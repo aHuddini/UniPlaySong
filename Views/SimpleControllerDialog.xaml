@@ -1,0 +1,130 @@
+<UserControl x:Class="UniPlaySong.Views.SimpleControllerDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="600"
+             Focusable="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Controller-Optimized Styles -->
+            <Style x:Key="ControllerListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                <Setter Property="MinHeight" Value="80"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Padding" Value="16,12"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Top"/>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#2196F3"/>
+                        <Setter Property="BorderBrush" Value="#1976D2"/>
+                        <Setter Property="BorderThickness" Value="3"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
+                    <Trigger Property="IsFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="#FF9800"/>
+                        <Setter Property="BorderThickness" Value="4"/>
+                        <Setter Property="Background" Value="#FFF3E0"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            
+            <Style x:Key="ControllerButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="Height" Value="50"/>
+                <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Title -->
+            <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+            <RowDefinition Height="*"/>     <!-- Results -->
+            <RowDefinition Height="Auto"/>  <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Name="DialogTitle"
+                   Text="🎮 Download Music" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,16" 
+                   HorizontalAlignment="Center"
+                   Foreground="#2196F3"/>
+
+        <!-- Controller Hint -->
+        <Border Grid.Row="1" 
+                Background="#E3F2FD" 
+                BorderBrush="#2196F3" 
+                BorderThickness="2" 
+                CornerRadius="8" 
+                Padding="16,8"
+                Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock FontSize="14" 
+                           FontWeight="SemiBold"
+                           Foreground="#1976D2"
+                           Text="🎮 Xbox Controller Support Active:"
+                           TextAlignment="Center"
+                           Margin="0,0,0,4"/>
+                <TextBlock FontSize="12" 
+                           Foreground="#1976D2"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap">
+                    <Run Text="🎮 A: Select/Download • B: Back/Cancel • X/Y: Preview • D-Pad: Navigate"/>
+                    <LineBreak/>
+                    <Run Text="🎮 LB/RB: Page through • LT/RT: Jump to top/bottom"/>
+                    <LineBreak/>
+                    <Run Text="⌨️ Keyboard: Arrow keys, Enter, Escape, F1 for preview"/>
+                </TextBlock>
+                <TextBlock Name="InputFeedback"
+                           FontSize="12" 
+                           Foreground="#FF9800"
+                           TextAlignment="Center"
+                           Margin="0,4,0,0"
+                           Text="🎮 Loading download options..."
+                           FontStyle="Italic"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Results List - Controller-Optimized -->
+        <ListBox Grid.Row="2"
+                 Name="ResultsListBox"
+                 ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,16"
+                 MinHeight="200">
+            <!-- Items will be populated dynamically -->
+        </ListBox>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="3" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Center">
+            <Button Name="CancelButton"
+                    Content="Back / Cancel"
+                    Style="{StaticResource ControllerButtonStyle}"
+                    Click="CancelButton_Click"/>
+            <Button Name="ConfirmButton"
+                    Content="Select / Download"
+                    Style="{StaticResource ControllerButtonStyle}"
+                    Click="ConfirmButton_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

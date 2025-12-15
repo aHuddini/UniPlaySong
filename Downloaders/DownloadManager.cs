@@ -1,0 +1,901 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text.RegularExpressions;
+using System.Threading;
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using UniPlaySong.Common;
+using UniPlaySong.Models;
+using UniPlaySong.Services;
+
+namespace UniPlaySong.Downloaders
+{
+    /// <summary>
+    /// Manages music downloads from various sources
+    /// </summary>
+    public class DownloadManager : IDownloadManager
+    {
+        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly TimeSpan MaxSongLength = new TimeSpan(0, Constants.MaxPreviewSongLengthMinutes, 0);
+        private static readonly List<string> PreferredSongEndings = Constants.PreferredSongEndings;
+
+        private readonly IDownloader _khDownloader;
+        private readonly IDownloader _ytDownloader;
+        private readonly string _tempPath;
+        private readonly ErrorHandlerService _errorHandler;
+        private readonly SearchCacheService _cacheService;
+        private readonly UniPlaySongSettings _settings;
+
+        public DownloadManager(HttpClient httpClient, HtmlAgilityPack.HtmlWeb htmlWeb, string tempPath,
+            string ytDlpPath = null, string ffmpegPath = null, ErrorHandlerService errorHandler = null,
+            SearchCacheService cacheService = null, UniPlaySongSettings settings = null)
+        {
+            _tempPath = tempPath ?? throw new ArgumentNullException(nameof(tempPath));
+            _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
+            _cacheService = cacheService; // Optional - can be null
+            _settings = settings; // Optional - can be null
+
+            // Initialize downloaders
+            _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
+            _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, errorHandler);
+
+            // Cleanup temp directory
+            Cleanup();
+        }
+
+        public IEnumerable<Album> GetAlbumsForGame(string gameName, Source source, CancellationToken cancellationToken, bool auto = false)
+        {
+            if (_errorHandler != null)
+            {
+                return _errorHandler.Try(
+                    () => GetAlbumsForGameInternal(gameName, source, cancellationToken, auto),
+                    defaultValue: Enumerable.Empty<Album>(),
+                    context: $"getting albums for '{gameName}' from {source}"
+                );
+            }
+            else
+            {
+                try
+                {
+                    return GetAlbumsForGameInternal(gameName, source, cancellationToken, auto);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Error getting albums for '{gameName}' from {source}: {ex.Message}");
+                    return Enumerable.Empty<Album>();
+                }
+            }
+        }
+        
+        private IEnumerable<Album> GetAlbumsForGameInternal(string gameName, Source source, CancellationToken cancellationToken, bool auto)
+        {
+            // For Source.All: Try KHInsider first, fallback to YouTube if no results
+            if (source == Source.All)
+            {
+                Logger.Info($"[Source.All] Searching for '{gameName}'");
+                Logger.Info($"[Source.All] Step 1/2: Trying KHInsider...");
+                
+                // Check cache first for KHInsider
+                List<Album> khAlbums = null;
+                if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
+                {
+                    // Cache hit!
+                    if (khAlbums.Count > 0)
+                    {
+                        Logger.Info($"[Source.All] ✓ KHInsider (cached): Found {khAlbums.Count} album(s) for '{gameName}'");
+                        return khAlbums;
+                    }
+                    else
+                    {
+                        // Cache says KHInsider has no results, skip directly to YouTube
+                        Logger.Info($"[Source.All] ✗ KHInsider (cached): No results for '{gameName}', skipping to YouTube");
+                        Logger.Info($"[Source.All] Step 2/2: Falling back to YouTube...");
+                        return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto);
+                    }
+                }
+                
+                // Cache miss - perform actual KHInsider search
+                khAlbums = _khDownloader?.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList() 
+                    ?? new List<Album>();
+                
+                // Cache the result
+                if (_cacheService != null)
+                {
+                    _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
+                }
+                
+                if (khAlbums.Count > 0)
+                {
+                    Logger.Info($"[Source.All] ✓ KHInsider: Found {khAlbums.Count} album(s) for '{gameName}'");
+                    return khAlbums;
+                }
+                
+                Logger.Info($"[Source.All] ✗ KHInsider: No results for '{gameName}'");
+                Logger.Info($"[Source.All] Step 2/2: Falling back to YouTube...");
+                
+                return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto);
+            }
+            
+            // For specific sources, use the appropriate downloader with caching
+            if (source == Source.KHInsider || source == Source.YouTube)
+            {
+                // Check cache first
+                if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, source, out var cachedAlbums))
+                {
+                    return cachedAlbums;
+                }
+                
+                // Cache miss - perform actual search
+                var downloader = GetDownloaderForSource(source);
+                if (downloader == null)
+                {
+                    Logger.Warn($"No downloader available for source: {source}");
+                    return Enumerable.Empty<Album>();
+                }
+                
+                var albums = downloader.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList() 
+                    ?? new List<Album>();
+                
+                // Cache the result
+                if (_cacheService != null)
+                {
+                    _cacheService.CacheSearchResult(gameName, source, albums);
+                }
+                
+                return albums;
+            }
+            else
+            {
+                // Other sources (no caching)
+                var downloader = GetDownloaderForSource(source);
+                if (downloader == null)
+                {
+                    Logger.Warn($"No downloader available for source: {source}");
+                    return Enumerable.Empty<Album>();
+                }
+                
+                return downloader.GetAlbumsForGame(gameName, cancellationToken, auto);
+            }
+        }
+        
+        /// <summary>
+        /// Get YouTube albums with caching support
+        /// </summary>
+        private List<Album> GetYouTubeAlbumsWithCache(string gameName, CancellationToken cancellationToken, bool auto)
+        {
+            // Check cache first
+            if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.YouTube, out var cachedAlbums))
+            {
+                if (cachedAlbums.Count > 0)
+                {
+                    Logger.Info($"[Source.All] ✓ YouTube (cached): Found {cachedAlbums.Count} album(s) for '{gameName}'");
+                }
+                else
+                {
+                    Logger.Warn($"[Source.All] ✗ YouTube (cached): No albums found for '{gameName}'");
+                }
+                return cachedAlbums;
+            }
+            
+            // Cache miss - try multiple YouTube search strategies
+            var ytAlbums = new List<Album>();
+            
+            // Strategy 1: "[Game Name]" OST (quoted for exact match)
+            Logger.Debug($"[YouTube] Strategy 1: Searching for '\"{gameName}\" OST'");
+            var strategy1 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" OST", cancellationToken, auto)?.ToList()
+                ?? new List<Album>();
+            ytAlbums.AddRange(strategy1);
+            
+            if (ytAlbums.Count > 0)
+            {
+                Logger.Info($"[YouTube] ✓ Strategy 1 found {ytAlbums.Count} result(s)");
+            }
+            else
+            {
+                // Strategy 2: "[Game Name]" soundtrack (if strategy 1 found nothing)
+                Logger.Debug($"[YouTube] Strategy 2: Searching for '\"{gameName}\" soundtrack'");
+                var strategy2 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" soundtrack", cancellationToken, auto)?.ToList()
+                    ?? new List<Album>();
+                ytAlbums.AddRange(strategy2);
+                
+                if (ytAlbums.Count > 0)
+                {
+                    Logger.Info($"[YouTube] ✓ Strategy 2 found {ytAlbums.Count} result(s)");
+                }
+                else
+                {
+                    // Strategy 3: [Game Name] original soundtrack (if still nothing)
+                    Logger.Debug($"[YouTube] Strategy 3: Searching for '{gameName} original soundtrack'");
+                    var strategy3 = _ytDownloader?.GetAlbumsForGame($"{gameName} original soundtrack", cancellationToken, auto)?.ToList()
+                        ?? new List<Album>();
+                    ytAlbums.AddRange(strategy3);
+                    
+                    if (ytAlbums.Count > 0)
+                    {
+                        Logger.Info($"[YouTube] ✓ Strategy 3 found {ytAlbums.Count} result(s)");
+                    }
+                }
+            }
+            
+            // Cache the result
+            if (_cacheService != null)
+            {
+                _cacheService.CacheSearchResult(gameName, Source.YouTube, ytAlbums);
+            }
+            
+            if (ytAlbums.Count > 0)
+            {
+                Logger.Info($"[Source.All] ✓ YouTube: Found {ytAlbums.Count} total album(s) for '{gameName}'");
+            }
+            else
+            {
+                Logger.Warn($"[Source.All] ✗ No albums found on any source (KHInsider + YouTube) for '{gameName}'");
+            }
+            
+            return ytAlbums;
+        }
+
+        /// <summary>
+        /// Minimum score required for an album to be considered a valid match.
+        /// Simplified: We now rely on strict keyword filtering rather than complex scoring
+        /// </summary>
+        private const int MinimumAlbumRelevanceScore = 1000;
+
+        public Album BestAlbumPick(IEnumerable<Album> albums, Game game)
+        {
+            var albumsList = albums?.ToList() ?? new List<Album>();
+
+            if (albumsList.Count == 0)
+                return null;
+
+            var gameName = StringHelper.PrepareForSearch(game.Name);
+
+            // FIRST PASS: Filter out obvious non-game-music albums (auto-mode only filters)
+            var filteredAlbums = albumsList.Where(album => IsLikelyGameMusic(album, game, auto: true)).ToList();
+            
+            Logger.Info($"Album filtering for '{game.Name}': {albumsList.Count} total → {filteredAlbums.Count} after filtering");
+            
+            if (filteredAlbums.Count == 0)
+            {
+                Logger.Warn($"No valid game music albums found for '{game.Name}' after filtering");
+                return null;
+            }
+            
+            // SECOND PASS: Score remaining albums
+            var scoredAlbums = filteredAlbums.Select(album => new
+            {
+                Album = album,
+                Score = CalculateAlbumRelevance(album, game)
+            })
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+            // Log top candidates for debugging
+            Logger.Info($"Album candidates for '{game.Name}' (search: '{gameName}'):");
+            foreach (var candidate in scoredAlbums.Take(5))
+            {
+                Logger.Info($"  - '{candidate.Album.Name}' (score: {candidate.Score}, source: {candidate.Album.Source})");
+            }
+
+            // Filter to only albums that meet minimum relevance threshold
+            var validAlbums = scoredAlbums.Where(x => x.Score >= MinimumAlbumRelevanceScore).ToList();
+
+            if (validAlbums.Count == 0)
+            {
+                Logger.Warn($"No albums met minimum relevance threshold ({MinimumAlbumRelevanceScore}) for game '{game.Name}'");
+                Logger.Warn($"Best candidate was '{scoredAlbums.FirstOrDefault()?.Album?.Name}' with score {scoredAlbums.FirstOrDefault()?.Score}");
+                return null;
+            }
+
+            var best = validAlbums.First();
+            Logger.Info($"Selected album '{best.Album.Name}' with score {best.Score} for game '{game.Name}'");
+            
+            return best.Album;
+        }
+        
+        /// <summary>
+        /// First-pass filter: Quickly eliminate albums that are clearly NOT game music
+        /// This prevents scoring non-game content like TV shows, movies, random music
+        /// </summary>
+        /// <param name="album">The album to check</param>
+        /// <param name="game">The game being searched for</param>
+        /// <param name="auto">Whether this is auto-mode (applies whitelist and strict filtering) or manual mode</param>
+        private bool IsLikelyGameMusic(Album album, Game game, bool auto)
+        {
+            if (album == null || string.IsNullOrWhiteSpace(album.Name))
+                return false;
+
+            var albumName = album.Name.ToLowerInvariant();
+            var gameName = game.Name.ToLowerInvariant();
+
+            // REQUIREMENT 1: Must contain game-music-related keywords
+            var musicKeywords = new[] { "ost", "soundtrack", "original soundtrack", "game music", "bgm", "score", "theme" };
+            bool hasMusicKeyword = musicKeywords.Any(keyword => albumName.Contains(keyword));
+
+            if (!hasMusicKeyword)
+            {
+                Logger.Debug($"Album '{album.Name}' rejected: No music keywords (OST/soundtrack/etc)");
+                return false;
+            }
+
+            // REQUIREMENT 2: Reject obvious non-game content
+            var rejectKeywords = new[]
+            {
+                "[eng sub]", "[sub]", "episode", "drama", "movie", "film",
+                "trailer", "review", "gameplay", "walkthrough", "let's play",
+                "reaction", "cover", "remix", "fan made", "fanmade"
+            };
+
+            if (rejectKeywords.Any(keyword => albumName.Contains(keyword)))
+            {
+                Logger.Debug($"Album '{album.Name}' rejected: Contains non-game keyword");
+                return false;
+            }
+
+            // REQUIREMENT 3: For YouTube, apply strict filtering (ONLY in auto mode)
+            if (album.Source == Source.YouTube && auto)
+            {
+                // REQUIREMENT 3a: Channel whitelist check (auto-mode only)
+                if (_settings != null &&
+                    _settings.EnableYouTubeChannelWhitelist &&
+                    _settings.WhitelistedYouTubeChannelIds != null &&
+                    _settings.WhitelistedYouTubeChannelIds.Count > 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(album.ChannelId))
+                    {
+                        bool isWhitelisted = _settings.WhitelistedYouTubeChannelIds.Contains(album.ChannelId);
+
+                        if (!isWhitelisted)
+                        {
+                            Logger.Debug($"[Auto-mode] Album '{album.Name}' from channel '{album.ChannelName}' (ID: {album.ChannelId}) rejected: Not in whitelist");
+                            return false;
+                        }
+                        else
+                        {
+                            Logger.Info($"[Auto-mode] Album '{album.Name}' from whitelisted channel '{album.ChannelName}' - whitelist check passed");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Debug($"[Auto-mode] Album '{album.Name}' rejected: No channel ID available for whitelist check");
+                        return false;
+                    }
+                }
+
+                // REQUIREMENT 3b: Word matching (stricter in auto-mode)
+                var gameWords = GetSignificantWords(gameName);
+                var albumWords = GetSignificantWords(albumName);
+
+                if (gameWords.Count > 0)
+                {
+                    int matchedWords = gameWords.Count(gw =>
+                        albumWords.Any(aw => string.Equals(gw, aw, StringComparison.OrdinalIgnoreCase)));
+
+                    // For YouTube, require at least 66% word match (or 100% for single-word games)
+                    // Increased from 50% to be more strict
+                    double matchPercentage = (double)matchedWords / gameWords.Count;
+                    double requiredMatch = gameWords.Count == 1 ? 1.0 : 0.66;
+
+                    if (matchPercentage < requiredMatch)
+                    {
+                        Logger.Debug($"[Auto-mode] Album '{album.Name}' rejected: Insufficient word match for YouTube ({matchPercentage:P0} < {requiredMatch:P0})");
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public List<Song> BestSongPick(IEnumerable<Song> songs, string gameName, int maxSongs = 1)
+        {
+            var songsList = songs?.ToList() ?? new List<Song>();
+            
+            if (songsList.Count == 0)
+                return new List<Song>();
+                
+            if (songsList.Count == 1)
+                return new List<Song> { songsList.First() };
+            
+            // Score songs based on preferences
+            var scoredSongs = songsList.Select(song => new
+            {
+                Song = song,
+                Score = CalculateSongRelevance(song, gameName)
+            })
+            .OrderByDescending(x => x.Score)
+            .ToList();
+            
+            // Log top candidates for debugging
+            var topCandidates = scoredSongs.Take(5).ToList();
+            Logger.Debug($"Top song candidates for '{gameName}':");
+            foreach (var candidate in topCandidates)
+            {
+                Logger.Debug($"  - '{candidate.Song.Name}' (score: {candidate.Score})");
+            }
+            
+            var result = scoredSongs.Take(maxSongs).Select(x => x.Song).ToList();
+            
+            if (result.Any())
+            {
+                Logger.Info($"Selected song for '{gameName}': '{result[0].Name}' (score: {scoredSongs[0].Score})");
+            }
+            
+            return result;
+        }
+        
+        private int CalculateSongRelevance(Song song, string gameName)
+        {
+            if (song == null)
+                return 0;
+                
+            var score = 0;
+            var songName = song.Name?.ToLowerInvariant() ?? string.Empty;
+            var cleanGameName = NormalizeForMatching(gameName);
+            
+            // === HIGH PRIORITY: Theme/Title songs (these are what we want for game previews) ===
+            
+            // Exact matches for common title screen music patterns
+            if (songName.Contains("title screen") || songName.Contains("title theme"))
+                score += 5000;
+            if (songName.Contains("main theme") || songName.Contains("main menu"))
+                score += 4500;
+            if (songName.Contains("opening theme") || songName.Contains("opening"))
+                score += 4000;
+            
+            // Preferred keywords
+            var highPriorityKeywords = new[] { "theme", "title", "menu", "intro", "prologue" };
+            foreach (var keyword in highPriorityKeywords)
+            {
+                if (songName.Contains(keyword))
+                {
+                    score += 2000;
+                    break;
+                }
+            }
+            
+            // === MEDIUM PRIORITY: Game name relevance ===
+            
+            // Contains game name (very relevant)
+            if (!string.IsNullOrEmpty(cleanGameName) && cleanGameName.Length > 2)
+            {
+                if (songName.Contains(cleanGameName))
+                    score += 1500;
+                    
+                // Check if song name starts with game name
+                if (songName.StartsWith(cleanGameName))
+                    score += 500;
+            }
+            
+            // === POSITIVE INDICATORS ===
+            
+            // Overworld/hub area music (often memorable)
+            if (songName.Contains("overworld") || songName.Contains("hub") || songName.Contains("world map"))
+                score += 800;
+                
+            // Character themes (often iconic)
+            if (songName.Contains("protagonist") || songName.Contains("hero"))
+                score += 600;
+            
+            // First level/area (players will recognize)
+            if (songName.Contains("stage 1") || songName.Contains("level 1") || 
+                songName.Contains("chapter 1") || songName.Contains("act 1"))
+                score += 400;
+            
+            // === NEGATIVE INDICATORS (things to avoid for auto-selection) ===
+            
+            // Remixes and covers (not original)
+            if (songName.Contains("remix") || songName.Contains("cover") || 
+                songName.Contains("arrange") || songName.Contains("arranged"))
+                score -= 1000;
+            
+            // Extended/loop versions (too long, repetitive)
+            if (songName.Contains("extended") || songName.Contains("loop") || 
+                songName.Contains("10 hour") || songName.Contains("1 hour"))
+                score -= 2000;
+            
+            // Battle/boss music (too intense for browsing)
+            if (songName.Contains("battle") || songName.Contains("boss") || 
+                songName.Contains("combat") || songName.Contains("fight"))
+                score -= 300;
+            
+            // Sad/ending music (not representative of game feel)
+            if (songName.Contains("game over") || songName.Contains("death") || 
+                songName.Contains("ending") || songName.Contains("credits") ||
+                songName.Contains("sad") || songName.Contains("tragic"))
+                score -= 500;
+            
+            // Sound effects, jingles (not actual music)
+            if (songName.Contains("sfx") || songName.Contains("sound effect") || 
+                songName.Contains("jingle") || songName.Contains("fanfare"))
+                score -= 1500;
+            
+            // === SONG LENGTH SCORING ===
+            if (song.Length.HasValue)
+            {
+                var minutes = song.Length.Value.TotalMinutes;
+                
+                // Ideal length is 1.5-4 minutes (typical theme/title music)
+                if (minutes >= 1.5 && minutes <= 4)
+                    score += 300;
+                else if (minutes >= 1 && minutes <= 5)
+                    score += 150;
+                else if (minutes < 0.5)
+                    score -= 500; // Too short (probably jingle)
+                else if (minutes > MaxSongLength.TotalMinutes)
+                    score -= 1000; // Too long
+            }
+            
+            // === TRACK POSITION BONUS ===
+            // Early tracks are often title/menu music
+            // This is a heuristic - track 1-3 are often title screens
+            // We don't have track numbers directly, but song names sometimes include them
+            if (Regex.IsMatch(songName, @"^(01|1\.|track\s*1|#1)\s"))
+                score += 200;
+            else if (Regex.IsMatch(songName, @"^(02|2\.|track\s*2|#2)\s"))
+                score += 100;
+            
+            return score;
+        }
+
+        public IEnumerable<Song> GetSongsFromAlbum(Album album, CancellationToken cancellationToken)
+        {
+            if (album == null)
+                return Enumerable.Empty<Song>();
+
+            if (_errorHandler != null)
+            {
+                return _errorHandler.Try(
+                    () =>
+                    {
+                        var downloader = GetDownloaderForSource(album.Source);
+                        if (downloader == null)
+                        {
+                            Logger.Warn($"No downloader available for source: {album.Source}");
+                            return Enumerable.Empty<Song>();
+                        }
+
+                        return downloader.GetSongsFromAlbum(album, cancellationToken);
+                    },
+                    defaultValue: Enumerable.Empty<Song>(),
+                    context: $"getting songs from album '{album.Name}'"
+                );
+            }
+            else
+            {
+                // Fallback to original error handling
+                try
+                {
+                    var downloader = GetDownloaderForSource(album.Source);
+                    if (downloader == null)
+                    {
+                        Logger.Warn($"No downloader available for source: {album.Source}");
+                        return Enumerable.Empty<Song>();
+                    }
+
+                    return downloader.GetSongsFromAlbum(album, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Error getting songs from album '{album.Name}': {ex.Message}");
+                    return Enumerable.Empty<Song>();
+                }
+            }
+        }
+
+        public bool DownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview = false)
+        {
+            if (song == null)
+            {
+                Logger.Warn("Cannot download: song is null");
+                return false;
+            }
+
+            if (_errorHandler != null)
+            {
+                return _errorHandler.Try(
+                    () =>
+                    {
+                        var downloader = GetDownloaderForSource(song.Source);
+                        if (downloader == null)
+                        {
+                            Logger.Warn($"No downloader available for source: {song.Source}");
+                            return false;
+                        }
+
+                        // Use temp path if no path specified
+                        var downloadPath = string.IsNullOrWhiteSpace(path) ? GetTempPath(song) : path;
+
+                        // Ensure directory exists
+                        var directory = Path.GetDirectoryName(downloadPath);
+                        if (!string.IsNullOrEmpty(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+
+                        var success = downloader.DownloadSong(song, downloadPath, cancellationToken, isPreview);
+
+                        // Move from temp if needed
+                        if (success && !string.IsNullOrWhiteSpace(path) && downloadPath != path && File.Exists(downloadPath))
+                        {
+                            if (File.Exists(path))
+                            {
+                                File.Delete(path);
+                            }
+                            File.Move(downloadPath, path);
+                        }
+
+                        return success;
+                    },
+                    defaultValue: false,
+                    context: $"downloading song '{song.Name}'"
+                );
+            }
+            else
+            {
+                // Fallback to original error handling
+                try
+                {
+                    var downloader = GetDownloaderForSource(song.Source);
+                    if (downloader == null)
+                    {
+                        Logger.Warn($"No downloader available for source: {song.Source}");
+                        return false;
+                    }
+
+                    // Use temp path if no path specified
+                    var downloadPath = string.IsNullOrWhiteSpace(path) ? GetTempPath(song) : path;
+
+                    // Ensure directory exists
+                    var directory = Path.GetDirectoryName(downloadPath);
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    var success = downloader.DownloadSong(song, downloadPath, cancellationToken, isPreview);
+
+                    // Move from temp if needed
+                    if (success && !string.IsNullOrWhiteSpace(path) && downloadPath != path && File.Exists(downloadPath))
+                    {
+                        if (File.Exists(path))
+                        {
+                            File.Delete(path);
+                        }
+                        File.Move(downloadPath, path);
+                    }
+
+                    return success;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Error downloading song '{song.Name}': {ex.Message}");
+                    return false;
+                }
+            }
+        }
+
+        public void Cleanup()
+        {
+            // Use ErrorHandlerService if available, otherwise fall back to direct logging
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () =>
+                    {
+                        if (Directory.Exists(_tempPath))
+                        {
+                            Directory.Delete(_tempPath, true);
+                        }
+                        Directory.CreateDirectory(_tempPath);
+                    },
+                    context: "cleaning up temp directory"
+                );
+            }
+            else
+            {
+                // Fallback to original error handling if ErrorHandlerService not available
+                try
+                {
+                    if (Directory.Exists(_tempPath))
+                    {
+                        Directory.Delete(_tempPath, true);
+                    }
+                    Directory.CreateDirectory(_tempPath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Error cleaning up temp directory: {ex.Message}");
+                }
+            }
+        }
+
+        private IDownloader GetDownloaderForSource(Source source)
+        {
+            switch (source)
+            {
+                case Source.KHInsider:
+                    return _khDownloader;
+                case Source.YouTube:
+                    return _ytDownloader;
+                case Source.All:
+                    // For "All", return KHInsider as default (can be enhanced to try multiple)
+                    return _khDownloader;
+                default:
+                    Logger.Warn($"Unknown source: {source}");
+                    return null;
+            }
+        }
+
+        private int CalculateAlbumRelevance(Album album, Game game)
+        {
+            if (album == null || game == null)
+                return 0;
+
+            // Normalize both names for comparison
+            var gameName = NormalizeForMatching(StringHelper.PrepareForSearch(game.Name));
+            var albumName = NormalizeForMatching(album.Name);
+            
+            // Also get individual words for partial matching
+            var gameWords = GetSignificantWords(gameName);
+            var albumWords = GetSignificantWords(albumName);
+            
+            var score = 0;
+
+            // === EXACT MATCH (highest priority) ===
+            if (string.Equals(albumName, gameName, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 10000;
+            }
+            // Album starts with exact game name
+            else if (albumName.StartsWith(gameName + " ", StringComparison.OrdinalIgnoreCase) ||
+                     albumName.StartsWith(gameName + ":", StringComparison.OrdinalIgnoreCase))
+            {
+                score += 8000;
+            }
+            // Game name is contained in album name
+            else if (albumName.ContainsIgnoreCase(gameName))
+            {
+                score += 6000;
+            }
+            
+            // === WORD-BASED MATCHING (simplified) ===
+            if (gameWords.Count > 0)
+            {
+                // Count how many game words appear in album name
+                int matchedWords = gameWords.Count(gw => 
+                    albumWords.Any(aw => string.Equals(gw, aw, StringComparison.OrdinalIgnoreCase)));
+                
+                // Calculate match percentage
+                double matchPercentage = (double)matchedWords / gameWords.Count;
+                
+                // All words match
+                if (matchPercentage >= 1.0)
+                {
+                    score += 5000;
+                }
+                // Most words match (75%+)
+                else if (matchPercentage >= 0.75)
+                {
+                    score += 3000;
+                }
+                // Half words match
+                else if (matchPercentage >= 0.5)
+                {
+                    score += 1500;
+                }
+                // Some words match (33%+)
+                else if (matchPercentage >= 0.33)
+                {
+                    score += 500;
+                }
+            }
+            
+            // === SOUNDTRACK INDICATORS (bonus) ===
+            if (albumName.Contains("original soundtrack"))
+                score += 300;
+            else if (albumName.Contains("soundtrack") || albumName.Contains("ost"))
+                score += 200;
+            else if (albumName.Contains("score") || albumName.Contains("music"))
+                score += 100;
+            
+            // === PLATFORM MATCH (bonus) ===
+            if (game.Platforms != null && album.Platforms != null && album.Platforms.Any())
+            {
+                var gamePlatforms = game.Platforms.Select(p => NormalizeForMatching(p.Name)).ToList();
+                var albumPlatforms = album.Platforms.Select(NormalizeForMatching).ToList();
+                
+                bool platformMatch = gamePlatforms.Any(gp => 
+                    albumPlatforms.Any(ap => 
+                        string.Equals(gp, ap, StringComparison.OrdinalIgnoreCase) ||
+                        gp.Contains(ap) || ap.Contains(gp)));
+                
+                if (platformMatch)
+                {
+                    score += 200;
+                }
+            }
+
+            // === TYPE PREFERENCE (bonus) ===
+            if (!string.IsNullOrWhiteSpace(album.Type))
+            {
+                if (string.Equals(album.Type, "GameRip", StringComparison.OrdinalIgnoreCase))
+                    score += 150;
+                else if (string.Equals(album.Type, "Soundtrack", StringComparison.OrdinalIgnoreCase))
+                    score += 100;
+            }
+
+            // === YEAR MATCH (bonus) ===
+            if (!string.IsNullOrWhiteSpace(album.Year) && game.ReleaseYear.HasValue)
+            {
+                if (album.Year.Contains(game.ReleaseYear.Value.ToString()))
+                    score += 50;
+            }
+
+            return score;
+        }
+
+        /// <summary>
+        /// Normalizes a string for matching (lowercase, remove special chars, collapse spaces)
+        /// </summary>
+        private string NormalizeForMatching(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+
+            // Remove special characters, keeping only alphanumeric and spaces
+            var normalized = Regex.Replace(name, @"[^\w\s]", " ");
+            // Collapse multiple spaces
+            normalized = Regex.Replace(normalized, @"\s+", " ");
+            return normalized.Trim().ToLowerInvariant();
+        }
+        
+        /// <summary>
+        /// Gets significant words from a name (filters out common words)
+        /// </summary>
+        private List<string> GetSignificantWords(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return new List<string>();
+            
+            // Common words to ignore
+            var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or",
+                "vol", "volume", "part", "disc", "cd", "ost", "soundtrack", "original",
+                "sound", "music", "game", "video"
+            };
+            
+            var words = name.ToLowerInvariant()
+                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length > 1 && !stopWords.Contains(w))
+                .ToList();
+            
+            return words;
+        }
+
+        public string GetTempPath(Song song)
+        {
+            if (song == null)
+                return null;
+                
+            // Create a hash-based temp filename
+            // SHA256 provides deterministic, collision-resistant filenames from song identifiers
+            // This enables caching: same song ID = same filename = reuses existing download
+            var hash = BitConverter.ToString(
+                System.Security.Cryptography.SHA256.Create()
+                    .ComputeHash(System.Text.Encoding.UTF8.GetBytes(song.Id ?? song.Name ?? Guid.NewGuid().ToString())))
+                .Replace("-", "");
+
+            var extension = Path.GetExtension(song.Id ?? ".mp3");
+            if (string.IsNullOrEmpty(extension))
+                extension = ".mp3";
+
+            return Path.Combine(_tempPath, hash + extension);
+        }
+    }
+}
+

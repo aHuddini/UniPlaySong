@@ -1,0 +1,88 @@
+using System.Collections.Generic;
+using Playnite.SDK.Models;
+using UniPlaySong.Models;
+
+namespace UniPlaySong.Services
+{
+    /// <summary>
+    /// High-level service for managing music playback for games
+    /// </summary>
+    public interface IMusicPlaybackService
+    {
+        /// <summary>
+        /// Plays music for a game (console-like preview experience)
+        /// </summary>
+        void PlayGameMusic(Game game);
+
+        /// <summary>
+        /// Plays music for a game with settings check
+        /// </summary>
+        void PlayGameMusic(Game game, UniPlaySongSettings settings);
+        
+        /// <summary>
+        /// Plays music for a game with settings check and optional force reload
+        /// </summary>
+        void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload);
+
+        /// <summary>
+        /// Stops current playback
+        /// </summary>
+        void Stop();
+
+        /// <summary>
+        /// Pauses current playback
+        /// </summary>
+        void Pause();
+
+        /// <summary>
+        /// Resumes paused playback
+        /// </summary>
+        void Resume();
+
+        /// <summary>
+        /// Gets available songs for a game
+        /// </summary>
+        List<string> GetAvailableSongs(Game game);
+
+        /// <summary>
+        /// Sets the volume (0.0 to 1.0)
+        /// </summary>
+        void SetVolume(double volume);
+
+        /// <summary>
+        /// Gets current volume
+        /// </summary>
+        double GetVolume();
+
+        /// <summary>
+        /// Whether music is currently playing
+        /// </summary>
+        bool IsPlaying { get; }
+        
+        /// <summary>
+        /// Whether music is currently paused
+        /// </summary>
+        bool IsPaused { get; }
+        
+        /// <summary>
+        /// Whether a media file is currently loaded (matches PlayniteSound's IsLoaded)
+        /// </summary>
+        bool IsLoaded { get; }
+        
+        /// <summary>
+        /// Loads and plays a specific audio file
+        /// </summary>
+        void LoadAndPlayFile(string filePath);
+        
+        /// <summary>
+        /// Event fired when music stops (for native music restoration)
+        /// </summary>
+        event System.Action<UniPlaySongSettings> OnMusicStopped;
+        
+        /// <summary>
+        /// Event fired when music starts (for native music suppression)
+        /// </summary>
+        event System.Action<UniPlaySongSettings> OnMusicStarted;
+    }
+}
+

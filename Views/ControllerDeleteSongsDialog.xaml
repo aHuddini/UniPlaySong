@@ -1,0 +1,164 @@
+<UserControl x:Class="UniPlaySong.Views.ControllerDeleteSongsDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="550" d:DesignWidth="750"
+             Focusable="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Controller-Optimized Styles -->
+            <Style x:Key="ControllerListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                <Setter Property="MinHeight" Value="70"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Padding" Value="16,12"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#F44336"/>
+                        <Setter Property="BorderBrush" Value="#D32F2F"/>
+                        <Setter Property="BorderThickness" Value="3"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
+                    <Trigger Property="IsFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="#FF9800"/>
+                        <Setter Property="BorderThickness" Value="4"/>
+                        <Setter Property="Background" Value="#FFF3E0"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            
+            <Style x:Key="ControllerButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="Height" Value="50"/>
+                <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+
+            <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControllerButtonStyle}">
+                <Setter Property="Background" Value="#F44336"/>
+                <Setter Property="BorderBrush" Value="#D32F2F"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    <Border Background="#1E1E1E" 
+            BorderBrush="#424242" 
+            BorderThickness="2" 
+            CornerRadius="8" 
+            Margin="8">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Title -->
+            <RowDefinition Height="Auto"/>  <!-- Warning -->
+            <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+            <RowDefinition Height="*"/>     <!-- File List -->
+            <RowDefinition Height="Auto"/>  <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Name="DialogTitle"
+                   Text="🎮 Delete Songs" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,12" 
+                   HorizontalAlignment="Center"
+                   Foreground="#F44336"/>
+
+        <!-- Warning -->
+        <Border Grid.Row="1" 
+                Background="#FFEBEE" 
+                BorderBrush="#F44336" 
+                BorderThickness="2" 
+                CornerRadius="8" 
+                Padding="12,8"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚠️ " 
+                           FontSize="16"
+                           Foreground="#D32F2F"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="Warning: Deleted songs cannot be recovered. Make sure you have backups!" 
+                           FontWeight="SemiBold"
+                           Foreground="#D32F2F"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Controller Hint -->
+        <Border Grid.Row="2" 
+                Background="#E3F2FD" 
+                BorderBrush="#2196F3" 
+                BorderThickness="2" 
+                CornerRadius="8" 
+                Padding="16,8"
+                Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock FontSize="14" 
+                           FontWeight="SemiBold"
+                           Foreground="#1976D2"
+                           Text="🎮 Xbox Controller Support Active:"
+                           TextAlignment="Center"
+                           Margin="0,0,0,4"/>
+                <TextBlock FontSize="12" 
+                           Foreground="#1976D2"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap">
+                    <Run Text="🎮 A: Delete Selected • B: Cancel • X/Y: Preview • D-Pad: Navigate"/>
+                    <LineBreak/>
+                    <Run Text="🎮 LB/RB: Page through • LT/RT: Jump to top/bottom"/>
+                    <LineBreak/>
+                    <Run Text="⌨️ Keyboard: Arrow keys, Enter, Escape, F1 for preview"/>
+                </TextBlock>
+                <TextBlock Name="InputFeedback"
+                           FontSize="12" 
+                           Foreground="#FF9800"
+                           TextAlignment="Center"
+                           Margin="0,4,0,0"
+                           Text="🎮 Loading music files..."
+                           FontStyle="Italic"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Music Files List -->
+        <ListBox Grid.Row="3"
+                 Name="FilesListBox"
+                 ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,16"
+                 MinHeight="200">
+            <!-- Items will be populated dynamically -->
+        </ListBox>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="4" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Center">
+            <Button Name="CancelButton"
+                    Content="Cancel"
+                    Style="{StaticResource ControllerButtonStyle}"
+                    Click="CancelButton_Click"/>
+            <Button Name="DeleteButton"
+                    Content="🗑️ Delete Selected"
+                    Style="{StaticResource DeleteButtonStyle}"
+                    Click="DeleteButton_Click"/>
+        </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
