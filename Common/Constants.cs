@@ -160,7 +160,7 @@ namespace UniPlaySong.Common
         /// <summary>
         /// Menu section name for game menu items
         /// </summary>
-        public const string MenuSectionName = "UniPSound";
+        public const string MenuSectionName = "UniPlaySong";
         
         #endregion
         

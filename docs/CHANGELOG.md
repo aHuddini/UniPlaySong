@@ -5,12 +5,12 @@
 ### Fullscreen Mode with Xbox Controller Support (Complete) 🎮
 **Major Feature**: Complete controller-friendly interface for managing game music entirely from fullscreen mode
 
-UniPlaySong now provides complete music management capabilities directly from fullscreen mode using an Xbox controller. Access all features via the extension menu: Select a game → Menu button → Extensions → UniPSound → Choose your action.
+UniPlaySong now provides complete music management capabilities directly from fullscreen mode using an Xbox controller. Access all features via the extension menu: Select a game → Menu button → Extensions → UniPlaySong → Choose your action.
 
 **Access Method:**
 - Select a game in fullscreen mode
 - Press Menu/Context button on Xbox controller (or right-click)
-- Navigate to Extensions → UniPSound
+- Navigate to Extensions → UniPlaySong
 - Select from available controller-optimized options
 
 **Features:**

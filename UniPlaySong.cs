@@ -1325,7 +1325,7 @@ namespace UniPlaySong
             var game = games[0];
             var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
             
-            // All items under "UniPSound" parent menu
+            // All items under "UniPlaySong" parent menu
             items.Add(new GameMenuItem
             {
                 Description = "Download Music...",

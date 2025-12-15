@@ -124,7 +124,7 @@ UniPlaySong provides complete controller support for fullscreen gaming. All musi
 **How to Access in Fullscreen Mode:**
 1. Select a game in your library
 2. Press the **Menu/Context button** on your Xbox controller (or right-click with mouse)
-3. Navigate to **Extensions** → **UniPSound**
+3. Navigate to **Extensions** → **UniPlaySong**
 4. Select from the available options:
    - **Download Music (🎮 Mode)** - Browse and download tracks/albums
    - **Set Primary Song (🎮 Mode)** - Choose which song plays first
