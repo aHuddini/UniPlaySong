@@ -17,8 +17,6 @@ namespace UniPlaySong.Services
         private static readonly ILogger Logger = LogManager.GetLogger();
         private readonly string _baseMusicPath;
         private readonly ErrorHandlerService _errorHandler;
-
-        // Supported audio file extensions (using Constants for consistency)
         private static readonly string[] SupportedExtensions = Constants.SupportedAudioExtensions;
 
         public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null)
@@ -71,7 +69,6 @@ namespace UniPlaySong.Services
             }
             else
             {
-                // Fallback to original error handling
                 try
                 {
                     var files = Directory.GetFiles(directory)

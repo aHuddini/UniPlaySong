@@ -98,7 +98,6 @@ namespace UniPlaySong
             };
         }
         
-        // Services
         private IMusicPlaybackService _playbackService;
         private IDownloadManager _downloadManager;
         private GameMusicFileService _fileService;
@@ -109,21 +108,15 @@ namespace UniPlaySong
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
         private Services.INormalizationService _normalizationService;
-        
-        // Coordinator (Phase 1: Created but not used yet - existing code remains intact)
         private IMusicPlaybackCoordinator _coordinator;
         
-        // Shared settings instance (Phase 2: Compatibility property, will be removed in Phase 6)
         private UniPlaySongSettings _settings => _settingsService?.Current;
-        
 
-        // HTTP client for downloads
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
 
         public override Guid Id { get; } = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
         
-        // Direct API access (preferred over properties for simplicity)
         private IEnumerable<Game> SelectedGames => _api.MainView.SelectedGames;
         private bool IsFullscreen => _api.ApplicationInfo.Mode == ApplicationMode.Fullscreen;
         private bool IsDesktop => _api.ApplicationInfo.Mode == ApplicationMode.Desktop;
@@ -134,7 +127,6 @@ namespace UniPlaySong
             _httpClient = new HttpClient();
             _htmlWeb = new HtmlWeb();
 
-            // Initialize file logger
             try
             {
                 var extensionPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -144,43 +136,34 @@ namespace UniPlaySong
             }
             catch
             {
-                // Continue without file logger if it fails
+                // File logger initialization failed - continue without it
             }
 
             Properties = new GenericPluginProperties { HasSettings = true };
 
-            // Initialize SettingsService (Phase 2: Now using it for settings management)
             _settingsService = new SettingsService(_api, logger, _fileLogger, this);
-            
-            // Subscribe to settings changes for automatic updates
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
 
             InitializeServices();
             InitializeMenuHandlers();
             
-            // Attach window monitor for theme support
             WindowMonitor.Attach(_playbackService, _errorHandler);
             
-            // Subscribe to settings changes for video pause/resume
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
                 
-                // Attach media monitor if pause on trailer is enabled
                 if (_settings.PauseOnTrailer)
                 {
                     MediaElementsMonitor.Attach(_api, _settings);
                 }
             }
             
-            // Subscribe to SettingsService property changes
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
-            
-            // Subscribe to main model changes for view transitions
             SubscribeToMainModel();
             
-            // Try to suppress native music early if in fullscreen (before OnApplicationStarted)
-            // This helps catch native music that starts very early in the initialization
+            // Try early native music suppression in fullscreen mode
+            // Catches native music that starts before OnApplicationStarted
             if (IsFullscreen)
             {
                 bool shouldSuppress = _settings?.SuppressPlayniteBackgroundMusic == true ||
@@ -188,14 +171,13 @@ namespace UniPlaySong
                 
                 if (shouldSuppress)
                 {
-                    // Try immediate suppression (may not work yet if audio not initialized, but no harm)
                     try
                     {
                         SuppressNativeMusic();
                     }
                     catch
                     {
-                        // Silently ignore - audio system may not be ready yet
+                        // Audio system may not be initialized yet - ignore
                     }
                 }
             }
@@ -206,59 +188,64 @@ namespace UniPlaySong
 
         #region Playnite Events
 
+        /// <summary>
+        /// Handles game selection events from Playnite.
+        /// Delegates all logic to the music playback coordinator.
+        /// </summary>
         public override void OnGameSelected(OnGameSelectedEventArgs args)
         {
-            // All game selection logic is handled by the coordinator
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
         }
 
+        /// <summary>
+        /// Handles application startup events from Playnite.
+        /// Initializes skip state, login detection, and native music suppression.
+        /// </summary>
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             _fileLogger?.Info($"Application started - Mode: {_api.ApplicationInfo.Mode}");
             
-            // Ensure settings are loaded
             if (_settings == null)
             {
                 _fileLogger?.Warn("OnApplicationStarted: Settings are null, reloading...");
                 _settingsService?.LoadSettings();
             }
             
-            // Reset skip state when starting in fullscreen mode (for SkipFirstSelectionAfterModeSwitch)
             if (IsFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
                 _coordinator.ResetSkipStateForModeSwitch();
             }
             
-            // Attach input handler for login screen detection
             if (_settings?.ThemeCompatibleSilentSkip == true && IsFullscreen)
             {
                 AttachLoginInputHandler();
             }
             
-            // Suppress native music on startup if:
+            // Suppress native music if:
             // 1. SuppressPlayniteBackgroundMusic is explicitly enabled, OR
-            // 2. UseNativeMusicAsDefault is enabled (we play the same file ourselves, so suppress Playnite's duplicate playback)
+            // 2. UseNativeMusicAsDefault is enabled (we play the same file, suppress duplicate)
             bool shouldSuppressOnStartup = _settings?.SuppressPlayniteBackgroundMusic == true ||
                                           (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
             
             if (IsFullscreen && shouldSuppressOnStartup)
             {
                 _fileLogger?.Info($"OnApplicationStarted: Starting native music suppression (SuppressPlayniteBackgroundMusic={_settings?.SuppressPlayniteBackgroundMusic}, UseNativeMusicAsDefault={_settings?.UseNativeMusicAsDefault})");
-                // Suppress immediately (in case audio is already initialized)
                 SuppressNativeMusic();
-                // Start continuous monitoring to catch music that starts at different times
                 StartNativeMusicSuppression();
             }
         }
 
+        /// <summary>
+        /// Handles application shutdown events from Playnite.
+        /// Cleans up resources and stops all monitoring systems.
+        /// </summary>
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             _playbackService?.Stop();
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
             
-            // Stop monitoring systems
             StopControllerLoginMonitoring();
             StopNativeMusicSuppression();
             
@@ -270,11 +257,11 @@ namespace UniPlaySong
         #region Music Playback
 
         /// <summary>
-        /// Central gatekeeper - delegates to coordinator for all playback decisions
+        /// Determines if music should play for the currently selected game.
+        /// Delegates to the coordinator for all playback decisions.
         /// </summary>
         private bool ShouldPlayMusic()
         {
-            // Phase 2: Use coordinator for state - get current game for check
             var game = SelectedGames?.FirstOrDefault();
             return _coordinator.ShouldPlayMusic(game);
         }
@@ -292,11 +279,11 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Handles SettingsService property changes (Phase 2)
+        /// Handles SettingsService property change events.
+        /// Forwards video state changes to the coordinator.
         /// </summary>
         private void OnSettingsServicePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            // Handle video state changes for coordinator
             if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
             {
                 _coordinator?.HandleVideoStateChange(_settings.VideoIsPlaying);
@@ -304,9 +291,9 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Handles SettingsService settings changed event (Phase 6)
-        /// Coordinator subscribes directly to SettingsService, so no manual UpdateSettings() needed
-        /// This handler manages plugin-level concerns (volume, media monitor, PropertyChanged subscription)
+        /// Handles SettingsService settings changed events.
+        /// Manages plugin-level concerns: volume updates, media monitor, and PropertyChanged subscriptions.
+        /// Coordinator subscribes directly to SettingsService, so no manual UpdateSettings() needed.
         /// </summary>
         private void OnSettingsServiceChanged(object sender, SettingsChangedEventArgs e)
         {
@@ -350,8 +337,8 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Called when settings are saved - reloads settings via SettingsService
-        /// SettingsService automatically notifies all subscribers (Phase 2)
+        /// Called when settings are saved in the settings UI.
+        /// Reloads settings via SettingsService, which automatically notifies all subscribers.
         /// </summary>
         public void OnSettingsSaved()
         {
@@ -540,8 +527,8 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Start continuous native music suppression monitoring for initial fullscreen startup.
-        /// Runs longer (10 seconds) to ensure we catch native music regardless of when Playnite loads it.
+        /// Starts continuous native music suppression monitoring for initial fullscreen startup.
+        /// Polls every 50ms for 15 seconds to catch native music that starts at different times.
         /// </summary>
         private void StartNativeMusicSuppression()
         {
@@ -551,9 +538,8 @@ namespace UniPlaySong
             try
             {
                 _isNativeMusicSuppressionActive = true;
-                _hasLoggedSuppression = false; // Reset for this session
+                _hasLoggedSuppression = false;
                 
-                // Create a timer that checks every 50ms for native music (faster than before)
                 _nativeMusicSuppressionTimer = new System.Windows.Threading.DispatcherTimer
                 {
                     Interval = TimeSpan.FromMilliseconds(50)
@@ -574,7 +560,7 @@ namespace UniPlaySong
                 _nativeMusicSuppressionTimer.Start();
                 _fileLogger?.Info("Started native music suppression monitoring (15 second window)");
                 
-                // Stop monitoring after 15 seconds (extended to catch delayed audio initialization and theme transitions)
+                // Stop after 15 seconds to catch delayed audio initialization and theme transitions
                 Task.Delay(15000).ContinueWith(_ =>
                 {
                     Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
@@ -590,7 +576,7 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Stop continuous native music suppression monitoring
+        /// Stops continuous native music suppression monitoring.
         /// </summary>
         private void StopNativeMusicSuppression()
         {
@@ -617,16 +603,18 @@ namespace UniPlaySong
 
         /// <summary>
         /// Suppresses Playnite's native background music by stopping playback and preventing reload.
+        /// Uses reflection to access Playnite's internal BackgroundMusic property and SDL2_mixer to stop playback.
+        /// </summary>
+        /// <remarks>
         /// Triggers when:
         /// 1. SuppressPlayniteBackgroundMusic is explicitly enabled, OR
         /// 2. UseNativeMusicAsDefault is enabled (we play the same file ourselves)
-        /// </summary>
+        /// </remarks>
         private void SuppressNativeMusic()
         {
             if (!IsFullscreen)
                 return;
             
-            // Check if we should suppress
             bool shouldSuppress = _settings?.SuppressPlayniteBackgroundMusic == true ||
                                  (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
             
@@ -635,7 +623,6 @@ namespace UniPlaySong
 
             try
             {
-                // Get BackgroundMusic property via reflection
                 var mainModel = GetMainModel();
                 if (mainModel?.App == null)
                     return;
@@ -661,11 +648,9 @@ namespace UniPlaySong
                 
                 if (currentMusic != IntPtr.Zero)
                 {
-                    // Stop music playback
                     SDL_mixer.Mix_HaltMusic();
-                    // Free the music resource
                     SDL_mixer.Mix_FreeMusic(currentMusic);
-                    // Set BackgroundMusic to Zero to prevent Playnite from reloading it
+                    // Set to Zero to prevent Playnite from reloading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
                     
                     if (!_hasLoggedSuppression)
@@ -676,7 +661,7 @@ namespace UniPlaySong
                 }
                 else
                 {
-                    // Music not loaded yet, but set it to Zero anyway to prevent loading
+                    // Music not loaded yet - set to Zero to prevent loading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
                 }
             }
@@ -1394,15 +1379,49 @@ namespace UniPlaySong
 
         #region Public API
 
+        /// <summary>
+        /// Gets the download manager service.
+        /// </summary>
         public IDownloadManager GetDownloadManager() => _downloadManager;
+
+        /// <summary>
+        /// Gets the music playback service.
+        /// </summary>
         public IMusicPlaybackService GetPlaybackService() => _playbackService;
+
+        /// <summary>
+        /// Gets the game music file service.
+        /// </summary>
         public GameMusicFileService GetFileService() => _fileService;
+
+        /// <summary>
+        /// Gets the download dialog service.
+        /// </summary>
         public DownloadDialogService GetDownloadDialogService() => _downloadDialogService;
+
+        /// <summary>
+        /// Gets the settings service.
+        /// </summary>
         public SettingsService GetSettingsService() => _settingsService;
+
+        /// <summary>
+        /// Gets the search cache service.
+        /// </summary>
         public SearchCacheService GetSearchCacheService() => _cacheService;
-        
+
+        /// <summary>
+        /// Gets the error handler service.
+        /// </summary>
         public ErrorHandlerService GetErrorHandlerService() => _errorHandler;
+
+        /// <summary>
+        /// Gets the audio normalization service.
+        /// </summary>
         public Services.INormalizationService GetNormalizationService() => _normalizationService;
+
+        /// <summary>
+        /// Gets the Playnite API instance.
+        /// </summary>
         public new IPlayniteAPI PlayniteApi => _api;
 
         #endregion
@@ -1418,10 +1437,8 @@ namespace UniPlaySong
             {
                 logger.Debug($"ShowControllerSetPrimarySong called for game: {game?.Name}");
 
-                // Create controller file picker dialog
                 var filePickerDialog = new Views.ControllerFilePickerDialog();
 
-                // Create window using Playnite's dialog system
                 var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
                 {
                     ShowMinimizeButton = false,
@@ -1437,10 +1454,8 @@ namespace UniPlaySong
                 window.ResizeMode = ResizeMode.CanResize;
                 window.Content = filePickerDialog;
 
-                // Initialize the dialog
                 filePickerDialog.InitializeForGame(game, PlayniteApi, _fileService, _playbackService, Views.ControllerFilePickerDialog.DialogMode.SetPrimary);
 
-                // Handle window events for focus management
                 window.Closing += (s, e) =>
                 {
                     try
@@ -1460,7 +1475,6 @@ namespace UniPlaySong
                     }
                 };
 
-                // Show dialog
                 window.ShowDialog();
             }
             catch (Exception ex)
@@ -1529,7 +1543,6 @@ namespace UniPlaySong
                     }
                 };
 
-                // Show dialog
                 window.ShowDialog();
             }
             catch (Exception ex)
@@ -1598,7 +1611,6 @@ namespace UniPlaySong
                     }
                 };
 
-                // Show dialog
                 window.ShowDialog();
             }
             catch (Exception ex)
@@ -1789,7 +1801,8 @@ namespace UniPlaySong
         private bool _hasLastLoginState = false;
 
         /// <summary>
-        /// Start monitoring Xbox controller for login bypass
+        /// Starts monitoring Xbox controller input for login screen bypass.
+        /// Polls controller every 50ms and triggers login dismiss on A or Start button press.
         /// </summary>
         private void StartControllerLoginMonitoring()
         {
@@ -1848,7 +1861,7 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Stop monitoring Xbox controller for login bypass
+        /// Stops monitoring Xbox controller input for login screen bypass.
         /// </summary>
         private void StopControllerLoginMonitoring()
         {
@@ -1866,24 +1879,24 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Check for login bypass button presses (A button or Start button)
+        /// Checks for login bypass button presses (A button or Start button).
+        /// Detects newly pressed buttons and triggers login dismiss on UI thread.
         /// </summary>
         private void CheckLoginBypassButtonPresses(XINPUT_GAMEPAD currentState, XINPUT_GAMEPAD lastState)
         {
             try
             {
-                // Get newly pressed buttons (buttons that are pressed now but weren't before)
+                // Get newly pressed buttons (pressed now but not before)
                 ushort newlyPressed = (ushort)(currentState.wButtons & ~lastState.wButtons);
                 
-                if (newlyPressed == 0) return; // No new button presses
+                if (newlyPressed == 0)
+                    return;
                 
-                // Check for A button or Start button (common login bypass buttons)
                 if ((newlyPressed & XINPUT_GAMEPAD_A) != 0 || (newlyPressed & XINPUT_GAMEPAD_START) != 0)
                 {
                     string buttonName = (newlyPressed & XINPUT_GAMEPAD_A) != 0 ? "A" : "Start";
                     _fileLogger?.Info($"Xbox controller {buttonName} button pressed - triggering login dismiss");
                     
-                    // Trigger login dismiss on UI thread
                     Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                     {
                         try

@@ -19,14 +19,12 @@ namespace UniPlaySong.Services
         private readonly ILogger _logger;
         private readonly FileLogger _fileLogger;
         
-        // State - centralized here
         private bool _firstSelect = true;
         private bool _loginSkipActive = false;
-        private bool _skipFirstSelectActive = false; // Tracks if we're in the "skip first select" window
-        private bool _hasSeenFullscreen = false; // Track if we've seen fullscreen mode yet
+        private bool _skipFirstSelectActive = false;
+        private bool _hasSeenFullscreen = false;
         private Game _currentGame;
         
-        // Dependencies (using Func delegates for testability)
         private readonly Func<bool> _isFullscreen;
         private readonly Func<bool> _isDesktop;
         private readonly Func<Game> _getSelectedGame;
@@ -49,17 +47,22 @@ namespace UniPlaySong.Services
             _isDesktop = isDesktop ?? throw new ArgumentNullException(nameof(isDesktop));
             _getSelectedGame = getSelectedGame ?? throw new ArgumentNullException(nameof(getSelectedGame));
             
-            // Subscribe to automatic settings updates (Phase 3)
             _settingsService.SettingsChanged += OnSettingsChanged;
             _fileLogger?.Info("MusicPlaybackCoordinator: Subscribed to SettingsService");
         }
         
         /// <summary>
-        /// Central gatekeeper - ALL music playback decisions go through here
+        /// Determines whether music should play for the given game.
+        /// This is the central gatekeeper for all playback decisions.
         /// </summary>
+        /// <param name="game">The game to check. Must not be null.</param>
+        /// <returns>True if music should play; otherwise, false.</returns>
+        /// <remarks>
+        /// Checks skip logic, settings, mode, video state, and volume.
+        /// All music playback decisions must pass through this method.
+        /// </remarks>
         public bool ShouldPlayMusic(Game game)
         {
-            // Basic checks
             if (_settings == null || !_settings.EnableMusic)
             {
                 _fileLogger?.Info("ShouldPlayMusic: Returning false - music disabled or settings null");
@@ -90,22 +93,19 @@ namespace UniPlaySong.Services
                 return false;
             }
             
-            // Login skip check
             if (_loginSkipActive)
             {
                 _fileLogger?.Info("ShouldPlayMusic: Returning false - login skip active");
                 return false;
             }
             
-            // First select skip check - CENTRAL GATEKEEPER
-            // Check both _firstSelect (for initial state) and _skipFirstSelectActive (for skip window)
+            // Check both _firstSelect (initial state) and _skipFirstSelectActive (skip window)
             if ((_firstSelect || _skipFirstSelectActive) && _settings.SkipFirstSelectionAfterModeSwitch)
             {
                 _fileLogger?.Info($"ShouldPlayMusic: Returning false - first select skip enabled (FirstSelect: {_firstSelect}, SkipActive: {_skipFirstSelectActive})");
                 return false;
             }
             
-            // Mode-based checks
             var state = _settings.MusicState;
             if (_isFullscreen() && state != AudioState.Fullscreen && state != AudioState.Always)
             {
@@ -124,12 +124,14 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Handles game selection - coordinates skip logic and playback
+        /// Handles game selection events.
+        /// Coordinates skip logic and initiates music playback if appropriate.
         /// </summary>
+        /// <param name="game">The selected game. Can be null.</param>
+        /// <param name="isFullscreen">Whether Playnite is in fullscreen mode.</param>
         public void HandleGameSelected(Game game, bool isFullscreen)
         {
-            // Reset skip state when entering fullscreen for the first time (for SkipFirstSelectionAfterModeSwitch)
-            // This matches PNS's "Skip on startup" behavior - skip the first selection after mode switch
+            // Reset skip state when entering fullscreen for first time (matches PNS "Skip on startup" behavior)
             if (isFullscreen && !_hasSeenFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
                 _fileLogger?.Info("HandleGameSelected: First time seeing fullscreen mode - resetting skip state");
@@ -140,8 +142,7 @@ namespace UniPlaySong.Services
             
             if (game == null || _settings?.EnableMusic != true)
             {
-                // Use PlayGameMusic(null) to handle fade-out properly (it calls FadeOutAndStop internally)
-                // This ensures smooth fade-out when switching to games with no music
+                // Use PlayGameMusic(null) to handle fade-out properly
                 _fileLogger?.Info("HandleGameSelected: No game or music disabled - fading out playback");
                 _playbackService?.PlayGameMusic(null, _settings, false);
                 _firstSelect = false;
@@ -154,13 +155,11 @@ namespace UniPlaySong.Services
             
             _fileLogger?.Info($"HandleGameSelected: Game={game.Name}, IsFullscreen={isFullscreen}, WasFirstSelect={wasFirstSelect}, LoginSkipActive={_loginSkipActive}, HasSeenFullscreen={_hasSeenFullscreen}");
             
-            // SkipFirstSelectionAfterModeSwitch - takes precedence
+            // SkipFirstSelectionAfterModeSwitch takes precedence
             if (wasFirstSelect && _settings.SkipFirstSelectionAfterModeSwitch)
             {
                 _fileLogger?.Info($"HandleGameSelected: Skipping first selection (Game: {game.Name})");
-                // Set skip flag to block music from all paths (HandleVideoStateChange, etc.)
                 _skipFirstSelectActive = true;
-                // Clear _firstSelect so next selection won't skip again
                 _firstSelect = false;
                 return;
             }
@@ -170,42 +169,32 @@ namespace UniPlaySong.Services
             {
                 _fileLogger?.Info($"HandleGameSelected: Login skip active (Game: {game.Name})");
                 _loginSkipActive = true;
-                // DON'T clear _firstSelect here - keep it true so ShouldPlayMusic() continues to block
-                // We'll clear it when login is dismissed or when we actually play music
+                // Keep _firstSelect true so ShouldPlayMusic() continues to block
                 return;
             }
             
-            // Clear login skip if active
             if (_loginSkipActive)
             {
                 _fileLogger?.Info("HandleGameSelected: Clearing login skip");
                 _loginSkipActive = false;
             }
             
-            // Clear skip flag when we get to a selection that should play (second selection or later)
             if (_skipFirstSelectActive)
             {
                 _fileLogger?.Info("HandleGameSelected: Clearing skip flag - ready to allow music");
                 _skipFirstSelectActive = false;
             }
             
-            // Check if skip flags are active - if so, don't play anything
             if (_loginSkipActive || _skipFirstSelectActive)
             {
                 _fileLogger?.Info($"HandleGameSelected: Skip flags active - not playing music (LoginSkip: {_loginSkipActive}, SkipFirstSelect: {_skipFirstSelectActive})");
                 return;
             }
             
-            // Always call PlayGameMusic - let the service handle the logic
-            // The service will:
-            // 1. Check if game has music files
-            // 2. If no game music, check for default music fallback
-            // 3. Respect EnableMusic and other settings
-            // This ensures default music plays when a game has no music, regardless of MusicState
+            // Service handles: music file detection, default music fallback, and settings
             _fileLogger?.Info($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
             _playbackService?.PlayGameMusic(game, _settings, false);
             
-            // Clear _firstSelect after processing (PNS pattern)
             _firstSelect = false;
         }
         
@@ -253,7 +242,8 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Handles view changes (user left login screen)
+        /// Handles view changes (e.g., user left login screen).
+        /// Clears login skip and starts music if appropriate.
         /// </summary>
         public void HandleViewChange()
         {
@@ -267,7 +257,6 @@ namespace UniPlaySong.Services
             {
                 _fileLogger?.Info("HandleViewChange: Clearing login skip and starting music");
                 _loginSkipActive = false;
-                // Clear skip flag when view changes - we're past the skip window
                 _skipFirstSelectActive = false;
                 _firstSelect = false;
                 
@@ -283,8 +272,10 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Handles video state changes (pause/resume)
+        /// Handles video playback state changes.
+        /// Pauses music when video starts, resumes or starts music when video stops.
         /// </summary>
+        /// <param name="isPlaying">True if video is playing; false if video stopped.</param>
         public void HandleVideoStateChange(bool isPlaying)
         {
             if (isPlaying)
@@ -298,7 +289,6 @@ namespace UniPlaySong.Services
             else
             {
                 _fileLogger?.Info("HandleVideoStateChange: Video stopped - resuming music");
-                // Resume only if we should play
                 var game = _getSelectedGame();
                 if (game != null && ShouldPlayMusic(game))
                 {
@@ -308,7 +298,6 @@ namespace UniPlaySong.Services
                     }
                     else
                     {
-                        // Start playing if not loaded
                         _fileLogger?.Info($"HandleVideoStateChange: Starting music for {game.Name}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
@@ -320,18 +309,36 @@ namespace UniPlaySong.Services
             }
         }
         
-        // State queries
+        /// <summary>
+        /// Gets whether this is the first game selection.
+        /// </summary>
         public bool IsFirstSelect() => _firstSelect;
+
+        /// <summary>
+        /// Gets whether login skip is currently active.
+        /// </summary>
         public bool IsLoginSkipActive() => _loginSkipActive;
         
-        // State management
+        /// <summary>
+        /// Resets the first select flag.
+        /// </summary>
         public void ResetFirstSelect() => _firstSelect = false;
+
+        /// <summary>
+        /// Sets the first select flag.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
         public void SetFirstSelect(bool value) => _firstSelect = value;
+
+        /// <summary>
+        /// Sets the login skip active state.
+        /// </summary>
+        /// <param name="active">True to activate login skip; false to deactivate.</param>
         public void SetLoginSkipActive(bool active) => _loginSkipActive = active;
         
         /// <summary>
-        /// Resets skip state when switching modes (for SkipFirstSelectionAfterModeSwitch)
-        /// Should be called when switching to fullscreen mode
+        /// Resets skip state when switching to fullscreen mode.
+        /// Used for SkipFirstSelectionAfterModeSwitch feature.
         /// </summary>
         public void ResetSkipStateForModeSwitch()
         {
@@ -340,13 +347,13 @@ namespace UniPlaySong.Services
                 _fileLogger?.Info("ResetSkipStateForModeSwitch: Resetting _firstSelect and _skipFirstSelectActive for mode switch");
                 _firstSelect = true;
                 _skipFirstSelectActive = false;
-                _hasSeenFullscreen = false; // Reset so we detect the next fullscreen entry
+                _hasSeenFullscreen = false;
             }
         }
 
         /// <summary>
-        /// Handles SettingsService settings changed event (Phase 3)
-        /// Automatically called when settings are updated - no manual UpdateSettings() needed
+        /// Handles SettingsService settings changed events.
+        /// Automatically called when settings are updated - no manual UpdateSettings() needed.
         /// </summary>
         private void OnSettingsChanged(object sender, SettingsChangedEventArgs e)
         {
@@ -358,11 +365,14 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Updates the settings reference (called when settings are saved)
-        /// DEPRECATED: SettingsService now handles this automatically via events
-        /// Kept for backward compatibility during migration
+        /// Updates the settings reference.
         /// </summary>
-        [Obsolete("SettingsService now handles updates automatically. This method will be removed in Phase 6.")]
+        /// <param name="newSettings">The new settings instance.</param>
+        /// <remarks>
+        /// DEPRECATED: SettingsService now handles updates automatically via events.
+        /// Kept for backward compatibility.
+        /// </remarks>
+        [Obsolete("SettingsService now handles updates automatically. This method will be removed in a future version.")]
         public void UpdateSettings(UniPlaySongSettings newSettings)
         {
             if (newSettings != null)

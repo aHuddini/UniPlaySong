@@ -67,15 +67,16 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Check if a file is already normalized (has the normalization suffix)
+        /// Checks if a file is already normalized (has the normalization suffix).
         /// </summary>
+        /// <param name="filePath">The file path to check.</param>
+        /// <param name="suffix">The normalization suffix to look for.</param>
+        /// <returns>True if the file is already normalized; otherwise, false.</returns>
         private bool IsFileAlreadyNormalized(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
             
             var fileName = Path.GetFileNameWithoutExtension(filePath);
-            
-            // Check if filename ends with the suffix
             return fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -94,7 +95,6 @@ namespace UniPlaySong.Services
                 Logger.Info($"  - Loudness Range (LRA): {before.MeasuredLRA:F3} LU");
                 
                 // After normalization, we can't easily measure without re-running analysis
-                // But we can log what the target should be
                 Logger.Info($"After Normalization (Target):");
                 Logger.Info($"  - Integrated Loudness (I): {targetLoudness:F1} LUFS (target)");
                 Logger.Info($"  - True Peak (TP): Should be within acceptable range");
@@ -118,7 +118,6 @@ namespace UniPlaySong.Services
                 return false;
             }
 
-            // Check if file is already normalized (when skip is enabled)
             if (settings.SkipAlreadyNormalized && IsFileAlreadyNormalized(filePath, settings.NormalizationSuffix))
             {
                 Logger.Info($"Skipping already-normalized file: {filePath}");
@@ -127,7 +126,7 @@ namespace UniPlaySong.Services
                     CurrentFile = Path.GetFileName(filePath),
                     Status = "Skipped (already normalized)"
                 });
-                return true; // Return true to indicate it was processed (skipped intentionally)
+                return true;
             }
 
             // Stop music playback to prevent file locking issues
@@ -137,15 +136,12 @@ namespace UniPlaySong.Services
                 {
                     Logger.Info($"Stopping music playback before normalizing: {Path.GetFileName(filePath)}");
                     _playbackService.Stop();
-                    
-                    // Give a moment for the file to be released
                     await Task.Delay(200, cancellationToken);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Warn(ex, $"Error stopping playback before normalization: {ex.Message}");
-                // Continue with normalization even if stopping playback fails
             }
 
             if (string.IsNullOrWhiteSpace(settings.FFmpegPath) || !ValidateFFmpegAvailable(settings.FFmpegPath))
@@ -182,7 +178,6 @@ namespace UniPlaySong.Services
                     return false;
                 }
 
-                // Log before measurements for verification
                 Logger.Info($"Before normalization - File: {fileName}, Measured I: {beforeMeasurements.MeasuredI:F3} LUFS, Target: {settings.TargetLoudness:F1} LUFS");
 
                 // Second pass: Apply normalization
@@ -194,7 +189,6 @@ namespace UniPlaySong.Services
 
                 var success = await ApplyNormalizationAsync(filePath, settings, beforeMeasurements, cancellationToken);
                 
-                // Log verification info
                 if (success)
                 {
                     Logger.Info($"Normalization completed - File: {fileName}, Target achieved: {settings.TargetLoudness:F1} LUFS");
@@ -300,9 +294,8 @@ namespace UniPlaySong.Services
             CancellationToken cancellationToken)
         {
             var result = new NormalizationResult();
-            var suffix = normalizationSuffix ?? "-normalized"; // Use provided suffix or default
+            var suffix = normalizationSuffix ?? "-normalized";
             
-            // Determine preserved originals directory
             string preservedOriginalsDir;
             if (!string.IsNullOrEmpty(_backupBasePath))
             {
@@ -310,11 +303,9 @@ namespace UniPlaySong.Services
             }
             else
             {
-                // Fallback - but we should always have _backupBasePath
                 preservedOriginalsDir = Path.Combine(Path.GetTempPath(), Constants.PreservedOriginalsFolderName);
             }
             
-            // Collect all normalized files (files with the suffix) from the provided paths
             var normalizedFiles = new List<string>();
             foreach (var path in filePathsOrDirectories ?? new List<string>())
             {
@@ -328,7 +319,6 @@ namespace UniPlaySong.Services
                 }
                 else if (Directory.Exists(path))
                 {
-                    // If it's a directory, find all normalized music files
                     var musicFiles = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
                         .Where(f =>
                         {
@@ -375,7 +365,6 @@ namespace UniPlaySong.Services
 
                 try
                 {
-                    // Stop playback if the file is currently playing
                     try
                     {
                         if (_playbackService != null && _playbackService.IsPlaying)
@@ -389,21 +378,17 @@ namespace UniPlaySong.Services
                         Logger.Warn(ex, $"Error stopping playback before restore: {ex.Message}");
                     }
 
-                    // Find the corresponding original file in preserved originals
                     var directory = Path.GetDirectoryName(normalizedFilePath);
                     var fileNameWithoutExt = Path.GetFileNameWithoutExtension(normalizedFilePath);
                     var extension = Path.GetExtension(normalizedFilePath);
                     
-                    // Remove the suffix to get original filename
+                    // Remove suffix to get original filename
                     var originalFileNameWithoutExt = fileNameWithoutExt.Substring(0, fileNameWithoutExt.Length - suffix.Length);
                     var originalFileName = $"{originalFileNameWithoutExt}{extension}";
                     
-                    // Determine game folder name
                     var gameFolderName = Path.GetFileName(directory);
                     var gamePreservedDir = Path.Combine(preservedOriginalsDir, gameFolderName);
                     var preservedOriginalPath = Path.Combine(gamePreservedDir, originalFileName);
-                    
-                    // Original file location (where normalized file currently is, but we'll restore original name)
                     var originalFilePath = Path.Combine(directory, originalFileName);
 
                     if (!File.Exists(preservedOriginalPath))
@@ -419,13 +404,9 @@ namespace UniPlaySong.Services
                         continue;
                     }
 
-                    // Delete normalized file and restore original
                     try
                     {
-                        // Delete the normalized file
                         File.Delete(normalizedFilePath);
-                        
-                        // Move original file back from preserved originals
                         File.Move(preservedOriginalPath, originalFilePath);
                         Logger.Info($"Restored original file: {originalFilePath} (from preserved originals: {preservedOriginalPath})");
                         result.SuccessCount++;
@@ -498,14 +479,12 @@ namespace UniPlaySong.Services
 
                     process.Start();
 
-                    // Read output synchronously to ensure we capture everything
-                    // Use async wrapper to avoid blocking UI thread if called from UI
+                    // Read output synchronously to ensure we capture everything (use async wrapper to avoid blocking UI thread)
                     string standardOutput = null;
                     string standardError = null;
 
                     await Task.Run(() =>
                     {
-                        // Check for cancellation before reading
                         if (cancellationToken.IsCancellationRequested)
                         {
                             try { process.Kill(); } catch { }
@@ -516,14 +495,12 @@ namespace UniPlaySong.Services
                         standardOutput = process.StandardOutput.ReadToEnd();
                         standardError = process.StandardError.ReadToEnd();
 
-                        // Wait for process to exit with timeout
                         if (!process.WaitForExit(300000)) // 5 minute timeout
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg analysis timed out after 5 minutes");
                         }
 
-                        // Check for cancellation during wait
                         if (cancellationToken.IsCancellationRequested)
                         {
                             throw new OperationCanceledException();
@@ -557,15 +534,16 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Parse loudnorm JSON output from FFmpeg
-        /// FFmpeg outputs JSON directly to stderr with root-level properties
+        /// Parses loudnorm JSON output from FFmpeg.
+        /// FFmpeg outputs JSON directly to stderr with root-level properties.
         /// </summary>
+        /// <param name="jsonOutput">The JSON output string from FFmpeg stderr.</param>
+        /// <returns>Parsed loudness measurements, or null if parsing fails.</returns>
         private LoudnormMeasurements ParseLoudnormJson(string jsonOutput)
         {
             try
             {
-                // FFmpeg outputs JSON on stderr, find the JSON block
-                // The JSON might be on a single line or multiple lines
+                // FFmpeg outputs JSON on stderr - find the JSON block (may be single or multiple lines)
                 var jsonStart = jsonOutput.IndexOf('{');
                 var jsonEnd = jsonOutput.LastIndexOf('}');
                 
@@ -595,7 +573,7 @@ namespace UniPlaySong.Services
                     return null;
                 }
 
-                // Parse string values to double (FFmpeg outputs as strings)
+                // FFmpeg outputs values as strings - parse to double
                 var measurements = new LoudnormMeasurements
                 {
                     MeasuredI = double.Parse(inputI, System.Globalization.CultureInfo.InvariantCulture),
@@ -619,7 +597,8 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Second pass: Apply normalization using measurements from first pass
+        /// Second pass: Applies normalization using measurements from first pass.
+        /// Creates normalized file and optionally preserves original.
         /// </summary>
         private async Task<bool> ApplyNormalizationAsync(
             string filePath,
@@ -633,14 +612,13 @@ namespace UniPlaySong.Services
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
                 var extension = Path.GetExtension(filePath);
                 
-                // Determine output path based on preserve mode
                 string finalOutputPath;
                 string preservedOriginalPath = null;
                 
                 if (settings.DoNotPreserveOriginals)
                 {
                     // Space saver mode: Replace original file directly (no preservation)
-                    finalOutputPath = filePath; // Replace original
+                    finalOutputPath = filePath;
                 }
                 else
                 {
@@ -664,16 +642,13 @@ namespace UniPlaySong.Services
                     var gameFolderName = Path.GetFileName(directory);
                     var gamePreservedDir = Path.Combine(preservedOriginalsDir, gameFolderName);
                     Directory.CreateDirectory(gamePreservedDir);
-                    
-                    // Path where original file will be moved to
                     preservedOriginalPath = Path.Combine(gamePreservedDir, $"{fileName}{extension}");
                 }
                 
-                // Use temp file for processing
                 var tempPath = Path.Combine(directory, $"{fileName}.normalized.tmp{extension}");
 
-                // Build loudnorm filter with measurements from first pass
-                // Include offset if available (recommended for accurate normalization)
+                // Build loudnorm filter with measurements from first pass.
+                // Include offset if available (recommended for accurate normalization).
                 var offsetParam = measurements.Offset != 0 
                     ? $":offset={measurements.Offset:F3}"
                     : "";
@@ -706,28 +681,23 @@ namespace UniPlaySong.Services
                     string standardOutput = null;
                     string standardError = null;
 
-                    // Wait for completion with cancellation support
                     await Task.Run(() =>
                     {
-                        // Check for cancellation
                         if (cancellationToken.IsCancellationRequested)
                         {
                             try { process.Kill(); } catch { }
                             throw new OperationCanceledException();
                         }
 
-                        // Read output synchronously
                         standardOutput = process.StandardOutput.ReadToEnd();
                         standardError = process.StandardError.ReadToEnd();
 
-                        // Wait for process to exit with timeout
                         if (!process.WaitForExit(600000)) // 10 minute timeout for normalization
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg normalization timed out after 10 minutes");
                         }
 
-                        // Check for cancellation during wait
                         if (cancellationToken.IsCancellationRequested)
                         {
                             throw new OperationCanceledException();
@@ -737,14 +707,12 @@ namespace UniPlaySong.Services
                     if (process.ExitCode != 0)
                     {
                         Logger.Error($"FFmpeg normalization failed (exit code {process.ExitCode}):\nOutput: {standardOutput}\nError: {standardError}");
-                        // Clean up temp file
                         try { File.Delete(tempPath); } catch { }
                         return false;
                     }
                     
                     Logger.Debug($"Normalization process completed successfully. Output: {standardOutput}");
 
-                    // Verify output file exists and is valid
                     if (!File.Exists(tempPath) || new FileInfo(tempPath).Length == 0)
                     {
                         Logger.Error($"Normalized file is missing or empty: {tempPath}");
@@ -752,13 +720,12 @@ namespace UniPlaySong.Services
                         return false;
                     }
 
-                    // Move normalized temp file to final location
                     try
                     {
                         if (settings.DoNotPreserveOriginals)
                         {
                             // Space saver mode: Replace original file directly
-                            File.Delete(filePath); // Delete original
+                            File.Delete(filePath);
                             File.Move(tempPath, finalOutputPath); // Move normalized file to original location
                             Logger.Info($"Successfully normalized file (replaced original): {finalOutputPath}");
                         }

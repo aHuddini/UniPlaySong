@@ -100,12 +100,12 @@ namespace UniPlaySong.Monitors
             {
                 if (!(mediaElementReference.Target is MediaElement mediaElement))
                 {
-                    // The MediaElement has been collected, remove it from the dictionary
+                    // MediaElement has been collected, remove it from the dictionary
                     keysToRemove.Add(mediaElementReference);
                 }
                 else if (mediaElementPositions[mediaElementReference] != mediaElement.Position)
                 {
-                    // The position has changed, update the position in the dictionary
+                    // Position has changed, update the dictionary
                     mediaElementPositions[mediaElementReference] = mediaElement.Position;
                     
                     bool isPlaying = mediaElement.HasAudio && !mediaElement.IsMuted && mediaElement.Volume > 0;
@@ -113,9 +113,6 @@ namespace UniPlaySong.Monitors
                     {
                         someIsPlaying = true;
                         playing.Add(mediaElement);
-                        // Log what's playing (throttle this to avoid spamming logs?)
-                        // For debugging this issue, we need to know WHAT is blocking music
-                        // Only log if it wasn't playing before? No, we reconstruct 'playing' list every tick.
                     }
                 }
                 else if(!mediaElement.IsVisible || mediaElement.LoadedBehavior!=MediaState.Manual && mediaElement.Position>=mediaElement.NaturalDuration)
@@ -162,8 +159,7 @@ namespace UniPlaySong.Monitors
                 Logger.Info($"[UniPlaySong] MediaElementsMonitor: MediaElement opened - Source: {mediaElement.Source?.ToString() ?? "null"}, HasAudio: {mediaElement.HasAudio}, IsVisible: {mediaElement.IsVisible}, NaturalDuration: {mediaElement.NaturalDuration}, Current VideoIsPlaying: {settings.VideoIsPlaying}");
             }
             Timer_Tick(sender, e);
-            // Match PlayniteSound exactly: always start timer (no check)
-            // This ensures timer is running whenever a MediaElement is detected
+            // Always start timer when a MediaElement is detected (matches PlayniteSound pattern)
             timer.Start();
         }
     }

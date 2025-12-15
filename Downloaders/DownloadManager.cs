@@ -35,14 +35,12 @@ namespace UniPlaySong.Downloaders
         {
             _tempPath = tempPath ?? throw new ArgumentNullException(nameof(tempPath));
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
-            _cacheService = cacheService; // Optional - can be null
-            _settings = settings; // Optional - can be null
+            _cacheService = cacheService;
+            _settings = settings;
 
-            // Initialize downloaders
             _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
             _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, errorHandler);
 
-            // Cleanup temp directory
             Cleanup();
         }
 
@@ -78,11 +76,9 @@ namespace UniPlaySong.Downloaders
                 Logger.Info($"[Source.All] Searching for '{gameName}'");
                 Logger.Info($"[Source.All] Step 1/2: Trying KHInsider...");
                 
-                // Check cache first for KHInsider
                 List<Album> khAlbums = null;
                 if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
                 {
-                    // Cache hit!
                     if (khAlbums.Count > 0)
                     {
                         Logger.Info($"[Source.All] ✓ KHInsider (cached): Found {khAlbums.Count} album(s) for '{gameName}'");
@@ -90,18 +86,15 @@ namespace UniPlaySong.Downloaders
                     }
                     else
                     {
-                        // Cache says KHInsider has no results, skip directly to YouTube
                         Logger.Info($"[Source.All] ✗ KHInsider (cached): No results for '{gameName}', skipping to YouTube");
                         Logger.Info($"[Source.All] Step 2/2: Falling back to YouTube...");
                         return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto);
                     }
                 }
                 
-                // Cache miss - perform actual KHInsider search
                 khAlbums = _khDownloader?.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList() 
                     ?? new List<Album>();
                 
-                // Cache the result
                 if (_cacheService != null)
                 {
                     _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
@@ -122,13 +115,11 @@ namespace UniPlaySong.Downloaders
             // For specific sources, use the appropriate downloader with caching
             if (source == Source.KHInsider || source == Source.YouTube)
             {
-                // Check cache first
                 if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, source, out var cachedAlbums))
                 {
                     return cachedAlbums;
                 }
                 
-                // Cache miss - perform actual search
                 var downloader = GetDownloaderForSource(source);
                 if (downloader == null)
                 {
@@ -139,7 +130,6 @@ namespace UniPlaySong.Downloaders
                 var albums = downloader.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList() 
                     ?? new List<Album>();
                 
-                // Cache the result
                 if (_cacheService != null)
                 {
                     _cacheService.CacheSearchResult(gameName, source, albums);
@@ -149,7 +139,6 @@ namespace UniPlaySong.Downloaders
             }
             else
             {
-                // Other sources (no caching)
                 var downloader = GetDownloaderForSource(source);
                 if (downloader == null)
                 {
@@ -162,11 +151,10 @@ namespace UniPlaySong.Downloaders
         }
         
         /// <summary>
-        /// Get YouTube albums with caching support
+        /// Gets YouTube albums with caching support, using multiple search strategies.
         /// </summary>
         private List<Album> GetYouTubeAlbumsWithCache(string gameName, CancellationToken cancellationToken, bool auto)
         {
-            // Check cache first
             if (_cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.YouTube, out var cachedAlbums))
             {
                 if (cachedAlbums.Count > 0)
@@ -180,7 +168,7 @@ namespace UniPlaySong.Downloaders
                 return cachedAlbums;
             }
             
-            // Cache miss - try multiple YouTube search strategies
+            // Try multiple YouTube search strategies
             var ytAlbums = new List<Album>();
             
             // Strategy 1: "[Game Name]" OST (quoted for exact match)
@@ -195,7 +183,7 @@ namespace UniPlaySong.Downloaders
             }
             else
             {
-                // Strategy 2: "[Game Name]" soundtrack (if strategy 1 found nothing)
+                // Strategy 2: "[Game Name]" soundtrack
                 Logger.Debug($"[YouTube] Strategy 2: Searching for '\"{gameName}\" soundtrack'");
                 var strategy2 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" soundtrack", cancellationToken, auto)?.ToList()
                     ?? new List<Album>();
@@ -207,7 +195,7 @@ namespace UniPlaySong.Downloaders
                 }
                 else
                 {
-                    // Strategy 3: [Game Name] original soundtrack (if still nothing)
+                    // Strategy 3: [Game Name] original soundtrack
                     Logger.Debug($"[YouTube] Strategy 3: Searching for '{gameName} original soundtrack'");
                     var strategy3 = _ytDownloader?.GetAlbumsForGame($"{gameName} original soundtrack", cancellationToken, auto)?.ToList()
                         ?? new List<Album>();
@@ -253,7 +241,7 @@ namespace UniPlaySong.Downloaders
 
             var gameName = StringHelper.PrepareForSearch(game.Name);
 
-            // FIRST PASS: Filter out obvious non-game-music albums (auto-mode only filters)
+            // First pass: Filter out obvious non-game-music albums (auto-mode only filters)
             var filteredAlbums = albumsList.Where(album => IsLikelyGameMusic(album, game, auto: true)).ToList();
             
             Logger.Info($"Album filtering for '{game.Name}': {albumsList.Count} total → {filteredAlbums.Count} after filtering");
@@ -264,7 +252,7 @@ namespace UniPlaySong.Downloaders
                 return null;
             }
             
-            // SECOND PASS: Score remaining albums
+            // Second pass: Score remaining albums
             var scoredAlbums = filteredAlbums.Select(album => new
             {
                 Album = album,
@@ -273,14 +261,12 @@ namespace UniPlaySong.Downloaders
             .OrderByDescending(x => x.Score)
             .ToList();
 
-            // Log top candidates for debugging
             Logger.Info($"Album candidates for '{game.Name}' (search: '{gameName}'):");
             foreach (var candidate in scoredAlbums.Take(5))
             {
                 Logger.Info($"  - '{candidate.Album.Name}' (score: {candidate.Score}, source: {candidate.Album.Source})");
             }
 
-            // Filter to only albums that meet minimum relevance threshold
             var validAlbums = scoredAlbums.Where(x => x.Score >= MinimumAlbumRelevanceScore).ToList();
 
             if (validAlbums.Count == 0)
@@ -311,7 +297,7 @@ namespace UniPlaySong.Downloaders
             var albumName = album.Name.ToLowerInvariant();
             var gameName = game.Name.ToLowerInvariant();
 
-            // REQUIREMENT 1: Must contain game-music-related keywords
+            // Requirement 1: Must contain game-music-related keywords
             var musicKeywords = new[] { "ost", "soundtrack", "original soundtrack", "game music", "bgm", "score", "theme" };
             bool hasMusicKeyword = musicKeywords.Any(keyword => albumName.Contains(keyword));
 
@@ -321,7 +307,7 @@ namespace UniPlaySong.Downloaders
                 return false;
             }
 
-            // REQUIREMENT 2: Reject obvious non-game content
+            // Requirement 2: Reject obvious non-game content
             var rejectKeywords = new[]
             {
                 "[eng sub]", "[sub]", "episode", "drama", "movie", "film",
@@ -335,10 +321,10 @@ namespace UniPlaySong.Downloaders
                 return false;
             }
 
-            // REQUIREMENT 3: For YouTube, apply strict filtering (ONLY in auto mode)
+            // Requirement 3: For YouTube, apply strict filtering (only in auto mode)
             if (album.Source == Source.YouTube && auto)
             {
-                // REQUIREMENT 3a: Channel whitelist check (auto-mode only)
+                // Requirement 3a: Channel whitelist check (auto-mode only)
                 if (_settings != null &&
                     _settings.EnableYouTubeChannelWhitelist &&
                     _settings.WhitelistedYouTubeChannelIds != null &&
@@ -365,7 +351,7 @@ namespace UniPlaySong.Downloaders
                     }
                 }
 
-                // REQUIREMENT 3b: Word matching (stricter in auto-mode)
+                // Requirement 3b: Word matching (stricter in auto-mode)
                 var gameWords = GetSignificantWords(gameName);
                 var albumWords = GetSignificantWords(albumName);
 
@@ -375,7 +361,6 @@ namespace UniPlaySong.Downloaders
                         albumWords.Any(aw => string.Equals(gw, aw, StringComparison.OrdinalIgnoreCase)));
 
                     // For YouTube, require at least 66% word match (or 100% for single-word games)
-                    // Increased from 50% to be more strict
                     double matchPercentage = (double)matchedWords / gameWords.Count;
                     double requiredMatch = gameWords.Count == 1 ? 1.0 : 0.66;
 
@@ -400,7 +385,6 @@ namespace UniPlaySong.Downloaders
             if (songsList.Count == 1)
                 return new List<Song> { songsList.First() };
             
-            // Score songs based on preferences
             var scoredSongs = songsList.Select(song => new
             {
                 Song = song,
@@ -409,7 +393,6 @@ namespace UniPlaySong.Downloaders
             .OrderByDescending(x => x.Score)
             .ToList();
             
-            // Log top candidates for debugging
             var topCandidates = scoredSongs.Take(5).ToList();
             Logger.Debug($"Top song candidates for '{gameName}':");
             foreach (var candidate in topCandidates)
@@ -436,9 +419,7 @@ namespace UniPlaySong.Downloaders
             var songName = song.Name?.ToLowerInvariant() ?? string.Empty;
             var cleanGameName = NormalizeForMatching(gameName);
             
-            // === HIGH PRIORITY: Theme/Title songs (these are what we want for game previews) ===
-            
-            // Exact matches for common title screen music patterns
+            // High priority: Theme/Title songs (these are what we want for game previews)
             if (songName.Contains("title screen") || songName.Contains("title theme"))
                 score += 5000;
             if (songName.Contains("main theme") || songName.Contains("main menu"))
@@ -446,7 +427,6 @@ namespace UniPlaySong.Downloaders
             if (songName.Contains("opening theme") || songName.Contains("opening"))
                 score += 4000;
             
-            // Preferred keywords
             var highPriorityKeywords = new[] { "theme", "title", "menu", "intro", "prologue" };
             foreach (var keyword in highPriorityKeywords)
             {
@@ -457,63 +437,49 @@ namespace UniPlaySong.Downloaders
                 }
             }
             
-            // === MEDIUM PRIORITY: Game name relevance ===
-            
-            // Contains game name (very relevant)
+            // Medium priority: Game name relevance
             if (!string.IsNullOrEmpty(cleanGameName) && cleanGameName.Length > 2)
             {
                 if (songName.Contains(cleanGameName))
                     score += 1500;
                     
-                // Check if song name starts with game name
                 if (songName.StartsWith(cleanGameName))
                     score += 500;
             }
             
-            // === POSITIVE INDICATORS ===
-            
-            // Overworld/hub area music (often memorable)
+            // Positive indicators
             if (songName.Contains("overworld") || songName.Contains("hub") || songName.Contains("world map"))
                 score += 800;
                 
-            // Character themes (often iconic)
             if (songName.Contains("protagonist") || songName.Contains("hero"))
                 score += 600;
-            
-            // First level/area (players will recognize)
             if (songName.Contains("stage 1") || songName.Contains("level 1") || 
                 songName.Contains("chapter 1") || songName.Contains("act 1"))
                 score += 400;
             
-            // === NEGATIVE INDICATORS (things to avoid for auto-selection) ===
-            
-            // Remixes and covers (not original)
+            // Negative indicators (things to avoid for auto-selection)
             if (songName.Contains("remix") || songName.Contains("cover") || 
                 songName.Contains("arrange") || songName.Contains("arranged"))
                 score -= 1000;
             
-            // Extended/loop versions (too long, repetitive)
             if (songName.Contains("extended") || songName.Contains("loop") || 
                 songName.Contains("10 hour") || songName.Contains("1 hour"))
                 score -= 2000;
             
-            // Battle/boss music (too intense for browsing)
             if (songName.Contains("battle") || songName.Contains("boss") || 
                 songName.Contains("combat") || songName.Contains("fight"))
                 score -= 300;
             
-            // Sad/ending music (not representative of game feel)
             if (songName.Contains("game over") || songName.Contains("death") || 
                 songName.Contains("ending") || songName.Contains("credits") ||
                 songName.Contains("sad") || songName.Contains("tragic"))
                 score -= 500;
             
-            // Sound effects, jingles (not actual music)
             if (songName.Contains("sfx") || songName.Contains("sound effect") || 
                 songName.Contains("jingle") || songName.Contains("fanfare"))
                 score -= 1500;
             
-            // === SONG LENGTH SCORING ===
+            // Song length scoring
             if (song.Length.HasValue)
             {
                 var minutes = song.Length.Value.TotalMinutes;
@@ -529,10 +495,8 @@ namespace UniPlaySong.Downloaders
                     score -= 1000; // Too long
             }
             
-            // === TRACK POSITION BONUS ===
-            // Early tracks are often title/menu music
-            // This is a heuristic - track 1-3 are often title screens
-            // We don't have track numbers directly, but song names sometimes include them
+            // Track position bonus: Early tracks are often title/menu music
+            // Track numbers may appear in song names (e.g., "01 Title Theme")
             if (Regex.IsMatch(songName, @"^(01|1\.|track\s*1|#1)\s"))
                 score += 200;
             else if (Regex.IsMatch(songName, @"^(02|2\.|track\s*2|#2)\s"))
