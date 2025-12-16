@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.0.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-A Playnite extension that provides a console-like game music preview experience with custom options to fine-tune the experience (like fade-in and fade-out controls). Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
+A Playnite extension that provides a console-like game music preview experience and controller-friendly song management, with custom options to fine-tune the experience (like fade-in and fade-out controls). Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
 
 Designed for both Desktop and Fullscreen mode, with compatibility to modern themes (like ANIKI REMAKE).
 
