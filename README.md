@@ -24,7 +24,7 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 - Normalize audio files directly from fullscreen menu
 - **Never leave fullscreen mode** - complete music management from your couch!
 
-![Demo Screenshot](DEMOScreen1.png)
+<img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
 ### 🎼 Core Features
 - **Automatic Music Playback**: Music plays when selecting games in your library
