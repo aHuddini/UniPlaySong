@@ -13,8 +13,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - **🎮 Fullscreen Controller Support**: Complete Xbox controller support for music management in fullscreen mode
   - Download music, delete songs, normalize audio, and set primary songs - all from your couch!
   - Never leave fullscreen mode to manage your game music library
-- **🔊 Native Music Integration**: Use Playnite's built-in background music as your default music
-- **⚙️ Settings Improvements**: Better organized settings menu matching the extension UI
+- **🔊 Default / Fallback Music Integration**: Use Playnite's built-in background music or a custom background track as your default music
 
 ---
 
