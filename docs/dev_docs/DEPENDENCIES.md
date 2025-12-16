@@ -404,10 +404,18 @@ public bool ValidateFFmpegAvailable(string ffmpegPath)
 
 All dependencies are compatible with the MIT license:
 
-- **PlayniteSDK**: Playnite license (compatible)
+- **PlayniteSDK**: MIT license (compatible)
 - **NuGet Packages**: Various licenses (all compatible with MIT)
+  - MaterialDesignThemes: MIT
+  - MaterialDesignColors: MIT
+  - HtmlAgilityPack: MIT
+  - Newtonsoft.Json: MIT
 - **SDL2/SDL2_mixer**: zlib license (compatible with MIT)
 - **External Tools**: Users install independently (not bundled)
+  - yt-dlp: Unlicense
+  - FFmpeg: LGPL/GPL (users install separately)
+
+> **Note**: For complete licensing information and attribution requirements, see the [Credits section](../../README.md#-credits) in the main README.
 
 ## Security Considerations
 
