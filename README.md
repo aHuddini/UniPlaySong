@@ -1,4 +1,4 @@
-# UniPlaySong
+# UniPlaySong Playnite Extension
 
 ![Version](https://img.shields.io/badge/version-1.0.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -23,14 +23,14 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 
 ### 🎼 Core Features
 - **Automatic Music Playback**: Music plays when selecting games in your library
+- **Custom Preview Time**: Customize songs to play for 15 seconds, 30 seconds, or the entire length of a file.
 - **Configurable Song Randomization**: Randomize songs when selecting a game or when song loops end
 - **Smooth, customizable Fade Transitions**: Edit fade-in and fade-out effects for song playback when switching games
 - **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard or with custom values). All using standard FFPMEG encoder.
 - **Default Music Support**: Fallback music that seamlessly plays when games have no music, with natural position preservation
-- **Theme Compatibility**: Works with fullscreen themes that have login screens (waits for keyboard/controller input)
+- **Theme Compatibility**: Works with fullscreen themes that have login screens
 - **Online Music Downloads**: Download game music directly from YouTube or KHInsider (either in Fullscreen or desktop mode)
-- **Primary Songs**: Set default songs for each game
-- **Customizable**: Adjust volume, fade durations, and behavior
+- **Primary Songs**: Set "default" songs for each game that plays when you launch Playnite.
 
 ---
 
@@ -94,6 +94,14 @@ After installation, configure the required tools for full functionality:
 
 > 💡 **Smart Randomization**: Avoids playing the same song twice in a row. Only applies to game music (not default music).
 
+### Preview Music Options
+| Setting | Description | Range |
+|---------|-------------|-------|
+| **Enable Preview Mode** | When enabled, game music tracks restart after the preview duration instead of playing continuously | On/Off |
+| **Preview Duration** | How long each game music track plays before restarting (in seconds) | 15-300 seconds |
+
+> 💡 **Preview Mode**: When enabled, songs play for the specified duration (e.g., 15, 30, or 60 seconds) then restart, giving you a taste of each track without waiting for the full song. This only affects game-specific music and does not apply to the fallback default music.
+
 ### Default Music
 | Setting | Description |
 |---------|-------------|
@@ -131,7 +139,13 @@ After installation, configure the required tools for full functionality:
 | **yt-dlp Path** | Path to yt-dlp executable |
 | **FFmpeg Path** | Path to ffmpeg executable (required for audio normalization) |
 
----
+### Search Cache
+| Setting | Description | Range |
+|---------|-------------|-------|
+| **Enable Search Cache** | Cache search results to speed up subsequent song searches | On/Off |
+| **Cache Duration** | How long search results are cached before expiring (in days) | 1-30 days |
+
+> 💡 **Search Cache**: When enabled, the extension caches album search results to avoid redundant API calls. If a game has no results on on search source, the cache remembers this and skips directly to YouTube on subsequent searches.
 
 ## 📁 Music Folder Structure
 
