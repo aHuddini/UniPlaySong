@@ -203,10 +203,25 @@ For fullscreen themes with login screens (like ANIKI), enable **"Theme Compatibl
 
 ## 🛠️ Building from Source
 
+**Complete build and package workflow:**
+
 ```powershell
-cd UniPlaySong
+# Navigate to project directory
+cd C:\Projects\UniPSound\UniPlaySong
+
+# Clean, restore, and build
+dotnet clean -c Release
+dotnet restore
 dotnet build -c Release
-.\package_extension.ps1
+
+# Package the extension (with execution policy bypass)
+powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
+```
+
+**One-liner version:**
+
+```powershell
+cd C:\Projects\UniPSound\UniPlaySong; dotnet clean -c Release; dotnet restore; dotnet build -c Release; powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
 ```
 
 For detailed build instructions and developer documentation, see the `docs/dev_docs/` folder in the repository.

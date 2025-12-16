@@ -2,26 +2,69 @@
 
 ## Prerequisites
 
-1. **Visual Studio 2019 or later** (with .NET Framework 4.6.2 support)
-   - OR .NET SDK with MSBuild
+1. **.NET SDK** (with .NET Framework 4.6.2 support)
+   - Download from: https://dotnet.microsoft.com/download
    - Install .NET Framework 4.6.2 Developer Pack if needed
+   - Verify installation: `dotnet --version`
 
-2. **Internet connection** for NuGet package restoration
-   - Ensure `https://api.nuget.org/v3/index.json` is enabled in Visual Studio's NuGet package sources
+2. **PowerShell** (for packaging script)
+   - Windows PowerShell 5.1+ or PowerShell Core 7+
+   - Verify installation: `$PSVersionTable.PSVersion`
 
-3. **Required NuGet Packages** (will be restored automatically):
+3. **Internet connection** for NuGet package restoration
+   - NuGet packages will be restored automatically
+
+4. **Required NuGet Packages** (will be restored automatically):
    - PlayniteSDK (6.11.0.0)
    - Microsoft.CSharp (4.7.0)
    - HtmlAgilityPack (1.11.46)
    - System.Net.Http (4.3.4)
+   - MaterialDesignThemes (4.7.0)
+   - MaterialDesignColors (2.1.0)
+   - Newtonsoft.Json (13.0.1)
 
 ## Building the Extension
 
-### Option 1: Using Visual Studio (Recommended)
+### Recommended: Using dotnet CLI
+
+The dotnet CLI is the recommended method for building the extension.
+
+**Complete build and package workflow:**
+
+```powershell
+# Navigate to project directory
+cd X:\Projects\UniPlaySong
+
+# Clean previous builds
+dotnet clean -c Release
+
+# Restore NuGet packages
+dotnet restore
+
+# Build in Release configuration
+dotnet build -c Release
+```
+
+**One-liner version:**
+
+```powershell
+cd X:\Projects\UniPlaySong; dotnet clean -c Release; dotnet restore; dotnet build -c Release
+```
+
+**Verify Output:**
+- Check that `UniPlaySong.dll` is created in:
+  ```
+  bin\Release\net4.6.2\UniPlaySong.dll
+  ```
+- Verify dependencies are copied (HtmlAgilityPack.dll, MaterialDesignThemes.Wpf.dll, etc.)
+
+### Alternative: Using Visual Studio
+
+If you prefer using Visual Studio:
 
 1. **Open the Solution**:
    ```
-   Open UniPSong/UniPlaySong.sln in Visual Studio
+   Open UniPlaySong/UniPlaySong.sln in Visual Studio
    ```
 
 2. **Restore NuGet Packages**:
@@ -44,18 +87,11 @@
      ```
    - Verify dependencies are copied (HtmlAgilityPack.dll, etc.)
 
-### Option 2: Using Command Line (MSBuild)
+### Alternative: Using MSBuild
 
 ```powershell
-cd UniPSong
+cd C:\Projects\UniPSound\UniPlaySong
 msbuild UniPlaySong.csproj /p:Configuration=Release /p:Platform=AnyCPU /t:Rebuild
-```
-
-### Option 3: Using dotnet CLI
-
-```powershell
-cd UniPSong
-dotnet build UniPlaySong.csproj -c Release
 ```
 
 ## Verifying the Build
@@ -67,6 +103,9 @@ After building, verify:
 
 2. **Dependencies are present**:
    - `bin\Release\net4.6.2\HtmlAgilityPack.dll`
+   - `bin\Release\net4.6.2\MaterialDesignThemes.Wpf.dll`
+   - `bin\Release\net4.6.2\MaterialDesignColors.dll`
+   - `bin\Release\net4.6.2\Newtonsoft.Json.dll`
    - Other dependencies as needed
    
 3. **SDL2 DLLs** (required for SDL2MusicPlayer):
@@ -74,9 +113,9 @@ After building, verify:
    - `lib\SDL2_mixer.dll` - Must be present for packaging
    - These are automatically included in the package by `package_extension.ps1`
 
-3. **No build errors**:
-   - Check Visual Studio Error List
-   - Check Output window for warnings
+4. **No build errors**:
+   - Check build output for errors or warnings
+   - Verify all files are present before packaging
 
 ## Common Build Issues
 
@@ -103,11 +142,33 @@ After building, verify:
 
 ## Packaging the Extension
 
-After building, package the extension:
+After building, package the extension using the PowerShell script:
+
+**Recommended method (with execution policy bypass):**
 
 ```powershell
-cd UniPSong
-.\package_extension.ps1
+# Navigate to project directory
+cd X:\Projects\UniPlaySong
+
+# Package the extension (bypasses execution policy)
+powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
+```
+
+**Alternative (if execution policy allows):**
+
+```powershell
+cd X:\Projects\UniPlaySong
+.\package_extension.ps1 -Configuration Release
+```
+
+**Complete workflow (clean, build, and package):**
+
+```powershell
+cd C:\Projects\UniPSound\UniPlaySong
+dotnet clean -c Release
+dotnet restore
+dotnet build -c Release
+powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
 ```
 
 **Note**: The packaging script automatically:
@@ -115,6 +176,13 @@ cd UniPSong
 - Updates `AssemblyInfo.cs` with current version
 - Updates `extension.yaml` with current version
 - Creates `.pext` package with correct version in filename
+- Copies all required DLLs and files to the package directory
+
+**Output location:**
+The packaged `.pext` file will be created in the project root directory with a name like:
+```
+UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890_1_0_6.pext
+```
 
 See `docs/VERSIONING.md` for details on the version management system.
 
@@ -128,16 +196,22 @@ After successful build and packaging:
 ## Project Structure
 
 ```
-UniPSong/
+UniPlaySong/
 ├── bin/Release/net4.6.2/    # Build output (after building)
 │   ├── UniPlaySong.dll      # Main extension DLL
 │   └── [dependencies]        # NuGet package DLLs
 ├── lib/                      # SDL2 native DLLs (required)
 │   ├── SDL2.dll             # SDL2 core library
 │   └── SDL2_mixer.dll       # SDL2 audio mixer
+├── package/                  # Package output (created by packaging script)
+│   ├── UniPlaySong.dll      # Main extension DLL
+│   ├── extension.yaml       # Extension manifest
+│   ├── icon.png             # Extension icon
+│   └── [all dependencies]   # All required DLLs
 ├── version.txt              # Version number (single source of truth)
 ├── AssemblyInfo.cs          # Assembly metadata (auto-updated by scripts)
 ├── extension.yaml           # Extension manifest (auto-updated by scripts)
+├── icon.png                 # Extension icon
 ├── UniPlaySong.csproj       # Project file
 ├── UniPlaySong.sln          # Solution file
 └── package_extension.ps1    # Packaging script (handles version updates)
