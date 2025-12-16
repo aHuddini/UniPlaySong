@@ -111,7 +111,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         
         private UniPlaySongSettings _settings => _settingsService?.Current;
-
+        
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
 
@@ -1408,7 +1408,7 @@ namespace UniPlaySong
         /// Gets the search cache service.
         /// </summary>
         public SearchCacheService GetSearchCacheService() => _cacheService;
-
+        
         /// <summary>
         /// Gets the error handler service.
         /// </summary>

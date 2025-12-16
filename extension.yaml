@@ -6,4 +6,7 @@ Module: UniPlaySong.dll
 Type: GenericPlugin
 Icon: icon.png
 Description: A simple, universal extension that provides a console-like game preview experience through music. Music plays when hovering over or selecting games, creating an immersive browsing experience.
+Links:
+  - Name: GitHub Repository
+    Url: https://github.com/aHuddini/UniPlaySong
 
