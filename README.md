@@ -13,11 +13,10 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 See UniPlaySong in action! Watch these demo clips to see the extension's features:
 
 ### Demo Clip 1
-https://github.com/user-attachments/assets/46832548-63e2-4927-a895-4b7d0e8361cf
-
+<video src="https://github.com/user-attachments/assets/46832548-63e2-4927-a895-4b7d0e8361cf" controls width="640"></video>
 
 ### Demo Clip 2
-https://github.com/user-attachments/assets/7ef9abc4-378f-4649-9eb3-f6a46863094c
+<video src="https://github.com/user-attachments/assets/7ef9abc4-378f-4649-9eb3-f6a46863094c" controls width="640"></video>
 
 
 ---
