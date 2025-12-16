@@ -83,46 +83,31 @@ After installation, configure the required tools for full functionality:
 |---------|-------------|
 | **Enable Music** | Turn music playback on/off |
 | **Play Music State** | Never / Desktop / Fullscreen / Always |
-| **Music Volume** | 0-100% |
-
-### Theme Compatibility
-| Setting | Description |
-|---------|-------------|
 | **Do not play music on startup** | Skip first game selection |
 | **Theme Compatible Login Skip** | Wait for keyboard/controller input before playing music (for login/Welcome screens used in themes like ANIKI REMAKE) |
+| **Music Volume** | 0-100% |
+| **Fade-In Duration** | How long music takes to fade in | 0.05 - 10.0 seconds |
+| **Fade-Out Duration** | How long music takes to fade out | 0.05 - 10.0 seconds |
 
-### Song Randomization
-| Setting | Description |
-|---------|-------------|
-| **Randomize song upon selection** | Choose a random song each time you select a game (after primary song plays) |
-| **Randomize song when current song ends** | Automatically play different songs when tracks finish |
-
-> 💡 **Smart Randomization**: Avoids playing the same song twice in a row. Only applies to game music (not default music).
-
-### Preview Music Options
+#### Preview Music Options
 | Setting | Description | Range |
 |---------|-------------|-------|
 | **Enable Preview Mode** | When enabled, game music tracks restart after the preview duration instead of playing continuously | On/Off |
 | **Preview Duration** | How long each game music track plays before restarting (in seconds) | 15-300 seconds |
 
-> 💡 **Preview Mode**: When enabled, songs play for the specified duration (e.g., 15, 30, or 60 seconds) then restart, giving you a taste of each track without waiting for the full song. This only affects game-specific music and does not apply to the fallback default music.
+> 💡 **Preview Mode**: When enabled, songs play for the specified duration (e.g., 15, 30, or 60 seconds), then restarts, giving you a taste of each track without waiting for the full song. Pair it with custom fade effects. This only affects game-specific music and does not apply to the fallback default music.
+
+#### Song Randomization
+| Setting | Description |
+|---------|-------------|
+| **Randomize song upon selection** | Choose a random song each time you select a game (after primary song plays) |
+| **Randomize song when current song ends** | Automatically play different songs when tracks finish |
 
 ### Default Music
 | Setting | Description |
 |---------|-------------|
 | **Enable Default Music** | Play fallback music when games have no music files |
 | **Default Music Path** | Select a music file to use as default/fallback music |
-| **Position Preservation** | Default music resumes from saved position when switching between games |
-
-### Fade Settings
-| Setting | Description | Range |
-|---------|-------------|-------|
-| **Fade-In Duration** | How long music takes to fade in | 0.05 - 10.0 seconds |
-| **Fade-Out Duration** | How long music takes to fade out | 0.05 - 10.0 seconds |
-
-### Native Music Suppression
-| Setting | Description |
-|---------|-------------|
 | **Suppress Native Background Music** | Suppress Playnite's native background music when extension music plays |
 | **Use Native Playnite Music as Default** | Uses Playnite's default music background when selecting games with no custom preview music |
 
@@ -138,19 +123,19 @@ After installation, configure the required tools for full functionality:
 | **Restore Original Files** | Restore original files from preserved backups | - |
 | **Delete Preserved Originals** | Free up disk space by deleting preserved files | - |
 
-### Music Downloads
-| Setting | Description |
-|---------|-------------|
-| **yt-dlp Path** | Path to yt-dlp executable |
-| **FFmpeg Path** | Path to ffmpeg executable (required for audio normalization) |
-
 ### Search Cache
 | Setting | Description | Range |
 |---------|-------------|-------|
 | **Enable Search Cache** | Cache search results to speed up subsequent song searches | On/Off |
 | **Cache Duration** | How long search results are cached before expiring (in days) | 1-30 days |
 
-> 💡 **Search Cache**: When enabled, the extension caches album search results to avoid redundant API calls. If a game has no results on on search source, the cache remembers this and skips directly to YouTube on subsequent searches.
+> 💡 **Search Cache**: When enabled, the extension caches album search results to avoid redundant API calls. If a game has no results on search source, the cache remembers this and skips directly to YouTube on subsequent searches.
+
+### Music Downloads
+| Setting | Description |
+|---------|-------------|
+| **yt-dlp Path** | Path to yt-dlp executable |
+| **FFmpeg Path** | Path to ffmpeg executable (required for audio normalization) |
 
 ## 📁 Music Folder Structure
 
@@ -230,7 +215,7 @@ For fullscreen themes with login screens (like ANIKI), enable **"Theme Compatibl
 
 ```powershell
 # Navigate to project directory
-cd C:\Projects\UniPSound\UniPlaySong
+cd [drive]:\<folder>\UniPlaySong
 
 # Clean, restore, and build
 dotnet clean -c Release
@@ -239,12 +224,6 @@ dotnet build -c Release
 
 # Package the extension (with execution policy bypass)
 powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
-```
-
-**One-liner version:**
-
-```powershell
-cd C:\Projects\UniPSound\UniPlaySong; dotnet clean -c Release; dotnet restore; dotnet build -c Release; powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
 ```
 
 For detailed build instructions and developer documentation, see the `docs/dev_docs/` folder in the repository.
