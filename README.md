@@ -15,7 +15,7 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 - Download individual tracks/albums directly from fullscreen menu using Xbox controller
 - Controller-optimized dialogs for all music management tasks
 - Preview tracks with controller buttons (X/Y buttons)
-- Set primary songs or delete songs - all with controller navigation
+- Set primary songs or delete songs
 - Normalize audio files directly from fullscreen menu
 - **Never leave fullscreen mode** - complete music management from your couch!
 
