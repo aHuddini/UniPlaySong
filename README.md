@@ -19,12 +19,12 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 
 ### 🎼 Core Features
 - **Automatic Music Playback**: Music plays when selecting games in your library
-- **Song Randomization**: Randomize songs when switching games or when songs end (configurable)
-- **Smooth Transitions**: Fades between songs when switching games
-- **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard)
-- **Default Music Support**: Fallback music that plays when games have no music, with position preservation
+- **Configurable Song Randomization**: Randomize songs when selecting a game or when song loops end
+- **Smooth, customizable Fade Transitions**: Edit fade-in and fade-out effects for song playback when switching games
+- **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard or with custom values). All using standard FFPMEG encoder.
+- **Default Music Support**: Fallback music that seamlessly plays when games have no music, with natural position preservation
 - **Theme Compatibility**: Works with fullscreen themes that have login screens (waits for keyboard/controller input)
-- **Online Music Downloads**: Download game music directly from YouTube or KHInsider/YouTube (either in Fullscreen or desktop mode)
+- **Online Music Downloads**: Download game music directly from YouTube or KHInsider (either in Fullscreen or desktop mode)
 - **Primary Songs**: Set default songs for each game
 - **Customizable**: Adjust volume, fade durations, and behavior
 
@@ -217,9 +217,9 @@ For detailed build instructions and developer documentation, see the `docs/dev_d
 
 ### Inspiration
 
-**UniPlaySong is 100% inspired by the [PlayniteSound](https://github.com/joyrider3774/PlayniteSound) extension.**
+**UniPlaySong is heavily inspired by the [PlayniteSound](https://github.com/joyrider3774/PlayniteSound) extension.**
 
-I originally built this extension as I wanted to manage individual game select music purely from fullscreen (since I'm normally not at my desktop and stream my games remotely with a controller).
+I originally built this extension as I wanted to manage individual game select music purely from fullscreen (since I'm normally not at my desktop and stream my games remotely with a controller). This helps me greatly when dealing with failures with auto-searching and downloading music. I can correct individual games a bit more faster through fullscreen mode now.
 
 Special thanks and credit to the original PlayniteSound developer for creating the foundation and architecture that inspired this project. I struggled getting this plugin off the ground even with AI-assisted tools. PlayniteSound was critical to helping me apply proven coding patterns and business logic that worked with the Playnite application. Their foundation is what allowed me to experiment further.
 
@@ -258,6 +258,6 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **GitHub Repository**: [UniPlaySong](https://github.com/yourusername/UniPlaySong)
-- **Inspired By**: [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)
+- **GitHub Repository**: [UniPlaySong](https://github.com/aHuddini/UniPlaySong)
+- **Playnite Sound Extension**: [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)
 - **Playnite**: [Official Website](https://playnite.link/)
