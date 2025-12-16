@@ -29,7 +29,7 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 - **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard or with custom values). All using standard FFPMEG encoder.
 - **Default Music Support**: Fallback music that seamlessly plays when games have no music, with natural position preservation
 - **Theme Compatibility**: Works with fullscreen themes that have login screens
-- **Online Music Downloads**: Download game music directly from YouTube or KHInsider (either in Fullscreen or desktop mode)
+- **Online Audio Downloads**: Download and preview game music directly from online sources (either in Fullscreen or desktop mode)
 - **Primary Songs**: Set "default" songs for each game that plays when you launch Playnite.
 
 ---
