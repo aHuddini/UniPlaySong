@@ -108,6 +108,7 @@ namespace UniPlaySong
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
         private Services.INormalizationService _normalizationService;
+        private Services.ITrimService _trimService;
         private IMusicPlaybackCoordinator _coordinator;
         
         private UniPlaySongSettings _settings => _settingsService?.Current;
@@ -454,6 +455,10 @@ namespace UniPlaySong
                 // Initialize normalization service with playback service and base path for backups
                 _normalizationService = new Services.AudioNormalizationService(_errorHandler, _playbackService, basePath);
                 _fileLogger?.Info("AudioNormalizationService initialized");
+                
+                // Initialize trim service with playback service and base path for backups
+                _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
+                _fileLogger?.Info("AudioTrimService initialized");
             }
             catch (Exception ex)
             {
@@ -1203,6 +1208,324 @@ namespace UniPlaySong
 
         #endregion
 
+        #region Audio Trimming
+
+        /// <summary>
+        /// Trim leading silence from all music files in the library
+        /// </summary>
+        public void TrimAllMusicFiles()
+        {
+            try
+            {
+                if (_trimService == null)
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage("Trim service not available.", "UniPlaySong");
+                    return;
+                }
+
+                if (_settings == null)
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
+                        "FFmpeg Not Configured");
+                    return;
+                }
+
+                if (!_trimService.ValidateFFmpegAvailable(_settings.FFmpegPath))
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
+                        "FFmpeg Not Available");
+                    return;
+                }
+
+                // Stop music playback before trimming to prevent file locking
+                try
+                {
+                    if (_playbackService != null && _playbackService.IsPlaying)
+                    {
+                        logger.Info("Stopping music playback before bulk trim");
+                        _playbackService.Stop();
+                        
+                        // Give a moment for files to be released
+                        System.Threading.Thread.Sleep(300);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Error stopping playback before trim");
+                }
+
+                // Get all music files from all games
+                var allMusicFiles = new List<string>();
+                foreach (var game in PlayniteApi.Database.Games)
+                {
+                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+                    allMusicFiles.AddRange(gameFiles);
+                }
+
+                if (allMusicFiles.Count == 0)
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No music files found in your library.", "No Files to Trim");
+                    return;
+                }
+
+                // Show progress dialog
+                ShowTrimProgress(allMusicFiles, "Trimming Leading Silence from All Music Files");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error in TrimAllMusicFiles");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
+            }
+        }
+
+        /// <summary>
+        /// Trim leading silence from music files for a single game (for fullscreen menu)
+        /// Shows progress dialog and displays confirmation when complete
+        /// </summary>
+        public void TrimSelectedGamesFullscreen(Game game)
+        {
+            if (game == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("No game selected.", "Trim Error");
+                return;
+            }
+
+            TrimSelectedGames(new List<Game> { game }, showSimpleConfirmation: true);
+        }
+
+        /// <summary>
+        /// Trim leading silence from music files for selected games
+        /// </summary>
+        public void TrimSelectedGames(List<Playnite.SDK.Models.Game> games, bool showSimpleConfirmation = false)
+        {
+            try
+            {
+                if (_trimService == null)
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage("Trim service not available.", "UniPlaySong");
+                    return;
+                }
+
+                if (_settings == null)
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
+                    return;
+                }
+
+                if (games == null || games.Count == 0)
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No games selected.", "No Games Selected");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
+                        "FFmpeg Not Configured");
+                    return;
+                }
+
+                if (!_trimService.ValidateFFmpegAvailable(_settings.FFmpegPath))
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
+                        "FFmpeg Not Available");
+                    return;
+                }
+
+                // Stop music playback before trimming to prevent file locking
+                try
+                {
+                    if (_playbackService != null && _playbackService.IsPlaying)
+                    {
+                        logger.Info("Stopping music playback before trimming selected games");
+                        _playbackService.Stop();
+                        
+                        // Give a moment for files to be released
+                        System.Threading.Thread.Sleep(300);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Error stopping playback before trim");
+                }
+
+                // Get all music files from selected games
+                var allMusicFiles = new List<string>();
+                foreach (var game in games)
+                {
+                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+                    allMusicFiles.AddRange(gameFiles);
+                }
+
+                if (allMusicFiles.Count == 0)
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No music files found for selected games.", "No Files to Trim");
+                    return;
+                }
+
+                // Show progress dialog
+                var gameNames = string.Join(", ", games.Select(g => g.Name).Take(3));
+                if (games.Count > 3) gameNames += $" and {games.Count - 3} more";
+                ShowTrimProgress(allMusicFiles, $"Trimming Leading Silence for {games.Count} Games", showSimpleConfirmation);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error in TrimSelectedGames");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
+            }
+        }
+
+        /// <summary>
+        /// Show trim progress dialog and execute trim operation
+        /// </summary>
+        private void ShowTrimProgress(List<string> musicFiles, string title, bool showSimpleConfirmation = false)
+        {
+            try
+            {
+                // Create progress dialog (reuse normalization progress dialog)
+                var progressDialog = new Views.NormalizationProgressDialog();
+
+                // Create window
+                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true
+                });
+
+                window.Title = title;
+                window.Width = 600;
+                window.Height = 500;
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowInTaskbar = false;
+                window.ResizeMode = ResizeMode.CanResize;
+                window.Content = progressDialog;
+
+                // Handle window closing
+                window.Closing += (s, e) =>
+                {
+                    try
+                    {
+                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
+                        if (mainWindow != null)
+                        {
+                            mainWindow.Activate();
+                            mainWindow.Focus();
+                            mainWindow.Topmost = true;
+                            mainWindow.Topmost = false;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Debug(ex, "Error returning focus during trim dialog close");
+                    }
+                };
+
+                // Start trim asynchronously
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        var settings = new Models.TrimSettings
+                        {
+                            SilenceThreshold = -50.0,
+                            SilenceDuration = 0.1,
+                            MinSilenceToTrim = 0.5,
+                            TrimBuffer = 0.15,
+                            TrimSuffix = "-trimmed",
+                            SkipAlreadyTrimmed = true,
+                            DoNotPreserveOriginals = false,
+                            FFmpegPath = _settings.FFmpegPath
+                        };
+
+                        var progress = new Progress<Models.NormalizationProgress>(p =>
+                        {
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.ReportProgress(p);
+                            }));
+                        });
+
+                        var result = await _trimService.TrimBulkAsync(
+                            musicFiles,
+                            settings,
+                            progress,
+                            progressDialog.CancellationToken);
+
+                        // Show completion message
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            // Close progress dialog first
+                            window.Close();
+
+                            if (showSimpleConfirmation)
+                            {
+                                // Simple confirmation for fullscreen menu
+                                PlayniteApi.Dialogs.ShowMessage(
+                                    "Leading silence trimmed successfully.\n\nChanges will take effect when the game is re-selected.",
+                                    "Trim Complete");
+                            }
+                            else
+                            {
+                                // Detailed confirmation for settings menu
+                                var message = $"Trim Complete!\n\n" +
+                                            $"Total: {result.TotalFiles} files\n" +
+                                            $"Succeeded: {result.SuccessCount}\n" +
+                                            $"Failed: {result.FailureCount}";
+
+                                if (result.FailedFiles.Count > 0)
+                                {
+                                    message += $"\n\nFailed files:\n{string.Join("\n", result.FailedFiles.Take(5).Select(f => System.IO.Path.GetFileName(f)))}";
+                                    if (result.FailedFiles.Count > 5)
+                                    {
+                                        message += $"\n... and {result.FailedFiles.Count - 5} more";
+                                    }
+                                }
+
+                                PlayniteApi.Dialogs.ShowMessage(message, "Trim Complete");
+                            }
+                        }));
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            PlayniteApi.Dialogs.ShowMessage("Trim was cancelled.", "Trim Cancelled");
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Error during trim");
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            window.Close();
+                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during trim: {ex.Message}", "Trim Error");
+                        }));
+                    }
+                });
+
+                // Show dialog
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error showing trim progress dialog");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Trim Error");
+            }
+        }
+
+        #endregion
+
         #region Settings & Menus
 
         public override ISettings GetSettings(bool firstRunSettings)
@@ -1260,6 +1583,12 @@ namespace UniPlaySong
                     Description = "Normalize Selected Music",
                     MenuSection = menuSection,
                     Action = _ => NormalizeSelectedGamesFullscreen(singleGame)
+                });
+                items.Add(new GameMenuItem
+                {
+                    Description = "Trim Audio",
+                    MenuSection = menuSection,
+                    Action = _ => TrimSelectedGamesFullscreen(singleGame)
                 });
             }
 
@@ -1418,6 +1747,11 @@ namespace UniPlaySong
         /// Gets the audio normalization service.
         /// </summary>
         public Services.INormalizationService GetNormalizationService() => _normalizationService;
+
+        /// <summary>
+        /// Gets the audio trim service.
+        /// </summary>
+        public Services.ITrimService GetTrimService() => _trimService;
 
         /// <summary>
         /// Gets the Playnite API instance.

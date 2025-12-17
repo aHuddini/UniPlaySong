@@ -239,6 +239,38 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand TrimAllMusicCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    plugin.TrimAllMusicFiles();
+                },
+                context: "trimming all music files",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand TrimSelectedGamesCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var selectedGames = plugin.PlayniteApi.MainView.SelectedGames;
+                    if (selectedGames == null || selectedGames.Count() == 0)
+                    {
+                        plugin.PlayniteApi.Dialogs.ShowMessage("Please select one or more games first.", "No Games Selected");
+                        return;
+                    }
+                    plugin.TrimSelectedGames(selectedGames.ToList());
+                },
+                context: "trimming selected games",
+                showUserMessage: true
+            );
+        });
+
         public ICommand RestoreNormalizedFilesCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

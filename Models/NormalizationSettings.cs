@@ -87,4 +87,55 @@ namespace UniPlaySong.Models
         public System.Collections.Generic.List<string> FailedFiles { get; set; } = new System.Collections.Generic.List<string>();
         public bool IsComplete { get; set; }
     }
+
+    /// <summary>
+    /// Configuration settings for audio silence trimming
+    /// </summary>
+    public class TrimSettings
+    {
+        /// <summary>
+        /// Silence threshold in dB for detection (default: -50.0 dB)
+        /// </summary>
+        public double SilenceThreshold { get; set; } = -50.0;
+
+        /// <summary>
+        /// Minimum silence duration to detect in seconds (default: 0.1 seconds)
+        /// </summary>
+        public double SilenceDuration { get; set; } = 0.1;
+
+        /// <summary>
+        /// Minimum silence length in seconds to trim (skip if shorter)
+        /// Default: 0.5 seconds - files with less than 0.5s of leading silence are skipped
+        /// </summary>
+        public double MinSilenceToTrim { get; set; } = 0.5;
+
+        /// <summary>
+        /// Buffer time in seconds to add after silence end to avoid clicks
+        /// Default: 0.15 seconds - ensures we're well into actual audio before cutting
+        /// </summary>
+        public double TrimBuffer { get; set; } = 0.15;
+
+        /// <summary>
+        /// Suffix to append to trimmed file names (e.g., "-trimmed")
+        /// Trimmed files are created with this suffix when preserving originals
+        /// </summary>
+        public string TrimSuffix { get; set; } = "-trimmed";
+
+        /// <summary>
+        /// Skip files that are already trimmed (have trim suffix)
+        /// </summary>
+        public bool SkipAlreadyTrimmed { get; set; } = true;
+
+        /// <summary>
+        /// Do not preserve original files (space saver mode)
+        /// When enabled, original files are trimmed directly and replaced
+        /// When disabled, original files are moved to PreservedOriginals folder
+        /// </summary>
+        public bool DoNotPreserveOriginals { get; set; } = false;
+
+        /// <summary>
+        /// Path to FFmpeg executable
+        /// </summary>
+        public string FFmpegPath { get; set; }
+    }
 }

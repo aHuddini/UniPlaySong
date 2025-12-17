@@ -77,7 +77,105 @@ namespace UniPlaySong.Services
             if (string.IsNullOrWhiteSpace(suffix)) return false;
             
             var fileName = Path.GetFileNameWithoutExtension(filePath);
-            return fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
+            // Check for exact suffix or combined suffixes (e.g., "-normalized" or "-trimmed-normalized")
+            return fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ||
+                   fileName.IndexOf("-normalized", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Strips existing suffixes from filename and returns base name
+        /// </summary>
+        private string StripSuffixes(string fileName, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
+        {
+            var result = fileName;
+            
+            // Remove combined suffixes (order matters - check both orders)
+            if (result.EndsWith($"{normalizeSuffix}{trimSuffix}", StringComparison.OrdinalIgnoreCase))
+            {
+                result = result.Substring(0, result.Length - (normalizeSuffix.Length + trimSuffix.Length));
+            }
+            else if (result.EndsWith($"{trimSuffix}{normalizeSuffix}", StringComparison.OrdinalIgnoreCase))
+            {
+                result = result.Substring(0, result.Length - (trimSuffix.Length + normalizeSuffix.Length));
+            }
+            // Remove individual suffixes
+            else if (result.EndsWith(normalizeSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                result = result.Substring(0, result.Length - normalizeSuffix.Length);
+            }
+            else if (result.EndsWith(trimSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                result = result.Substring(0, result.Length - trimSuffix.Length);
+            }
+            
+            return result;
+        }
+
+        /// <summary>
+        /// Checks if filename has a specific suffix (including in combined form)
+        /// </summary>
+        private bool HasSuffix(string fileName, string suffix)
+        {
+            return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Builds output filename with appropriate suffix based on existing suffixes.
+        /// Suffix order reflects chronological order of operations:
+        /// - If normalized first, then trimmed: "song-normalized-trimmed"
+        /// - If trimmed first, then normalized: "song-trimmed-normalized"
+        /// </summary>
+        private string BuildOutputFileName(string baseFileName, string newSuffix, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
+        {
+            // Strip all existing suffixes to get base name
+            var cleanName = StripSuffixes(baseFileName, trimSuffix, normalizeSuffix);
+            
+            // Check what suffixes already exist (before stripping)
+            bool hasTrimmed = HasSuffix(baseFileName, trimSuffix);
+            bool hasNormalized = HasSuffix(baseFileName, normalizeSuffix);
+            
+            // Build new filename with suffixes reflecting chronological order of operations
+            if (newSuffix == normalizeSuffix)
+            {
+                // Adding normalization operation
+                if (hasTrimmed && !hasNormalized)
+                {
+                    // File was trimmed first, now normalizing: "song-trimmed-normalized"
+                    return $"{cleanName}{trimSuffix}{normalizeSuffix}";
+                }
+                // If already normalized, return as-is (should be skipped)
+                else if (hasNormalized)
+                {
+                    return baseFileName; // Shouldn't happen if skip logic works
+                }
+                // Just add normalization (no existing operations)
+                else
+                {
+                    return $"{cleanName}{normalizeSuffix}";
+                }
+            }
+            else if (newSuffix == trimSuffix)
+            {
+                // Adding trim operation
+                if (hasNormalized && !hasTrimmed)
+                {
+                    // File was normalized first, now trimming: "song-normalized-trimmed"
+                    return $"{cleanName}{normalizeSuffix}{trimSuffix}";
+                }
+                // If already trimmed, return as-is (should be skipped)
+                else if (hasTrimmed)
+                {
+                    return baseFileName; // Shouldn't happen if skip logic works
+                }
+                // Just add trim (no existing operations)
+                else
+                {
+                    return $"{cleanName}{trimSuffix}";
+                }
+            }
+            
+            // Fallback: just append new suffix
+            return $"{cleanName}{newSuffix}";
         }
 
         /// <summary>
@@ -617,14 +715,21 @@ namespace UniPlaySong.Services
                 
                 if (settings.DoNotPreserveOriginals)
                 {
-                    // Space saver mode: Replace original file directly (no preservation)
-                    finalOutputPath = filePath;
+                    // Space saver mode: Replace original file directly, but still add suffix if file was already processed
+                    // Check if file has existing suffixes and preserve them
+                    var normalizeSuffix = settings.NormalizationSuffix ?? "-normalized";
+                    var trimSuffix = "-trimmed";
+                    var outputFileName = BuildOutputFileName(fileName, normalizeSuffix, trimSuffix, normalizeSuffix);
+                    finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                 }
                 else
                 {
                     // Preservation mode: Create normalized file with suffix
-                    var suffix = settings.NormalizationSuffix ?? "-normalized";
-                    finalOutputPath = Path.Combine(directory, $"{fileName}{suffix}{extension}");
+                    // Check if file already has "-trimmed" suffix and append "-normalized" appropriately
+                    var normalizeSuffix = settings.NormalizationSuffix ?? "-normalized";
+                    var trimSuffix = "-trimmed"; // Default trim suffix
+                    var outputFileName = BuildOutputFileName(fileName, normalizeSuffix, trimSuffix, normalizeSuffix);
+                    finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                     
                     // Determine preserved originals directory
                     string preservedOriginalsDir;

@@ -404,6 +404,39 @@
 
                         <Separator Margin="0,15"/>
 
+                        <TextBlock Text="Silence Trimming" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                        <TextBlock Text="Remove silent gaps at the beginning of audio files. Files with short silence (&lt; 0.5s) or already trimmed files are automatically skipped." 
+                                   FontSize="11" 
+                                   Foreground="Gray" 
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <Button Content="Trim All Music Files" 
+                                    Width="220"
+                                    Margin="0,0,10,0"
+                                    Command="{Binding TrimAllMusicCommand}"/>
+                            <TextBlock Text="Remove leading silence from all music files in your library." 
+                                       VerticalAlignment="Center" 
+                                       FontSize="11" 
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                            <Button Content="Trim Selected Games" 
+                                    Width="220"
+                                    Margin="0,0,10,0"
+                                    Command="{Binding TrimSelectedGamesCommand}"/>
+                            <TextBlock Text="Remove leading silence from music files for selected games." 
+                                       VerticalAlignment="Center" 
+                                       FontSize="11" 
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,15"/>
+
                         <Separator Margin="0,15"/>
 
                         <TextBlock Text="Original File Management" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
