@@ -1,8 +1,25 @@
 # UniPlaySong - Changelog
 
+## Version 1.0.7
+
+### Features
+- **Silence Trimming**: Automatically remove leading silence from audio files using FFmpeg
+  - Configurable silence detection threshold and duration
+  - Enhances fade effects for seamless music preview transitions
+  - Smart file naming that preserves operation order (normalize → trim or trim → normalize)
+  - Option to skip already-trimmed files
+  - Minimum silence duration threshold to avoid trimming very short silences
+  - Works seamlessly with audio normalization - files can be both normalized and trimmed
+
 ## Version 1.0.6
 
 ### Features
+- **Audio Normalization**: Normalize all game music to consistent volume levels using FFmpeg
+  - Uses standard FFmpeg only (FFmpeg-normalize not required)
+  - EBU R128 standard support with customizable target loudness, true peak, and loudness range
+  - Bulk normalization support for entire game libraries
+  - Option to preserve original files or replace them
+  - Accessible from both desktop and fullscreen modes
 - **Fullscreen Controller Support**: Complete Xbox controller support for managing music in fullscreen mode
   - Download music directly from fullscreen using controller
   - Delete songs with controller-friendly dialogs

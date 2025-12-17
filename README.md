@@ -18,6 +18,11 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ## Previous Version - v1.0.6
 
+- **🔊 Audio Normalization**: Normalize all game music to consistent volume levels using FFmpeg
+  - Uses standard FFmpeg only (FFmpeg-normalize not required)
+  - EBU R128 standard support with customizable target loudness, true peak, and loudness range
+  - Bulk normalization support for entire game libraries
+  - Accessible from both desktop and fullscreen modes
 - **🎮 Fullscreen Controller Support**: Complete Xbox controller support for music management in fullscreen mode
   - Download music, delete songs, normalize audio, and set primary songs - all from your couch!
   - Never leave fullscreen mode to manage your game music library
@@ -48,7 +53,7 @@ Complete controller-friendly interface for managing game music in fullscreen mod
 - **Custom Preview Time**: Customize songs to play for 15 seconds, 30 seconds, or the entire length of a file.
 - **Configurable Song Randomization**: Randomize songs when selecting a game or when song loops end
 - **Smooth, customizable Fade Transitions**: Edit fade-in and fade-out effects for song playback when switching games
-- **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard or with custom values). All using standard FFPMEG encoder.
+- **Audio Normalization**: Normalize all game music to consistent volume levels (EBU R128 standard or with custom values). Uses standard FFmpeg only (FFmpeg-normalize not required).
 - **Default Music Support**: Fallback music that seamlessly plays when games have no music, with natural position preservation
 - **Theme Compatibility**: Works with fullscreen themes that have login screens
 - **Online Audio Downloads**: Download and preview game music directly from online sources (either in Fullscreen or desktop mode)
