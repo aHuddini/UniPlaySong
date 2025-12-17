@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.0.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 A Playnite extension that provides a console-like game music preview experience and controller-friendly song management, with custom options to fine-tune the experience (like fade-in and fade-out controls). Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
 
@@ -8,7 +8,15 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.6
+## 🆕 What's New - v1.0.7
+
+- **✂️ Silence Trimming**: Automatically remove leading silence from your game music files
+  - Clean up downloaded tracks that have unwanted silence at the start
+  - Enhances fade effects for seamless music preview transitions
+  - Configurable detection settings for fine-tuning
+  - Works seamlessly with audio normalization
+
+## Previous Version - v1.0.6
 
 - **🎮 Fullscreen Controller Support**: Complete Xbox controller support for music management in fullscreen mode
   - Download music, delete songs, normalize audio, and set primary songs - all from your couch!
