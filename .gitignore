@@ -7,4 +7,5 @@ packages/
 *.pext
 *.zip
 package/
+addonprep/
 
