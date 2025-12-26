@@ -22,7 +22,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - **✨ Customizable Trim Suffix**: Match your trimming suffix with normalization suffix (e.g., "-trimmed")
 - **📊 Improved Progress Tracking**: Clearer distinction between succeeded/skipped/failed operations with accurate file counts
 - **🏷️ Better UI Labels**: All trim features now clearly labeled as "Silence Trimming" to avoid confusion
--**⚠️** Right-click context menu UI clean-up.
+- **⚠️** Right-click context menu UI clean-up.
 
 **KNOWN BUGS**
 -The add-on settings play state (never, desktop, fullscreen, both) doesn't work reliably depending on certain functions you use. Music will still play no matter what options you typically pick. Will fix later. Workaround: Uncheck "ENABLE MUSIC" if you wish to disable the music features.
