@@ -26,20 +26,6 @@ using UniPlaySong.Models;
 namespace UniPlaySong
 {
     /// <summary>
-    /// SDL2_mixer wrapper for suppressing Playnite's native background music
-    /// </summary>
-    static class SDL_mixer
-    {
-        const string nativeLibName = "SDL2_mixer";
-
-        [DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Mix_HaltMusic();
-        
-        [DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Mix_FreeMusic(IntPtr music);
-    }
-
-    /// <summary>
     /// UniPlaySong - Console-like game music preview extension for Playnite
     /// Plays game-specific music when browsing your library
     /// </summary>
@@ -317,6 +303,24 @@ namespace UniPlaySong
                     }
                     // Note: MediaElementsMonitor doesn't have a Detach method - it stops automatically
                     // when there are no media elements (timer stops when mediaElementPositions.Count == 0)
+                }
+                
+                // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
+                if (e.OldSettings != null && e.NewSettings != null)
+                {
+                    bool downloadSettingsChanged = 
+                        e.OldSettings.YtDlpPath != e.NewSettings.YtDlpPath ||
+                        e.OldSettings.FFmpegPath != e.NewSettings.FFmpegPath ||
+                        e.OldSettings.UseFirefoxCookies != e.NewSettings.UseFirefoxCookies;
+                    
+                    if (downloadSettingsChanged && _downloadManager != null)
+                    {
+                        var tempPath = Path.Combine(_api.Paths.ExtensionsDataPath, "UniPlaySong", "temp");
+                        _downloadManager = new DownloadManager(
+                            _httpClient, _htmlWeb, tempPath,
+                            e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, e.NewSettings);
+                        logger.Info("DownloadManager recreated with updated download settings");
+                    }
                 }
                 
                 // Re-subscribe to PropertyChanged for backward compatibility
@@ -653,8 +657,8 @@ namespace UniPlaySong
                 
                 if (currentMusic != IntPtr.Zero)
                 {
-                    SDL_mixer.Mix_HaltMusic();
-                    SDL_mixer.Mix_FreeMusic(currentMusic);
+                    SDL2MixerWrapper.Mix_HaltMusic();
+                    SDL2MixerWrapper.Mix_FreeMusic(currentMusic);
                     // Set to Zero to prevent Playnite from reloading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
                     
@@ -676,7 +680,7 @@ namespace UniPlaySong
                 // Fallback to simple halt if reflection fails
                 try
                 {
-                    SDL_mixer.Mix_HaltMusic();
+                    SDL2MixerWrapper.Mix_HaltMusic();
                 }
                 catch { }
             }
@@ -919,6 +923,7 @@ namespace UniPlaySong
                             LoudnessRange = _settings.NormalizationLoudnessRange,
                             AudioCodec = _settings.NormalizationCodec,
                             NormalizationSuffix = _settings.NormalizationSuffix,
+                            TrimSuffix = _settings.TrimSuffix,
                             SkipAlreadyNormalized = _settings.SkipAlreadyNormalized,
                             DoNotPreserveOriginals = _settings.DoNotPreserveOriginals,
                             FFmpegPath = _settings.FFmpegPath
@@ -1442,7 +1447,7 @@ namespace UniPlaySong
                             SilenceDuration = 0.1,
                             MinSilenceToTrim = 0.5,
                             TrimBuffer = 0.15,
-                            TrimSuffix = "-trimmed",
+                            TrimSuffix = _settings.TrimSuffix,
                             SkipAlreadyTrimmed = true,
                             DoNotPreserveOriginals = false,
                             FFmpegPath = _settings.FFmpegPath
@@ -1468,32 +1473,52 @@ namespace UniPlaySong
                             // Close progress dialog first
                             window.Close();
 
-                            if (showSimpleConfirmation)
-                            {
-                                // Simple confirmation for fullscreen menu
-                                PlayniteApi.Dialogs.ShowMessage(
-                                    "Leading silence trimmed successfully.\n\nChanges will take effect when the game is re-selected.",
-                                    "Trim Complete");
-                            }
-                            else
-                            {
-                                // Detailed confirmation for settings menu
-                                var message = $"Trim Complete!\n\n" +
-                                            $"Total: {result.TotalFiles} files\n" +
-                                            $"Succeeded: {result.SuccessCount}\n" +
-                                            $"Failed: {result.FailureCount}";
+                            // Build result message
+                            var message = $"Trim Complete!\n\n" +
+                                        $"Total: {result.TotalFiles} files\n" +
+                                        $"Succeeded: {result.SuccessCount}\n" +
+                                        $"Skipped: {result.SkippedCount}\n" +
+                                        $"Failed: {result.FailureCount}";
 
-                                if (result.FailedFiles.Count > 0)
+                            if (!showSimpleConfirmation)
+                            {
+                                // Detailed view: Show file lists
+                                if (result.SkippedFiles.Count > 0)
                                 {
-                                    message += $"\n\nFailed files:\n{string.Join("\n", result.FailedFiles.Take(5).Select(f => System.IO.Path.GetFileName(f)))}";
-                                    if (result.FailedFiles.Count > 5)
+                                    message += $"\n\nSkipped files (not renamed - no leading silence or already trimmed):\n{string.Join("\n", result.SkippedFiles.Take(3).Select(f => System.IO.Path.GetFileName(f)))}";
+                                    if (result.SkippedFiles.Count > 3)
                                     {
-                                        message += $"\n... and {result.FailedFiles.Count - 5} more";
+                                        message += $"\n... and {result.SkippedFiles.Count - 3} more";
                                     }
                                 }
 
-                                PlayniteApi.Dialogs.ShowMessage(message, "Trim Complete");
+                                if (result.FailedFiles.Count > 0)
+                                {
+                                    message += $"\n\nFailed files (not renamed - processing error):\n{string.Join("\n", result.FailedFiles.Take(3).Select(f => System.IO.Path.GetFileName(f)))}";
+                                    if (result.FailedFiles.Count > 3)
+                                    {
+                                        message += $"\n... and {result.FailedFiles.Count - 3} more";
+                                    }
+                                }
                             }
+
+                            // Add status explanation
+                            if (result.SuccessCount > 0 && (result.SkippedCount > 0 || result.FailureCount > 0))
+                            {
+                                message += "\n\nNote: Only successfully trimmed files have the suffix appended.";
+                            }
+                            else if (result.SkippedCount > 0 && result.SuccessCount == 0)
+                            {
+                                message += "\n\nNote: Files were not renamed (no trimming was needed).";
+                            }
+
+                            // Add re-select note if any files were successfully trimmed
+                            if (result.SuccessCount > 0)
+                            {
+                                message += "\nChanges will take effect when the game is re-selected.";
+                            }
+
+                            PlayniteApi.Dialogs.ShowMessage(message, "Trim Complete");
                         }));
                     }
                     catch (OperationCanceledException)
@@ -1586,33 +1611,21 @@ namespace UniPlaySong
                 });
                 items.Add(new GameMenuItem
                 {
-                    Description = "Trim Audio",
+                    Description = "Trim Leading Silence",
                     MenuSection = menuSection,
                     Action = _ => TrimSelectedGamesFullscreen(singleGame)
                 });
             }
 
-            // Multi-game selection: Show "Download All" options
+            // Multi-game selection: Show simplified "Download All" option
             if (games.Count > 1)
             {
-                // Download All submenu with source options
+                // Download All - uses Source.All (tries KHInsider first, falls back to YouTube)
                 items.Add(new GameMenuItem
                 {
                     Description = $"Download All ({games.Count} games)",
-                    MenuSection = downloadSection,
-                    Action = _ => _gameMenuHandler.DownloadMusicForGames(games, Models.Source.KHInsider)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "KHInsider",
-                    MenuSection = downloadSection,
-                    Action = _ => _gameMenuHandler.DownloadMusicForGames(games, Models.Source.KHInsider)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "YouTube",
-                    MenuSection = downloadSection,
-                    Action = _ => _gameMenuHandler.DownloadMusicForGames(games, Models.Source.YouTube)
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.DownloadMusicForGames(games, Models.Source.All)
                 });
 
                 // Add retry option if there are failed downloads
@@ -2072,66 +2085,7 @@ namespace UniPlaySong
 
         #region Xbox Controller Login Bypass Support
 
-        // XInput API definitions (same as in SimpleControllerDialog)
-        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_1_4(int dwUserIndex, ref XINPUT_STATE pState);
-
-        [DllImport("xinput1_3.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_1_3(int dwUserIndex, ref XINPUT_STATE pState);
-
-        [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_9_1_0(int dwUserIndex, ref XINPUT_STATE pState);
-
-        private static int XInputGetState(int dwUserIndex, ref XINPUT_STATE pState)
-        {
-            try
-            {
-                return XInputGetState_1_4(dwUserIndex, ref pState);
-            }
-            catch
-            {
-                try
-                {
-                    return XInputGetState_1_3(dwUserIndex, ref pState);
-                }
-                catch
-                {
-                    try
-                    {
-                        return XInputGetState_9_1_0(dwUserIndex, ref pState);
-                    }
-                    catch
-                    {
-                        return -1; // No XInput available
-                    }
-                }
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_STATE
-        {
-            public uint dwPacketNumber;
-            public XINPUT_GAMEPAD Gamepad;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_GAMEPAD
-        {
-            public ushort wButtons;
-            public byte bLeftTrigger;
-            public byte bRightTrigger;
-            public short sThumbLX;
-            public short sThumbLY;
-            public short sThumbRX;
-            public short sThumbRY;
-        }
-
-        // Button constants
-        private const ushort XINPUT_GAMEPAD_A = 0x1000;
-        private const ushort XINPUT_GAMEPAD_START = 0x0010;
-
-        private XINPUT_STATE _lastControllerLoginState;
+        private XInputWrapper.XINPUT_STATE _lastControllerLoginState;
         private bool _hasLastLoginState = false;
 
         /// <summary>
@@ -2156,8 +2110,8 @@ namespace UniPlaySong
                         try
                         {
                             // Check controller 0 (first controller)
-                            XINPUT_STATE state = new XINPUT_STATE();
-                            int result = XInputGetState(0, ref state);
+                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                            int result = XInputWrapper.XInputGetState(0, ref state);
                             
                             if (result == 0) // Success
                             {
@@ -2216,7 +2170,7 @@ namespace UniPlaySong
         /// Checks for login bypass button presses (A button or Start button).
         /// Detects newly pressed buttons and triggers login dismiss on UI thread.
         /// </summary>
-        private void CheckLoginBypassButtonPresses(XINPUT_GAMEPAD currentState, XINPUT_GAMEPAD lastState)
+        private void CheckLoginBypassButtonPresses(XInputWrapper.XINPUT_GAMEPAD currentState, XInputWrapper.XINPUT_GAMEPAD lastState)
         {
             try
             {
@@ -2226,9 +2180,9 @@ namespace UniPlaySong
                 if (newlyPressed == 0)
                     return;
                 
-                if ((newlyPressed & XINPUT_GAMEPAD_A) != 0 || (newlyPressed & XINPUT_GAMEPAD_START) != 0)
+                if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 || (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_START) != 0)
                 {
-                    string buttonName = (newlyPressed & XINPUT_GAMEPAD_A) != 0 ? "A" : "Start";
+                    string buttonName = (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 ? "A" : "Start";
                     _fileLogger?.Info($"Xbox controller {buttonName} button pressed - triggering login dismiss");
                     
                     Application.Current?.Dispatcher.BeginInvoke(new Action(() =>

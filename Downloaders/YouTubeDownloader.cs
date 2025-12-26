@@ -24,13 +24,15 @@ namespace UniPlaySong.Downloaders
         private readonly HttpClient _httpClient;
         private readonly string _ytDlpPath;
         private readonly string _ffmpegPath;
+        private readonly bool _useFirefoxCookies;
         private readonly ErrorHandlerService _errorHandler;
 
-        public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, ErrorHandlerService errorHandler)
+        public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, bool useFirefoxCookies, ErrorHandlerService errorHandler)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _ytDlpPath = ytDlpPath;
             _ffmpegPath = ffmpegPath;
+            _useFirefoxCookies = useFirefoxCookies;
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
@@ -157,6 +159,59 @@ namespace UniPlaySong.Downloaders
                 return false;
             }
 
+            if (!File.Exists(_ffmpegPath))
+            {
+                Logger.Error($"FFmpeg not found at: {_ffmpegPath}");
+                return false;
+            }
+
+            // Log diagnostic information
+            Logger.Debug($"Download diagnostic - Song: {song?.Name}, Video ID: {song?.Id}, Target path: {path}");
+            Logger.Debug($"Download diagnostic - yt-dlp path: {_ytDlpPath}, FFmpeg path: {_ffmpegPath}");
+            
+            // Check for JavaScript runtime (required for yt-dlp 2025.11.12+)
+            // yt-dlp will automatically detect Deno, Node.js, QuickJS, etc. if installed
+            // We'll check yt-dlp output for hints about JS runtime usage
+            // Reference: https://github.com/yt-dlp/yt-dlp/issues/15012
+            
+            // Validate FFmpeg is accessible
+            try
+            {
+                var ffmpegInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = _ffmpegPath,
+                    Arguments = "-version",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                using (var ffmpegCheck = System.Diagnostics.Process.Start(ffmpegInfo))
+                {
+                    if (ffmpegCheck != null)
+                    {
+                        ffmpegCheck.WaitForExit(3000);
+                        if (ffmpegCheck.ExitCode == 0)
+                        {
+                            var versionOutput = ffmpegCheck.StandardOutput.ReadToEnd();
+                            var firstLine = versionOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                            if (!string.IsNullOrWhiteSpace(firstLine))
+                            {
+                                Logger.Debug($"FFmpeg version check: {firstLine.Trim()}");
+                            }
+                        }
+                        else
+                        {
+                            Logger.Warn($"FFmpeg version check failed with exit code {ffmpegCheck.ExitCode}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Could not verify FFmpeg version: {ex.Message}");
+            }
+
             try
             {
                 // Ensure directory exists
@@ -166,35 +221,90 @@ namespace UniPlaySong.Downloaders
                     Directory.CreateDirectory(directory);
                 }
 
-                // yt-dlp arguments: extract audio, mp3 format, output path
-                // For previews: use lower quality (5 = ~128kbps), limit to 30 seconds, and optimize for speed
-                // For full downloads: use best quality (0 = best available)
                 var pathWithoutExt = Path.ChangeExtension(path, null);
-                var quality = isPreview ? "5" : "0"; // 5 = ~128kbps, 0 = best
+                string arguments;
                 
-                // For previews, add optimization flags for faster, more consistent downloads
-                var previewOptimizations = isPreview 
-                    ? " --no-playlist --no-warnings --quiet --no-progress --postprocessor-args \"ffmpeg:-t 30\""
-                    : "";
-                
-                // For full downloads, use standard flags
-                var standardFlags = isPreview ? "" : " --no-playlist";
-                
-                var arguments = $"-x --audio-format mp3 --audio-quality {quality}{previewOptimizations}{standardFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                if (_useFirefoxCookies)
+                {
+                    // Simplified command when using Firefox cookies - extract audio to MP3
+                    // Minimal options: cookies, extract audio, MP3 format, FFmpeg location, output path, and URL
+                    arguments = $"--cookies-from-browser firefox -x --audio-format mp3 --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    Logger.Info("Using simplified yt-dlp command with Firefox cookies");
+                }
+                else
+                {
+                    // Full command with all options when not using cookies
+                    // yt-dlp arguments: extract audio, mp3 format, output path
+                    // For previews: use lower quality (5 = ~128kbps), limit to 30 seconds, and optimize for speed
+                    // For full downloads: use best quality (0 = best available)
+                    var quality = isPreview ? "5" : "0"; // 5 = ~128kbps, 0 = best
+                    
+                    // Anti-bot detection options to help bypass YouTube's bot checks
+                    // Try multiple clients in order: android (best), ios (good), web (fallback)
+                    // This helps bypass YouTube's aggressive bot detection, especially in regions like Germany
+                    var antiBotOptions = " --extractor-args \"youtube:player_client=android,ios,web\"";
+                    
+                    // For previews, add optimization flags for faster, more consistent downloads
+                    var previewOptimizations = isPreview 
+                        ? " --no-playlist --no-warnings --quiet --no-progress --postprocessor-args \"ffmpeg:-t 30\""
+                        : "";
+                    
+                    // For full downloads, use standard flags
+                    var standardFlags = isPreview ? "" : " --no-playlist";
+                    
+                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{previewOptimizations}{standardFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                }
 
-                Logger.Debug($"Downloading song with yt-dlp: {song.Name} to {path}");
+                // Check directory permissions before starting download
+                var targetDir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(targetDir))
+                {
+                    try
+                    {
+                        if (!Directory.Exists(targetDir))
+                        {
+                            Directory.CreateDirectory(targetDir);
+                            Logger.Debug($"Created target directory: {targetDir}");
+                        }
+                        
+                        // Test write permissions
+                        var testFile = Path.Combine(targetDir, ".writetest");
+                        try
+                        {
+                            File.WriteAllText(testFile, "test");
+                            File.Delete(testFile);
+                            Logger.Debug($"Directory write permissions verified: {targetDir}");
+                        }
+                        catch (Exception permEx)
+                        {
+                            Logger.Error($"Directory write permission check failed for {targetDir}: {permEx.Message}");
+                        }
+                    }
+                    catch (Exception dirEx)
+                    {
+                        Logger.Error($"Failed to create/access target directory {targetDir}: {dirEx.Message}");
+                    }
+                }
+
+                var workingDir = Path.GetDirectoryName(_ytDlpPath) ?? Directory.GetCurrentDirectory();
+                Logger.Info($"Downloading song with yt-dlp: {song.Name} to {path}");
                 Logger.Debug($"yt-dlp command: {_ytDlpPath} {arguments}");
+                Logger.Debug($"Working directory: {workingDir}");
 
                 var processInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = _ytDlpPath,
                     Arguments = arguments,
-                    WorkingDirectory = Path.GetDirectoryName(_ytDlpPath) ?? Directory.GetCurrentDirectory(),
+                    WorkingDirectory = workingDir,
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
+
+                // Declare output/error outside using block so they're accessible after process completes
+                string output = null;
+                string error = null;
 
                 using (var process = System.Diagnostics.Process.Start(processInfo))
                 {
@@ -204,9 +314,11 @@ namespace UniPlaySong.Downloaders
                         return false;
                     }
 
-                    // Read output for progress (optional - can be enhanced later)
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
+                    // Read streams synchronously to avoid mixing async/sync operations
+                    // Use Task.Run to prevent blocking the UI thread while reading streams
+                    
+                    var readOutputTask = Task.Run(() => process.StandardOutput.ReadToEnd());
+                    var readErrorTask = Task.Run(() => process.StandardError.ReadToEnd());
 
                     while (!process.WaitForExit(100))
                     {
@@ -217,16 +329,147 @@ namespace UniPlaySong.Downloaders
                                 process.Kill();
                             }
                             catch { }
+                            
+                            // Wait for stream reading to complete after killing process
+                            try
+                            {
+                                readOutputTask.Wait(1000);
+                                readErrorTask.Wait(1000);
+                            }
+                            catch { }
+                            
                             Logger.Info($"Download cancelled for: {song.Name}");
                             return false;
                         }
                     }
 
+                    // Wait for stream reading to complete
+                    readOutputTask.Wait();
+                    readErrorTask.Wait();
+                    output = readOutputTask.Result;
+                    error = readErrorTask.Result;
+
+                    // Check for JavaScript runtime usage in output (yt-dlp logs this when using Deno/Node/etc)
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        var outputLower = output.ToLowerInvariant();
+                        
+                        // Check for explicit JS runtime usage indicators
+                        if (outputLower.Contains("[jsc:deno]") || outputLower.Contains("solving js challenges using deno"))
+                        {
+                            Logger.Info("✓ JavaScript runtime detected: Deno is working! (solving JS challenges)");
+                        }
+                        else if (outputLower.Contains("[jsc:node]") || (outputLower.Contains("using") && outputLower.Contains("node")))
+                        {
+                            Logger.Info("✓ JavaScript runtime detected: Node.js is working!");
+                        }
+                        else if (outputLower.Contains("[jsc:quickjs]") || (outputLower.Contains("using") && outputLower.Contains("quickjs")))
+                        {
+                            Logger.Info("✓ JavaScript runtime detected: QuickJS is working!");
+                        }
+                        else if (outputLower.Contains("[jsc:bun]") || (outputLower.Contains("using") && outputLower.Contains("bun")))
+                        {
+                            Logger.Info("✓ JavaScript runtime detected: Bun is working!");
+                        }
+                        else if (outputLower.Contains("deprecated") || outputLower.Contains("no js runtime") || outputLower.Contains("without js"))
+                        {
+                            Logger.Warn("⚠ yt-dlp appears to be running without JavaScript runtime - downloads may be limited or fail");
+                            Logger.Warn("Install Deno for best results: https://deno.com/");
+                        }
+                        else
+                        {
+                            // Log a sample of output to help debug
+                            var firstLines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Take(3);
+                            Logger.Debug($"yt-dlp output preview: {string.Join(" | ", firstLines)}");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Debug("yt-dlp produced no standard output (this is normal for some operations)");
+                    }
+
                     if (process.ExitCode != 0)
                     {
-                        var error = process.StandardError.ReadToEnd();
-                        Logger.Error($"yt-dlp failed with exit code {process.ExitCode}: {error}");
+                        Logger.Error($"yt-dlp failed with exit code {process.ExitCode} for song '{song?.Name}' (Video ID: {song?.Id})");
+                        
+                        // Log full error output
+                        if (!string.IsNullOrWhiteSpace(error))
+                        {
+                            Logger.Error($"yt-dlp error output:\n{error}");
+                            
+                            // Parse common error patterns and provide helpful diagnostics
+                            var errorLower = error.ToLowerInvariant();
+                            if (errorLower.Contains("sign in to confirm") || errorLower.Contains("not a bot") || errorLower.Contains("bot"))
+                            {
+                                Logger.Error("Diagnosis: YouTube bot detection - YouTube is blocking the download");
+                                
+                                Logger.Error("");
+                                Logger.Error("CRITICAL: yt-dlp 2025.11.12+ now REQUIRES a JavaScript runtime for YouTube downloads!");
+                                Logger.Error("Without a JS runtime, YouTube downloads are deprecated and will fail with bot detection.");
+                                Logger.Error("");
+                                Logger.Error("Solution 1 (MOST IMPORTANT): Install Deno (recommended JavaScript runtime):");
+                                Logger.Error("  - Download from: https://deno.com/ or https://github.com/denoland/deno/releases");
+                                Logger.Error("  - Install Deno (get 'deno' NOT 'denort' from GitHub releases)");
+                                Logger.Error("  - Minimum version: Deno 2.0.0 (latest version recommended)");
+                                Logger.Error("  - After installation, yt-dlp will automatically detect and use Deno");
+                                Logger.Error("");
+                                Logger.Error("Alternative JS runtimes (if Deno doesn't work):");
+                                Logger.Error("  - Node.js: https://nodejs.org/ (minimum v20.0.0, v25+ recommended)");
+                                Logger.Error("  - QuickJS: https://bellard.org/quickjs/ (minimum 2023-12-9, 2025-4-26+ recommended)");
+                                Logger.Error("");
+                                Logger.Error("Solution 2: Update yt-dlp to the latest version:");
+                                Logger.Error("  - Open Command Prompt/PowerShell");
+                                Logger.Error("  - Navigate to your yt-dlp directory");
+                                Logger.Error("  - Run: yt-dlp.exe -U");
+                                Logger.Error("");
+                                Logger.Error("Solution 3: Wait 10-15 minutes and try again (YouTube rate limiting)");
+                                Logger.Error("");
+                                Logger.Error("Reference: https://github.com/yt-dlp/yt-dlp/issues/15012");
+                            }
+                            else if (errorLower.Contains("unable to download") || errorLower.Contains("http error") || errorLower.Contains("network"))
+                            {
+                                Logger.Error("Diagnosis: Network/HTTP error - check internet connection or YouTube availability");
+                            }
+                            else if (errorLower.Contains("ffmpeg") || errorLower.Contains("postprocessor"))
+                            {
+                                Logger.Error($"Diagnosis: FFmpeg-related error - verify FFmpeg is working at: {_ffmpegPath}");
+                            }
+                            else if (errorLower.Contains("private video") || errorLower.Contains("unavailable"))
+                            {
+                                Logger.Error("Diagnosis: Video is private or unavailable");
+                            }
+                            else if (errorLower.Contains("permission") || errorLower.Contains("access denied"))
+                            {
+                                Logger.Error($"Diagnosis: File system permission error - check write access to: {Path.GetDirectoryName(path)}");
+                            }
+                            else if (errorLower.Contains("disk") || errorLower.Contains("space"))
+                            {
+                                Logger.Error("Diagnosis: Disk space issue - check available disk space");
+                            }
+                        }
+                        else
+                        {
+                            Logger.Warn("yt-dlp error output was empty - this may indicate a process startup issue");
+                        }
+                        
+                        // Log standard output if available (sometimes errors go to stdout)
+                        if (!string.IsNullOrWhiteSpace(output))
+                        {
+                            Logger.Debug($"yt-dlp standard output:\n{output}");
+                        }
+                        
+                        // Log the exact command that failed for troubleshooting
+                        Logger.Error($"Failed command: {_ytDlpPath} {arguments}");
+                        Logger.Error($"Working directory: {processInfo.WorkingDirectory}");
+                        Logger.Error($"Target path: {path}");
+                        
                         return false;
+                    }
+                    
+                    // Log successful completion details
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        Logger.Debug($"yt-dlp output: {output}");
                     }
                 }
 
@@ -268,18 +511,57 @@ namespace UniPlaySong.Downloaders
                 if (File.Exists(path))
                 {
                     var fileInfo = new FileInfo(path);
-                    Logger.Info($"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)");
+                    var successMessage = $"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)";
+                    
+                    // Add context about what helped the download succeed
+                    var successDetails = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(output) && output.ToLowerInvariant().Contains("using") && 
+                        (output.ToLowerInvariant().Contains("deno") || output.ToLowerInvariant().Contains("node") || 
+                         output.ToLowerInvariant().Contains("quickjs") || output.ToLowerInvariant().Contains("bun")))
+                    {
+                        successDetails.Add("JavaScript runtime active");
+                    }
+                    
+                    if (successDetails.Any())
+                    {
+                        successMessage += $" ({string.Join(", ", successDetails)})";
+                    }
+                    
+                    Logger.Info(successMessage);
                     return true;
                 }
                 
-                Logger.Error($"Download failed: File not found at {path}");
+                Logger.Error($"Download failed: File not found at {path} after yt-dlp completed successfully");
+                Logger.Error($"This may indicate yt-dlp created the file with a different name or extension");
+                
                 // List files in directory for debugging
                 var debugDir = Path.GetDirectoryName(path);
                 if (Directory.Exists(debugDir))
                 {
                     var files = Directory.GetFiles(debugDir);
-                    Logger.Debug($"Files in directory: {string.Join(", ", files.Select(f => Path.GetFileName(f)))}");
+                    Logger.Debug($"Files in directory ({files.Length} total): {string.Join(", ", files.Select(f => Path.GetFileName(f)))}");
+                    
+                    // Check for files created around the same time (within last 2 minutes)
+                    var recentFiles = files.Where(f => 
+                    {
+                        try
+                        {
+                            var fileTime = File.GetLastWriteTime(f);
+                            return (DateTime.Now - fileTime).TotalMinutes < 2;
+                        }
+                        catch { return false; }
+                    }).ToList();
+                    
+                    if (recentFiles.Any())
+                    {
+                        Logger.Debug($"Recently created files (last 2 minutes): {string.Join(", ", recentFiles.Select(f => Path.GetFileName(f)))}");
+                    }
                 }
+                else
+                {
+                    Logger.Error($"Target directory does not exist: {debugDir}");
+                }
+                
                 return false;
             }
             catch (OperationCanceledException)

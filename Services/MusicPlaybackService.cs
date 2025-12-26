@@ -5,6 +5,7 @@ using System.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
+using UniPlaySong.Models;
 using UniPlaySong.Players;
 using UniPlaySong.Services;
 
@@ -52,7 +53,10 @@ namespace UniPlaySong.Services
         private string _currentSongPath;
         private string _previousSongPath;
         private Game _currentGame;
-        private bool _isPaused;
+
+        // Multi-source pause tracking (replaces simple bool _isPaused)
+        private readonly HashSet<PauseSource> _activePauseSources = new HashSet<PauseSource>();
+        private bool _isPaused => _activePauseSources.Count > 0;
 
         public bool IsPlaying => _musicPlayer?.IsActive ?? false;
         public bool IsPaused => _isPaused;
@@ -79,6 +83,72 @@ namespace UniPlaySong.Services
             _previewTimer.Interval = TimeSpan.FromSeconds(1);
             _previewTimer.Tick += OnPreviewTimerTick;
         }
+
+        #region Multi-Source Pause Management
+
+        /// <summary>
+        /// Adds a pause source and pauses playback if this is the first pause source.
+        /// Multiple sources can pause independently without conflicts.
+        /// </summary>
+        /// <param name="source">The source requesting pause</param>
+        public void AddPauseSource(PauseSource source)
+        {
+            bool wasPlaying = !_isPaused;
+            _activePauseSources.Add(source);
+
+            if (wasPlaying && _isPaused)
+            {
+                // First pause source added - actually pause the player
+                _fileLogger?.Info($"Pause added: {source} (total sources: {_activePauseSources.Count})");
+                _musicPlayer?.Pause();
+            }
+            else if (_activePauseSources.Contains(source))
+            {
+                _fileLogger?.Debug($"Pause source already active: {source}");
+            }
+        }
+
+        /// <summary>
+        /// Removes a pause source and resumes playback if all pause sources are cleared.
+        /// Only resumes when no other pause sources remain active.
+        /// </summary>
+        /// <param name="source">The source releasing pause</param>
+        public void RemovePauseSource(PauseSource source)
+        {
+            bool wasPaused = _isPaused;
+            _activePauseSources.Remove(source);
+
+            if (wasPaused && !_isPaused && _musicPlayer?.IsLoaded == true)
+            {
+                // Last pause source removed - resume playback
+                _fileLogger?.Info($"Pause removed: {source} - resuming playback (no pause sources remaining)");
+                _fader.Resume();
+            }
+            else if (wasPaused)
+            {
+                _fileLogger?.Debug($"Pause removed: {source} (still paused by {_activePauseSources.Count} sources)");
+            }
+        }
+
+        /// <summary>
+        /// Clears all pause sources and resumes playback.
+        /// Use cautiously - only when you're certain all pause reasons are resolved.
+        /// </summary>
+        public void ClearAllPauseSources()
+        {
+            if (_activePauseSources.Count > 0)
+            {
+                _fileLogger?.Info($"Clearing all pause sources ({_activePauseSources.Count} active)");
+                _activePauseSources.Clear();
+
+                if (_musicPlayer?.IsLoaded == true)
+                {
+                    _fader.Resume();
+                }
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Checks if a given path is the default music (either native or custom)
@@ -114,15 +184,14 @@ namespace UniPlaySong.Services
         /// </remarks>
         private void PauseDefaultMusic(UniPlaySongSettings settings)
         {
-            if (_isPlayingDefaultMusic && 
+            if (_isPlayingDefaultMusic &&
                 IsDefaultMusicPath(_currentSongPath, settings) &&
                 _musicPlayer?.IsLoaded == true)
             {
                 _defaultMusicPausedOnTime = _musicPlayer.CurrentTime ?? default;
                 _fileLogger?.Info($"Pausing default music at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s: {Path.GetFileName(_currentSongPath)}");
                 _isPlayingDefaultMusic = false;
-                _musicPlayer.Pause();
-                _isPaused = true;
+                AddPauseSource(PauseSource.DefaultMusicPreservation);
             }
         }
 
@@ -135,15 +204,14 @@ namespace UniPlaySong.Services
         /// </remarks>
         private void ResumeDefaultMusic(string defaultMusicPath, UniPlaySongSettings settings)
         {
-            if (!_isPlayingDefaultMusic && 
+            if (!_isPlayingDefaultMusic &&
                 string.Equals(_lastDefaultMusicPath, defaultMusicPath, StringComparison.OrdinalIgnoreCase) &&
                 _isPaused &&
                 _musicPlayer?.IsLoaded == true &&
                 string.Equals(_musicPlayer.Source, defaultMusicPath, StringComparison.OrdinalIgnoreCase))
             {
                 _fileLogger?.Info($"Resuming paused default music from position {_defaultMusicPausedOnTime.TotalSeconds:F2}s: {Path.GetFileName(defaultMusicPath)}");
-                _fader.Resume();
-                _isPaused = false;
+                RemovePauseSource(PauseSource.DefaultMusicPreservation);
                 _isPlayingDefaultMusic = true;
                 OnMusicStarted?.Invoke(settings);
             }
@@ -152,17 +220,17 @@ namespace UniPlaySong.Services
                 _fileLogger?.Info($"Loading and playing default music from position {_defaultMusicPausedOnTime.TotalSeconds:F2}s: {Path.GetFileName(defaultMusicPath)}");
                 _lastDefaultMusicPath = defaultMusicPath;
                 _isPlayingDefaultMusic = true;
-                
+
                 if (_musicPlayer?.IsActive == true || _musicPlayer?.IsLoaded == true)
                 {
                     _musicPlayer.Stop();
                 }
-                
+
                 _musicPlayer.Load(defaultMusicPath);
                 _musicPlayer.Volume = 0;
                 _musicPlayer.Play(_defaultMusicPausedOnTime);
                 _fader.FadeIn();
-                _isPaused = false;
+                RemovePauseSource(PauseSource.DefaultMusicPreservation);
                 OnMusicStarted?.Invoke(settings);
             }
         }
@@ -241,13 +309,25 @@ namespace UniPlaySong.Services
                     return;
                 }
                 
-                if (settings != null && !settings.EnableMusic)
+                // Check if we have default music in the songs list
+                bool hasDefaultMusic = settings?.EnableDefaultMusic == true && 
+                    (songs.Any(s => IsDefaultMusicPath(s, settings)));
+                
+                // EnableMusic check: Only apply to game music, not default music (default music is a fallback)
+                // Default music should work even if EnableMusic is false
+                if (settings != null && !settings.EnableMusic && !hasDefaultMusic)
                 {
+                    _fileLogger?.Info($"EnableMusic is false and no default music - stopping playback");
                     _currentGameId = gameId;
                     _currentGame = null;
                     FadeOutAndStop();
                     OnMusicStopped?.Invoke(settings);
                     return;
+                }
+                
+                if (settings != null && !settings.EnableMusic && hasDefaultMusic)
+                {
+                    _fileLogger?.Info($"EnableMusic is false but default music is available - allowing default music to play");
                 }
                 
                 // Calculate isNewGame BEFORE updating _currentGameId (critical - compare with PREVIOUS game ID)
@@ -319,8 +399,7 @@ namespace UniPlaySong.Services
                         string.Equals(_musicPlayer.Source, songToPlay, StringComparison.OrdinalIgnoreCase))
                     {
                         _fileLogger?.Info($"Default music is paused - resuming from saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
-                        _fader.Resume();
-                        _isPaused = false;
+                        RemovePauseSource(PauseSource.DefaultMusicPreservation);
                         _isPlayingDefaultMusic = true;
                         return;
                     }
@@ -340,7 +419,7 @@ namespace UniPlaySong.Services
                                     StopPreviewTimer();
                                     _musicPlayer.Close();
                                     _currentSongPath = null;
-                                    _isPaused = false;
+                                    ClearAllPauseSources();
                                 },
                                 preloadAction: () =>
                                 {
@@ -352,7 +431,7 @@ namespace UniPlaySong.Services
                                     _musicPlayer.Volume = 0;
                                     _musicPlayer.Play(_defaultMusicPausedOnTime);
                                     _currentSongPath = songToPlay;
-                                    _isPaused = false;
+                                    ClearAllPauseSources();
                                     _isPlayingDefaultMusic = true;
                                     _lastDefaultMusicPath = songToPlay;
                                     _songStartTime = DateTime.MinValue;
@@ -408,7 +487,7 @@ namespace UniPlaySong.Services
                             StopPreviewTimer();
                             _musicPlayer.Close();
                             _currentSongPath = null;
-                            _isPaused = false;
+                            ClearAllPauseSources();
                         },
                         preloadAction: () =>
                         {
@@ -420,7 +499,7 @@ namespace UniPlaySong.Services
                             _musicPlayer.Load(newSongPath);
                             _musicPlayer.Play();
                             _currentSongPath = newSongPath;
-                            _isPaused = false;
+                            ClearAllPauseSources();
                             MarkSongStart();
                             _fileLogger?.Info($"Playing (switched): {Path.GetFileName(newSongPath)}");
                             OnMusicStarted?.Invoke(settings);
@@ -433,7 +512,7 @@ namespace UniPlaySong.Services
                     
                     _musicPlayer?.Close();
                     _currentSongPath = null;
-                    _isPaused = false;
+                    ClearAllPauseSources();
                     
                     _musicPlayer.Load(newSongPath);
                     _musicPlayer.Volume = 0;
@@ -454,7 +533,7 @@ namespace UniPlaySong.Services
                     _musicPlayer.Volume = 0;
                     _musicPlayer.Play();
                     _currentSongPath = newSongPath;
-                    _isPaused = false;
+                    ClearAllPauseSources();
                     MarkSongStart();
 
                     _fader.FadeIn();
@@ -486,7 +565,7 @@ namespace UniPlaySong.Services
                 _currentSongPath = null;
                 _currentGameId = null;
                 _currentGame = null;
-                _isPaused = false;
+                ClearAllPauseSources();
 
                 _isPlayingDefaultMusic = false;
                 _lastDefaultMusicPath = null;
@@ -517,7 +596,7 @@ namespace UniPlaySong.Services
                     _currentSongPath = null;
                     _currentGameId = null;
                     _currentGame = null;
-                    _isPaused = false;
+                    ClearAllPauseSources();
 
                     _isPlayingDefaultMusic = false;
                     _lastDefaultMusicPath = null;
@@ -537,8 +616,7 @@ namespace UniPlaySong.Services
             if (_musicPlayer?.IsLoaded == true)
             {
                 StopPreviewTimer();
-                _fader.Pause();
-                _isPaused = true;
+                AddPauseSource(PauseSource.Manual);
             }
         }
 
@@ -546,8 +624,7 @@ namespace UniPlaySong.Services
         {
             if (_isPaused && _musicPlayer?.IsLoaded == true)
             {
-                _fader.Resume();
-                _isPaused = false;
+                RemovePauseSource(PauseSource.Manual);
             }
         }
 
@@ -593,7 +670,7 @@ namespace UniPlaySong.Services
                 _musicPlayer.Volume = 0;
                 _musicPlayer.Play();
                 _fader.FadeIn();
-                _isPaused = false;
+                ClearAllPauseSources();
             }
             catch (Exception ex)
             {

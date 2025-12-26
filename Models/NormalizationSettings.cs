@@ -32,6 +32,12 @@ namespace UniPlaySong.Models
         public string NormalizationSuffix { get; set; } = "-normalized";
 
         /// <summary>
+        /// Suffix to append to trimmed file names (e.g., "-trimmed")
+        /// Used for suffix order management when files are both trimmed and normalized
+        /// </summary>
+        public string TrimSuffix { get; set; } = "-trimmed";
+
+        /// <summary>
         /// Skip files that are already normalized
         /// </summary>
         public bool SkipAlreadyNormalized { get; set; } = true;
@@ -83,8 +89,10 @@ namespace UniPlaySong.Models
         public int TotalFiles { get; set; }
         public int CurrentIndex { get; set; }
         public int SuccessCount { get; set; }
+        public int SkippedCount { get; set; }
         public int FailureCount { get; set; }
         public System.Collections.Generic.List<string> FailedFiles { get; set; } = new System.Collections.Generic.List<string>();
+        public System.Collections.Generic.List<string> SkippedFiles { get; set; } = new System.Collections.Generic.List<string>();
         public bool IsComplete { get; set; }
     }
 

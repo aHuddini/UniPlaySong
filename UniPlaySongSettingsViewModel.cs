@@ -135,6 +135,7 @@ namespace UniPlaySong
             );
         });
 
+
         public ICommand BrowseForDefaultMusicFile => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

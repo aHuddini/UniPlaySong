@@ -39,7 +39,8 @@ namespace UniPlaySong.Downloaders
             _settings = settings;
 
             _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
-            _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, errorHandler);
+            var useFirefoxCookies = settings?.UseFirefoxCookies ?? false;
+            _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, useFirefoxCookies, errorHandler);
 
             Cleanup();
         }

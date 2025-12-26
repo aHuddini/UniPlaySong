@@ -141,6 +141,18 @@ These tools are **not bundled** with the extension and must be installed separat
   - Handles YouTube API changes automatically
 - **Location**: Path configured in `UniPlaySongSettings.YtDlpPath`
 - **Process Execution**: Called via `Process.Start()` in `YouTubeDownloader`
+- **JavaScript Runtime Requirement** (yt-dlp 2025.11.12+):
+  - **Deno is now recommended** by yt-dlp for YouTube downloads
+  - yt-dlp requires an external JavaScript runtime (Deno, Node.js, or QuickJS)
+  - **Important**: Place `deno.exe` in the **same folder as yt-dlp.exe** for automatic detection
+  - Download Deno from: https://deno.com/ or https://github.com/denoland/deno/releases
+  - Alternative runtimes: Node.js (v20+) or QuickJS (if Deno doesn't work)
+  - Extension provides helpful error messages if JS runtime is missing
+- **Cookies Support**:
+  - Extension supports Firefox cookies via `--cookies-from-browser firefox` option
+  - When enabled, uses simplified command: `--cookies-from-browser firefox -x --audio-format mp3`
+  - Greatly improves download reliability and bypasses YouTube bot detection
+  - Configured via `UniPlaySongSettings.UseFirefoxCookies`
 
 **Configuration:**
 ```csharp

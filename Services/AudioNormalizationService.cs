@@ -75,107 +75,125 @@ namespace UniPlaySong.Services
         private bool IsFileAlreadyNormalized(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
-            
+
             var fileName = Path.GetFileNameWithoutExtension(filePath);
-            // Check for exact suffix or combined suffixes (e.g., "-normalized" or "-trimmed-normalized")
-            return fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ||
-                   fileName.IndexOf("-normalized", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        /// <summary>
-        /// Strips existing suffixes from filename and returns base name
-        /// </summary>
-        private string StripSuffixes(string fileName, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
-        {
-            var result = fileName;
-            
-            // Remove combined suffixes (order matters - check both orders)
-            if (result.EndsWith($"{normalizeSuffix}{trimSuffix}", StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - (normalizeSuffix.Length + trimSuffix.Length));
-            }
-            else if (result.EndsWith($"{trimSuffix}{normalizeSuffix}", StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - (trimSuffix.Length + normalizeSuffix.Length));
-            }
-            // Remove individual suffixes
-            else if (result.EndsWith(normalizeSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - normalizeSuffix.Length);
-            }
-            else if (result.EndsWith(trimSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - trimSuffix.Length);
-            }
-            
-            return result;
-        }
-
-        /// <summary>
-        /// Checks if filename has a specific suffix (including in combined form)
-        /// </summary>
-        private bool HasSuffix(string fileName, string suffix)
-        {
+            // Check if filename contains the normalization suffix
             return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
-        /// Builds output filename with appropriate suffix based on existing suffixes.
-        /// Suffix order reflects chronological order of operations:
-        /// - If normalized first, then trimmed: "song-normalized-trimmed"
-        /// - If trimmed first, then normalized: "song-trimmed-normalized"
+        /// Builds output filename by simply appending the normalization suffix.
+        /// Simple approach: always append suffix to current filename.
+        /// Examples:
+        /// - "song.mp3" -> "song-normalized.mp3"
+        /// - "song-trimmed.mp3" -> "song-trimmed-normalized.mp3"
         /// </summary>
-        private string BuildOutputFileName(string baseFileName, string newSuffix, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
+        private string BuildNormalizedFileName(string baseFileName, string normalizeSuffix)
         {
-            // Strip all existing suffixes to get base name
-            var cleanName = StripSuffixes(baseFileName, trimSuffix, normalizeSuffix);
-            
-            // Check what suffixes already exist (before stripping)
-            bool hasTrimmed = HasSuffix(baseFileName, trimSuffix);
-            bool hasNormalized = HasSuffix(baseFileName, normalizeSuffix);
-            
-            // Build new filename with suffixes reflecting chronological order of operations
-            if (newSuffix == normalizeSuffix)
+            return $"{baseFileName}{normalizeSuffix}";
+        }
+
+        /// <summary>
+        /// Gets the duration of an audio file in seconds using FFmpeg
+        /// </summary>
+        private async Task<double?> GetAudioDurationAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken)
+        {
+            try
             {
-                // Adding normalization operation
-                if (hasTrimmed && !hasNormalized)
+                var args = $"-i \"{filePath}\" -hide_banner";
+
+                var processInfo = new ProcessStartInfo
                 {
-                    // File was trimmed first, now normalizing: "song-trimmed-normalized"
-                    return $"{cleanName}{trimSuffix}{normalizeSuffix}";
-                }
-                // If already normalized, return as-is (should be skipped)
-                else if (hasNormalized)
+                    FileName = ffmpegPath,
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    StandardErrorEncoding = Encoding.UTF8
+                };
+
+                using (var process = new Process())
                 {
-                    return baseFileName; // Shouldn't happen if skip logic works
-                }
-                // Just add normalization (no existing operations)
-                else
-                {
-                    return $"{cleanName}{normalizeSuffix}";
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    string standardError = null;
+
+                    await Task.Run(async () =>
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            try { process.Kill(); } catch { }
+                            throw new OperationCanceledException();
+                        }
+
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
+
+                        if (!process.WaitForExit(30000)) // 30 second timeout
+                        {
+                            try { process.Kill(); } catch { }
+                            return;
+                        }
+
+                        await outputTask.ConfigureAwait(false);
+                        standardError = await errorTask.ConfigureAwait(false);
+                    }, cancellationToken);
+
+                    // Parse duration from stderr (FFmpeg outputs file info to stderr)
+                    // Format: Duration: 00:46:23.45, start: 0.000000, bitrate: 320 kb/s
+                    var durationMatch = System.Text.RegularExpressions.Regex.Match(standardError, @"Duration:\s*(\d{2}):(\d{2}):(\d{2}\.\d{2})");
+                    if (durationMatch.Success)
+                    {
+                        var hours = int.Parse(durationMatch.Groups[1].Value);
+                        var minutes = int.Parse(durationMatch.Groups[2].Value);
+                        var seconds = double.Parse(durationMatch.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture);
+
+                        var totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                        Logger.Debug($"Detected audio duration: {totalSeconds:F2} seconds ({hours:D2}:{minutes:D2}:{seconds:F2})");
+                        return totalSeconds;
+                    }
                 }
             }
-            else if (newSuffix == trimSuffix)
+            catch (Exception ex)
             {
-                // Adding trim operation
-                if (hasNormalized && !hasTrimmed)
-                {
-                    // File was normalized first, now trimming: "song-normalized-trimmed"
-                    return $"{cleanName}{normalizeSuffix}{trimSuffix}";
-                }
-                // If already trimmed, return as-is (should be skipped)
-                else if (hasTrimmed)
-                {
-                    return baseFileName; // Shouldn't happen if skip logic works
-                }
-                // Just add trim (no existing operations)
-                else
-                {
-                    return $"{cleanName}{trimSuffix}";
-                }
+                Logger.Warn(ex, $"Error detecting audio duration: {filePath}");
             }
-            
-            // Fallback: just append new suffix
-            return $"{cleanName}{newSuffix}";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Sanitizes filename by removing or replacing problematic characters for FFmpeg
+        /// </summary>
+        private string SanitizeFilenameForFFmpeg(string fileName)
+        {
+            // Characters that commonly cause issues with FFmpeg command-line parsing
+            var problematicChars = new[] { '[', ']', '(', ')', '{', '}', '\'', '"', '`', '&', '|', ';', '<', '>', '!', '$', '#', '%' };
+
+            var sanitized = fileName;
+            foreach (var ch in problematicChars)
+            {
+                sanitized = sanitized.Replace(ch, '_');
+            }
+
+            // Remove multiple consecutive underscores
+            while (sanitized.Contains("__"))
+            {
+                sanitized = sanitized.Replace("__", "_");
+            }
+
+            return sanitized;
+        }
+
+        /// <summary>
+        /// Checks if a filename contains problematic characters for FFmpeg
+        /// </summary>
+        private bool HasProblematicCharacters(string fileName)
+        {
+            var problematicChars = new[] { '[', ']', '(', ')', '{', '}', '\'', '"', '`', '&', '|', ';', '<', '>', '!', '$', '#', '%' };
+            return problematicChars.Any(ch => fileName.Contains(ch));
         }
 
         /// <summary>
@@ -256,7 +274,62 @@ namespace UniPlaySong.Services
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                
+                var fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
+
+                // Check if filename has problematic characters and needs sanitization
+                string workingFilePath = filePath;
+                bool needsRename = HasProblematicCharacters(fileNameWithoutExt);
+
+                if (needsRename)
+                {
+                    var directory = Path.GetDirectoryName(filePath);
+                    var extension = Path.GetExtension(filePath);
+                    var sanitizedName = SanitizeFilenameForFFmpeg(fileNameWithoutExt);
+                    var sanitizedPath = Path.Combine(directory, $"{sanitizedName}{extension}");
+
+                    Logger.Info($"Renaming file with problematic characters: '{fileName}' -> '{Path.GetFileName(sanitizedPath)}'");
+                    progress?.Report(new NormalizationProgress
+                    {
+                        CurrentFile = fileName,
+                        Status = "Sanitizing filename..."
+                    });
+
+                    try
+                    {
+                        File.Move(filePath, sanitizedPath);
+                        workingFilePath = sanitizedPath;
+                        fileName = Path.GetFileName(sanitizedPath);
+                        Logger.Info($"File renamed successfully to: {fileName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(ex, $"Failed to rename file: {ex.Message}. Attempting normalization with original name...");
+                        workingFilePath = filePath;
+                    }
+                }
+
+                // Detect audio duration to warn about long files
+                progress?.Report(new NormalizationProgress
+                {
+                    CurrentFile = fileName,
+                    Status = "Detecting audio duration..."
+                });
+
+                var durationSeconds = await GetAudioDurationAsync(workingFilePath, settings.FFmpegPath, cancellationToken);
+                if (durationSeconds.HasValue && durationSeconds.Value > 600) // Warn if > 10 minutes
+                {
+                    var durationMinutes = (int)(durationSeconds.Value / 60);
+                    Logger.Warn($"Long audio file detected: {fileName} is {durationMinutes} minutes long. Normalization may take several minutes.");
+                    progress?.Report(new NormalizationProgress
+                    {
+                        CurrentFile = fileName,
+                        Status = $"Warning: Long file ({durationMinutes} min) - this may take a while..."
+                    });
+
+                    // Give user time to see the warning
+                    await Task.Delay(2000, cancellationToken);
+                }
+
                 // First pass: Analyze audio (get before measurements)
                 progress?.Report(new NormalizationProgress
                 {
@@ -264,10 +337,10 @@ namespace UniPlaySong.Services
                     Status = "Analyzing audio..."
                 });
 
-                var beforeMeasurements = await AnalyzeAudioAsync(filePath, settings, cancellationToken);
+                var beforeMeasurements = await AnalyzeAudioAsync(workingFilePath, settings, cancellationToken);
                 if (beforeMeasurements == null)
                 {
-                    Logger.Error($"Failed to analyze audio: {filePath}");
+                    Logger.Error($"Failed to analyze audio: {workingFilePath}");
                     progress?.Report(new NormalizationProgress
                     {
                         CurrentFile = fileName,
@@ -285,7 +358,7 @@ namespace UniPlaySong.Services
                     Status = "Normalizing audio..."
                 });
 
-                var success = await ApplyNormalizationAsync(filePath, settings, beforeMeasurements, cancellationToken);
+                var success = await ApplyNormalizationAsync(workingFilePath, settings, beforeMeasurements, cancellationToken);
                 
                 if (success)
                 {
@@ -558,7 +631,8 @@ namespace UniPlaySong.Services
         {
             try
             {
-                var args = $"-i \"{filePath}\" -af loudnorm=I={settings.TargetLoudness:F1}:TP={settings.TruePeak:F1}:LRA={settings.LoudnessRange:F1}:print_format=json -f null -";
+                // Use InvariantCulture to ensure decimal separator is always '.' (not ',' in some locales)
+                var args = $"-i \"{filePath}\" -af loudnorm=I={settings.TargetLoudness.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}:TP={settings.TruePeak.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}:LRA={settings.LoudnessRange.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}:print_format=json -f null -";
 
                 var processInfo = new ProcessStartInfo
                 {
@@ -577,11 +651,11 @@ namespace UniPlaySong.Services
 
                     process.Start();
 
-                    // Read output synchronously to ensure we capture everything (use async wrapper to avoid blocking UI thread)
+                    // Read output asynchronously to avoid deadlock
                     string standardOutput = null;
                     string standardError = null;
 
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -589,15 +663,19 @@ namespace UniPlaySong.Services
                             throw new OperationCanceledException();
                         }
 
-                        // Read all output synchronously (more reliable for capturing JSON)
-                        standardOutput = process.StandardOutput.ReadToEnd();
-                        standardError = process.StandardError.ReadToEnd();
+                        // Read output and error streams asynchronously to prevent deadlock
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
 
                         if (!process.WaitForExit(300000)) // 5 minute timeout
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg analysis timed out after 5 minutes");
                         }
+
+                        // Await the async reads with a timeout
+                        standardOutput = await outputTask.ConfigureAwait(false);
+                        standardError = await errorTask.ConfigureAwait(false);
 
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -712,23 +790,20 @@ namespace UniPlaySong.Services
                 
                 string finalOutputPath;
                 string preservedOriginalPath = null;
-                
+                var normalizeSuffix = settings.NormalizationSuffix ?? "-normalized";
+
                 if (settings.DoNotPreserveOriginals)
                 {
-                    // Space saver mode: Replace original file directly, but still add suffix if file was already processed
-                    // Check if file has existing suffixes and preserve them
-                    var normalizeSuffix = settings.NormalizationSuffix ?? "-normalized";
-                    var trimSuffix = "-trimmed";
-                    var outputFileName = BuildOutputFileName(fileName, normalizeSuffix, trimSuffix, normalizeSuffix);
+                    // Space saver mode: Replace original file directly
+                    // Simply append normalization suffix to current filename
+                    var outputFileName = BuildNormalizedFileName(fileName, normalizeSuffix);
                     finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                 }
                 else
                 {
                     // Preservation mode: Create normalized file with suffix
-                    // Check if file already has "-trimmed" suffix and append "-normalized" appropriately
-                    var normalizeSuffix = settings.NormalizationSuffix ?? "-normalized";
-                    var trimSuffix = "-trimmed"; // Default trim suffix
-                    var outputFileName = BuildOutputFileName(fileName, normalizeSuffix, trimSuffix, normalizeSuffix);
+                    // Simply append normalization suffix to current filename
+                    var outputFileName = BuildNormalizedFileName(fileName, normalizeSuffix);
                     finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                     
                     // Determine preserved originals directory
@@ -754,13 +829,15 @@ namespace UniPlaySong.Services
 
                 // Build loudnorm filter with measurements from first pass.
                 // Include offset if available (recommended for accurate normalization).
+                // Use InvariantCulture to ensure decimal separator is always '.' (not ',' in some locales)
+                var invariantCulture = System.Globalization.CultureInfo.InvariantCulture;
                 var offsetParam = measurements.Offset != 0 
-                    ? $":offset={measurements.Offset:F3}"
+                    ? $":offset={measurements.Offset.ToString("F3", invariantCulture)}"
                     : "";
                     
-                var loudnormFilter = $"loudnorm=I={settings.TargetLoudness:F1}:TP={settings.TruePeak:F1}:LRA={settings.LoudnessRange:F1}:" +
-                                   $"measured_I={measurements.MeasuredI:F3}:measured_TP={measurements.MeasuredTP:F3}:" +
-                                   $"measured_LRA={measurements.MeasuredLRA:F3}:measured_thresh={measurements.MeasuredThreshold:F3}{offsetParam}:" +
+                var loudnormFilter = $"loudnorm=I={settings.TargetLoudness.ToString("F1", invariantCulture)}:TP={settings.TruePeak.ToString("F1", invariantCulture)}:LRA={settings.LoudnessRange.ToString("F1", invariantCulture)}:" +
+                                   $"measured_I={measurements.MeasuredI.ToString("F3", invariantCulture)}:measured_TP={measurements.MeasuredTP.ToString("F3", invariantCulture)}:" +
+                                   $"measured_LRA={measurements.MeasuredLRA.ToString("F3", invariantCulture)}:measured_thresh={measurements.MeasuredThreshold.ToString("F3", invariantCulture)}{offsetParam}:" +
                                    "linear=true";
 
                 // Use 48kHz sample rate (recommended for loudnorm filter)
@@ -786,7 +863,7 @@ namespace UniPlaySong.Services
                     string standardOutput = null;
                     string standardError = null;
 
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -794,14 +871,19 @@ namespace UniPlaySong.Services
                             throw new OperationCanceledException();
                         }
 
-                        standardOutput = process.StandardOutput.ReadToEnd();
-                        standardError = process.StandardError.ReadToEnd();
+                        // Read output and error streams asynchronously to prevent deadlock
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
 
                         if (!process.WaitForExit(600000)) // 10 minute timeout for normalization
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg normalization timed out after 10 minutes");
                         }
+
+                        // Await the async reads
+                        standardOutput = await outputTask.ConfigureAwait(false);
+                        standardError = await errorTask.ConfigureAwait(false);
 
                         if (cancellationToken.IsCancellationRequested)
                         {

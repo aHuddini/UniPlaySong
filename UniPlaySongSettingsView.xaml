@@ -8,6 +8,7 @@
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
         <local:AudioStateConverter x:Key="AudioStateConverter"/>
+        <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -340,13 +341,25 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Text="Normalization Suffix: " VerticalAlignment="Center" Width="150"/>
-                            <TextBox Text="{Binding Settings.NormalizationSuffix}" 
-                                     Width="120" 
+                            <TextBox Text="{Binding Settings.NormalizationSuffix}"
+                                     Width="120"
                                      Margin="0,0,10,0"/>
                         </StackPanel>
-                        <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'" 
-                                   FontSize="11" 
-                                   Foreground="Gray" 
+                        <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Silence Trim Suffix: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.TrimSuffix}"
+                                     Width="120"
+                                     Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Suffix to append to silence-trimmed file names (default: '-trimmed'). Example: 'song.mp3' becomes 'song-trimmed.mp3'"
+                                   FontSize="11"
+                                   Foreground="Gray"
                                    TextWrapping="Wrap"
                                    Margin="20,0,0,10"/>
 
@@ -412,25 +425,25 @@
                                    Margin="0,0,0,10"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <Button Content="Trim All Music Files" 
+                            <Button Content="Trim Silence - All Files"
                                     Width="220"
                                     Margin="0,0,10,0"
                                     Command="{Binding TrimAllMusicCommand}"/>
-                            <TextBlock Text="Remove leading silence from all music files in your library." 
-                                       VerticalAlignment="Center" 
-                                       FontSize="11" 
+                            <TextBlock Text="Remove leading silence from all music files in your library."
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
                                        Foreground="Gray"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Trim Selected Games" 
+                            <Button Content="Trim Silence - Selected Games"
                                     Width="220"
                                     Margin="0,0,10,0"
                                     Command="{Binding TrimSelectedGamesCommand}"/>
-                            <TextBlock Text="Remove leading silence from music files for selected games." 
-                                       VerticalAlignment="Center" 
-                                       FontSize="11" 
+                            <TextBlock Text="Remove leading silence from music files for selected games."
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
                                        Foreground="Gray"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
@@ -551,7 +564,18 @@
                                FontSize="11" 
                                Foreground="Gray" 
                                TextWrapping="Wrap"
-                               Margin="20,5,0,0"/>
+                               Margin="20,5,0,10"/>
+                    
+                    <Separator Margin="0,10"/>
+                    
+                    <CheckBox Content="Use cookies from browser (Firefox)" 
+                              IsChecked="{Binding Settings.UseFirefoxCookies}" 
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, uses Firefox cookies for YouTube downloads. This helps bypass bot detection and improves download reliability. Make sure Firefox is installed and you're logged into YouTube in Firefox." 
+                               FontSize="11" 
+                               Foreground="Gray" 
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

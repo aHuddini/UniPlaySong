@@ -137,6 +137,18 @@ namespace UniPlaySong
             set { ffmpegPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
+        private bool useFirefoxCookies = false;
+
+        /// <summary>
+        /// Use cookies from Firefox browser for YouTube downloads
+        /// When enabled, uses simplified yt-dlp command with --cookies-from-browser firefox
+        /// </summary>
+        public bool UseFirefoxCookies
+        {
+            get => useFirefoxCookies;
+            set { useFirefoxCookies = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Tracks if a video is currently playing
         /// </summary>
@@ -301,6 +313,9 @@ namespace UniPlaySong
         private bool skipAlreadyNormalized = true;
         private bool doNotPreserveOriginals = false;
 
+        // Audio Trimming Settings
+        private string trimSuffix = "-trimmed";
+
         /// <summary>
         /// Enable audio normalization for consistent volume levels
         /// When enabled, audio files can be normalized to EBU R128 standard
@@ -375,6 +390,16 @@ namespace UniPlaySong
         {
             get => doNotPreserveOriginals;
             set { doNotPreserveOriginals = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Suffix to append to trimmed file names (e.g., "-trimmed")
+        /// Trimmed files are created with this suffix when preserving originals
+        /// </summary>
+        public string TrimSuffix
+        {
+            get => trimSuffix;
+            set { trimSuffix = value ?? "-trimmed"; OnPropertyChanged(); }
         }
 
         // Song Randomization Settings

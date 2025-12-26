@@ -75,107 +75,22 @@ namespace UniPlaySong.Services
         private bool IsFileAlreadyTrimmed(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
-            
+
             var fileName = Path.GetFileNameWithoutExtension(filePath);
-            // Check for exact suffix or combined suffixes (e.g., "-trimmed" or "-normalized-trimmed")
-            return fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ||
-                   fileName.IndexOf("-trimmed", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        /// <summary>
-        /// Strips existing suffixes from filename and returns base name
-        /// </summary>
-        private string StripSuffixes(string fileName, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
-        {
-            var result = fileName;
-            
-            // Remove combined suffixes (order matters - check both orders)
-            if (result.EndsWith($"{normalizeSuffix}{trimSuffix}", StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - (normalizeSuffix.Length + trimSuffix.Length));
-            }
-            else if (result.EndsWith($"{trimSuffix}{normalizeSuffix}", StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - (trimSuffix.Length + normalizeSuffix.Length));
-            }
-            // Remove individual suffixes
-            else if (result.EndsWith(normalizeSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - normalizeSuffix.Length);
-            }
-            else if (result.EndsWith(trimSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                result = result.Substring(0, result.Length - trimSuffix.Length);
-            }
-            
-            return result;
-        }
-
-        /// <summary>
-        /// Checks if filename has a specific suffix (including in combined form)
-        /// </summary>
-        private bool HasSuffix(string fileName, string suffix)
-        {
+            // Check if filename contains the trim suffix
             return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
-        /// Builds output filename with appropriate suffix based on existing suffixes.
-        /// Suffix order reflects chronological order of operations:
-        /// - If normalized first, then trimmed: "song-normalized-trimmed"
-        /// - If trimmed first, then normalized: "song-trimmed-normalized"
+        /// Builds output filename by simply appending the trim suffix.
+        /// Simple approach: always append suffix to current filename.
+        /// Examples:
+        /// - "song.mp3" -> "song-trimmed.mp3"
+        /// - "song-normalized.mp3" -> "song-normalized-trimmed.mp3"
         /// </summary>
-        private string BuildOutputFileName(string baseFileName, string newSuffix, string trimSuffix = "-trimmed", string normalizeSuffix = "-normalized")
+        private string BuildTrimmedFileName(string baseFileName, string trimSuffix)
         {
-            // Strip all existing suffixes to get base name
-            var cleanName = StripSuffixes(baseFileName, trimSuffix, normalizeSuffix);
-            
-            // Check what suffixes already exist (before stripping)
-            bool hasTrimmed = HasSuffix(baseFileName, trimSuffix);
-            bool hasNormalized = HasSuffix(baseFileName, normalizeSuffix);
-            
-            // Build new filename with suffixes reflecting chronological order of operations
-            if (newSuffix == trimSuffix)
-            {
-                // Adding trim operation
-                if (hasNormalized && !hasTrimmed)
-                {
-                    // File was normalized first, now trimming: "song-normalized-trimmed"
-                    return $"{cleanName}{normalizeSuffix}{trimSuffix}";
-                }
-                // If already trimmed, return as-is (should be skipped)
-                else if (hasTrimmed)
-                {
-                    return baseFileName; // Shouldn't happen if skip logic works
-                }
-                // Just add trim (no existing operations)
-                else
-                {
-                    return $"{cleanName}{trimSuffix}";
-                }
-            }
-            else if (newSuffix == normalizeSuffix)
-            {
-                // Adding normalization operation
-                if (hasTrimmed && !hasNormalized)
-                {
-                    // File was trimmed first, now normalizing: "song-trimmed-normalized"
-                    return $"{cleanName}{trimSuffix}{normalizeSuffix}";
-                }
-                // If already normalized, return as-is (should be skipped)
-                else if (hasNormalized)
-                {
-                    return baseFileName; // Shouldn't happen if skip logic works
-                }
-                // Just add normalization (no existing operations)
-                else
-                {
-                    return $"{cleanName}{normalizeSuffix}";
-                }
-            }
-            
-            // Fallback: just append new suffix
-            return $"{cleanName}{newSuffix}";
+            return $"{baseFileName}{trimSuffix}";
         }
 
         /// <summary>
@@ -212,7 +127,7 @@ namespace UniPlaySong.Services
 
                     string standardError = null;
 
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -220,14 +135,19 @@ namespace UniPlaySong.Services
                             throw new OperationCanceledException();
                         }
 
-                        standardError = process.StandardError.ReadToEnd();
-                        process.StandardOutput.ReadToEnd(); // Consume stdout
+                        // Read output streams asynchronously to prevent deadlock
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
 
                         if (!process.WaitForExit(300000)) // 5 minute timeout
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg silence detection timed out after 5 minutes");
                         }
+
+                        // Await the async reads
+                        await outputTask.ConfigureAwait(false); // Consume stdout
+                        standardError = await errorTask.ConfigureAwait(false);
 
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -388,18 +308,19 @@ namespace UniPlaySong.Services
                 // Step 2: Check if should skip
                 if (ShouldSkipFile(filePath, settings, silenceEndTime))
                 {
-                    var skipReason = IsFileAlreadyTrimmed(filePath, settings.TrimSuffix) 
-                        ? "Skipped (already trimmed)" 
+                    var skipReason = IsFileAlreadyTrimmed(filePath, settings.TrimSuffix)
+                        ? "Skipped (already trimmed)"
                         : silenceEndTime.HasValue && silenceEndTime.Value < settings.MinSilenceToTrim
                             ? $"Skipped (silence too short: {silenceEndTime.Value:F3}s)"
-                            : "Skipped (no leading silence)";
+                            : "Skipped (no leading silence detected)";
 
+                    Logger.Info($"Skipping file: {fileName} - {skipReason}");
                     progress?.Report(new NormalizationProgress
                     {
                         CurrentFile = fileName,
                         Status = skipReason
                     });
-                    return true; // Successfully skipped
+                    return false; // Return false to indicate skipped (not success, not failure)
                 }
 
                 // Step 3: Trim the file
@@ -445,27 +366,28 @@ namespace UniPlaySong.Services
                 var directory = Path.GetDirectoryName(filePath);
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
                 var extension = Path.GetExtension(filePath);
-                
+
                 string finalOutputPath;
                 string preservedOriginalPath = null;
-                
+                var trimSuffix = settings.TrimSuffix ?? "-trimmed";
+
+                Logger.Debug($"Trim operation - Input file: {fileName}, Trim suffix: '{trimSuffix}'");
+
                 if (settings.DoNotPreserveOriginals)
                 {
-                    // Space saver mode: Replace original file directly, but still add suffix if file was already processed
-                    // Check if file has existing suffixes and preserve them
-                    var trimSuffix = settings.TrimSuffix ?? "-trimmed";
-                    var normalizeSuffix = "-normalized";
-                    var outputFileName = BuildOutputFileName(fileName, trimSuffix, trimSuffix, normalizeSuffix);
+                    // Space saver mode: Replace original file directly
+                    // Simply append trim suffix to current filename
+                    var outputFileName = BuildTrimmedFileName(fileName, trimSuffix);
                     finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
+                    Logger.Debug($"Space saver mode - Output file will be: {Path.GetFileName(finalOutputPath)}");
                 }
                 else
                 {
                     // Preservation mode: Create trimmed file with suffix
-                    // Check if file already has "-normalized" suffix and append "-trimmed" appropriately
-                    var trimSuffix = settings.TrimSuffix ?? "-trimmed";
-                    var normalizeSuffix = "-normalized"; // Default normalization suffix
-                    var outputFileName = BuildOutputFileName(fileName, trimSuffix, trimSuffix, normalizeSuffix);
+                    // Simply append trim suffix to current filename
+                    var outputFileName = BuildTrimmedFileName(fileName, trimSuffix);
                     finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
+                    Logger.Debug($"Preservation mode - Output file will be: {Path.GetFileName(finalOutputPath)}");
                     
                     // Determine preserved originals directory
                     string preservedOriginalsDir;
@@ -553,7 +475,7 @@ namespace UniPlaySong.Services
                     string standardOutput = null;
                     string standardError = null;
 
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -561,14 +483,19 @@ namespace UniPlaySong.Services
                             throw new OperationCanceledException();
                         }
 
-                        standardOutput = process.StandardOutput.ReadToEnd();
-                        standardError = process.StandardError.ReadToEnd();
+                        // Read output streams asynchronously to prevent deadlock
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
 
                         if (!process.WaitForExit(300000)) // 5 minute timeout
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg trim timed out after 5 minutes");
                         }
+
+                        // Await the async reads
+                        standardOutput = await outputTask.ConfigureAwait(false);
+                        standardError = await errorTask.ConfigureAwait(false);
 
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -596,28 +523,34 @@ namespace UniPlaySong.Services
                     {
                         if (settings.DoNotPreserveOriginals)
                         {
-                            // Space saver mode: Replace original file directly
+                            // Space saver mode: Delete original and rename trimmed file with suffix
+                            Logger.Info($"Space saver mode - Deleting original: {filePath}");
                             File.Delete(filePath);
+                            Logger.Info($"Space saver mode - Moving temp '{Path.GetFileName(tempPath)}' to '{Path.GetFileName(finalOutputPath)}'");
                             File.Move(tempPath, finalOutputPath);
-                            Logger.Info($"Successfully trimmed file (replaced original): {finalOutputPath}");
+                            Logger.Info($"Successfully trimmed file with suffix (space saver mode): {Path.GetFileName(finalOutputPath)}");
                         }
                         else
                         {
                             // Preservation mode: Create trimmed file with suffix, move original to preserved folder
                             if (File.Exists(finalOutputPath))
                             {
+                                Logger.Warn($"Output file already exists, deleting: {finalOutputPath}");
                                 File.Delete(finalOutputPath);
                             }
+                            Logger.Info($"Preservation mode - Moving temp '{Path.GetFileName(tempPath)}' to '{Path.GetFileName(finalOutputPath)}'");
                             File.Move(tempPath, finalOutputPath);
-                            Logger.Info($"Successfully created trimmed file: {finalOutputPath}");
-                            
+                            Logger.Info($"Successfully created trimmed file: {Path.GetFileName(finalOutputPath)}");
+
                             // Now move original file to preserved originals folder
                             if (File.Exists(preservedOriginalPath))
                             {
+                                Logger.Warn($"Preserved original already exists, deleting: {preservedOriginalPath}");
                                 File.Delete(preservedOriginalPath);
                             }
+                            Logger.Info($"Preservation mode - Moving original '{Path.GetFileName(filePath)}' to preserved folder");
                             File.Move(filePath, preservedOriginalPath);
-                            Logger.Info($"Moved original file to preserved originals: {preservedOriginalPath}");
+                            Logger.Info($"Moved original to preserved originals: {Path.GetFileName(preservedOriginalPath)}");
                         }
                         return true;
                     }
@@ -677,20 +610,42 @@ namespace UniPlaySong.Services
                     TotalFiles = files.Count,
                     SuccessCount = result.SuccessCount,
                     FailureCount = result.FailureCount,
-                    Status = $"Processing {i + 1} of {files.Count}..."
+                    Status = $"Processing {i + 1} of {files.Count}... ({result.SuccessCount} succeeded, {result.SkippedCount} skipped)"
                 });
 
                 try
                 {
-                    var success = await TrimFileAsync(filePath, settings, progress, cancellationToken);
+                    // Track last status to distinguish between skip and failure
+                    string lastStatus = null;
+                    var statusProgress = new Progress<NormalizationProgress>(p => lastStatus = p.Status);
+                    var combinedProgress = new Progress<NormalizationProgress>(p =>
+                    {
+                        lastStatus = p.Status;
+                        progress?.Report(p);
+                    });
+
+                    var success = await TrimFileAsync(filePath, settings, combinedProgress, cancellationToken);
                     if (success)
                     {
                         result.SuccessCount++;
+                        Logger.Debug($"File trimmed successfully: {Path.GetFileName(filePath)}");
                     }
                     else
                     {
-                        result.FailureCount++;
-                        result.FailedFiles.Add(filePath);
+                        // Check if it was a skip (status contains "Skipped") or a failure
+                        Logger.Debug($"File not trimmed - lastStatus: '{lastStatus}'");
+                        if (lastStatus != null && lastStatus.StartsWith("Skipped", StringComparison.OrdinalIgnoreCase))
+                        {
+                            result.SkippedCount++;
+                            result.SkippedFiles.Add(filePath);
+                            Logger.Debug($"Counted as skipped: {Path.GetFileName(filePath)}");
+                        }
+                        else
+                        {
+                            result.FailureCount++;
+                            result.FailedFiles.Add(filePath);
+                            Logger.Debug($"Counted as failed: {Path.GetFileName(filePath)}");
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -708,10 +663,10 @@ namespace UniPlaySong.Services
                 TotalFiles = result.TotalFiles,
                 SuccessCount = result.SuccessCount,
                 FailureCount = result.FailureCount,
-                Status = $"Complete: {result.SuccessCount} succeeded, {result.FailureCount} failed"
+                Status = $"Complete: {result.SuccessCount} succeeded, {result.SkippedCount} skipped, {result.FailureCount} failed"
             });
 
-            Logger.Info($"Bulk trim complete: {result.SuccessCount} succeeded, {result.FailureCount} failed");
+            Logger.Info($"Bulk trim complete: {result.SuccessCount} succeeded, {result.SkippedCount} skipped, {result.FailureCount} failed");
             return result;
         }
     }

@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.0.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 A Playnite extension that provides a console-like game music preview experience and controller-friendly song management, with custom options to fine-tune the experience (like fade-in and fade-out controls). Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
 
@@ -8,7 +8,26 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.7
+## 🆕 What's New - v1.0.8
+
+- **🔥 Firefox Cookies Support**: New option to use Firefox browser cookies for YouTube downloads - greatly improves reliability for international users
+- **⚡ Deno JavaScript Runtime**: yt-dlp now requires Deno (or Node.js/QuickJS) - place `deno.exe` in the same folder as `yt-dlp.exe`
+- **🐛 Critical Bug Fixes**: Fixed FFmpeg process deadlock causing normalization/trimming to freeze at "analyzing music" with files more than 10 minutes long
+- **🌍 Normalization Locale Fix**: Fixed normalization failing in non-English locales (German, French, etc.) due to decimal separator issues
+- **🎵 Default Music Fix**: Fixed issue where default music wouldn't play when switching to games with no music after downloads
+- **🔧 MP4 to MP3 Fix**: Fixed issue where simplified cookies command was downloading MP4 files instead of MP3 audio
+- **🎮 Simplified Multi-Game Menu**: Streamlined context menu for multiple game selection - removed individual source options, simplified to "Download All"
+- **⚠️ Long Audio Warnings**: Alerts when processing files >10 minutes to set user expectations
+- **🔧 Automatic Filename Sanitization**: Special characters in filenames are automatically fixed for FFmpeg compatibility
+- **✨ Customizable Trim Suffix**: Match your trimming suffix with normalization suffix (e.g., "-trimmed")
+- **📊 Improved Progress Tracking**: Clearer distinction between succeeded/skipped/failed operations with accurate file counts
+- **🏷️ Better UI Labels**: All trim features now clearly labeled as "Silence Trimming" to avoid confusion
+-**⚠️** Right-click context menu UI clean-up.
+
+**KNOWN BUGS**
+-The add-on settings play state (never, desktop, fullscreen, both) doesn't work reliably depending on certain functions you use. Music will still play no matter what options you typically pick. Will fix later. Workaround: Uncheck "ENABLE MUSIC" if you wish to disable the music features.
+
+## Previous Version - v1.0.7
 
 - **✂️ Silence Trimming**: Automatically remove leading silence from your game music files
   - Clean up downloaded tracks that have unwanted silence at the start
@@ -16,7 +35,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
   - Configurable detection settings for fine-tuning
   - Works seamlessly with audio normalization
 
-## Previous Version - v1.0.6
+## v1.0.6
 
 - **🔊 Audio Normalization**: Normalize all game music to consistent volume levels using FFmpeg
   - Uses standard FFmpeg only (FFmpeg-normalize not required)
@@ -68,7 +87,10 @@ Before installing, ensure you have the following tools:
 | Tool | Purpose | Download |
 |------|---------|----------|
 | **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** | Required for downloading music from YouTube/KHInsider | [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases) |
+| **[Deno](https://deno.com/)** | **Required JavaScript runtime for yt-dlp** (recommended) | [Deno.com](https://deno.com/) or [GitHub Releases](https://github.com/denoland/deno/releases) |
 | **[FFmpeg](https://ffmpeg.org/download.html)** | Required for audio normalization and processing | [Official Website](https://ffmpeg.org/download.html) |
+
+> **⚠️ Important**: yt-dlp version 2025.11.12+ now **requires** an external JavaScript runtime (Deno, Node.js, or QuickJS) for YouTube downloads. **Deno is recommended**. Place `deno.exe` in the **same folder as yt-dlp.exe** for automatic detection.
 
 ---
 
@@ -83,18 +105,25 @@ Before installing, ensure you have the following tools:
 
 After installation, configure the required tools for full functionality:
 
-1. **Install yt-dlp and FFmpeg**:
+1. **Install yt-dlp, Deno, and FFmpeg**:
    - Download yt-dlp from [GitHub releases](https://github.com/yt-dlp/yt-dlp/releases)
+   - **Download Deno** (recommended JavaScript runtime) from [deno.com](https://deno.com/) or [GitHub releases](https://github.com/denoland/deno/releases)
+     - **Important**: Extract `deno.exe` and place it in the **same folder as yt-dlp.exe**
+     - yt-dlp will automatically detect Deno when it's in the same directory
+     - Alternative: Node.js (v20+) or QuickJS if Deno doesn't work
    - Download FFmpeg from the [official website](https://ffmpeg.org/download.html) or use a package manager
-   - Extract/install both tools to a location of your choice
+   - Extract/install all tools to locations of your choice
 
 2. **Configure Paths in Extension Settings**:
    - On Desktop mode, go to Playnite Settings → **Add-ons → Extension Settings → Generic → UniPlaySong**
    - Navigate to the **Downloads** Tab
    - Set the **yt-dlp Path** to point to your `yt-dlp.exe` file
    - Set the **FFmpeg Path** to point to your `ffmpeg.exe` file
+   - **Optional but Recommended**: Check **"Use cookies from browser (Firefox)"** to improve download reliability
+     - Make sure Firefox is installed and you're logged into YouTube in Firefox
+     - This helps bypass YouTube bot detection and greatly improves download success rates
 
-> **⚠️ Note**: Without these configured, the extension will not be able to download music or normalize audio files.
+> **⚠️ Note**: Without yt-dlp and FFmpeg configured, the extension will not be able to download music or normalize audio files. Without Deno (or another JS runtime), YouTube downloads will fail with bot detection errors.
 
 ---
 
@@ -145,6 +174,14 @@ After installation, configure the required tools for full functionality:
 | **Restore Original Files** | Restore original files from preserved backups | - |
 | **Delete Preserved Originals** | Free up disk space by deleting preserved files | - |
 
+### Silence Trimming
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Silence Threshold** | Audio level below which is considered silence (in dB) | -50.0 |
+| **Minimum Duration** | Minimum silence duration to detect (in seconds) | 0.1 |
+| **Silence Trim Suffix** | Customizable suffix appended to trimmed files | "-trimmed" |
+| **Skip Already Trimmed** | Automatically skip files that are already trimmed | ✓ |
+
 ### Search Cache
 | Setting | Description | Range |
 |---------|-------------|-------|
@@ -158,6 +195,10 @@ After installation, configure the required tools for full functionality:
 |---------|-------------|
 | **yt-dlp Path** | Path to yt-dlp executable |
 | **FFmpeg Path** | Path to ffmpeg executable (required for audio normalization) |
+| **Use cookies from browser (Firefox)** | Enable to use Firefox cookies for YouTube downloads (recommended) |
+| | - Improves download reliability and bypasses bot detection |
+| | - Requires Firefox installed and logged into YouTube |
+| | - Uses simplified yt-dlp command for better compatibility |
 
 ## 📁 Music Folder Structure
 
