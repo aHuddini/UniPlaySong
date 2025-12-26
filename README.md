@@ -8,7 +8,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.8
+## 🆕 What's New - v1.0.8 (Upcoming Release)
 
 - **🔥 Firefox Cookies Support**: New option to use Firefox browser cookies for YouTube downloads - greatly improves reliability for international users
 - **⚡ Deno JavaScript Runtime**: yt-dlp now requires Deno (or Node.js/QuickJS) - place `deno.exe` in the same folder as `yt-dlp.exe`
