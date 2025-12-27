@@ -5,7 +5,7 @@
 ### Bug Fixes
 - **Fixed double "MB MB" suffix in download dialogs** ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
 - **Fixed Topmost windows blocking other apps in Desktop mode** ([#8](https://github.com/aHuddini/UniPlaySong/issues/8)) - Dialogs now only use Topmost in Fullscreen mode
-- **Fixed failed downloads persisting across batch runs** ([#9](https://github.com/aHuddini/UniPlaySong/issues/9)) - Previous failures no longer carry over to new batch downloads
+- **Fixed failed downloads persisting across batch runs** ([#9](https://github.com/aHuddini/UniPlaySong/issues/9)) - Previous failures should no longer carry over to new batch downloads
 - **Fixed music not playing immediately after download** - Downloads now trigger automatic music refresh
 - **Fixed preview threading issue** - Resolved `InvalidOperationException` when stopping previews
 - **Fixed FFmpeg process deadlock** - Audio normalization/trimming no longer freezes at "analyzing music"
