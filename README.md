@@ -20,10 +20,10 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - Fixed failed downloads persisting across batch runs ([#9](https://github.com/aHuddini/UniPlaySong/issues/9))
 - Fixed music not playing immediately after download
 - Fixed FFmpeg deadlock and normalization issues in non-English locales
+- Reduced logging ([#3](https://github.com/aHuddini/UniPlaySong/issues/3)) - Added "Enable Debug Logging" toggle
+- Simple Rate limiting ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) - Delays between downloads to avoid throttling, and sleep-interval commands introduced for when using yt-dlp
 
 ### New Features
-- **Reduced logging** ([#3](https://github.com/aHuddini/UniPlaySong/issues/3)) - Added "Enable Debug Logging" toggle
-- **Rate limiting** ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) - Delays between downloads to avoid throttling
 - **Firefox Cookies Support** - Improves YouTube download reliability
 - **Deno JavaScript Runtime** - Required for yt-dlp 2025.11.12+
 
