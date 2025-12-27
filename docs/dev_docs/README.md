@@ -36,7 +36,6 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
 ### Additional Resources
 
 - **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Build and packaging instructions
-- **[../GITHUB_RELEASE_CHECKLIST.md](../GITHUB_RELEASE_CHECKLIST.md)** - Release checklist
 
 ## Quick Start for Developers
 
@@ -63,6 +62,9 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
 1. Review [ARCHITECTURE.md](ARCHITECTURE.md) to understand extension points
 2. Check [DEPENDENCIES.md](DEPENDENCIES.md) for required dependencies
 3. Reference [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) for similar implementations
+
+**Releasing a New Version:**
+1. Follow [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) to build and package
 
 **Debugging an Issue:**
 1. Check [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) for relevant state variables
