@@ -463,6 +463,54 @@ namespace UniPlaySong.Menus
             }
         }
 
+        /// <summary>
+        /// Opens a dialog to download audio from a specific YouTube URL
+        /// </summary>
+        /// <param name="game">The game to download music for</param>
+        public void DownloadFromUrl(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteDownloadFromUrl(game),
+                    context: $"downloading from URL for '{game?.Name}'",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteDownloadFromUrl(game);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in DownloadFromUrl: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteDownloadFromUrl(Game game)
+        {
+            _logger.Info($"DownloadFromUrl called for game: {game?.Name ?? "null"}");
+
+            if (game == null)
+            {
+                _playniteApi.Dialogs.ShowMessage("No game selected.", "UniPlaySong");
+                return;
+            }
+
+            if (_downloadManager == null)
+            {
+                _playniteApi.Dialogs.ShowMessage("Download manager not initialized. Please check extension settings.", "UniPlaySong");
+                return;
+            }
+
+            // Show the Download From URL dialog
+            _dialogService.ShowDownloadFromUrlDialog(game);
+        }
+
         #region Batch Download (Download All)
 
         /// <summary>

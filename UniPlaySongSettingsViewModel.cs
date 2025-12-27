@@ -365,6 +365,167 @@ namespace UniPlaySong
             }
         }
 
+        #region Migration Properties and Commands
+
+        private string _migrationPlayniteSoundStatus = "Not scanned";
+        public string MigrationPlayniteSoundStatus
+        {
+            get => _migrationPlayniteSoundStatus;
+            set
+            {
+                _migrationPlayniteSoundStatus = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _migrationUniPlaySongStatus = "Not scanned";
+        public string MigrationUniPlaySongStatus
+        {
+            get => _migrationUniPlaySongStatus;
+            set
+            {
+                _migrationUniPlaySongStatus = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand RefreshMigrationStatusCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => RefreshMigrationStatus(),
+                context: "refreshing migration status",
+                showUserMessage: true
+            );
+        });
+
+        private void RefreshMigrationStatus()
+        {
+            var migrationService = plugin.GetMigrationService();
+            if (migrationService == null)
+            {
+                MigrationPlayniteSoundStatus = "Service not available";
+                MigrationUniPlaySongStatus = "Service not available";
+                return;
+            }
+
+            var summary = migrationService.GetMigrationSummary();
+
+            MigrationPlayniteSoundStatus = summary.PlayniteSoundGameCount > 0
+                ? $"{summary.PlayniteSoundGameCount} games, {summary.PlayniteSoundFileCount} files"
+                : "No music found";
+
+            MigrationUniPlaySongStatus = summary.UniPlaySongGameCount > 0
+                ? $"{summary.UniPlaySongGameCount} games, {summary.UniPlaySongFileCount} files"
+                : "No music found";
+        }
+
+        public ICommand MigrateFromPlayniteSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteMigrateFromPlayniteSound(),
+                context: "migrating from PlayniteSound",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteMigrateFromPlayniteSound()
+        {
+            var migrationService = plugin.GetMigrationService();
+            if (migrationService == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("Migration service not available.", "UniPlaySong");
+                return;
+            }
+
+            var games = migrationService.ScanPlayniteSoundGames();
+
+            if (games.Count == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "No music files found in PlayniteSound directories.\n\n" +
+                    "PlayniteSound stores music in:\n" +
+                    "%APPDATA%\\Playnite\\ExtraMetadata\\Games\\{GameId}\\Music Files\\",
+                    "No Music Found");
+                return;
+            }
+
+            var totalFiles = games.Sum(g => g.FileCount);
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"Found {games.Count} games with {totalFiles} music files in PlayniteSound.\n\n" +
+                "This will copy all music files to UniPlaySong format.\n" +
+                "Existing files in UniPlaySong will be skipped (not overwritten).\n\n" +
+                "Do you want to proceed?",
+                "Import from PlayniteSound",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Show progress dialog and run migration
+            plugin.RunMigrationWithProgress(
+                "Importing from PlayniteSound",
+                async (progress, token) => await migrationService.MigrateAllFromPlayniteSoundAsync(progress, token));
+
+            // Refresh status after migration
+            RefreshMigrationStatus();
+        }
+
+        public ICommand MigrateToPlayniteSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteMigrateToPlayniteSound(),
+                context: "migrating to PlayniteSound",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteMigrateToPlayniteSound()
+        {
+            var migrationService = plugin.GetMigrationService();
+            if (migrationService == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("Migration service not available.", "UniPlaySong");
+                return;
+            }
+
+            var games = migrationService.ScanUniPlaySongGames();
+
+            if (games.Count == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "No music files found in UniPlaySong directories.\n\n" +
+                    "UniPlaySong stores music in:\n" +
+                    "%APPDATA%\\Playnite\\ExtraMetadata\\UniPlaySong\\Games\\{GameId}\\",
+                    "No Music Found");
+                return;
+            }
+
+            var totalFiles = games.Sum(g => g.FileCount);
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"Found {games.Count} games with {totalFiles} music files in UniPlaySong.\n\n" +
+                "This will copy all music files to PlayniteSound format.\n" +
+                "Existing files in PlayniteSound will be skipped (not overwritten).\n\n" +
+                "Do you want to proceed?",
+                "Export to PlayniteSound",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Show progress dialog and run migration
+            plugin.RunMigrationWithProgress(
+                "Exporting to PlayniteSound",
+                async (progress, token) => await migrationService.MigrateAllToPlayniteSoundAsync(progress, token));
+
+            // Refresh status after migration
+            RefreshMigrationStatus();
+        }
+
+        #endregion
+
         private void UpdateCacheStats()
         {
             try
@@ -413,6 +574,7 @@ namespace UniPlaySong
         {
             // Called when settings view is opened
             UpdateCacheStats();
+            RefreshMigrationStatus();
         }
 
         public void CancelEdit()

@@ -8,4 +8,6 @@ packages/
 *.zip
 package/
 addonprep/
+drafts/
+.claude/
 

@@ -1200,6 +1200,133 @@ namespace UniPlaySong.Services
             var result = window.ShowDialog();
             return selectedAlbum;
         }
+
+        /// <summary>
+        /// Shows a dialog to download audio from a specific YouTube URL
+        /// </summary>
+        /// <param name="game">The game to download music for</param>
+        public void ShowDownloadFromUrlDialog(Game game)
+        {
+            if (game == null)
+            {
+                Logger.Warn("ShowDownloadFromUrlDialog called with null game");
+                return;
+            }
+
+            // Pre-load Material Design assemblies before XAML parsing
+            PreloadMaterialDesignAssemblies();
+
+            LogDebug($"ShowDownloadFromUrlDialog called for game: {game.Name}");
+
+            // Check if yt-dlp is configured
+            var ytDlpPath = _settingsService.Current?.YtDlpPath;
+            var ffmpegPath = _settingsService.Current?.FFmpegPath;
+
+            if (string.IsNullOrWhiteSpace(ytDlpPath) || !System.IO.File.Exists(ytDlpPath))
+            {
+                _playniteApi.Dialogs.ShowErrorMessage(
+                    "yt-dlp is not configured or not found.\n\n" +
+                    "Please configure the yt-dlp path in UniPlaySong settings to use the Download From URL feature.",
+                    "UniPlaySong - Configuration Required");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(ffmpegPath) || !System.IO.File.Exists(ffmpegPath))
+            {
+                _playniteApi.Dialogs.ShowErrorMessage(
+                    "FFmpeg is not configured or not found.\n\n" +
+                    "Please configure the FFmpeg path in UniPlaySong settings to use the Download From URL feature.",
+                    "UniPlaySong - Configuration Required");
+                return;
+            }
+
+            // Create the view model
+            var viewModel = new ViewModels.DownloadFromUrlViewModel(
+                _playniteApi,
+                _downloadManager,
+                _fileService,
+                _settingsService,
+                _errorHandler,
+                _playbackService,
+                game);
+
+            // Create the window
+            var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = true
+            });
+
+            window.Height = 380;
+            window.Width = 580;
+            window.Title = $"Download From URL - {game.Name}";
+            window.ShowInTaskbar = false;
+            window.Topmost = IsFullscreenMode;
+            window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
+            window.ResizeMode = ResizeMode.NoResize;
+
+            var view = new Views.DownloadFromUrlDialog();
+            window.Content = view;
+            window.DataContext = viewModel;
+
+            var ownerWindow = _playniteApi.Dialogs.GetCurrentAppWindow();
+            if (ownerWindow != null)
+            {
+                window.Owner = ownerWindow;
+            }
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            // Handle window loaded
+            window.Loaded += (s, e) =>
+            {
+                window.Activate();
+                window.Focus();
+            };
+
+            // Handle download command
+            viewModel.DownloadCommand = new Common.RelayCommand(async () =>
+            {
+                await viewModel.DownloadAsync();
+            }, () => viewModel.IsValidUrl && !viewModel.IsDownloading);
+
+            // Handle cancel command
+            viewModel.CancelCommand = new Common.RelayCommand(() =>
+            {
+                viewModel.Cleanup();
+                window.DialogResult = false;
+                window.Close();
+            });
+
+            // Handle download complete
+            viewModel.OnDownloadComplete = (success) =>
+            {
+                if (success)
+                {
+                    viewModel.Cleanup();
+                    window.DialogResult = true;
+                    window.Close();
+                }
+            };
+
+            // Cleanup on window close
+            window.Closing += (s, e) =>
+            {
+                viewModel.Cleanup();
+            };
+
+            var result = window.ShowDialog();
+
+            if (result == true)
+            {
+                LogDebug($"Download from URL completed successfully for game: {game.Name}");
+            }
+            else
+            {
+                LogDebug($"Download from URL cancelled or failed for game: {game.Name}");
+            }
+        }
     }
 }
+
 

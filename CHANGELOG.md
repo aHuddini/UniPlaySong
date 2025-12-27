@@ -1,6 +1,33 @@
 # UniPlaySong - Changelog
 
-## Version 1.0.8 (Latest)
+## Version 1.0.9 (Latest)
+
+### Features
+- **Download From URL** ([#10](https://github.com/aHuddini/UniPlaySong/issues/10)) - New dialog to download music from a specific YouTube URL
+  - Paste any YouTube URL and validate it instantly
+  - Preview 30-second audio clips before downloading
+  - If enabled, respects Firefox cookies settings for authenticated downloads
+  - Music auto-plays immediately after download
+
+- **PlayniteSound Migration** - Bidirectional migration between PlayniteSound and UniPlaySong
+  - Import music from PlayniteSound to UniPlaySong
+  - Export music from UniPlaySong to PlayniteSound
+  - Progress dialog with file counts and status updates
+  - Files are copied (not moved) - originals remain in place
+  - Duplicate files are automatically skipped
+
+### Improvements
+- **Reorganized Context Menu** - Cleaner, more logical right-click menu structure
+  - Download options grouped at top
+  - Primary song options grouped together
+  - Audio processing options (Normalize, Trim) grouped
+  - Open Music Folder at bottom
+- **Enhanced Rate Limiting** - Added `--sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5` to all yt-dlp commands to prevent throttling
+- **New Migration Tab** in settings - Access migration tools via Add-ons → Extension Settings → UniPlaySong → Migration
+
+---
+
+## Version 1.0.8
 
 ### Bug Fixes
 - **Fixed double "MB MB" suffix in download dialogs** ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))

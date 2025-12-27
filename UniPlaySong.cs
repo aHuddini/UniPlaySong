@@ -95,6 +95,7 @@ namespace UniPlaySong
         private SearchCacheService _cacheService;
         private Services.INormalizationService _normalizationService;
         private Services.ITrimService _trimService;
+        private Services.MigrationService _migrationService;
         private IMusicPlaybackCoordinator _coordinator;
         
         private UniPlaySongSettings _settings => _settingsService?.Current;
@@ -477,6 +478,10 @@ namespace UniPlaySong
                 // Initialize trim service with playback service and base path for backups
                 _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
                 _fileLogger?.Info("AudioTrimService initialized");
+
+                // Initialize migration service for PlayniteSound <-> UniPlaySong migration
+                _migrationService = new Services.MigrationService(_api, _errorHandler);
+                _fileLogger?.Info("MigrationService initialized");
             }
             catch (Exception ex)
             {
@@ -1227,6 +1232,117 @@ namespace UniPlaySong
 
         #endregion
 
+        #region Music Migration
+
+        /// <summary>
+        /// Run a migration operation with progress dialog
+        /// </summary>
+        public void RunMigrationWithProgress(
+            string title,
+            Func<IProgress<Services.MigrationProgress>, System.Threading.CancellationToken, System.Threading.Tasks.Task<Services.MigrationBatchResult>> migrationTask)
+        {
+            try
+            {
+                // Create progress dialog
+                var progressDialog = new Views.MigrationProgressDialog();
+                progressDialog.SetTitle(title);
+
+                // Create window
+                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true
+                });
+
+                window.Title = title;
+                window.Width = 550;
+                window.Height = 450;
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowInTaskbar = false;
+                window.ResizeMode = ResizeMode.NoResize;
+                window.Content = progressDialog;
+
+                // Handle window closing
+                window.Closing += (s, e) =>
+                {
+                    try
+                    {
+                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
+                        if (mainWindow != null)
+                        {
+                            mainWindow.Activate();
+                            mainWindow.Focus();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Debug(ex, "Error returning focus during migration dialog close");
+                    }
+                };
+
+                // Start migration asynchronously
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        var progress = new Progress<Services.MigrationProgress>(p =>
+                        {
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.ReportProgress(p);
+                            }));
+                        });
+
+                        var result = await migrationTask(progress, progressDialog.CancellationToken);
+
+                        // Report completion
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            progressDialog.ReportCompletion(result);
+
+                            // Show summary message after a short delay
+                            if (!result.WasCancelled)
+                            {
+                                var message = $"Migration Complete!\n\n" +
+                                            $"Games processed: {result.TotalGames}\n" +
+                                            $"Files copied: {result.TotalFilesCopied}\n" +
+                                            $"Files skipped (already exist): {result.TotalFilesSkipped}\n" +
+                                            $"Failed: {result.FailedGames}";
+
+                                PlayniteApi.Dialogs.ShowMessage(message, "Migration Complete");
+                            }
+                        }));
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            PlayniteApi.Dialogs.ShowMessage("Migration was cancelled.", "Migration Cancelled");
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Error during migration");
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during migration: {ex.Message}", "Migration Error");
+                        }));
+                    }
+                });
+
+                // Show dialog (blocks until closed)
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error showing migration progress dialog");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Migration Error");
+            }
+        }
+
+        #endregion
+
         #region Audio Trimming
 
         /// <summary>
@@ -1583,53 +1699,8 @@ namespace UniPlaySong
                 return Enumerable.Empty<GameMenuItem>();
 
             const string menuSection = Constants.MenuSectionName;
-            const string downloadSection = menuSection + "|Download";
             var items = new List<GameMenuItem>();
             var games = args.Games.ToList();
-
-            // Add controller-friendly options (accessible in fullscreen mode)
-            items.Add(new GameMenuItem
-            {
-                Description = "Download Music (🎮 Mode)",
-                MenuSection = menuSection,
-                Action = _ => ShowControllerDownloadDialog(games.FirstOrDefault())
-            });
-            
-            // Only show primary song options for single game selection
-            if (games.Count == 1)
-            {
-                var singleGame = games.First();
-                items.Add(new GameMenuItem
-                {
-                    Description = "Set Primary Song (🎮 Mode)",
-                    MenuSection = menuSection,
-                    Action = _ => ShowControllerSetPrimarySong(singleGame)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Remove Primary Song (🎮 Mode)",
-                    MenuSection = menuSection,
-                    Action = _ => ShowControllerRemovePrimarySong(singleGame)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Delete Songs (🎮 Mode)",
-                    MenuSection = menuSection,
-                    Action = _ => ShowControllerDeleteSongs(singleGame)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Normalize Selected Music",
-                    MenuSection = menuSection,
-                    Action = _ => NormalizeSelectedGamesFullscreen(singleGame)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Trim Leading Silence",
-                    MenuSection = menuSection,
-                    Action = _ => TrimSelectedGamesFullscreen(singleGame)
-                });
-            }
 
             // Multi-game selection: Show simplified "Download All" option
             if (games.Count > 1)
@@ -1662,44 +1733,114 @@ namespace UniPlaySong
                 return items;
             }
 
-            // Single game selection: Original behavior
+            // Single game selection - reorganized menu layout
             var game = games[0];
             var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-            
-            // All items under "UniPlaySong" parent menu
+
+            // === Download Section ===
+            // Download Music (🎮 Mode) - Controller-friendly download dialog
             items.Add(new GameMenuItem
             {
-                Description = "Download Music...",
+                Description = "Download Music (🎮 Mode)",
+                MenuSection = menuSection,
+                Action = _ => ShowControllerDownloadDialog(game)
+            });
+
+            // Download Music (PC Mode) - Desktop download dialog with source selection
+            items.Add(new GameMenuItem
+            {
+                Description = "Download Music (PC Mode)",
                 MenuSection = menuSection,
                 Action = _ => _gameMenuHandler.DownloadMusicForGame(game)
             });
+
+            // Download From URL - Download audio from a specific YouTube URL
+            items.Add(new GameMenuItem
+            {
+                Description = "Download From URL",
+                MenuSection = menuSection,
+                Action = _ => _gameMenuHandler.DownloadFromUrl(game)
+            });
+
+            // Separator before Primary Song section
+            items.Add(new GameMenuItem
+            {
+                Description = "-",
+                MenuSection = menuSection
+            });
+
+            // === Primary Song Section ===
+            // Set Primary Song (🎮 Mode) - Controller-friendly
+            items.Add(new GameMenuItem
+            {
+                Description = "Set Primary Song (🎮 Mode)",
+                MenuSection = menuSection,
+                Action = _ => ShowControllerSetPrimarySong(game)
+            });
+
+            // Set Primary Song (PC Mode) - Desktop file picker
+            items.Add(new GameMenuItem
+            {
+                Description = "Set Primary Song (PC Mode)",
+                MenuSection = menuSection,
+                Action = _ => _gameMenuHandler.SetPrimarySong(game)
+            });
+
+            // Clear Primary Song (🎮 Mode) - Controller-friendly
+            items.Add(new GameMenuItem
+            {
+                Description = "Clear Primary Song (🎮 Mode)",
+                MenuSection = menuSection,
+                Action = _ => ShowControllerRemovePrimarySong(game)
+            });
+
+            // Clear Primary Song (PC Mode) - Desktop
+            items.Add(new GameMenuItem
+            {
+                Description = "Clear Primary Song (PC Mode)",
+                MenuSection = menuSection,
+                Action = _ => _gameMenuHandler.ClearPrimarySong(game)
+            });
+
+            // Separator before Audio Processing section
+            items.Add(new GameMenuItem
+            {
+                Description = "-",
+                MenuSection = menuSection
+            });
+
+            // === Audio Processing Section ===
+            // Normalize Music Folder
+            items.Add(new GameMenuItem
+            {
+                Description = "Normalize Music Folder",
+                MenuSection = menuSection,
+                Action = _ => NormalizeSelectedGamesFullscreen(game)
+            });
+
+            // Trim Leading Silence
+            items.Add(new GameMenuItem
+            {
+                Description = "Trim Leading Silence",
+                MenuSection = menuSection,
+                Action = _ => TrimSelectedGamesFullscreen(game)
+            });
+
+            // Separator before utility options
+            items.Add(new GameMenuItem
+            {
+                Description = "-",
+                MenuSection = menuSection
+            });
+
+            // === Utility Section ===
+            // Open Music Folder
             items.Add(new GameMenuItem
             {
                 Description = "Open Music Folder",
                 MenuSection = menuSection,
                 Action = _ => _gameMenuHandler.OpenMusicFolder(game)
             });
-
-            if (songs.Count > 0)
-            {
-                items.Add(new GameMenuItem 
-                { 
-                    Description = "-",
-                    MenuSection = menuSection
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Set Primary Song...",
-                    MenuSection = menuSection,
-                    Action = _ => _gameMenuHandler.SetPrimarySong(game)
-                });
-                items.Add(new GameMenuItem
-                {
-                    Description = "Clear Primary Song",
-                    MenuSection = menuSection,
-                    Action = _ => _gameMenuHandler.ClearPrimarySong(game)
-                });
-            }
 
             return items;
         }
@@ -1779,6 +1920,11 @@ namespace UniPlaySong
         /// Gets the audio trim service.
         /// </summary>
         public Services.ITrimService GetTrimService() => _trimService;
+
+        /// <summary>
+        /// Gets the migration service.
+        /// </summary>
+        public Services.MigrationService GetMigrationService() => _migrationService;
 
         /// <summary>
         /// Gets the Playnite API instance.

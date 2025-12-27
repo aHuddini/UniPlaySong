@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.0.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,25 +12,31 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.8
-
-### Bug Fixes
-- Fixed double "MB MB" suffix in download dialogs ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
-- Fixed Topmost windows blocking other apps in Desktop mode ([#8](https://github.com/aHuddini/UniPlaySong/issues/8))
-- Fixed failed downloads persisting across batch runs ([#9](https://github.com/aHuddini/UniPlaySong/issues/9))
-- Fixed music not playing immediately after download
-- Fixed FFmpeg deadlock and normalization issues in non-English locales
-- Reduced logging ([#3](https://github.com/aHuddini/UniPlaySong/issues/3)) - Added "Enable Debug Logging" toggle
-- Simple Rate limiting ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) - Delays between downloads to avoid throttling, and sleep-interval commands introduced for when using yt-dlp
+## 🆕 What's New - v1.0.9
 
 ### New Features
-- **Firefox Cookies Support** - Improves YouTube download reliability (check the add-on settings>Download tab to enable cookies from Firefox)
-- **Deno JavaScript Runtime** - Required for yt-dlp 2025.11.12+
+- **Download From URL** ([#10](https://github.com/aHuddini/UniPlaySong/issues/10)) - Paste a specific YouTube URL to download music for a game
+  - URL validation with visual feedback
+  - Audio preview before downloading (30-second clips)
+  - Respects Firefox cookies settings
+  - Rate limiting to avoid YouTube throttling
+  - Music auto-plays after download
 
-**Known Issue**: Play state setting doesn't work reliably. Use "Enable Music" toggle as workaround.
+- **PlayniteSound & UniPlaySong Migration** ([#12](https://github.com/aHuddini/UniPlaySong/issues/12)) - Transfer music between PlayniteSound and UniPlaySong (for preserving existing music libraries. Helpful if you want to switch or stay on a preferred plugin)
+  - Import: Copy music from PlayniteSound to UniPlaySong
+  - Export: Copy music from UniPlaySong to PlayniteSound
+  - Access via Settings → Migration tab
 
-### Previous Version - v1.0.7
-- **Silence Trimming**: Automatically remove leading silence from audio files
+### Improvements
+- **[Desktop Mode] Reorganized Right-Click Context Menu** - Cleaner, more logical menu structure with grouped sections
+- **Enhanced Rate Limiting** - Added `--sleep-requests` and `--sleep-interval` options to yt-dlp commands with specific right-click context options.
+
+**Known Issue**: Play state setting (Desktop, Fullscreen, Never, etc.) doesn't work reliably. Use "Enable Music" toggle as workaround.
+
+### Previous Version - v1.0.8
+- Fixed double "MB MB" suffix, Topmost windows blocking, failed downloads persisting
+- Firefox Cookies Support for YouTube downloads
+- Deno JavaScript Runtime support for yt-dlp 2025.11.12+
 
 ---
 
@@ -51,6 +57,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
 - **Theme Compatibility** - Works with login screen themes
+- **PlayniteSound Migration** - Import/export music between UniPlaySong and PlayniteSound
 
 <img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
@@ -87,7 +94,12 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 🎮 Usage
 
 ### Desktop Mode
-Right-click a game → **UniPlaySong** → Download Music / Set Primary Song / Open Music Folder
+Right-click a game → **UniPlaySong**:
+- **Download Music** - Search and download from KHInsider/YouTube
+- **Download From URL** - Paste a specific YouTube URL
+- **Set/Clear Primary Song** - Choose which song plays first
+- **Normalize/Trim** - Process audio files
+- **Open Music Folder** - Access game's music directory
 
 ### Fullscreen Mode
 Press Menu button → **Extensions → UniPlaySong** → Access all features with controller
@@ -105,6 +117,7 @@ Settings are accessible via **Add-ons → Extension Settings → UniPlaySong**:
 - **Audio Processing**: Normalization (EBU R128) and silence trimming settings
 - **Downloads**: yt-dlp/FFmpeg paths, Firefox cookies option
 - **Search Cache**: Cache search results to speed up downloads
+- **Migration**: Import/export music between PlayniteSound and UniPlaySong
 
 Music files are stored in: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
 
