@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
-  <img src="GHdisplay.png" alt="UniPlaySong" width="600">
+  <img src="GHdisplay.png" alt="UniPlaySong">
 </p>
 
 A Playnite extension that provides a console-like game music preview experience with controller-friendly song management. Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
