@@ -24,7 +24,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - Simple Rate limiting ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) - Delays between downloads to avoid throttling, and sleep-interval commands introduced for when using yt-dlp
 
 ### New Features
-- **Firefox Cookies Support** - Improves YouTube download reliability
+- **Firefox Cookies Support** - Improves YouTube download reliability (check the add-on settings>Download tab to enable cookies from Firefox)
 - **Deno JavaScript Runtime** - Required for yt-dlp 2025.11.12+
 
 **Known Issue**: Play state setting doesn't work reliably. Use "Enable Music" toggle as workaround.
