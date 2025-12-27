@@ -7,14 +7,28 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Common
 {
     /// <summary>
-    /// Simple file-based logger for debugging
-    /// Writes logs to a file in the extension directory
+    /// Simple file-based logger with conditional debug logging support.
     /// </summary>
     public class FileLogger
     {
         private readonly string _logFilePath;
         private readonly object _lockObject = new object();
         private bool _initialized = false;
+
+        /// <summary>
+        /// Global debug logging check. When null or returns true, debug logging is enabled.
+        /// </summary>
+        public static Func<bool> GlobalDebugEnabled { get; set; }
+
+        /// <summary>
+        /// Returns true if debug logging is currently enabled.
+        /// </summary>
+        public static bool IsDebugLoggingEnabled => GlobalDebugEnabled == null || GlobalDebugEnabled();
+
+        /// <summary>
+        /// Instance-level debug check for this logger.
+        /// </summary>
+        public Func<bool> IsDebugEnabled { get; set; }
 
         public FileLogger(string extensionPath)
         {
@@ -122,6 +136,12 @@ namespace UniPlaySong.Common
 
         public void Debug(string message)
         {
+            // Only log DEBUG messages if debug logging is explicitly enabled
+            // This reduces log file size for end users while allowing verbose logging for troubleshooting
+            if (IsDebugEnabled != null && !IsDebugEnabled())
+            {
+                return;
+            }
             Log("DEBUG", message);
         }
 

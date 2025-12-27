@@ -182,6 +182,20 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Troubleshooting -->
+                    <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Debug Logging"
+                              IsChecked="{Binding Settings.EnableDebugLogging}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Use this when troubleshooting issues. Disable for normal use to reduce log file size."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

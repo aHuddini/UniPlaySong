@@ -131,6 +131,20 @@ namespace UniPlaySong
             _settingsService = new SettingsService(_api, logger, _fileLogger, this);
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
 
+            // Wire up debug logging setting to FileLogger (both instance and global static)
+            // This allows DEBUG-level logs to be conditional based on user preference
+            if (_settings != null)
+            {
+                // Set the global static so all classes can check it
+                FileLogger.GlobalDebugEnabled = () => _settings.EnableDebugLogging;
+
+                // Also set the instance property if FileLogger was initialized
+                if (_fileLogger != null)
+                {
+                    _fileLogger.IsDebugEnabled = () => _settings.EnableDebugLogging;
+                }
+            }
+
             InitializeServices();
             InitializeMenuHandlers();
             

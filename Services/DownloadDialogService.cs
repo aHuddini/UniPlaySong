@@ -21,13 +21,31 @@ namespace UniPlaySong.Services
     public class DownloadDialogService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        
+
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(message);
+            }
+        }
+
         private readonly IPlayniteAPI _playniteApi;
         private readonly IDownloadManager _downloadManager;
         private readonly IMusicPlaybackService _playbackService;
         private readonly GameMusicFileService _fileService;
         private readonly SettingsService _settingsService;
         private readonly ErrorHandlerService _errorHandler;
+
+        /// <summary>
+        /// Returns true if Playnite is in Fullscreen mode.
+        /// Topmost dialogs are only needed in Fullscreen mode to appear above the fullscreen window.
+        /// In Desktop mode, Topmost causes dialogs to block other applications.
+        /// </summary>
+        private bool IsFullscreenMode => _playniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen;
 
         public DownloadDialogService(
             IPlayniteAPI playniteApi,
@@ -137,11 +155,11 @@ namespace UniPlaySong.Services
             window.Width = 600;
             window.Title = "Select Download Source";
             window.ShowInTaskbar = false;
-            window.Topmost = true;
-            
+            window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps in Desktop mode
+
             // Set background color for fullscreen mode (fixes transparency issue)
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
-            
+
             var view = new DownloadDialogView();
             window.Content = view;
             window.DataContext = viewModel;
@@ -177,16 +195,16 @@ namespace UniPlaySong.Services
                     var selectedItem = selected[0];
                     if (selectedItem is Playnite.SDK.GenericItemOption selectedOption)
                     {
-                        Logger.Info($"User selected source option: {selectedOption.Name}");
-                        
+                        LogDebug($"User selected source option: {selectedOption.Name}");
+
                         if (selectedOption.Name == "KHInsider")
                         {
-                            Logger.Info("Returning Source.KHInsider");
+                            LogDebug("Returning Source.KHInsider");
                             return Source.KHInsider;
                         }
                         else if (selectedOption.Name == "YouTube")
                         {
-                            Logger.Info("YouTube selected - validating configuration...");
+                            LogDebug("YouTube selected - validating configuration...");
                             // Validate YouTube configuration before returning
                             if (_settingsService.Current == null || string.IsNullOrWhiteSpace(_settingsService.Current.YtDlpPath) || string.IsNullOrWhiteSpace(_settingsService.Current.FFmpegPath))
                             {
@@ -208,7 +226,7 @@ namespace UniPlaySong.Services
                                 return null; // Prevent proceeding if yt-dlp not found
                             }
                             
-                            Logger.Info("YouTube configuration validated successfully");
+                            LogDebug("YouTube configuration validated successfully");
                             return Source.YouTube;
                         }
                         else
@@ -228,7 +246,7 @@ namespace UniPlaySong.Services
             }
             else
             {
-                Logger.Info("Source selection dialog cancelled or closed");
+                LogDebug("Source selection dialog cancelled or closed");
             }
 
             return null;
@@ -243,9 +261,9 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            Logger.Info($"ShowUnifiedAlbumSelectionDialog called for game: {game?.Name ?? "null"}");
+            LogDebug($"ShowUnifiedAlbumSelectionDialog called for game: {game?.Name ?? "null"}");
 
-            Logger.Debug("Creating unified DownloadDialogViewModel...");
+            LogDebug("Creating unified DownloadDialogViewModel...");
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
                     _playniteApi,
@@ -267,7 +285,7 @@ namespace UniPlaySong.Services
                 return null;
             }
 
-            Logger.Debug("Unified DownloadDialogViewModel created successfully");
+            LogDebug("Unified DownloadDialogViewModel created successfully");
 
             return _errorHandler.Try(
                 () =>
@@ -283,7 +301,7 @@ namespace UniPlaySong.Services
                     window.Width = 800;
                     window.Title = $"Find Music for: {game.Name}";
                     window.ShowInTaskbar = false;
-                    window.Topmost = true;
+                    window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
 
                     // Set background color for fullscreen mode
                     window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
@@ -303,7 +321,7 @@ namespace UniPlaySong.Services
                             {
                                 window.Activate();
                                 window.Focus();
-                                Logger.Debug("Unified album selection window loaded and activated");
+                                LogDebug("Unified album selection window loaded and activated");
 
                                 // Trigger search after window is loaded
                                 if (game != null)
@@ -352,9 +370,9 @@ namespace UniPlaySong.Services
                         viewModel.CleanupPreviewFiles();
                     };
 
-                    Logger.Debug("Showing unified album selection window...");
+                    LogDebug("Showing unified album selection window...");
                     var result = window.ShowDialog();
-                    Logger.Debug($"Unified album selection window closed with result: {result}");
+                    LogDebug($"Unified album selection window closed with result: {result}");
 
                     if (result == true)
                     {
@@ -362,12 +380,12 @@ namespace UniPlaySong.Services
                         var album = selected.FirstOrDefault() as Album;
                         if (album != null)
                         {
-                            Logger.Info($"User selected album: {album.Name} from {album.Source}");
+                            LogDebug($"User selected album: {album.Name} from {album.Source}");
                             return album;
                         }
                     }
 
-                    Logger.Info("User cancelled unified album selection or no album selected");
+                    LogDebug("User cancelled unified album selection or no album selected");
                     return null;
                 },
                 defaultValue: null,
@@ -384,16 +402,16 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
             
-            Logger.Info($"ShowAlbumSelectionDialog called for game: {game?.Name ?? "null"}, source: {source}");
+            LogDebug($"ShowAlbumSelectionDialog called for game: {game?.Name ?? "null"}, source: {source}");
             
             // YouTube configuration is now validated in ShowSourceSelectionDialog before YouTube can be selected
             // So if we reach here with YouTube source, it should be valid
             if (source == Source.YouTube)
             {
-                Logger.Debug("YouTube source confirmed - configuration already validated");
+                LogDebug("YouTube source confirmed - configuration already validated");
             }
 
-            Logger.Debug("Creating DownloadDialogViewModel...");
+            LogDebug("Creating DownloadDialogViewModel...");
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
                     _playniteApi,
@@ -415,9 +433,9 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            Logger.Debug("DownloadDialogViewModel created successfully");
+            LogDebug("DownloadDialogViewModel created successfully");
             
-            Logger.Debug("Creating album selection window...");
+            LogDebug("Creating album selection window...");
 
             return _errorHandler.Try(
                 () =>
@@ -433,8 +451,8 @@ namespace UniPlaySong.Services
                     window.Width = 700;
                     window.Title = $"Select Album for {game.Name}";
                     window.ShowInTaskbar = false; // Important for fullscreen mode
-                    window.Topmost = true; // Ensure dialog appears above fullscreen window
-                    
+                    window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps
+
                     // Set background color for fullscreen mode (fixes transparency issue)
                     window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
                     
@@ -454,7 +472,7 @@ namespace UniPlaySong.Services
                             {
                                 window.Activate();
                                 window.Focus();
-                                Logger.Debug("Album selection window loaded and activated");
+                                LogDebug("Album selection window loaded and activated");
                                 
                                 // Trigger search after window is loaded (similar to PNS WindowOpenedCommand)
                                 // This ensures window is visible and responsive before search starts
@@ -524,16 +542,16 @@ namespace UniPlaySong.Services
                         viewModel.CleanupPreviewFiles();
                     };
 
-                    Logger.Debug("Showing album selection dialog...");
+                    LogDebug("Showing album selection dialog...");
                     var result = window.ShowDialog();
-                    Logger.Debug($"Album selection dialog result: {result}");
+                    LogDebug($"Album selection dialog result: {result}");
                 
                     if (result == true)
                     {
                         // If double-clicked, use that album
                         if (doubleClickedAlbum != null)
                         {
-                            Logger.Info($"Album double-clicked: {doubleClickedAlbum.Name}");
+                            LogDebug($"Album double-clicked: {doubleClickedAlbum.Name}");
                             return doubleClickedAlbum;
                         }
 
@@ -541,16 +559,16 @@ namespace UniPlaySong.Services
                         var album = selected.FirstOrDefault() as Album;
                         if (album != null)
                         {
-                            Logger.Info($"Album selected: {album.Name} (ID: {album.Id})");
+                            LogDebug($"Album selected: {album.Name} (ID: {album.Id})");
                         }
                         else
                         {
-                            Logger.Warn("No album selected from dialog");
+                            LogDebug("No album selected from dialog");
                         }
                         return album;
                     }
 
-                    Logger.Info("Album selection dialog cancelled");
+                    LogDebug("Album selection dialog cancelled");
                     return null;
                 },
                 defaultValue: null,
@@ -589,7 +607,7 @@ namespace UniPlaySong.Services
             window.Width = 700;
             window.Title = $"Select Songs from {album.Name}";
             window.ShowInTaskbar = false; // Important for fullscreen mode
-            window.Topmost = true; // Ensure dialog appears above fullscreen window
+            window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps
             
             // Set background color for fullscreen mode (fixes transparency issue)
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
@@ -610,7 +628,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        Logger.Debug("Song selection window loaded and activated");
+                        LogDebug("Song selection window loaded and activated");
                         
                         // Trigger search after window is loaded to load songs from album
                         // This matches the pattern we use for album selection
@@ -624,7 +642,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            Logger.Debug($"Triggering song search for album: {album.Name}");
+                                            LogDebug($"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs after window load"
@@ -650,8 +668,21 @@ namespace UniPlaySong.Services
             // For song selection, confirm triggers inline download instead of closing
             viewModel.OnDownloadComplete = (success) =>
             {
-                // Dialog will stay open - user can close manually after download completes
-                // Optionally could auto-close after delay, but keeping it open for now
+                // After successful download, trigger music refresh so music plays immediately
+                // This addresses the issue where music doesn't play after download completes
+                if (success && game != null && _playbackService != null)
+                {
+                    _errorHandler.Try(
+                        () =>
+                        {
+                            LogDebug($"Download complete - triggering music refresh for game: {game.Name}");
+                            // Get current settings to pass to PlayGameMusic
+                            var settings = _settingsService?.Current;
+                            _playbackService.PlayGameMusic(game, settings, forceReload: true);
+                        },
+                        context: $"refreshing music after download for '{game.Name}'"
+                    );
+                }
             };
 
             viewModel.ConfirmCommand = new Common.RelayCommand(() =>
@@ -697,7 +728,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            Logger.Info($"ShowSongSelectionDialogWithReturn called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
+            LogDebug($"ShowSongSelectionDialogWithReturn called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
 
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
@@ -731,7 +762,7 @@ namespace UniPlaySong.Services
             window.Width = 700;
             window.Title = $"Select Songs from {album.Name}";
             window.ShowInTaskbar = false;
-            window.Topmost = true;
+            window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
             var view = new DownloadDialogView();
@@ -752,7 +783,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        Logger.Debug("Batch song selection window loaded and activated");
+                        LogDebug("Batch song selection window loaded and activated");
 
                         if (album != null)
                         {
@@ -764,7 +795,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            Logger.Debug($"Triggering song search for album: {album.Name}");
+                                            LogDebug($"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs in batch dialog"
@@ -815,7 +846,7 @@ namespace UniPlaySong.Services
             
             if (result == true)
             {
-                Logger.Info($"User selected {selectedSongs.Count} songs for batch download");
+                LogDebug($"User selected {selectedSongs.Count} songs for batch download");
                 return selectedSongs;
             }
 
@@ -831,7 +862,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            Logger.Info("ShowDefaultMusicDownloadDialog called");
+            LogDebug("ShowDefaultMusicDownloadDialog called");
 
             if (_downloadManager == null)
             {
@@ -843,12 +874,12 @@ namespace UniPlaySong.Services
             Source? sourceNullable = ShowSourceSelectionDialog();
             if (sourceNullable == null)
             {
-                Logger.Info("User cancelled source selection");
+                LogDebug("User cancelled source selection");
                 return false;
             }
 
             var source = sourceNullable.Value;
-            Logger.Info($"User selected source: {source}");
+            LogDebug($"User selected source: {source}");
 
             // Step 2: For default music, use a dummy game and let users search in the album dialog
             // This is more intuitive - users can type the game name in the search box
@@ -858,7 +889,7 @@ namespace UniPlaySong.Services
             Album album = ShowAlbumSelectionDialogForDefaultMusic(source);
             if (album == null)
             {
-                Logger.Info("User cancelled album selection");
+                LogDebug("User cancelled album selection");
                 return false;
             }
 
@@ -866,7 +897,7 @@ namespace UniPlaySong.Services
             var selectedSong = ShowSongSelectionForDefaultMusic(dummyGame, album);
             if (selectedSong == null)
             {
-                Logger.Info("No song selected or download cancelled");
+                LogDebug("No song selected or download cancelled");
                 return false;
             }
 
@@ -895,7 +926,7 @@ namespace UniPlaySong.Services
                         downloadPath = defaultMusicPath;
                     }
 
-                    Logger.Info($"Downloading default music to: {downloadPath}");
+                    LogDebug($"Downloading default music to: {downloadPath}");
 
                     // Show progress dialog
                     var progressOptions = new Playnite.SDK.GlobalProgressOptions(
@@ -912,7 +943,7 @@ namespace UniPlaySong.Services
 
                     if (downloadSuccess && System.IO.File.Exists(downloadPath))
                     {
-                        Logger.Info($"Default music downloaded successfully: {downloadPath}");
+                        LogDebug($"Default music downloaded successfully: {downloadPath}");
                         _playniteApi.Dialogs.ShowMessage(
                             $"Default music downloaded successfully!\n\nFile: {System.IO.Path.GetFileName(downloadPath)}\nLocation: {downloadPath}",
                             "Download Complete");
@@ -942,7 +973,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            Logger.Info($"ShowSongSelectionForDefaultMusic called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
+            LogDebug($"ShowSongSelectionForDefaultMusic called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
 
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
@@ -965,7 +996,7 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            Logger.Debug("DownloadDialogViewModel created successfully");
+            LogDebug("DownloadDialogViewModel created successfully");
 
             var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
             {
@@ -978,7 +1009,7 @@ namespace UniPlaySong.Services
             window.Width = 700;
             window.Title = $"Select Song for Default Music";
             window.ShowInTaskbar = false;
-            window.Topmost = true;
+            window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
             var view = new DownloadDialogView();
@@ -999,7 +1030,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        Logger.Debug("Default music song selection window loaded and activated");
+                        LogDebug("Default music song selection window loaded and activated");
                         
                         // Trigger search after window is loaded to load songs from album
                         if (album != null)
@@ -1012,7 +1043,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            Logger.Debug($"Triggering song search for album: {album.Name}");
+                                            LogDebug($"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs in default music dialog"
@@ -1064,7 +1095,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
             
-            Logger.Info($"ShowAlbumSelectionDialogForDefaultMusic called for source: {source}");
+            LogDebug($"ShowAlbumSelectionDialogForDefaultMusic called for source: {source}");
 
             // Create a dummy game with empty name - user will search
             Game dummyGame = new Game { Name = "", Id = Guid.NewGuid() };
@@ -1090,7 +1121,7 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            Logger.Debug("DownloadDialogViewModel created successfully");
+            LogDebug("DownloadDialogViewModel created successfully");
 
             var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
             {
@@ -1105,7 +1136,7 @@ namespace UniPlaySong.Services
                 ? "Search for Game Soundtrack (Default Music)" 
                 : "Enter YouTube URL (Default Music)";
             window.ShowInTaskbar = false;
-            window.Topmost = true;
+            window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
             var view = new DownloadDialogView();
@@ -1131,7 +1162,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        Logger.Debug("Default music album selection window loaded");
+                        LogDebug("Default music album selection window loaded");
                         // Don't trigger auto-search - user will type in search box
                     },
                     context: "activating default music album selection window"

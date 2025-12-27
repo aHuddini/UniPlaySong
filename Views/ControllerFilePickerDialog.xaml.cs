@@ -22,6 +22,28 @@ namespace UniPlaySong.Views
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(message);
+            }
+        }
+
+        /// <summary>
+        /// Logs a debug message with exception only if debug logging is enabled.
+        /// </summary>
+        private static void LogDebug(Exception ex, string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(ex, message);
+            }
+        }
+
         // XInput API for Xbox controller support
         [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")]
         private static extern uint XInputGetState14(uint dwUserIndex, ref XINPUT_STATE pState);
@@ -133,7 +155,7 @@ namespace UniPlaySong.Views
                 _playbackService = playbackService;
                 _mode = mode;
 
-                Logger.Debug($"Initialized file picker for game: {game?.Name}, mode: {mode}");
+                LogDebug($"Initialized file picker for game: {game?.Name}, mode: {mode}");
 
                 // Update UI based on mode
                 UpdateUIForMode();
@@ -349,7 +371,7 @@ namespace UniPlaySong.Views
             _controllerMonitoringCancellation = new CancellationTokenSource();
             
             _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
-            Logger.Debug("Started controller monitoring for file picker");
+            LogDebug("Started controller monitoring for file picker");
         }
 
         /// <summary>
@@ -361,7 +383,7 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            Logger.Debug("Stopped controller monitoring for file picker");
+            LogDebug("Stopped controller monitoring for file picker");
         }
 
         /// <summary>
@@ -400,7 +422,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    Logger.Debug(ex, "Error in controller monitoring");
+                    LogDebug(ex, "Error in controller monitoring");
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -575,7 +597,7 @@ namespace UniPlaySong.Views
                 _previewPlayer.Play();
                 
                 UpdateInputFeedback($"🔊 Playing preview: {fileName} - X/Y to stop (Game music paused)");
-                Logger.Debug($"Started preview for: {fileName}");
+                LogDebug($"Started preview for: {fileName}");
             }
             catch (Exception ex)
             {
@@ -619,7 +641,7 @@ namespace UniPlaySong.Views
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    Logger.Debug("Paused game music for preview");
+                    LogDebug("Paused game music for preview");
                 }
                 else
                 {
@@ -644,7 +666,7 @@ namespace UniPlaySong.Views
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    Logger.Debug("Resumed game music after preview");
+                    LogDebug("Resumed game music after preview");
                 }
             }
             catch (Exception ex)
@@ -811,7 +833,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        Logger.Debug(focusEx, "Error returning focus to main window");
+                        LogDebug(focusEx, "Error returning focus to main window");
                     }
                     
                     window.DialogResult = success;

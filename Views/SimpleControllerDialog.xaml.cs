@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using UniPlaySong.Common;
 using UniPlaySong.Downloaders;
 using UniPlaySong.Models;
 using UniPlaySong.Services;
@@ -23,9 +24,32 @@ namespace UniPlaySong.Views
     public partial class SimpleControllerDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(message);
+            }
+        }
+
+        /// <summary>
+        /// Logs a debug message with exception only if debug logging is enabled.
+        /// </summary>
+        private static void LogDebug(Exception ex, string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(ex, message);
+            }
+        }
+
         private CancellationTokenSource _controllerMonitoringCancellation;
         private bool _isMonitoring = false;
-        
+
         // Download functionality dependencies
         private Game _currentGame;
         private DownloadDialogService _dialogService;
@@ -45,6 +69,10 @@ namespace UniPlaySong.Views
         private string _currentlyPreviewing = null;
         private System.Windows.Media.MediaPlayer _previewPlayer;
         private bool _wasGameMusicPlaying = false;
+
+        // Preview rate limiting
+        private DateTime _lastPreviewRequestTime = DateTime.MinValue;
+        private const int MinPreviewIntervalMs = 2000; // 2 seconds between preview requests
         
         public enum DialogStep
         {
@@ -57,7 +85,7 @@ namespace UniPlaySong.Views
         public SimpleControllerDialog()
         {
             InitializeComponent();
-            Logger.Debug("Controller download dialog initialized");
+            LogDebug("Controller download dialog initialized");
             
             // Focus the first item for controller navigation
             Loaded += (s, e) => 
@@ -97,7 +125,7 @@ namespace UniPlaySong.Views
                 _fileService = fileService;
                 _currentStep = DialogStep.SourceSelection;
                 
-                Logger.Debug($"Initialized controller dialog for game: {game?.Name}");
+                LogDebug($"Initialized controller dialog for game: {game?.Name}");
                 
                 // Load source selection
                 LoadSourceSelection();
@@ -134,7 +162,7 @@ namespace UniPlaySong.Views
                 UpdateUIForSourceSelection();
                 PopulateResultsList(_sourceOptions.Select(CreateSourceItem).ToList());
                 
-                Logger.Debug("Loaded source selection options");
+                LogDebug("Loaded source selection options");
             }
             catch (Exception ex)
             {
@@ -156,7 +184,7 @@ namespace UniPlaySong.Views
             }
             catch (Exception ex)
             {
-                Logger.Debug(ex, "Error checking YouTube configuration");
+                LogDebug(ex, "Error checking YouTube configuration");
                 return false;
             }
         }
@@ -303,35 +331,35 @@ namespace UniPlaySong.Views
         {
             try
             {
-                Logger.Debug($"HandleCancelAction called - Current step: {_currentStep}");
+                LogDebug($"HandleCancelAction called - Current step: {_currentStep}");
                 
                 switch (_currentStep)
                 {
                     case DialogStep.SourceSelection:
                         // Close the dialog
-                        Logger.Debug("Closing controller dialog from source selection");
+                        LogDebug("Closing controller dialog from source selection");
                         CloseDialog(false);
                         break;
                         
                     case DialogStep.AlbumSelection:
                         // Go back to source selection
-                        Logger.Debug("Going back to source selection from album selection");
+                        LogDebug("Going back to source selection from album selection");
                         LoadSourceSelection();
                         break;
                         
                     case DialogStep.SongSelection:
                         // Go back to album selection
-                        Logger.Debug($"Going back to album selection from song selection - Selected source: {_selectedSource}");
+                        LogDebug($"Going back to album selection from song selection - Selected source: {_selectedSource}");
                         try
                         {
                             if (_selectedSource.HasValue)
                             {
-                                Logger.Debug($"Loading album selection for source: {_selectedSource.Value}");
+                                LogDebug($"Loading album selection for source: {_selectedSource.Value}");
                                 LoadAlbumSelection(_selectedSource.Value);
                             }
                             else
                             {
-                                Logger.Debug("No selected source, going back to source selection");
+                                LogDebug("No selected source, going back to source selection");
                                 LoadSourceSelection();
                             }
                         }
@@ -345,13 +373,13 @@ namespace UniPlaySong.Views
                         
                     case DialogStep.Downloading:
                         // Cancel download
-                        Logger.Debug("Cancelling download");
+                        LogDebug("Cancelling download");
                         UpdateInputFeedback("❌ Download cancelled");
                         CloseDialog(false);
                         break;
                         
                     default:
-                        Logger.Debug($"Unknown step {_currentStep}, closing dialog");
+                        LogDebug($"Unknown step {_currentStep}, closing dialog");
                         CloseDialog(false);
                         break;
                 }
@@ -371,7 +399,7 @@ namespace UniPlaySong.Views
         {
             try
             {
-                Logger.Debug($"CloseDialog called with success: {success}");
+                LogDebug($"CloseDialog called with success: {success}");
                 
                 // Stop any preview playback and restore game music
                 StopCurrentPreview();
@@ -379,7 +407,7 @@ namespace UniPlaySong.Views
                 var window = Window.GetWindow(this);
                 if (window != null)
                 {
-                    Logger.Debug("Closing dialog window");
+                    LogDebug("Closing dialog window");
                     
                     // Force focus return to Playnite main window
                     try
@@ -387,7 +415,7 @@ namespace UniPlaySong.Views
                         var mainWindow = _playniteApi?.Dialogs?.GetCurrentAppWindow();
                         if (mainWindow != null)
                         {
-                            Logger.Debug("Forcing focus return to main window");
+                            LogDebug("Forcing focus return to main window");
                             
                             // Multiple attempts to ensure focus returns
                             mainWindow.Activate();
@@ -406,7 +434,7 @@ namespace UniPlaySong.Views
                                     }
                                     catch (Exception delayedFocusEx)
                                     {
-                                        Logger.Debug(delayedFocusEx, "Error in delayed focus return");
+                                        LogDebug(delayedFocusEx, "Error in delayed focus return");
                                     }
                                 }));
                             });
@@ -414,7 +442,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        Logger.Debug(focusEx, "Error returning focus to main window");
+                        LogDebug(focusEx, "Error returning focus to main window");
                     }
                     
                     window.DialogResult = success;
@@ -422,7 +450,7 @@ namespace UniPlaySong.Views
                 }
                 else
                 {
-                    Logger.Debug("No parent window found to close");
+                    LogDebug("No parent window found to close");
                 }
             }
             catch (Exception ex)
@@ -514,7 +542,7 @@ namespace UniPlaySong.Views
                     }));
                 });
                 
-                Logger.Debug($"Previewed source: {sourceOption.Name}");
+                LogDebug($"Previewed source: {sourceOption.Name}");
             }
             catch (Exception ex)
             {
@@ -557,7 +585,7 @@ namespace UniPlaySong.Views
                     }));
                 });
                 
-                Logger.Debug($"Previewed album: {album.Name}");
+                LogDebug($"Previewed album: {album.Name}");
             }
             catch (Exception ex)
             {
@@ -575,12 +603,23 @@ namespace UniPlaySong.Views
             {
                 var songItem = selectedItem.Tag as DownloadItemViewModel;
                 var song = songItem?.Item as Song;
-                
+
                 if (song == null)
                 {
                     UpdateInputFeedback("❌ Invalid song for preview");
                     return;
                 }
+
+                // Rate limiting: Prevent rapid preview requests to avoid hammering the server
+                var timeSinceLastRequest = (DateTime.Now - _lastPreviewRequestTime).TotalMilliseconds;
+                if (timeSinceLastRequest < MinPreviewIntervalMs)
+                {
+                    var remainingMs = MinPreviewIntervalMs - timeSinceLastRequest;
+                    LogDebug($"Preview request rate limited - {remainingMs:F0}ms remaining");
+                    UpdateInputFeedback($"⏳ Please wait {remainingMs / 1000.0:F1}s before previewing again");
+                    return;
+                }
+                _lastPreviewRequestTime = DateTime.Now;
 
                 UpdateInputFeedback($"🎵 Previewing: {song.Name}...");
                 
@@ -614,12 +653,12 @@ namespace UniPlaySong.Views
                                 UpdateInputFeedback($"⬇️ Downloading preview: {song.Name}...");
                             }));
                             
-                            Logger.Debug($"Preview file doesn't exist, downloading to: {tempPath}");
+                            LogDebug($"Preview file doesn't exist, downloading to: {tempPath}");
                             
                             var cancellationToken = new CancellationTokenSource().Token;
                             var downloaded = _downloadManager?.DownloadSong(song, tempPath, cancellationToken, isPreview: true) ?? false;
                             
-                            Logger.Debug($"Download result: {downloaded}, File exists after download: {System.IO.File.Exists(tempPath)}");
+                            LogDebug($"Download result: {downloaded}, File exists after download: {System.IO.File.Exists(tempPath)}");
                             
                             if (!downloaded || !System.IO.File.Exists(tempPath))
                             {
@@ -631,11 +670,11 @@ namespace UniPlaySong.Views
                                 return;
                             }
                             
-                            Logger.Debug($"Preview download successful, file size: {new System.IO.FileInfo(tempPath).Length} bytes");
+                            LogDebug($"Preview download successful, file size: {new System.IO.FileInfo(tempPath).Length} bytes");
                         }
                         else
                         {
-                            Logger.Debug($"Preview file already exists: {tempPath}");
+                            LogDebug($"Preview file already exists: {tempPath}");
                         }
 
                         // Play the preview on the UI thread
@@ -645,7 +684,7 @@ namespace UniPlaySong.Views
                             UpdateInputFeedback($"🔊 Playing preview: {song.Name} - X/Y to stop (Game music paused)");
                         }));
                         
-                        Logger.Debug($"Started audio preview for song: {song.Name}");
+                        LogDebug($"Started audio preview for song: {song.Name}");
                     }
                     catch (Exception ex)
                     {
@@ -669,6 +708,13 @@ namespace UniPlaySong.Views
         /// </summary>
         private void StopCurrentPreview()
         {
+            // Ensure we're on the UI thread since MediaPlayer is a WPF object
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => StopCurrentPreview());
+                return;
+            }
+
             try
             {
                 if (_previewPlayer != null)
@@ -676,7 +722,7 @@ namespace UniPlaySong.Views
                     _previewPlayer.Stop();
                     _previewPlayer.Close();
                     _previewPlayer = null;
-                    Logger.Debug("Stopped preview player");
+                    LogDebug("Stopped preview player");
                 }
 
                 _currentlyPreviewing = null;
@@ -701,7 +747,7 @@ namespace UniPlaySong.Views
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    Logger.Debug("Paused game music for preview");
+                    LogDebug("Paused game music for preview");
                 }
                 else
                 {
@@ -726,7 +772,7 @@ namespace UniPlaySong.Views
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    Logger.Debug("Resumed game music after preview");
+                    LogDebug("Resumed game music after preview");
                 }
             }
             catch (Exception ex)
@@ -743,7 +789,7 @@ namespace UniPlaySong.Views
         {
             try
             {
-                Logger.Debug($"PlayPreviewFile called for: {songName}, path: {tempPath}");
+                LogDebug($"PlayPreviewFile called for: {songName}, path: {tempPath}");
                 
                 if (!System.IO.File.Exists(tempPath))
                 {
@@ -764,7 +810,7 @@ namespace UniPlaySong.Views
                 
                 _previewPlayer.MediaEnded += (s, e) => 
                 {
-                    Logger.Debug("Preview MediaEnded event fired");
+                    LogDebug("Preview MediaEnded event fired");
                     Dispatcher.BeginInvoke(new Action(() =>
                     {
                         UpdateInputFeedback("🎮 Preview ended - Game music resumed - X/Y to play again");
@@ -785,7 +831,7 @@ namespace UniPlaySong.Views
                 _previewPlayer.Open(new Uri(tempPath));
                 _previewPlayer.Play();
                 
-                Logger.Debug($"Preview started for: {songName}");
+                LogDebug($"Preview started for: {songName}");
             }
             catch (Exception ex)
             {
@@ -868,7 +914,7 @@ namespace UniPlaySong.Views
                         break;
                         
                     default:
-                        Logger.Debug($"Unhandled dialog step: {_currentStep}");
+                        LogDebug($"Unhandled dialog step: {_currentStep}");
                         break;
                 }
             }
@@ -934,13 +980,13 @@ namespace UniPlaySong.Views
                         var cancellationToken = new CancellationTokenSource().Token;
                         var gameName = _currentGame?.Name ?? "Unknown Game";
                         
-                        Logger.Debug($"Searching for albums: Game='{gameName}', Source={source}");
+                        LogDebug($"Searching for albums: Game='{gameName}', Source={source}");
                         
                         // Search for real albums using the download manager
                         var albums = _downloadManager?.GetAlbumsForGame(gameName, source, cancellationToken, auto: false);
                         var albumsList = albums?.ToList() ?? new List<Album>();
                         
-                        Logger.Info($"Found {albumsList.Count} albums for '{gameName}' from {source}");
+                        LogDebug($"Found {albumsList.Count} albums for '{gameName}' from {source}");
                         
                         // Convert to view models
                         var albumViewModels = albumsList.Select(a => new DownloadItemViewModel
@@ -1064,19 +1110,19 @@ namespace UniPlaySong.Views
                     {
                         var cancellationToken = new CancellationTokenSource().Token;
                         
-                        Logger.Debug($"Loading songs from album: {album.Name}");
+                        LogDebug($"Loading songs from album: {album.Name}");
                         
                         // Load real songs using the download manager
                         var songs = _downloadManager?.GetSongsFromAlbum(album, cancellationToken);
                         var songsList = songs?.ToList() ?? new List<Song>();
                         
-                        Logger.Info($"Found {songsList.Count} songs from album '{album.Name}'");
+                        LogDebug($"Found {songsList.Count} songs from album '{album.Name}'");
                         
                         // Convert to view models
                         var songViewModels = songsList.Select(s => new DownloadItemViewModel
                         {
                             Name = s.Name,
-                            Description = $"{s.Length} • {s.SizeInMb} MB",
+                            Description = FormatSongDescription(s),
                             Item = s
                         }).ToList();
 
@@ -1173,7 +1219,7 @@ namespace UniPlaySong.Views
                 {
                     try
                     {
-                        Logger.Debug($"Starting download for song: {selectedSong.Name}");
+                        LogDebug($"Starting download for song: {selectedSong.Name}");
                         
                         // Use the same path logic as regular dialog
                         var musicDir = _fileService.GetGameMusicDirectory(_currentGame);
@@ -1202,13 +1248,27 @@ namespace UniPlaySong.Views
                                 if (success && System.IO.File.Exists(filePath))
                                 {
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
-                                    
+
+                                    // Trigger music refresh so music plays immediately after download
+                                    try
+                                    {
+                                        if (_playbackService != null && _currentGame != null)
+                                        {
+                                            LogDebug($"Download complete - triggering music refresh for game: {_currentGame.Name}");
+                                            _playbackService.PlayGameMusic(_currentGame);
+                                        }
+                                    }
+                                    catch (Exception refreshEx)
+                                    {
+                                        LogDebug(refreshEx, "Error refreshing music after download");
+                                    }
+
                                     // Show success message
                                     _playniteApi?.Dialogs?.ShowMessage(
-                                        $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}", 
+                                        $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}",
                                         "Download Complete");
-                                    
-                                    Logger.Info($"Successfully downloaded: {selectedSong.Name} to {filePath}");
+
+                                    LogDebug($"Successfully downloaded: {selectedSong.Name} to {filePath}");
                                 }
                                 else
                                 {
@@ -1245,7 +1305,7 @@ namespace UniPlaySong.Views
                     }
                 });
                 
-                Logger.Debug($"Initiated download for song: {selectedSong.Name}");
+                LogDebug($"Initiated download for song: {selectedSong.Name}");
             }
             catch (Exception ex)
             {
@@ -1321,7 +1381,7 @@ namespace UniPlaySong.Views
                 // Update feedback text to show input was received
                 UpdateInputFeedback($"Last input: {e.Key} ✓");
                 
-                Logger.Debug($"Controller input: {e.Key}");
+                LogDebug($"Controller input: {e.Key}");
             }
             catch (Exception ex)
             {
@@ -1483,7 +1543,7 @@ namespace UniPlaySong.Views
                 
                 Task.Run(async () =>
                 {
-                    Logger.Debug("Starting Xbox controller monitoring");
+                    LogDebug("Starting Xbox controller monitoring");
                     
                     while (!_controllerMonitoringCancellation.Token.IsCancellationRequested)
                     {
@@ -1513,12 +1573,12 @@ namespace UniPlaySong.Views
                         }
                         catch (Exception ex)
                         {
-                            Logger.Debug(ex, "Error in controller monitoring loop");
+                            LogDebug(ex, "Error in controller monitoring loop");
                             await Task.Delay(1000, _controllerMonitoringCancellation.Token); // Wait longer on error
                         }
                     }
                     
-                    Logger.Debug("Xbox controller monitoring stopped");
+                    LogDebug("Xbox controller monitoring stopped");
                 }, _controllerMonitoringCancellation.Token);
             }
             catch (Exception ex)
@@ -1626,6 +1686,57 @@ namespace UniPlaySong.Views
             {
                 Logger.Error(ex, "Error checking button presses");
             }
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Formats the song description, avoiding duplicate "MB" suffix
+        /// </summary>
+        private static string FormatSongDescription(Song song)
+        {
+            var lengthPart = song.Length.HasValue ? song.Length.Value.ToString() : "";
+            var sizePart = song.SizeInMb ?? "";
+
+            // SizeInMb from KHInsider already contains "MB", so don't append it again
+            // For YouTube, SizeInMb is typically empty, so we skip the size part
+            if (!string.IsNullOrWhiteSpace(sizePart))
+            {
+                // Strip existing "MB" suffix if present (case-insensitive) and re-add consistently
+                var sizeValue = sizePart.Trim();
+                if (sizeValue.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+                {
+                    sizeValue = sizeValue.Substring(0, sizeValue.Length - 2).Trim();
+                }
+
+                // Try to parse as number for consistent formatting
+                if (double.TryParse(sizeValue, out double sizeNum))
+                {
+                    sizePart = $"{sizeNum:F2} MB";
+                }
+                else
+                {
+                    // Keep original if not parseable, but ensure single MB suffix
+                    sizePart = $"{sizeValue} MB";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(lengthPart) && !string.IsNullOrWhiteSpace(sizePart))
+            {
+                return $"{lengthPart} • {sizePart}";
+            }
+            else if (!string.IsNullOrWhiteSpace(lengthPart))
+            {
+                return lengthPart;
+            }
+            else if (!string.IsNullOrWhiteSpace(sizePart))
+            {
+                return sizePart;
+            }
+
+            return "";
         }
 
         #endregion

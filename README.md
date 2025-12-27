@@ -8,24 +8,29 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.8 (Upcoming Release)
+## 🆕 What's New - v1.0.8
 
-- **🔥 Firefox Cookies Support**: New option to use Firefox browser cookies for YouTube downloads - greatly improves reliability for international users
-- **⚡ Deno JavaScript Runtime**: yt-dlp now requires Deno (or Node.js/QuickJS) - place `deno.exe` in the same folder as `yt-dlp.exe`
-- **🐛 Critical Bug Fixes**: Fixed FFmpeg process deadlock causing normalization/trimming to freeze at "analyzing music" with files more than 10 minutes long
-- **🌍 Normalization Locale Fix**: Fixed normalization failing in non-English locales (German, French, etc.) due to decimal separator issues
-- **🎵 Default Music Fix**: Fixed issue where default music wouldn't play when switching to games with no music after downloads
-- **🔧 MP4 to MP3 Fix**: Fixed issue where simplified cookies command was downloading MP4 files instead of MP3 audio
-- **🎮 Simplified Multi-Game Menu**: Streamlined context menu for multiple game selection - removed individual source options, simplified to "Download All"
-- **⚠️ Long Audio Warnings**: Alerts when processing files >10 minutes to set user expectations
-- **🔧 Automatic Filename Sanitization**: Special characters in filenames are automatically fixed for FFmpeg compatibility
-- **✨ Customizable Trim Suffix**: Match your trimming suffix with normalization suffix (e.g., "-trimmed")
-- **📊 Improved Progress Tracking**: Clearer distinction between succeeded/skipped/failed operations with accurate file counts
-- **🏷️ Better UI Labels**: All trim features now clearly labeled as "Silence Trimming" to avoid confusion
-- **⚠️** Right-click context menu UI clean-up.
+### Bug Fixes
+- Fixed double "MB MB" suffix in download dialogs ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
+- Fixed Topmost windows blocking other apps in Desktop mode ([#8](https://github.com/aHuddini/UniPlaySong/issues/8))
+- Fixed failed downloads persisting across batch runs ([#9](https://github.com/aHuddini/UniPlaySong/issues/9))
+- Fixed music not playing immediately after download
+- Fixed preview threading issues
+- Fixed FFmpeg deadlock causing normalization to freeze
+- Fixed normalization failing in non-English locales (German, French, etc.)
+
+### New Features
+- **Reduced logging** ([#3](https://github.com/aHuddini/UniPlaySong/issues/3)) - Added "Enable Debug Logging" toggle in settings
+- **Rate limiting** ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) -Added simple delays between downloads to avoid server throttling
+- **Firefox Cookies Support** - Improves YouTube download reliability
+- **Deno JavaScript Runtime** - yt-dlp 2025.11.12+ requires Deno/Node.js/QuickJS
+
+### UI Improvements
+- Simplified multi-game context menu
+- Better progress tracking and UI labels
 
 **KNOWN BUGS**
--The add-on settings play state (never, desktop, fullscreen, both) doesn't work reliably depending on certain functions you use. Music will still play no matter what options you typically pick. Will fix later. Workaround: Uncheck "ENABLE MUSIC" if you wish to disable the music features.
+- The play state setting (never, desktop, fullscreen, both) doesn't work reliably. Workaround: Uncheck "ENABLE MUSIC" to disable music features.
 
 ## Previous Version - v1.0.7
 

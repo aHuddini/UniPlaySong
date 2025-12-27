@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using UniPlaySong.Common;
 using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
@@ -18,6 +19,18 @@ namespace UniPlaySong.Downloaders
     public class YouTubeClient
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                LogDebug(message);
+            }
+        }
+
         private readonly HttpClient _httpClient;
         private readonly ErrorHandlerService _errorHandler;
 
@@ -67,7 +80,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("YouTube search cancelled");
+                LogDebug("YouTube search cancelled");
                 throw; // Re-throw cancellation
             }
             catch (Exception ex)
@@ -114,7 +127,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("YouTube playlist loading cancelled");
+                LogDebug("YouTube playlist loading cancelled");
             }
             catch (Exception ex)
             {
@@ -143,7 +156,7 @@ namespace UniPlaySong.Downloaders
 
                 request.Content = new StringContent(content);
                 request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-                Logger.Debug($"YouTube search request: Query='{searchQuery}', Filter='{searchFilter}', Continuation={continuationToken != null}");
+                LogDebug($"YouTube search request: Query='{searchQuery}', Filter='{searchFilter}', Continuation={continuationToken != null}");
                 
                 var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
                 
@@ -155,7 +168,7 @@ namespace UniPlaySong.Downloaders
                 }
                 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                Logger.Debug($"YouTube search response received: {responseContent.Length} characters");
+                LogDebug($"YouTube search response received: {responseContent.Length} characters");
                 return responseContent;
             }
             catch (Exception ex)
@@ -197,7 +210,7 @@ namespace UniPlaySong.Downloaders
                 dynamic jsonObj = Serialization.FromJson<dynamic>(json);
                 var playlists = new List<dynamic>(jsonObj.SelectTokens(ParserPlaylists));
                 
-                Logger.Debug($"ParseSearchResults: Found {playlists.Count} playlists in JSON response");
+                LogDebug($"ParseSearchResults: Found {playlists.Count} playlists in JSON response");
 
                 foreach (var playlist in playlists)
                 {
@@ -216,11 +229,11 @@ namespace UniPlaySong.Downloaders
                         if (!string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Title))
                         {
                             results.Add(item);
-                            Logger.Debug($"Added playlist: {item.Title} (ID: {item.Id}, Count: {item.Count}, Channel: {item.ChannelName})");
+                            LogDebug($"Added playlist: {item.Title} (ID: {item.Id}, Count: {item.Count}, Channel: {item.ChannelName})");
                         }
                         else
                         {
-                            Logger.Debug($"Skipped playlist - missing ID or Title. ID: {item.Id}, Title: {item.Title}");
+                            LogDebug($"Skipped playlist - missing ID or Title. ID: {item.Id}, Title: {item.Title}");
                         }
                     }
                     catch (Exception ex)
@@ -235,7 +248,7 @@ namespace UniPlaySong.Downloaders
                 }
 
                 var continuationToken = jsonObj.SelectToken(ParserContinuationToken)?.ToString();
-                Logger.Debug($"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
+                LogDebug($"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
                 return continuationToken;
             }
             catch (Exception ex)

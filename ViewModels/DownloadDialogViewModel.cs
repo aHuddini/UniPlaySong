@@ -22,7 +22,18 @@ namespace UniPlaySong.ViewModels
     public class DownloadDialogViewModel : ObservableObject
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        
+
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(message);
+            }
+        }
+
         private readonly IPlayniteAPI _playniteApi;
         private readonly IDownloadManager _downloadManager;
         private readonly IMusicPlaybackService _playbackService;
@@ -307,7 +318,7 @@ namespace UniPlaySong.ViewModels
             // Don't search if keyword is empty (user needs to type something)
             if (string.IsNullOrWhiteSpace(searchKeyword) && !_isSongSelection)
             {
-                Logger.Debug("PerformSearch called but no search term provided - waiting for user input");
+                LogDebug("PerformSearch called but no search term provided - waiting for user input");
                 return;
             }
             
@@ -369,16 +380,16 @@ namespace UniPlaySong.ViewModels
                 if (_isSongSelection && _album != null)
                 {
                     // Load songs from album
-                    Logger.Debug($"Loading songs from album: {_album.Name}");
+                    LogDebug($"Loading songs from album: {_album.Name}");
                     var songs = _downloadManager.GetSongsFromAlbum(_album, cancellationToken);
                     results = songs.Select(s => new DownloadItemViewModel
                     {
                         Name = s.Name,
-                        Description = $"{s.Length} • {s.SizeInMb:F2} MB",
+                        Description = FormatSongDescription(s),
                         Item = s,
                         Source = s.Source
                     }).ToList();
-                    Logger.Info($"Found {results.Count} songs from album");
+                    LogDebug($"Found {results.Count} songs from album");
                 }
                 else
                 {
@@ -396,14 +407,14 @@ namespace UniPlaySong.ViewModels
                         return new ObservableCollection<DownloadItemViewModel>(results);
                     }
                     
-                    Logger.Debug($"Searching for albums: Game='{gameName}', Source={_source}");
+                    LogDebug($"Searching for albums: Game='{gameName}', Source={_source}");
 
                     // Manual search mode: auto=false means no whitelist filtering
                     var albums = _downloadManager.GetAlbumsForGame(gameName, _source, cancellationToken, auto: false);
 
                     // IEnumerable is never null, but can be empty
                     var albumsList = albums?.ToList() ?? new List<Album>();
-                    Logger.Info($"Found {albumsList.Count} albums for '{gameName}' from {_source}");
+                    LogDebug($"Found {albumsList.Count} albums for '{gameName}' from {_source}");
                     
                     results = albumsList.Select(a => new DownloadItemViewModel
                     {
@@ -424,7 +435,7 @@ namespace UniPlaySong.ViewModels
             catch (OperationCanceledException)
             {
                 // Search was cancelled, ignore
-                Logger.Debug("Search was cancelled");
+                LogDebug("Search was cancelled");
                 results = new List<DownloadItemViewModel>();
             }
             catch (Exception ex)
@@ -467,17 +478,28 @@ namespace UniPlaySong.ViewModels
         private string _currentlyPreviewing = null;
         private IMusicPlayer _previewPlayer;
         private readonly List<string> _previewFiles = new List<string>();
+        private DateTime _lastPreviewRequestTime = DateTime.MinValue;
+        private const int MinPreviewIntervalMs = 2000; // Minimum 2 seconds between preview requests to avoid rate limiting
 
         private void PreviewSong(Song song)
         {
             try
             {
+                // Rate limiting: Prevent rapid preview requests to avoid server rate limits
+                var timeSinceLastRequest = (DateTime.Now - _lastPreviewRequestTime).TotalMilliseconds;
+                if (timeSinceLastRequest < MinPreviewIntervalMs)
+                {
+                    LogDebug($"Preview request rate limited - {MinPreviewIntervalMs - timeSinceLastRequest:F0}ms remaining");
+                    return;
+                }
+                _lastPreviewRequestTime = DateTime.Now;
+
                 // Stop any current preview
                 StopPreview();
 
                 // Get temp path for preview
                 var tempPath = GetTempPathForPreview(song);
-                
+
                 // If already previewing this song, toggle it off
                 if (tempPath == _currentlyPreviewing)
                 {
@@ -703,6 +725,53 @@ namespace UniPlaySong.ViewModels
                 return new List<object>();
 
             return SelectedItems.Select(vm => vm.Item).ToList();
+        }
+
+        /// <summary>
+        /// Formats the song description, avoiding duplicate "MB" suffix
+        /// </summary>
+        private static string FormatSongDescription(Song song)
+        {
+            var lengthPart = song.Length.HasValue ? song.Length.Value.ToString() : "";
+            var sizePart = song.SizeInMb ?? "";
+
+            // SizeInMb from KHInsider already contains "MB", so don't append it again
+            // For YouTube, SizeInMb is typically empty, so we skip the size part
+            if (!string.IsNullOrWhiteSpace(sizePart))
+            {
+                // Strip existing "MB" suffix if present (case-insensitive) and re-add consistently
+                var sizeValue = sizePart.Trim();
+                if (sizeValue.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+                {
+                    sizeValue = sizeValue.Substring(0, sizeValue.Length - 2).Trim();
+                }
+
+                // Try to parse as number for consistent formatting
+                if (double.TryParse(sizeValue, out double sizeNum))
+                {
+                    sizePart = $"{sizeNum:F2} MB";
+                }
+                else
+                {
+                    // Keep original if not parseable, but ensure single MB suffix
+                    sizePart = $"{sizeValue} MB";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(lengthPart) && !string.IsNullOrWhiteSpace(sizePart))
+            {
+                return $"{lengthPart} • {sizePart}";
+            }
+            else if (!string.IsNullOrWhiteSpace(lengthPart))
+            {
+                return lengthPart;
+            }
+            else if (!string.IsNullOrWhiteSpace(sizePart))
+            {
+                return sizePart;
+            }
+
+            return "";
         }
 
         /// <summary>

@@ -21,6 +21,17 @@ namespace UniPlaySong.Downloaders
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string KhInsiderBaseUrl = "https://downloads.khinsider.com/";
 
+        /// <summary>
+        /// Logs a debug message if debug logging is enabled.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                Logger.Debug(message);
+            }
+        }
+
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
         private readonly ErrorHandlerService _errorHandler;
@@ -49,7 +60,7 @@ namespace UniPlaySong.Downloaders
             try
             {
                 var searchUrl = $"{KhInsiderBaseUrl}search?search={Uri.EscapeDataString(gameName)}";
-                Logger.Debug($"Searching KHInsider for: {gameName}");
+                LogDebug($"Searching KHInsider for: {gameName}");
 
                 // Use async properly - but we need to block for IEnumerable return
                 // In a real async scenario, this would return Task<IEnumerable<Album>>
@@ -75,11 +86,11 @@ namespace UniPlaySong.Downloaders
                     }
                 }
 
-                Logger.Info($"Found {albums.Count} albums for '{gameName}' on KHInsider");
+                LogDebug($"Found {albums.Count} albums for '{gameName}' on KHInsider");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"Search cancelled for: {gameName}");
+                LogDebug($"Search cancelled for: {gameName}");
             }
             catch (Exception ex)
             {
@@ -106,7 +117,7 @@ namespace UniPlaySong.Downloaders
                 }
 
                 var albumUrl = $"{KhInsiderBaseUrl}{album.Id}";
-                Logger.Debug($"Loading album: {albumUrl}");
+                LogDebug($"Loading album: {albumUrl}");
 
                 var htmlDoc = _htmlWeb.LoadFromWebAsync(albumUrl, cancellationToken).GetAwaiter().GetResult();
 
@@ -123,7 +134,7 @@ namespace UniPlaySong.Downloaders
                     var headers = headerRow.Descendants("th").Select(n => n.InnerHtml);
                     if (!headers.Any(h => h.Contains("MP3")))
                     {
-                        Logger.Info($"Album '{album.Name}' has no MP3 files");
+                        LogDebug($"Album '{album.Name}' has no MP3 files");
                         return songs;
                     }
                 }
@@ -138,7 +149,7 @@ namespace UniPlaySong.Downloaders
                 var tableRows = songTable.Descendants("tr").Skip(1).ToList();
                 if (tableRows.Count < 2)
                 {
-                    Logger.Info($"No songs found in album: {album.Name}");
+                    LogDebug($"No songs found in album: {album.Name}");
                     return songs;
                 }
 
@@ -157,11 +168,11 @@ namespace UniPlaySong.Downloaders
                     }
                 }
 
-                Logger.Info($"Found {songs.Count} songs in album '{album.Name}'");
+                LogDebug($"Found {songs.Count} songs in album '{album.Name}'");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"Album loading cancelled for: {album?.Name}");
+                LogDebug($"Album loading cancelled for: {album?.Name}");
             }
             catch (Exception ex)
             {
@@ -187,7 +198,7 @@ namespace UniPlaySong.Downloaders
 
                 // Get the actual download URL from the song page
                 var songUrl = $"{KhInsiderBaseUrl}{song.Id}";
-                Logger.Debug($"Loading song page: {songUrl}");
+                LogDebug($"Loading song page: {songUrl}");
 
                 var htmlDoc = _htmlWeb.LoadFromWebAsync(songUrl, cancellationToken).GetAwaiter().GetResult();
                 if (htmlDoc == null)
@@ -237,7 +248,7 @@ namespace UniPlaySong.Downloaders
                 }
 
                 // Download the file
-                Logger.Debug($"Downloading song from: {fileUrl}");
+                LogDebug($"Downloading song from: {fileUrl}");
                 // Use SendAsync with HttpRequestMessage to avoid overload ambiguity in .NET Framework 4.6.2
                 var request = new HttpRequestMessage(HttpMethod.Get, fileUrl);
                 var response = _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).GetAwaiter().GetResult();
@@ -256,7 +267,7 @@ namespace UniPlaySong.Downloaders
                     var fileInfo = new FileInfo(path);
                     if (fileInfo.Length > 0)
                     {
-                        Logger.Info($"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)");
+                        LogDebug($"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)");
                         return true;
                     }
                     else
@@ -274,7 +285,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"Download cancelled for: {song?.Name}");
+                LogDebug($"Download cancelled for: {song?.Name}");
                 return false;
             }
             catch (Exception ex)

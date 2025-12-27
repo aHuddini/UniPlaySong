@@ -30,6 +30,17 @@ namespace UniPlaySong.Menus
         private readonly ErrorHandlerService _errorHandler;
         private readonly List<FailedDownload> _failedDownloads;
 
+        /// <summary>
+        /// Logs a debug message only if debug logging is enabled in settings.
+        /// </summary>
+        private void LogDebug(string message)
+        {
+            if (FileLogger.IsDebugLoggingEnabled)
+            {
+                _logger.Debug(message);
+            }
+        }
+
         public GameMenuHandler(
             IPlayniteAPI playniteApi,
             ILogger logger,
@@ -75,7 +86,7 @@ namespace UniPlaySong.Menus
                         Source? sourceNullable = null;
                         while (true)
                         {
-                            _logger.Debug("Showing source selection dialog...");
+                            LogDebug("Showing source selection dialog...");
                             sourceNullable = _dialogService.ShowSourceSelectionDialog();
                             if (sourceNullable == null)
                             {
@@ -90,7 +101,7 @@ namespace UniPlaySong.Menus
                             Album album = null;
                             while (true)
                             {
-                                _logger.Debug($"Showing album selection dialog for source: {source}");
+                                LogDebug($"Showing album selection dialog for source: {source}");
                                 album = _dialogService.ShowAlbumSelectionDialog(game, source);
                                 if (album == null)
                                 {
@@ -135,7 +146,7 @@ namespace UniPlaySong.Menus
                     Source? sourceNullable = null;
                     while (true)
                     {
-                        _logger.Debug("Showing source selection dialog...");
+                        LogDebug("Showing source selection dialog...");
                         sourceNullable = _dialogService.ShowSourceSelectionDialog();
                         if (sourceNullable == null)
                         {
@@ -150,7 +161,7 @@ namespace UniPlaySong.Menus
                         Album album = null;
                         while (true)
                         {
-                            _logger.Debug($"Showing album selection dialog for source: {source}");
+                            LogDebug($"Showing album selection dialog for source: {source}");
                             album = _dialogService.ShowAlbumSelectionDialog(game, source);
                             if (album == null)
                             {
@@ -224,7 +235,7 @@ namespace UniPlaySong.Menus
                         var fileName = $"{sanitizedName}.mp3";
                         var filePath = Path.Combine(musicDir, fileName);
 
-                        _logger.Debug($"Attempting to download '{song.Name}' to '{filePath}'");
+                        LogDebug($"Attempting to download '{song.Name}' to '{filePath}'");
 
                         var success = _downloadManager.DownloadSong(song, filePath, cancellationToken);
                         if (success)
@@ -557,6 +568,11 @@ namespace UniPlaySong.Menus
             bool overwrite,
             string progressTitle)
         {
+            // Clear failed downloads from previous batch runs to prevent accumulation
+            // This ensures only failures from THIS batch run are tracked
+            _failedDownloads.Clear();
+            LogDebug("Cleared previous failed downloads before starting new batch");
+
             int gameIdx = 0;
             int successCount = 0;
             int skipCount = 0;
@@ -602,6 +618,14 @@ namespace UniPlaySong.Menus
                         failCount++;
                         // Track failed download
                         TrackFailedDownload(game, "Download failed - no suitable music found");
+                    }
+
+                    // Rate limiting: Add a small delay between batch downloads to avoid overwhelming servers
+                    // This helps prevent 429 (Too Many Requests) errors from KHInsider and YouTube
+                    // Only delay if there are more games to process
+                    if (gameIdx < games.Count && !args.CancelToken.IsCancellationRequested)
+                    {
+                        System.Threading.Thread.Sleep(1000); // 1 second delay between games
                     }
                 }
                 catch (BatchDownloadSkipException)

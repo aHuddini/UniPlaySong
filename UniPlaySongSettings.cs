@@ -20,6 +20,7 @@ namespace UniPlaySong
         private bool videoIsPlaying = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
+        private bool enableDebugLogging = false;
 
         public bool EnableMusic
         {
@@ -177,6 +178,17 @@ namespace UniPlaySong
         {
             get => previewDuration;
             set { previewDuration = Math.Max(Constants.MinPreviewDuration, Math.Min(Constants.MaxPreviewDuration, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable verbose debug logging to file.
+        /// When disabled, only errors and important events are logged.
+        /// Enable this for troubleshooting issues with the extension.
+        /// </summary>
+        public bool EnableDebugLogging
+        {
+            get => enableDebugLogging;
+            set { enableDebugLogging = value; OnPropertyChanged(); }
         }
 
         // Default Music Support
