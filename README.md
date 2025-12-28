@@ -67,8 +67,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 📦 Installation
 
 1. Download the latest `.pext` file from [Releases](https://github.com/aHuddini/UniPlaySong/releases)
-2. Open Playnite → **Add-ons → Extensions**
-3. Click **"Install from file"** and select the `.pext` file
+2. Double-click the downloaded `.pext` file (Playnite will detect it and prompt for installation), or update from within Playnite when an update is available from the add-on database
 
 ### Setup
 
