@@ -19,7 +19,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - **Pause music on minimize** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music pauses when Playnite is minimized, resumes when restored
 
 ### Bug Fixes
-- **Fixed Music Play State settings** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - "Never", "Desktop", and "Fullscreen" modes now work correctly
+- **Fixed Music Play State settings** ([#15](https://github.com/aHuddini/UniPlaySong/issues/15) - "Never", "Desktop", and "Fullscreen" modes now should work correctly
   - Settings changes take effect immediately when saved
 
 ### Previous Version - v1.0.9
