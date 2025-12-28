@@ -21,6 +21,8 @@ namespace UniPlaySong
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private bool enableDebugLogging = false;
+        private bool pauseOnFocusLoss = false;
+        private bool pauseOnMinimize = false;
 
         public bool EnableMusic
         {
@@ -189,6 +191,26 @@ namespace UniPlaySong
         {
             get => enableDebugLogging;
             set { enableDebugLogging = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Pause music when Playnite loses focus (switching to another application).
+        /// Music will resume when Playnite regains focus.
+        /// </summary>
+        public bool PauseOnFocusLoss
+        {
+            get => pauseOnFocusLoss;
+            set { pauseOnFocusLoss = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Pause music when Playnite is minimized to taskbar or system tray.
+        /// Music will resume when Playnite is restored.
+        /// </summary>
+        public bool PauseOnMinimize
+        {
+            get => pauseOnMinimize;
+            set { pauseOnMinimize = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

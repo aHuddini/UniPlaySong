@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.0.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,31 +12,20 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## 🆕 What's New - v1.0.9
+## What's New - v1.1.0
 
 ### New Features
-- **Download From URL** ([#10](https://github.com/aHuddini/UniPlaySong/issues/10)) - Paste a specific YouTube URL to download music for a game
-  - URL validation with visual feedback
-  - Audio preview before downloading (30-second clips)
-  - Respects Firefox cookies settings
-  - Rate limiting to avoid YouTube throttling
-  - Music auto-plays after download
+- **Pause music on focus loss** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music pauses when you switch to another application, resumes when you return
+- **Pause music on minimize** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music pauses when Playnite is minimized, resumes when restored
 
-- **PlayniteSound & UniPlaySong Migration** ([#12](https://github.com/aHuddini/UniPlaySong/issues/12)) - Transfer music between PlayniteSound and UniPlaySong (for preserving existing music libraries. Helpful if you want to switch or stay on a preferred plugin)
-  - Import: Copy music from PlayniteSound to UniPlaySong
-  - Export: Copy music from UniPlaySong to PlayniteSound
-  - Access via Settings → Migration tab
+### Bug Fixes
+- **Fixed Music Play State settings** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - "Never", "Desktop", and "Fullscreen" modes now work correctly
+  - Settings changes take effect immediately when saved
 
-### Improvements
-- **[Desktop Mode] Reorganized Right-Click Context Menu** - Cleaner, more logical menu structure with grouped sections
-- **Enhanced Rate Limiting** - Added `--sleep-requests` and `--sleep-interval` options to yt-dlp commands with specific right-click context options.
-
-**Known Issue**: Play state setting (Desktop, Fullscreen, Never, etc.) doesn't work reliably. Use "Enable Music" toggle as workaround.
-
-### Previous Version - v1.0.8
-- Fixed double "MB MB" suffix, Topmost windows blocking, failed downloads persisting
-- Firefox Cookies Support for YouTube downloads
-- Deno JavaScript Runtime support for yt-dlp 2025.11.12+
+### Previous Version - v1.0.9
+- Download From URL - Paste specific YouTube URLs
+- PlayniteSound Migration - Import/export music between extensions
+- Reorganized context menu with grouped sections
 
 ---
 

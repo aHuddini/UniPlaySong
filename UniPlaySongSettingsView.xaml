@@ -52,16 +52,34 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
                     
-                    <CheckBox Content="Theme Compatible Login Skip" 
-                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}" 
+                    <CheckBox Content="Theme Compatible Login Skip"
+                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
                               IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
                               Margin="0,5"/>
-                    <TextBlock Text="Waits for keyboard or controller input (Enter/Space/Escape/Return) before playing music. When enabled, music will not play until you press a key to dismiss the login screen. Useful for fullscreen themes with login/welcome screens." 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="Waits for keyboard or controller input (Enter/Space/Escape/Return) before playing music. When enabled, music will not play until you press a key to dismiss the login screen. Useful for fullscreen themes with login/welcome screens."
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    
+
+                    <CheckBox Content="Pause music when Playnite loses focus"
+                              IsChecked="{Binding Settings.PauseOnFocusLoss}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is minimized"
+                              IsChecked="{Binding Settings.PauseOnMinimize}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar or system tray. Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <Separator Margin="0,10"/>
                     
                     <!-- Volume -->

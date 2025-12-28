@@ -48,7 +48,7 @@ namespace UniPlaySong.Services
             _getSelectedGame = getSelectedGame ?? throw new ArgumentNullException(nameof(getSelectedGame));
             
             _settingsService.SettingsChanged += OnSettingsChanged;
-            _fileLogger?.Info("MusicPlaybackCoordinator: Subscribed to SettingsService");
+            _fileLogger?.Debug("MusicPlaybackCoordinator: Subscribed to SettingsService");
         }
         
         /// <summary>
@@ -65,61 +65,61 @@ namespace UniPlaySong.Services
         {
             if (_settings == null || !_settings.EnableMusic)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - music disabled or settings null");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - music disabled or settings null");
                 return false;
             }
-            
+
             if (_playbackService == null)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - playback service null");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - playback service null");
                 return false;
             }
-            
+
             if (_settings.MusicVolume <= 0)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - volume is 0");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - volume is 0");
                 return false;
             }
-            
+
             if (_settings.VideoIsPlaying)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - video is playing");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - video is playing");
                 return false;
             }
-            
+
             if (game == null)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - game is null");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - game is null");
                 return false;
             }
-            
+
             if (_loginSkipActive)
             {
-                _fileLogger?.Info("ShouldPlayMusic: Returning false - login skip active");
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - login skip active");
                 return false;
             }
-            
+
             // Check both _firstSelect (initial state) and _skipFirstSelectActive (skip window)
             if ((_firstSelect || _skipFirstSelectActive) && _settings.SkipFirstSelectionAfterModeSwitch)
             {
-                _fileLogger?.Info($"ShouldPlayMusic: Returning false - first select skip enabled (FirstSelect: {_firstSelect}, SkipActive: {_skipFirstSelectActive})");
+                _fileLogger?.Debug($"ShouldPlayMusic: Returning false - first select skip enabled (FirstSelect: {_firstSelect}, SkipActive: {_skipFirstSelectActive})");
                 return false;
             }
-            
+
             var state = _settings.MusicState;
             if (_isFullscreen() && state != AudioState.Fullscreen && state != AudioState.Always)
             {
-                _fileLogger?.Info($"ShouldPlayMusic: Returning false - fullscreen mode but state is {state}");
+                _fileLogger?.Debug($"ShouldPlayMusic: Returning false - fullscreen mode but state is {state}");
                 return false;
             }
-            
+
             if (_isDesktop() && state != AudioState.Desktop && state != AudioState.Always)
             {
-                _fileLogger?.Info($"ShouldPlayMusic: Returning false - desktop mode but state is {state}");
+                _fileLogger?.Debug($"ShouldPlayMusic: Returning false - desktop mode but state is {state}");
                 return false;
             }
-            
-            _fileLogger?.Info($"ShouldPlayMusic: Returning true - all checks passed (Game: {game.Name})");
+
+            _fileLogger?.Debug($"ShouldPlayMusic: Returning true - all checks passed (Game: {game.Name})");
             return true;
         }
         
@@ -134,7 +134,7 @@ namespace UniPlaySong.Services
             // Reset skip state when entering fullscreen for first time (matches PNS "Skip on startup" behavior)
             if (isFullscreen && !_hasSeenFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
-                _fileLogger?.Info("HandleGameSelected: First time seeing fullscreen mode - resetting skip state");
+                _fileLogger?.Debug("HandleGameSelected: First time seeing fullscreen mode - resetting skip state");
                 _firstSelect = true;
                 _skipFirstSelectActive = false;
                 _hasSeenFullscreen = true;
@@ -143,7 +143,7 @@ namespace UniPlaySong.Services
             if (game == null || _settings?.EnableMusic != true)
             {
                 // Use PlayGameMusic(null) to handle fade-out properly
-                _fileLogger?.Info("HandleGameSelected: No game or music disabled - fading out playback");
+                _fileLogger?.Debug("HandleGameSelected: No game or music disabled - fading out playback");
                 _playbackService?.PlayGameMusic(null, _settings, false);
                 _firstSelect = false;
                 _currentGame = null;
@@ -153,12 +153,12 @@ namespace UniPlaySong.Services
             var wasFirstSelect = _firstSelect;
             _currentGame = game;
             
-            _fileLogger?.Info($"HandleGameSelected: Game={game.Name}, IsFullscreen={isFullscreen}, WasFirstSelect={wasFirstSelect}, LoginSkipActive={_loginSkipActive}, HasSeenFullscreen={_hasSeenFullscreen}");
+            _fileLogger?.Debug($"HandleGameSelected: Game={game.Name}, IsFullscreen={isFullscreen}, WasFirstSelect={wasFirstSelect}, LoginSkipActive={_loginSkipActive}, HasSeenFullscreen={_hasSeenFullscreen}");
             
             // SkipFirstSelectionAfterModeSwitch takes precedence
             if (wasFirstSelect && _settings.SkipFirstSelectionAfterModeSwitch)
             {
-                _fileLogger?.Info($"HandleGameSelected: Skipping first selection (Game: {game.Name})");
+                _fileLogger?.Debug($"HandleGameSelected: Skipping first selection (Game: {game.Name})");
                 _skipFirstSelectActive = true;
                 _firstSelect = false;
                 return;
@@ -167,7 +167,7 @@ namespace UniPlaySong.Services
             // ThemeCompatibleSilentSkip - only if SkipFirstSelectionAfterModeSwitch is disabled
             if (wasFirstSelect && _settings.ThemeCompatibleSilentSkip && isFullscreen && !_settings.SkipFirstSelectionAfterModeSwitch)
             {
-                _fileLogger?.Info($"HandleGameSelected: Login skip active (Game: {game.Name})");
+                _fileLogger?.Debug($"HandleGameSelected: Login skip active (Game: {game.Name})");
                 _loginSkipActive = true;
                 // Keep _firstSelect true so ShouldPlayMusic() continues to block
                 return;
@@ -175,26 +175,36 @@ namespace UniPlaySong.Services
             
             if (_loginSkipActive)
             {
-                _fileLogger?.Info("HandleGameSelected: Clearing login skip");
+                _fileLogger?.Debug("HandleGameSelected: Clearing login skip");
                 _loginSkipActive = false;
             }
-            
+
             if (_skipFirstSelectActive)
             {
-                _fileLogger?.Info("HandleGameSelected: Clearing skip flag - ready to allow music");
+                _fileLogger?.Debug("HandleGameSelected: Clearing skip flag - ready to allow music");
                 _skipFirstSelectActive = false;
             }
-            
+
             if (_loginSkipActive || _skipFirstSelectActive)
             {
-                _fileLogger?.Info($"HandleGameSelected: Skip flags active - not playing music (LoginSkip: {_loginSkipActive}, SkipFirstSelect: {_skipFirstSelectActive})");
+                _fileLogger?.Debug($"HandleGameSelected: Skip flags active - not playing music (LoginSkip: {_loginSkipActive}, SkipFirstSelect: {_skipFirstSelectActive})");
                 return;
             }
-            
+
+            // Check MusicState (Never/Desktop/Fullscreen/Always) before playing
+            if (!ShouldPlayMusic(game))
+            {
+                _fileLogger?.Debug($"HandleGameSelected: ShouldPlayMusic returned false for {game.Name} - stopping all music");
+                // Stop any currently playing music (including default music)
+                _playbackService?.Stop();
+                _firstSelect = false;
+                return;
+            }
+
             // Service handles: music file detection, default music fallback, and settings
             _fileLogger?.Info($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
             _playbackService?.PlayGameMusic(game, _settings, false);
-            
+
             _firstSelect = false;
         }
         
@@ -205,11 +215,11 @@ namespace UniPlaySong.Services
         {
             if (!_loginSkipActive)
             {
-                _fileLogger?.Info("HandleLoginDismiss: Login skip not active, ignoring");
+                _fileLogger?.Debug("HandleLoginDismiss: Login skip not active, ignoring");
                 return;
             }
             
-            _fileLogger?.Info("HandleLoginDismiss: Clearing login skip");
+            _fileLogger?.Debug("HandleLoginDismiss: Clearing login skip");
             _loginSkipActive = false;
             // Clear skip flag when login is dismissed - we're past the skip window
             _skipFirstSelectActive = false;
@@ -225,12 +235,12 @@ namespace UniPlaySong.Services
                     var game = _getSelectedGame();
                     if (game != null && ShouldPlayMusic(game))
                     {
-                        _fileLogger?.Info($"HandleLoginDismiss: Playing music for {game.Name}");
+                        _fileLogger?.Debug($"HandleLoginDismiss: Playing music for {game.Name}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
                     else
                     {
-                        _fileLogger?.Info($"HandleLoginDismiss: Not playing - game null or ShouldPlayMusic returned false");
+                        _fileLogger?.Debug($"HandleLoginDismiss: Not playing - game null or ShouldPlayMusic returned false");
                         // If no music to play, allow native music (if suppression is disabled)
                         // This ensures native music plays after login when no game music is available
                         // Note: We need to call this through a callback since coordinator doesn't have direct access
@@ -255,7 +265,7 @@ namespace UniPlaySong.Services
             var game = _getSelectedGame();
             if (game != null && _settings?.EnableMusic == true)
             {
-                _fileLogger?.Info("HandleViewChange: Clearing login skip and starting music");
+                _fileLogger?.Debug("HandleViewChange: Clearing login skip and starting music");
                 _loginSkipActive = false;
                 _skipFirstSelectActive = false;
                 _firstSelect = false;
@@ -266,7 +276,7 @@ namespace UniPlaySong.Services
                 }
                 else
                 {
-                    _fileLogger?.Info("HandleViewChange: Not playing - ShouldPlayMusic returned false");
+                    _fileLogger?.Debug("HandleViewChange: Not playing - ShouldPlayMusic returned false");
                 }
             }
         }
@@ -280,7 +290,7 @@ namespace UniPlaySong.Services
         {
             if (isPlaying)
             {
-                _fileLogger?.Info("HandleVideoStateChange: Video playing - pausing music");
+                _fileLogger?.Debug("HandleVideoStateChange: Video playing - pausing music");
                 if (_playbackService?.IsLoaded == true)
                 {
                     _playbackService.Pause();
@@ -288,7 +298,7 @@ namespace UniPlaySong.Services
             }
             else
             {
-                _fileLogger?.Info("HandleVideoStateChange: Video stopped - resuming music");
+                _fileLogger?.Debug("HandleVideoStateChange: Video stopped - resuming music");
                 var game = _getSelectedGame();
                 if (game != null && ShouldPlayMusic(game))
                 {
@@ -298,13 +308,13 @@ namespace UniPlaySong.Services
                     }
                     else
                     {
-                        _fileLogger?.Info($"HandleVideoStateChange: Starting music for {game.Name}");
+                        _fileLogger?.Debug($"HandleVideoStateChange: Starting music for {game.Name}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
                 }
                 else
                 {
-                    _fileLogger?.Info("HandleVideoStateChange: Not resuming - game null or ShouldPlayMusic returned false");
+                    _fileLogger?.Debug("HandleVideoStateChange: Not resuming - game null or ShouldPlayMusic returned false");
                 }
             }
         }
@@ -344,7 +354,7 @@ namespace UniPlaySong.Services
         {
             if (_settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
-                _fileLogger?.Info("ResetSkipStateForModeSwitch: Resetting _firstSelect and _skipFirstSelectActive for mode switch");
+                _fileLogger?.Debug("ResetSkipStateForModeSwitch: Resetting _firstSelect and _skipFirstSelectActive for mode switch");
                 _firstSelect = true;
                 _skipFirstSelectActive = false;
                 _hasSeenFullscreen = false;
@@ -360,7 +370,7 @@ namespace UniPlaySong.Services
             if (e.NewSettings != null)
             {
                 _settings = e.NewSettings;
-                _fileLogger?.Info("MusicPlaybackCoordinator: Settings updated automatically via SettingsService");
+                _fileLogger?.Debug("MusicPlaybackCoordinator: Settings updated automatically via SettingsService");
             }
         }
 
@@ -378,7 +388,7 @@ namespace UniPlaySong.Services
             if (newSettings != null)
             {
                 _settings = newSettings;
-                _fileLogger?.Info("MusicPlaybackCoordinator: Settings updated (deprecated method)");
+                _fileLogger?.Debug("MusicPlaybackCoordinator: Settings updated (deprecated method)");
             }
         }
     }

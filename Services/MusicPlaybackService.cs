@@ -616,15 +616,19 @@ namespace UniPlaySong.Services
             if (_musicPlayer?.IsLoaded == true)
             {
                 StopPreviewTimer();
-                AddPauseSource(PauseSource.Manual);
+                _fileLogger?.Debug("Pause: Calling fader.Pause()");
+                _fader?.Pause();
+                _activePauseSources.Add(PauseSource.Manual);
             }
         }
 
         public void Resume()
         {
-            if (_isPaused && _musicPlayer?.IsLoaded == true)
+            if (_musicPlayer?.IsLoaded == true)
             {
-                RemovePauseSource(PauseSource.Manual);
+                _fileLogger?.Debug("Resume: Calling fader.Resume()");
+                _fader?.Resume();
+                _activePauseSources.Remove(PauseSource.Manual);
             }
         }
 

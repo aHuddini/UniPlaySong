@@ -236,6 +236,14 @@ namespace UniPlaySong
                 SuppressNativeMusic();
                 StartNativeMusicSuppression();
             }
+
+            // Subscribe to application focus/minimize events for PauseOnDeactivate feature
+            Application.Current.Deactivated += OnApplicationDeactivate;
+            Application.Current.Activated += OnApplicationActivate;
+            if (Application.Current.MainWindow != null)
+            {
+                Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
+            }
         }
 
         /// <summary>
@@ -247,10 +255,18 @@ namespace UniPlaySong
             _playbackService?.Stop();
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
-            
+
+            // Unsubscribe from focus/minimize events
+            Application.Current.Deactivated -= OnApplicationDeactivate;
+            Application.Current.Activated -= OnApplicationActivate;
+            if (Application.Current.MainWindow != null)
+            {
+                Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
+            }
+
             StopControllerLoginMonitoring();
             StopNativeMusicSuppression();
-            
+
             _fileLogger?.Info("Application stopped");
         }
 
@@ -302,7 +318,32 @@ namespace UniPlaySong
             try
             {
                 // Coordinator subscribes directly to SettingsService - no manual update needed
-                
+
+                // Check if MusicState or EnableMusic changed - if so, re-evaluate playback
+                bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
+                    (e.OldSettings.MusicState != e.NewSettings.MusicState ||
+                     e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
+
+                if (musicSettingsChanged)
+                {
+                    var game = SelectedGames?.FirstOrDefault();
+                    if (game != null && _coordinator != null)
+                    {
+                        // Re-evaluate if music should be playing with new settings
+                        if (!_coordinator.ShouldPlayMusic(game))
+                        {
+                            _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - stopping music (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic})");
+                            _playbackService?.Stop();
+                        }
+                    }
+                    else if (e.NewSettings?.EnableMusic == false || e.NewSettings?.MusicState == AudioState.Never)
+                    {
+                        // No game selected but music disabled - stop any default music
+                        _fileLogger?.Debug("OnSettingsServiceChanged: Music disabled - stopping all playback");
+                        _playbackService?.Stop();
+                    }
+                }
+
                 // Update playback service volume if needed
                 if (_playbackService != null && e.NewSettings != null)
                 {
@@ -367,7 +408,37 @@ namespace UniPlaySong
                 // Reload settings from disk via SettingsService
                 // SettingsService will automatically notify all subscribers via SettingsChanged event
                 _settingsService.LoadSettings();
-                
+
+                // Immediately check if music should be stopped based on new settings
+                // This handles the case where MusicState was changed to Never or a mode-specific setting
+                var currentSettings = _settingsService.Current;
+                if (currentSettings != null && _coordinator != null)
+                {
+                    var game = SelectedGames?.FirstOrDefault();
+                    bool shouldStop = false;
+
+                    // Check if music should be completely disabled
+                    if (!currentSettings.EnableMusic || currentSettings.MusicState == AudioState.Never)
+                    {
+                        shouldStop = true;
+                    }
+                    // Check mode-specific settings
+                    else if (IsDesktop && currentSettings.MusicState == AudioState.Fullscreen)
+                    {
+                        shouldStop = true;
+                    }
+                    else if (IsFullscreen && currentSettings.MusicState == AudioState.Desktop)
+                    {
+                        shouldStop = true;
+                    }
+
+                    if (shouldStop)
+                    {
+                        _fileLogger?.Debug($"OnSettingsSaved: Stopping music immediately (State: {currentSettings.MusicState}, Mode: {(IsFullscreen ? "Fullscreen" : "Desktop")})");
+                        _playbackService?.Stop();
+                    }
+                }
+
                 logger.Info("Settings saved and reloaded via SettingsService");
             }
             catch (Exception ex)
@@ -380,6 +451,85 @@ namespace UniPlaySong
         {
             if (e.PropertyName != "ActiveView") return;
             _coordinator.HandleViewChange();
+        }
+
+        /// <summary>
+        /// Handles window state changes (minimize/restore).
+        /// Pauses music when minimized if PauseOnMinimize is enabled.
+        /// </summary>
+        private void OnWindowStateChanged(object sender, EventArgs e)
+        {
+            var windowState = Application.Current?.MainWindow?.WindowState;
+            _fileLogger?.Debug($"OnWindowStateChanged - WindowState: {windowState}, PauseOnMinimize: {_settings?.PauseOnMinimize}");
+
+            if (_settings?.PauseOnMinimize == true)
+            {
+                switch (windowState)
+                {
+                    case WindowState.Normal:
+                    case WindowState.Maximized:
+                        _fileLogger?.Debug("OnWindowStateChanged: Window restored - resuming music");
+                        ResumeAfterPause();
+                        break;
+                    case WindowState.Minimized:
+                        _fileLogger?.Debug("OnWindowStateChanged: Window minimized - pausing music");
+                        _playbackService?.Pause();
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles application losing focus.
+        /// Pauses music when Playnite loses focus if PauseOnFocusLoss is enabled.
+        /// </summary>
+        private void OnApplicationDeactivate(object sender, EventArgs e)
+        {
+            _fileLogger?.Debug($"OnApplicationDeactivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
+            if (_settings?.PauseOnFocusLoss == true)
+            {
+                _fileLogger?.Debug("OnApplicationDeactivate: Pausing music");
+                _playbackService?.Pause();
+            }
+        }
+
+        /// <summary>
+        /// Handles application gaining focus.
+        /// Resumes music when Playnite gains focus if PauseOnFocusLoss is enabled.
+        /// </summary>
+        private void OnApplicationActivate(object sender, EventArgs e)
+        {
+            _fileLogger?.Debug($"OnApplicationActivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
+            if (_settings?.PauseOnFocusLoss == true)
+            {
+                // Only resume if window is not minimized (minimize has its own resume logic)
+                var windowState = Application.Current?.MainWindow?.WindowState;
+                if (windowState != WindowState.Minimized)
+                {
+                    _fileLogger?.Debug("OnApplicationActivate: Resuming music");
+                    ResumeAfterPause();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resumes music after a pause (focus loss or minimize).
+        /// Uses Resume() if music is loaded.
+        /// </summary>
+        private void ResumeAfterPause()
+        {
+            if (_playbackService == null) return;
+
+            // If music is loaded, resume it
+            if (_playbackService.IsLoaded)
+            {
+                _fileLogger?.Debug("ResumeAfterPause: Music is loaded - calling Resume()");
+                _playbackService.Resume();
+            }
+            else
+            {
+                _fileLogger?.Debug("ResumeAfterPause: Music not loaded - nothing to resume");
+            }
         }
 
         private void OnLoginDismissKeyPress(object sender, KeyEventArgs e)

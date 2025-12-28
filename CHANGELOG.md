@@ -1,6 +1,31 @@
 # UniPlaySong - Changelog
 
-## Version 1.0.9 (Latest)
+## Version 1.1.0 (Latest)
+
+### Features
+- **Pause music on focus loss** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - New option to pause music when switching to another application
+  - Music pauses when Playnite loses focus (switching to another window)
+  - Music resumes when Playnite regains focus
+  - Enable in Settings → General → "Pause music when Playnite loses focus"
+
+- **Pause music on minimize** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - New option to pause music when Playnite is minimized
+  - Music pauses when Playnite is minimized to taskbar or system tray
+  - Music resumes when Playnite is restored
+  - Enable in Settings → General → "Pause music when Playnite is minimized"
+
+### Bug Fixes
+- **Fixed Music Play State settings not working** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music state settings (Never, Desktop, Fullscreen, Always) now work reliably
+  - "Never" mode now properly stops all music (including default music)
+  - "Desktop" mode correctly plays music only in Desktop mode
+  - "Fullscreen" mode correctly plays music only in Fullscreen mode
+  - Settings changes take effect immediately when saved (no longer requires game switch)
+
+### Improvements
+- **Debug logging respects toggle** - Coordinator debug messages now only log when Debug Logging is enabled
+
+---
+
+## Version 1.0.9
 
 ### Features
 - **Download From URL** ([#10](https://github.com/aHuddini/UniPlaySong/issues/10)) - New dialog to download music from a specific YouTube URL
