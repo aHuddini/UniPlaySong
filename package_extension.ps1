@@ -295,15 +295,24 @@ if (-not (Test-Path (Join-Path $packageDir "HtmlAgilityPack.dll"))) {
 
 # Create .pext file (ZIP with different extension)
 Write-Host "Creating .pext package..." -ForegroundColor Yellow
+
+# Create pext output folder if it doesn't exist
+$pextOutputDir = Join-Path $scriptDir "pext"
+if (-not (Test-Path $pextOutputDir)) {
+    New-Item -ItemType Directory -Path $pextOutputDir -Force | Out-Null
+    Write-Host "  Created pext output folder" -ForegroundColor Gray
+}
+
 $pextFileName = "$extensionName.$extensionId`_$version.pext"
-$zipFileName = "$extensionName.$extensionId`_$version.zip"
+$pextFilePath = Join-Path $pextOutputDir $pextFileName
+$zipFilePath = Join-Path $pextOutputDir "$extensionName.$extensionId`_$version.zip"
 
 # Remove old package if exists
-if (Test-Path $pextFileName) {
-    Remove-Item $pextFileName -Force -ErrorAction SilentlyContinue
+if (Test-Path $pextFilePath) {
+    Remove-Item $pextFilePath -Force -ErrorAction SilentlyContinue
 }
-if (Test-Path $zipFileName) {
-    Remove-Item $zipFileName -Force -ErrorAction SilentlyContinue
+if (Test-Path $zipFilePath) {
+    Remove-Item $zipFilePath -Force -ErrorAction SilentlyContinue
 }
 
 # Verify package contents before creating archive
@@ -333,13 +342,13 @@ Write-Host ""
 # Create ZIP first (Compress-Archive limitation)
 Write-Host "Creating .pext archive..." -ForegroundColor Yellow
 try {
-    Compress-Archive -Path "$packageDir\*" -DestinationPath $zipFileName -Force
-    
+    Compress-Archive -Path "$packageDir\*" -DestinationPath $zipFilePath -Force
+
     # Rename to .pext
-    Rename-Item -Path $zipFileName -NewName $pextFileName -Force
-    
-    $packageInfo = Get-Item $pextFileName
-    
+    Rename-Item -Path $zipFilePath -NewName $pextFileName -Force
+
+    $packageInfo = Get-Item $pextFilePath
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "  PACKAGE CREATED SUCCESSFULLY!" -ForegroundColor Green

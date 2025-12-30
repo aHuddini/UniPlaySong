@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -49,6 +48,10 @@ namespace UniPlaySong.Views
 
         private CancellationTokenSource _controllerMonitoringCancellation;
         private bool _isMonitoring = false;
+
+        // D-pad debouncing - prevents double-input from both XInput and WPF processing
+        private DateTime _lastDpadNavigationTime = DateTime.MinValue;
+        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
 
         // Download functionality dependencies
         private Game _currentGame;
@@ -1390,6 +1393,21 @@ namespace UniPlaySong.Views
         }
 
         /// <summary>
+        /// Check if enough time has passed since last D-pad navigation (debouncing)
+        /// </summary>
+        private bool TryDpadNavigation()
+        {
+            var now = DateTime.Now;
+            var timeSinceLastNav = (now - _lastDpadNavigationTime).TotalMilliseconds;
+            if (timeSinceLastNav < DpadDebounceMs)
+            {
+                return false; // Too soon, ignore this input
+            }
+            _lastDpadNavigationTime = now;
+            return true;
+        }
+
+        /// <summary>
         /// Navigate the list by a number of items
         /// </summary>
         private void NavigateList(int offset)
@@ -1400,10 +1418,10 @@ namespace UniPlaySong.Views
                 {
                     int currentIndex = ResultsListBox.SelectedIndex;
                     int newIndex = Math.Max(0, Math.Min(ResultsListBox.Items.Count - 1, currentIndex + offset));
-                    
+
                     ResultsListBox.SelectedIndex = newIndex;
                     ResultsListBox.ScrollIntoView(ResultsListBox.SelectedItem);
-                    
+
                     // Ensure the ListBox has focus for visual feedback
                     ResultsListBox.Focus();
                 }
@@ -1459,74 +1477,7 @@ namespace UniPlaySong.Views
 
         #region Xbox Controller Support
 
-        // XInput API definitions
-        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_1_4(int dwUserIndex, ref XINPUT_STATE pState);
-
-        [DllImport("xinput1_3.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_1_3(int dwUserIndex, ref XINPUT_STATE pState);
-
-        [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState")]
-        private static extern int XInputGetState_9_1_0(int dwUserIndex, ref XINPUT_STATE pState);
-
-        private static int XInputGetState(int dwUserIndex, ref XINPUT_STATE pState)
-        {
-            try
-            {
-                return XInputGetState_1_4(dwUserIndex, ref pState);
-            }
-            catch
-            {
-                try
-                {
-                    return XInputGetState_1_3(dwUserIndex, ref pState);
-                }
-                catch
-                {
-                    try
-                    {
-                        return XInputGetState_9_1_0(dwUserIndex, ref pState);
-                    }
-                    catch
-                    {
-                        return -1; // No XInput available
-                    }
-                }
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_STATE
-        {
-            public uint dwPacketNumber;
-            public XINPUT_GAMEPAD Gamepad;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_GAMEPAD
-        {
-            public ushort wButtons;
-            public byte bLeftTrigger;
-            public byte bRightTrigger;
-            public short sThumbLX;
-            public short sThumbLY;
-            public short sThumbRX;
-            public short sThumbRY;
-        }
-
-        // Button constants
-        private const ushort XINPUT_GAMEPAD_A = 0x1000;
-        private const ushort XINPUT_GAMEPAD_B = 0x2000;
-        private const ushort XINPUT_GAMEPAD_X = 0x4000;
-        private const ushort XINPUT_GAMEPAD_Y = 0x8000;
-        private const ushort XINPUT_GAMEPAD_DPAD_UP = 0x0001;
-        private const ushort XINPUT_GAMEPAD_DPAD_DOWN = 0x0002;
-        private const ushort XINPUT_GAMEPAD_DPAD_LEFT = 0x0004;
-        private const ushort XINPUT_GAMEPAD_DPAD_RIGHT = 0x0008;
-        private const ushort XINPUT_GAMEPAD_LEFT_SHOULDER = 0x0100;
-        private const ushort XINPUT_GAMEPAD_RIGHT_SHOULDER = 0x0200;
-
-        private XINPUT_STATE _lastControllerState;
+        private XInputWrapper.XINPUT_STATE _lastControllerState;
         private bool _hasLastState = false;
 
         /// <summary>
@@ -1550,8 +1501,8 @@ namespace UniPlaySong.Views
                         try
                         {
                             // Check controller 0 (first controller)
-                            XINPUT_STATE state = new XINPUT_STATE();
-                            int result = XInputGetState(0, ref state);
+                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                            int result = XInputWrapper.XInputGetState(0, ref state);
                             
                             if (result == 0) // Success
                             {
@@ -1609,56 +1560,62 @@ namespace UniPlaySong.Views
         /// <summary>
         /// Check for button presses and handle them
         /// </summary>
-        private void CheckButtonPresses(XINPUT_GAMEPAD currentState, XINPUT_GAMEPAD lastState)
+        private void CheckButtonPresses(XInputWrapper.XINPUT_GAMEPAD currentState, XInputWrapper.XINPUT_GAMEPAD lastState)
         {
             try
             {
                 // Get newly pressed buttons (buttons that are pressed now but weren't before)
                 ushort newlyPressed = (ushort)(currentState.wButtons & ~lastState.wButtons);
-                
+
                 if (newlyPressed == 0) return; // No new button presses
-                
+
                 // Dispatch to UI thread
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     try
                     {
-                        if ((newlyPressed & XINPUT_GAMEPAD_A) != 0)
+                        if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
                         {
                             UpdateInputFeedback("Xbox A Button ✓");
                             ConfirmButton_Click(this, new RoutedEventArgs());
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_B) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
                         {
                             UpdateInputFeedback("Xbox B Button ✓");
                             CancelButton_Click(this, new RoutedEventArgs());
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_X) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_X) != 0)
                         {
                             UpdateInputFeedback("Xbox X Button ✓");
                             HandlePreviewAction();
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_Y) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_Y) != 0)
                         {
                             UpdateInputFeedback("Xbox Y Button ✓");
                             HandlePreviewAction();
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_DPAD_UP) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
                         {
-                            UpdateInputFeedback("Xbox D-Pad Up ✓");
-                            NavigateList(-1);
+                            if (TryDpadNavigation())
+                            {
+                                UpdateInputFeedback("Xbox D-Pad Up ✓");
+                                NavigateList(-1);
+                            }
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_DPAD_DOWN) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
                         {
-                            UpdateInputFeedback("Xbox D-Pad Down ✓");
-                            NavigateList(1);
+                            if (TryDpadNavigation())
+                            {
+                                UpdateInputFeedback("Xbox D-Pad Down ✓");
+                                NavigateList(1);
+                            }
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
                         {
                             UpdateInputFeedback("Xbox Left Bumper ✓");
                             NavigateList(-5);
                         }
-                        else if ((newlyPressed & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
+                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
                         {
                             UpdateInputFeedback("Xbox Right Bumper ✓");
                             NavigateList(5);

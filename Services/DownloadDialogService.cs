@@ -1326,6 +1326,88 @@ namespace UniPlaySong.Services
                 LogDebug($"Download from URL cancelled or failed for game: {game.Name}");
             }
         }
+
+        /// <summary>
+        /// Normalize an individual song (desktop mode)
+        /// </summary>
+        public void ShowNormalizeIndividualSongProgress(Game game, string selectedFile)
+        {
+            if (game == null || string.IsNullOrEmpty(selectedFile))
+            {
+                Logger.Warn("ShowNormalizeIndividualSongProgress called with null game or empty file");
+                return;
+            }
+
+            LogDebug($"ShowNormalizeIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
+
+            _errorHandler.Try(
+                () =>
+                {
+                    // Get the plugin instance from Application.Current.Properties
+                    if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                    {
+                        var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        if (plugin != null)
+                        {
+                            plugin.NormalizeSingleFile(game, selectedFile);
+                        }
+                        else
+                        {
+                            Logger.Warn("UniPlaySongPlugin found in Application.Current.Properties but is not UniPlaySong type");
+                            _playniteApi.Dialogs.ShowErrorMessage("Plugin instance not available.", "UniPlaySong");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Warn("UniPlaySongPlugin not found in Application.Current.Properties");
+                        _playniteApi.Dialogs.ShowErrorMessage("Plugin instance not available.", "UniPlaySong");
+                    }
+                },
+                context: $"normalizing individual song '{System.IO.Path.GetFileName(selectedFile)}' for '{game.Name}'",
+                showUserMessage: true
+            );
+        }
+
+        /// <summary>
+        /// Silence-trim an individual song (desktop mode)
+        /// </summary>
+        public void ShowTrimIndividualSongProgress(Game game, string selectedFile)
+        {
+            if (game == null || string.IsNullOrEmpty(selectedFile))
+            {
+                Logger.Warn("ShowTrimIndividualSongProgress called with null game or empty file");
+                return;
+            }
+
+            LogDebug($"ShowTrimIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
+
+            _errorHandler.Try(
+                () =>
+                {
+                    // Get the plugin instance from Application.Current.Properties
+                    if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                    {
+                        var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        if (plugin != null)
+                        {
+                            plugin.TrimSingleFile(game, selectedFile);
+                        }
+                        else
+                        {
+                            Logger.Warn("UniPlaySongPlugin found in Application.Current.Properties but is not UniPlaySong type");
+                            _playniteApi.Dialogs.ShowErrorMessage("Plugin instance not available.", "UniPlaySong");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Warn("UniPlaySongPlugin not found in Application.Current.Properties");
+                        _playniteApi.Dialogs.ShowErrorMessage("Plugin instance not available.", "UniPlaySong");
+                    }
+                },
+                context: $"trimming individual song '{System.IO.Path.GetFileName(selectedFile)}' for '{game.Name}'",
+                showUserMessage: true
+            );
+        }
     }
 }
 

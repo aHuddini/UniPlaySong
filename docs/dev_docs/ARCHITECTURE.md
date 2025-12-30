@@ -18,10 +18,12 @@ UniPlaySong is a Playnite extension that provides console-like game music previe
 UniPlaySong/
 ├── Common/                    # Shared utilities and constants
 │   ├── Constants.cs           # Centralized constants (volumes, paths, durations)
+│   ├── DialogHelper.cs        # Centralized dialog window creation
 │   ├── FileLogger.cs          # File-based logging utility
 │   ├── PlayniteThemeHelper.cs # Playnite theme integration helpers
 │   ├── PrimarySongManager.cs  # Primary song selection logic
-│   └── RelayCommand.cs        # MVVM command pattern implementation
+│   ├── RelayCommand.cs        # MVVM command pattern implementation
+│   └── XInputWrapper.cs       # Xbox controller input (single source of truth)
 │
 ├── Downloaders/               # Music download implementations
 │   ├── IDownloader.cs         # Downloader interface
@@ -77,6 +79,11 @@ UniPlaySong/
 │   ├── GameMenuHandler.cs     # Game context menu handler
 │   └── MainMenuHandler.cs     # Main menu handler
 │
+├── Handlers/                  # Dialog and operation handlers
+│   ├── ControllerDialogHandler.cs    # Controller-friendly dialog operations
+│   ├── NormalizationDialogHandler.cs # Audio normalization dialog operations
+│   └── TrimDialogHandler.cs          # Audio trimming dialog operations
+│
 ├── Views/                     # WPF UI views
 │   ├── DownloadDialogView.xaml         # Download dialog UI
 │   ├── SimpleControllerDialog.xaml    # Controller-optimized download dialog
@@ -100,12 +107,22 @@ The main plugin class that:
 - Manages native music suppression
 - Provides public API for other extensions
 - Handles controller login bypass monitoring
+- Delegates dialog operations to specialized handlers
 
 **Key Responsibilities:**
 - Service initialization and lifecycle management
 - Event subscription and delegation to coordinator
 - Native music suppression (SDL2_mixer integration)
 - Controller input monitoring for login screens
+- Menu registration and action delegation
+
+**Refactored Structure (v1.1.0+):**
+The main plugin file has been refactored for maintainability. Large code blocks have been extracted to dedicated handler classes in the `Handlers/` folder:
+- `ControllerDialogHandler`: Controller-friendly dialog operations (set/clear primary song, delete songs, download)
+- `NormalizationDialogHandler`: Audio normalization progress dialogs and operations
+- `TrimDialogHandler`: Audio trimming progress dialogs and operations
+
+Public methods in `UniPlaySong.cs` now delegate to these handlers, keeping the main file focused on initialization, event handling, and coordination.
 
 ### 2. Music Playback Coordinator (`MusicPlaybackCoordinator`)
 
@@ -205,6 +222,150 @@ The main plugin class that:
 - True Peak: -1.5 dBTP
 - Loudness Range: 11.0 LU
 
+### 8. Dialog Handlers (`Handlers/`)
+
+**Extracted dialog operation handlers** that encapsulate complex UI operations:
+
+#### ControllerDialogHandler
+Handles controller-friendly (fullscreen mode) dialog operations:
+- `ShowSetPrimarySong(Game)`: File picker for setting primary song
+- `ClearPrimarySong(Game)`: Clears primary song with notification
+- `ShowDeleteSongs(Game)`: Multi-select dialog for deleting songs
+- `ShowDownloadDialog(Game)`: Controller-optimized download dialog
+- `ShowNormalizeIndividualSong(Game)`: File picker for normalizing single song
+- `ShowTrimIndividualSong(Game)`: File picker for silence-trimming single song
+
+#### NormalizationDialogHandler
+Handles audio normalization operations:
+- `NormalizeAllMusicFiles()`: Bulk normalize entire library
+- `NormalizeSelectedGames(List<Game>)`: Normalize selected games
+- `NormalizeSingleFile(Game, string)`: Normalize individual file
+- `DeletePreservedOriginals()`: Delete backup files
+- `RestoreNormalizedFiles()`: Restore from backups
+
+#### TrimDialogHandler
+Handles audio trimming operations:
+- `TrimAllMusicFiles()`: Bulk trim silence from library
+- `TrimSelectedGames(List<Game>)`: Trim selected games
+- `TrimSingleFile(Game, string)`: Trim individual file
+
+**Handler Pattern Benefits:**
+- Reduces main plugin file size for better maintainability
+- Encapsulates related operations together
+- Uses `Func<UniPlaySongSettings>` for settings access (avoids stale references)
+- Shares common helper methods (focus management, playback stopping)
+
+### 9. Dialog Helper (`Common/DialogHelper.cs`)
+
+**Centralized dialog window creation** that provides:
+- Consistent window styling across all dialogs
+- Common default settings (size, position, taskbar visibility)
+- Focus management when dialogs close
+
+**Key Methods:**
+- `CreateStandardDialog()`: Resizable dialog with maximize button
+- `CreateFixedDialog()`: Non-resizable dialog (for progress dialogs, etc.)
+- `CreateFullscreenDialog()`: Dialog with Topmost and dark background for fullscreen mode
+- `CreateDialog()`: Full customization via `DialogOptions`
+- `AddFocusReturnHandler()`: Adds handler to return focus to main window on close
+- `ReturnFocusToMainWindow()`: Static helper for focus management
+
+**Usage Example:**
+```csharp
+var dialog = new Views.MyDialog();
+var window = DialogHelper.CreateStandardDialog(
+    _playniteApi,
+    "Dialog Title",
+    dialog,
+    width: 600,
+    height: 500);
+
+DialogHelper.AddFocusReturnHandler(window, _playniteApi, "my dialog close");
+window.ShowDialog();
+```
+
+**Benefits:**
+- Single point of customization for all dialog appearances
+- Eliminates duplicate window creation code (~8-12 lines per dialog)
+- Consistent focus behavior in fullscreen mode
+- Easy theming adjustments in the future
+
+### 10. XInput Wrapper (`Common/XInputWrapper.cs`)
+
+**Single source of truth for Xbox controller input** that provides:
+- P/Invoke declarations for XInput DLLs (1.4, 1.3, 9.1.0 fallback chain)
+- `XINPUT_STATE` and `XINPUT_GAMEPAD` structs
+- Button constants (`XINPUT_GAMEPAD_A`, `XINPUT_GAMEPAD_B`, etc.)
+
+**Key Methods:**
+- `XInputGetState(int, ref XINPUT_STATE)`: Get controller state with automatic DLL fallback
+
+**Usage:**
+All controller dialogs (`ControllerFilePickerDialog`, `ControllerDeleteSongsDialog`, `SimpleControllerDialog`) use `XInputWrapper` instead of duplicating P/Invoke code.
+
+```csharp
+XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+int result = XInputWrapper.XInputGetState(0, ref state);
+if (result == 0) // Success
+{
+    if ((state.Gamepad.wButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
+    {
+        // A button pressed
+    }
+}
+```
+
+**D-Pad Debouncing:**
+Controller dialogs implement D-pad debouncing to prevent double-input when both WPF (which processes D-pad as arrow keys) and XInput process the same input:
+
+```csharp
+private DateTime _lastDpadNavigationTime = DateTime.MinValue;
+private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
+
+private bool TryDpadNavigation()
+{
+    var now = DateTime.Now;
+    if ((now - _lastDpadNavigationTime).TotalMilliseconds < DpadDebounceMs)
+        return false; // Too soon, ignore this input
+    _lastDpadNavigationTime = now;
+    return true;
+}
+```
+
+### 11. Game Menu System (`UniPlaySong.cs:GetGameMenuItems`)
+
+**Mode-specific menu organization** that adapts to Playnite's display mode:
+
+#### Fullscreen Mode Structure
+Organized with subfolders for controller navigation:
+- **🎮 Download Music** - Controller-optimized download (parent level)
+- **Primary Song** subfolder - 🎮 Set/Clear Primary Song
+- **Audio Processing** subfolder:
+  - 🎮 Normalize Individual Song, 🎮 Silence Trim - Single Song
+  - Normalize Music Directory, Silence Trim - Audio Folder
+- **Manage Music** subfolder - 🎮 Delete Songs, Open Music Folder
+- **🖥️ PC Mode** subfolder - Desktop dialogs for keyboard/mouse users
+
+#### Desktop Mode Structure
+Flat layout with PC options at parent level:
+- Download Music, Download From URL
+- Set/Clear Primary Song
+- Normalize Individual Song, Silence Trim - Single Song
+- Normalize Music Directory, Silence Trim - Audio Folder
+- Open Music Folder
+- **🎮 Controller Mode** subfolder - Controller-friendly versions
+
+#### Multi-Game Selection
+When multiple games are selected (Desktop mode only):
+- **Download All** - Bulk download for all selected games
+- **Normalize All** - Bulk normalize selected games
+- **Trim All** - Bulk trim selected games
+
+**Visual Indicators:**
+- 🎮 emoji prefix = Controller-optimized dialog (large buttons, D-pad navigation)
+- 🖥️ emoji prefix = Desktop dialog (standard Windows UI)
+- No emoji = Works with both modes
+
 ## Design Patterns
 
 ### 1. Service Locator Pattern
@@ -221,6 +382,9 @@ Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyC
 
 ### 5. Factory Pattern
 `GameContextBindingFactory` creates game context bindings for UI integration.
+
+### 6. Static Helper Pattern
+`DialogHelper` and `XInputWrapper` provide centralized, reusable functionality as static classes. This eliminates code duplication and provides single points of maintenance for cross-cutting concerns (dialog creation, controller input).
 
 ## Data Flow
 

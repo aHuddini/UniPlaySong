@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.1-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,20 +12,20 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## What's New - v1.1.0
+## What's New - v1.1.1
 
 ### New Features
-- **Pause music on focus loss** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music pauses when you switch to another application, resumes when you return
-- **Pause music on minimize** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music pauses when Playnite is minimized, resumes when restored
+- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from Playnite's context menus in PC and Controller mode
+- **Open Preserved Folder** - New button in add-on settings to open backup folder of songs preserved by the user when trimming or normalizing audio tracks 
 
-### Bug Fixes
-- **Fixed Music Play State settings** ([#15](https://github.com/aHuddini/UniPlaySong/issues/15)) - "Never", "Desktop", and "Fullscreen" modes now should work correctly
-  - Settings changes take effect immediately when saved
+### Improvements
+- **Settings Tab Cleanup** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Removed redundant buttons from Normalization tab and proper word-wrapping 
+- **Clearer Menu Labels** - Renamed and organized context menus for fullscreen mode and desktop mode, including re-labeling "Silence Trim" options for clarity
+- **Code Refactoring** - Extracted approx. ~1,600 lines into dedicated handler files for better code organization. Future refactors planned.
 
-### Previous Version - v1.0.9
-- Download From URL - Paste specific YouTube URLs
-- PlayniteSound Migration - Import/export music between extensions
-- Reorganized context menu with grouped sections
+### Previous Version - v1.1.0
+- Pause music on focus loss/minimize
+- Fixed Music Play State settings
 
 ---
 

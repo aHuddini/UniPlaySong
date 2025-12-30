@@ -90,6 +90,9 @@ namespace UniPlaySong
         private ErrorHandlerService _errorHandler;
         private GameMenuHandler _gameMenuHandler;
         private MainMenuHandler _mainMenuHandler;
+        private Handlers.ControllerDialogHandler _controllerDialogHandler;
+        private Handlers.NormalizationDialogHandler _normalizationDialogHandler;
+        private Handlers.TrimDialogHandler _trimDialogHandler;
         private DownloadDialogService _downloadDialogService;
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
@@ -207,7 +210,10 @@ namespace UniPlaySong
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             _fileLogger?.Info($"Application started - Mode: {_api.ApplicationInfo.Mode}");
-            
+
+            // Register plugin instance for access from dialogs and services
+            Application.Current.Properties["UniPlaySongPlugin"] = this;
+
             if (_settings == null)
             {
                 _fileLogger?.Warn("OnApplicationStarted: Settings are null, reloading...");
@@ -262,6 +268,12 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
+            }
+
+            // Remove plugin instance registration
+            if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+            {
+                Application.Current.Properties.Remove("UniPlaySongPlugin");
             }
 
             StopControllerLoginMonitoring();
@@ -549,109 +561,101 @@ namespace UniPlaySong
 
         private void InitializeServices()
         {
+            var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+            var tempPath = Path.Combine(basePath, Constants.TempFolderName);
+
+            // Initialize error handler service (for centralized error handling)
+            _errorHandler = new ErrorHandlerService(logger, _fileLogger, _api);
+
+            _fileService = new GameMusicFileService(gamesPath, _errorHandler);
+
+            // Use SDL2 for reliable volume control (matching PlayniteSound)
+            IMusicPlayer musicPlayer;
             try
             {
-                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
-                var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
-                var tempPath = Path.Combine(basePath, Constants.TempFolderName);
-
-                // Initialize error handler service (for centralized error handling)
-                _errorHandler = new ErrorHandlerService(logger, _fileLogger, _api);
-
-                _fileService = new GameMusicFileService(gamesPath, _errorHandler);
-                
-                // Use SDL2 for reliable volume control (matching PlayniteSound)
-                IMusicPlayer musicPlayer;
-                try
-                {
-                    musicPlayer = new SDL2MusicPlayer(_errorHandler);
-                    logger.Info("Initialized SDL2MusicPlayer");
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
-                    musicPlayer = new MusicPlayer(_errorHandler);
-                }
-                
-                _playbackService = new MusicPlaybackService(musicPlayer, _fileService, _fileLogger, _errorHandler);
-                // Suppress native music when our music starts (if suppression enabled or using native as default)
-                _playbackService.OnMusicStarted += (settings) => 
-                {
-                    if (!IsFullscreen)
-                        return;
-                        
-                    bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
-                                         (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
-                    
-                    if (shouldSuppress)
-                    {
-                        SuppressNativeMusic();
-                    }
-                };
-                
-                if (_settings != null)
-                {
-                    _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
-                }
-                
-                // Initialize coordinator - centralizes all music playback logic and state management
-                _coordinator = new MusicPlaybackCoordinator(
-                    _playbackService,
-                    _settingsService,
-                    logger,
-                    _fileLogger,
-                    () => IsFullscreen,
-                    () => IsDesktop,
-                    () => SelectedGames?.FirstOrDefault()
-                );
-                _fileLogger?.Info("MusicPlaybackCoordinator initialized");
-
-                // Initialize search cache service
-                var extensionDataPath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
-                _cacheService = new SearchCacheService(
-                    extensionDataPath,
-                    enabled: _settings?.EnableSearchCache ?? true,
-                    cacheDurationDays: _settings?.SearchCacheDurationDays ?? 7);
-                _fileLogger?.Info("SearchCacheService initialized");
-
-                _downloadManager = new DownloadManager(
-                    _httpClient, _htmlWeb, tempPath,
-                    _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _settings);
-
-                _downloadDialogService = new DownloadDialogService(
-                    _api, _downloadManager, _playbackService, _fileService, _settingsService, _errorHandler);
-                
-                // Initialize normalization service with playback service and base path for backups
-                _normalizationService = new Services.AudioNormalizationService(_errorHandler, _playbackService, basePath);
-                _fileLogger?.Info("AudioNormalizationService initialized");
-                
-                // Initialize trim service with playback service and base path for backups
-                _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
-                _fileLogger?.Info("AudioTrimService initialized");
-
-                // Initialize migration service for PlayniteSound <-> UniPlaySong migration
-                _migrationService = new Services.MigrationService(_api, _errorHandler);
-                _fileLogger?.Info("MigrationService initialized");
+                musicPlayer = new SDL2MusicPlayer(_errorHandler);
+                logger.Info("Initialized SDL2MusicPlayer");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to initialize services");
+                logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
+                musicPlayer = new MusicPlayer(_errorHandler);
             }
+
+            _playbackService = new MusicPlaybackService(musicPlayer, _fileService, _fileLogger, _errorHandler);
+            // Suppress native music when our music starts (if suppression enabled or using native as default)
+            _playbackService.OnMusicStarted += (settings) =>
+            {
+                if (!IsFullscreen)
+                    return;
+
+                bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
+                                     (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
+
+                if (shouldSuppress)
+                {
+                    SuppressNativeMusic();
+                }
+            };
+
+            if (_settings != null)
+            {
+                _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
+            }
+
+            // Initialize coordinator - centralizes all music playback logic and state management
+            _coordinator = new MusicPlaybackCoordinator(
+                _playbackService,
+                _settingsService,
+                logger,
+                _fileLogger,
+                () => IsFullscreen,
+                () => IsDesktop,
+                () => SelectedGames?.FirstOrDefault()
+            );
+            _fileLogger?.Info("MusicPlaybackCoordinator initialized");
+
+            // Initialize search cache service
+            var extensionDataPath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            _cacheService = new SearchCacheService(
+                extensionDataPath,
+                enabled: _settings?.EnableSearchCache ?? true,
+                cacheDurationDays: _settings?.SearchCacheDurationDays ?? 7);
+            _fileLogger?.Info("SearchCacheService initialized");
+
+            _downloadManager = new DownloadManager(
+                _httpClient, _htmlWeb, tempPath,
+                _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _settings);
+
+            _downloadDialogService = new DownloadDialogService(
+                _api, _downloadManager, _playbackService, _fileService, _settingsService, _errorHandler);
+
+            // Initialize normalization service with playback service and base path for backups
+            _normalizationService = new Services.AudioNormalizationService(_errorHandler, _playbackService, basePath);
+            _fileLogger?.Info("AudioNormalizationService initialized");
+
+            // Initialize trim service with playback service and base path for backups
+            _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
+            _fileLogger?.Info("AudioTrimService initialized");
+
+            // Initialize migration service for PlayniteSound <-> UniPlaySong migration
+            _migrationService = new Services.MigrationService(_api, _errorHandler);
+            _fileLogger?.Info("MigrationService initialized");
         }
 
         private void InitializeMenuHandlers()
         {
-            try
-            {
-                _gameMenuHandler = new GameMenuHandler(
-                    _api, logger, _downloadManager, _fileService, 
-                    _playbackService, _downloadDialogService, _errorHandler);
-                _mainMenuHandler = new MainMenuHandler(_api, Id);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to initialize menu handlers");
-            }
+            _gameMenuHandler = new GameMenuHandler(
+                _api, logger, _downloadManager, _fileService,
+                _playbackService, _downloadDialogService, _errorHandler);
+            _mainMenuHandler = new MainMenuHandler(_api, Id);
+            _controllerDialogHandler = new Handlers.ControllerDialogHandler(
+                _api, _fileService, _playbackService, _downloadDialogService, _downloadManager);
+            _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
+                _api, _normalizationService, _playbackService, _fileService, () => _settings);
+            _trimDialogHandler = new Handlers.TrimDialogHandler(
+                _api, _trimService, _playbackService, _fileService, () => _settings);
         }
 
         private void SubscribeToMainModel()
@@ -860,524 +864,66 @@ namespace UniPlaySong
         #region Audio Normalization
 
         /// <summary>
-        /// Normalize all music files in the library
+        /// Normalize all music files in the library.
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
         public void NormalizeAllMusicFiles()
         {
-            try
-            {
-                if (_normalizationService == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Normalization service not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (_settings == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
-                        "FFmpeg Not Configured");
-                    return;
-                }
-
-                if (!_normalizationService.ValidateFFmpegAvailable(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
-                        "FFmpeg Not Available");
-                    return;
-                }
-
-                // Stop music playback before normalization to prevent file locking
-                try
-                {
-                    if (_playbackService != null && _playbackService.IsPlaying)
-                    {
-                        logger.Info("Stopping music playback before bulk normalization");
-                        _playbackService.Stop();
-                        
-                        // Give a moment for files to be released
-                        System.Threading.Thread.Sleep(300);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(ex, "Error stopping playback before normalization");
-                }
-
-                // Get all music files from all games
-                var allMusicFiles = new List<string>();
-                foreach (var game in PlayniteApi.Database.Games)
-                {
-                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                    allMusicFiles.AddRange(gameFiles);
-                }
-
-                if (allMusicFiles.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found in your library.", "No Files to Normalize");
-                    return;
-                }
-
-                // Show progress dialog
-                ShowNormalizationProgress(allMusicFiles, "Normalizing All Music Files");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in NormalizeAllMusicFiles");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting normalization: {ex.Message}", "Normalization Error");
-            }
+            _normalizationDialogHandler?.NormalizeAllMusicFiles();
         }
 
         /// <summary>
-        /// Normalize music files for selected games
-        /// </summary>
-        /// <summary>
-        /// Normalize music files for a single game (for fullscreen menu)
-        /// Shows progress dialog and displays confirmation when complete
+        /// Normalize music files for a single game (for fullscreen menu).
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
         public void NormalizeSelectedGamesFullscreen(Game game)
         {
-            if (game == null)
-            {
-                PlayniteApi.Dialogs.ShowMessage("No game selected.", "Normalization Error");
-                return;
-            }
-
-            NormalizeSelectedGames(new List<Game> { game }, showSimpleConfirmation: true);
-        }
-
-        public void NormalizeSelectedGames(List<Playnite.SDK.Models.Game> games, bool showSimpleConfirmation = false)
-        {
-            try
-            {
-                if (_normalizationService == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Normalization service not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (_settings == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (games == null || games.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No games selected.", "No Games Selected");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
-                        "FFmpeg Not Configured");
-                    return;
-                }
-
-                if (!_normalizationService.ValidateFFmpegAvailable(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
-                        "FFmpeg Not Available");
-                    return;
-                }
-
-                // Stop music playback before normalization to prevent file locking
-                try
-                {
-                    if (_playbackService != null && _playbackService.IsPlaying)
-                    {
-                        logger.Info("Stopping music playback before normalizing selected games");
-                        _playbackService.Stop();
-                        
-                        // Give a moment for files to be released
-                        System.Threading.Thread.Sleep(300);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(ex, "Error stopping playback before normalization");
-                }
-
-                // Get all music files from selected games
-                var allMusicFiles = new List<string>();
-                foreach (var game in games)
-                {
-                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                    allMusicFiles.AddRange(gameFiles);
-                }
-
-                if (allMusicFiles.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found for selected games.", "No Files to Normalize");
-                    return;
-                }
-
-                // Show progress dialog
-                var gameNames = string.Join(", ", games.Select(g => g.Name).Take(3));
-                if (games.Count > 3) gameNames += $" and {games.Count - 3} more";
-                ShowNormalizationProgress(allMusicFiles, $"Normalizing Music for {games.Count} Games");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in NormalizeSelectedGames");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting normalization: {ex.Message}", "Normalization Error");
-            }
+            _normalizationDialogHandler?.NormalizeSelectedGamesFullscreen(game);
         }
 
         /// <summary>
-        /// Show normalization progress dialog and execute normalization
+        /// Normalize music files for selected games.
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
-        private void ShowNormalizationProgress(List<string> musicFiles, string title, bool showSimpleConfirmation = false)
+        public void NormalizeSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
-            try
-            {
-                // Create progress dialog
-                var progressDialog = new Views.NormalizationProgressDialog();
-
-                // Create window
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = title;
-                window.Width = 600;
-                window.Height = 500;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = progressDialog;
-
-                // Handle window closing
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during normalization dialog close");
-                    }
-                };
-
-                // Start normalization asynchronously
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
-                    {
-                        var settings = new Models.NormalizationSettings
-                        {
-                            TargetLoudness = _settings.NormalizationTargetLoudness,
-                            TruePeak = _settings.NormalizationTruePeak,
-                            LoudnessRange = _settings.NormalizationLoudnessRange,
-                            AudioCodec = _settings.NormalizationCodec,
-                            NormalizationSuffix = _settings.NormalizationSuffix,
-                            TrimSuffix = _settings.TrimSuffix,
-                            SkipAlreadyNormalized = _settings.SkipAlreadyNormalized,
-                            DoNotPreserveOriginals = _settings.DoNotPreserveOriginals,
-                            FFmpegPath = _settings.FFmpegPath
-                        };
-
-                        var progress = new Progress<Models.NormalizationProgress>(p =>
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                progressDialog.ReportProgress(p);
-                            }));
-                        });
-
-                        var result = await _normalizationService.NormalizeBulkAsync(
-                            musicFiles,
-                            settings,
-                            progress,
-                            progressDialog.CancellationToken);
-
-                        // Show completion message
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            // Close progress dialog first
-                            window.Close();
-
-                            if (showSimpleConfirmation)
-                            {
-                                // Simple confirmation for fullscreen menu
-                                PlayniteApi.Dialogs.ShowMessage(
-                                    "Music normalized successfully.\n\nChanges will take effect when the game is re-selected.",
-                                    "Normalization Complete");
-                            }
-                            else
-                            {
-                                // Detailed confirmation for settings menu
-                                var message = $"Normalization Complete!\n\n" +
-                                            $"Total: {result.TotalFiles} files\n" +
-                                            $"Succeeded: {result.SuccessCount}\n" +
-                                            $"Failed: {result.FailureCount}";
-
-                                if (result.FailedFiles.Count > 0)
-                                {
-                                    message += $"\n\nFailed files:\n{string.Join("\n", result.FailedFiles.Take(5).Select(f => System.IO.Path.GetFileName(f)))}";
-                                    if (result.FailedFiles.Count > 5)
-                                    {
-                                        message += $"\n... and {result.FailedFiles.Count - 5} more";
-                                    }
-                                }
-
-                                PlayniteApi.Dialogs.ShowMessage(message, "Normalization Complete");
-                            }
-                        }));
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowMessage("Normalization was cancelled.", "Normalization Cancelled");
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, "Error during normalization");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            window.Close();
-                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during normalization: {ex.Message}", "Normalization Error");
-                        }));
-                    }
-                });
-
-                // Show dialog
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing normalization progress dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Normalization Error");
-            }
+            _normalizationDialogHandler?.NormalizeSelectedGames(games, showSimpleConfirmation);
         }
 
         /// <summary>
-        /// Delete all files in the PreservedOriginals folder
+        /// Delete all files in the PreservedOriginals folder.
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
         public void DeletePreservedOriginals()
         {
-            try
-            {
-                var preservedOriginalsDir = Path.Combine(
-                    Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName),
-                    Constants.PreservedOriginalsFolderName);
-
-                if (!Directory.Exists(preservedOriginalsDir))
-                {
-                    PlayniteApi.Dialogs.ShowMessage("PreservedOriginals folder does not exist or is empty.", "No Files to Delete");
-                    return;
-                }
-
-                // Count files before deletion
-                var allFiles = Directory.GetFiles(preservedOriginalsDir, "*.*", SearchOption.AllDirectories);
-                var fileCount = allFiles.Length;
-                
-                if (fileCount == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("PreservedOriginals folder is empty.", "No Files to Delete");
-                    return;
-                }
-
-                // Delete all files and directories
-                try
-                {
-                    Directory.Delete(preservedOriginalsDir, true);
-                    Directory.CreateDirectory(preservedOriginalsDir); // Recreate empty directory
-                    
-                    logger.Info($"Deleted {fileCount} files from PreservedOriginals folder");
-                    PlayniteApi.Dialogs.ShowMessage(
-                        $"Successfully deleted {fileCount} preserved original file(s).\n\nDisk space has been freed.",
-                        "Deletion Complete");
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Error deleting PreservedOriginals folder contents");
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        $"Error deleting preserved originals: {ex.Message}",
-                        "Deletion Error");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in DeletePreservedOriginals");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Delete Preserved Originals Error");
-            }
+            _normalizationDialogHandler?.DeletePreservedOriginals();
         }
 
         /// <summary>
-        /// Restore original files from PreservedOriginals folder
-        /// Deletes normalized files and moves originals back to game music folders
+        /// Restore original files from PreservedOriginals folder.
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
         public void RestoreNormalizedFiles()
         {
-            try
-            {
-                if (_normalizationService == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Normalization service not available.", "UniPlaySong");
-                    return;
-                }
-
-                // Get all normalized files (files with -normalized suffix or files in music folders that have backups)
-                var allMusicFiles = new List<string>();
-                foreach (var game in PlayniteApi.Database.Games)
-                {
-                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                    allMusicFiles.AddRange(gameFiles);
-                }
-
-                if (allMusicFiles.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found in your library.", "No Files to Restore");
-                    return;
-                }
-
-                // Show progress dialog
-                ShowRestoreProgress(allMusicFiles, "Restoring Original Files");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in RestoreNormalizedFiles");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting restore: {ex.Message}", "Restore Error");
-            }
+            _normalizationDialogHandler?.RestoreNormalizedFiles();
         }
 
         /// <summary>
-        /// Show restoration progress dialog and execute restoration of original files
+        /// Normalize a single music file.
+        /// Delegates to NormalizationDialogHandler.
         /// </summary>
-        private void ShowRestoreProgress(List<string> musicFiles, string title)
+        public void NormalizeSingleFile(Game game, string filePath)
         {
-            try
-            {
-                // Create progress dialog
-                var progressDialog = new Views.NormalizationProgressDialog();
+            _normalizationDialogHandler?.NormalizeSingleFile(game, filePath);
+        }
 
-                // Create window
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = title;
-                window.Width = 600;
-                window.Height = 500;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = progressDialog;
-
-                // Handle window closing
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during restore dialog close");
-                    }
-                };
-
-                // Get normalization suffix from settings
-                var suffix = _settings?.NormalizationSuffix ?? "-normalized";
-
-                // Start deletion asynchronously
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
-                    {
-                        var progress = new Progress<Models.NormalizationProgress>(p =>
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                progressDialog.ReportProgress(p);
-                            }));
-                        });
-
-                        var result = await _normalizationService.RestoreFromBackupsAsync(
-                            musicFiles,
-                            suffix,
-                            progress,
-                            progressDialog.CancellationToken);
-
-                        // Show completion message
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            var message = $"Deletion Complete!\n\n" +
-                                        $"Total: {result.TotalFiles} normalized files\n" +
-                                        $"Deleted: {result.SuccessCount}\n" +
-                                        $"Failed: {result.FailureCount}";
-
-                            if (result.FailedFiles.Count > 0)
-                            {
-                                message += $"\n\nFailed files:\n{string.Join("\n", result.FailedFiles.Take(5).Select(f => System.IO.Path.GetFileName(f)))}";
-                                if (result.FailedFiles.Count > 5)
-                                {
-                                    message += $"\n... and {result.FailedFiles.Count - 5} more";
-                                }
-                            }
-
-                            PlayniteApi.Dialogs.ShowMessage(message, "Deletion Complete");
-                        }));
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowMessage("Restore was cancelled.", "Restore Cancelled");
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, "Error during restore");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during restore: {ex.Message}", "Restore Error");
-                        }));
-                    }
-                });
-
-                // Show dialog
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing restore progress dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Restore Error");
-            }
+        /// <summary>
+        /// Trim a single music file.
+        /// Delegates to TrimDialogHandler.
+        /// </summary>
+        public void TrimSingleFile(Game game, string filePath)
+        {
+            _trimDialogHandler?.TrimSingleFile(game, filePath);
         }
 
         #endregion
@@ -1397,39 +943,14 @@ namespace UniPlaySong
                 var progressDialog = new Views.MigrationProgressDialog();
                 progressDialog.SetTitle(title);
 
-                // Create window
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = false,
-                    ShowCloseButton = true
-                });
+                var window = Common.DialogHelper.CreateFixedDialog(
+                    PlayniteApi,
+                    title,
+                    progressDialog,
+                    width: 550,
+                    height: 450);
 
-                window.Title = title;
-                window.Width = 550;
-                window.Height = 450;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.NoResize;
-                window.Content = progressDialog;
-
-                // Handle window closing
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during migration dialog close");
-                    }
-                };
+                Common.DialogHelper.AddFocusReturnHandler(window, PlayniteApi, "migration dialog close");
 
                 // Start migration asynchronously
                 System.Threading.Tasks.Task.Run(async () =>
@@ -1496,337 +1017,30 @@ namespace UniPlaySong
         #region Audio Trimming
 
         /// <summary>
-        /// Trim leading silence from all music files in the library
+        /// Trim leading silence from all music files in the library.
+        /// Delegates to TrimDialogHandler.
         /// </summary>
         public void TrimAllMusicFiles()
         {
-            try
-            {
-                if (_trimService == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Trim service not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (_settings == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
-                        "FFmpeg Not Configured");
-                    return;
-                }
-
-                if (!_trimService.ValidateFFmpegAvailable(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
-                        "FFmpeg Not Available");
-                    return;
-                }
-
-                // Stop music playback before trimming to prevent file locking
-                try
-                {
-                    if (_playbackService != null && _playbackService.IsPlaying)
-                    {
-                        logger.Info("Stopping music playback before bulk trim");
-                        _playbackService.Stop();
-                        
-                        // Give a moment for files to be released
-                        System.Threading.Thread.Sleep(300);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(ex, "Error stopping playback before trim");
-                }
-
-                // Get all music files from all games
-                var allMusicFiles = new List<string>();
-                foreach (var game in PlayniteApi.Database.Games)
-                {
-                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                    allMusicFiles.AddRange(gameFiles);
-                }
-
-                if (allMusicFiles.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found in your library.", "No Files to Trim");
-                    return;
-                }
-
-                // Show progress dialog
-                ShowTrimProgress(allMusicFiles, "Trimming Leading Silence from All Music Files");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in TrimAllMusicFiles");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
-            }
+            _trimDialogHandler?.TrimAllMusicFiles();
         }
 
         /// <summary>
-        /// Trim leading silence from music files for a single game (for fullscreen menu)
-        /// Shows progress dialog and displays confirmation when complete
+        /// Trim leading silence from music files for a single game (for fullscreen menu).
+        /// Delegates to TrimDialogHandler.
         /// </summary>
         public void TrimSelectedGamesFullscreen(Game game)
         {
-            if (game == null)
-            {
-                PlayniteApi.Dialogs.ShowMessage("No game selected.", "Trim Error");
-                return;
-            }
-
-            TrimSelectedGames(new List<Game> { game }, showSimpleConfirmation: true);
+            _trimDialogHandler?.TrimSelectedGamesFullscreen(game);
         }
 
         /// <summary>
-        /// Trim leading silence from music files for selected games
+        /// Trim leading silence from music files for selected games.
+        /// Delegates to TrimDialogHandler.
         /// </summary>
-        public void TrimSelectedGames(List<Playnite.SDK.Models.Game> games, bool showSimpleConfirmation = false)
+        public void TrimSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
-            try
-            {
-                if (_trimService == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Trim service not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (_settings == null)
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage("Settings not available.", "UniPlaySong");
-                    return;
-                }
-
-                if (games == null || games.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No games selected.", "No Games Selected");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
-                        "FFmpeg Not Configured");
-                    return;
-                }
-
-                if (!_trimService.ValidateFFmpegAvailable(_settings.FFmpegPath))
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        $"FFmpeg not found or not accessible at: {_settings.FFmpegPath}\n\nPlease verify the FFmpeg path in extension settings.",
-                        "FFmpeg Not Available");
-                    return;
-                }
-
-                // Stop music playback before trimming to prevent file locking
-                try
-                {
-                    if (_playbackService != null && _playbackService.IsPlaying)
-                    {
-                        logger.Info("Stopping music playback before trimming selected games");
-                        _playbackService.Stop();
-                        
-                        // Give a moment for files to be released
-                        System.Threading.Thread.Sleep(300);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(ex, "Error stopping playback before trim");
-                }
-
-                // Get all music files from selected games
-                var allMusicFiles = new List<string>();
-                foreach (var game in games)
-                {
-                    var gameFiles = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                    allMusicFiles.AddRange(gameFiles);
-                }
-
-                if (allMusicFiles.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found for selected games.", "No Files to Trim");
-                    return;
-                }
-
-                // Show progress dialog
-                var gameNames = string.Join(", ", games.Select(g => g.Name).Take(3));
-                if (games.Count > 3) gameNames += $" and {games.Count - 3} more";
-                ShowTrimProgress(allMusicFiles, $"Trimming Leading Silence for {games.Count} Games", showSimpleConfirmation);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error in TrimSelectedGames");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
-            }
-        }
-
-        /// <summary>
-        /// Show trim progress dialog and execute trim operation
-        /// </summary>
-        private void ShowTrimProgress(List<string> musicFiles, string title, bool showSimpleConfirmation = false)
-        {
-            try
-            {
-                // Create progress dialog (reuse normalization progress dialog)
-                var progressDialog = new Views.NormalizationProgressDialog();
-
-                // Create window
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = title;
-                window.Width = 600;
-                window.Height = 500;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = progressDialog;
-
-                // Handle window closing
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during trim dialog close");
-                    }
-                };
-
-                // Start trim asynchronously
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
-                    {
-                        var settings = new Models.TrimSettings
-                        {
-                            SilenceThreshold = -50.0,
-                            SilenceDuration = 0.1,
-                            MinSilenceToTrim = 0.5,
-                            TrimBuffer = 0.15,
-                            TrimSuffix = _settings.TrimSuffix,
-                            SkipAlreadyTrimmed = true,
-                            DoNotPreserveOriginals = false,
-                            FFmpegPath = _settings.FFmpegPath
-                        };
-
-                        var progress = new Progress<Models.NormalizationProgress>(p =>
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                progressDialog.ReportProgress(p);
-                            }));
-                        });
-
-                        var result = await _trimService.TrimBulkAsync(
-                            musicFiles,
-                            settings,
-                            progress,
-                            progressDialog.CancellationToken);
-
-                        // Show completion message
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            // Close progress dialog first
-                            window.Close();
-
-                            // Build result message
-                            var message = $"Trim Complete!\n\n" +
-                                        $"Total: {result.TotalFiles} files\n" +
-                                        $"Succeeded: {result.SuccessCount}\n" +
-                                        $"Skipped: {result.SkippedCount}\n" +
-                                        $"Failed: {result.FailureCount}";
-
-                            if (!showSimpleConfirmation)
-                            {
-                                // Detailed view: Show file lists
-                                if (result.SkippedFiles.Count > 0)
-                                {
-                                    message += $"\n\nSkipped files (not renamed - no leading silence or already trimmed):\n{string.Join("\n", result.SkippedFiles.Take(3).Select(f => System.IO.Path.GetFileName(f)))}";
-                                    if (result.SkippedFiles.Count > 3)
-                                    {
-                                        message += $"\n... and {result.SkippedFiles.Count - 3} more";
-                                    }
-                                }
-
-                                if (result.FailedFiles.Count > 0)
-                                {
-                                    message += $"\n\nFailed files (not renamed - processing error):\n{string.Join("\n", result.FailedFiles.Take(3).Select(f => System.IO.Path.GetFileName(f)))}";
-                                    if (result.FailedFiles.Count > 3)
-                                    {
-                                        message += $"\n... and {result.FailedFiles.Count - 3} more";
-                                    }
-                                }
-                            }
-
-                            // Add status explanation
-                            if (result.SuccessCount > 0 && (result.SkippedCount > 0 || result.FailureCount > 0))
-                            {
-                                message += "\n\nNote: Only successfully trimmed files have the suffix appended.";
-                            }
-                            else if (result.SkippedCount > 0 && result.SuccessCount == 0)
-                            {
-                                message += "\n\nNote: Files were not renamed (no trimming was needed).";
-                            }
-
-                            // Add re-select note if any files were successfully trimmed
-                            if (result.SuccessCount > 0)
-                            {
-                                message += "\nChanges will take effect when the game is re-selected.";
-                            }
-
-                            PlayniteApi.Dialogs.ShowMessage(message, "Trim Complete");
-                        }));
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowMessage("Trim was cancelled.", "Trim Cancelled");
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, "Error during trim");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            window.Close();
-                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during trim: {ex.Message}", "Trim Error");
-                        }));
-                    }
-                });
-
-                // Show dialog
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing trim progress dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Trim Error");
-            }
+            _trimDialogHandler?.TrimSelectedGames(games, showSimpleConfirmation);
         }
 
         #endregion
@@ -1845,14 +1059,14 @@ namespace UniPlaySong
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
-            if (_gameMenuHandler == null || args.Games.Count == 0)
+            if (args.Games.Count == 0)
                 return Enumerable.Empty<GameMenuItem>();
 
             const string menuSection = Constants.MenuSectionName;
             var items = new List<GameMenuItem>();
             var games = args.Games.ToList();
 
-            // Multi-game selection: Show simplified "Download All" option
+            // Multi-game selection: Show bulk operations
             if (games.Count > 1)
             {
                 // Download All - uses Source.All (tries KHInsider first, falls back to YouTube)
@@ -1861,6 +1075,22 @@ namespace UniPlaySong
                     Description = $"Download All ({games.Count} games)",
                     MenuSection = menuSection,
                     Action = _ => _gameMenuHandler.DownloadMusicForGames(games, Models.Source.All)
+                });
+
+                // Normalize All - bulk normalize selected games
+                items.Add(new GameMenuItem
+                {
+                    Description = $"Normalize All ({games.Count} games)",
+                    MenuSection = menuSection,
+                    Action = _ => _normalizationDialogHandler.NormalizeSelectedGames(games)
+                });
+
+                // Trim All - bulk trim selected games
+                items.Add(new GameMenuItem
+                {
+                    Description = $"Trim All ({games.Count} games)",
+                    MenuSection = menuSection,
+                    Action = _ => _trimDialogHandler.TrimSelectedGames(games)
                 });
 
                 // Add retry option if there are failed downloads
@@ -1883,123 +1113,247 @@ namespace UniPlaySong
                 return items;
             }
 
-            // Single game selection - reorganized menu layout
+            // Single game selection
             var game = games[0];
             var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
 
-            // === Download Section ===
-            // Download Music (🎮 Mode) - Controller-friendly download dialog
-            items.Add(new GameMenuItem
+            if (IsFullscreen)
             {
-                Description = "Download Music (🎮 Mode)",
-                MenuSection = menuSection,
-                Action = _ => ShowControllerDownloadDialog(game)
-            });
+                // === FULLSCREEN MODE: Organized with submenus for controller navigation ===
+                var primarySongSection = $"{menuSection}|Primary Song";
+                var audioProcessingSection = $"{menuSection}|Audio Processing";
+                var manageMusicSection = $"{menuSection}|Manage Music";
+                var pcModeSection = $"{menuSection}|🖥️ PC Mode";
 
-            // Download Music (PC Mode) - Desktop download dialog with source selection
-            items.Add(new GameMenuItem
-            {
-                Description = "Download Music (PC Mode)",
-                MenuSection = menuSection,
-                Action = _ => _gameMenuHandler.DownloadMusicForGame(game)
-            });
+                // Download Music (🎮 Mode) - at parent level for quick access
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Download Music",
+                    MenuSection = menuSection,
+                    Action = _ => _controllerDialogHandler.ShowDownloadDialog(game)
+                });
 
-            // Download From URL - Download audio from a specific YouTube URL
-            items.Add(new GameMenuItem
-            {
-                Description = "Download From URL",
-                MenuSection = menuSection,
-                Action = _ => _gameMenuHandler.DownloadFromUrl(game)
-            });
+                // === Primary Song Submenu (🎮 Mode options) ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Set Primary Song",
+                    MenuSection = primarySongSection,
+                    Action = _ => _controllerDialogHandler.ShowSetPrimarySong(game)
+                });
 
-            // Separator before Primary Song section
-            items.Add(new GameMenuItem
-            {
-                Description = "-",
-                MenuSection = menuSection
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Clear Primary Song",
+                    MenuSection = primarySongSection,
+                    Action = _ => _controllerDialogHandler.ClearPrimarySong(game)
+                });
 
-            // === Primary Song Section ===
-            // Set Primary Song (🎮 Mode) - Controller-friendly
-            items.Add(new GameMenuItem
-            {
-                Description = "Set Primary Song (🎮 Mode)",
-                MenuSection = menuSection,
-                Action = _ => ShowControllerSetPrimarySong(game)
-            });
+                // === Audio Processing Submenu ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Normalize Individual Song",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _controllerDialogHandler.ShowNormalizeIndividualSong(game)
+                });
 
-            // Set Primary Song (PC Mode) - Desktop file picker
-            items.Add(new GameMenuItem
-            {
-                Description = "Set Primary Song (PC Mode)",
-                MenuSection = menuSection,
-                Action = _ => _gameMenuHandler.SetPrimarySong(game)
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Silence Trim - Single Song",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _controllerDialogHandler.ShowTrimIndividualSong(game)
+                });
 
-            // Clear Primary Song (🎮 Mode) - Controller-friendly
-            items.Add(new GameMenuItem
-            {
-                Description = "Clear Primary Song (🎮 Mode)",
-                MenuSection = menuSection,
-                Action = _ => ShowControllerRemovePrimarySong(game)
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "Normalize Music Directory",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => NormalizeSelectedGamesFullscreen(game)
+                });
 
-            // Clear Primary Song (PC Mode) - Desktop
-            items.Add(new GameMenuItem
-            {
-                Description = "Clear Primary Song (PC Mode)",
-                MenuSection = menuSection,
-                Action = _ => _gameMenuHandler.ClearPrimarySong(game)
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "Silence Trim - Audio Folder",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => TrimSelectedGamesFullscreen(game)
+                });
 
-            // Separator before Audio Processing section
-            items.Add(new GameMenuItem
-            {
-                Description = "-",
-                MenuSection = menuSection
-            });
+                // === Manage Music Submenu (🎮 Mode options) ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Delete Songs",
+                    MenuSection = manageMusicSection,
+                    Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
+                });
 
-            // === Audio Processing Section ===
-            // Normalize Music Folder
-            items.Add(new GameMenuItem
-            {
-                Description = "Normalize Music Folder",
-                MenuSection = menuSection,
-                Action = _ => NormalizeSelectedGamesFullscreen(game)
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "Open Music Folder",
+                    MenuSection = manageMusicSection,
+                    Action = _ => _gameMenuHandler.OpenMusicFolder(game)
+                });
 
-            // Trim Leading Silence
-            items.Add(new GameMenuItem
-            {
-                Description = "Trim Leading Silence",
-                MenuSection = menuSection,
-                Action = _ => TrimSelectedGamesFullscreen(game)
-            });
+                // === PC Mode Submenu (Desktop dialogs for keyboard/mouse users) ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "🖥️ Download Music",
+                    MenuSection = pcModeSection,
+                    Action = _ => _gameMenuHandler.DownloadMusicForGame(game)
+                });
 
-            // Separator before utility options
-            items.Add(new GameMenuItem
-            {
-                Description = "-",
-                MenuSection = menuSection
-            });
+                items.Add(new GameMenuItem
+                {
+                    Description = "🖥️ Download From URL",
+                    MenuSection = pcModeSection,
+                    Action = _ => _gameMenuHandler.DownloadFromUrl(game)
+                });
 
-            // === Utility Section ===
-            // Open Music Folder
-            items.Add(new GameMenuItem
+                items.Add(new GameMenuItem
+                {
+                    Description = "🖥️ Set Primary Song",
+                    MenuSection = pcModeSection,
+                    Action = _ => _gameMenuHandler.SetPrimarySong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🖥️Clear Primary Song",
+                    MenuSection = pcModeSection,
+                    Action = _ => _gameMenuHandler.ClearPrimarySong(game)
+                });
+            }
+            else
             {
-                Description = "Open Music Folder",
-                MenuSection = menuSection,
-                Action = _ => _gameMenuHandler.OpenMusicFolder(game)
-            });
+                // === DESKTOP MODE: PC Mode options at parent level, Controller Mode in subfolder ===
+                var controllerModeSection = $"{menuSection}|🎮 Controller Mode";
+
+                // Download Music - Desktop download dialog with source selection
+                items.Add(new GameMenuItem
+                {
+                    Description = "Download Music",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.DownloadMusicForGame(game)
+                });
+
+                // Download From URL - Download audio from a specific YouTube URL
+                items.Add(new GameMenuItem
+                {
+                    Description = "Download From URL",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.DownloadFromUrl(game)
+                });
+
+                // Separator before Primary Song section
+                items.Add(new GameMenuItem
+                {
+                    Description = "-",
+                    MenuSection = menuSection
+                });
+
+                // Set Primary Song - Desktop file picker
+                items.Add(new GameMenuItem
+                {
+                    Description = "Set Primary Song",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.SetPrimarySong(game)
+                });
+
+                // Clear Primary Song - Desktop
+                items.Add(new GameMenuItem
+                {
+                    Description = "Clear Primary Song",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.ClearPrimarySong(game)
+                });
+
+                // Separator before Audio Processing section
+                items.Add(new GameMenuItem
+                {
+                    Description = "-",
+                    MenuSection = menuSection
+                });
+
+                // Normalize Individual Song
+                items.Add(new GameMenuItem
+                {
+                    Description = "Normalize Individual Song",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.ShowNormalizeIndividualSong(game)
+                });
+
+                // Silence Trim - Single Song
+                items.Add(new GameMenuItem
+                {
+                    Description = "Silence Trim - Single Song",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.ShowTrimIndividualSong(game)
+                });
+
+                // Normalize Music Directory
+                items.Add(new GameMenuItem
+                {
+                    Description = "Normalize Music Directory",
+                    MenuSection = menuSection,
+                    Action = _ => _normalizationDialogHandler.NormalizeSelectedGames(new List<Game> { game })
+                });
+
+                // Silence Trim - Audio Folder
+                items.Add(new GameMenuItem
+                {
+                    Description = "Silence Trim - Audio Folder",
+                    MenuSection = menuSection,
+                    Action = _ => _trimDialogHandler.TrimSelectedGames(new List<Game> { game })
+                });
+
+                // Separator before utility options
+                items.Add(new GameMenuItem
+                {
+                    Description = "-",
+                    MenuSection = menuSection
+                });
+
+                // Open Music Folder
+                items.Add(new GameMenuItem
+                {
+                    Description = "Open Music Folder",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.OpenMusicFolder(game)
+                });
+
+                // === Controller Mode Submenu (Controller-friendly dialogs) ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Download Music",
+                    MenuSection = controllerModeSection,
+                    Action = _ => _controllerDialogHandler.ShowDownloadDialog(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Set Primary Song",
+                    MenuSection = controllerModeSection,
+                    Action = _ => _controllerDialogHandler.ShowSetPrimarySong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Clear Primary Song",
+                    MenuSection = controllerModeSection,
+                    Action = _ => _controllerDialogHandler.ClearPrimarySong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Delete Songs",
+                    MenuSection = controllerModeSection,
+                    Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
+                });
+            }
 
             return items;
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
-            if (_mainMenuHandler == null)
-                return Enumerable.Empty<MainMenuItem>();
-
             var items = new List<MainMenuItem>
             {
                 new MainMenuItem
@@ -2010,7 +1364,7 @@ namespace UniPlaySong
             };
 
             // Add retry failed downloads option if there are any failed downloads
-            if (_gameMenuHandler != null && _gameMenuHandler.FailedDownloads.Any(fd => !fd.Resolved))
+            if (_gameMenuHandler.FailedDownloads.Any(fd => !fd.Resolved))
             {
                 items.Add(new MainMenuItem
                 {
@@ -2080,316 +1434,6 @@ namespace UniPlaySong
         /// Gets the Playnite API instance.
         /// </summary>
         public new IPlayniteAPI PlayniteApi => _api;
-
-        #endregion
-
-        #region Controller Dialogs
-
-        /// <summary>
-        /// Show controller-friendly file picker for setting primary song
-        /// </summary>
-        private void ShowControllerSetPrimarySong(Game game)
-        {
-            try
-            {
-                logger.Debug($"ShowControllerSetPrimarySong called for game: {game?.Name}");
-
-                var filePickerDialog = new Views.ControllerFilePickerDialog();
-
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = $"Set Primary Song - {game?.Name ?? "Unknown Game"}";
-                window.Width = 700;
-                window.Height = 500;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = filePickerDialog;
-
-                filePickerDialog.InitializeForGame(game, PlayniteApi, _fileService, _playbackService, Views.ControllerFilePickerDialog.DialogMode.SetPrimary);
-
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during set primary dialog close");
-                    }
-                };
-
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing controller set primary song dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage("Failed to open primary song selector.", "UniPlaySong");
-            }
-        }
-
-        /// <summary>
-        /// Show controller-friendly dialog for removing primary song
-        /// </summary>
-        private void ShowControllerRemovePrimarySong(Game game)
-        {
-            try
-            {
-                logger.Debug($"ShowControllerRemovePrimarySong called for game: {game?.Name}");
-
-                // Check if there is a primary song to remove
-                var currentPrimary = _fileService?.GetPrimarySong(game);
-                if (string.IsNullOrEmpty(currentPrimary))
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No primary song is currently set for this game.", "UniPlaySong");
-                    return;
-                }
-
-                // Create controller file picker dialog
-                var filePickerDialog = new Views.ControllerFilePickerDialog();
-
-                // Create window using Playnite's dialog system
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = $"Remove Primary Song - {game?.Name ?? "Unknown Game"}";
-                window.Width = 700;
-                window.Height = 500;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = filePickerDialog;
-
-                // Initialize the dialog
-                filePickerDialog.InitializeForGame(game, PlayniteApi, _fileService, _playbackService, Views.ControllerFilePickerDialog.DialogMode.RemovePrimary);
-
-                // Handle window events for focus management
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during remove primary dialog close");
-                    }
-                };
-
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing controller remove primary song dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage("Failed to open primary song remover.", "UniPlaySong");
-            }
-        }
-
-        /// <summary>
-        /// Show controller-friendly dialog for deleting songs
-        /// </summary>
-        private void ShowControllerDeleteSongs(Game game)
-        {
-            try
-            {
-                logger.Debug($"ShowControllerDeleteSongs called for game: {game?.Name}");
-
-                // Check if there are any songs to delete
-                var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                if (availableSongs.Count == 0)
-                {
-                    PlayniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
-                    return;
-                }
-
-                // Create controller delete songs dialog
-                var deleteSongsDialog = new Views.ControllerDeleteSongsDialog();
-
-                // Create window using Playnite's dialog system
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = $"Delete Songs - {game?.Name ?? "Unknown Game"}";
-                window.Width = 750;
-                window.Height = 550;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-                window.Content = deleteSongsDialog;
-
-                // Initialize the dialog
-                deleteSongsDialog.InitializeForGame(game, PlayniteApi, _fileService, _playbackService);
-
-                // Handle window events for focus management
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus during delete songs dialog close");
-                    }
-                };
-
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing controller delete songs dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage("Failed to open song deletion dialog.", "UniPlaySong");
-            }
-        }
-
-        /// <summary>
-        /// Show the controller-optimized download dialog for a specific game
-        /// </summary>
-        public void ShowControllerDownloadDialog(Game game)
-        {
-            try
-            {
-                logger.Info($"Opening controller download dialog for game: {game?.Name}");
-                
-                // Create a window for the controller dialog using Playnite's dialog system
-                var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = true,
-                    ShowCloseButton = true
-                });
-
-                window.Title = $"Download Music - {game?.Name ?? "Unknown Game"}";
-                window.Width = 800;
-                window.Height = 600;
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowInTaskbar = false;
-                window.ResizeMode = ResizeMode.CanResize;
-
-                // Set background color for fullscreen compatibility
-                window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
-
-                // Create and set the controller dialog
-                var controllerDialog = new Views.SimpleControllerDialog();
-                window.Content = controllerDialog;
-
-                // Initialize the dialog with real download functionality
-                controllerDialog.InitializeForGame(game, _downloadDialogService, PlayniteApi, _downloadManager, _playbackService, _fileService);
-
-                // Ensure the window stays in fullscreen context
-                window.Focusable = true;
-                window.KeyDown += (s, e) => controllerDialog.Focus();
-
-                // Show the dialog and ensure it gets focus
-                window.Loaded += (s, e) => 
-                {
-                    window.Activate();
-                    window.Focus();
-                    controllerDialog.Focus();
-                };
-
-                // Handle window closing to prevent focus loss and dark overlay
-                window.Closing += (s, e) =>
-                {
-                    try
-                    {
-                        logger.Debug("Controller dialog window closing");
-                        
-                        // Force focus return to prevent dark overlay
-                        var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                        if (mainWindow != null)
-                        {
-                            logger.Debug("Forcing focus return to main window");
-                            mainWindow.Activate();
-                            mainWindow.Focus();
-                            mainWindow.Topmost = true;
-                            mainWindow.Topmost = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error returning focus to main window during close");
-                    }
-                };
-
-                window.Closed += (s, e) =>
-                {
-                    try
-                    {
-                        logger.Debug("Controller dialog window closed");
-                        
-                        // Additional focus restoration after window is fully closed
-                        Task.Delay(50).ContinueWith(_ =>
-                        {
-                            try
-                            {
-                                var mainWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
-                                if (mainWindow != null)
-                                {
-                                    mainWindow.Dispatcher.BeginInvoke(new Action(() =>
-                                    {
-                                        mainWindow.Activate();
-                                        mainWindow.Focus();
-                                    }));
-                                }
-                            }
-                            catch (Exception delayEx)
-                            {
-                                logger.Debug(delayEx, "Error in delayed focus restoration");
-                            }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Debug(ex, "Error in window closed handler");
-                    }
-                };
-                
-                var result = window.ShowDialog();
-                
-                logger.Info($"Controller download dialog completed with result: {result}");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error showing controller download dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing download dialog: {ex.Message}", "Download Dialog Error");
-            }
-        }
 
         #endregion
 

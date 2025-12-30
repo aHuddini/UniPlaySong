@@ -347,7 +347,10 @@ namespace UniPlaySong.Menus
                     () =>
                     {
                         _logger.Info($"SetPrimarySong called for game: {game?.Name ?? "null"}");
-                        
+
+                        // Get the game's music directory first
+                        var musicDir = _fileService.GetGameMusicDirectory(game);
+
                         var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                         if (songs.Count == 0)
                         {
@@ -355,11 +358,17 @@ namespace UniPlaySong.Menus
                             return;
                         }
 
-                        // Show file selection dialog
-                        var selectedFile = _playniteApi.Dialogs.SelectFile("Audio files|*.mp3;*.wav;*.ogg;*.flac");
+                        // Show file selection dialog starting in the game's music directory
+                        var dialog = new Microsoft.Win32.OpenFileDialog
+                        {
+                            Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                            InitialDirectory = musicDir,
+                            Title = "Select Primary Song"
+                        };
+
+                        var selectedFile = dialog.ShowDialog() == true ? dialog.FileName : null;
                         if (!string.IsNullOrEmpty(selectedFile))
                         {
-                            var musicDir = _fileService.GetGameMusicDirectory(game);
                             if (selectedFile.StartsWith(musicDir))
                             {
                                 PrimarySongManager.SetPrimarySong(musicDir, selectedFile, _errorHandler);
@@ -385,7 +394,10 @@ namespace UniPlaySong.Menus
                 try
                 {
                     _logger.Info($"SetPrimarySong called for game: {game?.Name ?? "null"}");
-                    
+
+                    // Get the game's music directory first
+                    var musicDir = _fileService.GetGameMusicDirectory(game);
+
                     var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                     if (songs.Count == 0)
                     {
@@ -393,11 +405,17 @@ namespace UniPlaySong.Menus
                         return;
                     }
 
-                    // Show file selection dialog
-                    var selectedFile = _playniteApi.Dialogs.SelectFile("Audio files|*.mp3;*.wav;*.ogg;*.flac");
+                    // Show file selection dialog starting in the game's music directory
+                    var dialog = new Microsoft.Win32.OpenFileDialog
+                    {
+                        Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                        InitialDirectory = musicDir,
+                        Title = "Select Primary Song"
+                    };
+
+                    var selectedFile = dialog.ShowDialog() == true ? dialog.FileName : null;
                     if (!string.IsNullOrEmpty(selectedFile))
                     {
-                        var musicDir = _fileService.GetGameMusicDirectory(game);
                         if (selectedFile.StartsWith(musicDir))
                         {
                             PrimarySongManager.SetPrimarySong(musicDir, selectedFile);
@@ -459,6 +477,136 @@ namespace UniPlaySong.Menus
                 {
                     _logger.Error(ex, $"Error clearing primary song: {ex.Message}");
                     _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows a file picker dialog for normalizing an individual song
+        /// </summary>
+        public void ShowNormalizeIndividualSong(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteShowNormalizeIndividualSong(game),
+                    context: $"showing normalize individual song dialog for '{game?.Name}'",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteShowNormalizeIndividualSong(game);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in ShowNormalizeIndividualSong: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteShowNormalizeIndividualSong(Game game)
+        {
+            _logger.Info($"ShowNormalizeIndividualSong called for game: {game?.Name ?? "null"}");
+
+            var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+            if (songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
+                return;
+            }
+
+            var musicDir = _fileService.GetGameMusicDirectory(game);
+
+            // Show file selection dialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                InitialDirectory = musicDir,
+                Title = "Select Song to Normalize"
+            };
+
+            var selectedFile = dialog.ShowDialog() == true ? dialog.FileName : null;
+            if (!string.IsNullOrEmpty(selectedFile))
+            {
+                if (selectedFile.StartsWith(musicDir))
+                {
+                    // Trigger normalization for this single file via the plugin
+                    _dialogService.ShowNormalizeIndividualSongProgress(game, selectedFile);
+                }
+                else
+                {
+                    _playniteApi.Dialogs.ShowMessage(
+                        "Selected file must be in the game's music folder.",
+                        "UniPlaySong");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows a file picker dialog for trimming an individual song
+        /// </summary>
+        public void ShowTrimIndividualSong(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteShowTrimIndividualSong(game),
+                    context: $"showing trim individual song dialog for '{game?.Name}'",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteShowTrimIndividualSong(game);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in ShowTrimIndividualSong: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteShowTrimIndividualSong(Game game)
+        {
+            _logger.Info($"ShowTrimIndividualSong called for game: {game?.Name ?? "null"}");
+
+            var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+            if (songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
+                return;
+            }
+
+            var musicDir = _fileService.GetGameMusicDirectory(game);
+
+            // Show file selection dialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                InitialDirectory = musicDir,
+                Title = "Silence Trim - Select Song"
+            };
+
+            var selectedFile = dialog.ShowDialog() == true ? dialog.FileName : null;
+            if (!string.IsNullOrEmpty(selectedFile))
+            {
+                if (selectedFile.StartsWith(musicDir))
+                {
+                    // Trigger trim for this single file via the dialog service
+                    _dialogService.ShowTrimIndividualSongProgress(game, selectedFile);
+                }
+                else
+                {
+                    _playniteApi.Dialogs.ShowMessage(
+                        "Selected file must be in the game's music folder.",
+                        "UniPlaySong");
                 }
             }
         }

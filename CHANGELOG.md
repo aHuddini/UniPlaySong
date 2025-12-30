@@ -1,6 +1,22 @@
 # UniPlaySong - Changelog
 
-## Version 1.1.0 (Latest)
+## Version 1.1.1 (Latest)
+
+### Features
+- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from context menu
+  - Desktop mode: Windows file picker dialog
+  - Fullscreen mode: Controller-friendly file picker with D-pad navigation
+- **Open Preserved Folder** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - New button in Normalization settings to open backup folder of original songs that were edited by users.
+
+### Improvements
+- **Settings Tab Cleanup** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Removed redundant per-game buttons from Normalization tab (use context menu instead)
+- **Clearer Menu Labels** - Renamed trim options to "Silence Trim" for clarity (e.g., "Silence Trim - Single Song", "Silence Trim - Audio Folder")
+- **Fixed PreservedOriginals Path** - "Open Preserved Folder" now opens the correct backup location
+- **Code Refactoring** - Extracted dialog handlers (~1,270 lines) and common utilities (~370 lines) into dedicated files (UniPlaySong.cs was 2000+ lines of code). Updated developer documentation. Further refactoring planned.
+
+---
+
+## Version 1.1.0
 
 ### Features
 - **Pause music on focus loss** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - New option to pause music when switching to another application
@@ -19,9 +35,11 @@
   - "Desktop" mode correctly plays music only in Desktop mode
   - "Fullscreen" mode correctly plays music only in Fullscreen mode
   - Settings changes take effect immediately when saved (no longer requires game switch)
+- **Fixed "Set Primary Song (PC Mode)" file picker** - File dialog now opens directly in the game's music directory instead of a random folder
 
 ### Improvements
 - **Debug logging respects toggle** - Coordinator debug messages now only log when Debug Logging is enabled
+- **Improved error visibility** - Initialization errors now surface properly instead of silently failing
 
 ---
 

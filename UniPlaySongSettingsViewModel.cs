@@ -309,13 +309,38 @@ namespace UniPlaySong
                         "Are you absolutely sure you want to delete all preserved originals?",
                         "Delete Preserved Originals",
                         System.Windows.MessageBoxButton.YesNo);
-                    
+
                     if (result == System.Windows.MessageBoxResult.Yes)
                     {
                         plugin.DeletePreservedOriginals();
                     }
                 },
                 context: "deleting preserved originals",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand OpenPreservedOriginalsFolderCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    // Use the same path as normalization/trim services: ConfigurationPath + ExtraMetadata + UniPlaySong + PreservedOriginals
+                    var preservedOriginalsPath = Path.Combine(
+                        PlayniteApi.Paths.ConfigurationPath,
+                        Constants.ExtraMetadataFolderName,
+                        Constants.ExtensionFolderName,
+                        Constants.PreservedOriginalsFolderName);
+
+                    if (!Directory.Exists(preservedOriginalsPath))
+                    {
+                        Directory.CreateDirectory(preservedOriginalsPath);
+                    }
+
+                    System.Diagnostics.Process.Start("explorer.exe", preservedOriginalsPath);
+                },
+                context: "opening preserved originals folder",
                 showUserMessage: true
             );
         });

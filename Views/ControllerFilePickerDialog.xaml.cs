@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -44,61 +43,14 @@ namespace UniPlaySong.Views
             }
         }
 
-        // XInput API for Xbox controller support
-        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")]
-        private static extern uint XInputGetState14(uint dwUserIndex, ref XINPUT_STATE pState);
-        
-        [DllImport("xinput1_3.dll", EntryPoint = "XInputGetState")]
-        private static extern uint XInputGetState13(uint dwUserIndex, ref XINPUT_STATE pState);
-        
-        [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState")]
-        private static extern uint XInputGetState910(uint dwUserIndex, ref XINPUT_STATE pState);
-
-        private static uint XInputGetState(uint dwUserIndex, ref XINPUT_STATE pState)
-        {
-            try { return XInputGetState14(dwUserIndex, ref pState); }
-            catch { }
-            try { return XInputGetState13(dwUserIndex, ref pState); }
-            catch { }
-            try { return XInputGetState910(dwUserIndex, ref pState); }
-            catch { return 1; } // ERROR_DEVICE_NOT_CONNECTED
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_STATE
-        {
-            public uint dwPacketNumber;
-            public XINPUT_GAMEPAD Gamepad;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_GAMEPAD
-        {
-            public ushort wButtons;
-            public byte bLeftTrigger;
-            public byte bRightTrigger;
-            public short sThumbLX;
-            public short sThumbLY;
-            public short sThumbRX;
-            public short sThumbRY;
-        }
-
-        // Xbox controller button constants
-        private const ushort XINPUT_GAMEPAD_A = 0x1000;
-        private const ushort XINPUT_GAMEPAD_B = 0x2000;
-        private const ushort XINPUT_GAMEPAD_X = 0x4000;
-        private const ushort XINPUT_GAMEPAD_Y = 0x8000;
-        private const ushort XINPUT_GAMEPAD_DPAD_UP = 0x0001;
-        private const ushort XINPUT_GAMEPAD_DPAD_DOWN = 0x0002;
-        private const ushort XINPUT_GAMEPAD_DPAD_LEFT = 0x0004;
-        private const ushort XINPUT_GAMEPAD_DPAD_RIGHT = 0x0008;
-        private const ushort XINPUT_GAMEPAD_LEFT_SHOULDER = 0x0100;
-        private const ushort XINPUT_GAMEPAD_RIGHT_SHOULDER = 0x0200;
-
         // Controller monitoring
         private CancellationTokenSource _controllerMonitoringCancellation;
         private bool _isMonitoring = false;
         private ushort _lastButtonState = 0;
+
+        // D-pad debouncing - prevents double-input from both XInput and WPF processing
+        private DateTime _lastDpadNavigationTime = DateTime.MinValue;
+        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
 
         // Dialog state
         private Game _currentGame;
@@ -116,7 +68,9 @@ namespace UniPlaySong.Views
         public enum DialogMode
         {
             SetPrimary,
-            RemovePrimary
+            RemovePrimary,
+            NormalizeIndividual,
+            TrimIndividual
         }
 
         private DialogMode _mode;
@@ -182,12 +136,24 @@ namespace UniPlaySong.Views
                     ConfirmButton.Content = "Set as Primary";
                     RemoveButton.Visibility = Visibility.Collapsed;
                     break;
-                    
+
                 case DialogMode.RemovePrimary:
                     DialogTitle.Text = "🎮 Remove Primary Song";
                     ConfirmButton.Content = "Remove Primary";
                     RemoveButton.Visibility = Visibility.Visible;
                     RemoveButton.Content = "Remove Primary";
+                    break;
+
+                case DialogMode.NormalizeIndividual:
+                    DialogTitle.Text = "🎮 Select Song to Normalize";
+                    ConfirmButton.Content = "Normalize";
+                    RemoveButton.Visibility = Visibility.Collapsed;
+                    break;
+
+                case DialogMode.TrimIndividual:
+                    DialogTitle.Text = "🎮 Silence Trim - Select Song";
+                    ConfirmButton.Content = "Silence Trim";
+                    RemoveButton.Visibility = Visibility.Collapsed;
                     break;
             }
         }
@@ -395,8 +361,8 @@ namespace UniPlaySong.Views
             {
                 try
                 {
-                    XINPUT_STATE state = new XINPUT_STATE();
-                    uint result = XInputGetState(0, ref state); // Check controller 0
+                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                    uint result = (uint)XInputWrapper.XInputGetState(0, ref state); // Check controller 0
 
                     if (result == 0) // Success
                     {
@@ -431,47 +397,49 @@ namespace UniPlaySong.Views
         /// <summary>
         /// Handle Xbox controller input
         /// </summary>
-        private void HandleControllerInput(ushort pressedButtons, XINPUT_GAMEPAD gamepad)
+        private void HandleControllerInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
         {
             try
             {
                 // A button - Confirm selection
-                if ((pressedButtons & XINPUT_GAMEPAD_A) != 0)
+                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
                 {
                     ConfirmButton_Click(null, null);
                     return;
                 }
 
                 // B button - Cancel
-                if ((pressedButtons & XINPUT_GAMEPAD_B) != 0)
+                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
                 {
                     CancelButton_Click(null, null);
                     return;
                 }
 
                 // X/Y buttons - Preview
-                if ((pressedButtons & (XINPUT_GAMEPAD_X | XINPUT_GAMEPAD_Y)) != 0)
+                if ((pressedButtons & (XInputWrapper.XINPUT_GAMEPAD_X | XInputWrapper.XINPUT_GAMEPAD_Y)) != 0)
                 {
                     PreviewSelectedFile();
                     return;
                 }
 
-                // D-Pad navigation
-                if ((pressedButtons & XINPUT_GAMEPAD_DPAD_UP) != 0)
+                // D-Pad navigation with debouncing
+                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
                 {
-                    NavigateList(-1);
+                    if (TryDpadNavigation())
+                        NavigateList(-1);
                 }
-                else if ((pressedButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0)
+                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
                 {
-                    NavigateList(1);
+                    if (TryDpadNavigation())
+                        NavigateList(1);
                 }
 
                 // Shoulder buttons - Page navigation
-                if ((pressedButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
+                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
                 {
                     NavigateList(-5); // Page up
                 }
-                else if ((pressedButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
+                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
                 {
                     NavigateList(5); // Page down
                 }
@@ -490,6 +458,21 @@ namespace UniPlaySong.Views
             {
                 Logger.Error(ex, "Error handling controller input");
             }
+        }
+
+        /// <summary>
+        /// Check if enough time has passed since last D-pad navigation (debouncing)
+        /// </summary>
+        private bool TryDpadNavigation()
+        {
+            var now = DateTime.Now;
+            var timeSinceLastNav = (now - _lastDpadNavigationTime).TotalMilliseconds;
+            if (timeSinceLastNav < DpadDebounceMs)
+            {
+                return false; // Too soon, ignore this input
+            }
+            _lastDpadNavigationTime = now;
+            return true;
         }
 
         /// <summary>
@@ -719,9 +702,17 @@ namespace UniPlaySong.Views
                         case DialogMode.SetPrimary:
                             SetPrimarySong(selectedFilePath);
                             break;
-                            
+
                         case DialogMode.RemovePrimary:
                             RemovePrimarySong();
+                            break;
+
+                        case DialogMode.NormalizeIndividual:
+                            NormalizeIndividualSong(selectedFilePath);
+                            break;
+
+                        case DialogMode.TrimIndividual:
+                            TrimIndividualSong(selectedFilePath);
                             break;
                     }
                 }
@@ -789,11 +780,11 @@ namespace UniPlaySong.Views
             try
             {
                 _fileService?.RemovePrimarySong(_currentGame);
-                
+
                 _playniteApi?.Dialogs?.ShowMessage(
                     "Primary song removed. The game will use randomized selection.",
                     "UniPlaySong");
-                
+
                 Logger.Info($"Removed primary song for {_currentGame?.Name}");
                 CloseDialog(true);
             }
@@ -801,6 +792,78 @@ namespace UniPlaySong.Views
             {
                 Logger.Error(ex, "Error removing primary song");
                 UpdateInputFeedback("❌ Error removing primary song");
+            }
+        }
+
+        /// <summary>
+        /// Normalize the selected individual song
+        /// </summary>
+        private void NormalizeIndividualSong(string filePath)
+        {
+            try
+            {
+                var fileName = Path.GetFileName(filePath);
+                Logger.Info($"Starting normalization for individual song: {fileName}");
+
+                // Close dialog first, then trigger normalization
+                CloseDialog(true);
+
+                // Use dispatcher to show progress dialog after this dialog closes
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // Get the UniPlaySong plugin instance to access normalization
+                        var plugin = Application.Current?.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        plugin?.NormalizeSingleFile(_currentGame, filePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error triggering normalization");
+                        _playniteApi?.Dialogs?.ShowErrorMessage($"Error normalizing file: {ex.Message}", "UniPlaySong");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error starting normalization");
+                UpdateInputFeedback("❌ Error starting normalization");
+            }
+        }
+
+        /// <summary>
+        /// Trim the selected individual song
+        /// </summary>
+        private void TrimIndividualSong(string filePath)
+        {
+            try
+            {
+                var fileName = Path.GetFileName(filePath);
+                Logger.Info($"Starting trim for individual song: {fileName}");
+
+                // Close dialog first, then trigger trim
+                CloseDialog(true);
+
+                // Use dispatcher to show progress dialog after this dialog closes
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // Get the UniPlaySong plugin instance to access trim
+                        var plugin = Application.Current?.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        plugin?.TrimSingleFile(_currentGame, filePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error triggering trim");
+                        _playniteApi?.Dialogs?.ShowErrorMessage($"Error trimming file: {ex.Message}", "UniPlaySong");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error starting trim");
+                UpdateInputFeedback("❌ Error starting trim");
             }
         }
 
