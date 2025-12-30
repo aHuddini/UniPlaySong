@@ -15,7 +15,7 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 ## What's New - v1.1.1
 
 ### New Features
-- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from Playnite's context menus in PC and Controller mode
+- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from Playnite's context menus in PC and Controller mode (previously, context menus only performed bulk edits in a game's music directory. Individual edits were only possible on add-on settings menu)
 - **Open Preserved Folder** - New button in add-on settings to open backup folder of songs preserved by the user when trimming or normalizing audio tracks 
 
 ### Improvements
