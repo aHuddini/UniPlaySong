@@ -93,11 +93,14 @@ namespace UniPlaySong
         private Handlers.ControllerDialogHandler _controllerDialogHandler;
         private Handlers.NormalizationDialogHandler _normalizationDialogHandler;
         private Handlers.TrimDialogHandler _trimDialogHandler;
+        private Handlers.WaveformTrimDialogHandler _waveformTrimDialogHandler;
+        private Services.IWaveformTrimService _waveformTrimService;
         private DownloadDialogService _downloadDialogService;
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
         private Services.INormalizationService _normalizationService;
         private Services.ITrimService _trimService;
+        private Services.AudioRepairService _repairService;
         private Services.MigrationService _migrationService;
         private IMusicPlaybackCoordinator _coordinator;
         
@@ -249,6 +252,244 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
+            }
+        }
+
+        /// <summary>
+        /// Handles library update events from Playnite.
+        /// Triggers auto-download of music for newly added games if enabled.
+        /// </summary>
+        public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
+        {
+            try
+            {
+                _fileLogger?.Info($"OnLibraryUpdated: Library updated event received");
+
+                if (_settings == null)
+                {
+                    _fileLogger?.Warn("OnLibraryUpdated: Settings is null");
+                    return;
+                }
+
+                if (!_settings.AutoDownloadOnLibraryUpdate)
+                {
+                    _fileLogger?.Debug("OnLibraryUpdated: Auto-download disabled, skipping");
+                    // Still update timestamp to avoid processing old games later
+                    _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
+                    SavePluginSettings(_settings);
+                    return;
+                }
+
+                // Get games added since last auto-download check
+                var lastCheck = _settings.LastAutoLibUpdateAssetsDownload;
+                _fileLogger?.Info($"OnLibraryUpdated: Checking for games added after {lastCheck}");
+
+                var newGames = _api.Database.Games
+                    .Where(g => g.Added.HasValue && g.Added.Value > lastCheck)
+                    .ToList();
+
+                _fileLogger?.Info($"OnLibraryUpdated: Found {newGames.Count} new game(s)");
+
+                // Start auto-download in background if we have new games
+                if (newGames.Count > 0)
+                {
+                    Task.Run(() => AutoDownloadMusicForGamesAsync(newGames));
+                }
+
+                // Update timestamp AFTER identifying games (like PlayniteSound does)
+                _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
+                SavePluginSettings(_settings);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"OnLibraryUpdated: Error - {ex.Message}", ex);
+                logger.Error(ex, "Error in OnLibraryUpdated");
+            }
+        }
+
+        /// <summary>
+        /// Automatically downloads music for a list of games.
+        /// Uses BestAlbumPick and BestSongPick to select the most relevant music.
+        /// </summary>
+        private async Task AutoDownloadMusicForGamesAsync(List<Game> games)
+        {
+            if (games == null || games.Count == 0)
+                return;
+
+            _fileLogger?.Info($"AutoDownloadMusicForGamesAsync: Starting auto-download for {games.Count} game(s)");
+
+            var successCount = 0;
+            var skipCount = 0;
+            var failCount = 0;
+
+            foreach (var game in games)
+            {
+                try
+                {
+                    // Check if game already has music
+                    if (_fileService.HasMusic(game))
+                    {
+                        _fileLogger?.Debug($"AutoDownload: Skipping '{game.Name}' - already has music");
+                        skipCount++;
+                        continue;
+                    }
+
+                    var success = await AutoDownloadMusicForGameAsync(game);
+                    if (success)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                    }
+
+                    // Rate limiting: wait between downloads to avoid throttling
+                    await Task.Delay(2000);
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Error($"AutoDownload: Error processing '{game.Name}' - {ex.Message}", ex);
+                    failCount++;
+                }
+            }
+
+            _fileLogger?.Info($"AutoDownloadMusicForGamesAsync: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
+
+            // Show notification with results
+            if (successCount > 0 || failCount > 0)
+            {
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    var message = $"Auto-download completed:\n" +
+                                  $"• Downloaded: {successCount}\n" +
+                                  $"• Skipped (already have music): {skipCount}\n" +
+                                  $"• Failed: {failCount}";
+                    _api.Notifications.Add(new NotificationMessage(
+                        "UniPlaySong_AutoDownload",
+                        message,
+                        NotificationType.Info));
+                }));
+            }
+        }
+
+        /// <summary>
+        /// Automatically downloads music for a single game.
+        /// Returns true if music was successfully downloaded.
+        /// </summary>
+        private async Task<bool> AutoDownloadMusicForGameAsync(Game game)
+        {
+            try
+            {
+                _fileLogger?.Debug($"AutoDownload: Processing '{game.Name}'");
+
+                using (var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2)))
+                {
+                    // Get albums for this game (try KHInsider first, fallback to YouTube)
+                    var albums = _downloadManager.GetAlbumsForGame(game.Name, Models.Source.All, cts.Token, auto: true);
+                    if (albums == null || !albums.Any())
+                    {
+                        _fileLogger?.Debug($"AutoDownload: No albums found for '{game.Name}'");
+                        return false;
+                    }
+
+                    // Use BestAlbumPick to select the best album
+                    var bestAlbum = _downloadManager.BestAlbumPick(albums, game);
+                    if (bestAlbum == null)
+                    {
+                        _fileLogger?.Debug($"AutoDownload: No suitable album found for '{game.Name}'");
+                        return false;
+                    }
+
+                    _fileLogger?.Debug($"AutoDownload: Selected album '{bestAlbum.Name}' for '{game.Name}'");
+
+                    // Get songs from the album
+                    var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cts.Token);
+                    if (songs == null || !songs.Any())
+                    {
+                        _fileLogger?.Debug($"AutoDownload: No songs found in album '{bestAlbum.Name}'");
+                        return false;
+                    }
+
+                    // Use BestSongPick to select the best song (only 1 song for auto-download)
+                    var bestSongs = _downloadManager.BestSongPick(songs, game.Name, maxSongs: 1);
+                    if (bestSongs == null || bestSongs.Count == 0)
+                    {
+                        _fileLogger?.Debug($"AutoDownload: No suitable song found for '{game.Name}'");
+                        return false;
+                    }
+
+                    var bestSong = bestSongs.First();
+                    _fileLogger?.Debug($"AutoDownload: Selected song '{bestSong.Name}' for '{game.Name}'");
+
+                    // Ensure game music directory exists
+                    var gameDir = _fileService.EnsureGameMusicDirectory(game);
+                    if (string.IsNullOrWhiteSpace(gameDir))
+                    {
+                        _fileLogger?.Error($"AutoDownload: Failed to create music directory for '{game.Name}'");
+                        return false;
+                    }
+
+                    // Generate safe filename
+                    var safeFileName = Common.StringHelper.CleanForPath(bestSong.Name);
+                    var extension = Path.GetExtension(bestSong.Id);
+                    if (string.IsNullOrEmpty(extension))
+                        extension = ".mp3";
+                    var downloadPath = Path.Combine(gameDir, safeFileName + extension);
+
+                    // Download the song
+                    var success = _downloadManager.DownloadSong(bestSong, downloadPath, cts.Token, isPreview: false);
+                    if (success)
+                    {
+                        _fileLogger?.Info($"AutoDownload: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
+
+                        // Auto-normalize if enabled
+                        if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)
+                        {
+                            try
+                            {
+                                var normSettings = new Models.NormalizationSettings
+                                {
+                                    FFmpegPath = _settings.FFmpegPath,
+                                    TargetLoudness = _settings.NormalizationTargetLoudness,
+                                    TruePeak = _settings.NormalizationTruePeak,
+                                    LoudnessRange = _settings.NormalizationLoudnessRange,
+                                    AudioCodec = _settings.NormalizationCodec,
+                                    NormalizationSuffix = _settings.NormalizationSuffix,
+                                    TrimSuffix = _settings.TrimSuffix,
+                                    DoNotPreserveOriginals = _settings.DoNotPreserveOriginals
+                                };
+                                await _normalizationService.NormalizeFileAsync(
+                                    downloadPath,
+                                    normSettings,
+                                    null,
+                                    CancellationToken.None);
+                                _fileLogger?.Debug($"AutoDownload: Normalized '{bestSong.Name}'");
+                            }
+                            catch (Exception ex)
+                            {
+                                _fileLogger?.Warn($"AutoDownload: Normalization failed for '{bestSong.Name}' - {ex.Message}");
+                            }
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        _fileLogger?.Warn($"AutoDownload: Download failed for '{bestSong.Name}'");
+                        return false;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _fileLogger?.Warn($"AutoDownload: Timeout for '{game.Name}'");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"AutoDownload: Error for '{game.Name}' - {ex.Message}", ex);
+                return false;
             }
         }
 
@@ -635,20 +876,32 @@ namespace UniPlaySong
             _normalizationService = new Services.AudioNormalizationService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Info("AudioNormalizationService initialized");
 
+            // Wire up normalization service to download dialog service for auto-normalize feature
+            _downloadDialogService.SetNormalizationService(_normalizationService);
+
             // Initialize trim service with playback service and base path for backups
             _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Info("AudioTrimService initialized");
 
+            // Initialize waveform trim service for precise trimming
+            _waveformTrimService = new Services.WaveformTrimService(_errorHandler, _playbackService, basePath);
+            _fileLogger?.Info("WaveformTrimService initialized");
+
             // Initialize migration service for PlayniteSound <-> UniPlaySong migration
             _migrationService = new Services.MigrationService(_api, _errorHandler);
             _fileLogger?.Info("MigrationService initialized");
+
+            // Initialize audio repair service for fixing problematic audio files
+            _repairService = new Services.AudioRepairService(_errorHandler, _playbackService, basePath);
+            _fileLogger?.Info("AudioRepairService initialized");
         }
 
         private void InitializeMenuHandlers()
         {
             _gameMenuHandler = new GameMenuHandler(
                 _api, logger, _downloadManager, _fileService,
-                _playbackService, _downloadDialogService, _errorHandler);
+                _playbackService, _downloadDialogService, _errorHandler,
+                _repairService, () => _settings);
             _mainMenuHandler = new MainMenuHandler(_api, Id);
             _controllerDialogHandler = new Handlers.ControllerDialogHandler(
                 _api, _fileService, _playbackService, _downloadDialogService, _downloadManager);
@@ -656,6 +909,8 @@ namespace UniPlaySong
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
             _trimDialogHandler = new Handlers.TrimDialogHandler(
                 _api, _trimService, _playbackService, _fileService, () => _settings);
+            _waveformTrimDialogHandler = new Handlers.WaveformTrimDialogHandler(
+                _api, () => _settings, _fileService, _playbackService, _waveformTrimService);
         }
 
         private void SubscribeToMainModel()
@@ -1151,9 +1406,16 @@ namespace UniPlaySong
                 // === Audio Processing Submenu ===
                 items.Add(new GameMenuItem
                 {
-                    Description = "🎮 Normalize Individual Song",
+                    Description = "🎮 Normalize Single Song",
                     MenuSection = audioProcessingSection,
                     Action = _ => _controllerDialogHandler.ShowNormalizeIndividualSong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Normalize Music Folder",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => NormalizeSelectedGamesFullscreen(game)
                 });
 
                 items.Add(new GameMenuItem
@@ -1165,16 +1427,16 @@ namespace UniPlaySong
 
                 items.Add(new GameMenuItem
                 {
-                    Description = "Normalize Music Directory",
+                    Description = "Silence Trim - Music Folder",
                     MenuSection = audioProcessingSection,
-                    Action = _ => NormalizeSelectedGamesFullscreen(game)
+                    Action = _ => TrimSelectedGamesFullscreen(game)
                 });
 
                 items.Add(new GameMenuItem
                 {
-                    Description = "Silence Trim - Audio Folder",
+                    Description = "🎮 Precise Trim",
                     MenuSection = audioProcessingSection,
-                    Action = _ => TrimSelectedGamesFullscreen(game)
+                    Action = _ => _waveformTrimDialogHandler.ShowControllerPreciseTrimDialog(game)
                 });
 
                 // === Manage Music Submenu (🎮 Mode options) ===
@@ -1223,7 +1485,9 @@ namespace UniPlaySong
             }
             else
             {
-                // === DESKTOP MODE: PC Mode options at parent level, Controller Mode in subfolder ===
+                // === DESKTOP MODE: Organized with submenus ===
+                var audioProcessingSection = $"{menuSection}|Audio Processing";
+                var audioEditingSection = $"{menuSection}|Audio Editing";
                 var controllerModeSection = $"{menuSection}|🎮 Controller Mode";
 
                 // Download Music - Desktop download dialog with source selection
@@ -1265,43 +1529,55 @@ namespace UniPlaySong
                     Action = _ => _gameMenuHandler.ClearPrimarySong(game)
                 });
 
-                // Separator before Audio Processing section
+                // === Audio Processing Submenu (Normalize and Silence Trim options) ===
                 items.Add(new GameMenuItem
                 {
-                    Description = "-",
-                    MenuSection = menuSection
-                });
-
-                // Normalize Individual Song
-                items.Add(new GameMenuItem
-                {
-                    Description = "Normalize Individual Song",
-                    MenuSection = menuSection,
+                    Description = "Normalize Single Song",
+                    MenuSection = audioProcessingSection,
                     Action = _ => _gameMenuHandler.ShowNormalizeIndividualSong(game)
                 });
 
-                // Silence Trim - Single Song
                 items.Add(new GameMenuItem
                 {
-                    Description = "Silence Trim - Single Song",
-                    MenuSection = menuSection,
-                    Action = _ => _gameMenuHandler.ShowTrimIndividualSong(game)
-                });
-
-                // Normalize Music Directory
-                items.Add(new GameMenuItem
-                {
-                    Description = "Normalize Music Directory",
-                    MenuSection = menuSection,
+                    Description = "Normalize Music Folder",
+                    MenuSection = audioProcessingSection,
                     Action = _ => _normalizationDialogHandler.NormalizeSelectedGames(new List<Game> { game })
                 });
 
-                // Silence Trim - Audio Folder
                 items.Add(new GameMenuItem
                 {
-                    Description = "Silence Trim - Audio Folder",
-                    MenuSection = menuSection,
+                    Description = "Silence Trim - Single Song",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _gameMenuHandler.ShowTrimIndividualSong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Silence Trim - Music Folder",
+                    MenuSection = audioProcessingSection,
                     Action = _ => _trimDialogHandler.TrimSelectedGames(new List<Game> { game })
+                });
+
+                // === Audio Editing Submenu (Precise Trim and Repair options) ===
+                items.Add(new GameMenuItem
+                {
+                    Description = "Precise Trim",
+                    MenuSection = audioEditingSection,
+                    Action = _ => _waveformTrimDialogHandler.ShowPreciseTrimDialog(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Repair Audio File",
+                    MenuSection = audioEditingSection,
+                    Action = _ => _gameMenuHandler.ShowRepairAudioFile(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Repair Music Folder",
+                    MenuSection = audioEditingSection,
+                    Action = _ => _gameMenuHandler.RepairAllAudioFiles(game)
                 });
 
                 // Separator before utility options
@@ -1347,6 +1623,13 @@ namespace UniPlaySong
                     MenuSection = controllerModeSection,
                     Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
                 });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Precise Trim",
+                    MenuSection = controllerModeSection,
+                    Action = _ => _waveformTrimDialogHandler.ShowControllerPreciseTrimDialog(game)
+                });
             }
 
             return items;
@@ -1374,6 +1657,273 @@ namespace UniPlaySong
             }
 
             return items;
+        }
+
+        /// <summary>
+        /// Downloads music for all games that don't have music yet.
+        /// Triggered from settings Downloads tab.
+        /// Shows a non-blocking progress dialog with cancellation support.
+        /// </summary>
+        public void DownloadMusicForAllGamesFromSettings()
+        {
+            try
+            {
+                // Get all games without music
+                var gamesWithoutMusic = _api.Database.Games
+                    .Where(g => !_fileService.HasMusic(g))
+                    .ToList();
+
+                if (gamesWithoutMusic.Count == 0)
+                {
+                    _api.Dialogs.ShowMessage(
+                        "All games already have music!",
+                        "UniPlaySong");
+                    return;
+                }
+
+                var result = _api.Dialogs.ShowMessage(
+                    $"Found {gamesWithoutMusic.Count} game(s) without music.\n\n" +
+                    $"Do you want to automatically download music for all of them?\n\n" +
+                    $"A progress dialog will show the current status. You can cancel at any time.",
+                    "UniPlaySong - Download Music for All Games",
+                    System.Windows.MessageBoxButton.YesNo);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _fileLogger?.Info($"DownloadMusicForAllGames: Starting download for {gamesWithoutMusic.Count} game(s)");
+
+                    // Use Playnite's global progress dialog (non-blocking, cancelable)
+                    var progressOptions = new GlobalProgressOptions(
+                        $"Downloading music for {gamesWithoutMusic.Count} games...",
+                        cancelable: true)
+                    {
+                        IsIndeterminate = false
+                    };
+
+                    _api.Dialogs.ActivateGlobalProgress(args =>
+                    {
+                        BulkDownloadMusicWithProgress(gamesWithoutMusic, args);
+                    }, progressOptions);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"DownloadMusicForAllGames: Error - {ex.Message}", ex);
+                _api.Dialogs.ShowErrorMessage($"Error starting download: {ex.Message}", "UniPlaySong");
+            }
+        }
+
+        /// <summary>
+        /// Performs bulk download with progress reporting.
+        /// Called from ActivateGlobalProgress for non-blocking UI updates.
+        /// </summary>
+        private void BulkDownloadMusicWithProgress(List<Game> games, GlobalProgressActionArgs progressArgs)
+        {
+            var successCount = 0;
+            var skipCount = 0;
+            var failCount = 0;
+            var totalGames = games.Count;
+
+            progressArgs.ProgressMaxValue = totalGames;
+
+            for (int i = 0; i < totalGames; i++)
+            {
+                // Check for cancellation
+                if (progressArgs.CancelToken.IsCancellationRequested)
+                {
+                    _fileLogger?.Info($"BulkDownload: Cancelled by user at {i}/{totalGames}");
+                    break;
+                }
+
+                var game = games[i];
+
+                // Update progress text
+                progressArgs.Text = $"Downloading {i + 1}/{totalGames}: {game.Name}";
+                progressArgs.CurrentProgressValue = i;
+
+                try
+                {
+                    // Check if game already has music (double-check)
+                    if (_fileService.HasMusic(game))
+                    {
+                        _fileLogger?.Debug($"BulkDownload: Skipping '{game.Name}' - already has music");
+                        skipCount++;
+                        continue;
+                    }
+
+                    // Synchronously download music for this game
+                    var success = AutoDownloadMusicForGameSync(game, progressArgs.CancelToken);
+                    if (success)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                    }
+
+                    // Rate limiting: wait between downloads to avoid throttling
+                    if (i < totalGames - 1 && !progressArgs.CancelToken.IsCancellationRequested)
+                    {
+                        Thread.Sleep(2000);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    _fileLogger?.Info($"BulkDownload: Cancelled during '{game.Name}'");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Error($"BulkDownload: Error processing '{game.Name}' - {ex.Message}", ex);
+                    failCount++;
+                }
+            }
+
+            // Final progress update
+            progressArgs.CurrentProgressValue = totalGames;
+
+            _fileLogger?.Info($"BulkDownload: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
+
+            // Show completion notification
+            var wasCancelled = progressArgs.CancelToken.IsCancellationRequested;
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                var statusMessage = wasCancelled ? "Download cancelled" : "Download completed";
+                var message = $"{statusMessage}:\n" +
+                              $"• Downloaded: {successCount}\n" +
+                              $"• Skipped (already have music): {skipCount}\n" +
+                              $"• Failed: {failCount}";
+
+                _api.Notifications.Add(new NotificationMessage(
+                    "UniPlaySong_BulkDownload",
+                    message,
+                    wasCancelled ? NotificationType.Info : NotificationType.Info));
+            }));
+        }
+
+        /// <summary>
+        /// Synchronously downloads music for a single game with cancellation support.
+        /// Used by BulkDownloadMusicWithProgress for progress dialog integration.
+        /// Returns true if music was successfully downloaded.
+        /// </summary>
+        private bool AutoDownloadMusicForGameSync(Game game, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _fileLogger?.Debug($"AutoDownloadSync: Processing '{game.Name}'");
+
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                {
+                    cts.CancelAfter(TimeSpan.FromMinutes(2));
+
+                    // Get albums for this game (try KHInsider first, fallback to YouTube)
+                    // Skip cache for bulk download to ensure fresh results
+                    var albums = _downloadManager.GetAlbumsForGame(game.Name, Models.Source.All, cts.Token, auto: true, skipCache: true);
+                    if (albums == null || !albums.Any())
+                    {
+                        _fileLogger?.Debug($"AutoDownloadSync: No albums found for '{game.Name}'");
+                        return false;
+                    }
+
+                    // Use BestAlbumPick to select the best album
+                    var bestAlbum = _downloadManager.BestAlbumPick(albums, game);
+                    if (bestAlbum == null)
+                    {
+                        _fileLogger?.Debug($"AutoDownloadSync: No suitable album found for '{game.Name}'");
+                        return false;
+                    }
+
+                    _fileLogger?.Debug($"AutoDownloadSync: Selected album '{bestAlbum.Name}' for '{game.Name}'");
+
+                    // Get songs from the album
+                    var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cts.Token);
+                    if (songs == null || !songs.Any())
+                    {
+                        _fileLogger?.Debug($"AutoDownloadSync: No songs found in album '{bestAlbum.Name}'");
+                        return false;
+                    }
+
+                    // Use BestSongPick to select the best song (only 1 song for auto-download)
+                    var bestSongs = _downloadManager.BestSongPick(songs, game.Name, maxSongs: 1);
+                    if (bestSongs == null || bestSongs.Count == 0)
+                    {
+                        _fileLogger?.Debug($"AutoDownloadSync: No suitable song found for '{game.Name}'");
+                        return false;
+                    }
+
+                    var bestSong = bestSongs.First();
+                    _fileLogger?.Debug($"AutoDownloadSync: Selected song '{bestSong.Name}' for '{game.Name}'");
+
+                    // Ensure game music directory exists
+                    var gameDir = _fileService.EnsureGameMusicDirectory(game);
+                    if (string.IsNullOrWhiteSpace(gameDir))
+                    {
+                        _fileLogger?.Error($"AutoDownloadSync: Failed to create music directory for '{game.Name}'");
+                        return false;
+                    }
+
+                    // Generate safe filename
+                    var safeFileName = Common.StringHelper.CleanForPath(bestSong.Name);
+                    var extension = Path.GetExtension(bestSong.Id);
+                    if (string.IsNullOrEmpty(extension))
+                        extension = ".mp3";
+                    var downloadPath = Path.Combine(gameDir, safeFileName + extension);
+
+                    // Download the song
+                    var success = _downloadManager.DownloadSong(bestSong, downloadPath, cts.Token, isPreview: false);
+                    if (success)
+                    {
+                        _fileLogger?.Info($"AutoDownloadSync: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
+
+                        // Auto-normalize if enabled
+                        if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)
+                        {
+                            try
+                            {
+                                var normSettings = new Models.NormalizationSettings
+                                {
+                                    FFmpegPath = _settings.FFmpegPath,
+                                    TargetLoudness = _settings.NormalizationTargetLoudness,
+                                    TruePeak = _settings.NormalizationTruePeak,
+                                    LoudnessRange = _settings.NormalizationLoudnessRange,
+                                    AudioCodec = _settings.NormalizationCodec,
+                                    NormalizationSuffix = _settings.NormalizationSuffix,
+                                    TrimSuffix = _settings.TrimSuffix,
+                                    DoNotPreserveOriginals = _settings.DoNotPreserveOriginals
+                                };
+                                _normalizationService.NormalizeFileAsync(
+                                    downloadPath,
+                                    normSettings,
+                                    null,
+                                    cts.Token).Wait(cts.Token);
+                                _fileLogger?.Debug($"AutoDownloadSync: Normalized '{bestSong.Name}'");
+                            }
+                            catch (Exception ex)
+                            {
+                                _fileLogger?.Warn($"AutoDownloadSync: Normalization failed for '{bestSong.Name}' - {ex.Message}");
+                            }
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        _fileLogger?.Warn($"AutoDownloadSync: Download failed for '{bestSong.Name}'");
+                        return false;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _fileLogger?.Warn($"AutoDownloadSync: Cancelled for '{game.Name}'");
+                throw; // Re-throw to signal cancellation
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"AutoDownloadSync: Error for '{game.Name}' - {ex.Message}", ex);
+                return false;
+            }
         }
 
         #endregion
@@ -1434,6 +1984,257 @@ namespace UniPlaySong
         /// Gets the Playnite API instance.
         /// </summary>
         public new IPlayniteAPI PlayniteApi => _api;
+
+        #endregion
+
+        #region Cleanup Operations
+
+        /// <summary>
+        /// Gets storage information for the cleanup UI.
+        /// </summary>
+        public (int gameCount, int fileCount, long totalBytes, int preservedCount, long preservedBytes) GetStorageInfo()
+        {
+            try
+            {
+                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+                var preservedPath = Path.Combine(basePath, "PreservedOriginals");
+
+                int gameCount = 0;
+                int fileCount = 0;
+                long totalBytes = 0;
+                int preservedCount = 0;
+                long preservedBytes = 0;
+
+                // Count game folders and music files
+                if (Directory.Exists(gamesPath))
+                {
+                    var gameDirs = Directory.GetDirectories(gamesPath);
+                    gameCount = gameDirs.Length;
+
+                    foreach (var gameDir in gameDirs)
+                    {
+                        var files = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories)
+                            .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+                        foreach (var file in files)
+                        {
+                            fileCount++;
+                            try { totalBytes += new FileInfo(file).Length; } catch { }
+                        }
+                    }
+                }
+
+                // Count preserved originals
+                if (Directory.Exists(preservedPath))
+                {
+                    var preservedFiles = Directory.GetFiles(preservedPath, "*.*", SearchOption.AllDirectories);
+                    preservedCount = preservedFiles.Length;
+                    foreach (var file in preservedFiles)
+                    {
+                        try { preservedBytes += new FileInfo(file).Length; } catch { }
+                    }
+                }
+
+                return (gameCount, fileCount, totalBytes, preservedCount, preservedBytes);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"GetStorageInfo: Error - {ex.Message}", ex);
+                return (0, 0, 0, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Deletes all music files and game folders.
+        /// </summary>
+        public (int deletedFiles, int deletedFolders, bool success) DeleteAllMusic()
+        {
+            try
+            {
+                // Stop any playing music first
+                _playbackService?.Stop();
+
+                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+                var preservedPath = Path.Combine(basePath, "PreservedOriginals");
+
+                int deletedFiles = 0;
+                int deletedFolders = 0;
+
+                // Delete all game music folders
+                if (Directory.Exists(gamesPath))
+                {
+                    var gameDirs = Directory.GetDirectories(gamesPath);
+                    foreach (var gameDir in gameDirs)
+                    {
+                        try
+                        {
+                            var files = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories);
+                            deletedFiles += files.Length;
+                            Directory.Delete(gameDir, true);
+                            deletedFolders++;
+                        }
+                        catch (Exception ex)
+                        {
+                            _fileLogger?.Warn($"DeleteAllMusic: Failed to delete '{gameDir}' - {ex.Message}");
+                        }
+                    }
+                }
+
+                // Delete preserved originals
+                if (Directory.Exists(preservedPath))
+                {
+                    try
+                    {
+                        var files = Directory.GetFiles(preservedPath, "*.*", SearchOption.AllDirectories);
+                        deletedFiles += files.Length;
+                        Directory.Delete(preservedPath, true);
+                        _fileLogger?.Info("DeleteAllMusic: Deleted PreservedOriginals folder");
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Warn($"DeleteAllMusic: Failed to delete PreservedOriginals - {ex.Message}");
+                    }
+                }
+
+                _fileLogger?.Info($"DeleteAllMusic: Deleted {deletedFiles} files in {deletedFolders} folders");
+                return (deletedFiles, deletedFolders, true);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"DeleteAllMusic: Error - {ex.Message}", ex);
+                return (0, 0, false);
+            }
+        }
+
+        /// <summary>
+        /// Resets all settings to their default values.
+        /// </summary>
+        public bool ResetSettingsToDefaults()
+        {
+            try
+            {
+                // Create new default settings
+                var defaultSettings = new UniPlaySongSettings();
+
+                // Copy default values to current settings
+                var currentSettings = _settings;
+                if (currentSettings == null)
+                {
+                    _fileLogger?.Error("ResetSettingsToDefaults: Current settings is null");
+                    return false;
+                }
+
+                // Playback settings
+                currentSettings.EnableMusic = defaultSettings.EnableMusic;
+                currentSettings.MusicState = defaultSettings.MusicState;
+                currentSettings.MusicVolume = defaultSettings.MusicVolume;
+                currentSettings.RandomizeOnEverySelect = defaultSettings.RandomizeOnEverySelect;
+                currentSettings.RandomizeOnMusicEnd = defaultSettings.RandomizeOnMusicEnd;
+                currentSettings.SkipFirstSelectionAfterModeSwitch = defaultSettings.SkipFirstSelectionAfterModeSwitch;
+                currentSettings.ThemeCompatibleSilentSkip = defaultSettings.ThemeCompatibleSilentSkip;
+                currentSettings.PauseOnTrailer = defaultSettings.PauseOnTrailer;
+                currentSettings.PauseOnFocusLoss = defaultSettings.PauseOnFocusLoss;
+                currentSettings.PauseOnMinimize = defaultSettings.PauseOnMinimize;
+
+                // Default music settings
+                currentSettings.EnableDefaultMusic = defaultSettings.EnableDefaultMusic;
+                currentSettings.DefaultMusicPath = defaultSettings.DefaultMusicPath;
+                currentSettings.UseNativeMusicAsDefault = defaultSettings.UseNativeMusicAsDefault;
+                currentSettings.SuppressPlayniteBackgroundMusic = defaultSettings.SuppressPlayniteBackgroundMusic;
+
+                // Download settings
+                currentSettings.AutoDownloadOnLibraryUpdate = defaultSettings.AutoDownloadOnLibraryUpdate;
+                currentSettings.LastAutoLibUpdateAssetsDownload = defaultSettings.LastAutoLibUpdateAssetsDownload;
+                currentSettings.AutoNormalizeAfterDownload = defaultSettings.AutoNormalizeAfterDownload;
+
+                // Normalization settings
+                currentSettings.NormalizationTargetLoudness = defaultSettings.NormalizationTargetLoudness;
+                currentSettings.NormalizationTruePeak = defaultSettings.NormalizationTruePeak;
+                currentSettings.NormalizationLoudnessRange = defaultSettings.NormalizationLoudnessRange;
+                currentSettings.NormalizationCodec = defaultSettings.NormalizationCodec;
+                currentSettings.NormalizationSuffix = defaultSettings.NormalizationSuffix;
+                currentSettings.TrimSuffix = defaultSettings.TrimSuffix;
+                currentSettings.DoNotPreserveOriginals = defaultSettings.DoNotPreserveOriginals;
+
+                // Cache settings
+                currentSettings.EnableSearchCache = defaultSettings.EnableSearchCache;
+                currentSettings.SearchCacheDurationDays = defaultSettings.SearchCacheDurationDays;
+
+                // Debug settings
+                currentSettings.EnableDebugLogging = defaultSettings.EnableDebugLogging;
+
+                // Note: We intentionally don't reset FFmpegPath, YtDlpPath, UseFirefoxCookies
+                // as these are system-specific paths that users configure
+
+                // Save the settings
+                SavePluginSettings(currentSettings);
+                _fileLogger?.Info("ResetSettingsToDefaults: Settings reset to defaults");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"ResetSettingsToDefaults: Error - {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Performs a complete factory reset: deletes all music, clears cache, resets settings.
+        /// </summary>
+        public (int deletedFiles, int deletedFolders, bool success) FactoryReset()
+        {
+            try
+            {
+                _fileLogger?.Info("FactoryReset: Starting factory reset...");
+
+                // Stop any playing music first
+                _playbackService?.Stop();
+
+                // Delete all music files
+                var (deletedFiles, deletedFolders, deleteSuccess) = DeleteAllMusic();
+
+                // Clear the search cache
+                try
+                {
+                    _cacheService?.ClearCache();
+                    _fileLogger?.Info("FactoryReset: Search cache cleared");
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"FactoryReset: Failed to clear cache - {ex.Message}");
+                }
+
+                // Delete temp folder
+                try
+                {
+                    var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                    var tempPath = Path.Combine(basePath, Constants.TempFolderName);
+                    if (Directory.Exists(tempPath))
+                    {
+                        Directory.Delete(tempPath, true);
+                        _fileLogger?.Info("FactoryReset: Temp folder deleted");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"FactoryReset: Failed to delete temp folder - {ex.Message}");
+                }
+
+                // Reset settings to defaults
+                var settingsReset = ResetSettingsToDefaults();
+
+                _fileLogger?.Info($"FactoryReset: Complete - Deleted {deletedFiles} files in {deletedFolders} folders, settings reset: {settingsReset}");
+
+                return (deletedFiles, deletedFolders, deleteSuccess && settingsReset);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"FactoryReset: Error - {ex.Message}", ex);
+                return (0, 0, false);
+            }
+        }
 
         #endregion
 

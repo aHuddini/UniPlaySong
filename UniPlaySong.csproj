@@ -28,6 +28,7 @@
         <PackageReference Include="MaterialDesignColors" Version="2.1.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+        <PackageReference Include="NAudio" Version="1.10.0" />
     </ItemGroup>
     
     <ItemGroup>

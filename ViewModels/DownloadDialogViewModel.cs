@@ -224,6 +224,9 @@ namespace UniPlaySong.ViewModels
         
         // Action to call when download completes (set by dialog service)
         public Action<bool> OnDownloadComplete { get; set; }
+
+        // Action to call with list of downloaded file paths (for post-processing like auto-normalize)
+        public Action<List<string>> OnFilesDownloaded { get; set; }
         
         private bool _showBackButton = false;
         public bool ShowBackButton
@@ -583,6 +586,9 @@ namespace UniPlaySong.ViewModels
             }
         }
 
+        // Track if game music was playing before preview started
+        private bool _wasGameMusicPlaying = false;
+
         private void PlayPreviewFile(string tempPath)
         {
             try
@@ -597,6 +603,9 @@ namespace UniPlaySong.ViewModels
                 {
                     _previewFiles.Add(tempPath);
                 }
+
+                // Pause game music before starting preview (matches controller mode behavior)
+                PauseGameMusicForPreview();
 
                 // Play preview
                 _currentlyPreviewing = tempPath;
@@ -622,6 +631,52 @@ namespace UniPlaySong.ViewModels
             }
         }
 
+        /// <summary>
+        /// Pause game music before starting preview
+        /// </summary>
+        private void PauseGameMusicForPreview()
+        {
+            try
+            {
+                if (_playbackService != null && _playbackService.IsPlaying)
+                {
+                    _wasGameMusicPlaying = true;
+                    _playbackService.Pause();
+                    LogDebug("Paused game music for preview");
+                }
+                else
+                {
+                    _wasGameMusicPlaying = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"Error pausing game music for preview: {ex.Message}");
+                _wasGameMusicPlaying = false;
+            }
+        }
+
+        /// <summary>
+        /// Resume game music after preview ends
+        /// </summary>
+        private void RestoreGameMusic()
+        {
+            try
+            {
+                if (_wasGameMusicPlaying && _playbackService != null)
+                {
+                    _playbackService.Resume();
+                    _wasGameMusicPlaying = false;
+                    LogDebug("Resumed game music after preview");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"Error resuming game music after preview: {ex.Message}");
+                _wasGameMusicPlaying = false;
+            }
+        }
+
         public void StopPreview()
         {
             try
@@ -632,7 +687,7 @@ namespace UniPlaySong.ViewModels
                     _previewPlayer.Close();
                     _previewPlayer = null;
                 }
-                
+
                 // Delete the current preview file if it exists
                 if (!string.IsNullOrEmpty(_currentlyPreviewing))
                 {
@@ -649,8 +704,11 @@ namespace UniPlaySong.ViewModels
                         // File may be locked or already deleted - ignore
                     }
                 }
-                
+
                 _currentlyPreviewing = null;
+
+                // Resume game music if it was playing before preview
+                RestoreGameMusic();
             }
             catch { }
         }
@@ -830,6 +888,7 @@ namespace UniPlaySong.ViewModels
             var total = selected.Count;
             var downloaded = 0;
             var failed = 0;
+            var downloadedFilePaths = new List<string>();
 
             // Show download progress
             IsDownloading = true;
@@ -879,10 +938,11 @@ namespace UniPlaySong.ViewModels
                         var filePath = System.IO.Path.Combine(musicDir, fileName);
 
                         var success = _downloadManager.DownloadSong(song, filePath, cancellationTokenSource.Token);
-                        
+
                         if (success && System.IO.File.Exists(filePath))
                         {
                             downloaded++;
+                            downloadedFilePaths.Add(filePath);
                         }
                         else
                         {
@@ -917,7 +977,7 @@ namespace UniPlaySong.ViewModels
                                 ProgressText = $"Download failed for all {total} song(s)";
                             }
 
-                            // Hide progress after a delay, then notify completion
+                            // Hide progress after a delay, then invoke callbacks on UI thread
                             System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
                             {
                                 if (app?.Dispatcher != null)
@@ -926,13 +986,20 @@ namespace UniPlaySong.ViewModels
                                     {
                                         IsDownloading = false;
                                         ProgressText = string.Empty;
-                                        
+
                                         // Re-enable confirm button
                                         if (ConfirmCommand is Common.RelayCommand confirmCmd)
                                         {
                                             confirmCmd.RaiseCanExecuteChanged();
                                         }
-                                        
+
+                                        // Invoke callback with downloaded file paths (for post-processing like auto-normalize)
+                                        // Must be on UI thread since AutoNormalizeDownloadedFiles uses dialogs
+                                        if (downloadedFilePaths.Count > 0)
+                                        {
+                                            OnFilesDownloaded?.Invoke(downloadedFilePaths);
+                                        }
+
                                         OnDownloadComplete?.Invoke(downloaded > 0);
                                     });
                                 }

@@ -1251,34 +1251,49 @@ namespace UniPlaySong.Views
                                 if (success && System.IO.File.Exists(filePath))
                                 {
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
+                                    LogDebug($"Successfully downloaded: {selectedSong.Name} to {filePath}");
 
-                                    // Trigger music refresh so music plays immediately after download
+                                    // Show success message first (blocking dialog)
+                                    _playniteApi?.Dialogs?.ShowMessage(
+                                        $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}",
+                                        "Download Complete");
+
+                                    // Trigger auto-normalize if enabled (after download message dismissed)
+                                    try
+                                    {
+                                        if (_dialogService != null)
+                                        {
+                                            var downloadedFiles = new List<string> { filePath };
+                                            _dialogService.AutoNormalizeDownloadedFiles(downloadedFiles);
+                                        }
+                                    }
+                                    catch (Exception normalizeEx)
+                                    {
+                                        LogDebug(normalizeEx, "Error during auto-normalize after download");
+                                    }
+
+                                    // Trigger music refresh so music plays immediately after download/normalize
                                     try
                                     {
                                         if (_playbackService != null && _currentGame != null)
                                         {
                                             LogDebug($"Download complete - triggering music refresh for game: {_currentGame.Name}");
-                                            _playbackService.PlayGameMusic(_currentGame);
+                                            // Use forceReload: true to ensure newly downloaded song plays
+                                            // Pass null settings - playback service uses its cached _currentSettings
+                                            _playbackService.PlayGameMusic(_currentGame, null, forceReload: true);
                                         }
                                     }
                                     catch (Exception refreshEx)
                                     {
                                         LogDebug(refreshEx, "Error refreshing music after download");
                                     }
-
-                                    // Show success message
-                                    _playniteApi?.Dialogs?.ShowMessage(
-                                        $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}",
-                                        "Download Complete");
-
-                                    LogDebug($"Successfully downloaded: {selectedSong.Name} to {filePath}");
                                 }
                                 else
                                 {
                                     UpdateInputFeedback($"❌ Download failed: {selectedSong.Name}");
                                     ShowError($"Failed to download: {selectedSong.Name}");
                                 }
-                                
+
                                 // Close the dialog after a brief delay
                                 Task.Delay(1000).ContinueWith(_ =>
                                 {

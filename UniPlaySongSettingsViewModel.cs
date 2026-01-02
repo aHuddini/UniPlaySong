@@ -379,6 +379,19 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand DownloadMusicForAllGamesCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    plugin.DownloadMusicForAllGamesFromSettings();
+                },
+                context: "downloading music for all games",
+                showUserMessage: true
+            );
+        });
+
         private string _cacheStatsText = "Cache: Loading...";
         public string CacheStatsText
         {
@@ -547,6 +560,219 @@ namespace UniPlaySong
 
             // Refresh status after migration
             RefreshMigrationStatus();
+        }
+
+        #endregion
+
+        #region Cleanup Properties and Commands
+
+        private string _cleanupStorageInfo = "Loading...";
+        public string CleanupStorageInfo
+        {
+            get => _cleanupStorageInfo;
+            set
+            {
+                _cleanupStorageInfo = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand RefreshCleanupStorageInfoCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => RefreshCleanupStorageInfo(),
+                context: "refreshing storage info",
+                showUserMessage: true
+            );
+        });
+
+        private void RefreshCleanupStorageInfo()
+        {
+            var (gameCount, fileCount, totalBytes, preservedCount, preservedBytes) = plugin.GetStorageInfo();
+
+            var totalMB = totalBytes / 1024.0 / 1024.0;
+            var preservedMB = preservedBytes / 1024.0 / 1024.0;
+            var combinedMB = (totalBytes + preservedBytes) / 1024.0 / 1024.0;
+
+            CleanupStorageInfo = $"Games: {gameCount}\n" +
+                                 $"Music Files: {fileCount} ({totalMB:F2} MB)\n" +
+                                 $"Preserved Originals: {preservedCount} ({preservedMB:F2} MB)\n" +
+                                 $"Total Storage: {combinedMB:F2} MB";
+        }
+
+        public ICommand DeleteAllMusicCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteDeleteAllMusic(),
+                context: "deleting all music",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteDeleteAllMusic()
+        {
+            var (gameCount, fileCount, totalBytes, preservedCount, preservedBytes) = plugin.GetStorageInfo();
+            var totalFiles = fileCount + preservedCount;
+
+            if (totalFiles == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage("No music files to delete.", "UniPlaySong");
+                return;
+            }
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"This will permanently delete:\n\n" +
+                $"- {fileCount} music files across {gameCount} games\n" +
+                $"- {preservedCount} preserved original files\n\n" +
+                $"This action cannot be undone. Are you sure?",
+                "Delete All Music",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Second confirmation for safety
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                "FINAL WARNING: All music files will be permanently deleted.\n\n" +
+                "Type 'DELETE' in your mind and click Yes to confirm.",
+                "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (confirm != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            var (deletedFiles, deletedFolders, success) = plugin.DeleteAllMusic();
+
+            if (success)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Deleted {deletedFiles} files in {deletedFolders} game folders.",
+                    "Delete Complete");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Some files could not be deleted. Check the log for details.",
+                    "Delete Failed");
+            }
+
+            RefreshCleanupStorageInfo();
+        }
+
+        public ICommand ResetSettingsCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteResetSettings(),
+                context: "resetting settings",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteResetSettings()
+        {
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                "This will reset all UniPlaySong settings to their default values.\n\n" +
+                "Your music files will NOT be deleted.\n" +
+                "Tool paths (FFmpeg, yt-dlp) will be preserved.\n\n" +
+                "Do you want to proceed?",
+                "Reset Settings",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            var success = plugin.ResetSettingsToDefaults();
+
+            if (success)
+            {
+                // Reload settings to update UI
+                var settingsService = plugin.GetSettingsService();
+                settingsService?.LoadSettings();
+                Settings = settingsService?.Current;
+
+                PlayniteApi.Dialogs.ShowMessage(
+                    "Settings have been reset to defaults.\n\n" +
+                    "Please close and reopen the settings dialog to see the changes.",
+                    "Reset Complete");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Failed to reset settings. Check the log for details.",
+                    "Reset Failed");
+            }
+        }
+
+        public ICommand FactoryResetCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteFactoryReset(),
+                context: "factory reset",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteFactoryReset()
+        {
+            var (gameCount, fileCount, totalBytes, preservedCount, preservedBytes) = plugin.GetStorageInfo();
+            var totalFiles = fileCount + preservedCount;
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                "FACTORY RESET will permanently:\n\n" +
+                $"- Delete {fileCount} music files\n" +
+                $"- Delete {preservedCount} preserved originals\n" +
+                $"- Remove {gameCount} game folders\n" +
+                "- Clear the search cache\n" +
+                "- Reset all settings to defaults\n\n" +
+                "This action CANNOT be undone!\n\n" +
+                "Are you absolutely sure?",
+                "Factory Reset - WARNING",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Second confirmation
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                "FINAL CONFIRMATION\n\n" +
+                "You are about to completely reset UniPlaySong.\n" +
+                "ALL downloaded music will be PERMANENTLY DELETED.\n\n" +
+                "Click Yes to proceed with factory reset.",
+                "Factory Reset - Final Confirmation",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (confirm != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            var (deletedFiles, deletedFolders, success) = plugin.FactoryReset();
+
+            if (success)
+            {
+                // Reload settings to update UI
+                var settingsService = plugin.GetSettingsService();
+                settingsService?.LoadSettings();
+                Settings = settingsService?.Current;
+
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Factory reset complete!\n\n" +
+                    $"- Deleted {deletedFiles} files\n" +
+                    $"- Removed {deletedFolders} game folders\n" +
+                    $"- Settings reset to defaults\n\n" +
+                    "Please close and reopen the settings dialog.",
+                    "Factory Reset Complete");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Factory reset encountered errors. Check the log for details.",
+                    "Factory Reset Failed");
+            }
+
+            RefreshCleanupStorageInfo();
         }
 
         #endregion

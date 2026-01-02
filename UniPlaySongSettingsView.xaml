@@ -580,6 +580,53 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Post-Download Processing" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <CheckBox Content="Automatically normalize downloaded music"
+                              IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Audio Normalization tab. Requires FFmpeg."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Auto-Download on Library Update" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <CheckBox Content="Automatically download music for new games"
+                              IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Bulk Download" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Download Music for All Games"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding DownloadMusicForAllGamesCommand}"/>
+                        <TextBlock Text="Download music for all games that don't have any yet."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock Text="Use this to populate music for your existing game library. Shows progress and can be cancelled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -677,6 +724,115 @@
                             <Run FontWeight="SemiBold">UniPlaySong:</Run>
                             <Run Text=" %APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\"/>
                         </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Cleanup Tab -->
+        <TabItem Header="Cleanup">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Cleanup &amp; Reset" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Reset UniPlaySong settings and remove all downloaded content."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,20"/>
+
+                    <!-- Warning Banner -->
+                    <Border Background="#4A1A1A" BorderBrush="#FF4444" BorderThickness="1" CornerRadius="4" Padding="15" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="WARNING: These actions cannot be undone!"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="#FF6666"
+                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="Factory Reset will permanently delete all downloaded music files, preserved originals, and reset all settings to their defaults. Make sure you have backups if needed."
+                                       FontSize="11"
+                                       Foreground="#FFAAAA"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Current Storage Info -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Current Storage Usage" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding CleanupStorageInfo}"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                            <Button Content="Refresh"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,10,0,0"
+                                    Padding="10,5"
+                                    Command="{Binding RefreshCleanupStorageInfoCommand}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Separator Margin="0,0,0,20"/>
+
+                    <!-- Delete All Music -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Delete All Music" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Removes all downloaded music files and game folders. Settings will be preserved."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Content="Delete All Music Files"
+                                Command="{Binding DeleteAllMusicCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#882222"
+                                Foreground="White"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
+                    <!-- Reset Settings Only -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Reset Settings Only" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Resets all settings to their default values. Music files will be preserved."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Content="Reset Settings to Defaults"
+                                Command="{Binding ResetSettingsCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
+                    <!-- Factory Reset -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Factory Reset" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Completely resets UniPlaySong to its initial state. This will:"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,5"/>
+                        <TextBlock FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                            <Run Text="- Delete all downloaded music files"/>
+                            <LineBreak/>
+                            <Run Text="- Delete all preserved original files"/>
+                            <LineBreak/>
+                            <Run Text="- Remove all game music folders"/>
+                            <LineBreak/>
+                            <Run Text="- Clear the search cache"/>
+                            <LineBreak/>
+                            <Run Text="- Reset all settings to defaults"/>
+                        </TextBlock>
+                        <Button Content="Factory Reset"
+                                Command="{Binding FactoryResetCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#AA2222"
+                                Foreground="White"
+                                FontWeight="Bold"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>

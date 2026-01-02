@@ -1,136 +1,126 @@
-# UniPlaySong - Changelog
+# Changelog
 
-## Version 1.1.1 (Latest)
+All notable changes to UniPlaySong will be documented in this file.
 
-### Features
-- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from context menu
-  - Desktop mode: Windows file picker dialog
-  - Fullscreen mode: Controller-friendly file picker with D-pad navigation
-- **Open Preserved Folder** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - New button in Normalization settings to open backup folder of original songs that were edited by users.
+## [1.1.2] - 2026-01-01
 
-### Improvements
-- **Settings Tab Cleanup** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Removed redundant per-game buttons from Normalization tab (use context menu instead)
-- **Clearer Menu Labels** - Renamed trim options to "Silence Trim" for clarity (e.g., "Silence Trim - Single Song", "Silence Trim - Audio Folder")
-- **Fixed PreservedOriginals Path** - "Open Preserved Folder" now opens the correct backup location
-- **Code Refactoring** - Extracted dialog handlers (~1,270 lines) and common utilities (~370 lines) into dedicated files (UniPlaySong.cs was 2000+ lines of code). Updated developer documentation. Further refactoring planned.
+### Added
+- Precise Trim (Waveform Editor): Visual waveform-based audio trimming with draggable start/end markers, real-time duration display, and preview functionality. Desktop mode uses mouse-draggable markers; Fullscreen mode supports full Xbox controller navigation (D-Pad for markers, LB/RB for symmetric adjust, A=Preview, B=Cancel, Start=Apply)
+- Factory Reset & Cleanup Tools: New settings tab (Settings → Cleanup) with storage info display, Delete All Music, Reset Settings, and Factory Reset options. Double-confirmation dialogs prevent accidental data loss
+- Auto-Download on Library Update: Automatically download music when new games are added ([#17](https://github.com/aHuddini/UniPlaySong/issues/17)). Uses intelligent album/song selection, tries KHInsider first with YouTube fallback
+- Download Music for All Games: Bulk download button with non-blocking progress dialog, cancellation support, and summary of results
+- Auto-Normalize After Download: Option to automatically normalize downloaded music using configured settings ([#20](https://github.com/aHuddini/UniPlaySong/issues/20))
+- Audio Repair Tool: Fix problematic audio files that fail to play by re-encoding to 48kHz stereo format
 
----
+### Changed
+- "Pause when minimized" is now enabled by default for new installations ([#20](https://github.com/aHuddini/UniPlaySong/issues/20))
+- Desktop context menu reorganized with "Audio Processing" and "Audio Editing" submenus for better organization
+- Renamed menu items for consistency: "Normalize Single Song", "Normalize Music Folder", "Repair Music Folder"
 
-## Version 1.1.0
+### Fixed
+- Music not playing after adding files to game (required restart before)
+- Desktop download preview audio overlap with game music
+- YouTube downloads failing to play due to encoding issues (unusual sample rates/channels)
+- YouTube JSON parsing "Path returned multiple tokens" error
+- Bulk download using stale cache results
+- Improved bulk download success rate with simplified game name search (strips edition suffixes like "Definitive Edition" when full name search fails)
+- KHInsider albums not found for games with colons in names (e.g., "Hitman: Absolution" now correctly finds "Hitman Absolution" album)
 
-### Features
-- **Pause music on focus loss** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - New option to pause music when switching to another application
-  - Music pauses when Playnite loses focus (switching to another window)
-  - Music resumes when Playnite regains focus
-  - Enable in Settings → General → "Pause music when Playnite loses focus"
+## [1.1.1] - 2025-12-15
 
-- **Pause music on minimize** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - New option to pause music when Playnite is minimized
-  - Music pauses when Playnite is minimized to taskbar or system tray
-  - Music resumes when Playnite is restored
-  - Enable in Settings → General → "Pause music when Playnite is minimized"
+### Added
+- Individual Song Processing: Normalize or silence-trim individual songs from context menu ([#16](https://github.com/aHuddini/UniPlaySong/issues/16))
+- Open Preserved Folder button in Normalization settings ([#16](https://github.com/aHuddini/UniPlaySong/issues/16))
 
-### Bug Fixes
-- **Fixed Music Play State settings not working** ([#4](https://github.com/aHuddini/UniPlaySong/issues/4)) - Music state settings (Never, Desktop, Fullscreen, Always) now work reliably
-  - "Never" mode now properly stops all music (including default music)
-  - "Desktop" mode correctly plays music only in Desktop mode
-  - "Fullscreen" mode correctly plays music only in Fullscreen mode
-  - Settings changes take effect immediately when saved (no longer requires game switch)
-- **Fixed "Set Primary Song (PC Mode)" file picker** - File dialog now opens directly in the game's music directory instead of a random folder
+### Changed
+- Removed redundant per-game buttons from Normalization tab (use context menu instead)
+- Renamed trim options to "Silence Trim" for clarity
+- Extracted dialog handlers and common utilities into dedicated files for maintainability
 
-### Improvements
-- **Debug logging respects toggle** - Coordinator debug messages now only log when Debug Logging is enabled
-- **Improved error visibility** - Initialization errors now surface properly instead of silently failing
+### Fixed
+- PreservedOriginals path now opens correct backup location
 
----
+## [1.1.0] - 2025-12-01
 
-## Version 1.0.9
+### Added
+- Pause music on focus loss option ([#4](https://github.com/aHuddini/UniPlaySong/issues/4))
+- Pause music on minimize option ([#4](https://github.com/aHuddini/UniPlaySong/issues/4))
 
-### Features
-- **Download From URL** ([#10](https://github.com/aHuddini/UniPlaySong/issues/10)) - New dialog to download music from a specific YouTube URL
-  - Paste any YouTube URL and validate it instantly
-  - Preview 30-second audio clips before downloading
-  - If enabled, respects Firefox cookies settings for authenticated downloads
-  - Music auto-plays immediately after download
+### Fixed
+- Music Play State settings (Never/Desktop/Fullscreen/Always) now work reliably ([#4](https://github.com/aHuddini/UniPlaySong/issues/4))
+- "Set Primary Song (PC Mode)" file picker now opens in game's music directory
 
-- **PlayniteSound Migration** - Bidirectional migration between PlayniteSound and UniPlaySong
-  - Import music from PlayniteSound to UniPlaySong
-  - Export music from UniPlaySong to PlayniteSound
-  - Progress dialog with file counts and status updates
-  - Files are copied (not moved) - originals remain in place
-  - Duplicate files are automatically skipped
+### Changed
+- Debug logging now respects the toggle setting
+- Initialization errors surface properly instead of silently failing
 
-### Improvements
-- **Reorganized Context Menu** - Cleaner, more logical right-click menu structure
-  - Download options grouped at top
-  - Primary song options grouped together
-  - Audio processing options (Normalize, Trim) grouped
-  - Open Music Folder at bottom
-- **Enhanced Rate Limiting** - Added `--sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5` to all yt-dlp commands to prevent throttling
-- **New Migration Tab** in settings - Access migration tools via Add-ons → Extension Settings → UniPlaySong → Migration
+## [1.0.9] - 2025-11-15
 
----
+### Added
+- Download From URL: Download music from specific YouTube URLs with preview ([#10](https://github.com/aHuddini/UniPlaySong/issues/10))
+- PlayniteSound Migration: Bidirectional import/export between PlayniteSound and UniPlaySong
+- New Migration tab in settings
 
-## Version 1.0.8
+### Changed
+- Reorganized context menu with logical groupings
+- Enhanced rate limiting for yt-dlp commands
 
-### Bug Fixes
-- **Fixed double "MB MB" suffix in download dialogs** ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
-- **Fixed Topmost windows blocking other apps in Desktop mode** ([#8](https://github.com/aHuddini/UniPlaySong/issues/8)) - Dialogs now only use Topmost in Fullscreen mode
-- **Fixed failed downloads persisting across batch runs** ([#9](https://github.com/aHuddini/UniPlaySong/issues/9)) - Previous failures should no longer carry over to new batch downloads
-- **Fixed music not playing immediately after download** - Downloads now trigger automatic music refresh
-- **Fixed preview threading issue** - Resolved `InvalidOperationException` when stopping previews
-- **Fixed FFmpeg process deadlock** - Audio normalization/trimming no longer freezes at "analyzing music"
-- **Fixed normalization in non-English locales** - Decimal separator issues (German, French, etc.) resolved
-- **Fixed default music not playing** after downloading music for another game
-- **Fixed MP4 files being renamed to MP3** - Simplified cookies command now properly extracts audio
+## [1.0.8] - 2025-11-01
 
-### Features
-- **Reduced logging verbosity** ([#3](https://github.com/aHuddini/UniPlaySong/issues/3)) - Added "Enable Debug Logging" toggle; verbose logs now only appear when enabled
-- **Rate limiting for downloads** ([#6](https://github.com/aHuddini/UniPlaySong/issues/6)) - Added delays between batch downloads and preview requests to avoid server throttling
-- **Firefox Cookies Support** - New option for YouTube downloads to improve reliability
-- **JavaScript Runtime Support (Deno)** - yt-dlp 2025.11.12+ requires Deno/Node.js/QuickJS for YouTube
-- **Customizable Trim Suffix** - Match your trimming suffix with normalization suffix
-- **Long Audio File Warning** - Warns when processing files >10 minutes
-- **Automatic Filename Sanitization** - Special characters fixed for FFmpeg compatibility
+### Added
+- Debug Logging toggle to reduce log verbosity ([#3](https://github.com/aHuddini/UniPlaySong/issues/3))
+- Rate limiting for downloads ([#6](https://github.com/aHuddini/UniPlaySong/issues/6))
+- Firefox Cookies Support for YouTube downloads
+- JavaScript Runtime Support (Deno) for yt-dlp 2025.11.12+
+- Customizable Trim Suffix
+- Long Audio File Warning (>10 minutes)
+- Automatic Filename Sanitization
 
-### UI Improvements
-- **Simplified Multi-Game Context Menu** - Removed individual source options, uses "Download All" with automatic KHInsider→YouTube fallback
-- **Better UI Labels** - All trim features clearly labeled as "Silence Trimming"
-- **Improved Progress Tracking** - Clear distinction between succeeded/skipped/failed operations
+### Fixed
+- Double "MB MB" suffix in download dialogs ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
+- Topmost windows blocking other apps in Desktop mode ([#8](https://github.com/aHuddini/UniPlaySong/issues/8))
+- Failed downloads persisting across batch runs ([#9](https://github.com/aHuddini/UniPlaySong/issues/9))
+- Music not playing immediately after download
+- Preview threading InvalidOperationException
+- FFmpeg process deadlock during normalization/trimming
+- Normalization in non-English locales (decimal separator issues)
+- Default music not playing after downloading for another game
+- MP4 files being renamed to MP3
 
-## Version 1.0.7
+### Changed
+- Simplified Multi-Game Context Menu with automatic KHInsider→YouTube fallback
+- All trim features labeled as "Silence Trimming"
+- Improved progress tracking with succeeded/skipped/failed distinction
 
-### Features
-- **Silence Trimming** - Automatically remove leading silence from audio files using FFmpeg
-  - Configurable silence detection threshold and duration
-  - Smart file naming that preserves operation order
-  - Works seamlessly with audio normalization
+## [1.0.7] - 2025-10-15
 
-## Version 1.0.6
+### Added
+- Silence Trimming: Remove leading silence from audio files using FFmpeg with configurable threshold and duration
 
-### Features
-- **Audio Normalization** - Normalize game music to consistent volume levels using FFmpeg
-  - EBU R128 standard with customizable settings
-  - Bulk normalization for entire game libraries
-- **Fullscreen Controller Support** - Complete Xbox controller support for music management
-- **Native Music Integration** - Use Playnite's built-in background music as default
+## [1.0.6] - 2025-10-01
 
-### Improvements
+### Added
+- Audio Normalization using EBU R128 standard with customizable settings
+- Fullscreen Controller Support for music management
+- Native Music Integration with Playnite's built-in background music
+
+### Changed
 - Enhanced native music suppression reliability
 - Better theme compatibility for fullscreen modes
 
-## Version 1.0.5
+## [1.0.5] - 2025-09-15
 
-### Features
-- **Native Music Control** - Option to use Playnite's native music as default or suppress it
+### Added
+- Native Music Control option to use or suppress Playnite's native music
 
-## Version 1.0.4
+## [1.0.4] - 2025-09-01
 
-### Features
-- **Primary Song System** - Set a "primary" song that plays first when selecting a game
-- **Universal Fullscreen Support** - Works with any Playnite theme
-- **Improved File Management** - Better file dialogs and error handling
+### Added
+- Primary Song System to set which song plays first
+- Universal Fullscreen Support for any Playnite theme
+- Improved file dialogs and error handling
 
-### Bug Fixes
-- Fixed music not stopping when switching to games without music
-- Fixed music not playing when switching back to games with music
-- Fixed file locking issues when selecting music files
+### Fixed
+- Music not stopping when switching to games without music
+- Music not playing when switching back to games with music
+- File locking issues when selecting music files

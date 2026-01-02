@@ -1,8 +1,12 @@
-# Waveform Trim Feature - Revised Implementation Plan
+# Waveform Trim Feature - Implementation Plan
+
+## Status: ✅ IMPLEMENTED
+
+This feature has been fully implemented and tested. The documentation below reflects the final implementation.
 
 ## Overview
 
-Add a **precise audio trimming capability** that allows users to visually select trim points using an interactive waveform editor. Supports both mouse/keyboard and Xbox controller input.
+A **precise audio trimming capability** that allows users to visually select trim points using an interactive waveform editor. **Fully usable in Playnite's Fullscreen Mode with complete Xbox controller support** - no keyboard or mouse required.
 
 ## Final Decisions
 
@@ -42,26 +46,38 @@ Handlers/
 
 ---
 
-## Controller Scheme
+## Controller Scheme (Final Implementation)
 
-```
-FILE SELECTION STEP (Step 1):
-  D-Pad Up/Down:      Navigate file list
-  A Button:           Select file, proceed to waveform editor
-  B Button:           Cancel/close dialog
+The controller scheme was refined through user testing to provide an intuitive, console-like experience.
 
-WAVEFORM EDITING STEP (Step 2):
-  D-Pad Left/Right:   Move BOTH markers together (shift window) - 2% steps
-  D-Pad Up/Down:      Adjust window SIZE (edges move symmetrically) - 2% steps
-  Left Bumper (LB):   Move START marker only (earlier/later)
-  Right Bumper (RB):  Move END marker only (earlier/later)
-  Left Trigger:       Fine-tune start marker (analog precision)
-  Right Trigger:      Fine-tune end marker (analog precision)
-  A Button:           Preview kept portion
-  X Button:           Confirm and apply trim
-  B Button:           Go back to file selection
-  Y Button:           Reset to full duration
-```
+### File Selection Step (Step 1)
+| Input | Action |
+|-------|--------|
+| D-Pad Up/Down | Navigate file list |
+| A Button | Select file, proceed to waveform editor |
+| B Button | Cancel/close dialog |
+
+### Waveform Editing Step (Step 2)
+| Input | Action |
+|-------|--------|
+| D-Pad Left | Move start marker earlier (0.5s steps) |
+| D-Pad Right | Move start marker later (0.5s steps) |
+| D-Pad Up | Move end marker later / extend (0.5s steps) |
+| D-Pad Down | Move end marker earlier / shorten (0.5s steps) |
+| Left Bumper (LB) | Contract window (move both edges inward) |
+| Right Bumper (RB) | Expand window (move both edges outward) |
+| A Button | Preview the kept portion |
+| B Button | Go back to file selection |
+| X Button | Apply trim and save |
+| Y Button | Reset to full duration |
+
+### Continuous D-Pad Navigation
+When holding D-pad directions, markers move continuously:
+- **Initial delay**: 200ms before continuous movement begins
+- **Repeat interval**: 50ms for smooth, precise control
+- **Fixed increments**: 0.5 second steps for predictable adjustments
+
+This design ensures users can make both quick adjustments (tap) and fine-tuned positioning (hold).
 
 ---
 
@@ -301,33 +317,36 @@ NAudio is well-maintained, compatible with .NET Framework 4.6.2+ (Playnite's tar
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure
-- [ ] Add NAudio NuGet package
-- [ ] Create `Models/WaveformTrim/` folder with TrimWindow.cs and WaveformData.cs
-- [ ] Create `IWaveformTrimService` and `WaveformTrimService`
-- [ ] Implement waveform generation (NAudio sample extraction + downsampling)
-- [ ] Implement FFmpeg trim with PreservedOriginals backup
+### Phase 1: Core Infrastructure ✅
+- [x] Add NAudio NuGet package
+- [x] Create `Models/WaveformTrim/` folder with TrimWindow.cs and WaveformData.cs
+- [x] Create `IWaveformTrimService` and `WaveformTrimService`
+- [x] Implement waveform generation (NAudio sample extraction + downsampling)
+- [x] Implement FFmpeg trim with PreservedOriginals backup
 
-### Phase 2: Desktop UI
-- [ ] Create `WaveformTrimDialog.xaml` with Canvas-based waveform display
-- [ ] Implement mouse interaction (drag markers, drag window)
-- [ ] Add preview functionality using existing playback service
-- [ ] Create `WaveformTrimDialogHandler` for orchestration
-- [ ] Add menu item to Desktop mode
+### Phase 2: Desktop UI ✅
+- [x] Create `WaveformTrimDialog.xaml` with Canvas-based waveform display
+- [x] Implement mouse interaction (drag markers, drag window)
+- [x] Add preview functionality using existing playback service
+- [x] Create `WaveformTrimDialogHandler` for orchestration
+- [x] Add menu item to Desktop mode
 
-### Phase 3: Controller UI
-- [ ] Create `ControllerWaveformTrimDialog.xaml` (multi-step: file selection + waveform)
-- [ ] Implement XInput handling with debouncing
-- [ ] Add analog trigger support for fine-tuning
-- [ ] Add visual controller hints
-- [ ] Add menu item to Fullscreen mode
+### Phase 3: Controller UI ✅
+- [x] Create `ControllerWaveformTrimDialog.xaml` (multi-step: file selection + waveform)
+- [x] Implement XInput handling with debouncing
+- [x] Implement continuous D-pad navigation (hold to move continuously)
+- [x] Add visual controller hints and audio feedback
+- [x] Add menu item to Fullscreen mode
+- [x] Refine controller scheme based on user testing (intuitive D-pad mapping)
 
-### Phase 4: Polish
-- [ ] Add loading indicator during waveform generation
-- [ ] Add file info display (duration, format, size)
-- [ ] Add indicator for already-trimmed files (`-ptrimmed` suffix)
-- [ ] Update ARCHITECTURE.md documentation
-- [ ] Test with various audio formats (MP3, FLAC, OGG, WAV)
+### Phase 4: Polish ✅
+- [x] Add loading indicator during waveform generation
+- [x] Add file info display (duration, format, size)
+- [x] Add indicator for already-trimmed files (`-ptrimmed` suffix)
+- [x] Update ARCHITECTURE.md documentation
+- [x] Test with various audio formats (MP3, FLAC, OGG, WAV)
+- [x] Fix preview to seek to start marker position
+- [x] Fix FFmpeg path resolution for trim operations
 
 ---
 
@@ -355,4 +374,9 @@ public string PreciseTrimSuffix { get; set; } = "-ptrimmed";
 - This feature is distinct from "Trim Leading Silence" which is automatic
 - "Precise Trim" gives users full control over what to keep
 - The waveform helps users visually identify intro/outro sections to remove
-- Controller support makes this usable from the couch during gaming sessions
+- **Full controller support** makes this usable from the couch during gaming sessions
+- Works seamlessly in **Playnite's Fullscreen Mode** - no keyboard/mouse required
+- The intuitive D-pad mapping mirrors standard audio editing conventions:
+  - Left/Right controls the start (blue) marker
+  - Up/Down controls the end (red) marker
+  - LB/RB expand or contract the window symmetrically

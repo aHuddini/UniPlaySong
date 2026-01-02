@@ -41,7 +41,10 @@ UniPlaySong/
 │   ├── DownloadItem.cs        # Download item model
 │   ├── FailedDownload.cs      # Failed download tracking
 │   ├── AudioState.cs          # Audio playback state enum
-│   └── NormalizationSettings.cs # Audio normalization configuration
+│   ├── NormalizationSettings.cs # Audio normalization configuration
+│   └── WaveformTrim/          # Precise trim models
+│       ├── TrimWindow.cs      # Trim selection model (start/end times)
+│       └── WaveformData.cs    # Waveform samples for display
 │
 ├── Monitors/                  # UI integration and monitoring
 │   ├── WindowMonitor.cs       # Window state monitoring for theme support
@@ -69,6 +72,10 @@ UniPlaySong/
 │   ├── SearchCacheService.cs          # Search result caching
 │   ├── AudioNormalizationService.cs   # Audio normalization (EBU R128)
 │   ├── INormalizationService.cs       # Normalization service interface
+│   ├── AudioTrimService.cs            # Silence trimming service
+│   ├── ITrimService.cs                # Trim service interface
+│   ├── WaveformTrimService.cs         # Precise waveform-based trimming (NAudio + FFmpeg)
+│   ├── IWaveformTrimService.cs        # Waveform trim service interface
 │   └── Controller/                    # Controller support services
 │       ├── ControllerInputService.cs  # Xbox controller input handling
 │       ├── ControllerOverlay.cs       # Controller UI overlay
@@ -80,16 +87,19 @@ UniPlaySong/
 │   └── MainMenuHandler.cs     # Main menu handler
 │
 ├── Handlers/                  # Dialog and operation handlers
-│   ├── ControllerDialogHandler.cs    # Controller-friendly dialog operations
-│   ├── NormalizationDialogHandler.cs # Audio normalization dialog operations
-│   └── TrimDialogHandler.cs          # Audio trimming dialog operations
+│   ├── ControllerDialogHandler.cs      # Controller-friendly dialog operations
+│   ├── NormalizationDialogHandler.cs   # Audio normalization dialog operations
+│   ├── TrimDialogHandler.cs            # Silence trimming dialog operations
+│   └── WaveformTrimDialogHandler.cs    # Precise waveform trim dialog operations
 │
 ├── Views/                     # WPF UI views
-│   ├── DownloadDialogView.xaml         # Download dialog UI
-│   ├── SimpleControllerDialog.xaml    # Controller-optimized download dialog
-│   ├── ControllerFilePickerDialog.xaml # Controller file picker
-│   ├── ControllerDeleteSongsDialog.xaml # Controller delete dialog
-│   └── NormalizationProgressDialog.xaml # Normalization progress UI
+│   ├── DownloadDialogView.xaml           # Download dialog UI
+│   ├── SimpleControllerDialog.xaml       # Controller-optimized download dialog
+│   ├── ControllerFilePickerDialog.xaml   # Controller file picker
+│   ├── ControllerDeleteSongsDialog.xaml  # Controller delete dialog
+│   ├── NormalizationProgressDialog.xaml  # Normalization progress UI
+│   ├── WaveformTrimDialog.xaml           # Desktop waveform trim dialog
+│   └── ControllerWaveformTrimDialog.xaml # Controller waveform trim dialog
 │
 ├── ViewModels/                # MVVM view models
 │   └── DownloadDialogViewModel.cs     # Download dialog view model
@@ -222,7 +232,51 @@ Public methods in `UniPlaySong.cs` now delegate to these handlers, keeping the m
 - True Peak: -1.5 dBTP
 - Loudness Range: 11.0 LU
 
-### 8. Dialog Handlers (`Handlers/`)
+### 8. Waveform Trim Service (`WaveformTrimService`)
+
+**Precise audio trimming with visual waveform editing** that:
+- Generates waveform data for visual display using NAudio
+- Applies precise trim points using FFmpeg
+- Preserves original files in `PreservedOriginals/` folder
+- Supports both desktop (mouse) and controller (D-pad) interfaces
+
+**Key Features:**
+- **Waveform Generation**: Uses NAudio `AudioFileReader` to extract ~1000 samples for smooth display
+- **Precise Trimming**: FFmpeg handles format-aware trimming with codec-specific encoding
+- **Two Interface Modes**:
+  - Desktop: Canvas-based waveform with draggable markers
+  - Controller: Two-step flow (file selection → waveform adjustment via D-pad)
+
+**Fullscreen/Controller Support:**
+The Precise Trim feature is **fully usable in Playnite's Fullscreen Mode** with complete Xbox controller support. Users can trim audio files from the couch without needing a keyboard or mouse. The controller dialog provides:
+- Large, controller-friendly UI optimized for TV viewing
+- Visual feedback with button prompts and sound cues
+- Continuous D-pad input with smooth, consistent marker movement
+
+**Controller Scheme (Waveform Editor Step):**
+| Input | Action |
+|-------|--------|
+| D-Pad Left | Move start marker earlier (0.5s steps) |
+| D-Pad Right | Move start marker later (0.5s steps) |
+| D-Pad Up | Move end marker later / extend (0.5s steps) |
+| D-Pad Down | Move end marker earlier / shorten (0.5s steps) |
+| Left Bumper (LB) | Contract window (move both edges inward) |
+| Right Bumper (RB) | Expand window (move both edges outward) |
+| A Button | Preview the kept portion |
+| B Button | Go back to file selection |
+| X Button | Apply trim and save |
+| Y Button | Reset to full duration |
+
+**Continuous D-Pad Navigation:**
+When holding D-pad directions, the markers move continuously with:
+- Initial delay: 200ms before continuous movement begins
+- Repeat interval: 50ms for smooth, precise control
+- Fixed 0.5 second increments for predictable, clean adjustments
+
+**Settings:**
+- `PreciseTrimSuffix`: Suffix for trimmed files (default: `-ptrimmed`)
+
+### 9. Dialog Handlers (`Handlers/`)
 
 **Extracted dialog operation handlers** that encapsulate complex UI operations:
 
@@ -244,10 +298,37 @@ Handles audio normalization operations:
 - `RestoreNormalizedFiles()`: Restore from backups
 
 #### TrimDialogHandler
-Handles audio trimming operations:
+Handles silence trimming operations:
 - `TrimAllMusicFiles()`: Bulk trim silence from library
 - `TrimSelectedGames(List<Game>)`: Trim selected games
 - `TrimSingleFile(Game, string)`: Trim individual file
+
+#### WaveformTrimDialogHandler
+Handles precise waveform-based trim operations:
+- `ShowPreciseTrimDialog(Game)`: Desktop waveform editor with mouse interaction
+- `ShowControllerPreciseTrimDialog(Game)`: Controller-friendly two-step dialog
+
+### 10. Cleanup Operations (`UniPlaySong.cs`)
+
+**Plugin data management** operations accessible via Settings → Cleanup tab:
+
+**Methods:**
+- `GetStorageInfo()`: Returns storage statistics (game count, file count, bytes, preserved files count/size)
+- `DeleteAllMusic()`: Removes all game music folders and preserved originals, preserves settings
+- `ResetSettingsToDefaults()`: Resets all settings to defaults while preserving tool paths (FFmpeg, yt-dlp)
+- `FactoryReset()`: Complete reset - deletes all music, clears search cache, resets settings
+
+**Storage Locations Cleaned:**
+- `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\*` - All game music folders
+- `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\PreservedOriginals\` - Backup files
+- `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Temp\` - Temporary files (factory reset only)
+- Search cache cleared (factory reset only)
+
+**Safety Features:**
+- Double-confirmation dialogs for destructive operations
+- Music playback is stopped before any deletion
+- Tool paths (FFmpeg, yt-dlp) preserved during settings reset (system-specific)
+- Detailed logging of all operations
 
 **Handler Pattern Benefits:**
 - Reduces main plugin file size for better maintainability
@@ -343,6 +424,7 @@ Organized with subfolders for controller navigation:
 - **Audio Processing** subfolder:
   - 🎮 Normalize Individual Song, 🎮 Silence Trim - Single Song
   - Normalize Music Directory, Silence Trim - Audio Folder
+  - 🎮 Precise Trim (waveform-based visual trimming)
 - **Manage Music** subfolder - 🎮 Delete Songs, Open Music Folder
 - **🖥️ PC Mode** subfolder - Desktop dialogs for keyboard/mouse users
 
@@ -352,8 +434,9 @@ Flat layout with PC options at parent level:
 - Set/Clear Primary Song
 - Normalize Individual Song, Silence Trim - Single Song
 - Normalize Music Directory, Silence Trim - Audio Folder
+- Precise Trim (waveform-based visual trimming)
 - Open Music Folder
-- **🎮 Controller Mode** subfolder - Controller-friendly versions
+- **🎮 Controller Mode** subfolder - Controller-friendly versions (including 🎮 Precise Trim)
 
 #### Multi-Game Selection
 When multiple games are selected (Desktop mode only):
@@ -506,6 +589,58 @@ The architecture supports testing through:
 - **Dependency Injection**: Dependencies passed via constructors
 - **Functional Delegates**: Coordinator uses `Func<>` delegates for testability
 - **Event-Driven**: State changes via events can be tested
+
+## Settings Tab Structure
+
+The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following tabs:
+
+### General Tab
+- Enable Music toggle
+- Music State (Never/Desktop/Fullscreen/Always)
+- Volume slider
+- Randomization options
+- Skip first selection behavior
+- Theme compatibility options
+- Pause on trailer/focus loss/minimize settings
+
+### Default Music Tab
+- Enable default music
+- Default music path
+- Use Playnite native music as default
+- Suppress Playnite background music
+
+### Audio Normalization Tab
+- Target loudness (LUFS)
+- True peak limit (dBTP)
+- Loudness range (LU)
+- Audio codec selection
+- Suffix settings (normalization, trim)
+- Preserve originals toggle
+- Bulk operations (Normalize All, Restore, Delete Preserved)
+
+### Downloads Tab
+- yt-dlp and FFmpeg path configuration
+- Firefox cookies support toggle
+- Search cache settings
+- Auto-normalize after download
+- Auto-download on library update
+- Bulk download button
+
+### Migration Tab
+- PlayniteSound status display
+- UniPlaySong status display
+- Import from PlayniteSound
+- Export to PlayniteSound
+- Directory location info
+
+### Cleanup Tab (v1.1.2+)
+- Storage usage statistics
+- Delete All Music button
+- Reset Settings button
+- Factory Reset button
+
+### Debug Tab
+- Enable debug logging toggle
 
 ## Future Architecture Improvement Ideas
 

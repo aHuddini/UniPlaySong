@@ -1,0 +1,327 @@
+<UserControl x:Class="UniPlaySong.Views.ControllerWaveformTrimDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900"
+             Focusable="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Controller-Optimized Styles -->
+            <Style x:Key="ControllerListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                <Setter Property="MinHeight" Value="60"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#2196F3"/>
+                        <Setter Property="BorderBrush" Value="#1976D2"/>
+                        <Setter Property="BorderThickness" Value="3"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
+                    <Trigger Property="IsFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="#FF9800"/>
+                        <Setter Property="BorderThickness" Value="4"/>
+                        <Setter Property="Background" Value="#FFF3E0"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ControllerButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="Height" Value="50"/>
+                <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="#1E1E1E"
+            BorderBrush="#424242"
+            BorderThickness="2"
+            CornerRadius="8"
+            Margin="8">
+        <Grid Margin="16">
+            <!-- Step 1: File Selection -->
+            <Grid Name="FileSelectionStep" Visibility="Visible">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- Title -->
+                    <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+                    <RowDefinition Height="*"/>     <!-- File List -->
+                    <RowDefinition Height="Auto"/>  <!-- Buttons -->
+                </Grid.RowDefinitions>
+
+                <!-- Title -->
+                <TextBlock Grid.Row="0"
+                           Name="FileSelectionTitle"
+                           Text="🎮 Precise Trim - Select File"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Margin="0,0,0,12"
+                           HorizontalAlignment="Center"
+                           Foreground="#4CAF50"/>
+
+                <!-- Controller Hint - File Selection -->
+                <Border Grid.Row="1"
+                        Background="#E3F2FD"
+                        BorderBrush="#2196F3"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1976D2"
+                                   Text="Step 1: Select a song to trim"
+                                   TextAlignment="Center"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock FontSize="12"
+                                   Foreground="#1976D2"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap">
+                            <Run Text="🎮 D-Pad: Navigate • A: Select file • B: Cancel"/>
+                            <LineBreak/>
+                            <Run Text="🎮 LB/RB: Page through • X/Y: Preview"/>
+                        </TextBlock>
+                        <TextBlock Name="FileSelectionFeedback"
+                                   FontSize="12"
+                                   Foreground="#FF9800"
+                                   TextAlignment="Center"
+                                   Margin="0,4,0,0"
+                                   Text="🎮 Loading music files..."
+                                   FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Music Files List -->
+                <ListBox Grid.Row="2"
+                         Name="FilesListBox"
+                         ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,16"
+                         MinHeight="200">
+                </ListBox>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="3"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <Button Name="CancelFileSelectionButton"
+                            Content="Cancel"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="CancelButton_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Step 2: Waveform Editor -->
+            <Grid Name="WaveformEditorStep" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- Title + File Info -->
+                    <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+                    <RowDefinition Height="*"/>     <!-- Waveform Canvas -->
+                    <RowDefinition Height="Auto"/>  <!-- Time Display -->
+                    <RowDefinition Height="Auto"/>  <!-- Buttons -->
+                </Grid.RowDefinitions>
+
+                <!-- Title + File Info -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock Name="WaveformTitle"
+                               Text="🎮 Precise Trim - Edit"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="#4CAF50"/>
+                    <TextBlock Name="CurrentFileText"
+                               FontSize="14"
+                               Foreground="#90CAF9"
+                               HorizontalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Controller Hint - Waveform Editor -->
+                <Border Grid.Row="1"
+                        Background="#E8F5E9"
+                        BorderBrush="#4CAF50"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="12,6"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock FontSize="12"
+                                   Foreground="#2E7D32"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap">
+                            <Run Text="🎮 D-Pad L/R: Shift window • D-Pad U/D: Adjust size"/>
+                            <LineBreak/>
+                            <Run Text="🎮 LB: Start earlier/later • RB: End earlier/later"/>
+                            <LineBreak/>
+                            <Run Text="🎮 A: Preview • X: Apply trim • Y: Reset • B: Back"/>
+                        </TextBlock>
+                        <TextBlock Name="WaveformFeedback"
+                                   FontSize="12"
+                                   Foreground="#FF9800"
+                                   TextAlignment="Center"
+                                   Margin="0,4,0,0"
+                                   Text="🎮 Adjust the green selection to trim"
+                                   FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Waveform Canvas -->
+                <Border Grid.Row="2"
+                        Background="#1a1a1a"
+                        BorderBrush="#424242"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Margin="0,0,0,8">
+                    <Grid>
+                        <Canvas Name="WaveformCanvas"
+                                ClipToBounds="True"
+                                SizeChanged="WaveformCanvas_SizeChanged">
+                            <!-- Waveform line -->
+                            <Polyline Name="WaveformLine"
+                                      Stroke="#4CAF50"
+                                      StrokeThickness="1"/>
+
+                            <!-- Excluded region (left of start) -->
+                            <Rectangle Name="ExcludedLeft"
+                                       Fill="#80000000"/>
+
+                            <!-- Excluded region (right of end) -->
+                            <Rectangle Name="ExcludedRight"
+                                       Fill="#80000000"/>
+
+                            <!-- Trim window (kept region) - subtle highlight -->
+                            <Rectangle Name="TrimWindowRect"
+                                       Fill="#2000FF00"
+                                       Stroke="#4CAF50"
+                                       StrokeThickness="1"/>
+
+                            <!-- Start marker (blue) -->
+                            <Rectangle Name="StartMarker"
+                                       Width="6"
+                                       Fill="#2196F3"
+                                       Stroke="#1976D2"
+                                       StrokeThickness="1"/>
+
+                            <!-- End marker (red) -->
+                            <Rectangle Name="EndMarker"
+                                       Width="6"
+                                       Fill="#F44336"
+                                       Stroke="#D32F2F"
+                                       StrokeThickness="1"/>
+
+                            <!-- Playhead (during preview) -->
+                            <Line Name="Playhead"
+                                  Stroke="#FFEB3B"
+                                  StrokeThickness="2"
+                                  Visibility="Collapsed"/>
+                        </Canvas>
+
+                        <!-- Loading indicator -->
+                        <Border Name="LoadingOverlay"
+                                Background="#CC1E1E1E"
+                                Visibility="Collapsed">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True"
+                                             Width="200"
+                                             Height="4"
+                                             Foreground="#4CAF50"/>
+                                <TextBlock Text="Loading waveform..."
+                                           Foreground="#90CAF9"
+                                           FontSize="14"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Time Display -->
+                <Grid Grid.Row="3" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Start Time -->
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+                        <TextBlock Text="Start" FontSize="11" Foreground="#90CAF9"/>
+                        <TextBlock Name="StartTimeText"
+                                   Text="0:00.0"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#2196F3"/>
+                    </StackPanel>
+
+                    <!-- Duration (center) -->
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="Keeping" FontSize="11" Foreground="#A5D6A7" HorizontalAlignment="Center"/>
+                        <TextBlock Name="DurationText"
+                                   Text="0:00.0"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#4CAF50"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Name="TotalDurationText"
+                                   Text="of 0:00.0"
+                                   FontSize="11"
+                                   Foreground="#757575"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- End Time -->
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <TextBlock Text="End" FontSize="11" Foreground="#EF9A9A" HorizontalAlignment="Right"/>
+                        <TextBlock Name="EndTimeText"
+                                   Text="0:00.0"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#F44336"
+                                   HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="4"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <Button Name="BackButton"
+                            Content="Back (B)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="BackButton_Click"/>
+                    <Button Name="ResetButton"
+                            Content="Reset (Y)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="ResetButton_Click"/>
+                    <Button Name="PreviewButton"
+                            Content="Preview (A)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="PreviewButton_Click"/>
+                    <Button Name="ApplyTrimButton"
+                            Content="Apply Trim (X)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Background="#4CAF50"
+                            Click="ApplyTrimButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

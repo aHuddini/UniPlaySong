@@ -59,8 +59,14 @@ namespace UniPlaySong.Downloaders
 
             try
             {
-                var searchUrl = $"{KhInsiderBaseUrl}search?search={Uri.EscapeDataString(gameName)}";
-                LogDebug($"Searching KHInsider for: {gameName}");
+                // Note: Do NOT manually URL-encode the game name here.
+                // HtmlWeb.LoadFromWebAsync handles encoding internally, and manual encoding
+                // can cause double-encoding issues or break KHInsider's search.
+                // PlayniteSound also uses this approach successfully.
+                var searchUrl = $"{KhInsiderBaseUrl}search?search={gameName}";
+
+                // Always log the actual search URL being used (this is key for debugging)
+                Logger.Info($"[KHInsider] Search: '{gameName}' → {searchUrl}");
 
                 // Use async properly - but we need to block for IEnumerable return
                 // In a real async scenario, this would return Task<IEnumerable<Album>>
@@ -68,11 +74,12 @@ namespace UniPlaySong.Downloaders
 
                 if (htmlDoc == null)
                 {
-                    Logger.Warn($"Failed to load search results for: {gameName}");
+                    Logger.Warn($"[KHInsider] No response for: '{gameName}'");
                     return albums;
                 }
 
-                var tableRows = htmlDoc.DocumentNode.Descendants("tr").Skip(1);
+                var tableRows = htmlDoc.DocumentNode.Descendants("tr").Skip(1).ToList();
+                LogDebug($"[KHInsider] Found {tableRows.Count} table rows for '{gameName}'");
 
                 foreach (var row in tableRows)
                 {
@@ -83,17 +90,20 @@ namespace UniPlaySong.Downloaders
                     if (album != null)
                     {
                         albums.Add(album);
+                        LogDebug($"[KHInsider] Parsed album: '{album.Name}'");
                     }
                 }
 
-                LogDebug($"Found {albums.Count} albums for '{gameName}' on KHInsider");
+                // Always log results count (important for debugging search issues)
+                Logger.Info($"[KHInsider] Result: '{gameName}' → {albums.Count} album(s)");
             }
             catch (OperationCanceledException)
             {
-                LogDebug($"Search cancelled for: {gameName}");
+                Logger.Info($"[KHInsider] Cancelled: '{gameName}'");
             }
             catch (Exception ex)
             {
+                Logger.Error($"[KHInsider] Error searching '{gameName}': {ex.Message}");
                 _errorHandler?.HandleError(
                     ex,
                     context: $"searching KHInsider for '{gameName}'",

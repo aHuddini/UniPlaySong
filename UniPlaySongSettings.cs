@@ -22,7 +22,7 @@ namespace UniPlaySong
         private int previewDuration = Constants.DefaultPreviewDuration;
         private bool enableDebugLogging = false;
         private bool pauseOnFocusLoss = false;
-        private bool pauseOnMinimize = false;
+        private bool pauseOnMinimize = true;
 
         public bool EnableMusic
         {
@@ -346,9 +346,11 @@ namespace UniPlaySong
         private string normalizationSuffix = "-normalized";
         private bool skipAlreadyNormalized = true;
         private bool doNotPreserveOriginals = false;
+        private bool autoNormalizeAfterDownload = false;
 
         // Audio Trimming Settings
         private string trimSuffix = "-trimmed";
+        private string preciseTrimSuffix = "-ptrimmed";
 
         /// <summary>
         /// Enable audio normalization for consistent volume levels
@@ -427,6 +429,17 @@ namespace UniPlaySong
         }
 
         /// <summary>
+        /// Automatically normalize downloaded music files.
+        /// When enabled, music files will be normalized to EBU R128 standard after downloading.
+        /// Uses the configured normalization settings (target loudness, true peak, etc.)
+        /// </summary>
+        public bool AutoNormalizeAfterDownload
+        {
+            get => autoNormalizeAfterDownload;
+            set { autoNormalizeAfterDownload = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
         /// Suffix to append to trimmed file names (e.g., "-trimmed")
         /// Trimmed files are created with this suffix when preserving originals
         /// </summary>
@@ -434,6 +447,16 @@ namespace UniPlaySong
         {
             get => trimSuffix;
             set { trimSuffix = value ?? "-trimmed"; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Suffix to append to precise-trimmed file names (e.g., "-ptrimmed")
+        /// Used by the waveform-based precise trim feature
+        /// </summary>
+        public string PreciseTrimSuffix
+        {
+            get => preciseTrimSuffix;
+            set { preciseTrimSuffix = value ?? "-ptrimmed"; OnPropertyChanged(); }
         }
 
         // Song Randomization Settings
@@ -458,6 +481,31 @@ namespace UniPlaySong
         {
             get => randomizeOnMusicEnd;
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
+        }
+
+        // Auto-Download on Library Update Settings
+        private bool autoDownloadOnLibraryUpdate = true;
+        private DateTime lastAutoLibUpdateAssetsDownload = DateTime.MinValue;
+
+        /// <summary>
+        /// Automatically download music for newly added games when library is updated.
+        /// When enabled, music will be automatically downloaded for games added since the last check.
+        /// Uses BestAlbumPick and BestSongPick to select the most relevant music.
+        /// </summary>
+        public bool AutoDownloadOnLibraryUpdate
+        {
+            get => autoDownloadOnLibraryUpdate;
+            set { autoDownloadOnLibraryUpdate = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Timestamp of the last automatic library update asset download.
+        /// Used to track which games need music downloaded.
+        /// </summary>
+        public DateTime LastAutoLibUpdateAssetsDownload
+        {
+            get => lastAutoLibUpdateAssetsDownload;
+            set { lastAutoLibUpdateAssetsDownload = value; OnPropertyChanged(); }
         }
 
         // YouTube Channel Whitelist Settings

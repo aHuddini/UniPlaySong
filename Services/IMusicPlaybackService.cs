@@ -73,7 +73,14 @@ namespace UniPlaySong.Services
         /// Loads and plays a specific audio file
         /// </summary>
         void LoadAndPlayFile(string filePath);
-        
+
+        /// <summary>
+        /// Loads and plays a specific audio file from a given position
+        /// </summary>
+        /// <param name="filePath">Path to the audio file</param>
+        /// <param name="startFrom">Position to start playback from</param>
+        void LoadAndPlayFileFrom(string filePath, System.TimeSpan startFrom);
+
         /// <summary>
         /// Event fired when music stops (for native music restoration)
         /// </summary>

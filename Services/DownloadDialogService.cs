@@ -39,6 +39,7 @@ namespace UniPlaySong.Services
         private readonly GameMusicFileService _fileService;
         private readonly SettingsService _settingsService;
         private readonly ErrorHandlerService _errorHandler;
+        private INormalizationService _normalizationService;
 
         /// <summary>
         /// Returns true if Playnite is in Fullscreen mode.
@@ -61,6 +62,15 @@ namespace UniPlaySong.Services
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
+        }
+
+        /// <summary>
+        /// Sets the normalization service for auto-normalize after download feature.
+        /// Called after service initialization in UniPlaySong.cs.
+        /// </summary>
+        public void SetNormalizationService(INormalizationService normalizationService)
+        {
+            _normalizationService = normalizationService;
         }
 
         /// <summary>
@@ -683,6 +693,12 @@ namespace UniPlaySong.Services
                         context: $"refreshing music after download for '{game.Name}'"
                     );
                 }
+            };
+
+            // Set up callback for auto-normalization after download
+            viewModel.OnFilesDownloaded = (downloadedFiles) =>
+            {
+                AutoNormalizeDownloadedFiles(downloadedFiles);
             };
 
             viewModel.ConfirmCommand = new Common.RelayCommand(() =>
@@ -1406,6 +1422,106 @@ namespace UniPlaySong.Services
                 },
                 context: $"trimming individual song '{System.IO.Path.GetFileName(selectedFile)}' for '{game.Name}'",
                 showUserMessage: true
+            );
+        }
+
+        /// <summary>
+        /// Automatically normalizes downloaded files if auto-normalize setting is enabled.
+        /// Called after successful downloads. Public so controller dialog can also use it.
+        /// </summary>
+        public void AutoNormalizeDownloadedFiles(List<string> downloadedFiles)
+        {
+            if (downloadedFiles == null || downloadedFiles.Count == 0)
+            {
+                return;
+            }
+
+            // Check if auto-normalize is enabled
+            var settings = _settingsService?.Current;
+            if (settings == null || !settings.AutoNormalizeAfterDownload)
+            {
+                LogDebug("Auto-normalize is disabled, skipping post-download normalization");
+                return;
+            }
+
+            // Check if normalization service is available
+            if (_normalizationService == null)
+            {
+                Logger.Warn("Normalization service not available for auto-normalize");
+                return;
+            }
+
+            // Check if FFmpeg is configured
+            var ffmpegPath = settings.FFmpegPath;
+            if (string.IsNullOrWhiteSpace(ffmpegPath) || !System.IO.File.Exists(ffmpegPath))
+            {
+                Logger.Warn("FFmpeg not configured, skipping auto-normalize");
+                return;
+            }
+
+            LogDebug($"Auto-normalizing {downloadedFiles.Count} downloaded file(s)...");
+
+            _errorHandler.Try(
+                () =>
+                {
+                    // Build normalization settings from user preferences
+                    var normSettings = new Models.NormalizationSettings
+                    {
+                        FFmpegPath = ffmpegPath,
+                        TargetLoudness = settings.NormalizationTargetLoudness,
+                        TruePeak = settings.NormalizationTruePeak,
+                        LoudnessRange = settings.NormalizationLoudnessRange,
+                        AudioCodec = settings.NormalizationCodec,
+                        NormalizationSuffix = settings.NormalizationSuffix,
+                        TrimSuffix = settings.TrimSuffix,
+                        SkipAlreadyNormalized = settings.SkipAlreadyNormalized,
+                        DoNotPreserveOriginals = settings.DoNotPreserveOriginals
+                    };
+
+                    // Show progress dialog for normalization
+                    var progressOptions = new Playnite.SDK.GlobalProgressOptions(
+                        $"Auto-normalizing {downloadedFiles.Count} downloaded file(s)...",
+                        true
+                    );
+
+                    _playniteApi.Dialogs.ActivateGlobalProgress((progress) =>
+                    {
+                        try
+                        {
+                            var cts = new System.Threading.CancellationTokenSource();
+
+                            // Link to Playnite's cancel token
+                            progress.CancelToken.Register(() => cts.Cancel());
+
+                            var progressReporter = new Progress<Models.NormalizationProgress>(p =>
+                            {
+                                progress.Text = $"Normalizing: {p.CurrentFile} ({p.CurrentIndex}/{p.TotalFiles})";
+                            });
+
+                            // Run normalization synchronously within the progress dialog
+                            var task = _normalizationService.NormalizeBulkAsync(
+                                downloadedFiles,
+                                normSettings,
+                                progressReporter,
+                                cts.Token);
+
+                            task.Wait(cts.Token);
+
+                            var result = task.Result;
+                            LogDebug($"Auto-normalize complete: {result.SuccessCount} succeeded, {result.FailureCount} failed, {result.SkippedCount} skipped");
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            LogDebug("Auto-normalize cancelled by user");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error(ex, "Error during auto-normalize");
+                        }
+                    }, progressOptions);
+                },
+                context: "auto-normalizing downloaded files",
+                showUserMessage: false
             );
         }
     }

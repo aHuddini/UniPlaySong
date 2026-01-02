@@ -29,6 +29,8 @@ namespace UniPlaySong.Menus
         private readonly DownloadDialogService _dialogService;
         private readonly ErrorHandlerService _errorHandler;
         private readonly List<FailedDownload> _failedDownloads;
+        private readonly AudioRepairService _repairService;
+        private readonly Func<UniPlaySongSettings> _getSettings;
 
         /// <summary>
         /// Logs a debug message only if debug logging is enabled in settings.
@@ -48,7 +50,9 @@ namespace UniPlaySong.Menus
             GameMusicFileService fileService,
             IMusicPlaybackService playbackService,
             DownloadDialogService dialogService,
-            ErrorHandlerService errorHandler = null)
+            ErrorHandlerService errorHandler = null,
+            AudioRepairService repairService = null,
+            Func<UniPlaySongSettings> getSettings = null)
         {
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -58,6 +62,8 @@ namespace UniPlaySong.Menus
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             _errorHandler = errorHandler;
             _failedDownloads = new List<FailedDownload>();
+            _repairService = repairService;
+            _getSettings = getSettings;
         }
 
         /// <summary>
@@ -202,6 +208,8 @@ namespace UniPlaySong.Menus
                 IsIndeterminate = false
             };
 
+            var downloadedFilePaths = new List<string>();
+
             _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
             {
                 try
@@ -227,7 +235,7 @@ namespace UniPlaySong.Menus
                         {
                             sanitizedName = sanitizedName.Replace(invalidChar, '_');
                         }
-                        
+
                         // Also remove any other problematic characters
                         sanitizedName = sanitizedName.Replace("..", "_");
                         sanitizedName = sanitizedName.Trim();
@@ -244,6 +252,7 @@ namespace UniPlaySong.Menus
                             if (File.Exists(filePath))
                             {
                                 downloaded++;
+                                downloadedFilePaths.Add(filePath);
                                 var fileInfo = new FileInfo(filePath);
                                 _logger.Info($"Successfully downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
                             }
@@ -259,7 +268,7 @@ namespace UniPlaySong.Menus
                     }
 
                     args.Text = $"Downloaded {downloaded}/{total} songs";
-                    
+
                     // Show summary message
                     if (downloaded < total)
                     {
@@ -287,6 +296,19 @@ namespace UniPlaySong.Menus
                         "UniPlaySong");
                 }
             }, progressOptions);
+
+            // Trigger auto-normalize after download dialog closes (if any files were downloaded)
+            if (downloadedFilePaths.Count > 0)
+            {
+                try
+                {
+                    _dialogService?.AutoNormalizeDownloadedFiles(downloadedFilePaths);
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"Error during auto-normalize after bulk download: {ex.Message}");
+                }
+            }
         }
 
         public void OpenMusicFolder(Game game)
@@ -744,13 +766,28 @@ namespace UniPlaySong.Menus
                 IsIndeterminate = false
             };
 
+            var batchDownloadedFilePaths = new List<string>();
+
             _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
             {
-                StartBatchDownload(args, games, source, albumSelect, songSelect, overwrite, progressTitle);
+                StartBatchDownload(args, games, source, albumSelect, songSelect, overwrite, progressTitle, batchDownloadedFilePaths);
             }, progressOptions);
 
             // Cleanup temp files after all downloads
             _downloadManager.Cleanup();
+
+            // Trigger auto-normalize after batch download completes (if any files were downloaded)
+            if (batchDownloadedFilePaths.Count > 0)
+            {
+                try
+                {
+                    _dialogService?.AutoNormalizeDownloadedFiles(batchDownloadedFilePaths);
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"Error during auto-normalize after batch download: {ex.Message}");
+                }
+            }
 
             _logger.Info("Batch download complete");
         }
@@ -762,7 +799,8 @@ namespace UniPlaySong.Menus
             bool albumSelect,
             bool songSelect,
             bool overwrite,
-            string progressTitle)
+            string progressTitle,
+            List<string> downloadedFilePaths = null)
         {
             // Clear failed downloads from previous batch runs to prevent accumulation
             // This ensures only failures from THIS batch run are tracked
@@ -801,7 +839,7 @@ namespace UniPlaySong.Menus
                 try
                 {
                     var result = DownloadMusicForSingleGame(
-                        args, game, source, albumSelect, songSelect, overwrite, progressTitle);
+                        args, game, source, albumSelect, songSelect, overwrite, progressTitle, downloadedFilePaths);
 
                     if (result)
                     {
@@ -895,7 +933,8 @@ namespace UniPlaySong.Menus
             bool albumSelect,
             bool songSelect,
             bool overwrite,
-            string progressTitle)
+            string progressTitle,
+            List<string> downloadedFilePaths = null)
         {
             // Prepare game name for searching (strips suffixes, normalizes)
             var searchGameName = StringHelper.PrepareForSearch(game.Name);
@@ -991,7 +1030,7 @@ namespace UniPlaySong.Menus
             }
 
             // Step 3: Download songs
-            return DownloadSongsForGame(game, songs, overwrite, args, progressTitle);
+            return DownloadSongsForGame(game, songs, overwrite, args, progressTitle, downloadedFilePaths);
         }
 
         private bool DownloadSongsForGame(
@@ -999,7 +1038,8 @@ namespace UniPlaySong.Menus
             List<Song> songs,
             bool overwrite,
             GlobalProgressActionArgs args,
-            string progressTitle)
+            string progressTitle,
+            List<string> downloadedFilePaths = null)
         {
             var musicDir = _fileService.GetGameMusicDirectory(game);
             Directory.CreateDirectory(musicDir);
@@ -1035,6 +1075,7 @@ namespace UniPlaySong.Menus
                 if (success && File.Exists(filePath))
                 {
                     downloaded++;
+                    downloadedFilePaths?.Add(filePath);
                     var fileInfo = new FileInfo(filePath);
                     _logger.Info($"Downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
                 }
@@ -1189,6 +1230,318 @@ namespace UniPlaySong.Menus
         {
             _failedDownloads.Clear();
             _logger.Info("Cleared all tracked failed downloads");
+        }
+
+        #endregion
+
+        #region Audio Repair
+
+        /// <summary>
+        /// Shows a file picker dialog for repairing a problematic audio file.
+        /// Uses FFmpeg to re-encode the file to fix encoding issues that cause SDL_mixer failures.
+        /// </summary>
+        public void ShowRepairAudioFile(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteShowRepairAudioFile(game),
+                    context: $"showing repair audio file dialog for '{game?.Name}'",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteShowRepairAudioFile(game);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in ShowRepairAudioFile: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteShowRepairAudioFile(Game game)
+        {
+            _logger.Info($"ShowRepairAudioFile called for game: {game?.Name ?? "null"}");
+
+            if (_repairService == null)
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    "Audio repair service not available.",
+                    "UniPlaySong");
+                return;
+            }
+
+            var settings = _getSettings?.Invoke();
+            if (settings == null || string.IsNullOrWhiteSpace(settings.FFmpegPath))
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            if (!_repairService.ValidateFFmpegAvailable(settings.FFmpegPath))
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"FFmpeg not found or not working at: {settings.FFmpegPath}\n\nPlease verify the path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+            if (songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
+                return;
+            }
+
+            var musicDir = _fileService.GetGameMusicDirectory(game);
+
+            // Show file selection dialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac;*.m4a;*.aac",
+                InitialDirectory = musicDir,
+                Title = "Repair Audio File - Select Song"
+            };
+
+            var selectedFile = dialog.ShowDialog() == true ? dialog.FileName : null;
+            if (!string.IsNullOrEmpty(selectedFile))
+            {
+                if (selectedFile.StartsWith(musicDir))
+                {
+                    RepairAudioFileWithProgress(game, selectedFile, settings.FFmpegPath);
+                }
+                else
+                {
+                    _playniteApi.Dialogs.ShowMessage(
+                        "Selected file must be in the game's music folder.",
+                        "UniPlaySong");
+                }
+            }
+        }
+
+        private void RepairAudioFileWithProgress(Game game, string filePath, string ffmpegPath)
+        {
+            var fileName = Path.GetFileName(filePath);
+            _logger.Info($"Starting audio repair for: {fileName}");
+
+            // First, probe the file to show what issues were detected
+            var progressTitle = "UniPlaySong - Repairing Audio";
+            var progressOptions = new GlobalProgressOptions(progressTitle, false)
+            {
+                IsIndeterminate = true
+            };
+
+            AudioProbeResult probeResult = null;
+            bool repairSuccess = false;
+
+            _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            {
+                args.Text = $"Analyzing: {fileName}";
+
+                // Probe the file
+                var probeTask = _repairService.ProbeFileAsync(filePath, ffmpegPath);
+                probeTask.Wait();
+                probeResult = probeTask.Result;
+
+                if (probeResult.Success)
+                {
+                    args.Text = $"Repairing: {fileName}";
+
+                    // Repair the file
+                    var repairTask = _repairService.RepairFileAsync(filePath, ffmpegPath);
+                    repairTask.Wait();
+                    repairSuccess = repairTask.Result;
+                }
+            }, progressOptions);
+
+            // Show result
+            if (probeResult == null || !probeResult.Success)
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"Failed to analyze audio file: {fileName}\n\n" +
+                    $"Error: {probeResult?.ErrorMessage ?? "Unknown error"}",
+                    "UniPlaySong - Repair Failed");
+                return;
+            }
+
+            if (repairSuccess)
+            {
+                var issuesSummary = probeResult.HasIssues
+                    ? $"Issues detected: {probeResult.Issues}\n\n"
+                    : "No obvious issues detected, but file was re-encoded.\n\n";
+
+                _playniteApi.Dialogs.ShowMessage(
+                    $"Successfully repaired: {fileName}\n\n" +
+                    issuesSummary +
+                    "The original file has been backed up to PreservedOriginals folder.\n" +
+                    "The repaired file should now play correctly.",
+                    "UniPlaySong - Repair Complete");
+
+                _logger.Info($"Audio repair completed successfully for: {fileName}");
+            }
+            else
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"Failed to repair audio file: {fileName}\n\n" +
+                    "The file may be too corrupted to repair, or FFmpeg encountered an error.\n" +
+                    "Check the logs for more details.",
+                    "UniPlaySong - Repair Failed");
+
+                _logger.Error($"Audio repair failed for: {fileName}");
+            }
+        }
+
+        /// <summary>
+        /// Scans and repairs all audio files in a game's music folder
+        /// </summary>
+        public void RepairAllAudioFiles(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteRepairAllAudioFiles(game),
+                    context: $"repairing all audio files for '{game?.Name}'",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteRepairAllAudioFiles(game);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in RepairAllAudioFiles: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteRepairAllAudioFiles(Game game)
+        {
+            _logger.Info($"RepairAllAudioFiles called for game: {game?.Name ?? "null"}");
+
+            if (_repairService == null)
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    "Audio repair service not available.",
+                    "UniPlaySong");
+                return;
+            }
+
+            var settings = _getSettings?.Invoke();
+            if (settings == null || string.IsNullOrWhiteSpace(settings.FFmpegPath))
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            if (!_repairService.ValidateFFmpegAvailable(settings.FFmpegPath))
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"FFmpeg not found or not working at: {settings.FFmpegPath}\n\nPlease verify the path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+            if (songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
+                return;
+            }
+
+            // Show progress and scan/repair all files
+            var progressTitle = "UniPlaySong - Scanning & Repairing Audio";
+            var progressOptions = new GlobalProgressOptions(progressTitle, true)
+            {
+                IsIndeterminate = false
+            };
+
+            int scanned = 0;
+            int repaired = 0;
+            int failed = 0;
+            int skipped = 0;
+
+            _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            {
+                args.ProgressMaxValue = songs.Count;
+
+                foreach (var song in songs)
+                {
+                    if (args.CancelToken.IsCancellationRequested)
+                    {
+                        _logger.Info("Audio repair scan cancelled by user");
+                        break;
+                    }
+
+                    var fileName = Path.GetFileName(song);
+                    args.Text = $"Scanning: {fileName}";
+                    args.CurrentProgressValue = ++scanned;
+
+                    try
+                    {
+                        // Probe the file
+                        var probeTask = _repairService.ProbeFileAsync(song, settings.FFmpegPath);
+                        probeTask.Wait();
+                        var probeResult = probeTask.Result;
+
+                        if (!probeResult.Success || !probeResult.HasIssues)
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        // File has issues - repair it
+                        args.Text = $"Repairing: {fileName}";
+                        _logger.Info($"Repairing file with issues ({probeResult.Issues}): {fileName}");
+
+                        var repairTask = _repairService.RepairFileAsync(song, settings.FFmpegPath);
+                        repairTask.Wait();
+
+                        if (repairTask.Result)
+                        {
+                            repaired++;
+                            _logger.Info($"Successfully repaired: {fileName}");
+                        }
+                        else
+                        {
+                            failed++;
+                            _logger.Error($"Failed to repair: {fileName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        _logger.Error(ex, $"Error processing {fileName}: {ex.Message}");
+                    }
+                }
+            }, progressOptions);
+
+            // Show summary
+            var summary = $"Scan & Repair Complete\n\n" +
+                         $"Files scanned: {scanned}\n" +
+                         $"No issues found: {skipped}\n" +
+                         $"Repaired: {repaired}\n" +
+                         $"Failed: {failed}";
+
+            if (repaired > 0)
+            {
+                summary += "\n\nOriginal files have been backed up to PreservedOriginals folder.";
+            }
+
+            _playniteApi.Dialogs.ShowMessage(summary, "UniPlaySong - Repair Complete");
+            _logger.Info($"Audio repair scan complete - Scanned: {scanned}, Repaired: {repaired}, Failed: {failed}, Skipped: {skipped}");
         }
 
         #endregion

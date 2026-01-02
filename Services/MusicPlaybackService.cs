@@ -661,6 +661,11 @@ namespace UniPlaySong.Services
 
         public void LoadAndPlayFile(string filePath)
         {
+            LoadAndPlayFileFrom(filePath, TimeSpan.Zero);
+        }
+
+        public void LoadAndPlayFileFrom(string filePath, TimeSpan startFrom)
+        {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
                 _fileLogger?.Warn($"Cannot load file: {filePath ?? "null"}");
@@ -669,10 +674,10 @@ namespace UniPlaySong.Services
 
             try
             {
-                _fileLogger?.Info($"LoadAndPlayFile: {filePath}");
+                _fileLogger?.Info($"LoadAndPlayFileFrom: {filePath} at {startFrom:mm\\:ss\\.fff}");
                 _musicPlayer.Load(filePath);
                 _musicPlayer.Volume = 0;
-                _musicPlayer.Play();
+                _musicPlayer.Play(startFrom);
                 _fader.FadeIn();
                 ClearAllPauseSources();
             }

@@ -247,7 +247,10 @@ namespace UniPlaySong.Downloaders
                     }
                 }
 
-                var continuationToken = jsonObj.SelectToken(ParserContinuationToken)?.ToString();
+                // Use SelectTokens (plural) because the deep scan ".." operator may match multiple tokens
+                // SelectToken (singular) throws "Path returned multiple tokens" when this happens
+                var continuationTokens = new List<dynamic>(jsonObj.SelectTokens(ParserContinuationToken));
+                var continuationToken = continuationTokens.FirstOrDefault()?.ToString();
                 LogDebug($"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
                 return continuationToken;
             }
@@ -268,7 +271,9 @@ namespace UniPlaySong.Downloaders
             try
             {
                 dynamic jsonObj = Serialization.FromJson<dynamic>(json);
-                visitorData = jsonObj.SelectToken(ParserVisitorData)?.ToString();
+                // Use SelectTokens (plural) because the deep scan ".." operator may match multiple tokens
+                var visitorDataTokens = new List<dynamic>(jsonObj.SelectTokens(ParserVisitorData));
+                visitorData = visitorDataTokens.FirstOrDefault()?.ToString();
                 var videos = new List<dynamic>(jsonObj.SelectTokens(ParserPlaylistVideos));
 
                 int newItems = 0;

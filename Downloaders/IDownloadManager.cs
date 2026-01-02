@@ -13,7 +13,12 @@ namespace UniPlaySong.Downloaders
         /// <summary>
         /// Gets albums for a game from a specific source
         /// </summary>
-        IEnumerable<Album> GetAlbumsForGame(string gameName, Source source, CancellationToken cancellationToken, bool auto = false);
+        /// <param name="gameName">Name of the game to search for</param>
+        /// <param name="source">Source to search (KHInsider, YouTube, or All)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <param name="auto">If true, applies stricter filtering for auto-download</param>
+        /// <param name="skipCache">If true, bypasses the search cache for fresh results</param>
+        IEnumerable<Album> GetAlbumsForGame(string gameName, Source source, CancellationToken cancellationToken, bool auto = false, bool skipCache = false);
 
         /// <summary>
         /// Picks the best album match for a game

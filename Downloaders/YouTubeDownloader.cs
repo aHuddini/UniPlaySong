@@ -245,7 +245,11 @@ namespace UniPlaySong.Downloaders
                 {
                     // Simplified command when using Firefox cookies - extract audio to MP3
                     // Minimal options: cookies, extract audio, MP3 format, FFmpeg location, output path, and URL
-                    arguments = $"--cookies-from-browser firefox -x --audio-format mp3{rateLimitOptions} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    // Post-processor args ensure SDL_mixer compatibility (48kHz stereo, matches normalization)
+                    var cookiesPostArgs = isPreview
+                        ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
+                        : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
+                    arguments = $"--cookies-from-browser firefox -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                     LogDebug("Using simplified yt-dlp command with Firefox cookies");
                 }
                 else
@@ -261,15 +265,21 @@ namespace UniPlaySong.Downloaders
                     // This helps bypass YouTube's aggressive bot detection, especially in regions like Germany
                     var antiBotOptions = " --extractor-args \"youtube:player_client=android,ios,web\"";
 
-                    // For previews, add optimization flags for faster, more consistent downloads
-                    var previewOptimizations = isPreview
-                        ? " --no-playlist --no-warnings --quiet --no-progress --postprocessor-args \"ffmpeg:-t 30\""
-                        : "";
+                    // Post-processor args to ensure SDL_mixer compatibility
+                    // -ar 48000: Resample to 48kHz (matches normalization settings for consistency)
+                    // -ac 2: Convert to stereo (2 channels)
+                    // This fixes issues where unusual sample rates or channel configs cause SDL "Out of memory" errors
+                    // For previews: also limit to 30 seconds with -t 30
+                    var postProcessorArgs = isPreview
+                        ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
+                        : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
 
-                    // For full downloads, use standard flags
-                    var standardFlags = isPreview ? "" : " --no-playlist";
+                    // For previews, add optimization flags for faster downloads
+                    var previewFlags = isPreview
+                        ? " --no-playlist --no-warnings --quiet --no-progress"
+                        : " --no-playlist";
 
-                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{previewOptimizations}{standardFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{postProcessorArgs}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
 
                 // Check directory permissions before starting download
