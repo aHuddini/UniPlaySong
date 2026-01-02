@@ -15,40 +15,36 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 ## What's New - v1.1.2
 
 ### Precise Trim (Waveform Editor)
-Visual waveform-based audio trimming with **full controller support** - no keyboard or mouse required!
+Visual audio trimming with interactive waveform display - works with mouse or Xbox controller
 
-- Interactive waveform display for selecting exact trim points
-- **Fullscreen/Controller Mode**: Fully usable with Xbox controller
-  - D-Pad Left/Right: Move start marker (blue)
-  - D-Pad Up/Down: Move end marker (red)
-  - LB/RB: Expand or contract the trim window
-  - Hold D-pad for continuous, smooth marker movement
-- Desktop Mode: Canvas-based UI with draggable markers
-- Preview the kept portion before applying
-- Original files preserved in `PreservedOriginals/` folder
+- Select exact start/end points on the audio waveform
+- Full controller support for fullscreen mode
+- Desktop mode with draggable markers
+- Preview before applying changes
+- Original files automatically backed up
 
 ### Cleanup & Maintenance Tools
-New "Cleanup" settings tab for maintenance operations:
-- Storage information display
-- Delete All Music with confirmation
-- Reset Settings to defaults
-- Factory Reset with double-confirmation dialogs
+New settings tab for maintenance and troubleshooting:
+- View storage usage information
+- Reset settings or delete all music
+- Factory reset with safety confirmations
 
 ### Smart Auto-Download
-- Automatically download music when new games are added
-- Intelligent album/song selection with KHInsider → YouTube fallback
-- Configurable in Settings → Downloads
+- Automatically download music for new games added to your library
+- Intelligent music selection with multiple source fallbacks
+- Configurable in Downloads settings
 
-> **ℹ️ Known Issue**: Auto-download may fail for some games due to limited music availability or search accuracy limitations. Use manual search in Desktop or Fullscreen mode to add music for individual games that were missed.
+> **Note**: Auto-download works for most games but may miss some due to music availability. Use manual search for any games that were skipped.
 
 ### Bulk Operations
-- Download music for all games at once
-- Auto-normalize after download option
-- Non-blocking progress dialogs with cancellation
+- Download music for your entire game library
+- Auto-normalize downloaded files
+- Progress tracking with cancellation support
 
 ### Audio Repair Tools
-- Fix problematic audio files by re-encoding to 48kHz stereo
-- Available for individual files or entire folders
+- Fix audio files that won't play properly
+- Re-encode files to standard format
+- Works on individual files or folders
 
 ### Previous Version
 - **v1.1.1**: Individual song processing, Open Preserved Folder button
