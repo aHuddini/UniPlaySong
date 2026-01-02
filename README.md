@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.1-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,20 +12,46 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## What's New - v1.1.1
+## What's New - v1.1.2
 
-### New Features
-- **Individual Song Processing** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Normalize or silence-trim individual songs from Playnite's context menus in PC and Controller mode (previously, context menus only performed bulk edits in a game's music directory. Individual edits were only possible on add-on settings menu)
-- **Open Preserved Folder** - New button in add-on settings to open backup folder of songs preserved by the user when trimming or normalizing audio tracks 
+### Precise Trim (Waveform Editor)
+Visual waveform-based audio trimming with **full controller support** - no keyboard or mouse required!
 
-### Improvements
-- **Settings Tab Cleanup** ([#16](https://github.com/aHuddini/UniPlaySong/issues/16)) - Removed redundant buttons from Normalization tab and proper word-wrapping 
-- **Clearer Menu Labels** - Renamed and organized context menus for fullscreen mode and desktop mode, including re-labeling "Silence Trim" options for clarity
-- **Code Refactoring** - Extracted approx. ~1,600 lines into dedicated handler files for better code organization. Future refactors planned.
+- Interactive waveform display for selecting exact trim points
+- **Fullscreen/Controller Mode**: Fully usable with Xbox controller
+  - D-Pad Left/Right: Move start marker (blue)
+  - D-Pad Up/Down: Move end marker (red)
+  - LB/RB: Expand or contract the trim window
+  - Hold D-pad for continuous, smooth marker movement
+- Desktop Mode: Canvas-based UI with draggable markers
+- Preview the kept portion before applying
+- Original files preserved in `PreservedOriginals/` folder
 
-### Previous Version - v1.1.0
-- Pause music on focus loss/minimize
-- Fixed Music Play State settings
+### Cleanup & Maintenance Tools
+New "Cleanup" settings tab for maintenance operations:
+- Storage information display
+- Delete All Music with confirmation
+- Reset Settings to defaults
+- Factory Reset with double-confirmation dialogs
+
+### Smart Auto-Download
+- Automatically download music when new games are added
+- Intelligent album/song selection with KHInsider → YouTube fallback
+- Configurable in Settings → Downloads
+
+> **ℹ️ Known Issue**: Auto-download may fail for some games due to limited music availability or search accuracy limitations. Use manual search in Desktop or Fullscreen mode to add music for individual games that were missed.
+
+### Bulk Operations
+- Download music for all games at once
+- Auto-normalize after download option
+- Non-blocking progress dialogs with cancellation
+
+### Audio Repair Tools
+- Fix problematic audio files by re-encoding to 48kHz stereo
+- Available for individual files or entire folders
+
+### Previous Version
+- **v1.1.1**: Individual song processing, Open Preserved Folder button
 
 ---
 
@@ -37,12 +63,17 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 🎵 Features
 
 - **Automatic Music Playback** - Music plays when selecting games
-- **🎮 Full Controller Support** - Manage music entirely from fullscreen mode with Xbox controller
+- **Precise Audio Trimming** - Visual waveform editor with controller support
+- **Full Controller Support** - Manage music entirely from fullscreen mode with Xbox controller
 - **Custom Preview Time** - Play 15s, 30s, or full tracks
 - **Fade Transitions** - Customizable fade-in/fade-out effects
 - **Audio Normalization** - EBU R128 standard volume leveling
 - **Silence Trimming** - Remove leading silence from tracks
 - **Online Downloads** - Download from YouTube and KHInsider
+- **Smart Auto-Download** - Automatically download music for new games
+- **Bulk Operations** - Download music for all games at once
+- **Audio Repair Tools** - Fix problematic audio files
+- **Cleanup & Maintenance** - Factory reset and storage management tools
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
 - **Theme Compatibility** - Works with login screen themes
@@ -66,8 +97,12 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 ## 📦 Installation
 
+### Option 1: Direct Download
 1. Download the latest `.pext` file from [Releases](https://github.com/aHuddini/UniPlaySong/releases)
-2. Double-click the downloaded `.pext` file (Playnite will detect it and prompt for installation), or update from within Playnite when an update is available from the add-on database
+2. Double-click the downloaded file to install
+
+### Option 2: Playnite Add-on Database
+Download or update directly from the Playnite add-on database, or browse Generic plugins in Playnite's Add-ons menu
 
 ### Setup
 
@@ -85,8 +120,10 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 Right-click a game → **UniPlaySong**:
 - **Download Music** - Search and download from KHInsider/YouTube
 - **Download From URL** - Paste a specific YouTube URL
+- **Download for All Games** - Bulk download music for entire library
+- **Audio Processing** → Normalize/Trim individual songs or folders
+- **Audio Editing** → Precise trim with waveform editor, repair audio files
 - **Set/Clear Primary Song** - Choose which song plays first
-- **Normalize/Trim** - Process audio files
 - **Open Music Folder** - Access game's music directory
 
 ### Fullscreen Mode
@@ -103,9 +140,10 @@ Settings are accessible via **Add-ons → Extension Settings → UniPlaySong**:
 - **General**: Enable/disable music, volume, fade durations, preview mode
 - **Default Music**: Fallback music settings, native Playnite music integration
 - **Audio Processing**: Normalization (EBU R128) and silence trimming settings
-- **Downloads**: yt-dlp/FFmpeg paths, Firefox cookies option
+- **Downloads**: yt-dlp/FFmpeg paths, Firefox cookies option, auto-download settings
 - **Search Cache**: Cache search results to speed up downloads
 - **Migration**: Import/export music between PlayniteSound and UniPlaySong
+- **Cleanup**: Storage info, delete all music, reset settings, factory reset
 
 Music files are stored in: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
 
