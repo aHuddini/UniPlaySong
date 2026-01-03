@@ -14,8 +14,8 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ## What's New - v1.1.3
 
-### Pause When in System Tray
-- Music now pauses when Playnite is hidden in the system tray
+### Pause When in System Tray 
+- When enabled, music now pauses when Playnite is hidden in the system tray
 - Prevents music from playing on startup when Playnite launches minimized
 - Configurable in General settings (enabled by default)
 
