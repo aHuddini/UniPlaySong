@@ -70,7 +70,8 @@ namespace UniPlaySong.Views
             SetPrimary,
             RemovePrimary,
             NormalizeIndividual,
-            TrimIndividual
+            TrimIndividual,
+            RepairIndividual
         }
 
         private DialogMode _mode;
@@ -153,6 +154,12 @@ namespace UniPlaySong.Views
                 case DialogMode.TrimIndividual:
                     DialogTitle.Text = "🎮 Silence Trim - Select Song";
                     ConfirmButton.Content = "Silence Trim";
+                    RemoveButton.Visibility = Visibility.Collapsed;
+                    break;
+
+                case DialogMode.RepairIndividual:
+                    DialogTitle.Text = "🎮 Repair Audio File";
+                    ConfirmButton.Content = "Repair";
                     RemoveButton.Visibility = Visibility.Collapsed;
                     break;
             }
@@ -714,6 +721,10 @@ namespace UniPlaySong.Views
                         case DialogMode.TrimIndividual:
                             TrimIndividualSong(selectedFilePath);
                             break;
+
+                        case DialogMode.RepairIndividual:
+                            RepairIndividualSong(selectedFilePath);
+                            break;
                     }
                 }
                 else
@@ -864,6 +875,42 @@ namespace UniPlaySong.Views
             {
                 Logger.Error(ex, "Error starting trim");
                 UpdateInputFeedback("❌ Error starting trim");
+            }
+        }
+
+        /// <summary>
+        /// Repair the selected individual song
+        /// </summary>
+        private void RepairIndividualSong(string filePath)
+        {
+            try
+            {
+                var fileName = Path.GetFileName(filePath);
+                Logger.Info($"Starting repair for individual song: {fileName}");
+
+                // Close dialog first, then trigger repair
+                CloseDialog(true);
+
+                // Use dispatcher to show progress dialog after this dialog closes
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // Get the UniPlaySong plugin instance to access repair
+                        var plugin = Application.Current?.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        plugin?.RepairSingleFile(_currentGame, filePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error triggering repair");
+                        _playniteApi?.Dialogs?.ShowErrorMessage($"Error repairing file: {ex.Message}", "UniPlaySong");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error starting repair");
+                UpdateInputFeedback("❌ Error starting repair");
             }
         }
 

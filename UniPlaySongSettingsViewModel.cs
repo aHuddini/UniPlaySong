@@ -777,6 +777,90 @@ namespace UniPlaySong
 
         #endregion
 
+        #region Music Status Tag Commands
+
+        public ICommand ScanAndTagAllGamesCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteScanAndTagAllGames(),
+                context: "scanning and tagging games",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteScanAndTagAllGames()
+        {
+            var tagService = plugin.GetGameMusicTagService();
+            if (tagService == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("Tag service not available.", "UniPlaySong");
+                return;
+            }
+
+            var games = PlayniteApi.Database.Games.ToList();
+            if (games.Count == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage("No games found in library.", "UniPlaySong");
+                return;
+            }
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"This will scan {games.Count} games and update their music status tags.\n\n" +
+                "Games will be tagged with:\n" +
+                "- '[UPS] Has Music' - if they have downloaded music\n" +
+                "- '[UPS] No Music' - if they don't have music\n\n" +
+                "You can then use Playnite's filter to find games by these tags.\n\n" +
+                "Do you want to proceed?",
+                "Scan & Tag Games",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Run with progress dialog
+            plugin.RunTagScanWithProgress(tagService);
+        }
+
+        public ICommand RemoveAllMusicTagsCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteRemoveAllMusicTags(),
+                context: "removing music tags",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteRemoveAllMusicTags()
+        {
+            var tagService = plugin.GetGameMusicTagService();
+            if (tagService == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("Tag service not available.", "UniPlaySong");
+                return;
+            }
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                "This will remove all UniPlaySong music status tags from your games.\n\n" +
+                "The tags '[UPS] Has Music' and '[UPS] No Music' will be removed from all games,\n" +
+                "and deleted from the tag database.\n\n" +
+                "Do you want to proceed?",
+                "Remove All Music Tags",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            tagService.RemoveAllMusicTags();
+
+            PlayniteApi.Dialogs.ShowMessage(
+                "All music status tags have been removed.",
+                "Tags Removed");
+        }
+
+        #endregion
+
         private void UpdateCacheStats()
         {
             try

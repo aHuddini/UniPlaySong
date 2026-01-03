@@ -165,12 +165,12 @@ namespace UniPlaySong.Common
         #endregion
         
         #region Download Settings
-        
+
         /// <summary>
         /// Maximum preview song length in minutes
         /// </summary>
         public const int MaxPreviewSongLengthMinutes = 8;
-        
+
         /// <summary>
         /// Preferred song name endings for selection
         /// </summary>
@@ -181,7 +181,21 @@ namespace UniPlaySong.Common
             "Menu",
             "Main Theme"
         };
-        
+
+        #endregion
+
+        #region Music Status Tags
+
+        /// <summary>
+        /// Tag name for games that have music downloaded
+        /// </summary>
+        public const string TagHasMusic = "[UPS] Has Music";
+
+        /// <summary>
+        /// Tag name for games that do not have music downloaded
+        /// </summary>
+        public const string TagNoMusic = "[UPS] No Music";
+
         #endregion
     }
 }

@@ -212,6 +212,36 @@
 
                     <Separator Margin="0,15"/>
 
+                    <!-- Music Status Tags -->
+                    <TextBlock Text="Music Status Tags" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Tag games based on music availability for easy filtering in Playnite" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Auto-tag games on library update"
+                              IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <Button Content="Scan &amp; Tag All Games"
+                                Width="160"
+                                Margin="0,0,10,0"
+                                Command="{Binding ScanAndTagAllGamesCommand}"/>
+                        <Button Content="Remove All Tags"
+                                Width="140"
+                                Command="{Binding RemoveAllMusicTagsCommand}"/>
+                    </StackPanel>
+                    <TextBlock Text="Manually scan your entire library and update music status tags. 'Remove All Tags' clears all UniPlaySong tags from your games."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- Troubleshooting -->
                     <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 

@@ -2,6 +2,12 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.4] - 2026-01-03
+
+### Added
+- Repair Music Folder option in Fullscreen mode context menu
+- Repair Audio File option with controller-friendly file picker in Fullscreen mode
+
 ## [1.1.3] - 2026-01-02
 
 ### Added
@@ -9,6 +15,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Parallel bulk normalization: Audio normalization now processes up to 3 files in parallel for significantly faster bulk operations ([#25](https://github.com/aHuddini/UniPlaySong/issues/25))
 - Parallel bulk silence trimming: Silence trim operations also now process up to 3 files in parallel
 - Dialog windows now appear in Windows taskbar (Desktop mode): Easy to find dialogs when switching between applications ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
+- Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18)). Auto-tags on library update with manual "Scan & Tag All Games" button in settings
 
 ### Changed
 - Simplified bulk normalization progress dialog by removing success/fail counters ([#26](https://github.com/aHuddini/UniPlaySong/issues/26))

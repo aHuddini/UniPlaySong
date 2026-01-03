@@ -102,6 +102,7 @@ namespace UniPlaySong
         private Services.ITrimService _trimService;
         private Services.AudioRepairService _repairService;
         private Services.MigrationService _migrationService;
+        private Services.GameMusicTagService _tagService;
         private IMusicPlaybackCoordinator _coordinator;
         
         private UniPlaySongSettings _settings => _settingsService?.Current;
@@ -259,6 +260,7 @@ namespace UniPlaySong
         /// <summary>
         /// Handles library update events from Playnite.
         /// Triggers auto-download of music for newly added games if enabled.
+        /// Also triggers auto-tagging of games if enabled.
         /// </summary>
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
@@ -272,34 +274,54 @@ namespace UniPlaySong
                     return;
                 }
 
-                if (!_settings.AutoDownloadOnLibraryUpdate)
+                // Handle auto-download
+                if (_settings.AutoDownloadOnLibraryUpdate)
                 {
-                    _fileLogger?.Debug("OnLibraryUpdated: Auto-download disabled, skipping");
+                    // Get games added since last auto-download check
+                    var lastCheck = _settings.LastAutoLibUpdateAssetsDownload;
+                    _fileLogger?.Info($"OnLibraryUpdated: Checking for games added after {lastCheck}");
+
+                    var newGames = _api.Database.Games
+                        .Where(g => g.Added.HasValue && g.Added.Value > lastCheck)
+                        .ToList();
+
+                    _fileLogger?.Info($"OnLibraryUpdated: Found {newGames.Count} new game(s)");
+
+                    // Start auto-download in background if we have new games
+                    if (newGames.Count > 0)
+                    {
+                        Task.Run(() => AutoDownloadMusicForGamesAsync(newGames));
+                    }
+
+                    // Update timestamp AFTER identifying games (like PlayniteSound does)
+                    _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
+                    SavePluginSettings(_settings);
+                }
+                else
+                {
+                    _fileLogger?.Debug("OnLibraryUpdated: Auto-download disabled");
                     // Still update timestamp to avoid processing old games later
                     _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
                     SavePluginSettings(_settings);
-                    return;
                 }
 
-                // Get games added since last auto-download check
-                var lastCheck = _settings.LastAutoLibUpdateAssetsDownload;
-                _fileLogger?.Info($"OnLibraryUpdated: Checking for games added after {lastCheck}");
-
-                var newGames = _api.Database.Games
-                    .Where(g => g.Added.HasValue && g.Added.Value > lastCheck)
-                    .ToList();
-
-                _fileLogger?.Info($"OnLibraryUpdated: Found {newGames.Count} new game(s)");
-
-                // Start auto-download in background if we have new games
-                if (newGames.Count > 0)
+                // Handle auto-tagging (scans all games, not just new ones)
+                if (_settings.AutoTagOnLibraryUpdate && _tagService != null)
                 {
-                    Task.Run(() => AutoDownloadMusicForGamesAsync(newGames));
+                    _fileLogger?.Info("OnLibraryUpdated: Starting auto-tag scan in background");
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var result = await _tagService.ScanAndTagAllGamesAsync();
+                            _fileLogger?.Info($"OnLibraryUpdated: Auto-tag complete - {result.GamesWithMusic} with music, {result.GamesWithoutMusic} without, {result.GamesModified} updated");
+                        }
+                        catch (Exception ex)
+                        {
+                            _fileLogger?.Error($"OnLibraryUpdated: Auto-tag error - {ex.Message}", ex);
+                        }
+                    });
                 }
-
-                // Update timestamp AFTER identifying games (like PlayniteSound does)
-                _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
-                SavePluginSettings(_settings);
             }
             catch (Exception ex)
             {
@@ -920,6 +942,13 @@ namespace UniPlaySong
             // Initialize audio repair service for fixing problematic audio files
             _repairService = new Services.AudioRepairService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Info("AudioRepairService initialized");
+
+            // Initialize game music tag service for tagging games by music status
+            _tagService = new Services.GameMusicTagService(_api, _fileService);
+            _fileLogger?.Info("GameMusicTagService initialized");
+
+            // Wire up tag service to download dialog service for post-download tag updates
+            _downloadDialogService.SetTagService(_tagService);
         }
 
         private void InitializeMenuHandlers()
@@ -1207,6 +1236,114 @@ namespace UniPlaySong
             _trimDialogHandler?.TrimSingleFile(game, filePath);
         }
 
+        /// <summary>
+        /// Repair a single audio file.
+        /// Delegates to GameMenuHandler.
+        /// </summary>
+        public void RepairSingleFile(Game game, string filePath)
+        {
+            // Use the existing repair logic from GameMenuHandler but for a specific file
+            if (_gameMenuHandler == null)
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage("Game menu handler not initialized.", "UniPlaySong");
+                return;
+            }
+
+            // Validate FFmpeg availability
+            if (_settings == null || string.IsNullOrWhiteSpace(_settings.FFmpegPath))
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            if (_repairService == null || !_repairService.ValidateFFmpegAvailable(_settings.FFmpegPath))
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"FFmpeg not found or not working at: {_settings.FFmpegPath}\n\nPlease verify the path in Settings → Audio Normalization.",
+                    "UniPlaySong");
+                return;
+            }
+
+            // Run repair with progress
+            RepairSingleFileWithProgress(game, filePath, _settings.FFmpegPath);
+        }
+
+        /// <summary>
+        /// Repair a single audio file with progress dialog.
+        /// </summary>
+        private void RepairSingleFileWithProgress(Game game, string filePath, string ffmpegPath)
+        {
+            var fileName = System.IO.Path.GetFileName(filePath);
+            logger.Info($"Starting audio repair for: {fileName}");
+
+            var progressTitle = "UniPlaySong - Repairing Audio";
+            var progressOptions = new GlobalProgressOptions(progressTitle, false)
+            {
+                IsIndeterminate = true
+            };
+
+            Services.AudioProbeResult probeResult = null;
+            bool repairSuccess = false;
+
+            PlayniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            {
+                args.Text = $"Analyzing: {fileName}";
+
+                // Probe the file
+                var probeTask = _repairService.ProbeFileAsync(filePath, ffmpegPath);
+                probeTask.Wait();
+                probeResult = probeTask.Result;
+
+                if (probeResult.Success)
+                {
+                    args.Text = $"Repairing: {fileName}";
+
+                    // Repair the file
+                    var repairTask = _repairService.RepairFileAsync(filePath, ffmpegPath);
+                    repairTask.Wait();
+                    repairSuccess = repairTask.Result;
+                }
+            }, progressOptions);
+
+            // Show result
+            if (probeResult == null || !probeResult.Success)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Failed to analyze audio file: {fileName}\n\n" +
+                    $"Error: {probeResult?.ErrorMessage ?? "Unknown error"}",
+                    "UniPlaySong - Repair Failed");
+                return;
+            }
+
+            if (repairSuccess)
+            {
+                var issuesSummary = probeResult.HasIssues
+                    ? $"Issues detected: {probeResult.Issues}\n\n"
+                    : "No obvious issues detected, but file was re-encoded.\n\n";
+
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Successfully repaired: {fileName}\n\n" +
+                    issuesSummary +
+                    "The original file has been backed up to PreservedOriginals folder.\n" +
+                    "The repaired file should now play correctly.",
+                    "UniPlaySong - Repair Complete");
+
+                logger.Info($"Audio repair completed successfully for: {fileName}");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Failed to repair audio file: {fileName}\n\n" +
+                    "The file may be too corrupted to repair, or FFmpeg encountered an error.\n" +
+                    "Check the logs for more details.",
+                    "UniPlaySong - Repair Failed");
+
+                logger.Error($"Audio repair failed for: {fileName}");
+            }
+        }
+
         #endregion
 
         #region Music Migration
@@ -1290,6 +1427,68 @@ namespace UniPlaySong
             {
                 logger.Error(ex, "Error showing migration progress dialog");
                 PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Migration Error");
+            }
+        }
+
+        /// <summary>
+        /// Runs game music tag scanning with progress dialog.
+        /// </summary>
+        public void RunTagScanWithProgress(Services.GameMusicTagService tagService)
+        {
+            try
+            {
+                var progressOptions = new GlobalProgressOptions("Scanning games for music status...", true)
+                {
+                    IsIndeterminate = false
+                };
+
+                _api.Dialogs.ActivateGlobalProgress((args) =>
+                {
+                    try
+                    {
+                        var progress = new Progress<Services.TagScanProgress>(p =>
+                        {
+                            args.CurrentProgressValue = p.ProcessedCount;
+                            args.ProgressMaxValue = p.TotalCount;
+                            args.Text = $"Scanning: {p.CurrentGame}\n({p.ProcessedCount}/{p.TotalCount})";
+                        });
+
+                        var task = tagService.ScanAndTagAllGamesAsync(progress, args.CancelToken);
+                        task.Wait(args.CancelToken);
+                        var result = task.Result;
+
+                        if (!args.CancelToken.IsCancellationRequested)
+                        {
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                _api.Dialogs.ShowMessage(
+                                    $"Tag scan complete!\n\n" +
+                                    $"Games scanned: {result.TotalGames}\n" +
+                                    $"With music: {result.GamesWithMusic}\n" +
+                                    $"Without music: {result.GamesWithoutMusic}\n" +
+                                    $"Tags updated: {result.GamesModified}",
+                                    "Scan Complete");
+                            }));
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // User cancelled, do nothing
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Error during tag scan");
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            _api.Dialogs.ShowErrorMessage($"Error during scan: {ex.Message}", "Scan Error");
+                        }));
+                    }
+                }, progressOptions);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error showing tag scan progress");
+                _api.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Scan Error");
             }
         }
 
@@ -1463,6 +1662,20 @@ namespace UniPlaySong
                     Description = "🎮 Precise Trim",
                     MenuSection = audioProcessingSection,
                     Action = _ => _waveformTrimDialogHandler.ShowControllerPreciseTrimDialog(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "🎮 Repair Audio File",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _controllerDialogHandler.ShowRepairIndividualSong(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Repair Music Folder",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _gameMenuHandler.RepairAllAudioFiles(game)
                 });
 
                 // === Manage Music Submenu (🎮 Mode options) ===
@@ -2005,6 +2218,11 @@ namespace UniPlaySong
         /// Gets the migration service.
         /// </summary>
         public Services.MigrationService GetMigrationService() => _migrationService;
+
+        /// <summary>
+        /// Gets the game music tag service.
+        /// </summary>
+        public Services.GameMusicTagService GetGameMusicTagService() => _tagService;
 
         /// <summary>
         /// Gets the Playnite API instance.

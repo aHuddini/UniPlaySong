@@ -519,6 +519,20 @@ namespace UniPlaySong
             set { lastAutoLibUpdateAssetsDownload = value; OnPropertyChanged(); }
         }
 
+        // Music Status Tag Settings
+        private bool autoTagOnLibraryUpdate = true;
+
+        /// <summary>
+        /// Automatically update music status tags when library is updated.
+        /// When enabled, games will be tagged with "[UPS] Has Music" or "[UPS] No Music"
+        /// based on whether they have downloaded music. These tags can be used for filtering.
+        /// </summary>
+        public bool AutoTagOnLibraryUpdate
+        {
+            get => autoTagOnLibraryUpdate;
+            set { autoTagOnLibraryUpdate = value; OnPropertyChanged(); }
+        }
+
         // YouTube Channel Whitelist Settings
         private bool enableYouTubeChannelWhitelist = true;
         private List<string> whitelistedYouTubeChannelIds = new List<string>

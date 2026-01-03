@@ -301,5 +301,42 @@ namespace UniPlaySong.Handlers
             }
         }
 
+        /// <summary>
+        /// Show controller-friendly file picker for repairing an individual audio file
+        /// </summary>
+        public void ShowRepairIndividualSong(Game game)
+        {
+            try
+            {
+                logger.Debug($"ShowRepairIndividualSong called for game: {game?.Name}");
+
+                // Check if there are any songs
+                var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+                if (availableSongs.Count == 0)
+                {
+                    _playniteApi.Dialogs.ShowMessage("No music files found for this game.", "UniPlaySong");
+                    return;
+                }
+
+                var filePickerDialog = new Views.ControllerFilePickerDialog();
+                var window = DialogHelper.CreateStandardDialog(
+                    _playniteApi,
+                    $"Repair Audio File - {game?.Name ?? "Unknown Game"}",
+                    filePickerDialog,
+                    width: 700,
+                    height: 500);
+
+                filePickerDialog.InitializeForGame(game, _playniteApi, _fileService, _playbackService, Views.ControllerFilePickerDialog.DialogMode.RepairIndividual);
+                DialogHelper.AddFocusReturnHandler(window, _playniteApi, "repair audio dialog close");
+
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error showing repair individual song dialog");
+                _playniteApi.Dialogs.ShowErrorMessage("Failed to open song selector.", "UniPlaySong");
+            }
+        }
+
     }
 }

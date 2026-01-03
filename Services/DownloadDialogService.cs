@@ -40,6 +40,7 @@ namespace UniPlaySong.Services
         private readonly SettingsService _settingsService;
         private readonly ErrorHandlerService _errorHandler;
         private INormalizationService _normalizationService;
+        private GameMusicTagService _tagService;
 
         /// <summary>
         /// Returns true if Playnite is in Fullscreen mode.
@@ -71,6 +72,15 @@ namespace UniPlaySong.Services
         public void SetNormalizationService(INormalizationService normalizationService)
         {
             _normalizationService = normalizationService;
+        }
+
+        /// <summary>
+        /// Sets the tag service for updating game music status tags after downloads.
+        /// Called after service initialization in UniPlaySong.cs.
+        /// </summary>
+        public void SetTagService(GameMusicTagService tagService)
+        {
+            _tagService = tagService;
         }
 
         /// <summary>
@@ -702,10 +712,24 @@ namespace UniPlaySong.Services
                 }
             };
 
-            // Set up callback for auto-normalization after download
+            // Set up callback for auto-normalization and tag update after download
             viewModel.OnFilesDownloaded = (downloadedFiles) =>
             {
                 AutoNormalizeDownloadedFiles(downloadedFiles);
+
+                // Update the game's music status tag after download
+                if (_tagService != null && game != null)
+                {
+                    try
+                    {
+                        _tagService.UpdateGameMusicTag(game);
+                        LogDebug($"Updated music tag for game '{game.Name}' after download");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(ex, $"Failed to update music tag for game '{game.Name}': {ex.Message}");
+                    }
+                }
             };
 
             viewModel.ConfirmCommand = new Common.RelayCommand(() =>
