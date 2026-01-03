@@ -24,12 +24,6 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 - Silence trimming also uses parallel processing for bulk operations
 - Significantly faster bulk operations
 
-### Music Status Tags
-- Games are automatically tagged with "[UPS] Has Music" or "[UPS] No Music"
-- Use Playnite's filter to quickly find games that need music
-- Tags update automatically on library update and after downloads
-- Manual "Scan & Tag All Games" button in Settings → General
-
 ### UI/UX Improvements
 - Dialog windows now appear in your Windows taskbar (Desktop Mode)
 - Back button in download dialogs now properly navigates through the full flow (Song → Album → Source)
