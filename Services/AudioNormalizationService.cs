@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -228,6 +229,41 @@ namespace UniPlaySong.Services
             IProgress<NormalizationProgress> progress,
             CancellationToken cancellationToken)
         {
+            // Stop music playback to prevent file locking issues (for single file operations)
+            await StopPlaybackIfNeededAsync(cancellationToken);
+
+            return await NormalizeFileInternalAsync(filePath, settings, progress, cancellationToken);
+        }
+
+        /// <summary>
+        /// Stops music playback if currently playing. Used before normalization to prevent file locking.
+        /// </summary>
+        private async Task StopPlaybackIfNeededAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (_playbackService != null && _playbackService.IsPlaying)
+                {
+                    Logger.Info("Stopping music playback before normalization");
+                    _playbackService.Stop();
+                    await Task.Delay(200, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, $"Error stopping playback before normalization: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Internal normalization method that doesn't stop playback (for use in parallel bulk operations).
+        /// </summary>
+        private async Task<bool> NormalizeFileInternalAsync(
+            string filePath,
+            NormalizationSettings settings,
+            IProgress<NormalizationProgress> progress,
+            CancellationToken cancellationToken)
+        {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
                 Logger.Error($"File does not exist: {filePath}");
@@ -243,21 +279,6 @@ namespace UniPlaySong.Services
                     Status = "Skipped (already normalized)"
                 });
                 return true;
-            }
-
-            // Stop music playback to prevent file locking issues
-            try
-            {
-                if (_playbackService != null && _playbackService.IsPlaying)
-                {
-                    Logger.Info($"Stopping music playback before normalizing: {Path.GetFileName(filePath)}");
-                    _playbackService.Stop();
-                    await Task.Delay(200, cancellationToken);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, $"Error stopping playback before normalization: {ex.Message}");
             }
 
             if (string.IsNullOrWhiteSpace(settings.FFmpegPath) || !ValidateFFmpegAvailable(settings.FFmpegPath))
@@ -400,61 +421,111 @@ namespace UniPlaySong.Services
                 return result;
             }
 
-            Logger.Info($"Starting bulk normalization: {result.TotalFiles} files");
+            // Stop playback once before parallel processing begins
+            await StopPlaybackIfNeededAsync(cancellationToken);
 
-            for (int i = 0; i < files.Count; i++)
+            // Determine parallelism: use processor count but cap at 3 for safety
+            // FFmpeg is CPU-intensive, so too many parallel processes can degrade performance
+            int maxParallelism = Math.Min(Environment.ProcessorCount, 3);
+            Logger.Info($"Starting parallel bulk normalization: {result.TotalFiles} files with {maxParallelism} parallel threads");
+
+            // Thread-safe collections for tracking results
+            var failedFiles = new ConcurrentBag<string>();
+            int successCount = 0;
+            int failureCount = 0;
+            int completedCount = 0;
+
+            // Report initial progress
+            progress?.Report(new NormalizationProgress
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Logger.Info("Normalization cancelled by user");
-                    break;
-                }
+                CurrentFile = "Starting parallel processing...",
+                CurrentIndex = 0,
+                TotalFiles = files.Count,
+                Status = $"Processing {files.Count} files with {maxParallelism} parallel threads..."
+            });
 
-                var filePath = files[i];
-                result.CurrentIndex = i + 1;
+            // Use Parallel.ForEach for parallel processing
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = maxParallelism,
+                CancellationToken = cancellationToken
+            };
 
-                progress?.Report(new NormalizationProgress
+            try
+            {
+                await Task.Run(() =>
                 {
-                    CurrentFile = Path.GetFileName(filePath),
-                    CurrentIndex = i + 1,
-                    TotalFiles = files.Count,
-                    SuccessCount = result.SuccessCount,
-                    FailureCount = result.FailureCount,
-                    Status = $"Processing {i + 1} of {files.Count}..."
-                });
-
-                try
-                {
-                    var success = await NormalizeFileAsync(filePath, settings, progress, cancellationToken);
-                    if (success)
+                    Parallel.ForEach(files, parallelOptions, (filePath, loopState) =>
                     {
-                        result.SuccessCount++;
-                    }
-                    else
-                    {
-                        result.FailureCount++;
-                        result.FailedFiles.Add(filePath);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"Error in bulk normalization for file: {filePath}");
-                    result.FailureCount++;
-                    result.FailedFiles.Add(filePath);
-                }
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            loopState.Stop();
+                            return;
+                        }
+
+                        try
+                        {
+                            // Use synchronous wrapper for parallel execution
+                            var success = NormalizeFileInternalAsync(filePath, settings, progress, cancellationToken)
+                                .GetAwaiter().GetResult();
+
+                            if (success)
+                            {
+                                Interlocked.Increment(ref successCount);
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref failureCount);
+                                failedFiles.Add(filePath);
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            loopState.Stop();
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error(ex, $"Error in parallel normalization for file: {filePath}");
+                            Interlocked.Increment(ref failureCount);
+                            failedFiles.Add(filePath);
+                        }
+
+                        // Update progress after each file completes
+                        int currentCompleted = Interlocked.Increment(ref completedCount);
+                        progress?.Report(new NormalizationProgress
+                        {
+                            CurrentFile = Path.GetFileName(filePath),
+                            CurrentIndex = currentCompleted,
+                            TotalFiles = files.Count,
+                            Status = $"Completed {currentCompleted} of {files.Count} ({maxParallelism} parallel)"
+                        });
+                    });
+                }, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Info("Normalization cancelled by user");
+            }
+
+            // Copy results to return object
+            result.SuccessCount = successCount;
+            result.FailureCount = failureCount;
+            result.CurrentIndex = completedCount;
+            foreach (var file in failedFiles)
+            {
+                result.FailedFiles.Add(file);
             }
 
             result.IsComplete = true;
             progress?.Report(new NormalizationProgress
             {
                 IsComplete = true,
+                CurrentIndex = completedCount,
                 TotalFiles = result.TotalFiles,
-                SuccessCount = result.SuccessCount,
-                FailureCount = result.FailureCount,
                 Status = $"Complete: {result.SuccessCount} succeeded, {result.FailureCount} failed"
             });
 
-            Logger.Info($"Bulk normalization complete: {result.SuccessCount} succeeded, {result.FailureCount} failed");
+            Logger.Info($"Parallel bulk normalization complete: {result.SuccessCount} succeeded, {result.FailureCount} failed");
             return result;
         }
 

@@ -8,6 +8,17 @@ namespace UniPlaySong.Models
     public class Album : DownloadItem
     {
         /// <summary>
+        /// Sentinel value indicating user pressed Back button to return to source selection.
+        /// Check using Album.IsBackSignal() method.
+        /// </summary>
+        public static readonly Album BackSignal = new Album { Id = "__BACK_SIGNAL__", Name = "__BACK_SIGNAL__" };
+
+        /// <summary>
+        /// Checks if this album instance is the BackSignal sentinel.
+        /// </summary>
+        public static bool IsBackSignal(Album album) => album != null && album.Id == "__BACK_SIGNAL__";
+
+        /// <summary>
         /// Type of album (OST, Remastered, GameRip, etc.)
         /// </summary>
         public string Type { get; set; }

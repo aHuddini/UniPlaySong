@@ -44,8 +44,8 @@ namespace UniPlaySong.Common
             /// <summary>Whether to show the close button</summary>
             public bool ShowCloseButton { get; set; } = true;
 
-            /// <summary>Whether to show the window in the taskbar</summary>
-            public bool ShowInTaskbar { get; set; } = false;
+            /// <summary>Whether to show the window in the taskbar (default true for Desktop mode accessibility)</summary>
+            public bool ShowInTaskbar { get; set; } = true;
 
             /// <summary>Whether to set the window as topmost (for fullscreen mode)</summary>
             public bool Topmost { get; set; } = false;
@@ -139,7 +139,8 @@ namespace UniPlaySong.Common
                 ShowMaximizeButton = true,
                 Topmost = isFullscreenMode,
                 ApplyDarkBackground = isFullscreenMode,
-                SetOwner = true
+                SetOwner = true,
+                ShowInTaskbar = !isFullscreenMode // Hide from taskbar in fullscreen mode (topmost handles visibility)
             });
         }
 

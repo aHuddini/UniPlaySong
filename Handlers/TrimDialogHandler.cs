@@ -63,7 +63,7 @@ namespace UniPlaySong.Handlers
                 if (string.IsNullOrWhiteSpace(settings.FFmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
+                        "FFmpeg path is not configured. Please configure FFmpeg in Settings → Audio Normalization.",
                         "FFmpeg Not Configured");
                     return;
                 }
@@ -147,7 +147,7 @@ namespace UniPlaySong.Handlers
                 if (string.IsNullOrWhiteSpace(settings.FFmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
+                        "FFmpeg path is not configured. Please configure FFmpeg in Settings → Audio Normalization.",
                         "FFmpeg Not Configured");
                     return;
                 }
@@ -213,7 +213,7 @@ namespace UniPlaySong.Handlers
                 if (string.IsNullOrWhiteSpace(settings.FFmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured. Please configure FFmpeg in the extension settings.",
+                        "FFmpeg path is not configured. Please configure FFmpeg in Settings → Audio Normalization.",
                         "FFmpeg Not Configured");
                     return;
                 }

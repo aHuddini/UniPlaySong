@@ -239,6 +239,11 @@ namespace UniPlaySong.ViewModels
             }
         }
 
+        /// <summary>
+        /// Indicates if the user pressed the Back button (vs Cancel or closing the window)
+        /// </summary>
+        public bool BackWasPressed { get; set; } = false;
+
         public DownloadDialogViewModel(
             IPlayniteAPI playniteApi,
             IDownloadManager downloadManager,

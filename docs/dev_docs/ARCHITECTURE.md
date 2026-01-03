@@ -226,11 +226,20 @@ Public methods in `UniPlaySong.cs` now delegate to these handlers, keeping the m
 - Uses FFmpeg for audio processing
 - Preserves original files (optional)
 - Provides progress reporting
+- **Parallel bulk processing** for faster operations (v1.1.3+)
 
 **Normalization Parameters:**
 - Target Loudness: -16.0 LUFS (EBU R128 standard)
 - True Peak: -1.5 dBTP
 - Loudness Range: 11.0 LU
+
+**Parallel Processing (v1.1.3+):**
+- Bulk normalization processes up to 3 files simultaneously
+- Bulk silence trimming also processes up to 3 files simultaneously
+- Uses `Math.Min(Environment.ProcessorCount, 3)` for safe parallelism cap
+- Thread-safe counters with `Interlocked.Increment`
+- Thread-safe failed files collection with `ConcurrentBag<string>`
+- Playback stopped once at start, not per-file
 
 ### 8. Waveform Trim Service (`WaveformTrimService`)
 
@@ -370,6 +379,11 @@ window.ShowDialog();
 - Eliminates duplicate window creation code (~8-12 lines per dialog)
 - Consistent focus behavior in fullscreen mode
 - Easy theming adjustments in the future
+
+**Taskbar Visibility (v1.1.3+):**
+- Default `ShowInTaskbar = true` for Desktop mode - dialogs appear in Windows taskbar
+- Fullscreen mode: `ShowInTaskbar = false` (topmost handles visibility)
+- Users can easily find and click back to dialogs when switching applications
 
 ### 10. XInput Wrapper (`Common/XInputWrapper.cs`)
 
@@ -516,18 +530,25 @@ Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyC
 ```
 1. User requests download via menu
    ↓
-2. DownloadDialogService shows dialog
+2. Source Selection Dialog (KHInsider/YouTube)
+   ↓ (Cancel exits, Back N/A)
+3. Album Selection Dialog
+   ↓ (Cancel exits, Back → Source Selection)
+4. Song Selection Dialog
+   ↓ (Cancel exits, Back → Album Selection)
+5. DownloadManager coordinates download
    ↓
-3. User selects source (KHInsider/YouTube) and searches
+6. IDownloader implementation (KHInsiderDownloader/YouTubeDownloader) downloads
    ↓
-4. DownloadManager coordinates download
+7. File saved to game music directory
    ↓
-5. IDownloader implementation (KHInsiderDownloader/YouTubeDownloader) downloads
-   ↓
-6. File saved to game music directory
-   ↓
-7. PlaybackService automatically picks up new file
+8. PlaybackService automatically picks up new file
 ```
+
+**Back Button Navigation:**
+- Desktop mode dialogs support Back button to navigate through the flow
+- Uses `Album.BackSignal` sentinel to distinguish Back from Cancel
+- `GameMenuHandler` uses nested loops to enable re-selection at each level
 
 ## Threading Model
 
@@ -601,7 +622,7 @@ The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following
 - Randomization options
 - Skip first selection behavior
 - Theme compatibility options
-- Pause on trailer/focus loss/minimize settings
+- Pause on trailer/focus loss/minimize/system tray settings
 
 ### Default Music Tab
 - Enable default music

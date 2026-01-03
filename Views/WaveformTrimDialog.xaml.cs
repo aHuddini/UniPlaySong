@@ -549,7 +549,7 @@ namespace UniPlaySong.Views
                 {
                     LogDebug("FFmpeg path is null or empty from settings");
                     _playniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured.\n\nPlease configure FFmpeg path in Settings → Downloads.",
+                        "FFmpeg path is not configured.\n\nPlease configure FFmpeg path in Settings → Audio Normalization.",
                         "FFmpeg Not Found");
                     ApplyButton.IsEnabled = true;
                     ApplyButton.Content = "Apply Trim";

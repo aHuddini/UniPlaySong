@@ -26,7 +26,6 @@
                 <RowDefinition Height="Auto"/>  <!-- Title -->
                 <RowDefinition Height="Auto"/>  <!-- Current File -->
                 <RowDefinition Height="Auto"/>  <!-- Progress Bar -->
-                <RowDefinition Height="Auto"/>  <!-- Statistics -->
                 <RowDefinition Height="*"/>     <!-- Status Messages -->
                 <RowDefinition Height="Auto"/>  <!-- Cancel Button -->
             </Grid.RowDefinitions>
@@ -73,42 +72,15 @@
                              Height="30"
                              Margin="0,0,0,8"/>
                 <TextBlock Name="ProgressText"
-                           Text="0 / 0 files"
+                           Text="Preparing..."
                            HorizontalAlignment="Center"
                            FontSize="12"
                            Foreground="Gray"/>
             </StackPanel>
 
-            <!-- Statistics -->
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
-                <Border Background="#E8F5E8" 
-                        BorderBrush="#4CAF50" 
-                        BorderThickness="1" 
-                        CornerRadius="4" 
-                        Padding="12,6"
-                        Margin="4">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="✅ Success: " FontWeight="SemiBold" Foreground="#2E7D32"/>
-                        <TextBlock Name="SuccessCountText" Text="0" FontWeight="Bold" Foreground="#1B5E20"/>
-                    </StackPanel>
-                </Border>
-                
-                <Border Background="#FFEBEE" 
-                        BorderBrush="#F44336" 
-                        BorderThickness="1" 
-                        CornerRadius="4" 
-                        Padding="12,6"
-                        Margin="4">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="❌ Failed: " FontWeight="SemiBold" Foreground="#C62828"/>
-                        <TextBlock Name="FailureCountText" Text="0" FontWeight="Bold" Foreground="#B71C1C"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-
             <!-- Status Messages -->
-            <ScrollViewer Grid.Row="4" 
-                          VerticalScrollBarVisibility="Auto" 
+            <ScrollViewer Grid.Row="3"
+                          VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
                           Margin="0,0,0,16"
                           MaxHeight="150">
@@ -126,7 +98,7 @@
             </ScrollViewer>
 
             <!-- Cancel Button -->
-            <Button Grid.Row="5"
+            <Button Grid.Row="4"
                     Name="CancelButton"
                     Content="Cancel"
                     Width="150"

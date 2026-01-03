@@ -889,7 +889,7 @@ namespace UniPlaySong.Views
                 if (!_waveformTrimService.ValidateFFmpegAvailable(ffmpegPath))
                 {
                     _playniteApi?.Dialogs?.ShowErrorMessage(
-                        "FFmpeg is required for trimming. Please configure the FFmpeg path in UniPlaySong settings.",
+                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings → Audio Normalization.",
                         "FFmpeg Required");
                     return;
                 }

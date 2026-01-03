@@ -74,7 +74,16 @@
                     <CheckBox Content="Pause music when Playnite is minimized"
                               IsChecked="{Binding Settings.PauseOnMinimize}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar or system tray. Music will resume when Playnite is restored."
+                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar. Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is in system tray"
+                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is hidden in the system tray (e.g., on startup or after closing to tray). Music will resume when Playnite is restored."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -288,18 +297,29 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,10"/>
                     
-                    <TextBlock Text="⚠️ Note: FFmpeg is required for normalization. Please configure the FFmpeg path in the General settings tab before using normalization features." 
-                               FontSize="11" 
-                               Foreground="#FFA500"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Normalization requires processing each file twice (analysis + application), which can be CPU-intensive for large libraries. Use bulk operations below to normalize files when needed." 
-                               FontSize="11" 
+                    <TextBlock Text="Normalization requires processing each file twice (analysis + application), which can be CPU-intensive for large libraries. Use bulk operations below to normalize files when needed."
+                               FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="0,0,0,20"/>
+                               Margin="0,0,0,10"/>
+
+                    <!-- FFmpeg Path Setting -->
+                    <TextBlock Text="FFmpeg Configuration" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="FFmpeg Path: " VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Settings.FFmpegPath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="False"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Command="{Binding BrowseForFFmpegFile}"/>
+                    </StackPanel>
+                    <TextBlock Text="FFmpeg is required for audio normalization, silence trimming, precise trim, and audio repair features. Download from ffmpeg.org if not installed."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,20"/>
 
                     <StackPanel>
                         <TextBlock Text="Normalization Settings" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,10"/>
@@ -554,22 +574,6 @@
                                 Command="{Binding BrowseForYtDlpFile}"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="FFmpeg Path: " VerticalAlignment="Center" Width="120"/>
-                        <TextBox Text="{Binding Settings.FFmpegPath}" 
-                                 Width="300" 
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="False"/>
-                        <Button Content="Browse..." 
-                                Width="80"
-                                Command="{Binding BrowseForFFmpegFile}"/>
-                    </StackPanel>
-                    <TextBlock Text="FFmpeg is also required for audio normalization features." 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,5,0,10"/>
-                    
                     <Separator Margin="0,10"/>
                     
                     <CheckBox Content="Use cookies from browser (Firefox)"

@@ -105,28 +105,50 @@ namespace UniPlaySong.Menus
 
                             // Step 2: Select album (with loop to allow going back from song selection)
                             Album album = null;
+                            bool backToSourceFromAlbum = false;
                             while (true)
                             {
                                 LogDebug($"Showing album selection dialog for source: {source}");
                                 album = _dialogService.ShowAlbumSelectionDialog(game, source);
-                                if (album == null)
+
+                                // Check if user pressed Back button (return to source selection)
+                                if (Album.IsBackSignal(album))
                                 {
-                                    _logger.Info("User cancelled album selection or pressed back - allowing source re-selection");
+                                    _logger.Info("User pressed back in album selection - returning to source selection");
+                                    backToSourceFromAlbum = true;
                                     break; // Break inner loop to re-select source
                                 }
-                            
+
+                                // Check if user cancelled (exit entirely)
+                                if (album == null)
+                                {
+                                    _logger.Info("User cancelled album selection");
+                                    return; // Exit function entirely
+                                }
+
                                 _logger.Info($"User selected album: {album.Name} (ID: {album.Id})");
 
                                 // Step 3: Select songs and download (handled inline in dialog)
                                 var songs = _dialogService.ShowSongSelectionDialog(game, album);
-                                // Downloads are now handled inline in the dialog
-                                // Dialog returns empty list - downloads happen within the dialog
-                                // User can close dialog after download completes
+
+                                // If songs is null, user pressed Back - loop to re-select album
+                                if (songs == null)
+                                {
+                                    _logger.Info("User pressed back in song selection - returning to album selection");
+                                    continue; // Continue inner loop to re-select album
+                                }
+
+                                // Downloads are handled inline in the dialog
+                                // Empty list means user completed download or cancelled
                                 return; // Exit function after dialog closes
                             }
-                            
-                            // If we get here, user pressed back in album selection - break to re-select source
-                            break;
+
+                            // If backToSourceFromAlbum is true, continue outer loop to re-select source
+                            if (!backToSourceFromAlbum)
+                            {
+                                return; // User cancelled, exit entirely
+                            }
+                            // Otherwise continue to next iteration of outer while(true) loop
                         }
                     },
                     context: $"downloading music for '{game?.Name}'",
@@ -165,28 +187,50 @@ namespace UniPlaySong.Menus
 
                         // Step 2: Select album (with loop to allow going back from song selection)
                         Album album = null;
+                        bool backToSourceFromAlbum = false;
                         while (true)
                         {
                             LogDebug($"Showing album selection dialog for source: {source}");
                             album = _dialogService.ShowAlbumSelectionDialog(game, source);
-                            if (album == null)
+
+                            // Check if user pressed Back button (return to source selection)
+                            if (Album.IsBackSignal(album))
                             {
-                                _logger.Info("User cancelled album selection or pressed back - allowing source re-selection");
+                                _logger.Info("User pressed back in album selection - returning to source selection");
+                                backToSourceFromAlbum = true;
                                 break; // Break inner loop to re-select source
                             }
-                        
+
+                            // Check if user cancelled (exit entirely)
+                            if (album == null)
+                            {
+                                _logger.Info("User cancelled album selection");
+                                return; // Exit function entirely
+                            }
+
                             _logger.Info($"User selected album: {album.Name} (ID: {album.Id})");
 
                             // Step 3: Select songs and download (handled inline in dialog)
                             var songs = _dialogService.ShowSongSelectionDialog(game, album);
-                            // Downloads are now handled inline in the dialog
-                            // Dialog returns empty list - downloads happen within the dialog
-                            // User can close dialog after download completes
+
+                            // If songs is null, user pressed Back - loop to re-select album
+                            if (songs == null)
+                            {
+                                _logger.Info("User pressed back in song selection - returning to album selection");
+                                continue; // Continue inner loop to re-select album
+                            }
+
+                            // Downloads are handled inline in the dialog
+                            // Empty list means user completed download or cancelled
                             return; // Exit function after dialog closes
                         }
-                        
-                        // If we get here, user pressed back in album selection - break to re-select source
-                        break;
+
+                        // If backToSourceFromAlbum is true, continue outer loop to re-select source
+                        if (!backToSourceFromAlbum)
+                        {
+                            return; // User cancelled, exit entirely
+                        }
+                        // Otherwise continue to next iteration of outer while(true) loop
                     }
                 }
                 catch (Exception ex)

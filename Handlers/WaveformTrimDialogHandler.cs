@@ -81,7 +81,7 @@ namespace UniPlaySong.Handlers
                     LogDebug("FFmpeg validation failed");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for precise trimming.\n\n" +
-                        "Please configure FFmpeg path in Settings → Downloads.",
+                        "Please configure FFmpeg path in Settings → Audio Normalization.",
                         "FFmpeg Not Found");
                     return;
                 }
@@ -166,7 +166,7 @@ namespace UniPlaySong.Handlers
                     LogDebug("FFmpeg validation failed");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for precise trimming.\n\n" +
-                        "Please configure FFmpeg path in Settings → Downloads.",
+                        "Please configure FFmpeg path in Settings → Audio Normalization.",
                         "FFmpeg Not Found");
                     return;
                 }

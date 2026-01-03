@@ -68,10 +68,6 @@ namespace UniPlaySong.Views
                     ProgressText.Text = $"{progress.CurrentIndex} / {progress.TotalFiles} files";
                 }
 
-                // Update statistics
-                SuccessCountText.Text = progress.SuccessCount.ToString();
-                FailureCountText.Text = progress.FailureCount.ToString();
-
                 // Add status message
                 if (!string.IsNullOrEmpty(progress.Status) && !progress.Status.Contains("Preparing") && !progress.Status.Contains("Initializing"))
                 {

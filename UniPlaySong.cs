@@ -252,6 +252,7 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
+                Application.Current.MainWindow.IsVisibleChanged += OnWindowVisibilityChanged;
             }
         }
 
@@ -509,6 +510,7 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
+                Application.Current.MainWindow.IsVisibleChanged -= OnWindowVisibilityChanged;
             }
 
             // Remove plugin instance registration
@@ -728,6 +730,30 @@ namespace UniPlaySong
                         _fileLogger?.Debug("OnWindowStateChanged: Window minimized - pausing music");
                         _playbackService?.Pause();
                         break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles window visibility changes (show/hide in system tray).
+        /// Pauses music when hidden in system tray if PauseWhenInSystemTray is enabled.
+        /// </summary>
+        private void OnWindowVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            var isVisible = (bool)e.NewValue;
+            _fileLogger?.Debug($"OnWindowVisibilityChanged - IsVisible: {isVisible}, PauseWhenInSystemTray: {_settings?.PauseWhenInSystemTray}");
+
+            if (_settings?.PauseWhenInSystemTray == true)
+            {
+                if (isVisible)
+                {
+                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window visible - resuming music");
+                    ResumeAfterPause();
+                }
+                else
+                {
+                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window hidden (system tray) - pausing music");
+                    _playbackService?.Pause();
                 }
             }
         }
@@ -2136,6 +2162,7 @@ namespace UniPlaySong
                 currentSettings.PauseOnTrailer = defaultSettings.PauseOnTrailer;
                 currentSettings.PauseOnFocusLoss = defaultSettings.PauseOnFocusLoss;
                 currentSettings.PauseOnMinimize = defaultSettings.PauseOnMinimize;
+                currentSettings.PauseWhenInSystemTray = defaultSettings.PauseWhenInSystemTray;
 
                 // Default music settings
                 currentSettings.EnableDefaultMusic = defaultSettings.EnableDefaultMusic;

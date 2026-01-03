@@ -164,7 +164,7 @@ namespace UniPlaySong.Services
             window.Height = 400;
             window.Width = 600;
             window.Title = "Select Download Source";
-            window.ShowInTaskbar = false;
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps in Desktop mode
 
             // Set background color for fullscreen mode (fixes transparency issue)
@@ -310,7 +310,7 @@ namespace UniPlaySong.Services
                     window.Height = 600;
                     window.Width = 800;
                     window.Title = $"Find Music for: {game.Name}";
-                    window.ShowInTaskbar = false;
+                    window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
                     window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
 
                     // Set background color for fullscreen mode
@@ -460,7 +460,7 @@ namespace UniPlaySong.Services
                     window.Height = 500;
                     window.Width = 700;
                     window.Title = $"Select Album for {game.Name}";
-                    window.ShowInTaskbar = false; // Important for fullscreen mode
+                    window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
                     window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps
 
                     // Set background color for fullscreen mode (fixes transparency issue)
@@ -536,12 +536,11 @@ namespace UniPlaySong.Services
                     });
 
                     // Enable back button for album selection (allows going back to source selection)
-                    // Note: The back button will close the dialog with DialogResult=false,
-                    // which will be handled by GameMenuHandler to allow re-selecting source
                     viewModel.ShowBackButton = true;
                     viewModel.BackCommand = new Common.RelayCommand(() =>
                     {
                         viewModel.CleanupPreviewFiles(); // Clean up preview files before closing
+                        viewModel.BackWasPressed = true; // Signal that user wants to go back to source selection
                         window.DialogResult = false;
                         window.Close();
                     });
@@ -576,6 +575,13 @@ namespace UniPlaySong.Services
                             LogDebug("No album selected from dialog");
                         }
                         return album;
+                    }
+
+                    // Return BackSignal when Back is pressed - signals caller to go back to source selection
+                    if (viewModel.BackWasPressed)
+                    {
+                        LogDebug("Album selection dialog: user pressed back - returning to source selection");
+                        return Album.BackSignal;
                     }
 
                     LogDebug("Album selection dialog cancelled");
@@ -616,7 +622,7 @@ namespace UniPlaySong.Services
             window.Height = 500;
             window.Width = 700;
             window.Title = $"Select Songs from {album.Name}";
-            window.ShowInTaskbar = false; // Important for fullscreen mode
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode to avoid blocking other apps
             
             // Set background color for fullscreen mode (fixes transparency issue)
@@ -670,6 +676,7 @@ namespace UniPlaySong.Services
             viewModel.BackCommand = new Common.RelayCommand(() =>
             {
                 viewModel.CleanupPreviewFiles(); // Clean up preview files before closing
+                viewModel.BackWasPressed = true; // Signal that user wants to go back, not cancel entirely
                 window.DialogResult = false;
                 window.Close();
             });
@@ -730,8 +737,15 @@ namespace UniPlaySong.Services
             };
 
             var result = window.ShowDialog();
-            // Return empty list - downloads are handled inline
-            // The old flow (returning songs for DownloadSongs) is replaced by inline downloads
+
+            // Return null when Back is pressed - signals caller to go back to album selection
+            if (viewModel.BackWasPressed)
+            {
+                LogDebug("Song selection dialog: user pressed back - returning to album selection");
+                return null;
+            }
+
+            // Return empty list for cancel/confirm/download complete - downloads are handled inline
             return new List<Song>();
         }
 
@@ -777,7 +791,7 @@ namespace UniPlaySong.Services
             window.Height = 500;
             window.Width = 700;
             window.Title = $"Select Songs from {album.Name}";
-            window.ShowInTaskbar = false;
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
@@ -1024,7 +1038,7 @@ namespace UniPlaySong.Services
             window.Height = 500;
             window.Width = 700;
             window.Title = $"Select Song for Default Music";
-            window.ShowInTaskbar = false;
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
@@ -1148,10 +1162,10 @@ namespace UniPlaySong.Services
 
             window.Height = 500;
             window.Width = 700;
-            window.Title = source == Source.KHInsider 
-                ? "Search for Game Soundtrack (Default Music)" 
+            window.Title = source == Source.KHInsider
+                ? "Search for Game Soundtrack (Default Music)"
                 : "Enter YouTube URL (Default Music)";
-            window.ShowInTaskbar = false;
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
 
@@ -1251,7 +1265,7 @@ namespace UniPlaySong.Services
             {
                 _playniteApi.Dialogs.ShowErrorMessage(
                     "FFmpeg is not configured or not found.\n\n" +
-                    "Please configure the FFmpeg path in UniPlaySong settings to use the Download From URL feature.",
+                    "Please configure the FFmpeg path in Settings → Audio Normalization (or Downloads tab) to use the Download From URL feature.",
                     "UniPlaySong - Configuration Required");
                 return;
             }
@@ -1277,7 +1291,7 @@ namespace UniPlaySong.Services
             window.Height = 380;
             window.Width = 580;
             window.Title = $"Download From URL - {game.Name}";
-            window.ShowInTaskbar = false;
+            window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode;
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
             window.ResizeMode = ResizeMode.NoResize;
@@ -1493,9 +1507,17 @@ namespace UniPlaySong.Services
                             // Link to Playnite's cancel token
                             progress.CancelToken.Register(() => cts.Cancel());
 
+                            // Track total for display (known upfront)
+                            int totalFiles = downloadedFiles.Count;
+                            int displayedIndex = 0;
+
                             var progressReporter = new Progress<Models.NormalizationProgress>(p =>
                             {
-                                progress.Text = $"Normalizing: {p.CurrentFile} ({p.CurrentIndex}/{p.TotalFiles})";
+                                // Use CurrentIndex if available, otherwise track completed count
+                                int currentIndex = p.CurrentIndex > 0 ? p.CurrentIndex : displayedIndex;
+                                if (p.CurrentIndex > displayedIndex) displayedIndex = p.CurrentIndex;
+
+                                progress.Text = $"Normalizing: {p.CurrentFile} ({currentIndex}/{totalFiles})";
                             });
 
                             // Run normalization synchronously within the progress dialog

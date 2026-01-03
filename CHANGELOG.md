@@ -2,6 +2,23 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.3] - 2026-01-02
+
+### Added
+- Pause music when in system tray: New option to pause music when Playnite is hidden in the system tray ([#27](https://github.com/aHuddini/UniPlaySong/issues/27))
+- Parallel bulk normalization: Audio normalization now processes up to 3 files in parallel for significantly faster bulk operations ([#25](https://github.com/aHuddini/UniPlaySong/issues/25))
+- Parallel bulk silence trimming: Silence trim operations also now process up to 3 files in parallel
+- Dialog windows now appear in Windows taskbar (Desktop mode): Easy to find dialogs when switching between applications ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
+
+### Changed
+- Simplified bulk normalization progress dialog by removing success/fail counters ([#26](https://github.com/aHuddini/UniPlaySong/issues/26))
+- FFmpeg path setting consolidated to Audio Normalization tab only (removed duplicate from Downloads tab) ([#30](https://github.com/aHuddini/UniPlaySong/issues/30))
+
+### Fixed
+- Normalization progress showing "0/0" after downloads ([#29](https://github.com/aHuddini/UniPlaySong/issues/29))
+- Dialog windows getting "lost" when switching to other programs in Desktop mode ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
+- Back button in Desktop download dialogs now properly navigates through the full flow (Song → Album → Source) instead of closing the dialog ([#31](https://github.com/aHuddini/UniPlaySong/issues/31))
+
 ## [1.1.2] - 2026-01-01
 
 ### Added

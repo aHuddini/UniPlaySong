@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -575,6 +576,81 @@ namespace UniPlaySong.Services
             }
         }
 
+        /// <summary>
+        /// Stops music playback if currently playing. Called once before bulk operations.
+        /// </summary>
+        private async Task StopPlaybackIfNeededAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (_playbackService != null && _playbackService.IsPlaying)
+                {
+                    Logger.Info("Stopping music playback before bulk trim");
+                    _playbackService.Stop();
+                    await Task.Delay(200, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, $"Error stopping playback before bulk trim: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Internal trim method for parallel processing - does NOT stop playback (caller handles that)
+        /// </summary>
+        private async Task<(bool success, string status)> TrimFileInternalAsync(
+            string filePath,
+            TrimSettings settings,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                Logger.Error($"File does not exist: {filePath}");
+                return (false, "Error: File not found");
+            }
+
+            var fileName = Path.GetFileName(filePath);
+
+            if (string.IsNullOrWhiteSpace(settings.FFmpegPath) || !ValidateFFmpegAvailable(settings.FFmpegPath))
+            {
+                Logger.Error($"FFmpeg not available at: {settings.FFmpegPath}");
+                return (false, "Error: FFmpeg not available");
+            }
+
+            try
+            {
+                // Step 1: Detect leading silence
+                var silenceEndTime = await DetectLeadingSilenceAsync(filePath, settings, cancellationToken);
+
+                // Step 2: Check if should skip
+                if (ShouldSkipFile(filePath, settings, silenceEndTime))
+                {
+                    var skipReason = IsFileAlreadyTrimmed(filePath, settings.TrimSuffix)
+                        ? "Skipped (already trimmed)"
+                        : silenceEndTime.HasValue && silenceEndTime.Value < settings.MinSilenceToTrim
+                            ? $"Skipped (silence too short: {silenceEndTime.Value:F3}s)"
+                            : "Skipped (no leading silence detected)";
+
+                    Logger.Info($"Skipping file: {fileName} - {skipReason}");
+                    return (false, skipReason);
+                }
+
+                // Step 3: Trim the file
+                var success = await ApplyTrimAsync(filePath, settings, silenceEndTime.Value, cancellationToken);
+                return (success, success ? "Completed" : "Failed");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Error trimming file: {filePath}");
+                return (false, $"Error: {ex.Message}");
+            }
+        }
+
         public async Task<NormalizationResult> TrimBulkAsync(
             IEnumerable<string> filePaths,
             TrimSettings settings,
@@ -590,83 +666,117 @@ namespace UniPlaySong.Services
                 return result;
             }
 
-            Logger.Info($"Starting bulk trim: {result.TotalFiles} files");
+            // Stop playback once before starting parallel processing
+            await StopPlaybackIfNeededAsync(cancellationToken);
 
-            for (int i = 0; i < files.Count; i++)
+            // Report initial progress
+            progress?.Report(new NormalizationProgress
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Logger.Info("Trim cancelled by user");
-                    break;
-                }
+                CurrentFile = "Starting...",
+                CurrentIndex = 0,
+                TotalFiles = files.Count,
+                Status = $"Processing {files.Count} files with parallel trimming..."
+            });
 
-                var filePath = files[i];
-                result.CurrentIndex = i + 1;
+            // Limit parallelism to avoid overwhelming the system (same as normalization)
+            int maxParallelism = Math.Min(Environment.ProcessorCount, 3);
+            Logger.Info($"Starting parallel bulk trim: {result.TotalFiles} files with max {maxParallelism} concurrent operations");
 
-                progress?.Report(new NormalizationProgress
-                {
-                    CurrentFile = Path.GetFileName(filePath),
-                    CurrentIndex = i + 1,
-                    TotalFiles = files.Count,
-                    SuccessCount = result.SuccessCount,
-                    FailureCount = result.FailureCount,
-                    Status = $"Processing {i + 1} of {files.Count}... ({result.SuccessCount} succeeded, {result.SkippedCount} skipped)"
-                });
+            var failedFiles = new ConcurrentBag<string>();
+            var skippedFiles = new ConcurrentBag<string>();
+            int successCount = 0;
+            int failureCount = 0;
+            int skippedCount = 0;
+            int completedCount = 0;
 
-                try
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = maxParallelism,
+                CancellationToken = cancellationToken
+            };
+
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(files, parallelOptions, (filePath, loopState) =>
                 {
-                    // Track last status to distinguish between skip and failure
-                    string lastStatus = null;
-                    var statusProgress = new Progress<NormalizationProgress>(p => lastStatus = p.Status);
-                    var combinedProgress = new Progress<NormalizationProgress>(p =>
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        lastStatus = p.Status;
-                        progress?.Report(p);
-                    });
-
-                    var success = await TrimFileAsync(filePath, settings, combinedProgress, cancellationToken);
-                    if (success)
-                    {
-                        result.SuccessCount++;
-                        Logger.Debug($"File trimmed successfully: {Path.GetFileName(filePath)}");
+                        loopState.Stop();
+                        return;
                     }
-                    else
+
+                    try
                     {
-                        // Check if it was a skip (status contains "Skipped") or a failure
-                        Logger.Debug($"File not trimmed - lastStatus: '{lastStatus}'");
-                        if (lastStatus != null && lastStatus.StartsWith("Skipped", StringComparison.OrdinalIgnoreCase))
+                        var fileName = Path.GetFileName(filePath);
+
+                        // Report progress for this file
+                        var currentCompleted = Interlocked.Increment(ref completedCount);
+                        progress?.Report(new NormalizationProgress
                         {
-                            result.SkippedCount++;
-                            result.SkippedFiles.Add(filePath);
-                            Logger.Debug($"Counted as skipped: {Path.GetFileName(filePath)}");
+                            CurrentFile = fileName,
+                            CurrentIndex = currentCompleted,
+                            TotalFiles = files.Count,
+                            SuccessCount = successCount,
+                            FailureCount = failureCount,
+                            Status = $"Trimming: {fileName}"
+                        });
+
+                        // Use internal method (synchronously wait for the async operation)
+                        var task = TrimFileInternalAsync(filePath, settings, cancellationToken);
+                        task.Wait(cancellationToken);
+                        var (success, status) = task.Result;
+
+                        if (success)
+                        {
+                            Interlocked.Increment(ref successCount);
+                            Logger.Debug($"File trimmed successfully: {fileName}");
+                        }
+                        else if (status != null && status.StartsWith("Skipped", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Interlocked.Increment(ref skippedCount);
+                            skippedFiles.Add(filePath);
+                            Logger.Debug($"File skipped: {fileName} - {status}");
                         }
                         else
                         {
-                            result.FailureCount++;
-                            result.FailedFiles.Add(filePath);
-                            Logger.Debug($"Counted as failed: {Path.GetFileName(filePath)}");
+                            Interlocked.Increment(ref failureCount);
+                            failedFiles.Add(filePath);
+                            Logger.Debug($"File failed: {fileName} - {status}");
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"Error in bulk trim for file: {filePath}");
-                    result.FailureCount++;
-                    result.FailedFiles.Add(filePath);
-                }
-            }
+                    catch (OperationCanceledException)
+                    {
+                        loopState.Stop();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"Error in parallel bulk trim for file: {filePath}");
+                        Interlocked.Increment(ref failureCount);
+                        failedFiles.Add(filePath);
+                    }
+                });
+            }, cancellationToken);
 
+            // Update result with final counts
+            result.SuccessCount = successCount;
+            result.FailureCount = failureCount;
+            result.SkippedCount = skippedCount;
+            result.FailedFiles = failedFiles.ToList();
+            result.SkippedFiles = skippedFiles.ToList();
+            result.CurrentIndex = completedCount;
             result.IsComplete = true;
+
             progress?.Report(new NormalizationProgress
             {
                 IsComplete = true,
+                CurrentIndex = completedCount,
                 TotalFiles = result.TotalFiles,
                 SuccessCount = result.SuccessCount,
                 FailureCount = result.FailureCount,
                 Status = $"Complete: {result.SuccessCount} succeeded, {result.SkippedCount} skipped, {result.FailureCount} failed"
             });
 
-            Logger.Info($"Bulk trim complete: {result.SuccessCount} succeeded, {result.SkippedCount} skipped, {result.FailureCount} failed");
+            Logger.Info($"Parallel bulk trim complete: {result.SuccessCount} succeeded, {result.SkippedCount} skipped, {result.FailureCount} failed");
             return result;
         }
     }

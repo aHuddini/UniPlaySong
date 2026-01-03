@@ -23,6 +23,7 @@ namespace UniPlaySong
         private bool enableDebugLogging = false;
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
+        private bool pauseWhenInSystemTray = true;
 
         public bool EnableMusic
         {
@@ -204,13 +205,23 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Pause music when Playnite is minimized to taskbar or system tray.
+        /// Pause music when Playnite is minimized to taskbar.
         /// Music will resume when Playnite is restored.
         /// </summary>
         public bool PauseOnMinimize
         {
             get => pauseOnMinimize;
             set { pauseOnMinimize = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Pause music when Playnite is hidden in the system tray.
+        /// Music will resume when Playnite is restored from the tray.
+        /// </summary>
+        public bool PauseWhenInSystemTray
+        {
+            get => pauseWhenInSystemTray;
+            set { pauseWhenInSystemTray = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

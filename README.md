@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,42 +12,26 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## What's New - v1.1.2
+## What's New - v1.1.3
 
-### Precise Trim (Waveform Editor)
-Visual audio trimming with interactive waveform display - works with mouse or Xbox controller
+### Pause When in System Tray
+- Music now pauses when Playnite is hidden in the system tray
+- Prevents music from playing on startup when Playnite launches minimized
+- Configurable in General settings (enabled by default)
 
-- Select exact start/end points on the audio waveform
-- Full controller support for fullscreen mode
-- Desktop mode with draggable markers
-- Preview before applying changes
-- Original files automatically backed up
+### Performance Boost: Parallel Processing
+- Bulk Audio normalization now processes up to 3 files simultaneously (instead of 1 file at a time)
+- Silence trimming also uses parallel processing for bulk operations
+- Significantly faster bulk operations
 
-### Cleanup & Maintenance Tools
-New settings tab for maintenance and troubleshooting:
-- View storage usage information
-- Reset settings or delete all music
-- Factory reset with safety confirmations
+### UI/UX Improvements
+- Dialog windows now appear in your Windows taskbar (Desktop Mode)
+- Back button in download dialogs now properly navigates through the full flow (Song → Album → Source)
+- Required FFmpeg filepath now set in Audio Normalization tab only
+- Fixed auto-normalize progress display after downloads
 
-### Smart Auto-Download
-- Automatically download music for new games added to your library
-- Intelligent music selection with multiple source fallbacks
-- Configurable in Downloads settings
-
-> **Note**: Auto-download works for most games but may miss some due to music availability. Use manual search for any games that were skipped.
-
-### Bulk Operations
-- Download music for your entire game library
-- Auto-normalize downloaded files
-- Progress tracking with cancellation support
-
-### Audio Repair Tools
-- Fix audio files that won't play properly
-- Re-encode files to standard format
-- Works on individual files or folders
-
-### Previous Version
-- **v1.1.1**: Individual song processing, Open Preserved Folder button
+### Previous Versions
+- **v1.1.2**: Precise Trim waveform editor, Cleanup tools, Auto-download, Bulk operations, Audio repair
 
 ---
 
