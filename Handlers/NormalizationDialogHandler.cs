@@ -17,7 +17,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class NormalizationDialogHandler
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly INormalizationService _normalizationService;
@@ -98,7 +98,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in NormalizeAllMusicFiles");
+                Logger.Error(ex, "Error in NormalizeAllMusicFiles");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting normalization: {ex.Message}", "Normalization Error");
             }
         }
@@ -184,7 +184,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in NormalizeSelectedGames");
+                Logger.Error(ex, "Error in NormalizeSelectedGames");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting normalization: {ex.Message}", "Normalization Error");
             }
         }
@@ -240,7 +240,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in NormalizeSingleFile");
+                Logger.Error(ex, "Error in NormalizeSingleFile");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting normalization: {ex.Message}", "Normalization Error");
             }
         }
@@ -340,7 +340,7 @@ namespace UniPlaySong.Handlers
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Error during normalization");
+                        Logger.Error(ex, "Error during normalization");
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             window.Close();
@@ -354,7 +354,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing normalization progress dialog");
+                Logger.Error(ex, "Error showing normalization progress dialog");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Normalization Error");
             }
         }
@@ -392,14 +392,14 @@ namespace UniPlaySong.Handlers
                     Directory.Delete(preservedOriginalsDir, true);
                     Directory.CreateDirectory(preservedOriginalsDir); // Recreate empty directory
 
-                    logger.Info($"Deleted {fileCount} files from PreservedOriginals folder");
+                    Logger.Info($"Deleted {fileCount} files from PreservedOriginals folder");
                     _playniteApi.Dialogs.ShowMessage(
                         $"Successfully deleted {fileCount} preserved original file(s).\n\nDisk space has been freed.",
                         "Deletion Complete");
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, $"Error deleting PreservedOriginals folder contents");
+                    Logger.Error(ex, $"Error deleting PreservedOriginals folder contents");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         $"Error deleting preserved originals: {ex.Message}",
                         "Deletion Error");
@@ -407,7 +407,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in DeletePreservedOriginals");
+                Logger.Error(ex, "Error in DeletePreservedOriginals");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Delete Preserved Originals Error");
             }
         }
@@ -444,7 +444,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in RestoreNormalizedFiles");
+                Logger.Error(ex, "Error in RestoreNormalizedFiles");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting restore: {ex.Message}", "Restore Error");
             }
         }
@@ -520,7 +520,7 @@ namespace UniPlaySong.Handlers
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Error during restore");
+                        Logger.Error(ex, "Error during restore");
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             _playniteApi.Dialogs.ShowErrorMessage($"Error during restore: {ex.Message}", "Restore Error");
@@ -533,7 +533,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing restore progress dialog");
+                Logger.Error(ex, "Error showing restore progress dialog");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Restore Error");
             }
         }
@@ -547,7 +547,7 @@ namespace UniPlaySong.Handlers
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    logger.Info($"Stopping music playback before {context}");
+                    Logger.Info($"Stopping music playback before {context}");
                     _playbackService.Stop();
 
                     // Give a moment for files to be released
@@ -556,7 +556,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Warn(ex, $"Error stopping playback before {context}");
+                Logger.Warn(ex, $"Error stopping playback before {context}");
             }
         }
 

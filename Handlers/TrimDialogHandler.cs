@@ -17,7 +17,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class TrimDialogHandler
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly ITrimService _trimService;
@@ -98,7 +98,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in TrimAllMusicFiles");
+                Logger.Error(ex, "Error in TrimAllMusicFiles");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
             }
         }
@@ -184,7 +184,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in TrimSelectedGames");
+                Logger.Error(ex, "Error in TrimSelectedGames");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
             }
         }
@@ -240,7 +240,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in TrimSingleFile");
+                Logger.Error(ex, "Error in TrimSingleFile");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error starting trim: {ex.Message}", "Trim Error");
             }
         }
@@ -359,7 +359,7 @@ namespace UniPlaySong.Handlers
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Error during trim");
+                        Logger.Error(ex, "Error during trim");
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             window.Close();
@@ -373,7 +373,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing trim progress dialog");
+                Logger.Error(ex, "Error showing trim progress dialog");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Trim Error");
             }
         }
@@ -387,7 +387,7 @@ namespace UniPlaySong.Handlers
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    logger.Info($"Stopping music playback before {context}");
+                    Logger.Info($"Stopping music playback before {context}");
                     _playbackService.Stop();
 
                     // Give a moment for files to be released
@@ -396,7 +396,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Warn(ex, $"Error stopping playback before {context}");
+                Logger.Warn(ex, $"Error stopping playback before {context}");
             }
         }
 

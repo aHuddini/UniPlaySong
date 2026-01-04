@@ -12,7 +12,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class WaveformTrimDialogHandler
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         /// <summary>
         /// Logs a debug message only if debug logging is enabled in settings.
@@ -21,7 +21,7 @@ namespace UniPlaySong.Handlers
         {
             if (FileLogger.IsDebugLoggingEnabled)
             {
-                logger.Debug($"[PreciseTrim] {message}");
+                Logger.Debug($"[PreciseTrim] {message}");
             }
         }
 
@@ -123,7 +123,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing precise trim dialog");
+                Logger.Error(ex, "Error showing precise trim dialog");
                 _playniteApi.Dialogs.ShowErrorMessage(
                     $"Error opening precise trim dialog: {ex.Message}",
                     "Precise Trim Error");
@@ -201,7 +201,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing controller precise trim dialog");
+                Logger.Error(ex, "Error showing controller precise trim dialog");
                 _playniteApi.Dialogs.ShowErrorMessage(
                     $"Error opening precise trim dialog: {ex.Message}",
                     "Precise Trim Error");

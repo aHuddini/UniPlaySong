@@ -16,7 +16,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class ControllerDialogHandler
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly GameMusicFileService _fileService;
@@ -45,7 +45,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ShowControllerSetPrimarySong called for game: {game?.Name}");
+                Logger.Debug($"ShowControllerSetPrimarySong called for game: {game?.Name}");
 
                 var filePickerDialog = new Views.ControllerFilePickerDialog();
                 var window = DialogHelper.CreateStandardDialog(
@@ -62,7 +62,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing controller set primary song dialog");
+                Logger.Error(ex, "Error showing controller set primary song dialog");
                 _playniteApi.Dialogs.ShowErrorMessage("Failed to open primary song selector.", "UniPlaySong");
             }
         }
@@ -74,7 +74,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ClearPrimarySong called for game: {game?.Name}");
+                Logger.Debug($"ClearPrimarySong called for game: {game?.Name}");
 
                 // Check if there is a primary song to remove
                 var currentPrimary = _fileService?.GetPrimarySong(game);
@@ -95,11 +95,11 @@ namespace UniPlaySong.Handlers
                     $"Primary song cleared:\n{fileName}\n\nSong selection will be randomized on application startup.",
                     "UniPlaySong");
 
-                logger.Info($"Cleared primary song for game '{game?.Name}': {fileName}");
+                Logger.Info($"Cleared primary song for game '{game?.Name}': {fileName}");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error clearing primary song");
+                Logger.Error(ex, "Error clearing primary song");
                 _playniteApi.Dialogs.ShowErrorMessage($"Failed to clear primary song: {ex.Message}", "UniPlaySong");
             }
         }
@@ -111,7 +111,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ShowControllerDeleteSongs called for game: {game?.Name}");
+                Logger.Debug($"ShowControllerDeleteSongs called for game: {game?.Name}");
 
                 // Check if there are any songs to delete
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
@@ -136,7 +136,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing controller delete songs dialog");
+                Logger.Error(ex, "Error showing controller delete songs dialog");
                 _playniteApi.Dialogs.ShowErrorMessage("Failed to open song deletion dialog.", "UniPlaySong");
             }
         }
@@ -148,7 +148,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Info($"Opening controller download dialog for game: {game?.Name}");
+                Logger.Info($"Opening controller download dialog for game: {game?.Name}");
 
                 var controllerDialog = new Views.SimpleControllerDialog();
                 var window = DialogHelper.CreateDialog(_playniteApi, controllerDialog, new DialogHelper.DialogOptions
@@ -179,7 +179,7 @@ namespace UniPlaySong.Handlers
                 // Handle window closing to prevent focus loss and dark overlay
                 window.Closing += (s, e) =>
                 {
-                    logger.Debug("Controller dialog window closing");
+                    Logger.Debug("Controller dialog window closing");
                     DialogHelper.ReturnFocusToMainWindow(_playniteApi, "controller download dialog close");
                 };
 
@@ -187,7 +187,7 @@ namespace UniPlaySong.Handlers
                 {
                     try
                     {
-                        logger.Debug("Controller dialog window closed");
+                        Logger.Debug("Controller dialog window closed");
 
                         // Additional focus restoration after window is fully closed
                         Task.Delay(50).ContinueWith(_ =>
@@ -206,23 +206,23 @@ namespace UniPlaySong.Handlers
                             }
                             catch (Exception delayEx)
                             {
-                                logger.Debug(delayEx, "Error in delayed focus restoration");
+                                Logger.Debug(delayEx, "Error in delayed focus restoration");
                             }
                         });
                     }
                     catch (Exception ex)
                     {
-                        logger.Debug(ex, "Error in window closed handler");
+                        Logger.Debug(ex, "Error in window closed handler");
                     }
                 };
 
                 var result = window.ShowDialog();
 
-                logger.Info($"Controller download dialog completed with result: {result}");
+                Logger.Info($"Controller download dialog completed with result: {result}");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing controller download dialog");
+                Logger.Error(ex, "Error showing controller download dialog");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error showing download dialog: {ex.Message}", "Download Dialog Error");
             }
         }
@@ -234,7 +234,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ShowNormalizeIndividualSong called for game: {game?.Name}");
+                Logger.Debug($"ShowNormalizeIndividualSong called for game: {game?.Name}");
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
@@ -259,7 +259,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing normalize individual song dialog");
+                Logger.Error(ex, "Error showing normalize individual song dialog");
                 _playniteApi.Dialogs.ShowErrorMessage("Failed to open song selector.", "UniPlaySong");
             }
         }
@@ -271,7 +271,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ShowTrimIndividualSong called for game: {game?.Name}");
+                Logger.Debug($"ShowTrimIndividualSong called for game: {game?.Name}");
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
@@ -296,7 +296,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing trim individual song dialog");
+                Logger.Error(ex, "Error showing trim individual song dialog");
                 _playniteApi.Dialogs.ShowErrorMessage("Failed to open song selector.", "UniPlaySong");
             }
         }
@@ -308,7 +308,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                logger.Debug($"ShowRepairIndividualSong called for game: {game?.Name}");
+                Logger.Debug($"ShowRepairIndividualSong called for game: {game?.Name}");
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
@@ -333,7 +333,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing repair individual song dialog");
+                Logger.Error(ex, "Error showing repair individual song dialog");
                 _playniteApi.Dialogs.ShowErrorMessage("Failed to open song selector.", "UniPlaySong");
             }
         }

@@ -12,13 +12,13 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class AmplifyDialogHandler
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         private static void LogDebug(string message)
         {
             if (FileLogger.IsDebugLoggingEnabled)
             {
-                logger.Debug($"[Amplify] {message}");
+                Logger.Debug($"[Amplify] {message}");
             }
         }
 
@@ -118,7 +118,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing amplify dialog");
+                Logger.Error(ex, "Error showing amplify dialog");
                 _playniteApi.Dialogs.ShowErrorMessage(
                     $"Error opening amplify dialog: {ex.Message}",
                     "Amplify Error");
@@ -194,7 +194,7 @@ namespace UniPlaySong.Handlers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing controller amplify dialog");
+                Logger.Error(ex, "Error showing controller amplify dialog");
                 _playniteApi.Dialogs.ShowErrorMessage(
                     $"Error opening amplify dialog: {ex.Message}",
                     "Amplify Error");

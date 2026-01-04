@@ -31,7 +31,7 @@ namespace UniPlaySong
     /// </summary>
     public class UniPlaySong : GenericPlugin
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = LogManager.GetLogger();
         private readonly IPlayniteAPI _api;
         private readonly FileLogger _fileLogger;
         
@@ -63,7 +63,7 @@ namespace UniPlaySong
                     string dllPath = Path.Combine(extensionPath, $"{assemblyName}.dll");
                     if (File.Exists(dllPath))
                     {
-                        logger?.Info($"Resolving assembly {assemblyName} from {dllPath}");
+                        Logger?.Info($"Resolving assembly {assemblyName} from {dllPath}");
                         return Assembly.LoadFrom(dllPath);
                     }
                     
@@ -71,13 +71,13 @@ namespace UniPlaySong
                     string exePath = Path.Combine(extensionPath, $"{assemblyName}.exe");
                     if (File.Exists(exePath))
                     {
-                        logger?.Info($"Resolving assembly {assemblyName} from {exePath}");
+                        Logger?.Info($"Resolving assembly {assemblyName} from {exePath}");
                         return Assembly.LoadFrom(exePath);
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger?.Error(ex, $"Error resolving assembly {args.Name}");
+                    Logger?.Error(ex, $"Error resolving assembly {args.Name}");
                 }
                 
                 return null;
@@ -138,7 +138,7 @@ namespace UniPlaySong
 
             Properties = new GenericPluginProperties { HasSettings = true };
 
-            _settingsService = new SettingsService(_api, logger, _fileLogger, this);
+            _settingsService = new SettingsService(_api, Logger, _fileLogger, this);
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
 
             // Wire up debug logging setting to FileLogger (both instance and global static)
@@ -194,7 +194,7 @@ namespace UniPlaySong
             }
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            logger.Info($"UniPlaySong v{assemblyVersion} loaded");
+            Logger.Info($"UniPlaySong v{assemblyVersion} loaded");
         }
 
         #region Playnite Events
@@ -328,7 +328,7 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 _fileLogger?.Error($"OnLibraryUpdated: Error - {ex.Message}", ex);
-                logger.Error(ex, "Error in OnLibraryUpdated");
+                Logger.Error(ex, "Error in OnLibraryUpdated");
             }
         }
 
@@ -654,7 +654,7 @@ namespace UniPlaySong
                         _downloadManager = new DownloadManager(
                             _httpClient, _htmlWeb, tempPath,
                             e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, e.NewSettings);
-                        logger.Info("DownloadManager recreated with updated download settings");
+                        Logger.Info("DownloadManager recreated with updated download settings");
                     }
                 }
                 
@@ -668,11 +668,11 @@ namespace UniPlaySong
                     e.NewSettings.PropertyChanged += OnSettingsChanged;
                 }
                 
-                logger.Info("SettingsService: Settings updated and services notified");
+                Logger.Info("SettingsService: Settings updated and services notified");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error handling settings change");
+                Logger.Error(ex, "Error handling settings change");
             }
         }
 
@@ -718,11 +718,11 @@ namespace UniPlaySong
                     }
                 }
 
-                logger.Info("Settings saved and reloaded via SettingsService");
+                Logger.Info("Settings saved and reloaded via SettingsService");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error reloading settings");
+                Logger.Error(ex, "Error reloading settings");
             }
         }
 
@@ -857,7 +857,7 @@ namespace UniPlaySong
             var tempPath = Path.Combine(basePath, Constants.TempFolderName);
 
             // Initialize error handler service (for centralized error handling)
-            _errorHandler = new ErrorHandlerService(logger, _fileLogger, _api);
+            _errorHandler = new ErrorHandlerService(Logger, _fileLogger, _api);
 
             _fileService = new GameMusicFileService(gamesPath, _errorHandler);
 
@@ -866,11 +866,11 @@ namespace UniPlaySong
             try
             {
                 musicPlayer = new SDL2MusicPlayer(_errorHandler);
-                logger.Info("Initialized SDL2MusicPlayer");
+                Logger.Info("Initialized SDL2MusicPlayer");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
+                Logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
                 musicPlayer = new MusicPlayer(_errorHandler);
             }
 
@@ -899,7 +899,7 @@ namespace UniPlaySong
             _coordinator = new MusicPlaybackCoordinator(
                 _playbackService,
                 _settingsService,
-                logger,
+                Logger,
                 _fileLogger,
                 () => IsFullscreen,
                 () => IsDesktop,
@@ -960,7 +960,7 @@ namespace UniPlaySong
         private void InitializeMenuHandlers()
         {
             _gameMenuHandler = new GameMenuHandler(
-                _api, logger, _downloadManager, _fileService,
+                _api, Logger, _downloadManager, _fileService,
                 _playbackService, _downloadDialogService, _errorHandler,
                 _repairService, () => _settings);
             _mainMenuHandler = new MainMenuHandler(_api, Id);
@@ -1286,7 +1286,7 @@ namespace UniPlaySong
         private void RepairSingleFileWithProgress(Game game, string filePath, string ffmpegPath)
         {
             var fileName = System.IO.Path.GetFileName(filePath);
-            logger.Info($"Starting audio repair for: {fileName}");
+            Logger.Info($"Starting audio repair for: {fileName}");
 
             var progressTitle = "UniPlaySong - Repairing Audio";
             var progressOptions = new GlobalProgressOptions(progressTitle, false)
@@ -1340,7 +1340,7 @@ namespace UniPlaySong
                     "The repaired file should now play correctly.",
                     "UniPlaySong - Repair Complete");
 
-                logger.Info($"Audio repair completed successfully for: {fileName}");
+                Logger.Info($"Audio repair completed successfully for: {fileName}");
             }
             else
             {
@@ -1350,7 +1350,7 @@ namespace UniPlaySong
                     "Check the logs for more details.",
                     "UniPlaySong - Repair Failed");
 
-                logger.Error($"Audio repair failed for: {fileName}");
+                Logger.Error($"Audio repair failed for: {fileName}");
             }
         }
 
@@ -1422,7 +1422,7 @@ namespace UniPlaySong
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Error during migration");
+                        Logger.Error(ex, "Error during migration");
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"Error during migration: {ex.Message}", "Migration Error");
@@ -1435,7 +1435,7 @@ namespace UniPlaySong
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing migration progress dialog");
+                Logger.Error(ex, "Error showing migration progress dialog");
                 PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Migration Error");
             }
         }
@@ -1487,7 +1487,7 @@ namespace UniPlaySong
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Error during tag scan");
+                        Logger.Error(ex, "Error during tag scan");
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             _api.Dialogs.ShowErrorMessage($"Error during scan: {ex.Message}", "Scan Error");
@@ -1497,7 +1497,7 @@ namespace UniPlaySong
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error showing tag scan progress");
+                Logger.Error(ex, "Error showing tag scan progress");
                 _api.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Scan Error");
             }
         }

@@ -33,38 +33,7 @@ namespace UniPlaySong.Services
 
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
-            if (string.IsNullOrWhiteSpace(ffmpegPath) || !File.Exists(ffmpegPath))
-            {
-                return false;
-            }
-
-            try
-            {
-                var processInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-version",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-
-                using (var process = Process.Start(processInfo))
-                {
-                    if (process != null)
-                    {
-                        process.WaitForExit(5000); // 5 second timeout
-                        return process.ExitCode == 0;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error validating FFmpeg");
-            }
-
-            return false;
+            return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
         /// <summary>

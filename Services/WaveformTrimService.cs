@@ -495,42 +495,9 @@ namespace UniPlaySong.Services
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
             LogDebug($"ValidateFFmpegAvailable - path: {ffmpegPath}");
-            if (string.IsNullOrWhiteSpace(ffmpegPath) || !File.Exists(ffmpegPath))
-            {
-                LogDebug($"FFmpeg validation failed: path empty or file not found");
-                return false;
-            }
-
-            try
-            {
-                var processInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-version",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-
-                using (var process = Process.Start(processInfo))
-                {
-                    if (process != null)
-                    {
-                        process.WaitForExit(5000);
-                        var result = process.ExitCode == 0;
-                        LogDebug($"FFmpeg validation result: {result} (exit code: {process.ExitCode})");
-                        return result;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error validating FFmpeg");
-                LogDebug($"FFmpeg validation exception: {ex.Message}");
-            }
-
-            return false;
+            var result = FFmpegHelper.IsAvailable(ffmpegPath);
+            LogDebug($"FFmpeg validation result: {result}");
+            return result;
         }
 
         /// <summary>
