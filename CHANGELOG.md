@@ -2,9 +2,16 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.1.4] - 2026-01-03
+## [1.1.4] - 2026-01-04
 
 ### Added
+- **Amplify Audio** feature with waveform-based gain adjustment editor
+  - Visual waveform display with real-time gain preview
+  - Clipping indicator shows when gain would exceed 0dBFS
+  - Headroom display shows maximum safe gain
+  - Supports gain range of -12dB to +12dB in 0.5dB steps
+  - Controller-friendly version for Fullscreen mode (D-Pad Up/Down for fine adjustment, LB/RB for coarse)
+  - Original files preserved in PreservedOriginals folder
 - Repair Music Folder option in Fullscreen mode context menu
 - Repair Audio File option with controller-friendly file picker in Fullscreen mode
 - Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18)). Auto-tags on library update with manual "Scan & Tag All Games" button in settings

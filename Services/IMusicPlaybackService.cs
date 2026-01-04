@@ -82,6 +82,14 @@ namespace UniPlaySong.Services
         void LoadAndPlayFileFrom(string filePath, System.TimeSpan startFrom);
 
         /// <summary>
+        /// Plays a preview file at a specific volume using the same audio backend.
+        /// Stops current playback, loads the file, sets volume directly (no fading), and plays.
+        /// </summary>
+        /// <param name="filePath">Path to the audio file</param>
+        /// <param name="volume">Volume level (0.0 to 1.0)</param>
+        void PlayPreview(string filePath, double volume);
+
+        /// <summary>
         /// Event fired when music stops (for native music restoration)
         /// </summary>
         event System.Action<UniPlaySongSettings> OnMusicStopped;

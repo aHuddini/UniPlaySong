@@ -691,6 +691,59 @@ namespace UniPlaySong.Services
             }
         }
 
+        public void PlayPreview(string filePath, double volume)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                Logger.Warn($"[PlayPreview] Cannot load file: {filePath ?? "null"}");
+                return;
+            }
+
+            try
+            {
+                // Clamp volume to valid range
+                volume = Math.Max(0.0, Math.Min(1.0, volume));
+
+                Logger.Info($"[PlayPreview] START: {Path.GetFileName(filePath)} at volume {volume:F2}");
+
+                // CRITICAL: Cancel any ongoing fade operation first
+                // This prevents the fader from overriding our volume setting
+                _fader.CancelFade();
+                Logger.Info($"[PlayPreview] Fader cancelled");
+
+                // Stop current playback completely (no fading)
+                _musicPlayer.Stop();
+                _musicPlayer.Close();
+                Logger.Info($"[PlayPreview] Player stopped and closed");
+
+                // Load the file
+                _musicPlayer.Load(filePath);
+                Logger.Info($"[PlayPreview] File loaded");
+
+                // Set volume directly on the player (same SDL2 backend, same volume scale)
+                _musicPlayer.Volume = volume;
+                Logger.Info($"[PlayPreview] Volume set to {volume:F2}, player reports {_musicPlayer.Volume:F2}");
+
+                // Play immediately (no fading)
+                _musicPlayer.Play();
+                Logger.Info($"[PlayPreview] Play called, volume now {_musicPlayer.Volume:F2}");
+
+                // Update internal state to match what we just set
+                _targetVolume = volume;
+                ClearAllPauseSources();
+
+                Logger.Info($"[PlayPreview] COMPLETE: targetVolume={_targetVolume:F2}");
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(
+                    ex,
+                    context: "playing preview",
+                    showUserMessage: false
+                );
+            }
+        }
+
         /// <summary>
         /// Selects which song to play for the given game.
         /// Handles primary song selection, randomization, and default music continuation.

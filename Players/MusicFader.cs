@@ -340,6 +340,23 @@ namespace UniPlaySong.Players
             EnsureTimer();
         }
 
+        /// <summary>
+        /// Cancels any ongoing fade operation and stops the timer.
+        /// Used when setting volume directly (e.g., preview playback).
+        /// </summary>
+        public void CancelFade()
+        {
+            _fadeTimer?.Stop();
+            _isFadingOut = false;
+            _isPaused = false;
+            _pauseAction = null;
+            _stopAction = null;
+            _playAction = null;
+            _preloadAction = null;
+            _fadeStartTime = default;
+            _fadeOutStartVolume = 0.0;
+        }
+
         public void FadeOutAndStop(Action onComplete = null)
         {
             bool wasAlreadyFadingOut = _isFadingOut;

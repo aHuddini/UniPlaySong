@@ -103,6 +103,8 @@ namespace UniPlaySong
         private Services.AudioRepairService _repairService;
         private Services.MigrationService _migrationService;
         private Services.GameMusicTagService _tagService;
+        private Services.AudioAmplifyService _amplifyService;
+        private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
         private IMusicPlaybackCoordinator _coordinator;
         
         private UniPlaySongSettings _settings => _settingsService?.Current;
@@ -949,6 +951,10 @@ namespace UniPlaySong
 
             // Wire up tag service to download dialog service for post-download tag updates
             _downloadDialogService.SetTagService(_tagService);
+
+            // Initialize amplify service for audio volume adjustments
+            _amplifyService = new Services.AudioAmplifyService(_errorHandler, _playbackService, basePath);
+            _fileLogger?.Info("AudioAmplifyService initialized");
         }
 
         private void InitializeMenuHandlers()
@@ -966,6 +972,10 @@ namespace UniPlaySong
                 _api, _trimService, _playbackService, _fileService, () => _settings);
             _waveformTrimDialogHandler = new Handlers.WaveformTrimDialogHandler(
                 _api, () => _settings, _fileService, _playbackService, _waveformTrimService);
+
+            // Initialize amplify dialog handler (service initialized in InitializeServices)
+            _amplifyDialogHandler = new Handlers.AmplifyDialogHandler(
+                _api, () => _settings, _fileService, _playbackService, _amplifyService);
         }
 
         private void SubscribeToMainModel()
@@ -1666,6 +1676,13 @@ namespace UniPlaySong
 
                 items.Add(new GameMenuItem
                 {
+                    Description = "🎮 Amplify Audio",
+                    MenuSection = audioProcessingSection,
+                    Action = _ => _amplifyDialogHandler.ShowControllerAmplifyDialog(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
                     Description = "🎮 Repair Audio File",
                     MenuSection = audioProcessingSection,
                     Action = _ => _controllerDialogHandler.ShowRepairIndividualSong(game)
@@ -1797,12 +1814,19 @@ namespace UniPlaySong
                     Action = _ => _trimDialogHandler.TrimSelectedGames(new List<Game> { game })
                 });
 
-                // === Audio Editing Submenu (Precise Trim and Repair options) ===
+                // === Audio Editing Submenu (Precise Trim, Amplify, and Repair options) ===
                 items.Add(new GameMenuItem
                 {
                     Description = "Precise Trim",
                     MenuSection = audioEditingSection,
                     Action = _ => _waveformTrimDialogHandler.ShowPreciseTrimDialog(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
+                    Description = "Amplify Audio",
+                    MenuSection = audioEditingSection,
+                    Action = _ => _amplifyDialogHandler.ShowAmplifyDialog(game)
                 });
 
                 items.Add(new GameMenuItem

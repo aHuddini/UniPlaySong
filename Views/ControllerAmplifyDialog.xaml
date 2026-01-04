@@ -1,0 +1,352 @@
+<UserControl x:Class="UniPlaySong.Views.ControllerAmplifyDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900"
+             Focusable="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Controller-Optimized Styles -->
+            <Style x:Key="ControllerListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                <Setter Property="MinHeight" Value="60"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#2196F3"/>
+                        <Setter Property="BorderBrush" Value="#1976D2"/>
+                        <Setter Property="BorderThickness" Value="3"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
+                    <Trigger Property="IsFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="#FF9800"/>
+                        <Setter Property="BorderThickness" Value="4"/>
+                        <Setter Property="Background" Value="#FFF3E0"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ControllerButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="Height" Value="50"/>
+                <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="#1E1E1E"
+            BorderBrush="#424242"
+            BorderThickness="2"
+            CornerRadius="8"
+            Margin="8">
+        <Grid Margin="16">
+            <!-- Step 1: File Selection -->
+            <Grid Name="FileSelectionStep" Visibility="Visible">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- Title -->
+                    <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+                    <RowDefinition Height="*"/>     <!-- File List -->
+                    <RowDefinition Height="Auto"/>  <!-- Buttons -->
+                </Grid.RowDefinitions>
+
+                <!-- Title -->
+                <TextBlock Grid.Row="0"
+                           Name="FileSelectionTitle"
+                           Text="🎮 Amplify Audio - Select File"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Margin="0,0,0,12"
+                           HorizontalAlignment="Center"
+                           Foreground="#FFD700"/>
+
+                <!-- Controller Hint - File Selection -->
+                <Border Grid.Row="1"
+                        Background="#FFF8E1"
+                        BorderBrush="#FFD700"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F57C00"
+                                   Text="Step 1: Select a song to amplify"
+                                   TextAlignment="Center"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock FontSize="12"
+                                   Foreground="#F57C00"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap">
+                            <Run Text="🎮 D-Pad: Navigate • A: Select file • B: Cancel"/>
+                            <LineBreak/>
+                            <Run Text="🎮 LB/RB: Page through"/>
+                        </TextBlock>
+                        <TextBlock Name="FileSelectionFeedback"
+                                   FontSize="12"
+                                   Foreground="#FF9800"
+                                   TextAlignment="Center"
+                                   Margin="0,4,0,0"
+                                   Text="🎮 Loading music files..."
+                                   FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Music Files List -->
+                <ListBox Grid.Row="2"
+                         Name="FilesListBox"
+                         ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,16"
+                         MinHeight="200">
+                </ListBox>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="3"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <Button Name="CancelFileSelectionButton"
+                            Content="Cancel"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="CancelButton_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Step 2: Amplify Editor -->
+            <Grid Name="AmplifyEditorStep" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- Title + File Info -->
+                    <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
+                    <RowDefinition Height="*"/>     <!-- Waveform Canvas -->
+                    <RowDefinition Height="Auto"/>  <!-- Gain Display -->
+                    <RowDefinition Height="Auto"/>  <!-- Buttons -->
+                </Grid.RowDefinitions>
+
+                <!-- Title + File Info -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock Name="AmplifyTitle"
+                               Text="🎮 Amplify Audio - Adjust Gain"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="#FFD700"/>
+                    <TextBlock Name="CurrentFileText"
+                               FontSize="14"
+                               Foreground="#90CAF9"
+                               HorizontalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Controller Hint - Amplify Editor -->
+                <Border Grid.Row="1"
+                        Background="#FFF8E1"
+                        BorderBrush="#FFD700"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="12,6"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock FontSize="12"
+                                   Foreground="#F57C00"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap">
+                            <Run Text="🎮 D-Pad Up/Down: Adjust gain (+/- 0.5 dB)"/>
+                            <LineBreak/>
+                            <Run Text="🎮 LB/RB: Coarse adjustment (+/- 3 dB)"/>
+                            <LineBreak/>
+                            <Run Text="🎮 A: Preview • X: Apply • Y: Reset • B: Back"/>
+                        </TextBlock>
+                        <TextBlock Name="AmplifyFeedback"
+                                   FontSize="12"
+                                   Foreground="#FF9800"
+                                   TextAlignment="Center"
+                                   Margin="0,4,0,0"
+                                   Text="🎮 Adjust gain with D-Pad Up/Down"
+                                   FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Waveform Canvas -->
+                <Border Grid.Row="2"
+                        Background="#1a1a1a"
+                        BorderBrush="#424242"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Margin="0,0,0,8">
+                    <Grid>
+                        <Canvas Name="WaveformCanvas"
+                                ClipToBounds="True"
+                                SizeChanged="WaveformCanvas_SizeChanged">
+
+                            <!-- 0dB reference line -->
+                            <Line Name="CenterLine"
+                                  Stroke="#444"
+                                  StrokeThickness="1"
+                                  StrokeDashArray="4,2"/>
+
+                            <!-- Headroom line (max safe gain) -->
+                            <Line Name="HeadroomLine"
+                                  Stroke="#4CAF50"
+                                  StrokeThickness="1"
+                                  StrokeDashArray="2,2"
+                                  Visibility="Collapsed"/>
+
+                            <!-- Clipping region overlay -->
+                            <Polygon Name="ClippingRegion"
+                                     Fill="#40FF0000"
+                                     Stroke="#FF0000"
+                                     StrokeThickness="1"
+                                     Visibility="Collapsed"/>
+
+                            <!-- Original waveform (ghost) -->
+                            <Polyline Name="OriginalWaveformLine"
+                                      Stroke="#333"
+                                      StrokeThickness="1"/>
+
+                            <!-- Scaled waveform (shows amplified result) -->
+                            <Polyline Name="ScaledWaveformLine"
+                                      Stroke="#FFD700"
+                                      StrokeThickness="1"/>
+
+                            <!-- Gain line (horizontal indicator) -->
+                            <Line Name="GainLine"
+                                  Stroke="#FFD700"
+                                  StrokeThickness="3"/>
+
+                            <!-- Gain line handles -->
+                            <Ellipse Name="GainHandleLeft"
+                                     Width="16" Height="16"
+                                     Fill="#FFD700"
+                                     Stroke="#FFA500"
+                                     StrokeThickness="2"/>
+                            <Ellipse Name="GainHandleRight"
+                                     Width="16" Height="16"
+                                     Fill="#FFD700"
+                                     Stroke="#FFA500"
+                                     StrokeThickness="2"/>
+                        </Canvas>
+
+                        <!-- dB scale labels -->
+                        <StackPanel HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,8,0"
+                                    Width="45">
+                            <TextBlock Text="+12dB" Foreground="#666" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Text="+6dB" Foreground="#666" FontSize="11" HorizontalAlignment="Right" Margin="0,25,0,0"/>
+                            <TextBlock Text="0dB" Foreground="#4CAF50" FontSize="11" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,25,0,0"/>
+                            <TextBlock Text="-6dB" Foreground="#666" FontSize="11" HorizontalAlignment="Right" Margin="0,25,0,0"/>
+                            <TextBlock Text="-12dB" Foreground="#666" FontSize="11" HorizontalAlignment="Right" Margin="0,25,0,0"/>
+                        </StackPanel>
+
+                        <!-- Loading indicator -->
+                        <Border Name="LoadingOverlay"
+                                Background="#CC1E1E1E"
+                                Visibility="Collapsed">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True"
+                                             Width="200"
+                                             Height="4"
+                                             Foreground="#FFD700"/>
+                                <TextBlock Text="Loading waveform..."
+                                           Foreground="#90CAF9"
+                                           FontSize="14"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Gain Display -->
+                <Grid Grid.Row="3" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Peak + Headroom -->
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+                        <TextBlock Text="Peak Level" FontSize="11" Foreground="#90CAF9"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Name="PeakText"
+                                       Text="-0.0 dB"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#4CAF50"/>
+                            <TextBlock Text=" | Headroom: " FontSize="12" Foreground="#666" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            <TextBlock Name="HeadroomText"
+                                       Text="+0.0 dB"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4CAF50"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Current Gain (center, large) -->
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="Gain Adjustment" FontSize="11" Foreground="#FFC107" HorizontalAlignment="Center"/>
+                        <TextBlock Name="GainText"
+                                   Text="+0.0 dB"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="#FFD700"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Clipping Warning -->
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock Name="ClippingWarning"
+                                   Text="⚠ CLIPPING!"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#FF4444"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="4"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <Button Name="BackButton"
+                            Content="Back (B)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="BackButton_Click"/>
+                    <Button Name="ResetButton"
+                            Content="Reset (Y)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="ResetButton_Click"/>
+                    <Button Name="PreviewButton"
+                            Content="Preview (A)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Click="PreviewButton_Click"/>
+                    <Button Name="ApplyButton"
+                            Content="Apply (X)"
+                            Style="{StaticResource ControllerButtonStyle}"
+                            Background="#FFD700"
+                            Foreground="Black"
+                            Click="ApplyButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
