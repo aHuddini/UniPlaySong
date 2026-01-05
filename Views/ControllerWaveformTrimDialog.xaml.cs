@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using IOPath = System.IO.Path;
+using System.IO;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -209,7 +209,7 @@ namespace UniPlaySong.Views
             foreach (var filePath in _musicFiles)
             {
                 var listItem = new ListBoxItem();
-                var fileName = IOPath.GetFileName(filePath);
+                var fileName = Path.GetFileName(filePath);
 
                 var stackPanel = new StackPanel
                 {
@@ -273,7 +273,7 @@ namespace UniPlaySong.Views
             if (selectedItem?.Tag is string filePath)
             {
                 _selectedFilePath = filePath;
-                CurrentFileText.Text = IOPath.GetFileName(filePath);
+                CurrentFileText.Text = Path.GetFileName(filePath);
                 ShowWaveformEditorStep();
                 LoadWaveformAsync(filePath);
             }
@@ -904,7 +904,7 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
-                    var fileName = IOPath.GetFileName(_selectedFilePath);
+                    var fileName = Path.GetFileName(_selectedFilePath);
                     _playniteApi?.Dialogs?.ShowMessage(
                         $"Successfully trimmed: {fileName}\n\nOriginal file preserved in PreservedOriginals folder.",
                         "Trim Complete");

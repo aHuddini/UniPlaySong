@@ -8,7 +8,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Playnite.SDK;
-using IOPath = System.IO.Path;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
@@ -83,7 +82,7 @@ namespace UniPlaySong.Views
 
             foreach (var song in songs)
             {
-                var fileName = IOPath.GetFileName(song);
+                var fileName = Path.GetFileName(song);
                 FileComboBox.Items.Add(new ComboBoxItem
                 {
                     Content = fileName,
@@ -107,14 +106,14 @@ namespace UniPlaySong.Views
         {
             if (FileComboBox.SelectedItem is ComboBoxItem item && item.Tag is string filePath)
             {
-                LogDebug($"File selected: {IOPath.GetFileName(filePath)}");
+                LogDebug($"File selected: {Path.GetFileName(filePath)}");
                 await LoadWaveformAsync(filePath);
             }
         }
 
         private async Task LoadWaveformAsync(string filePath)
         {
-            LogDebug($"LoadWaveformAsync: {IOPath.GetFileName(filePath)}");
+            LogDebug($"LoadWaveformAsync: {Path.GetFileName(filePath)}");
             _loadCts?.Cancel();
             _loadCts = new CancellationTokenSource();
             var token = _loadCts.Token;
@@ -124,7 +123,7 @@ namespace UniPlaySong.Views
                 LoadingOverlay.Visibility = Visibility.Visible;
                 NoWaveformText.Visibility = Visibility.Collapsed;
 
-                var fileName = IOPath.GetFileName(filePath);
+                var fileName = Path.GetFileName(filePath);
                 var fileInfo = new System.IO.FileInfo(filePath);
                 FileNameText.Text = fileName;
 
@@ -541,7 +540,7 @@ namespace UniPlaySong.Views
             if (_waveformData == null || Math.Abs(_currentGainDb) < 0.1f) return;
 
             var filePath = _waveformData.FilePath;
-            var fileName = IOPath.GetFileName(filePath);
+            var fileName = Path.GetFileName(filePath);
 
             LogDebug($"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
 
@@ -590,7 +589,7 @@ namespace UniPlaySong.Views
                 if (success)
                 {
                     _playniteApi.Dialogs.ShowMessage(
-                        $"Successfully created '{IOPath.GetFileNameWithoutExtension(fileName)}{suffix}{IOPath.GetExtension(fileName)}'.\n\n" +
+                        $"Successfully created '{Path.GetFileNameWithoutExtension(fileName)}{suffix}{Path.GetExtension(fileName)}'.\n\n" +
                         $"Gain applied: {_currentGainDb:+0.0;-0.0;0}dB\n\n" +
                         $"Original file moved to PreservedOriginals folder.",
                         "Amplify Complete");

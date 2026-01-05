@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using IOPath = System.IO.Path;
+using System.IO;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
@@ -200,7 +200,7 @@ namespace UniPlaySong.Views
             foreach (var filePath in _musicFiles)
             {
                 var listItem = new ListBoxItem();
-                var fileName = IOPath.GetFileName(filePath);
+                var fileName = Path.GetFileName(filePath);
 
                 var stackPanel = new StackPanel
                 {
@@ -251,7 +251,7 @@ namespace UniPlaySong.Views
             if (selectedItem?.Tag is string filePath)
             {
                 _selectedFilePath = filePath;
-                CurrentFileText.Text = IOPath.GetFileName(filePath);
+                CurrentFileText.Text = Path.GetFileName(filePath);
                 _currentGainDb = 0f; // Reset gain for new file
                 ShowAmplifyEditorStep();
                 LoadWaveformAsync(filePath);
@@ -885,7 +885,7 @@ namespace UniPlaySong.Views
         {
             if (_waveformData == null || Math.Abs(_currentGainDb) < 0.1f) return;
 
-            var fileName = IOPath.GetFileName(_selectedFilePath);
+            var fileName = Path.GetFileName(_selectedFilePath);
 
             LogDebug($"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
 
