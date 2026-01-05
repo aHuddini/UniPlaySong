@@ -13,21 +13,14 @@ namespace UniPlaySong.Services
     public class AmplifyPreviewPlayer : IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private const string LogPrefix = "AmplifyPreview";
 
         private MusicPlayer _player;
         private bool _isDisposed;
 
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[AmplifyPreview] {message}");
-            }
-        }
-
         public AmplifyPreviewPlayer()
         {
-            LogDebug("AmplifyPreviewPlayer created");
+            Logger.DebugIf(LogPrefix,"AmplifyPreviewPlayer created");
         }
 
         /// <summary>
@@ -54,7 +47,7 @@ namespace UniPlaySong.Services
                 // Clamp volume to valid range
                 volume = Math.Max(0.0, Math.Min(1.0, volume));
 
-                LogDebug($"Playing {Path.GetFileName(filePath)} at volume {volume:F2}");
+                Logger.DebugIf(LogPrefix,$"Playing {Path.GetFileName(filePath)} at volume {volume:F2}");
 
                 // Create new player instance (same pattern as DownloadDialogViewModel)
                 _player = new MusicPlayer();
@@ -66,7 +59,7 @@ namespace UniPlaySong.Services
                 _player.Load(filePath);
                 _player.Play();
 
-                LogDebug($"Playback started successfully at volume {volume:F2}");
+                Logger.DebugIf(LogPrefix,$"Playback started successfully at volume {volume:F2}");
             }
             catch (Exception ex)
             {
@@ -91,7 +84,7 @@ namespace UniPlaySong.Services
                     _player = null;
                 }
 
-                LogDebug("Playback stopped");
+                Logger.DebugIf(LogPrefix,"Playback stopped");
             }
             catch (Exception ex)
             {
@@ -109,7 +102,7 @@ namespace UniPlaySong.Services
             if (_isDisposed) return;
             _isDisposed = true;
 
-            LogDebug("Disposing AmplifyPreviewPlayer");
+            Logger.DebugIf(LogPrefix,"Disposing AmplifyPreviewPlayer");
             Stop();
         }
     }

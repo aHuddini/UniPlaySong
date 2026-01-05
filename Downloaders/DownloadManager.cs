@@ -19,19 +19,9 @@ namespace UniPlaySong.Downloaders
     public class DownloadManager : IDownloadManager
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private const string LogPrefix = "DownloadManager";
         private static readonly TimeSpan MaxSongLength = new TimeSpan(0, Constants.MaxPreviewSongLengthMinutes, 0);
         private static readonly List<string> PreferredSongEndings = Constants.PreferredSongEndings;
-
-        /// <summary>
-        /// Logs a debug message if debug logging is enabled.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
 
         private readonly IDownloader _khDownloader;
         private readonly IDownloader _ytDownloader;
@@ -85,8 +75,8 @@ namespace UniPlaySong.Downloaders
             // For Source.All: Try KHInsider first, fallback to YouTube if no results
             if (source == Source.All)
             {
-                LogDebug($"[Source.All] Searching for '{gameName}' (skipCache={skipCache})");
-                LogDebug($"[Source.All] Step 1/2: Trying KHInsider...");
+                Logger.DebugIf(LogPrefix,$"[Source.All] Searching for '{gameName}' (skipCache={skipCache})");
+                Logger.DebugIf(LogPrefix,$"[Source.All] Step 1/2: Trying KHInsider...");
 
                 List<Album> khAlbums = null;
 
@@ -95,13 +85,13 @@ namespace UniPlaySong.Downloaders
                 {
                     if (khAlbums.Count > 0)
                     {
-                        LogDebug($"[Source.All] KHInsider (cached): Found {khAlbums.Count} album(s) for '{gameName}'");
+                        Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider (cached): Found {khAlbums.Count} album(s) for '{gameName}'");
                         return khAlbums;
                     }
                     else
                     {
-                        LogDebug($"[Source.All] KHInsider (cached): No results for '{gameName}', skipping to YouTube");
-                        LogDebug($"[Source.All] Step 2/2: Falling back to YouTube...");
+                        Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider (cached): No results for '{gameName}', skipping to YouTube");
+                        Logger.DebugIf(LogPrefix,$"[Source.All] Step 2/2: Falling back to YouTube...");
                         return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto, skipCache);
                     }
                 }
@@ -116,12 +106,12 @@ namespace UniPlaySong.Downloaders
 
                 if (khAlbums.Count > 0)
                 {
-                    LogDebug($"[Source.All] KHInsider: Found {khAlbums.Count} album(s) for '{gameName}'");
+                    Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider: Found {khAlbums.Count} album(s) for '{gameName}'");
                     return khAlbums;
                 }
 
-                LogDebug($"[Source.All] KHInsider: No results for '{gameName}'");
-                LogDebug($"[Source.All] Step 2/2: Falling back to YouTube...");
+                Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider: No results for '{gameName}'");
+                Logger.DebugIf(LogPrefix,$"[Source.All] Step 2/2: Falling back to YouTube...");
 
                 return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto, skipCache);
             }
@@ -206,7 +196,7 @@ namespace UniPlaySong.Downloaders
             }
             else
             {
-                LogDebug($"[KHInsider] Strategy 2 SKIPPED: cleaned name same as original");
+                Logger.DebugIf(LogPrefix,$"[KHInsider] Strategy 2 SKIPPED: cleaned name same as original");
             }
 
             // Strategy 3: Simplified name (strip edition suffixes)
@@ -246,12 +236,12 @@ namespace UniPlaySong.Downloaders
                 }
                 else
                 {
-                    LogDebug($"[KHInsider] Strategy 4 SKIPPED: simplified+cleaned same as previous");
+                    Logger.DebugIf(LogPrefix,$"[KHInsider] Strategy 4 SKIPPED: simplified+cleaned same as previous");
                 }
             }
             else
             {
-                LogDebug($"[KHInsider] Strategies 3-4 SKIPPED: no edition suffix to strip");
+                Logger.DebugIf(LogPrefix,$"[KHInsider] Strategies 3-4 SKIPPED: no edition suffix to strip");
             }
 
             Logger.Info($"[KHInsider] All strategies completed for '{gameName}': {khAlbums.Count} total result(s)");
@@ -266,7 +256,7 @@ namespace UniPlaySong.Downloaders
             // Check cache only if not skipping
             if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.YouTube, out var cachedAlbums))
             {
-                LogDebug($"[Source.All] YouTube (cached): Found {cachedAlbums.Count} album(s) for '{gameName}'");
+                Logger.DebugIf(LogPrefix,$"[Source.All] YouTube (cached): Found {cachedAlbums.Count} album(s) for '{gameName}'");
                 return cachedAlbums;
             }
 
@@ -274,38 +264,38 @@ namespace UniPlaySong.Downloaders
             var ytAlbums = new List<Album>();
 
             // Strategy 1: "[Game Name]" OST (quoted for exact match)
-            LogDebug($"[YouTube] Strategy 1: Searching for '\"{gameName}\" OST'");
+            Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 1: Searching for '\"{gameName}\" OST'");
             var strategy1 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" OST", cancellationToken, auto)?.ToList()
                 ?? new List<Album>();
             ytAlbums.AddRange(strategy1);
 
             if (ytAlbums.Count > 0)
             {
-                LogDebug($"[YouTube] Strategy 1 found {ytAlbums.Count} result(s)");
+                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 1 found {ytAlbums.Count} result(s)");
             }
             else
             {
                 // Strategy 2: "[Game Name]" soundtrack
-                LogDebug($"[YouTube] Strategy 2: Searching for '\"{gameName}\" soundtrack'");
+                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 2: Searching for '\"{gameName}\" soundtrack'");
                 var strategy2 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" soundtrack", cancellationToken, auto)?.ToList()
                     ?? new List<Album>();
                 ytAlbums.AddRange(strategy2);
 
                 if (ytAlbums.Count > 0)
                 {
-                    LogDebug($"[YouTube] Strategy 2 found {ytAlbums.Count} result(s)");
+                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 2 found {ytAlbums.Count} result(s)");
                 }
                 else
                 {
                     // Strategy 3: [Game Name] original soundtrack
-                    LogDebug($"[YouTube] Strategy 3: Searching for '{gameName} original soundtrack'");
+                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 3: Searching for '{gameName} original soundtrack'");
                     var strategy3 = _ytDownloader?.GetAlbumsForGame($"{gameName} original soundtrack", cancellationToken, auto)?.ToList()
                         ?? new List<Album>();
                     ytAlbums.AddRange(strategy3);
 
                     if (ytAlbums.Count > 0)
                     {
-                        LogDebug($"[YouTube] Strategy 3 found {ytAlbums.Count} result(s)");
+                        Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 3 found {ytAlbums.Count} result(s)");
                     }
                     else
                     {
@@ -315,26 +305,26 @@ namespace UniPlaySong.Downloaders
                         if (!string.IsNullOrWhiteSpace(simplifiedName) &&
                             !simplifiedName.Equals(gameName, StringComparison.OrdinalIgnoreCase))
                         {
-                            LogDebug($"[YouTube] Strategy 4: Searching with simplified name '\"{simplifiedName}\" OST'");
+                            Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 4: Searching with simplified name '\"{simplifiedName}\" OST'");
                             var strategy4 = _ytDownloader?.GetAlbumsForGame($"\"{simplifiedName}\" OST", cancellationToken, auto)?.ToList()
                                 ?? new List<Album>();
                             ytAlbums.AddRange(strategy4);
 
                             if (ytAlbums.Count > 0)
                             {
-                                LogDebug($"[YouTube] Strategy 4 found {ytAlbums.Count} result(s)");
+                                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 4 found {ytAlbums.Count} result(s)");
                             }
                             else
                             {
                                 // Strategy 5: Simplified name + soundtrack
-                                LogDebug($"[YouTube] Strategy 5: Searching for '\"{simplifiedName}\" soundtrack'");
+                                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 5: Searching for '\"{simplifiedName}\" soundtrack'");
                                 var strategy5 = _ytDownloader?.GetAlbumsForGame($"\"{simplifiedName}\" soundtrack", cancellationToken, auto)?.ToList()
                                     ?? new List<Album>();
                                 ytAlbums.AddRange(strategy5);
 
                                 if (ytAlbums.Count > 0)
                                 {
-                                    LogDebug($"[YouTube] Strategy 5 found {ytAlbums.Count} result(s)");
+                                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 5 found {ytAlbums.Count} result(s)");
                                 }
                             }
                         }
@@ -348,7 +338,7 @@ namespace UniPlaySong.Downloaders
                 _cacheService.CacheSearchResult(gameName, Source.YouTube, ytAlbums);
             }
 
-            LogDebug($"[Source.All] YouTube: Found {ytAlbums.Count} total album(s) for '{gameName}'");
+            Logger.DebugIf(LogPrefix,$"[Source.All] YouTube: Found {ytAlbums.Count} total album(s) for '{gameName}'");
 
             return ytAlbums;
         }
@@ -371,7 +361,7 @@ namespace UniPlaySong.Downloaders
             // First pass: Filter out obvious non-game-music albums (auto-mode only filters)
             var filteredAlbums = albumsList.Where(album => IsLikelyGameMusic(album, game, auto: true)).ToList();
             
-            LogDebug($"Album filtering for '{game.Name}': {albumsList.Count} total -> {filteredAlbums.Count} after filtering");
+            Logger.DebugIf(LogPrefix,$"Album filtering for '{game.Name}': {albumsList.Count} total -> {filteredAlbums.Count} after filtering");
             
             if (filteredAlbums.Count == 0)
             {
@@ -388,10 +378,10 @@ namespace UniPlaySong.Downloaders
             .OrderByDescending(x => x.Score)
             .ToList();
 
-            LogDebug($"Album candidates for '{game.Name}' (search: '{gameName}'):");
+            Logger.DebugIf(LogPrefix,$"Album candidates for '{game.Name}' (search: '{gameName}'):");
             foreach (var candidate in scoredAlbums.Take(5))
             {
-                LogDebug($"  - '{candidate.Album.Name}' (score: {candidate.Score}, source: {candidate.Album.Source})");
+                Logger.DebugIf(LogPrefix,$"  - '{candidate.Album.Name}' (score: {candidate.Score}, source: {candidate.Album.Source})");
             }
 
             var validAlbums = scoredAlbums.Where(x => x.Score >= MinimumAlbumRelevanceScore).ToList();
@@ -404,7 +394,7 @@ namespace UniPlaySong.Downloaders
             }
 
             var best = validAlbums.First();
-            LogDebug($"Selected album '{best.Album.Name}' with score {best.Score} for game '{game.Name}'");
+            Logger.DebugIf(LogPrefix,$"Selected album '{best.Album.Name}' with score {best.Score} for game '{game.Name}'");
             
             return best.Album;
         }
@@ -430,7 +420,7 @@ namespace UniPlaySong.Downloaders
 
             if (!hasMusicKeyword)
             {
-                LogDebug($"Album '{album.Name}' rejected: No music keywords (OST/soundtrack/etc)");
+                Logger.DebugIf(LogPrefix,$"Album '{album.Name}' rejected: No music keywords (OST/soundtrack/etc)");
                 return false;
             }
 
@@ -444,7 +434,7 @@ namespace UniPlaySong.Downloaders
 
             if (rejectKeywords.Any(keyword => albumName.Contains(keyword)))
             {
-                LogDebug($"Album '{album.Name}' rejected: Contains non-game keyword");
+                Logger.DebugIf(LogPrefix,$"Album '{album.Name}' rejected: Contains non-game keyword");
                 return false;
             }
 
@@ -465,7 +455,7 @@ namespace UniPlaySong.Downloaders
 
                     if (matchPercentage < requiredMatch)
                     {
-                        LogDebug($"[Auto-mode] Album '{album.Name}' rejected: Insufficient word match for YouTube ({matchPercentage:P0} < {requiredMatch:P0})");
+                        Logger.DebugIf(LogPrefix,$"[Auto-mode] Album '{album.Name}' rejected: Insufficient word match for YouTube ({matchPercentage:P0} < {requiredMatch:P0})");
                         return false;
                     }
                 }
@@ -493,17 +483,17 @@ namespace UniPlaySong.Downloaders
             .ToList();
             
             var topCandidates = scoredSongs.Take(5).ToList();
-            LogDebug($"Top song candidates for '{gameName}':");
+            Logger.DebugIf(LogPrefix,$"Top song candidates for '{gameName}':");
             foreach (var candidate in topCandidates)
             {
-                LogDebug($"  - '{candidate.Song.Name}' (score: {candidate.Score})");
+                Logger.DebugIf(LogPrefix,$"  - '{candidate.Song.Name}' (score: {candidate.Score})");
             }
             
             var result = scoredSongs.Take(maxSongs).Select(x => x.Song).ToList();
             
             if (result.Any())
             {
-                LogDebug($"Selected song for '{gameName}': '{result[0].Name}' (score: {scoredSongs[0].Score})");
+                Logger.DebugIf(LogPrefix,$"Selected song for '{gameName}': '{result[0].Name}' (score: {scoredSongs[0].Score})");
             }
             
             return result;

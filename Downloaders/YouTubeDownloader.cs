@@ -19,18 +19,8 @@ namespace UniPlaySong.Downloaders
     public class YouTubeDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private const string LogPrefix = "YouTubeDownloader";
         private const string YouTubeBaseUrl = "https://www.youtube.com";
-
-        /// <summary>
-        /// Logs a debug message if debug logging is enabled.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
 
         private readonly HttpClient _httpClient;
         private readonly string _ytDlpPath;
@@ -66,7 +56,7 @@ namespace UniPlaySong.Downloaders
                     searchQuery = $"{gameName} OST";
                 }
                 
-                LogDebug($"Searching YouTube for: {searchQuery}");
+                Logger.DebugIf(LogPrefix,$"Searching YouTube for: {searchQuery}");
 
                 var client = new YouTubeClient(_httpClient, _errorHandler);
                 var results = client.Search(searchQuery, 100, cancellationToken);
@@ -88,7 +78,7 @@ namespace UniPlaySong.Downloaders
                     ChannelName = item.ChannelName
                 }).ToList();
 
-                LogDebug($"Found {albums.Count} playlists for '{gameName}' on YouTube");
+                Logger.DebugIf(LogPrefix,$"Found {albums.Count} playlists for '{gameName}' on YouTube");
                 
                 if (albums.Count == 0)
                 {
@@ -97,7 +87,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                LogDebug($"YouTube search cancelled for: {gameName}");
+                Logger.DebugIf(LogPrefix,$"YouTube search cancelled for: {gameName}");
                 throw; // Re-throw cancellation
             }
             catch (Exception ex)
@@ -124,7 +114,7 @@ namespace UniPlaySong.Downloaders
                     return songs;
                 }
 
-                LogDebug($"Loading YouTube playlist: {album.Name}");
+                Logger.DebugIf(LogPrefix,$"Loading YouTube playlist: {album.Name}");
 
                 var client = new YouTubeClient(_httpClient, _errorHandler);
                 var playlistItems = client.GetPlaylist(album.Id, cancellationToken);
@@ -138,11 +128,11 @@ namespace UniPlaySong.Downloaders
                     IconUrl = item.ThumbnailUrl?.ToString()
                 }).ToList();
 
-                LogDebug($"Found {songs.Count} songs in playlist '{album.Name}'");
+                Logger.DebugIf(LogPrefix,$"Found {songs.Count} songs in playlist '{album.Name}'");
             }
             catch (OperationCanceledException)
             {
-                LogDebug($"Playlist loading cancelled for: {album?.Name}");
+                Logger.DebugIf(LogPrefix,$"Playlist loading cancelled for: {album?.Name}");
             }
             catch (Exception ex)
             {
@@ -177,8 +167,8 @@ namespace UniPlaySong.Downloaders
             }
 
             // Log diagnostic information
-            LogDebug($"Download diagnostic - Song: {song?.Name}, Video ID: {song?.Id}, Target path: {path}");
-            LogDebug($"Download diagnostic - yt-dlp path: {_ytDlpPath}, FFmpeg path: {_ffmpegPath}");
+            Logger.DebugIf(LogPrefix,$"Download diagnostic - Song: {song?.Name}, Video ID: {song?.Id}, Target path: {path}");
+            Logger.DebugIf(LogPrefix,$"Download diagnostic - yt-dlp path: {_ytDlpPath}, FFmpeg path: {_ffmpegPath}");
             
             // Check for JavaScript runtime (required for yt-dlp 2025.11.12+)
             // yt-dlp will automatically detect Deno, Node.js, QuickJS, etc. if installed
@@ -208,7 +198,7 @@ namespace UniPlaySong.Downloaders
                             var firstLine = versionOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
                             if (!string.IsNullOrWhiteSpace(firstLine))
                             {
-                                LogDebug($"FFmpeg version check: {firstLine.Trim()}");
+                                Logger.DebugIf(LogPrefix,$"FFmpeg version check: {firstLine.Trim()}");
                             }
                         }
                         else
@@ -250,7 +240,7 @@ namespace UniPlaySong.Downloaders
                         ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
                         : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
                     arguments = $"--cookies-from-browser firefox -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
-                    LogDebug("Using simplified yt-dlp command with Firefox cookies");
+                    Logger.DebugIf(LogPrefix,"Using simplified yt-dlp command with Firefox cookies");
                 }
                 else
                 {
@@ -291,7 +281,7 @@ namespace UniPlaySong.Downloaders
                         if (!Directory.Exists(targetDir))
                         {
                             Directory.CreateDirectory(targetDir);
-                            LogDebug($"Created target directory: {targetDir}");
+                            Logger.DebugIf(LogPrefix,$"Created target directory: {targetDir}");
                         }
                         
                         // Test write permissions
@@ -300,7 +290,7 @@ namespace UniPlaySong.Downloaders
                         {
                             File.WriteAllText(testFile, "test");
                             File.Delete(testFile);
-                            LogDebug($"Directory write permissions verified: {targetDir}");
+                            Logger.DebugIf(LogPrefix,$"Directory write permissions verified: {targetDir}");
                         }
                         catch (Exception permEx)
                         {
@@ -314,9 +304,9 @@ namespace UniPlaySong.Downloaders
                 }
 
                 var workingDir = Path.GetDirectoryName(_ytDlpPath) ?? Directory.GetCurrentDirectory();
-                LogDebug($"Downloading song with yt-dlp: {song.Name} to {path}");
-                LogDebug($"yt-dlp command: {_ytDlpPath} {arguments}");
-                LogDebug($"Working directory: {workingDir}");
+                Logger.DebugIf(LogPrefix,$"Downloading song with yt-dlp: {song.Name} to {path}");
+                Logger.DebugIf(LogPrefix,$"yt-dlp command: {_ytDlpPath} {arguments}");
+                Logger.DebugIf(LogPrefix,$"Working directory: {workingDir}");
 
                 var processInfo = new System.Diagnostics.ProcessStartInfo
                 {
@@ -365,7 +355,7 @@ namespace UniPlaySong.Downloaders
                             }
                             catch { }
                             
-                            LogDebug($"Download cancelled for: {song.Name}");
+                            Logger.DebugIf(LogPrefix,$"Download cancelled for: {song.Name}");
                             return false;
                         }
                     }
@@ -384,19 +374,19 @@ namespace UniPlaySong.Downloaders
                         // Check for explicit JS runtime usage indicators
                         if (outputLower.Contains("[jsc:deno]") || outputLower.Contains("solving js challenges using deno"))
                         {
-                            LogDebug("JavaScript runtime detected: Deno is working! (solving JS challenges)");
+                            Logger.DebugIf(LogPrefix,"JavaScript runtime detected: Deno is working! (solving JS challenges)");
                         }
                         else if (outputLower.Contains("[jsc:node]") || (outputLower.Contains("using") && outputLower.Contains("node")))
                         {
-                            LogDebug("JavaScript runtime detected: Node.js is working!");
+                            Logger.DebugIf(LogPrefix,"JavaScript runtime detected: Node.js is working!");
                         }
                         else if (outputLower.Contains("[jsc:quickjs]") || (outputLower.Contains("using") && outputLower.Contains("quickjs")))
                         {
-                            LogDebug("JavaScript runtime detected: QuickJS is working!");
+                            Logger.DebugIf(LogPrefix,"JavaScript runtime detected: QuickJS is working!");
                         }
                         else if (outputLower.Contains("[jsc:bun]") || (outputLower.Contains("using") && outputLower.Contains("bun")))
                         {
-                            LogDebug("JavaScript runtime detected: Bun is working!");
+                            Logger.DebugIf(LogPrefix,"JavaScript runtime detected: Bun is working!");
                         }
                         else if (outputLower.Contains("deprecated") || outputLower.Contains("no js runtime") || outputLower.Contains("without js"))
                         {
@@ -407,12 +397,12 @@ namespace UniPlaySong.Downloaders
                         {
                             // Log a sample of output to help debug
                             var firstLines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Take(3);
-                            LogDebug($"yt-dlp output preview: {string.Join(" | ", firstLines)}");
+                            Logger.DebugIf(LogPrefix,$"yt-dlp output preview: {string.Join(" | ", firstLines)}");
                         }
                     }
                     else
                     {
-                        LogDebug("yt-dlp produced no standard output (this is normal for some operations)");
+                        Logger.DebugIf(LogPrefix,"yt-dlp produced no standard output (this is normal for some operations)");
                     }
 
                     if (process.ExitCode != 0)
@@ -482,7 +472,7 @@ namespace UniPlaySong.Downloaders
                         // Log standard output if available (sometimes errors go to stdout)
                         if (!string.IsNullOrWhiteSpace(output))
                         {
-                            LogDebug($"yt-dlp standard output:\n{output}");
+                            Logger.DebugIf(LogPrefix,$"yt-dlp standard output:\n{output}");
                         }
                         
                         // Log the exact command that failed for troubleshooting
@@ -496,7 +486,7 @@ namespace UniPlaySong.Downloaders
                     // Log successful completion details
                     if (!string.IsNullOrWhiteSpace(output))
                     {
-                        LogDebug($"yt-dlp output: {output}");
+                        Logger.DebugIf(LogPrefix,$"yt-dlp output: {output}");
                     }
                 }
 
@@ -511,7 +501,7 @@ namespace UniPlaySong.Downloaders
                         var testPath = pathWithoutExt2 + ext;
                         if (File.Exists(testPath))
                         {
-                            LogDebug($"Found file with extension {ext}, moving to {path}");
+                            Logger.DebugIf(LogPrefix,$"Found file with extension {ext}, moving to {path}");
                             File.Move(testPath, path);
                             break;
                         }
@@ -525,7 +515,7 @@ namespace UniPlaySong.Downloaders
                         if (files.Length > 0)
                         {
                             var foundFile = files[0];
-                            LogDebug($"Found file with pattern match: {foundFile}, moving to {path}");
+                            Logger.DebugIf(LogPrefix,$"Found file with pattern match: {foundFile}, moving to {path}");
                             if (File.Exists(path))
                             {
                                 File.Delete(path);
@@ -554,7 +544,7 @@ namespace UniPlaySong.Downloaders
                         successMessage += $" ({string.Join(", ", successDetails)})";
                     }
 
-                    LogDebug(successMessage);
+                    Logger.DebugIf(LogPrefix,successMessage);
                     return true;
                 }
                 
@@ -566,7 +556,7 @@ namespace UniPlaySong.Downloaders
                 if (Directory.Exists(debugDir))
                 {
                     var files = Directory.GetFiles(debugDir);
-                    LogDebug($"Files in directory ({files.Length} total): {string.Join(", ", files.Select(f => Path.GetFileName(f)))}");
+                    Logger.DebugIf(LogPrefix,$"Files in directory ({files.Length} total): {string.Join(", ", files.Select(f => Path.GetFileName(f)))}");
                     
                     // Check for files created around the same time (within last 2 minutes)
                     var recentFiles = files.Where(f => 
@@ -581,7 +571,7 @@ namespace UniPlaySong.Downloaders
                     
                     if (recentFiles.Any())
                     {
-                        LogDebug($"Recently created files (last 2 minutes): {string.Join(", ", recentFiles.Select(f => Path.GetFileName(f)))}");
+                        Logger.DebugIf(LogPrefix,$"Recently created files (last 2 minutes): {string.Join(", ", recentFiles.Select(f => Path.GetFileName(f)))}");
                     }
                 }
                 else
@@ -593,7 +583,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                LogDebug($"Download cancelled for: {song?.Name}");
+                Logger.DebugIf(LogPrefix,$"Download cancelled for: {song?.Name}");
                 return false;
             }
             catch (Exception ex)

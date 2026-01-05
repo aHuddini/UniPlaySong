@@ -13,14 +13,7 @@ namespace UniPlaySong.Handlers
     public class AmplifyDialogHandler
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[Amplify] {message}");
-            }
-        }
+        private const string LogPrefix = "Amplify";
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly Func<UniPlaySongSettings> _settingsProvider;
@@ -49,7 +42,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                LogDebug($"ShowAmplifyDialog called for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"ShowAmplifyDialog called for game: {game?.Name}");
 
                 if (game == null)
                 {
@@ -59,7 +52,7 @@ namespace UniPlaySong.Handlers
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                LogDebug($"Found {availableSongs.Count} available songs for game");
+                Logger.DebugIf(LogPrefix,$"Found {availableSongs.Count} available songs for game");
                 if (availableSongs.Count == 0)
                 {
                     _playniteApi.Dialogs.ShowMessage(
@@ -71,7 +64,7 @@ namespace UniPlaySong.Handlers
                 // Validate FFmpeg
                 var settings = _settingsProvider?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
-                LogDebug($"FFmpeg path from settings: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path from settings: {ffmpegPath}");
                 if (string.IsNullOrEmpty(ffmpegPath) || !_amplifyService.ValidateFFmpegAvailable(ffmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
@@ -82,11 +75,11 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop current playback
-                LogDebug("Stopping current playback");
+                Logger.DebugIf(LogPrefix,"Stopping current playback");
                 _playbackService?.Stop();
 
                 // Create and show dialog
-                LogDebug("Creating desktop AmplifyDialog");
+                Logger.DebugIf(LogPrefix,"Creating desktop AmplifyDialog");
                 var dialog = new Views.AmplifyDialog();
                 var window = DialogHelper.CreateStandardDialog(
                     _playniteApi,
@@ -106,15 +99,15 @@ namespace UniPlaySong.Handlers
                 // Handle window closing
                 window.Closing += (s, e) =>
                 {
-                    LogDebug("Desktop dialog closing, running cleanup");
+                    Logger.DebugIf(LogPrefix,"Desktop dialog closing, running cleanup");
                     dialog.Cleanup();
                 };
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "amplify dialog close");
 
-                LogDebug("Showing desktop dialog");
+                Logger.DebugIf(LogPrefix,"Showing desktop dialog");
                 window.ShowDialog();
-                LogDebug("Desktop dialog closed");
+                Logger.DebugIf(LogPrefix,"Desktop dialog closed");
             }
             catch (Exception ex)
             {
@@ -132,7 +125,7 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                LogDebug($"ShowControllerAmplifyDialog called for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"ShowControllerAmplifyDialog called for game: {game?.Name}");
 
                 if (game == null)
                 {
@@ -142,7 +135,7 @@ namespace UniPlaySong.Handlers
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                LogDebug($"Found {availableSongs.Count} available songs for game");
+                Logger.DebugIf(LogPrefix,$"Found {availableSongs.Count} available songs for game");
                 if (availableSongs.Count == 0)
                 {
                     _playniteApi.Dialogs.ShowMessage(
@@ -154,7 +147,7 @@ namespace UniPlaySong.Handlers
                 // Validate FFmpeg
                 var settings = _settingsProvider?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
-                LogDebug($"FFmpeg path from settings: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path from settings: {ffmpegPath}");
                 if (string.IsNullOrEmpty(ffmpegPath) || !_amplifyService.ValidateFFmpegAvailable(ffmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
@@ -165,11 +158,11 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop current playback
-                LogDebug("Stopping current playback");
+                Logger.DebugIf(LogPrefix,"Stopping current playback");
                 _playbackService?.Stop();
 
                 // Create and show controller dialog
-                LogDebug("Creating controller ControllerAmplifyDialog");
+                Logger.DebugIf(LogPrefix,"Creating controller ControllerAmplifyDialog");
                 var dialog = new Views.ControllerAmplifyDialog();
                 var window = DialogHelper.CreateFixedDialog(
                     _playniteApi,
@@ -188,9 +181,9 @@ namespace UniPlaySong.Handlers
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "controller amplify dialog close");
 
-                LogDebug("Showing controller dialog");
+                Logger.DebugIf(LogPrefix,"Showing controller dialog");
                 window.ShowDialog();
-                LogDebug("Controller dialog closed");
+                Logger.DebugIf(LogPrefix,"Controller dialog closed");
             }
             catch (Exception ex)
             {

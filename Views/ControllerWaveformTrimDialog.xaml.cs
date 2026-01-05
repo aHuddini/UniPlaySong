@@ -24,14 +24,7 @@ namespace UniPlaySong.Views
     public partial class ControllerWaveformTrimDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[PreciseTrim:Controller] {message}");
-            }
-        }
+        private const string LogPrefix = "PreciseTrim:Controller";
 
         // Controller monitoring
         private CancellationTokenSource _controllerMonitoringCancellation;
@@ -116,7 +109,7 @@ namespace UniPlaySong.Views
                 _waveformTrimService = waveformTrimService;
                 _getSettings = getSettings;
 
-                LogDebug($"Initialized controller waveform trim for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"Initialized controller waveform trim for game: {game?.Name}");
 
                 // Start at file selection
                 ShowFileSelectionStep();
@@ -461,7 +454,7 @@ namespace UniPlaySong.Views
             _controllerMonitoringCancellation = new CancellationTokenSource();
 
             _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
-            LogDebug("Started controller monitoring for waveform trim dialog");
+            Logger.DebugIf(LogPrefix,"Started controller monitoring for waveform trim dialog");
         }
 
         private void StopControllerMonitoring()
@@ -470,7 +463,7 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            LogDebug("Stopped controller monitoring for waveform trim dialog");
+            Logger.DebugIf(LogPrefix,"Stopped controller monitoring for waveform trim dialog");
         }
 
         private async Task CheckButtonPresses(CancellationToken cancellationToken)
@@ -519,7 +512,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    LogDebug($"Error in controller monitoring: {ex.Message}");
+                    Logger.DebugIf(LogPrefix,$"Error in controller monitoring: {ex.Message}");
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -782,7 +775,7 @@ namespace UniPlaySong.Views
                 StopPreview();
 
                 // Load and play the file from the start marker position
-                LogDebug($"Starting preview from {_trimWindow.StartTime:mm\\:ss\\.fff}");
+                Logger.DebugIf(LogPrefix,$"Starting preview from {_trimWindow.StartTime:mm\\:ss\\.fff}");
                 _playbackService.LoadAndPlayFileFrom(_selectedFilePath, _trimWindow.StartTime);
 
                 _isPreviewing = true;
@@ -898,7 +891,7 @@ namespace UniPlaySong.Views
                 ApplyTrimButton.IsEnabled = false;
 
                 // Pass FFmpeg path directly instead of relying on reflection
-                LogDebug($"Applying trim with FFmpeg path: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"Applying trim with FFmpeg path: {ffmpegPath}");
                 var success = await _waveformTrimService.ApplyTrimAsync(
                     _selectedFilePath, _trimWindow, suffix, ffmpegPath, CancellationToken.None);
 
@@ -1056,7 +1049,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        LogDebug($"Error returning focus: {focusEx.Message}");
+                        Logger.DebugIf(LogPrefix,$"Error returning focus: {focusEx.Message}");
                     }
 
                     window.DialogResult = success;

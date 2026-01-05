@@ -22,17 +22,7 @@ namespace UniPlaySong.ViewModels
     public class DownloadDialogViewModel : ObservableObject
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
+        private const string LogPrefix = "DownloadDialog";
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly IDownloadManager _downloadManager;
@@ -326,7 +316,7 @@ namespace UniPlaySong.ViewModels
             // Don't search if keyword is empty (user needs to type something)
             if (string.IsNullOrWhiteSpace(searchKeyword) && !_isSongSelection)
             {
-                LogDebug("PerformSearch called but no search term provided - waiting for user input");
+                Logger.DebugIf(LogPrefix,"PerformSearch called but no search term provided - waiting for user input");
                 return;
             }
             
@@ -388,7 +378,7 @@ namespace UniPlaySong.ViewModels
                 if (_isSongSelection && _album != null)
                 {
                     // Load songs from album
-                    LogDebug($"Loading songs from album: {_album.Name}");
+                    Logger.DebugIf(LogPrefix,$"Loading songs from album: {_album.Name}");
                     var songs = _downloadManager.GetSongsFromAlbum(_album, cancellationToken);
                     results = songs.Select(s => new DownloadItemViewModel
                     {
@@ -397,7 +387,7 @@ namespace UniPlaySong.ViewModels
                         Item = s,
                         Source = s.Source
                     }).ToList();
-                    LogDebug($"Found {results.Count} songs from album");
+                    Logger.DebugIf(LogPrefix,$"Found {results.Count} songs from album");
                 }
                 else
                 {
@@ -415,14 +405,14 @@ namespace UniPlaySong.ViewModels
                         return new ObservableCollection<DownloadItemViewModel>(results);
                     }
                     
-                    LogDebug($"Searching for albums: Game='{gameName}', Source={_source}");
+                    Logger.DebugIf(LogPrefix,$"Searching for albums: Game='{gameName}', Source={_source}");
 
                     // Manual search mode: auto=false means no whitelist filtering
                     var albums = _downloadManager.GetAlbumsForGame(gameName, _source, cancellationToken, auto: false);
 
                     // IEnumerable is never null, but can be empty
                     var albumsList = albums?.ToList() ?? new List<Album>();
-                    LogDebug($"Found {albumsList.Count} albums for '{gameName}' from {_source}");
+                    Logger.DebugIf(LogPrefix,$"Found {albumsList.Count} albums for '{gameName}' from {_source}");
                     
                     results = albumsList.Select(a => new DownloadItemViewModel
                     {
@@ -443,7 +433,7 @@ namespace UniPlaySong.ViewModels
             catch (OperationCanceledException)
             {
                 // Search was cancelled, ignore
-                LogDebug("Search was cancelled");
+                Logger.DebugIf(LogPrefix,"Search was cancelled");
                 results = new List<DownloadItemViewModel>();
             }
             catch (Exception ex)
@@ -497,7 +487,7 @@ namespace UniPlaySong.ViewModels
                 var timeSinceLastRequest = (DateTime.Now - _lastPreviewRequestTime).TotalMilliseconds;
                 if (timeSinceLastRequest < MinPreviewIntervalMs)
                 {
-                    LogDebug($"Preview request rate limited - {MinPreviewIntervalMs - timeSinceLastRequest:F0}ms remaining");
+                    Logger.DebugIf(LogPrefix,$"Preview request rate limited - {MinPreviewIntervalMs - timeSinceLastRequest:F0}ms remaining");
                     return;
                 }
                 _lastPreviewRequestTime = DateTime.Now;
@@ -647,7 +637,7 @@ namespace UniPlaySong.ViewModels
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    LogDebug("Paused game music for preview");
+                    Logger.DebugIf(LogPrefix,"Paused game music for preview");
                 }
                 else
                 {
@@ -656,7 +646,7 @@ namespace UniPlaySong.ViewModels
             }
             catch (Exception ex)
             {
-                LogDebug($"Error pausing game music for preview: {ex.Message}");
+                Logger.DebugIf(LogPrefix,$"Error pausing game music for preview: {ex.Message}");
                 _wasGameMusicPlaying = false;
             }
         }
@@ -672,12 +662,12 @@ namespace UniPlaySong.ViewModels
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    LogDebug("Resumed game music after preview");
+                    Logger.DebugIf(LogPrefix,"Resumed game music after preview");
                 }
             }
             catch (Exception ex)
             {
-                LogDebug($"Error resuming game music after preview: {ex.Message}");
+                Logger.DebugIf(LogPrefix,$"Error resuming game music after preview: {ex.Message}");
                 _wasGameMusicPlaying = false;
             }
         }

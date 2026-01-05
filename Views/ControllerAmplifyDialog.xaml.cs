@@ -21,14 +21,7 @@ namespace UniPlaySong.Views
     public partial class ControllerAmplifyDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[Amplify:Controller] {message}");
-            }
-        }
+        private const string LogPrefix = "Amplify:Controller";
 
         // Controller monitoring
         private CancellationTokenSource _controllerMonitoringCancellation;
@@ -110,7 +103,7 @@ namespace UniPlaySong.Views
                 _amplifyService = amplifyService;
                 _getSettings = getSettings;
 
-                LogDebug($"Initialized controller amplify dialog for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"Initialized controller amplify dialog for game: {game?.Name}");
 
                 ShowFileSelectionStep();
                 LoadMusicFiles();
@@ -509,7 +502,7 @@ namespace UniPlaySong.Views
             {
                 _currentGainDb = newGain;
                 UpdateGainDisplay();
-                LogDebug($"Gain adjusted to {_currentGainDb:+0.0;-0.0;0}dB");
+                Logger.DebugIf(LogPrefix,$"Gain adjusted to {_currentGainDb:+0.0;-0.0;0}dB");
             }
         }
 
@@ -533,7 +526,7 @@ namespace UniPlaySong.Views
             _controllerMonitoringCancellation = new CancellationTokenSource();
 
             _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
-            LogDebug("Started controller monitoring for amplify dialog");
+            Logger.DebugIf(LogPrefix,"Started controller monitoring for amplify dialog");
         }
 
         private void StopControllerMonitoring()
@@ -542,7 +535,7 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            LogDebug("Stopped controller monitoring for amplify dialog");
+            Logger.DebugIf(LogPrefix,"Stopped controller monitoring for amplify dialog");
         }
 
         private async Task CheckButtonPresses(CancellationToken cancellationToken)
@@ -587,7 +580,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    LogDebug($"Error in controller monitoring: {ex.Message}");
+                    Logger.DebugIf(LogPrefix,$"Error in controller monitoring: {ex.Message}");
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -843,7 +836,7 @@ namespace UniPlaySong.Views
 
             try
             {
-                LogDebug($"Preview with gain: {_currentGainDb:+0.0;-0.0;0}dB");
+                Logger.DebugIf(LogPrefix,$"Preview with gain: {_currentGainDb:+0.0;-0.0;0}dB");
 
                 // Get user's configured volume setting (0-100) and convert to 0-1 range
                 var settings = _getSettings?.Invoke();
@@ -863,7 +856,7 @@ namespace UniPlaySong.Views
                 // Use the same SDL2 backend for preview (consistent volume with normal playback)
                 _playbackService?.PlayPreview(_waveformData.FilePath, clampedVolume);
 
-                LogDebug($"Preview at volume {clampedVolume:F2} (user: {userVolume:F2} x gain: {gainMultiplier:F2})");
+                Logger.DebugIf(LogPrefix,$"Preview at volume {clampedVolume:F2} (user: {userVolume:F2} x gain: {gainMultiplier:F2})");
 
                 if (wasCapped)
                 {
@@ -887,7 +880,7 @@ namespace UniPlaySong.Views
 
             var fileName = Path.GetFileName(_selectedFilePath);
 
-            LogDebug($"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
+            Logger.DebugIf(LogPrefix,$"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
 
             var clippingWarning = "";
             if (_waveformData.WouldClip(_currentGainDb))

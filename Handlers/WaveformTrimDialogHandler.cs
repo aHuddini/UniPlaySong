@@ -13,17 +13,7 @@ namespace UniPlaySong.Handlers
     public class WaveformTrimDialogHandler
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[PreciseTrim] {message}");
-            }
-        }
+        private const string LogPrefix = "PreciseTrim";
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly Func<UniPlaySongSettings> _settingsProvider;
@@ -52,18 +42,18 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                LogDebug($"ShowPreciseTrimDialog called for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"ShowPreciseTrimDialog called for game: {game?.Name}");
 
                 if (game == null)
                 {
-                    LogDebug("No game selected, showing error");
+                    Logger.DebugIf(LogPrefix,"No game selected, showing error");
                     _playniteApi.Dialogs.ShowMessage("No game selected.", "Precise Trim");
                     return;
                 }
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                LogDebug($"Found {availableSongs.Count} available songs for game");
+                Logger.DebugIf(LogPrefix,$"Found {availableSongs.Count} available songs for game");
                 if (availableSongs.Count == 0)
                 {
                     _playniteApi.Dialogs.ShowMessage(
@@ -75,10 +65,10 @@ namespace UniPlaySong.Handlers
                 // Validate FFmpeg
                 var settings = _settingsProvider?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
-                LogDebug($"FFmpeg path from settings: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path from settings: {ffmpegPath}");
                 if (string.IsNullOrEmpty(ffmpegPath) || !_waveformTrimService.ValidateFFmpegAvailable(ffmpegPath))
                 {
-                    LogDebug("FFmpeg validation failed");
+                    Logger.DebugIf(LogPrefix,"FFmpeg validation failed");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for precise trimming.\n\n" +
                         "Please configure FFmpeg path in Settings → Audio Normalization.",
@@ -87,11 +77,11 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop current playback
-                LogDebug("Stopping current playback");
+                Logger.DebugIf(LogPrefix,"Stopping current playback");
                 _playbackService?.Stop();
 
                 // Create and show dialog
-                LogDebug("Creating desktop WaveformTrimDialog");
+                Logger.DebugIf(LogPrefix,"Creating desktop WaveformTrimDialog");
                 var dialog = new Views.WaveformTrimDialog();
                 var window = DialogHelper.CreateStandardDialog(
                     _playniteApi,
@@ -111,15 +101,15 @@ namespace UniPlaySong.Handlers
                 // Handle window closing
                 window.Closing += (s, e) =>
                 {
-                    LogDebug("Desktop dialog closing, running cleanup");
+                    Logger.DebugIf(LogPrefix,"Desktop dialog closing, running cleanup");
                     dialog.Cleanup();
                 };
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "precise trim dialog close");
 
-                LogDebug("Showing desktop dialog");
+                Logger.DebugIf(LogPrefix,"Showing desktop dialog");
                 window.ShowDialog();
-                LogDebug("Desktop dialog closed");
+                Logger.DebugIf(LogPrefix,"Desktop dialog closed");
             }
             catch (Exception ex)
             {
@@ -137,18 +127,18 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                LogDebug($"ShowControllerPreciseTrimDialog called for game: {game?.Name}");
+                Logger.DebugIf(LogPrefix,$"ShowControllerPreciseTrimDialog called for game: {game?.Name}");
 
                 if (game == null)
                 {
-                    LogDebug("No game selected, showing error");
+                    Logger.DebugIf(LogPrefix,"No game selected, showing error");
                     _playniteApi.Dialogs.ShowMessage("No game selected.", "Precise Trim");
                     return;
                 }
 
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-                LogDebug($"Found {availableSongs.Count} available songs for game");
+                Logger.DebugIf(LogPrefix,$"Found {availableSongs.Count} available songs for game");
                 if (availableSongs.Count == 0)
                 {
                     _playniteApi.Dialogs.ShowMessage(
@@ -160,10 +150,10 @@ namespace UniPlaySong.Handlers
                 // Validate FFmpeg
                 var settings = _settingsProvider?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
-                LogDebug($"FFmpeg path from settings: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path from settings: {ffmpegPath}");
                 if (string.IsNullOrEmpty(ffmpegPath) || !_waveformTrimService.ValidateFFmpegAvailable(ffmpegPath))
                 {
-                    LogDebug("FFmpeg validation failed");
+                    Logger.DebugIf(LogPrefix,"FFmpeg validation failed");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for precise trimming.\n\n" +
                         "Please configure FFmpeg path in Settings → Audio Normalization.",
@@ -172,11 +162,11 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop current playback
-                LogDebug("Stopping current playback");
+                Logger.DebugIf(LogPrefix,"Stopping current playback");
                 _playbackService?.Stop();
 
                 // Create and show controller dialog
-                LogDebug("Creating controller ControllerWaveformTrimDialog");
+                Logger.DebugIf(LogPrefix,"Creating controller ControllerWaveformTrimDialog");
                 var dialog = new Views.ControllerWaveformTrimDialog();
                 var window = DialogHelper.CreateFixedDialog(
                     _playniteApi,
@@ -195,9 +185,9 @@ namespace UniPlaySong.Handlers
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "controller precise trim dialog close");
 
-                LogDebug("Showing controller dialog");
+                Logger.DebugIf(LogPrefix,"Showing controller dialog");
                 window.ShowDialog();
-                LogDebug("Controller dialog closed");
+                Logger.DebugIf(LogPrefix,"Controller dialog closed");
             }
             catch (Exception ex)
             {

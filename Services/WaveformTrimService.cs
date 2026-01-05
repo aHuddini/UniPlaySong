@@ -17,23 +17,13 @@ namespace UniPlaySong.Services
     public class WaveformTrimService : IWaveformTrimService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private const string LogPrefix = "PreciseTrim";
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;
         private readonly string _backupBasePath;
 
         // Target number of samples for waveform display
         private const int TargetWaveformSamples = 1000;
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[PreciseTrim] {message}");
-            }
-        }
 
         public WaveformTrimService(
             ErrorHandlerService errorHandler = null,
@@ -50,7 +40,7 @@ namespace UniPlaySong.Services
         /// </summary>
         public async Task<WaveformData> GenerateWaveformAsync(string audioFilePath, CancellationToken token = default)
         {
-            LogDebug($"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
+            Logger.DebugIf(LogPrefix,$"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
             return await Task.Run(() =>
             {
                 try
@@ -114,7 +104,7 @@ namespace UniPlaySong.Services
                             }
                         }
 
-                        LogDebug($"Waveform generated: {outputSamples.Length} samples, duration={reader.TotalTime:mm\\:ss\\.fff}, rate={reader.WaveFormat.SampleRate}Hz, channels={channels}");
+                        Logger.DebugIf(LogPrefix,$"Waveform generated: {outputSamples.Length} samples, duration={reader.TotalTime:mm\\:ss\\.fff}, rate={reader.WaveFormat.SampleRate}Hz, channels={channels}");
 
                         return new WaveformData
                         {
@@ -128,7 +118,7 @@ namespace UniPlaySong.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    LogDebug("Waveform generation cancelled");
+                    Logger.DebugIf(LogPrefix,"Waveform generation cancelled");
                     throw;
                 }
                 catch (Exception ex)
@@ -176,7 +166,7 @@ namespace UniPlaySong.Services
             if (string.IsNullOrEmpty(ffmpegPath))
             {
                 Logger.Error("FFmpeg path not configured - use the overload that accepts ffmpegPath directly");
-                LogDebug("ApplyTrimAsync (no ffmpegPath) - GetFFmpegPath() returned null or empty");
+                Logger.DebugIf(LogPrefix,"ApplyTrimAsync (no ffmpegPath) - GetFFmpegPath() returned null or empty");
                 return false;
             }
             return await ApplyTrimAsync(inputPath, trimWindow, suffix, ffmpegPath, token);
@@ -187,22 +177,22 @@ namespace UniPlaySong.Services
         /// </summary>
         public async Task<bool> ApplyTrimAsync(string inputPath, TrimWindow trimWindow, string suffix, string ffmpegPath, CancellationToken token = default)
         {
-            LogDebug($"ApplyTrimAsync started - input: {Path.GetFileName(inputPath)}, suffix: {suffix}");
-            LogDebug($"TrimWindow: start={trimWindow.StartTime:mm\\:ss\\.fff}, end={trimWindow.EndTime:mm\\:ss\\.fff}, duration={trimWindow.Duration:mm\\:ss\\.fff}");
-            LogDebug($"FFmpeg path (passed in): {ffmpegPath}");
+            Logger.DebugIf(LogPrefix,$"ApplyTrimAsync started - input: {Path.GetFileName(inputPath)}, suffix: {suffix}");
+            Logger.DebugIf(LogPrefix,$"TrimWindow: start={trimWindow.StartTime:mm\\:ss\\.fff}, end={trimWindow.EndTime:mm\\:ss\\.fff}, duration={trimWindow.Duration:mm\\:ss\\.fff}");
+            Logger.DebugIf(LogPrefix,$"FFmpeg path (passed in): {ffmpegPath}");
             try
             {
                 if (!trimWindow.IsValid)
                 {
                     Logger.Warn("Invalid trim window");
-                    LogDebug($"TrimWindow validation failed: StartTime={trimWindow.StartTime}, EndTime={trimWindow.EndTime}, TotalDuration={trimWindow.TotalDuration}");
+                    Logger.DebugIf(LogPrefix,$"TrimWindow validation failed: StartTime={trimWindow.StartTime}, EndTime={trimWindow.EndTime}, TotalDuration={trimWindow.TotalDuration}");
                     return false;
                 }
 
                 if (string.IsNullOrEmpty(ffmpegPath))
                 {
                     Logger.Error("FFmpeg path is null or empty");
-                    LogDebug("ApplyTrimAsync - ffmpegPath parameter is null or empty");
+                    Logger.DebugIf(LogPrefix,"ApplyTrimAsync - ffmpegPath parameter is null or empty");
                     return false;
                 }
 
@@ -215,8 +205,8 @@ namespace UniPlaySong.Services
                 var finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                 var tempPath = Path.Combine(directory, $"{fileName}.ptrim.tmp{extension}");
 
-                LogDebug($"Output path: {finalOutputPath}");
-                LogDebug($"Temp path: {tempPath}");
+                Logger.DebugIf(LogPrefix,$"Output path: {finalOutputPath}");
+                Logger.DebugIf(LogPrefix,$"Temp path: {tempPath}");
                 Logger.Info($"Precise trim: {fileName} [{trimWindow.StartTime:mm\\:ss\\.fff} - {trimWindow.EndTime:mm\\:ss\\.fff}]");
 
                 // Stop playback if this file is playing
@@ -237,36 +227,36 @@ namespace UniPlaySong.Services
                 // FFmpeg command: seek to start, limit duration, copy or re-encode
                 var args = $"-y -ss {startSeconds} -i \"{inputPath}\" -t {durationSeconds} {codecArgs} \"{tempPath}\"";
 
-                LogDebug($"FFmpeg path: {ffmpegPath}");
-                LogDebug($"FFmpeg args: {args}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg args: {args}");
 
                 var success = await RunFFmpegAsync(ffmpegPath, args, token);
 
                 if (success && File.Exists(tempPath))
                 {
-                    LogDebug("FFmpeg completed successfully, temp file exists");
+                    Logger.DebugIf(LogPrefix,"FFmpeg completed successfully, temp file exists");
                     // Delete original (it's preserved in PreservedOriginals)
                     if (File.Exists(inputPath))
                     {
-                        LogDebug($"Deleting original: {inputPath}");
+                        Logger.DebugIf(LogPrefix,$"Deleting original: {inputPath}");
                         File.Delete(inputPath);
                     }
 
                     // Move temp to final output
-                    LogDebug($"Moving temp to final: {finalOutputPath}");
+                    Logger.DebugIf(LogPrefix,$"Moving temp to final: {finalOutputPath}");
                     File.Move(tempPath, finalOutputPath);
 
                     Logger.Info($"Precise trim completed: {Path.GetFileName(finalOutputPath)}");
-                    LogDebug("ApplyTrimAsync completed successfully");
+                    Logger.DebugIf(LogPrefix,"ApplyTrimAsync completed successfully");
                     return true;
                 }
                 else
                 {
-                    LogDebug($"FFmpeg failed or temp file missing. success={success}, tempExists={File.Exists(tempPath)}");
+                    Logger.DebugIf(LogPrefix,$"FFmpeg failed or temp file missing. success={success}, tempExists={File.Exists(tempPath)}");
                     // Cleanup temp file on failure
                     if (File.Exists(tempPath))
                     {
-                        LogDebug("Cleaning up temp file");
+                        Logger.DebugIf(LogPrefix,"Cleaning up temp file");
                         try { File.Delete(tempPath); } catch { }
                     }
 
@@ -275,7 +265,7 @@ namespace UniPlaySong.Services
                     {
                         try
                         {
-                            LogDebug("Restoring original file from preserved backup");
+                            Logger.DebugIf(LogPrefix,"Restoring original file from preserved backup");
                             File.Copy(preservedOriginalPath, inputPath, true);
                             Logger.Info("Restored original file after failed trim");
                         }
@@ -290,14 +280,14 @@ namespace UniPlaySong.Services
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Trim operation cancelled by user");
+                Logger.DebugIf(LogPrefix,"Trim operation cancelled by user");
                 Logger.Info("Trim operation cancelled");
                 throw;
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Error applying trim to: {inputPath}");
-                LogDebug($"ApplyTrimAsync exception: {ex.Message}");
+                Logger.DebugIf(LogPrefix,$"ApplyTrimAsync exception: {ex.Message}");
                 return false;
             }
         }
@@ -307,7 +297,7 @@ namespace UniPlaySong.Services
         /// </summary>
         private async Task<string> PreserveOriginalAsync(string inputPath, string directory, string fileName, string extension)
         {
-            LogDebug($"PreserveOriginalAsync - preserving: {fileName}{extension}");
+            Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync - preserving: {fileName}{extension}");
             return await Task.Run(() =>
             {
                 try
@@ -317,13 +307,13 @@ namespace UniPlaySong.Services
                     if (!string.IsNullOrEmpty(_backupBasePath))
                     {
                         preservedOriginalsDir = Path.Combine(_backupBasePath, Constants.PreservedOriginalsFolderName);
-                        LogDebug($"Using configured backup path: {preservedOriginalsDir}");
+                        Logger.DebugIf(LogPrefix,$"Using configured backup path: {preservedOriginalsDir}");
                     }
                     else
                     {
                         var parentDir = Directory.GetParent(directory)?.FullName ?? directory;
                         preservedOriginalsDir = Path.Combine(parentDir, Constants.PreservedOriginalsFolderName);
-                        LogDebug($"Using parent directory backup path: {preservedOriginalsDir}");
+                        Logger.DebugIf(LogPrefix,$"Using parent directory backup path: {preservedOriginalsDir}");
                     }
 
                     // Preserve relative structure (game folder name)
@@ -337,11 +327,11 @@ namespace UniPlaySong.Services
                     if (!File.Exists(preservedPath))
                     {
                         File.Copy(inputPath, preservedPath, false);
-                        LogDebug($"Preserved original to: {preservedPath}");
+                        Logger.DebugIf(LogPrefix,$"Preserved original to: {preservedPath}");
                     }
                     else
                     {
-                        LogDebug($"Preserved original already exists: {preservedPath}");
+                        Logger.DebugIf(LogPrefix,$"Preserved original already exists: {preservedPath}");
                     }
 
                     return preservedPath;
@@ -349,7 +339,7 @@ namespace UniPlaySong.Services
                 catch (Exception ex)
                 {
                     Logger.Error(ex, "Error preserving original file");
-                    LogDebug($"PreserveOriginalAsync exception: {ex.Message}");
+                    Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync exception: {ex.Message}");
                     return null;
                 }
             });
@@ -408,7 +398,7 @@ namespace UniPlaySong.Services
         /// </summary>
         private async Task<bool> RunFFmpegAsync(string ffmpegPath, string args, CancellationToken token)
         {
-            LogDebug($"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
+            Logger.DebugIf(LogPrefix,$"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
             return await Task.Run(() =>
             {
                 try
@@ -423,17 +413,17 @@ namespace UniPlaySong.Services
                         UseShellExecute = false
                     };
 
-                    LogDebug("Starting FFmpeg process...");
+                    Logger.DebugIf(LogPrefix,"Starting FFmpeg process...");
                     using (var process = Process.Start(processInfo))
                     {
                         if (process == null)
                         {
                             Logger.Error("Failed to start FFmpeg process");
-                            LogDebug("Process.Start returned null");
+                            Logger.DebugIf(LogPrefix,"Process.Start returned null");
                             return false;
                         }
 
-                        LogDebug($"FFmpeg process started with PID: {process.Id}");
+                        Logger.DebugIf(LogPrefix,$"FFmpeg process started with PID: {process.Id}");
 
                         // Read output asynchronously to prevent deadlock
                         var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -441,12 +431,12 @@ namespace UniPlaySong.Services
 
                         // Wait for process with timeout
                         var timeout = 120000; // 2 minutes
-                        LogDebug("Waiting for FFmpeg to complete...");
+                        Logger.DebugIf(LogPrefix,"Waiting for FFmpeg to complete...");
                         if (!process.WaitForExit(timeout))
                         {
                             try { process.Kill(); } catch { }
                             Logger.Error("FFmpeg process timed out");
-                            LogDebug("FFmpeg process timed out after 2 minutes");
+                            Logger.DebugIf(LogPrefix,"FFmpeg process timed out after 2 minutes");
                             return false;
                         }
 
@@ -455,35 +445,35 @@ namespace UniPlaySong.Services
                         var stdout = outputTask.Result;
                         var stderr = errorTask.Result;
 
-                        LogDebug($"FFmpeg exit code: {process.ExitCode}");
+                        Logger.DebugIf(LogPrefix,$"FFmpeg exit code: {process.ExitCode}");
                         if (!string.IsNullOrEmpty(stderr))
                         {
                             // FFmpeg outputs progress info to stderr even on success
                             // Only log first 500 chars to avoid flooding
                             var stderrPreview = stderr.Length > 500 ? stderr.Substring(0, 500) + "..." : stderr;
-                            LogDebug($"FFmpeg stderr: {stderrPreview}");
+                            Logger.DebugIf(LogPrefix,$"FFmpeg stderr: {stderrPreview}");
                         }
 
                         if (process.ExitCode != 0)
                         {
                             Logger.Error($"FFmpeg failed with exit code {process.ExitCode}: {stderr}");
-                            LogDebug($"FFmpeg FAILED - full stderr logged to error log");
+                            Logger.DebugIf(LogPrefix,$"FFmpeg FAILED - full stderr logged to error log");
                             return false;
                         }
 
-                        LogDebug("FFmpeg completed successfully");
+                        Logger.DebugIf(LogPrefix,"FFmpeg completed successfully");
                         return true;
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    LogDebug("FFmpeg operation cancelled");
+                    Logger.DebugIf(LogPrefix,"FFmpeg operation cancelled");
                     throw;
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex, "Error running FFmpeg");
-                    LogDebug($"FFmpeg exception: {ex.Message}");
+                    Logger.DebugIf(LogPrefix,$"FFmpeg exception: {ex.Message}");
                     return false;
                 }
             }, token);
@@ -494,9 +484,9 @@ namespace UniPlaySong.Services
         /// </summary>
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
-            LogDebug($"ValidateFFmpegAvailable - path: {ffmpegPath}");
+            Logger.DebugIf(LogPrefix,$"ValidateFFmpegAvailable - path: {ffmpegPath}");
             var result = FFmpegHelper.IsAvailable(ffmpegPath);
-            LogDebug($"FFmpeg validation result: {result}");
+            Logger.DebugIf(LogPrefix,$"FFmpeg validation result: {result}");
             return result;
         }
 
@@ -511,7 +501,7 @@ namespace UniPlaySong.Services
             var result = fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
             if (result)
             {
-                LogDebug($"File already trimmed: {fileName}");
+                Logger.DebugIf(LogPrefix,$"File already trimmed: {fileName}");
             }
             return result;
         }
