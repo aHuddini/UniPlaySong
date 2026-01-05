@@ -1,0 +1,97 @@
+AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+Packages:
+  - Version: 1.1.4
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-04
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.4/UniPlaySong-1_1_4-Jan04_2026.pext'
+    Changelog:
+      - 'Version 1.1.4 - Bug fixes and improvements'
+  - Version: 1.1.3
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-03
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.3/UniPlaySong-1_1_3-Jan03_2026.pext'
+    Changelog:
+      - 'Performance Boost: Faster bulk operations using parallel processing for normalization and silence trimming'
+      - 'Added "Pause music when in System Tray" option'
+      - 'Dialog windows now properly appear in Windows taskbar for easy access in Desktop mode'
+      - 'Simplified bulk normalization progress dialog by removing success/fail counters'
+      - 'Consolidated FFmpeg path setting to Audio Normalization tab only'
+      - 'Fixed normalization progress showing "0/0" after downloads'
+      - 'Fixed back button navigation in non-controller download dialogs'
+  - Version: 1.1.2
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-01
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.2/UniPlaySong-1_1_2-Jan01_2026.pext'
+    Changelog:
+      - 'Added Major Feature: Precise Trim (Waveform Editor) - Visual waveform-based audio trimming with draggable markers and preview functionality'
+      - 'Added Factory Reset & Cleanup Tools - New Cleanup settings tab with storage info, Delete All Music, Reset Settings, and Factory Reset options'
+      - 'Added Auto-Download on Library Update - Automatically download music when new games are added with intelligent album/song selection'
+      - 'Added Download Music for All Games - Bulk download button with progress dialog and cancellation support'
+      - 'Added Auto-Normalize After Download - Option to automatically normalize downloaded music using configured settings'
+      - 'Added Audio Repair Tool - Fix problematic audio files by re-encoding to 48kHz stereo format'
+      - 'Improved Desktop context menu organization with Audio Processing and Audio Editing submenus'
+      - 'Pause when minimized is now enabled by default for new installations'
+      - 'Renamed menu items for consistency: Normalize Single Song, Normalize Music Folder, Repair Music Folder'
+  - Version: 1.1.1
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-30
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.1/UniPlaySong-1_1_1-Dec30_2025.pext'
+    Changelog:
+      - 'Added Individual Song Processing - normalize or silence-trim individual songs from context menu (Desktop: file picker, Fullscreen: controller navigation)'
+      - 'Added Open Preserved Folder button in Normalization settings to access backup folder of original songs'
+      - 'Cleaned up Normalization tab by removing redundant per-game buttons (use context menu instead)'
+      - 'Renamed trim options to "Silence Trim" for clarity and improved menu labels'
+      - 'Fixed PreservedOriginals path to open correct backup location'
+  - Version: 1.1.0
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-28
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.0/UniPlaySong-1_1_0-Dec28_2025.pext'
+    Changelog:
+      - 'Added pause music on focus loss - music pauses when switching to another application and resumes when returning'
+      - 'Added pause music on minimize - music pauses when Playnite is minimized and resumes when restored'
+      - 'Fixed Music Play State settings - Never, Desktop, and Fullscreen modes now work correctly'
+      - 'Fixed settings changes taking effect immediately when saved (no longer requires game switch)'
+  - Version: 1.0.9
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-27
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.0.9/UniPlaySong-1_0_9-Dec2725.pext'
+    Changelog:
+      - 'Added Download From URL feature - paste YouTube URLs directly to download music on Desktop Mode (right-click on a single game to access)'
+      - 'Added PlayniteSound Migration - bidirectional transfer between PlayniteSound and UniPlaySong for preserving existing music libraries between both add-ons'
+      - 'Added Migration tab in settings for importing/exporting music libraries'
+      - 'Reorganized context menu with cleaner, grouped sections'
+      - 'Enhanced rate limiting with sleep-requests and sleep-interval options for yt-dlp for certain download actions'
+  - Version: 1.0.8
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-26
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.0.8/UniPlaySong-1_0_8-Dec26_2025.pext'
+    Changelog:
+      - 'Fixed double "MB MB" suffix in download dialogs'
+      - 'Fixed Topmost windows blocking other apps in Desktop mode'
+      - 'Fixed failed downloads persisting across batch runs'
+      - 'Fixed FFmpeg process deadlock and normalization in non-English locales'
+      - 'Added "Enable Debug Logging" toggle to reduce logging verbosity'
+      - 'Added rate limiting for downloads to avoid server throttling'
+      - 'Added Firefox Cookies Support for improved YouTube download reliability'
+      - 'Added JavaScript Runtime Support (Deno) for yt-dlp 2025.11.12+'
+      - 'Improved UI labels and progress tracking'
+  - Version: 1.0.7
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-17
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.0.7/UniPlaySong-1_0_7-Dec25.pext'
+    Changelog:
+      - 'Added silence trimming feature - automatically remove leading silence from audio files'
+      - 'Enhanced fade effects for seamless music preview transitions'
+      - 'Smart file naming that preserves operation order (normalize → trim or trim → normalize)'
+      - 'Configurable silence detection threshold and duration'
+      - 'Option to skip already-trimmed files'
+  - Version: 1.0.6
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-12-16
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.0.6/UniPlaySong-1_0_6-Dec25.pext'
+    Changelog:
+      - 'Added audio normalization using FFmpeg (EBU R128 standard, no FFmpeg-normalize required)'
+      - 'Added fullscreen Xbox controller support for complete music management'
+      - 'Added native music integration as default/fallback option'
+      - 'Improved settings organization and clarity'
+      - 'Enhanced native music suppression reliability'
