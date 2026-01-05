@@ -16,23 +16,13 @@ namespace UniPlaySong.Services
     public class AudioAmplifyService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private const string LogPrefix = "Amplify";
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;
         private readonly string _backupBasePath;
 
         // Target number of samples for waveform display
         private const int TargetWaveformSamples = 1000;
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[Amplify] {message}");
-            }
-        }
 
         public AudioAmplifyService(
             ErrorHandlerService errorHandler = null,
@@ -49,7 +39,7 @@ namespace UniPlaySong.Services
         /// </summary>
         public async Task<AmplifyWaveformData> GenerateWaveformAsync(string audioFilePath, CancellationToken token = default)
         {
-            LogDebug($"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
+            Logger.DebugIf(LogPrefix,$"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
             return await Task.Run(() =>
             {
                 try
@@ -116,7 +106,7 @@ namespace UniPlaySong.Services
                             }
                         }
 
-                        LogDebug($"Waveform generated: {outputSamples.Length} samples, duration={reader.TotalTime:mm\\:ss\\.fff}, peak={peakDb:F1}dB");
+                        Logger.DebugIf(LogPrefix,$"Waveform generated: {outputSamples.Length} samples, duration={reader.TotalTime:mm\\:ss\\.fff}, peak={peakDb:F1}dB");
 
                         return new AmplifyWaveformData
                         {
@@ -132,7 +122,7 @@ namespace UniPlaySong.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    LogDebug("Waveform generation cancelled");
+                    Logger.DebugIf(LogPrefix,"Waveform generation cancelled");
                     throw;
                 }
                 catch (Exception ex)
@@ -172,7 +162,7 @@ namespace UniPlaySong.Services
             string ffmpegPath,
             CancellationToken token = default)
         {
-            LogDebug($"ApplyAmplifyAsync started - input: {Path.GetFileName(inputPath)}, gain: {gainDb:+0.0;-0.0;0}dB");
+            Logger.DebugIf(LogPrefix,$"ApplyAmplifyAsync started - input: {Path.GetFileName(inputPath)}, gain: {gainDb:+0.0;-0.0;0}dB");
             try
             {
                 if (string.IsNullOrEmpty(ffmpegPath))
@@ -196,8 +186,8 @@ namespace UniPlaySong.Services
                 var finalOutputPath = Path.Combine(directory, $"{outputFileName}{extension}");
                 var tempPath = Path.Combine(directory, $"{fileName}.amplify.tmp{extension}");
 
-                LogDebug($"Output path: {finalOutputPath}");
-                LogDebug($"Temp path: {tempPath}");
+                Logger.DebugIf(LogPrefix,$"Output path: {finalOutputPath}");
+                Logger.DebugIf(LogPrefix,$"Temp path: {tempPath}");
                 Logger.Info($"Amplify: {fileName} by {gainDb:+0.0;-0.0;0}dB");
 
                 // Stop playback if this file is playing
@@ -216,30 +206,30 @@ namespace UniPlaySong.Services
                 // FFmpeg command: apply volume filter
                 var args = $"-y -i \"{inputPath}\" -af \"volume={gainStr}dB\" {codecArgs} \"{tempPath}\"";
 
-                LogDebug($"FFmpeg args: {args}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg args: {args}");
 
                 var success = await RunFFmpegAsync(ffmpegPath, args, token);
 
                 if (success && File.Exists(tempPath))
                 {
-                    LogDebug("FFmpeg completed successfully, temp file exists");
+                    Logger.DebugIf(LogPrefix,"FFmpeg completed successfully, temp file exists");
 
                     // Delete the original file from game folder (it's preserved in PreservedOriginals)
                     if (File.Exists(inputPath))
                     {
-                        LogDebug($"Deleting original from game folder: {inputPath}");
+                        Logger.DebugIf(LogPrefix,$"Deleting original from game folder: {inputPath}");
                         File.Delete(inputPath);
                     }
 
                     // If output file already exists (e.g., re-amplifying), remove it first
                     if (File.Exists(finalOutputPath))
                     {
-                        LogDebug($"Removing existing output file: {finalOutputPath}");
+                        Logger.DebugIf(LogPrefix,$"Removing existing output file: {finalOutputPath}");
                         File.Delete(finalOutputPath);
                     }
 
                     // Move temp to final output
-                    LogDebug($"Moving temp to final: {finalOutputPath}");
+                    Logger.DebugIf(LogPrefix,$"Moving temp to final: {finalOutputPath}");
                     File.Move(tempPath, finalOutputPath);
 
                     Logger.Info($"Amplify completed: {Path.GetFileName(finalOutputPath)} (original moved to PreservedOriginals)");
@@ -247,7 +237,7 @@ namespace UniPlaySong.Services
                 }
                 else
                 {
-                    LogDebug($"FFmpeg failed or temp file missing. success={success}, tempExists={File.Exists(tempPath)}");
+                    Logger.DebugIf(LogPrefix,$"FFmpeg failed or temp file missing. success={success}, tempExists={File.Exists(tempPath)}");
 
                     // Cleanup temp file on failure
                     if (File.Exists(tempPath))
@@ -274,7 +264,7 @@ namespace UniPlaySong.Services
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Amplify operation cancelled by user");
+                Logger.DebugIf(LogPrefix,"Amplify operation cancelled by user");
                 throw;
             }
             catch (Exception ex)
@@ -289,7 +279,7 @@ namespace UniPlaySong.Services
         /// </summary>
         private async Task<string> PreserveOriginalAsync(string inputPath, string directory, string fileName, string extension)
         {
-            LogDebug($"PreserveOriginalAsync - preserving: {fileName}{extension}");
+            Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync - preserving: {fileName}{extension}");
             return await Task.Run(() =>
             {
                 try
@@ -317,7 +307,7 @@ namespace UniPlaySong.Services
                     if (!File.Exists(preservedPath))
                     {
                         File.Copy(inputPath, preservedPath, false);
-                        LogDebug($"Preserved original to: {preservedPath}");
+                        Logger.DebugIf(LogPrefix,$"Preserved original to: {preservedPath}");
                     }
 
                     return preservedPath;
@@ -359,7 +349,7 @@ namespace UniPlaySong.Services
         /// </summary>
         private async Task<bool> RunFFmpegAsync(string ffmpegPath, string args, CancellationToken token)
         {
-            LogDebug($"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
+            Logger.DebugIf(LogPrefix,$"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
             return await Task.Run(() =>
             {
                 try
@@ -405,7 +395,7 @@ namespace UniPlaySong.Services
                             return false;
                         }
 
-                        LogDebug("FFmpeg completed successfully");
+                        Logger.DebugIf(LogPrefix,"FFmpeg completed successfully");
                         return true;
                     }
                 }

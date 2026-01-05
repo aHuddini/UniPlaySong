@@ -21,17 +21,7 @@ namespace UniPlaySong.Views
     public partial class WaveformTrimDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[PreciseTrim:Desktop] {message}");
-            }
-        }
+        private const string LogPrefix = "PreciseTrim:Desktop";
 
         private IPlayniteAPI _playniteApi;
         private IWaveformTrimService _waveformService;
@@ -69,7 +59,7 @@ namespace UniPlaySong.Views
             GameMusicFileService fileService,
             Func<UniPlaySongSettings> settingsProvider)
         {
-            LogDebug($"Initialize called for game: {game?.Name}");
+            Logger.DebugIf(LogPrefix,$"Initialize called for game: {game?.Name}");
             _game = game;
             _playniteApi = playniteApi;
             _waveformService = waveformService;
@@ -83,7 +73,7 @@ namespace UniPlaySong.Views
         private void LoadFileList()
         {
             var songs = _fileService?.GetAvailableSongs(_game) ?? new List<string>();
-            LogDebug($"LoadFileList: found {songs.Count} songs");
+            Logger.DebugIf(LogPrefix,$"LoadFileList: found {songs.Count} songs");
             FileComboBox.Items.Clear();
 
             foreach (var song in songs)
@@ -102,7 +92,7 @@ namespace UniPlaySong.Views
             }
             else
             {
-                LogDebug("No audio files found");
+                Logger.DebugIf(LogPrefix,"No audio files found");
                 NoWaveformText.Text = "No audio files found for this game";
                 NoWaveformText.Visibility = Visibility.Visible;
             }
@@ -112,14 +102,14 @@ namespace UniPlaySong.Views
         {
             if (FileComboBox.SelectedItem is ComboBoxItem item && item.Tag is string filePath)
             {
-                LogDebug($"File selected: {System.IO.Path.GetFileName(filePath)}");
+                Logger.DebugIf(LogPrefix,$"File selected: {System.IO.Path.GetFileName(filePath)}");
                 await LoadWaveformAsync(filePath);
             }
         }
 
         private async Task LoadWaveformAsync(string filePath)
         {
-            LogDebug($"LoadWaveformAsync: {System.IO.Path.GetFileName(filePath)}");
+            Logger.DebugIf(LogPrefix,$"LoadWaveformAsync: {System.IO.Path.GetFileName(filePath)}");
             // Cancel any previous load
             _loadCts?.Cancel();
             _loadCts = new CancellationTokenSource();
@@ -148,14 +138,14 @@ namespace UniPlaySong.Views
 
                 if (_waveformData == null || !_waveformData.IsValid)
                 {
-                    LogDebug("Failed to load waveform data");
+                    Logger.DebugIf(LogPrefix,"Failed to load waveform data");
                     NoWaveformText.Text = "Failed to load waveform";
                     NoWaveformText.Visibility = Visibility.Visible;
                     LoadingOverlay.Visibility = Visibility.Collapsed;
                     return;
                 }
 
-                LogDebug($"Waveform loaded: duration={_waveformData.Duration:mm\\:ss\\.fff}, samples={_waveformData.Samples.Length}");
+                Logger.DebugIf(LogPrefix,$"Waveform loaded: duration={_waveformData.Duration:mm\\:ss\\.fff}, samples={_waveformData.Samples.Length}");
 
                 // Update file info with duration
                 var sizeMB = fileInfo.Length / (1024.0 * 1024.0);
@@ -172,13 +162,13 @@ namespace UniPlaySong.Views
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Waveform load cancelled");
+                Logger.DebugIf(LogPrefix,"Waveform load cancelled");
                 // Cancelled, ignore
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error loading waveform");
-                LogDebug($"Error loading waveform: {ex.Message}");
+                Logger.DebugIf(LogPrefix,$"Error loading waveform: {ex.Message}");
                 NoWaveformText.Text = "Error loading waveform";
                 NoWaveformText.Visibility = Visibility.Visible;
                 LoadingOverlay.Visibility = Visibility.Collapsed;
@@ -422,14 +412,14 @@ namespace UniPlaySong.Views
 
             if (_isPreviewing)
             {
-                LogDebug("Stopping preview");
+                Logger.DebugIf(LogPrefix,"Stopping preview");
                 StopPreview();
                 return;
             }
 
             try
             {
-                LogDebug($"Starting preview: {FormatTime(_trimWindow.StartTime)} to {FormatTime(_trimWindow.EndTime)}");
+                Logger.DebugIf(LogPrefix,$"Starting preview: {FormatTime(_trimWindow.StartTime)} to {FormatTime(_trimWindow.EndTime)}");
                 _isPreviewing = true;
                 PreviewButton.Content = "Stop";
 
@@ -514,7 +504,7 @@ namespace UniPlaySong.Views
             var fileName = System.IO.Path.GetFileName(filePath);
             var suffix = _settingsProvider?.Invoke()?.PreciseTrimSuffix ?? "-ptrimmed";
 
-            LogDebug($"ApplyButton_Click: file={fileName}, start={FormatTime(_trimWindow.StartTime)}, end={FormatTime(_trimWindow.EndTime)}");
+            Logger.DebugIf(LogPrefix,$"ApplyButton_Click: file={fileName}, start={FormatTime(_trimWindow.StartTime)}, end={FormatTime(_trimWindow.EndTime)}");
 
             // Confirm with user
             var result = _playniteApi.Dialogs.ShowMessage(
@@ -527,13 +517,13 @@ namespace UniPlaySong.Views
 
             if (result != MessageBoxResult.Yes)
             {
-                LogDebug("User cancelled trim confirmation");
+                Logger.DebugIf(LogPrefix,"User cancelled trim confirmation");
                 return;
             }
 
             try
             {
-                LogDebug("Applying trim...");
+                Logger.DebugIf(LogPrefix,"Applying trim...");
                 ApplyButton.IsEnabled = false;
                 ApplyButton.Content = "Applying...";
 
@@ -543,11 +533,11 @@ namespace UniPlaySong.Views
                 // Get FFmpeg path from settings and pass it directly
                 var settings = _settingsProvider?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
-                LogDebug($"FFmpeg path from settings: {ffmpegPath}");
+                Logger.DebugIf(LogPrefix,$"FFmpeg path from settings: {ffmpegPath}");
 
                 if (string.IsNullOrEmpty(ffmpegPath))
                 {
-                    LogDebug("FFmpeg path is null or empty from settings");
+                    Logger.DebugIf(LogPrefix,"FFmpeg path is null or empty from settings");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg path is not configured.\n\nPlease configure FFmpeg path in Settings → Audio Normalization.",
                         "FFmpeg Not Found");
@@ -560,7 +550,7 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
-                    LogDebug("Trim applied successfully");
+                    Logger.DebugIf(LogPrefix,"Trim applied successfully");
                     _playniteApi.Dialogs.ShowMessage(
                         $"Successfully trimmed '{fileName}'.\n\n" +
                         $"Original file has been preserved.",
@@ -571,7 +561,7 @@ namespace UniPlaySong.Views
                 }
                 else
                 {
-                    LogDebug("Trim operation failed");
+                    Logger.DebugIf(LogPrefix,"Trim operation failed");
                     _playniteApi.Dialogs.ShowErrorMessage(
                         $"Failed to trim '{fileName}'.\n\nCheck that FFmpeg is configured correctly.",
                         "Trim Failed");
@@ -580,7 +570,7 @@ namespace UniPlaySong.Views
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error applying trim");
-                LogDebug($"Exception during trim: {ex.Message}");
+                Logger.DebugIf(LogPrefix,$"Exception during trim: {ex.Message}");
                 _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Trim Error");
             }
             finally
@@ -592,7 +582,7 @@ namespace UniPlaySong.Views
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            LogDebug("Cancel button clicked");
+            Logger.DebugIf(LogPrefix,"Cancel button clicked");
             StopPreview();
             _loadCts?.Cancel();
 
@@ -608,7 +598,7 @@ namespace UniPlaySong.Views
         /// </summary>
         public void Cleanup()
         {
-            LogDebug("Cleanup called");
+            Logger.DebugIf(LogPrefix,"Cleanup called");
             StopPreview();
             _loadCts?.Cancel();
         }

@@ -19,17 +19,7 @@ namespace UniPlaySong.Downloaders
     public class YouTubeClient
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                LogDebug(message);
-            }
-        }
+        private const string LogPrefix = "YouTube";
 
         private readonly HttpClient _httpClient;
         private readonly ErrorHandlerService _errorHandler;
@@ -80,7 +70,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                LogDebug("YouTube search cancelled");
+                Logger.DebugIf(LogPrefix,"YouTube search cancelled");
                 throw; // Re-throw cancellation
             }
             catch (Exception ex)
@@ -127,7 +117,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                LogDebug("YouTube playlist loading cancelled");
+                Logger.DebugIf(LogPrefix,"YouTube playlist loading cancelled");
             }
             catch (Exception ex)
             {
@@ -156,7 +146,7 @@ namespace UniPlaySong.Downloaders
 
                 request.Content = new StringContent(content);
                 request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-                LogDebug($"YouTube search request: Query='{searchQuery}', Filter='{searchFilter}', Continuation={continuationToken != null}");
+                Logger.DebugIf(LogPrefix,$"YouTube search request: Query='{searchQuery}', Filter='{searchFilter}', Continuation={continuationToken != null}");
                 
                 var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
                 
@@ -168,7 +158,7 @@ namespace UniPlaySong.Downloaders
                 }
                 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                LogDebug($"YouTube search response received: {responseContent.Length} characters");
+                Logger.DebugIf(LogPrefix,$"YouTube search response received: {responseContent.Length} characters");
                 return responseContent;
             }
             catch (Exception ex)
@@ -210,7 +200,7 @@ namespace UniPlaySong.Downloaders
                 dynamic jsonObj = Serialization.FromJson<dynamic>(json);
                 var playlists = new List<dynamic>(jsonObj.SelectTokens(ParserPlaylists));
                 
-                LogDebug($"ParseSearchResults: Found {playlists.Count} playlists in JSON response");
+                Logger.DebugIf(LogPrefix,$"ParseSearchResults: Found {playlists.Count} playlists in JSON response");
 
                 foreach (var playlist in playlists)
                 {
@@ -229,11 +219,11 @@ namespace UniPlaySong.Downloaders
                         if (!string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Title))
                         {
                             results.Add(item);
-                            LogDebug($"Added playlist: {item.Title} (ID: {item.Id}, Count: {item.Count}, Channel: {item.ChannelName})");
+                            Logger.DebugIf(LogPrefix,$"Added playlist: {item.Title} (ID: {item.Id}, Count: {item.Count}, Channel: {item.ChannelName})");
                         }
                         else
                         {
-                            LogDebug($"Skipped playlist - missing ID or Title. ID: {item.Id}, Title: {item.Title}");
+                            Logger.DebugIf(LogPrefix,$"Skipped playlist - missing ID or Title. ID: {item.Id}, Title: {item.Title}");
                         }
                     }
                     catch (Exception ex)
@@ -251,7 +241,7 @@ namespace UniPlaySong.Downloaders
                 // SelectToken (singular) throws "Path returned multiple tokens" when this happens
                 var continuationTokens = new List<dynamic>(jsonObj.SelectTokens(ParserContinuationToken));
                 var continuationToken = continuationTokens.FirstOrDefault()?.ToString();
-                LogDebug($"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
+                Logger.DebugIf(LogPrefix,$"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
                 return continuationToken;
             }
             catch (Exception ex)

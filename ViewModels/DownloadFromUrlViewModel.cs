@@ -18,14 +18,7 @@ namespace UniPlaySong.ViewModels
     public class DownloadFromUrlViewModel : System.Collections.Generic.ObservableObject
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
+        private const string LogPrefix = "DownloadFromUrl";
 
         private static readonly Regex YoutubeVideoRegex = new Regex(
             @"(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})",
@@ -234,7 +227,7 @@ namespace UniPlaySong.ViewModels
             }
 
             _extractedVideoId = match.Groups[1].Value;
-            LogDebug($"Extracted YouTube video ID: {_extractedVideoId}");
+            Logger.DebugIf(LogPrefix,$"Extracted YouTube video ID: {_extractedVideoId}");
 
             UpdateOnUIThread(() =>
             {
@@ -263,7 +256,7 @@ namespace UniPlaySong.ViewModels
                         ValidationIconColor = Brushes.LimeGreen;
                         IsValidUrl = true;
                         ShowValidationResult = true;
-                        LogDebug($"Video validated: {VideoTitle}");
+                        Logger.DebugIf(LogPrefix,$"Video validated: {VideoTitle}");
                     }
                     else
                     {
@@ -274,7 +267,7 @@ namespace UniPlaySong.ViewModels
             }
             catch (OperationCanceledException)
             {
-                LogDebug("URL validation cancelled");
+                Logger.DebugIf(LogPrefix,"URL validation cancelled");
                 UpdateOnUIThread(() => ShowProgress = false);
             }
             catch (Exception ex)
@@ -475,7 +468,7 @@ namespace UniPlaySong.ViewModels
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Preview download cancelled");
+                Logger.DebugIf(LogPrefix,"Preview download cancelled");
                 UpdateOnUIThread(() => ShowProgress = false);
             }
             catch (Exception ex)
@@ -611,13 +604,13 @@ namespace UniPlaySong.ViewModels
                     {
                         if (_playbackService != null && _settingsService?.Current != null)
                         {
-                            LogDebug($"Force reloading music for game: {_game.Name}");
+                            Logger.DebugIf(LogPrefix,$"Force reloading music for game: {_game.Name}");
                             _playbackService.PlayGameMusic(_game, _settingsService.Current, forceReload: true);
                         }
                     }
                     catch (Exception ex)
                     {
-                        LogDebug($"Error reloading music after download: {ex.Message}");
+                        Logger.DebugIf(LogPrefix,$"Error reloading music after download: {ex.Message}");
                     }
 
                     await Task.Delay(1500);
@@ -635,7 +628,7 @@ namespace UniPlaySong.ViewModels
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Download cancelled");
+                Logger.DebugIf(LogPrefix,"Download cancelled");
                 ProgressText = "Download cancelled.";
             }
             catch (Exception ex)

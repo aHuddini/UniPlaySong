@@ -20,28 +20,7 @@ namespace UniPlaySong.Views
     public partial class ControllerFilePickerDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
-
-        /// <summary>
-        /// Logs a debug message with exception only if debug logging is enabled.
-        /// </summary>
-        private static void LogDebug(Exception ex, string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(ex, message);
-            }
-        }
+        private const string LogPrefix = "FilePicker";
 
         // Controller monitoring
         private CancellationTokenSource _controllerMonitoringCancellation;
@@ -110,7 +89,7 @@ namespace UniPlaySong.Views
                 _playbackService = playbackService;
                 _mode = mode;
 
-                LogDebug($"Initialized file picker for game: {game?.Name}, mode: {mode}");
+                Logger.DebugIf(LogPrefix, $"Initialized file picker for game: {game?.Name}, mode: {mode}");
 
                 // Update UI based on mode
                 UpdateUIForMode();
@@ -344,7 +323,7 @@ namespace UniPlaySong.Views
             _controllerMonitoringCancellation = new CancellationTokenSource();
             
             _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
-            LogDebug("Started controller monitoring for file picker");
+            Logger.DebugIf(LogPrefix, "Started controller monitoring for file picker");
         }
 
         /// <summary>
@@ -356,7 +335,7 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            LogDebug("Stopped controller monitoring for file picker");
+            Logger.DebugIf(LogPrefix, "Stopped controller monitoring for file picker");
         }
 
         /// <summary>
@@ -395,7 +374,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    LogDebug(ex, "Error in controller monitoring");
+                    Logger.DebugIf(LogPrefix, ex, "Error in controller monitoring");
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -587,7 +566,7 @@ namespace UniPlaySong.Views
                 _previewPlayer.Play();
                 
                 UpdateInputFeedback($"🔊 Playing preview: {fileName} - X/Y to stop (Game music paused)");
-                LogDebug($"Started preview for: {fileName}");
+                Logger.DebugIf(LogPrefix, $"Started preview for: {fileName}");
             }
             catch (Exception ex)
             {
@@ -631,7 +610,7 @@ namespace UniPlaySong.Views
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    LogDebug("Paused game music for preview");
+                    Logger.DebugIf(LogPrefix, "Paused game music for preview");
                 }
                 else
                 {
@@ -656,7 +635,7 @@ namespace UniPlaySong.Views
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    LogDebug("Resumed game music after preview");
+                    Logger.DebugIf(LogPrefix, "Resumed game music after preview");
                 }
             }
             catch (Exception ex)
@@ -943,7 +922,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        LogDebug(focusEx, "Error returning focus to main window");
+                        Logger.DebugIf(LogPrefix, focusEx, "Error returning focus to main window");
                     }
                     
                     window.DialogResult = success;

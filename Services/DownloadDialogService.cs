@@ -21,17 +21,7 @@ namespace UniPlaySong.Services
     public class DownloadDialogService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
+        private const string LogPrefix = "DownloadDialog";
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly IDownloadManager _downloadManager;
@@ -215,16 +205,16 @@ namespace UniPlaySong.Services
                     var selectedItem = selected[0];
                     if (selectedItem is Playnite.SDK.GenericItemOption selectedOption)
                     {
-                        LogDebug($"User selected source option: {selectedOption.Name}");
+                        Logger.DebugIf(LogPrefix,$"User selected source option: {selectedOption.Name}");
 
                         if (selectedOption.Name == "KHInsider")
                         {
-                            LogDebug("Returning Source.KHInsider");
+                            Logger.DebugIf(LogPrefix,"Returning Source.KHInsider");
                             return Source.KHInsider;
                         }
                         else if (selectedOption.Name == "YouTube")
                         {
-                            LogDebug("YouTube selected - validating configuration...");
+                            Logger.DebugIf(LogPrefix,"YouTube selected - validating configuration...");
                             // Validate YouTube configuration before returning
                             if (_settingsService.Current == null || string.IsNullOrWhiteSpace(_settingsService.Current.YtDlpPath) || string.IsNullOrWhiteSpace(_settingsService.Current.FFmpegPath))
                             {
@@ -246,7 +236,7 @@ namespace UniPlaySong.Services
                                 return null; // Prevent proceeding if yt-dlp not found
                             }
                             
-                            LogDebug("YouTube configuration validated successfully");
+                            Logger.DebugIf(LogPrefix,"YouTube configuration validated successfully");
                             return Source.YouTube;
                         }
                         else
@@ -266,7 +256,7 @@ namespace UniPlaySong.Services
             }
             else
             {
-                LogDebug("Source selection dialog cancelled or closed");
+                Logger.DebugIf(LogPrefix,"Source selection dialog cancelled or closed");
             }
 
             return null;
@@ -281,9 +271,9 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            LogDebug($"ShowUnifiedAlbumSelectionDialog called for game: {game?.Name ?? "null"}");
+            Logger.DebugIf(LogPrefix,$"ShowUnifiedAlbumSelectionDialog called for game: {game?.Name ?? "null"}");
 
-            LogDebug("Creating unified DownloadDialogViewModel...");
+            Logger.DebugIf(LogPrefix,"Creating unified DownloadDialogViewModel...");
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
                     _playniteApi,
@@ -305,7 +295,7 @@ namespace UniPlaySong.Services
                 return null;
             }
 
-            LogDebug("Unified DownloadDialogViewModel created successfully");
+            Logger.DebugIf(LogPrefix,"Unified DownloadDialogViewModel created successfully");
 
             return _errorHandler.Try(
                 () =>
@@ -341,7 +331,7 @@ namespace UniPlaySong.Services
                             {
                                 window.Activate();
                                 window.Focus();
-                                LogDebug("Unified album selection window loaded and activated");
+                                Logger.DebugIf(LogPrefix,"Unified album selection window loaded and activated");
 
                                 // Trigger search after window is loaded
                                 if (game != null)
@@ -390,9 +380,9 @@ namespace UniPlaySong.Services
                         viewModel.CleanupPreviewFiles();
                     };
 
-                    LogDebug("Showing unified album selection window...");
+                    Logger.DebugIf(LogPrefix,"Showing unified album selection window...");
                     var result = window.ShowDialog();
-                    LogDebug($"Unified album selection window closed with result: {result}");
+                    Logger.DebugIf(LogPrefix,$"Unified album selection window closed with result: {result}");
 
                     if (result == true)
                     {
@@ -400,12 +390,12 @@ namespace UniPlaySong.Services
                         var album = selected.FirstOrDefault() as Album;
                         if (album != null)
                         {
-                            LogDebug($"User selected album: {album.Name} from {album.Source}");
+                            Logger.DebugIf(LogPrefix,$"User selected album: {album.Name} from {album.Source}");
                             return album;
                         }
                     }
 
-                    LogDebug("User cancelled unified album selection or no album selected");
+                    Logger.DebugIf(LogPrefix,"User cancelled unified album selection or no album selected");
                     return null;
                 },
                 defaultValue: null,
@@ -422,16 +412,16 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
             
-            LogDebug($"ShowAlbumSelectionDialog called for game: {game?.Name ?? "null"}, source: {source}");
+            Logger.DebugIf(LogPrefix,$"ShowAlbumSelectionDialog called for game: {game?.Name ?? "null"}, source: {source}");
             
             // YouTube configuration is now validated in ShowSourceSelectionDialog before YouTube can be selected
             // So if we reach here with YouTube source, it should be valid
             if (source == Source.YouTube)
             {
-                LogDebug("YouTube source confirmed - configuration already validated");
+                Logger.DebugIf(LogPrefix,"YouTube source confirmed - configuration already validated");
             }
 
-            LogDebug("Creating DownloadDialogViewModel...");
+            Logger.DebugIf(LogPrefix,"Creating DownloadDialogViewModel...");
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
                     _playniteApi,
@@ -453,9 +443,9 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            LogDebug("DownloadDialogViewModel created successfully");
+            Logger.DebugIf(LogPrefix,"DownloadDialogViewModel created successfully");
             
-            LogDebug("Creating album selection window...");
+            Logger.DebugIf(LogPrefix,"Creating album selection window...");
 
             return _errorHandler.Try(
                 () =>
@@ -492,7 +482,7 @@ namespace UniPlaySong.Services
                             {
                                 window.Activate();
                                 window.Focus();
-                                LogDebug("Album selection window loaded and activated");
+                                Logger.DebugIf(LogPrefix,"Album selection window loaded and activated");
                                 
                                 // Trigger search after window is loaded (similar to PNS WindowOpenedCommand)
                                 // This ensures window is visible and responsive before search starts
@@ -561,16 +551,16 @@ namespace UniPlaySong.Services
                         viewModel.CleanupPreviewFiles();
                     };
 
-                    LogDebug("Showing album selection dialog...");
+                    Logger.DebugIf(LogPrefix,"Showing album selection dialog...");
                     var result = window.ShowDialog();
-                    LogDebug($"Album selection dialog result: {result}");
+                    Logger.DebugIf(LogPrefix,$"Album selection dialog result: {result}");
                 
                     if (result == true)
                     {
                         // If double-clicked, use that album
                         if (doubleClickedAlbum != null)
                         {
-                            LogDebug($"Album double-clicked: {doubleClickedAlbum.Name}");
+                            Logger.DebugIf(LogPrefix,$"Album double-clicked: {doubleClickedAlbum.Name}");
                             return doubleClickedAlbum;
                         }
 
@@ -578,11 +568,11 @@ namespace UniPlaySong.Services
                         var album = selected.FirstOrDefault() as Album;
                         if (album != null)
                         {
-                            LogDebug($"Album selected: {album.Name} (ID: {album.Id})");
+                            Logger.DebugIf(LogPrefix,$"Album selected: {album.Name} (ID: {album.Id})");
                         }
                         else
                         {
-                            LogDebug("No album selected from dialog");
+                            Logger.DebugIf(LogPrefix,"No album selected from dialog");
                         }
                         return album;
                     }
@@ -590,11 +580,11 @@ namespace UniPlaySong.Services
                     // Return BackSignal when Back is pressed - signals caller to go back to source selection
                     if (viewModel.BackWasPressed)
                     {
-                        LogDebug("Album selection dialog: user pressed back - returning to source selection");
+                        Logger.DebugIf(LogPrefix,"Album selection dialog: user pressed back - returning to source selection");
                         return Album.BackSignal;
                     }
 
-                    LogDebug("Album selection dialog cancelled");
+                    Logger.DebugIf(LogPrefix,"Album selection dialog cancelled");
                     return null;
                 },
                 defaultValue: null,
@@ -654,7 +644,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        LogDebug("Song selection window loaded and activated");
+                        Logger.DebugIf(LogPrefix,"Song selection window loaded and activated");
                         
                         // Trigger search after window is loaded to load songs from album
                         // This matches the pattern we use for album selection
@@ -668,7 +658,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            LogDebug($"Triggering song search for album: {album.Name}");
+                                            Logger.DebugIf(LogPrefix,$"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs after window load"
@@ -702,7 +692,7 @@ namespace UniPlaySong.Services
                     _errorHandler.Try(
                         () =>
                         {
-                            LogDebug($"Download complete - triggering music refresh for game: {game.Name}");
+                            Logger.DebugIf(LogPrefix,$"Download complete - triggering music refresh for game: {game.Name}");
                             // Get current settings to pass to PlayGameMusic
                             var settings = _settingsService?.Current;
                             _playbackService.PlayGameMusic(game, settings, forceReload: true);
@@ -723,7 +713,7 @@ namespace UniPlaySong.Services
                     try
                     {
                         _tagService.UpdateGameMusicTag(game);
-                        LogDebug($"Updated music tag for game '{game.Name}' after download");
+                        Logger.DebugIf(LogPrefix,$"Updated music tag for game '{game.Name}' after download");
                     }
                     catch (Exception ex)
                     {
@@ -765,7 +755,7 @@ namespace UniPlaySong.Services
             // Return null when Back is pressed - signals caller to go back to album selection
             if (viewModel.BackWasPressed)
             {
-                LogDebug("Song selection dialog: user pressed back - returning to album selection");
+                Logger.DebugIf(LogPrefix,"Song selection dialog: user pressed back - returning to album selection");
                 return null;
             }
 
@@ -782,7 +772,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            LogDebug($"ShowSongSelectionDialogWithReturn called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
+            Logger.DebugIf(LogPrefix,$"ShowSongSelectionDialogWithReturn called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
 
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
@@ -837,7 +827,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        LogDebug("Batch song selection window loaded and activated");
+                        Logger.DebugIf(LogPrefix,"Batch song selection window loaded and activated");
 
                         if (album != null)
                         {
@@ -849,7 +839,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            LogDebug($"Triggering song search for album: {album.Name}");
+                                            Logger.DebugIf(LogPrefix,$"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs in batch dialog"
@@ -900,7 +890,7 @@ namespace UniPlaySong.Services
             
             if (result == true)
             {
-                LogDebug($"User selected {selectedSongs.Count} songs for batch download");
+                Logger.DebugIf(LogPrefix,$"User selected {selectedSongs.Count} songs for batch download");
                 return selectedSongs;
             }
 
@@ -916,7 +906,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            LogDebug("ShowDefaultMusicDownloadDialog called");
+            Logger.DebugIf(LogPrefix,"ShowDefaultMusicDownloadDialog called");
 
             if (_downloadManager == null)
             {
@@ -928,12 +918,12 @@ namespace UniPlaySong.Services
             Source? sourceNullable = ShowSourceSelectionDialog();
             if (sourceNullable == null)
             {
-                LogDebug("User cancelled source selection");
+                Logger.DebugIf(LogPrefix,"User cancelled source selection");
                 return false;
             }
 
             var source = sourceNullable.Value;
-            LogDebug($"User selected source: {source}");
+            Logger.DebugIf(LogPrefix,$"User selected source: {source}");
 
             // Step 2: For default music, use a dummy game and let users search in the album dialog
             // This is more intuitive - users can type the game name in the search box
@@ -943,7 +933,7 @@ namespace UniPlaySong.Services
             Album album = ShowAlbumSelectionDialogForDefaultMusic(source);
             if (album == null)
             {
-                LogDebug("User cancelled album selection");
+                Logger.DebugIf(LogPrefix,"User cancelled album selection");
                 return false;
             }
 
@@ -951,7 +941,7 @@ namespace UniPlaySong.Services
             var selectedSong = ShowSongSelectionForDefaultMusic(dummyGame, album);
             if (selectedSong == null)
             {
-                LogDebug("No song selected or download cancelled");
+                Logger.DebugIf(LogPrefix,"No song selected or download cancelled");
                 return false;
             }
 
@@ -980,7 +970,7 @@ namespace UniPlaySong.Services
                         downloadPath = defaultMusicPath;
                     }
 
-                    LogDebug($"Downloading default music to: {downloadPath}");
+                    Logger.DebugIf(LogPrefix,$"Downloading default music to: {downloadPath}");
 
                     // Show progress dialog
                     var progressOptions = new Playnite.SDK.GlobalProgressOptions(
@@ -997,7 +987,7 @@ namespace UniPlaySong.Services
 
                     if (downloadSuccess && System.IO.File.Exists(downloadPath))
                     {
-                        LogDebug($"Default music downloaded successfully: {downloadPath}");
+                        Logger.DebugIf(LogPrefix,$"Default music downloaded successfully: {downloadPath}");
                         _playniteApi.Dialogs.ShowMessage(
                             $"Default music downloaded successfully!\n\nFile: {System.IO.Path.GetFileName(downloadPath)}\nLocation: {downloadPath}",
                             "Download Complete");
@@ -1027,7 +1017,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            LogDebug($"ShowSongSelectionForDefaultMusic called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
+            Logger.DebugIf(LogPrefix,$"ShowSongSelectionForDefaultMusic called for game: {game?.Name ?? "null"}, album: {album?.Name ?? "null"}");
 
             DownloadDialogViewModel viewModel = _errorHandler.Try(
                 () => new DownloadDialogViewModel(
@@ -1050,7 +1040,7 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            LogDebug("DownloadDialogViewModel created successfully");
+            Logger.DebugIf(LogPrefix,"DownloadDialogViewModel created successfully");
 
             var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
             {
@@ -1084,7 +1074,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        LogDebug("Default music song selection window loaded and activated");
+                        Logger.DebugIf(LogPrefix,"Default music song selection window loaded and activated");
                         
                         // Trigger search after window is loaded to load songs from album
                         if (album != null)
@@ -1097,7 +1087,7 @@ namespace UniPlaySong.Services
                                     _errorHandler.Try(
                                         () =>
                                         {
-                                            LogDebug($"Triggering song search for album: {album.Name}");
+                                            Logger.DebugIf(LogPrefix,$"Triggering song search for album: {album.Name}");
                                             viewModel.PerformSearch();
                                         },
                                         context: "auto-search for songs in default music dialog"
@@ -1149,7 +1139,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
             
-            LogDebug($"ShowAlbumSelectionDialogForDefaultMusic called for source: {source}");
+            Logger.DebugIf(LogPrefix,$"ShowAlbumSelectionDialogForDefaultMusic called for source: {source}");
 
             // Create a dummy game with empty name - user will search
             Game dummyGame = new Game { Name = "", Id = Guid.NewGuid() };
@@ -1175,7 +1165,7 @@ namespace UniPlaySong.Services
                 return null;
             }
             
-            LogDebug("DownloadDialogViewModel created successfully");
+            Logger.DebugIf(LogPrefix,"DownloadDialogViewModel created successfully");
 
             var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
             {
@@ -1216,7 +1206,7 @@ namespace UniPlaySong.Services
                     {
                         window.Activate();
                         window.Focus();
-                        LogDebug("Default music album selection window loaded");
+                        Logger.DebugIf(LogPrefix,"Default music album selection window loaded");
                         // Don't trigger auto-search - user will type in search box
                     },
                     context: "activating default music album selection window"
@@ -1270,7 +1260,7 @@ namespace UniPlaySong.Services
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
 
-            LogDebug($"ShowDownloadFromUrlDialog called for game: {game.Name}");
+            Logger.DebugIf(LogPrefix,$"ShowDownloadFromUrlDialog called for game: {game.Name}");
 
             // Check if yt-dlp is configured
             var ytDlpPath = _settingsService.Current?.YtDlpPath;
@@ -1373,11 +1363,11 @@ namespace UniPlaySong.Services
 
             if (result == true)
             {
-                LogDebug($"Download from URL completed successfully for game: {game.Name}");
+                Logger.DebugIf(LogPrefix,$"Download from URL completed successfully for game: {game.Name}");
             }
             else
             {
-                LogDebug($"Download from URL cancelled or failed for game: {game.Name}");
+                Logger.DebugIf(LogPrefix,$"Download from URL cancelled or failed for game: {game.Name}");
             }
         }
 
@@ -1392,7 +1382,7 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            LogDebug($"ShowNormalizeIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
+            Logger.DebugIf(LogPrefix,$"ShowNormalizeIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
 
             _errorHandler.Try(
                 () =>
@@ -1433,7 +1423,7 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            LogDebug($"ShowTrimIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
+            Logger.DebugIf(LogPrefix,$"ShowTrimIndividualSongProgress called for game: {game.Name}, file: {selectedFile}");
 
             _errorHandler.Try(
                 () =>
@@ -1478,7 +1468,7 @@ namespace UniPlaySong.Services
             var settings = _settingsService?.Current;
             if (settings == null || !settings.AutoNormalizeAfterDownload)
             {
-                LogDebug("Auto-normalize is disabled, skipping post-download normalization");
+                Logger.DebugIf(LogPrefix,"Auto-normalize is disabled, skipping post-download normalization");
                 return;
             }
 
@@ -1497,7 +1487,7 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            LogDebug($"Auto-normalizing {downloadedFiles.Count} downloaded file(s)...");
+            Logger.DebugIf(LogPrefix,$"Auto-normalizing {downloadedFiles.Count} downloaded file(s)...");
 
             _errorHandler.Try(
                 () =>
@@ -1554,11 +1544,11 @@ namespace UniPlaySong.Services
                             task.Wait(cts.Token);
 
                             var result = task.Result;
-                            LogDebug($"Auto-normalize complete: {result.SuccessCount} succeeded, {result.FailureCount} failed, {result.SkippedCount} skipped");
+                            Logger.DebugIf(LogPrefix,$"Auto-normalize complete: {result.SuccessCount} succeeded, {result.FailureCount} failed, {result.SkippedCount} skipped");
                         }
                         catch (OperationCanceledException)
                         {
-                            LogDebug("Auto-normalize cancelled by user");
+                            Logger.DebugIf(LogPrefix,"Auto-normalize cancelled by user");
                         }
                         catch (Exception ex)
                         {

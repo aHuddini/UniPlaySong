@@ -17,14 +17,7 @@ namespace UniPlaySong.Services
     public class MigrationService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug(message);
-            }
-        }
+        private const string LogPrefix = "Migration";
 
         // Audio file extensions to migrate (excludes metadata files like .json)
         private static readonly string[] AudioExtensions =
@@ -79,7 +72,7 @@ namespace UniPlaySong.Services
 
             if (!Directory.Exists(PlayniteSoundGamesPath))
             {
-                LogDebug($"PlayniteSound games path does not exist: {PlayniteSoundGamesPath}");
+                Logger.DebugIf(LogPrefix,$"PlayniteSound games path does not exist: {PlayniteSoundGamesPath}");
                 return games;
             }
 
@@ -129,7 +122,7 @@ namespace UniPlaySong.Services
 
             if (!Directory.Exists(UniPlaySongGamesPath))
             {
-                LogDebug($"UniPlaySong games path does not exist: {UniPlaySongGamesPath}");
+                Logger.DebugIf(LogPrefix,$"UniPlaySong games path does not exist: {UniPlaySongGamesPath}");
                 return games;
             }
 

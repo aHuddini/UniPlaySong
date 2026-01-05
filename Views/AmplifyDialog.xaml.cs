@@ -8,7 +8,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Playnite.SDK;
-using IOPath = System.IO.Path;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
@@ -18,14 +17,7 @@ namespace UniPlaySong.Views
     public partial class AmplifyDialog : UserControl
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private static void LogDebug(string message)
-        {
-            if (FileLogger.IsDebugLoggingEnabled)
-            {
-                Logger.Debug($"[Amplify:Desktop] {message}");
-            }
-        }
+        private const string LogPrefix = "Amplify:Desktop";
 
         private IPlayniteAPI _playniteApi;
         private AudioAmplifyService _amplifyService;
@@ -64,7 +56,7 @@ namespace UniPlaySong.Views
             GameMusicFileService fileService,
             Func<UniPlaySongSettings> settingsProvider)
         {
-            LogDebug($"Initialize called for game: {game?.Name}");
+            Logger.DebugIf(LogPrefix,$"Initialize called for game: {game?.Name}");
             _game = game;
             _playniteApi = playniteApi;
             _amplifyService = amplifyService;
@@ -78,12 +70,12 @@ namespace UniPlaySong.Views
         private void LoadFileList()
         {
             var songs = _fileService?.GetAvailableSongs(_game) ?? new List<string>();
-            LogDebug($"LoadFileList: found {songs.Count} songs");
+            Logger.DebugIf(LogPrefix,$"LoadFileList: found {songs.Count} songs");
             FileComboBox.Items.Clear();
 
             foreach (var song in songs)
             {
-                var fileName = IOPath.GetFileName(song);
+                var fileName = Path.GetFileName(song);
                 FileComboBox.Items.Add(new ComboBoxItem
                 {
                     Content = fileName,
@@ -97,7 +89,7 @@ namespace UniPlaySong.Views
             }
             else
             {
-                LogDebug("No audio files found");
+                Logger.DebugIf(LogPrefix,"No audio files found");
                 NoWaveformText.Text = "No audio files found for this game";
                 NoWaveformText.Visibility = Visibility.Visible;
             }
@@ -107,14 +99,14 @@ namespace UniPlaySong.Views
         {
             if (FileComboBox.SelectedItem is ComboBoxItem item && item.Tag is string filePath)
             {
-                LogDebug($"File selected: {IOPath.GetFileName(filePath)}");
+                Logger.DebugIf(LogPrefix,$"File selected: {Path.GetFileName(filePath)}");
                 await LoadWaveformAsync(filePath);
             }
         }
 
         private async Task LoadWaveformAsync(string filePath)
         {
-            LogDebug($"LoadWaveformAsync: {IOPath.GetFileName(filePath)}");
+            Logger.DebugIf(LogPrefix,$"LoadWaveformAsync: {Path.GetFileName(filePath)}");
             _loadCts?.Cancel();
             _loadCts = new CancellationTokenSource();
             var token = _loadCts.Token;
@@ -124,7 +116,7 @@ namespace UniPlaySong.Views
                 LoadingOverlay.Visibility = Visibility.Visible;
                 NoWaveformText.Visibility = Visibility.Collapsed;
 
-                var fileName = IOPath.GetFileName(filePath);
+                var fileName = Path.GetFileName(filePath);
                 var fileInfo = new System.IO.FileInfo(filePath);
                 FileNameText.Text = fileName;
 
@@ -138,14 +130,14 @@ namespace UniPlaySong.Views
 
                 if (_waveformData == null || !_waveformData.IsValid)
                 {
-                    LogDebug("Failed to load waveform data");
+                    Logger.DebugIf(LogPrefix,"Failed to load waveform data");
                     NoWaveformText.Text = "Failed to load waveform";
                     NoWaveformText.Visibility = Visibility.Visible;
                     LoadingOverlay.Visibility = Visibility.Collapsed;
                     return;
                 }
 
-                LogDebug($"Waveform loaded: duration={_waveformData.Duration:mm\\:ss\\.fff}, peak={_waveformData.PeakDb:F1}dB");
+                Logger.DebugIf(LogPrefix,$"Waveform loaded: duration={_waveformData.Duration:mm\\:ss\\.fff}, peak={_waveformData.PeakDb:F1}dB");
 
                 // Update file info
                 var sizeMB = fileInfo.Length / (1024.0 * 1024.0);
@@ -159,7 +151,7 @@ namespace UniPlaySong.Views
             }
             catch (OperationCanceledException)
             {
-                LogDebug("Waveform load cancelled");
+                Logger.DebugIf(LogPrefix,"Waveform load cancelled");
             }
             catch (Exception ex)
             {
@@ -498,7 +490,7 @@ namespace UniPlaySong.Views
 
             try
             {
-                LogDebug($"Preview with gain: {_currentGainDb:+0.0;-0.0;0}dB");
+                Logger.DebugIf(LogPrefix,$"Preview with gain: {_currentGainDb:+0.0;-0.0;0}dB");
 
                 // Get user's configured volume setting (0-100) and convert to 0-1 range
                 var settings = _settingsProvider?.Invoke();
@@ -519,7 +511,7 @@ namespace UniPlaySong.Views
                 // Use the same SDL2 backend for preview (consistent volume with normal playback)
                 _playbackService?.PlayPreview(_waveformData.FilePath, clampedVolume);
 
-                LogDebug($"Preview at volume {clampedVolume:F2} (user: {userVolume:F2} x gain: {gainMultiplier:F2})");
+                Logger.DebugIf(LogPrefix,$"Preview at volume {clampedVolume:F2} (user: {userVolume:F2} x gain: {gainMultiplier:F2})");
 
                 if (wasCapped)
                 {
@@ -541,9 +533,9 @@ namespace UniPlaySong.Views
             if (_waveformData == null || Math.Abs(_currentGainDb) < 0.1f) return;
 
             var filePath = _waveformData.FilePath;
-            var fileName = IOPath.GetFileName(filePath);
+            var fileName = Path.GetFileName(filePath);
 
-            LogDebug($"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
+            Logger.DebugIf(LogPrefix,$"ApplyButton_Click: file={fileName}, gain={_currentGainDb:+0.0;-0.0;0}dB");
 
             // Warn about clipping
             var clippingWarning = "";
@@ -590,7 +582,7 @@ namespace UniPlaySong.Views
                 if (success)
                 {
                     _playniteApi.Dialogs.ShowMessage(
-                        $"Successfully created '{IOPath.GetFileNameWithoutExtension(fileName)}{suffix}{IOPath.GetExtension(fileName)}'.\n\n" +
+                        $"Successfully created '{Path.GetFileNameWithoutExtension(fileName)}{suffix}{Path.GetExtension(fileName)}'.\n\n" +
                         $"Gain applied: {_currentGainDb:+0.0;-0.0;0}dB\n\n" +
                         $"Original file moved to PreservedOriginals folder.",
                         "Amplify Complete");
@@ -618,7 +610,7 @@ namespace UniPlaySong.Views
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            LogDebug("Cancel button clicked");
+            Logger.DebugIf(LogPrefix,"Cancel button clicked");
             _loadCts?.Cancel();
             _playbackService?.Stop();
 
@@ -630,7 +622,7 @@ namespace UniPlaySong.Views
 
         public void Cleanup()
         {
-            LogDebug("Cleanup called");
+            Logger.DebugIf(LogPrefix,"Cleanup called");
             _loadCts?.Cancel();
             _playbackService?.Stop();
         }
