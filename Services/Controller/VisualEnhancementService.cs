@@ -223,49 +223,13 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        private OnScreenKeyboard _activeOSK = null;
-        
+        // TODO: OnScreenKeyboard feature not yet implemented
+        // private object _activeOSK = null;
+
         public void ShowOnScreenKeyboard(Panel oskContainer)
         {
-            if (oskContainer == null) return;
-
-            try
-            {
-                // Save original visibility if not already saved
-                if (!_originalPanelStates.ContainsKey(oskContainer))
-                {
-                    _originalPanelStates[oskContainer] = new VisualState
-                    {
-                        OriginalVisibility = oskContainer.Visibility
-                    };
-                }
-
-                // Create and add OSK if not already present
-                if (_activeOSK == null)
-                {
-                    _activeOSK = new OnScreenKeyboard();
-                    
-                    // Handle OSK close event
-                    _activeOSK.CloseRequested += (s, e) => HideOnScreenKeyboard(oskContainer);
-                    
-                    // Handle text confirmed event
-                    _activeOSK.TextConfirmed += (s, text) =>
-                    {
-                        HideOnScreenKeyboard(oskContainer);
-                    };
-                }
-
-                // Clear container and add OSK
-                oskContainer.Children.Clear();
-                oskContainer.Children.Add(_activeOSK);
-
-                oskContainer.Visibility = Visibility.Visible;
-                _logger?.Debug("On-Screen Keyboard shown for controller mode");
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Error showing On-Screen Keyboard - text input may not work");
-            }
+            // OnScreenKeyboard not yet implemented - stub method
+            _logger?.Debug("On-Screen Keyboard feature not yet implemented");
         }
 
         public void HideOnScreenKeyboard(Panel oskContainer)

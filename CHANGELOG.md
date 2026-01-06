@@ -2,6 +2,23 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Audacity-Compatible Reverb Presets** - 18 factory presets matching Audacity's reverb effect
+  - General Purpose: Acoustic, Ambience, Artificial, Clean, Modern
+  - Vocals: Vocal I, Vocal II, Dance Vocal, Modern Vocal, Voice Tail
+  - Room Sizes: Bathroom, Small Room Bright/Dark, Medium Room, Large Room, Church Hall, Cathedral, Big Cave
+- **Reverberance Parameter** - New slider controlling reverb tail length separately from Room Size (key for more pronounced effects)
+- **Tone Low/High Parameters** - New sliders for bass and treble content of reverb (Audacity-style post-reverb EQ)
+- **Wet Gain Extended Range** - Now allows +10 dB (was 0 dB max) for more pronounced reverb effects
+- **Effect Chain Ordering** - Dropdown to configure effect processing order (6 preset orderings)
+
+### Changed
+- Reverb algorithm now uses Reverberance (not Room Size) for feedback calculation, matching Audacity behavior
+- Reverb presets updated to use exact Audacity factory values
+- Technical documentation updated with complete algorithm details
+
 ## [1.1.4] - 2026-01-04
 
 ### Added
