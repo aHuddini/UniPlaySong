@@ -1,6 +1,4 @@
-using System.Windows;
 using System.Windows.Controls;
-using Playnite.SDK;
 
 namespace UniPlaySong
 {
@@ -13,4 +11,3 @@ namespace UniPlaySong
         }
     }
 }
-

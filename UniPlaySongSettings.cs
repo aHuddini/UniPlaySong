@@ -5,6 +5,65 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong
 {
+    /// <summary>
+    /// Reverb effect presets based on Audacity's factory presets.
+    /// Each preset configures Room Size, Pre-delay, Reverberance, HF Damping,
+    /// Tone Low, Tone High, Wet Gain, Dry Gain, and Stereo Width.
+    /// </summary>
+    public enum ReverbPreset
+    {
+        Custom = 0,
+        // General purpose (Audacity)
+        Acoustic,
+        Ambience,
+        Artificial,
+        Clean,
+        Modern,
+        // Vocals (Audacity)
+        VocalI,
+        VocalII,
+        DanceVocal,
+        ModernVocal,
+        VoiceTail,
+        // Room sizes (Audacity)
+        Bathroom,
+        SmallRoomBright,
+        SmallRoomDark,
+        MediumRoom,
+        LargeRoom,
+        ChurchHall,
+        Cathedral,
+        BigCave,
+        // UniPlaySong custom presets - Living/Entertainment environments
+        LivingRoom,         // Cozy living room TV viewing
+        HomeTheater,        // Home theater movie night
+        LateNightTV,        // Subtle late night ambience
+        LoungeCafe,         // Relaxed cafe/lounge atmosphere
+        JazzClub,           // Intimate jazz club
+        NightClub,          // Club/dance floor energy
+        ConcertHall         // Live concert experience
+    }
+
+    /// <summary>
+    /// Preset effect chain orderings.
+    /// Each preset defines a fixed, safe order for applying effects.
+    /// </summary>
+    public enum EffectChainPreset
+    {
+        /// <summary>Standard: High-Pass → Low-Pass → Reverb (Recommended)</summary>
+        Standard = 0,
+        /// <summary>Filters after reverb: Reverb → High-Pass → Low-Pass</summary>
+        ReverbFirst = 1,
+        /// <summary>Low-Pass → High-Pass → Reverb</summary>
+        LowPassFirst = 2,
+        /// <summary>Low-Pass → Reverb → High-Pass</summary>
+        LowPassThenReverb = 3,
+        /// <summary>High-Pass → Reverb → Low-Pass</summary>
+        HighPassThenReverb = 4,
+        /// <summary>Reverb → Low-Pass → High-Pass</summary>
+        ReverbThenLowPass = 5
+    }
+
     public class UniPlaySongSettings : ObservableObject
     {
         private bool enableMusic = true;
@@ -567,6 +626,703 @@ namespace UniPlaySong
         {
             get => whitelistedYouTubeChannelIds;
             set { whitelistedYouTubeChannelIds = value ?? new List<string>(); OnPropertyChanged(); }
+        }
+
+        // Live Effects Settings
+        private bool liveEffectsEnabled = false;
+        private bool lowPassEnabled = false;
+        private bool highPassEnabled = false;
+        private bool reverbEnabled = false;
+        private int lowPassCutoff = 8000;
+        private int highPassCutoff = 80;
+        private int reverbWetGain = -6;   // dB (-20 to 10) - Audacity allows up to +10
+        private int reverbDryGain = 0;    // dB (-20 to 0)
+        private int reverbRoomSize = 75;  // % (0-100)
+        private int reverbReverberance = 50; // % (0-100) - reverb tail length (Audacity parameter)
+        private int reverbDamping = 50;   // % (0-100) - HF damping
+        private int reverbToneLow = 100;  // % (0-100) - bass content of reverb (Audacity parameter)
+        private int reverbToneHigh = 100; // % (0-100) - treble content of reverb (Audacity parameter)
+        private int reverbPreDelay = 10;  // ms (0-200) - delay before reverb starts
+        private int reverbStereoWidth = 100; // % (0-100) - stereo spread
+        private bool makeupGainEnabled = false;
+        private int makeupGain = 0;       // dB (-6 to +12) - output gain after effects
+        private ReverbPreset selectedReverbPreset = ReverbPreset.Custom;
+        private EffectChainPreset effectChainPreset = EffectChainPreset.Standard;
+
+        // Advanced Reverb Tuning (expert mode)
+        private bool advancedReverbTuningEnabled = false;
+        private int reverbWetGainMultiplier = 8;     // 1-25 (displayed as 0.01-0.25, stored as 1-25 for int slider)
+        private int reverbAllpassFeedback = 50;     // 30-70 (displayed as 0.30-0.70)
+        private int reverbHfDampingMin = 20;        // 10-40 (displayed as 0.10-0.40)
+        private int reverbHfDampingMax = 50;        // 30-70 (displayed as 0.30-0.70)
+
+        /// <summary>
+        /// Enable live audio effects processing.
+        /// When enabled, uses NAudio-based player with real-time effects chain.
+        /// When disabled, uses standard WPF MediaPlayer for playback.
+        /// Note: Toggling this setting will restart the current song.
+        /// </summary>
+        public bool LiveEffectsEnabled
+        {
+            get => liveEffectsEnabled;
+            set { liveEffectsEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable low-pass filter effect (removes high frequencies).
+        /// Only works when LiveEffectsEnabled is true.
+        /// Use to create a "muffled" or "underwater" sound effect.
+        /// </summary>
+        public bool LowPassEnabled
+        {
+            get => lowPassEnabled;
+            set { lowPassEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable high-pass filter effect (removes low frequencies).
+        /// Only works when LiveEffectsEnabled is true.
+        /// Use to reduce bass/rumble or create a "thin" sound.
+        /// </summary>
+        public bool HighPassEnabled
+        {
+            get => highPassEnabled;
+            set { highPassEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable reverb effect (adds spacial echo/ambiance).
+        /// Only works when LiveEffectsEnabled is true.
+        /// Creates a sense of space or room around the sound.
+        /// </summary>
+        public bool ReverbEnabled
+        {
+            get => reverbEnabled;
+            set { reverbEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Low-pass filter cutoff frequency in Hz.
+        /// Range: 200 - 20000 Hz. Default: 8000 Hz (fairly open).
+        /// Lower values = more muffled sound.
+        /// </summary>
+        public int LowPassCutoff
+        {
+            get => lowPassCutoff;
+            set { lowPassCutoff = Math.Max(200, Math.Min(20000, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// High-pass filter cutoff frequency in Hz.
+        /// Range: 20 - 2000 Hz. Default: 80 Hz (minimal bass cut).
+        /// Higher values = more bass removed.
+        /// </summary>
+        public int HighPassCutoff
+        {
+            get => highPassCutoff;
+            set { highPassCutoff = Math.Max(20, Math.Min(2000, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb wet (effect) gain in dB.
+        /// Range: -20 to +10 dB. Default: -6 dB.
+        /// Controls the volume of the reverb effect independently from dry signal.
+        /// Positive values create more pronounced reverb effects.
+        /// </summary>
+        public int ReverbWetGain
+        {
+            get => reverbWetGain;
+            set { reverbWetGain = Math.Max(-20, Math.Min(10, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb dry (original) gain in dB.
+        /// Range: -20 to 0 dB. Default: 0 dB (full volume).
+        /// Controls the volume of the original signal independently from reverb.
+        /// </summary>
+        public int ReverbDryGain
+        {
+            get => reverbDryGain;
+            set { reverbDryGain = Math.Max(-20, Math.Min(0, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb room size percentage.
+        /// Range: 0 - 100%. Default: 75%.
+        /// Controls the size of the virtual room (larger = longer decay).
+        /// </summary>
+        public int ReverbRoomSize
+        {
+            get => reverbRoomSize;
+            set { reverbRoomSize = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb reverberance (tail length) percentage.
+        /// Range: 0 - 100%. Default: 50%.
+        /// Controls how long the reverb tail continues after sound ends.
+        /// Higher = longer, more "live" sounding reverb.
+        /// </summary>
+        public int ReverbReverberance
+        {
+            get => reverbReverberance;
+            set { reverbReverberance = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb high-frequency damping percentage.
+        /// Range: 0 - 100%. Default: 50%.
+        /// Controls how quickly high frequencies decay (higher = more muffled reverb tail).
+        /// </summary>
+        public int ReverbDamping
+        {
+            get => reverbDamping;
+            set { reverbDamping = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb tone low (bass) percentage.
+        /// Range: 0 - 100%. Default: 100%.
+        /// Controls bass content of reverb. Lower = less boomy reverb.
+        /// </summary>
+        public int ReverbToneLow
+        {
+            get => reverbToneLow;
+            set { reverbToneLow = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb tone high (treble) percentage.
+        /// Range: 0 - 100%. Default: 100%.
+        /// Controls treble content of reverb. Lower = darker, less bright reverb.
+        /// </summary>
+        public int ReverbToneHigh
+        {
+            get => reverbToneHigh;
+            set { reverbToneHigh = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb pre-delay in milliseconds.
+        /// Range: 0 - 200 ms. Default: 10 ms.
+        /// Delays the onset of reverb, creating sense of distance/space.
+        /// </summary>
+        public int ReverbPreDelay
+        {
+            get => reverbPreDelay;
+            set { reverbPreDelay = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Reverb stereo width percentage.
+        /// Range: 0 - 100%. Default: 100%.
+        /// Controls the stereo spread of the reverb (0 = mono, 100 = full stereo).
+        /// </summary>
+        public int ReverbStereoWidth
+        {
+            get => reverbStereoWidth;
+            set { reverbStereoWidth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable makeup gain (output amplification).
+        /// Only works when LiveEffectsEnabled is true.
+        /// </summary>
+        public bool MakeupGainEnabled
+        {
+            get => makeupGainEnabled;
+            set { makeupGainEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Makeup gain applied after all effects in dB.
+        /// Range: -6 to +12 dB. Default: 0 dB.
+        /// Use to compensate for volume changes caused by effects.
+        /// Only applied when MakeupGainEnabled is true.
+        /// </summary>
+        public int MakeupGain
+        {
+            get => makeupGain;
+            set { makeupGain = Math.Max(-6, Math.Min(12, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Currently selected reverb preset.
+        /// When set to a preset other than Custom, automatically applies the preset values.
+        /// Changes to individual reverb parameters will set this to Custom.
+        /// </summary>
+        public ReverbPreset SelectedReverbPreset
+        {
+            get => selectedReverbPreset;
+            set
+            {
+                if (selectedReverbPreset != value)
+                {
+                    selectedReverbPreset = value;
+                    OnPropertyChanged();
+                    // Apply preset values when a non-Custom preset is selected
+                    if (value != ReverbPreset.Custom)
+                    {
+                        ApplyReverbPreset(value);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Selected effect chain preset determining the order in which effects are applied.
+        /// Default: Standard (High-Pass → Low-Pass → Reverb)
+        /// </summary>
+        public EffectChainPreset EffectChainPreset
+        {
+            get => effectChainPreset;
+            set
+            {
+                if (effectChainPreset != value)
+                {
+                    effectChainPreset = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(EffectChainOrderDisplay));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets a display-friendly string representing the current effect chain order.
+        /// </summary>
+        public string EffectChainOrderDisplay
+        {
+            get
+            {
+                switch (effectChainPreset)
+                {
+                    case EffectChainPreset.Standard:
+                        return "High-Pass → Low-Pass → Reverb";
+                    case EffectChainPreset.ReverbFirst:
+                        return "Reverb → High-Pass → Low-Pass";
+                    case EffectChainPreset.LowPassFirst:
+                        return "Low-Pass → High-Pass → Reverb";
+                    case EffectChainPreset.LowPassThenReverb:
+                        return "Low-Pass → Reverb → High-Pass";
+                    case EffectChainPreset.HighPassThenReverb:
+                        return "High-Pass → Reverb → Low-Pass";
+                    case EffectChainPreset.ReverbThenLowPass:
+                        return "Reverb → Low-Pass → High-Pass";
+                    default:
+                        return "High-Pass → Low-Pass → Reverb";
+                }
+            }
+        }
+
+        // ===== Advanced Reverb Tuning Properties =====
+
+        /// <summary>
+        /// Enable advanced reverb tuning controls.
+        /// WARNING: These settings can produce very loud output that may damage hearing!
+        /// Only enable if you understand the reverb algorithm parameters.
+        /// </summary>
+        public bool AdvancedReverbTuningEnabled
+        {
+            get => advancedReverbTuningEnabled;
+            set { advancedReverbTuningEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Wet gain multiplier (1-25, representing 0.01-0.25).
+        /// Controls overall reverb intensity. Higher = more pronounced reverb.
+        /// Default: 8 (0.08). Range: 1-25.
+        /// WARNING: Values above 15 can cause very loud output!
+        /// </summary>
+        public int ReverbWetGainMultiplier
+        {
+            get => reverbWetGainMultiplier;
+            set { reverbWetGainMultiplier = Math.Max(1, Math.Min(25, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// All-pass filter feedback coefficient (30-70, representing 0.30-0.70).
+        /// Controls reverb diffusion/smoothness. Higher = smoother, more blended.
+        /// Default: 50 (0.50). Lower values create more distinct echoes.
+        /// </summary>
+        public int ReverbAllpassFeedback
+        {
+            get => reverbAllpassFeedback;
+            set { reverbAllpassFeedback = Math.Max(30, Math.Min(70, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Minimum HF damping coefficient (10-40, representing 0.10-0.40).
+        /// Controls brightness at 0% damping setting. Lower = brighter reverb.
+        /// Default: 20 (0.20).
+        /// </summary>
+        public int ReverbHfDampingMin
+        {
+            get => reverbHfDampingMin;
+            set { reverbHfDampingMin = Math.Max(10, Math.Min(40, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Maximum HF damping coefficient (30-70, representing 0.30-0.70).
+        /// Controls darkness at 100% damping setting. Higher = darker reverb.
+        /// Default: 50 (0.50).
+        /// </summary>
+        public int ReverbHfDampingMax
+        {
+            get => reverbHfDampingMax;
+            set { reverbHfDampingMax = Math.Max(30, Math.Min(70, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Applies a reverb preset by setting all reverb parameters.
+        /// Presets are based on Audacity's exact factory preset values.
+        /// Format: RoomSize, PreDelay, Reverberance, HfDamping, ToneLow, ToneHigh, WetGain, DryGain, StereoWidth
+        /// </summary>
+        public void ApplyReverbPreset(ReverbPreset preset)
+        {
+            switch (preset)
+            {
+                // === General Purpose ===
+                case ReverbPreset.Acoustic:
+                    // Acoustic - natural acoustic sound
+                    ReverbRoomSize = 50;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 75;
+                    ReverbDamping = 100;
+                    ReverbToneLow = 21;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -14;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 80;
+                    break;
+
+                case ReverbPreset.Ambience:
+                    // Ambience - spacious atmospheric effect (very pronounced)
+                    ReverbRoomSize = 100;
+                    ReverbPreDelay = 55;
+                    ReverbReverberance = 100;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 53;
+                    ReverbToneHigh = 38;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = -10;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.Artificial:
+                    // Artificial - synthetic/electronic reverb character
+                    ReverbRoomSize = 81;
+                    ReverbPreDelay = 99;
+                    ReverbReverberance = 23;
+                    ReverbDamping = 62;
+                    ReverbToneLow = 16;
+                    ReverbToneHigh = 19;
+                    ReverbWetGain = -4;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.Clean:
+                    // Clean - subtle, transparent reverb
+                    ReverbRoomSize = 50;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 75;
+                    ReverbDamping = 100;
+                    ReverbToneLow = 55;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -18;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 75;
+                    break;
+
+                case ReverbPreset.Modern:
+                    // Modern - contemporary production style
+                    ReverbRoomSize = 50;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 75;
+                    ReverbDamping = 100;
+                    ReverbToneLow = 55;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -15;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 75;
+                    break;
+
+                // === Vocals ===
+                case ReverbPreset.VocalI:
+                    // Vocal I - subtle vocal reverb
+                    ReverbRoomSize = 70;
+                    ReverbPreDelay = 20;
+                    ReverbReverberance = 40;
+                    ReverbDamping = 99;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 50;
+                    ReverbWetGain = -12;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 70;
+                    break;
+
+                case ReverbPreset.VocalII:
+                    // Vocal II - more pronounced vocal reverb
+                    ReverbRoomSize = 50;
+                    ReverbPreDelay = 0;
+                    ReverbReverberance = 50;
+                    ReverbDamping = 99;
+                    ReverbToneLow = 50;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -1;
+                    ReverbDryGain = -1;
+                    ReverbStereoWidth = 70;
+                    break;
+
+                case ReverbPreset.DanceVocal:
+                    // Dance Vocal - modern dance/EDM vocal effect
+                    ReverbRoomSize = 90;
+                    ReverbPreDelay = 2;
+                    ReverbReverberance = 60;
+                    ReverbDamping = 77;
+                    ReverbToneLow = 30;
+                    ReverbToneHigh = 51;
+                    ReverbWetGain = -10;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.ModernVocal:
+                    // Modern Vocal - contemporary vocal production
+                    ReverbRoomSize = 66;
+                    ReverbPreDelay = 27;
+                    ReverbReverberance = 77;
+                    ReverbDamping = 8;
+                    ReverbToneLow = 0;
+                    ReverbToneHigh = 51;
+                    ReverbWetGain = -10;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 68;
+                    break;
+
+                case ReverbPreset.VoiceTail:
+                    // Voice Tail - long reverb tail for vocals
+                    ReverbRoomSize = 66;
+                    ReverbPreDelay = 27;
+                    ReverbReverberance = 100;
+                    ReverbDamping = 8;
+                    ReverbToneLow = 0;
+                    ReverbToneHigh = 51;
+                    ReverbWetGain = -6;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 68;
+                    break;
+
+                // === Room Sizes ===
+                case ReverbPreset.Bathroom:
+                    // Bathroom - small reflective space
+                    ReverbRoomSize = 16;
+                    ReverbPreDelay = 8;
+                    ReverbReverberance = 80;
+                    ReverbDamping = 0;
+                    ReverbToneLow = 0;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -6;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.SmallRoomBright:
+                    // Small Room Bright - bright reflections
+                    ReverbRoomSize = 30;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 50;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 50;
+                    ReverbToneHigh = 100;
+                    ReverbWetGain = -1;
+                    ReverbDryGain = -1;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.SmallRoomDark:
+                    // Small Room Dark - muffled reflections
+                    ReverbRoomSize = 30;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 50;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 0;
+                    ReverbWetGain = -1;
+                    ReverbDryGain = -1;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.MediumRoom:
+                    // Medium Room - balanced room sound
+                    ReverbRoomSize = 75;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 40;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 70;
+                    ReverbWetGain = -1;
+                    ReverbDryGain = -1;
+                    ReverbStereoWidth = 70;
+                    break;
+
+                case ReverbPreset.LargeRoom:
+                    // Large Room - spacious room
+                    ReverbRoomSize = 85;
+                    ReverbPreDelay = 10;
+                    ReverbReverberance = 40;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 80;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = -6;
+                    ReverbStereoWidth = 90;
+                    break;
+
+                case ReverbPreset.ChurchHall:
+                    // Church Hall - large reverberant space
+                    ReverbRoomSize = 90;
+                    ReverbPreDelay = 32;
+                    ReverbReverberance = 60;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 50;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = -12;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.Cathedral:
+                    // Cathedral - massive cathedral space
+                    ReverbRoomSize = 90;
+                    ReverbPreDelay = 16;
+                    ReverbReverberance = 90;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 0;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = -20;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.BigCave:
+                    // Big Cave - cavernous space (very pronounced)
+                    ReverbRoomSize = 100;
+                    ReverbPreDelay = 55;
+                    ReverbReverberance = 100;
+                    ReverbDamping = 50;
+                    ReverbToneLow = 53;
+                    ReverbToneHigh = 38;
+                    ReverbWetGain = 5;
+                    ReverbDryGain = -3;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                // ===== UniPlaySong Custom Presets - Living/Entertainment =====
+
+                case ReverbPreset.LivingRoom:
+                    // Living Room - cozy TV viewing environment
+                    // Subtle, warm reverb that doesn't overwhelm dialogue
+                    ReverbRoomSize = 35;
+                    ReverbPreDelay = 8;
+                    ReverbReverberance = 30;
+                    ReverbDamping = 65;
+                    ReverbToneLow = 70;
+                    ReverbToneHigh = 60;
+                    ReverbWetGain = -12;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 60;
+                    break;
+
+                case ReverbPreset.HomeTheater:
+                    // Home Theater - movie night experience
+                    // Wider soundstage with controlled tail for cinematic feel
+                    ReverbRoomSize = 55;
+                    ReverbPreDelay = 15;
+                    ReverbReverberance = 45;
+                    ReverbDamping = 55;
+                    ReverbToneLow = 80;
+                    ReverbToneHigh = 70;
+                    ReverbWetGain = -8;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 85;
+                    break;
+
+                case ReverbPreset.LateNightTV:
+                    // Late Night TV - subtle, intimate ambience
+                    // Very restrained reverb, perfect for quiet viewing
+                    ReverbRoomSize = 25;
+                    ReverbPreDelay = 5;
+                    ReverbReverberance = 20;
+                    ReverbDamping = 75;
+                    ReverbToneLow = 60;
+                    ReverbToneHigh = 40;
+                    ReverbWetGain = -15;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 50;
+                    break;
+
+                case ReverbPreset.LoungeCafe:
+                    // Lounge/Cafe - relaxed background music atmosphere
+                    // Warm, smooth reverb like a cozy cafe
+                    ReverbRoomSize = 40;
+                    ReverbPreDelay = 12;
+                    ReverbReverberance = 35;
+                    ReverbDamping = 60;
+                    ReverbToneLow = 85;
+                    ReverbToneHigh = 55;
+                    ReverbWetGain = -10;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 70;
+                    break;
+
+                case ReverbPreset.JazzClub:
+                    // Jazz Club - intimate live performance feel
+                    // Tight, controlled reverb with warmth
+                    ReverbRoomSize = 45;
+                    ReverbPreDelay = 18;
+                    ReverbReverberance = 40;
+                    ReverbDamping = 45;
+                    ReverbToneLow = 90;
+                    ReverbToneHigh = 65;
+                    ReverbWetGain = -6;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 75;
+                    break;
+
+                case ReverbPreset.NightClub:
+                    // Night Club - energetic dance floor
+                    // Punchy with controlled low-end, wider stereo
+                    ReverbRoomSize = 60;
+                    ReverbPreDelay = 25;
+                    ReverbReverberance = 55;
+                    ReverbDamping = 40;
+                    ReverbToneLow = 70;
+                    ReverbToneHigh = 80;
+                    ReverbWetGain = -4;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 95;
+                    break;
+
+                case ReverbPreset.ConcertHall:
+                    // Concert Hall - live music experience
+                    // Large, natural acoustic space
+                    ReverbRoomSize = 80;
+                    ReverbPreDelay = 22;
+                    ReverbReverberance = 65;
+                    ReverbDamping = 35;
+                    ReverbToneLow = 95;
+                    ReverbToneHigh = 75;
+                    ReverbWetGain = -2;
+                    ReverbDryGain = -3;
+                    ReverbStereoWidth = 100;
+                    break;
+
+                case ReverbPreset.Custom:
+                default:
+                    // Custom - don't change anything
+                    break;
+            }
         }
     }
 }

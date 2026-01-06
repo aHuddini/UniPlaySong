@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 UniPlaySong Contributors
+Copyright (c) 2025-2026 UniPlaySong Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,4 +19,18 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-Party Acknowledgments:
+
+Reverb Algorithm:
+The reverb effect implementation is based on the public domain Freeverb algorithm
+by Jezar at Dreampoint (https://ccrma.stanford.edu/~jos/pasp/Freeverb.html).
+The algorithm constants and structure follow the libSoX implementation.
+
+Reverb Presets:
+The reverb preset values (Acoustic, Ambience, Vocal I, etc.) are derived from
+Audacity's factory presets for compatibility purposes. Audacity is licensed
+under GPL v2/v3 (https://www.audacityteam.org/).
 
