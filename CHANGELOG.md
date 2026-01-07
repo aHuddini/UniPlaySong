@@ -2,9 +2,19 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.1.4] - 2026-01-04
+## [1.1.4] - 2026-01-07
 
 ### Added
+- **Live Effects: Audacity-Compatible Reverb** - Professional-grade reverb using libSoX/Freeverb algorithm
+  - 18 Audacity factory presets: Acoustic, Ambience, Artificial, Clean, Modern, Vocal I/II, Dance Vocal, Modern Vocal, Voice Tail, Bathroom, Small Room Bright/Dark, Medium Room, Large Room, Church Hall, Cathedral, Big Cave
+  - 7 UniPlaySong environment presets: Living Room, Home Theater, Late Night TV, Lounge/Cafe, Jazz Club, Night Club, Concert Hall
+  - New parameters: Reverberance (tail length), Tone Low/High (post-reverb EQ), Stereo Width
+  - Extended Wet Gain range to +10 dB for more pronounced effects
+- **Live Effects: Effect Chain Ordering** - Configurable processing order with 6 preset orderings
+- **Live Effects: Advanced Reverb Tuning** - Expert-mode controls for algorithm parameters
+  - Wet Gain Multiplier (0.01-0.25) - Controls overall reverb intensity
+  - HF Damping Min/Max - Controls brightness/darkness range of damping slider
+  - Includes safety warnings about hearing damage risks
 - **Amplify Audio** feature with waveform-based gain adjustment editor
   - Visual waveform display with real-time gain preview
   - Clipping indicator shows when gain would exceed 0dBFS
@@ -15,6 +25,11 @@ All notable changes to UniPlaySong will be documented in this file.
 - Repair Music Folder option in Fullscreen mode context menu
 - Repair Audio File option with controller-friendly file picker in Fullscreen mode
 - Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18)). Auto-tags on library update with manual "Scan & Tag All Games" button in settings
+
+### Changed
+- Live Effects reverb algorithm now uses Reverberance (not Room Size) for feedback calculation, matching Audacity behavior
+- Reverb wet gain multiplier increased from 0.015 to 0.08 for more pronounced effects
+- Reverb tuning constants extracted and documented in EffectsChain.cs for easy modification
 
 ## [1.1.3] - 2026-01-02
 

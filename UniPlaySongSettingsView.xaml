@@ -9,6 +9,8 @@
     <UserControl.Resources>
         <local:AudioStateConverter x:Key="AudioStateConverter"/>
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <local:ReverbPresetConverter x:Key="ReverbPresetConverter"/>
+        <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -249,6 +251,496 @@
                               IsChecked="{Binding Settings.EnableDebugLogging}"
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Use this when troubleshooting issues. Disable for normal use to reduce log file size."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Live Effects Tab -->
+        <TabItem Header="Live Effects">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Live Audio Effects" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Apply real-time audio effects during playback using NAudio processing. Requires enabling the master toggle below."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,20"/>
+
+                    <!-- Master Toggle -->
+                    <CheckBox Content="Enable Live Effects"
+                              IsChecked="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Enables NAudio-based audio processing with real-time effects. When toggled, the current song will restart from the beginning using the new audio player. Effects below only work when this is enabled."
+                               FontSize="11"
+                               Foreground="#FFA500"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,20"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- High-Pass Filter Section -->
+                    <TextBlock Text="High-Pass Filter" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable High-Pass Filter"
+                              IsChecked="{Binding Settings.HighPassEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Cutoff Frequency: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.HighPassCutoff}"
+                                   VerticalAlignment="Center"
+                                   Width="45"/>
+                        <TextBlock Text="Hz" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="20" Maximum="2000"
+                                Value="{Binding Settings.HighPassCutoff}"
+                                Width="180"
+                                SmallChange="10"
+                                LargeChange="100"
+                                TickFrequency="200"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Frequencies below this value will be attenuated. Default: 80 Hz (subtle rumble removal)"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Low-Pass Filter Section -->
+                    <TextBlock Text="Low-Pass Filter" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Removes high frequencies above the cutoff point. Creates a muffled or underwater effect."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Low-Pass Filter"
+                              IsChecked="{Binding Settings.LowPassEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Cutoff Frequency: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.LowPassCutoff}"
+                                   VerticalAlignment="Center"
+                                   Width="45"/>
+                        <TextBlock Text="Hz" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="200" Maximum="20000"
+                                Value="{Binding Settings.LowPassCutoff}"
+                                Width="180"
+                                SmallChange="100"
+                                LargeChange="1000"
+                                TickFrequency="2000"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Frequencies above this value will be attenuated. Default: 8000 Hz (subtle high-end rolloff)"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Reverb Section -->
+                    <TextBlock Text="Reverb" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Adds spatial depth and ambience to the audio. Creates a sense of space or room. Based on libSoX/Audacity algorithm."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Reverb"
+                              IsChecked="{Binding Settings.ReverbEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+
+                    <!-- Preset Dropdown -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Preset: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.SelectedReverbPreset, Converter={StaticResource ReverbPresetConverter}}"
+                                  Width="200">
+                            <ComboBoxItem Content="Custom"/>
+                            <!-- General Purpose (Audacity) -->
+                            <ComboBoxItem Content="Acoustic"/>
+                            <ComboBoxItem Content="Ambience"/>
+                            <ComboBoxItem Content="Artificial"/>
+                            <ComboBoxItem Content="Clean"/>
+                            <ComboBoxItem Content="Modern"/>
+                            <!-- Vocals (Audacity) -->
+                            <ComboBoxItem Content="Vocal I"/>
+                            <ComboBoxItem Content="Vocal II"/>
+                            <ComboBoxItem Content="Dance Vocal"/>
+                            <ComboBoxItem Content="Modern Vocal"/>
+                            <ComboBoxItem Content="Voice Tail"/>
+                            <!-- Room Sizes (Audacity) -->
+                            <ComboBoxItem Content="Bathroom"/>
+                            <ComboBoxItem Content="Small Room Bright"/>
+                            <ComboBoxItem Content="Small Room Dark"/>
+                            <ComboBoxItem Content="Medium Room"/>
+                            <ComboBoxItem Content="Large Room"/>
+                            <ComboBoxItem Content="Church Hall"/>
+                            <ComboBoxItem Content="Cathedral"/>
+                            <ComboBoxItem Content="Big Cave"/>
+                            <!-- Living/Entertainment (UniPlaySong) -->
+                            <ComboBoxItem Content="Living Room"/>
+                            <ComboBoxItem Content="Home Theater"/>
+                            <ComboBoxItem Content="Late Night TV"/>
+                            <ComboBoxItem Content="Lounge/Cafe"/>
+                            <ComboBoxItem Content="Jazz Club"/>
+                            <ComboBoxItem Content="Night Club"/>
+                            <ComboBoxItem Content="Concert Hall"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Audacity-compatible presets plus UniPlaySong environments (Living Room, Home Theater, etc.). Adjusting sliders sets preset to 'Custom'."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Room Size -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Room Size: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbRoomSize}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbRoomSize}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Size of the virtual room. Small (0%) = tight/short reverb, Large (100%) = cathedral-like. Default: 75%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Reverberance (Audacity parameter) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Reverberance: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbReverberance}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbReverberance}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Length of reverb tail. Higher = longer, more 'live' reverb. Key for pronounced effects. Default: 50%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Pre-Delay -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Pre-Delay: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbPreDelay}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="ms" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="200"
+                                Value="{Binding Settings.ReverbPreDelay}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="20"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Delay before reverb starts. Creates sense of distance. 0ms = close, 100ms+ = distant/large space. Default: 10 ms"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Stereo Width -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Stereo Width: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbStereoWidth}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbStereoWidth}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Stereo spread of reverb. 0% = mono reverb, 100% = full stereo. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Wet Gain (Reverb volume) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Wet Gain: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbWetGain}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="dB" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="-20" Maximum="10"
+                                Value="{Binding Settings.ReverbWetGain}"
+                                Width="180"
+                                SmallChange="1"
+                                LargeChange="3"
+                                TickFrequency="5"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Volume of the reverb effect. Positive values = more pronounced reverb. Range: -20 to +10 dB. Default: -6 dB"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Dry Gain (Original volume) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Dry Gain: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbDryGain}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="dB" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="-20" Maximum="0"
+                                Value="{Binding Settings.ReverbDryGain}"
+                                Width="180"
+                                SmallChange="1"
+                                LargeChange="3"
+                                TickFrequency="2"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Volume of the original (dry) signal. 0 dB = full, -20 dB = very quiet. Default: 0 dB"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Damping (HF absorption) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Damping: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbDamping}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbDamping}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="High-frequency absorption. Higher = more muffled/darker reverb tail. Default: 50%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Tone Low (Audacity parameter) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Tone Low: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbToneLow}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbToneLow}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Bass content of reverb. Lower = less boomy, tighter reverb. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Tone High (Audacity parameter) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Tone High: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbToneHigh}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbToneHigh}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Treble content of reverb. Lower = darker, less bright reverb. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Makeup Gain Section -->
+                    <TextBlock Text="Output Gain" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Final gain stage applied after all effects. Use to compensate for volume changes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Makeup Gain"
+                              IsChecked="{Binding Settings.MakeupGainEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Gain: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.MakeupGain}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="dB" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="-6" Maximum="12"
+                                Value="{Binding Settings.MakeupGain}"
+                                Width="180"
+                                SmallChange="1"
+                                LargeChange="3"
+                                TickFrequency="3"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Boost or cut output volume. Uses soft-knee limiting to prevent harsh clipping. Default: 0 dB"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Effect Chain Order Section -->
+                    <TextBlock Text="Effect Chain Order" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Controls the order in which effects are applied. Default is High-Pass → Low-Pass → Reverb (recommended)."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Chain Order: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.EffectChainPreset, Converter={StaticResource EffectChainPresetConverter}}"
+                                  Width="220">
+                            <ComboBoxItem Content="High-Pass → Low-Pass → Reverb (Recommended)"/>
+                            <ComboBoxItem Content="Reverb → High-Pass → Low-Pass"/>
+                            <ComboBoxItem Content="Low-Pass → High-Pass → Reverb"/>
+                            <ComboBoxItem Content="Low-Pass → Reverb → High-Pass"/>
+                            <ComboBoxItem Content="High-Pass → Reverb → Low-Pass"/>
+                            <ComboBoxItem Content="Reverb → Low-Pass → High-Pass"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Be careful: Reverb-first orderings can cause unusual or harsh sounds with certain filter settings."
+                               FontSize="11"
+                               Foreground="#FFA500"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="20,5,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Advanced Reverb Tuning Section -->
+                    <TextBlock Text="Advanced Reverb Tuning" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Expert-level parameters that affect the reverb algorithm behavior. For audio engineers and enthusiasts."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Advanced Tuning"
+                              IsChecked="{Binding Settings.AdvancedReverbTuningEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="⚠️ WARNING: These settings can produce VERY LOUD output that may damage your hearing or speakers! Only enable if you understand the reverb algorithm. Use at your own risk."
+                               FontSize="11"
+                               Foreground="#FF4444"
+                               FontWeight="Bold"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <!-- Wet Gain Multiplier -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.AdvancedReverbTuningEnabled}">
+                        <TextBlock Text="Wet Multiplier: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbWetGainMultiplier, StringFormat='0.{0:D2}'}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <Slider Minimum="1" Maximum="25"
+                                Value="{Binding Settings.ReverbWetGainMultiplier}"
+                                Width="180"
+                                SmallChange="1"
+                                LargeChange="5"
+                                TickFrequency="5"
+                                TickPlacement="BottomRight"
+                                Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Scales reverb intensity (0.01-0.25). Default: 0.08. Higher = more reverb but risk of distortion. Values &gt;0.15 can be VERY loud!"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- HF Damping Min -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.AdvancedReverbTuningEnabled}">
+                        <TextBlock Text="HF Damp Min: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbHfDampingMin, StringFormat='0.{0:D2}'}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <Slider Minimum="10" Maximum="40"
+                                Value="{Binding Settings.ReverbHfDampingMin}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"
+                                Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Minimum damping at 0% setting (0.10-0.40). Default: 0.20. Lower = brighter reverb."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- HF Damping Max -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.AdvancedReverbTuningEnabled}">
+                        <TextBlock Text="HF Damp Max: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbHfDampingMax, StringFormat='0.{0:D2}'}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <Slider Minimum="30" Maximum="70"
+                                Value="{Binding Settings.ReverbHfDampingMax}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"
+                                Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Maximum damping at 100% setting (0.30-0.70). Default: 0.50. Higher = darker reverb at max damping."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

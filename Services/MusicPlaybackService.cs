@@ -847,7 +847,9 @@ namespace UniPlaySong.Services
 
         /// <summary>
         /// Timer tick handler for preview mode.
-        /// Checks if preview duration has been reached and restarts the song if needed.
+        /// Checks if preview duration has been reached and handles song transition.
+        /// If RandomizeOnMusicEnd is enabled, switches to a different random song.
+        /// Otherwise, restarts the same song from the beginning.
         /// </summary>
         private void OnPreviewTimerTick(object sender, EventArgs e)
         {
@@ -855,11 +857,40 @@ namespace UniPlaySong.Services
             {
                 if (ShouldRestartForPreview() && _musicPlayer?.IsActive == true)
                 {
-                    _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), restarting with fade: {Path.GetFileName(_currentSongPath)}");
-
                     _previewTimer.Stop();
 
-                    var songToRestart = _currentSongPath;
+                    // Check if we should randomize to a different song
+                    string nextSong = _currentSongPath;
+                    bool shouldRandomize = _currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null;
+
+                    if (shouldRandomize)
+                    {
+                        var songs = _fileService.GetAvailableSongs(_currentGame);
+                        if (songs.Count > 1)
+                        {
+                            // Select random song (avoiding immediate repeat, max 10 attempts)
+                            var random = new Random();
+                            int attempts = 0;
+                            do
+                            {
+                                nextSong = songs[random.Next(songs.Count)];
+                                attempts++;
+                            }
+                            while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
+
+                            _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), randomizing to: {Path.GetFileName(nextSong)}");
+                        }
+                        else
+                        {
+                            _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), only one song available, restarting: {Path.GetFileName(nextSong)}");
+                        }
+                    }
+                    else
+                    {
+                        _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), restarting with fade: {Path.GetFileName(nextSong)}");
+                    }
+
+                    var songToPlay = nextSong;
 
                     // Use fader to create smooth fade-out/fade-in transition
                     _fader.Switch(
@@ -869,16 +900,19 @@ namespace UniPlaySong.Services
                         },
                         preloadAction: () =>
                         {
-                            _musicPlayer.PreLoad(songToRestart);
+                            _musicPlayer.PreLoad(songToPlay);
                         },
                         playAction: () =>
                         {
-                            _musicPlayer.Load(songToRestart);
+                            _previousSongPath = _currentSongPath;
+                            _currentSongPath = songToPlay;
+
+                            _musicPlayer.Load(songToPlay);
                             _musicPlayer.Play(TimeSpan.Zero);
 
                             MarkSongStart();
 
-                            _fileLogger?.Info($"Preview mode: Restarted from beginning with fade: {Path.GetFileName(songToRestart)}");
+                            _fileLogger?.Info($"Preview mode: Now playing with fade: {Path.GetFileName(songToPlay)}");
                         }
                     );
                 }

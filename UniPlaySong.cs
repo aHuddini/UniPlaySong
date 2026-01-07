@@ -22,6 +22,7 @@ using UniPlaySong.Services;
 using UniPlaySong.Common;
 using UniPlaySong.Menus;
 using UniPlaySong.Models;
+using UniPlaySong.Audio;
 
 namespace UniPlaySong
 {
@@ -106,7 +107,9 @@ namespace UniPlaySong
         private Services.AudioAmplifyService _amplifyService;
         private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
         private IMusicPlaybackCoordinator _coordinator;
-        
+        private IMusicPlayer _currentMusicPlayer;
+        private bool _isUsingLiveEffectsPlayer;
+
         private UniPlaySongSettings _settings => _settingsService?.Current;
         
         private readonly HttpClient _httpClient;
@@ -656,8 +659,16 @@ namespace UniPlaySong
                             e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, e.NewSettings);
                         Logger.Info("DownloadManager recreated with updated download settings");
                     }
+
+                    // Check if LiveEffectsEnabled changed - need to switch music players
+                    bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
+                    if (liveEffectsChanged)
+                    {
+                        _fileLogger?.Info($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
+                        RecreateMusicPlayerForLiveEffects();
+                    }
                 }
-                
+
                 // Re-subscribe to PropertyChanged for backward compatibility
                 if (e.OldSettings != null)
                 {
@@ -861,20 +872,10 @@ namespace UniPlaySong
 
             _fileService = new GameMusicFileService(gamesPath, _errorHandler);
 
-            // Use SDL2 for reliable volume control (matching PlayniteSound)
-            IMusicPlayer musicPlayer;
-            try
-            {
-                musicPlayer = new SDL2MusicPlayer(_errorHandler);
-                Logger.Info("Initialized SDL2MusicPlayer");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
-                musicPlayer = new MusicPlayer(_errorHandler);
-            }
+            // Create the appropriate music player based on LiveEffectsEnabled setting
+            _currentMusicPlayer = CreateMusicPlayer();
 
-            _playbackService = new MusicPlaybackService(musicPlayer, _fileService, _fileLogger, _errorHandler);
+            _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
             // Suppress native music when our music starts (if suppression enabled or using native as default)
             _playbackService.OnMusicStarted += (settings) =>
             {
@@ -976,6 +977,112 @@ namespace UniPlaySong
             // Initialize amplify dialog handler (service initialized in InitializeServices)
             _amplifyDialogHandler = new Handlers.AmplifyDialogHandler(
                 _api, () => _settings, _fileService, _playbackService, _amplifyService);
+        }
+
+        /// <summary>
+        /// Creates the appropriate music player based on LiveEffectsEnabled setting.
+        /// When live effects are enabled, uses NAudioMusicPlayer with real-time effects chain.
+        /// Otherwise, uses SDL2MusicPlayer (or falls back to WPF MediaPlayer).
+        /// </summary>
+        private IMusicPlayer CreateMusicPlayer()
+        {
+            bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
+
+            if (useLiveEffects)
+            {
+                try
+                {
+                    var player = new NAudioMusicPlayer(_settingsService);
+                    Logger.Info("Initialized NAudioMusicPlayer (Live Effects enabled)");
+                    _isUsingLiveEffectsPlayer = true;
+                    return player;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Failed to initialize NAudioMusicPlayer, falling back to standard player: {ex.Message}");
+                    _isUsingLiveEffectsPlayer = false;
+                    // Fall through to standard player creation
+                }
+            }
+
+            // Standard player: SDL2 with WPF fallback
+            _isUsingLiveEffectsPlayer = false;
+            try
+            {
+                var player = new SDL2MusicPlayer(_errorHandler);
+                Logger.Info("Initialized SDL2MusicPlayer");
+                return player;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to initialize SDL2MusicPlayer, falling back to WPF MediaPlayer: {ex.Message}");
+                return new MusicPlayer(_errorHandler);
+            }
+        }
+
+        /// <summary>
+        /// Recreates the playback service with a new player when LiveEffectsEnabled changes.
+        /// Stops current playback before switching.
+        /// </summary>
+        private void RecreateMusicPlayerForLiveEffects()
+        {
+            try
+            {
+                _fileLogger?.Info($"Recreating music player (LiveEffectsEnabled changed to: {_settings?.LiveEffectsEnabled})");
+
+                // Stop current playback
+                _playbackService?.Stop();
+
+                // Dispose old player if it implements IDisposable
+                if (_currentMusicPlayer is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                // Create new player
+                _currentMusicPlayer = CreateMusicPlayer();
+
+                // Recreate playback service with new player
+                var oldService = _playbackService;
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+
+                // Re-attach event handlers
+                _playbackService.OnMusicStarted += (settings) =>
+                {
+                    if (!IsFullscreen)
+                        return;
+
+                    bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
+                                         (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
+
+                    if (shouldSuppress)
+                    {
+                        SuppressNativeMusic();
+                    }
+                };
+
+                if (_settings != null)
+                {
+                    _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
+                }
+
+                // Update coordinator with new playback service
+                _coordinator = new MusicPlaybackCoordinator(
+                    _playbackService,
+                    _settingsService,
+                    Logger,
+                    _fileLogger,
+                    () => IsFullscreen,
+                    () => IsDesktop,
+                    () => SelectedGames?.FirstOrDefault()
+                );
+
+                _fileLogger?.Info($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(ex, "recreating music player for live effects", showUserMessage: false);
+            }
         }
 
         private void SubscribeToMainModel()
