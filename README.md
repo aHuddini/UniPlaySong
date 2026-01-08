@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -12,26 +12,29 @@ Designed for both Desktop and Fullscreen mode, with compatibility to modern them
 
 ---
 
-## What's New - v1.1.3
+## What's New - v1.1.4 (MAJOR RELEASE)
 
-### Pause When in System Tray 
-- When enabled, music now pauses when Playnite is hidden in the system tray
-- Prevents music from playing on startup when Playnite launches minimized
-- Configurable in General settings (enabled by default)
+### ⚡ Real-Time Live Effects (Major Feature)
+- **Reverb Engine**: 25 studio-quality presets with Audacity-compatible algorithms
+- **Advanced Parameters**: Reverberance, Tone Low/High, Stereo Width controls
+- **Zero-Latency Processing**: Apply effects instantly without restarting playback
+- **Dynamic Effect Chaining**: 6 preset orderings for combining multiple effects
+- **Safety Warnings**: Hearing damage alerts for high-intensity settings
 
-### Performance Boost: Parallel Processing
-- Bulk Audio normalization now processes up to 3 files simultaneously (instead of 1 file at a time)
-- Silence trimming also uses parallel processing for bulk operations
-- Significantly faster bulk operations
+### 🎚️ Visual Audio "Amplify" Tool
+- **Waveform Editor**: Real-time visual gain adjustment with clipping indicators
+- **Controller Support**: D-Pad and shoulder buttons for precise gain control
+- **Headroom Display**: Shows maximum safe gain to prevent clipping
+- **Original Preservation**: Files backed up before modification
 
-### UI/UX Improvements
-- Dialog windows now appear in your Windows taskbar (Desktop Mode)
-- Back button in download dialogs now properly navigates through the full flow (Song → Album → Source)
-- Required FFmpeg filepath now set in Audio Normalization tab only
-- Fixed auto-normalize progress display after downloads
+### Smart Audio Management (Major Feature)
+- **Auto-Tagging System**: Games tagged "[UPS] Has Music" or "[UPS] No Music" for easy filtering [#18]
+
+
+
 
 ### Previous Versions
-- **v1.1.2**: Precise Trim waveform editor, Cleanup tools, Auto-download, Bulk operations, Audio repair
+- **v1.1.3**: Parallel processing, system tray pause, taskbar dialogs
 
 ---
 
@@ -43,6 +46,8 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 🎵 Features
 
 - **Automatic Music Playback** - Music plays when selecting games
+- **Real-Time Live Effects** - Professional reverb, effect chaining, and zero-latency processing
+- **Visual Audio Amplify** - Waveform-based gain adjustment with controller support
 - **Precise Audio Trimming** - Visual waveform editor with controller support
 - **Full Controller Support** - Manage music entirely from fullscreen mode with Xbox controller
 - **Custom Preview Time** - Play 15s, 30s, or full tracks
@@ -51,8 +56,9 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Silence Trimming** - Remove leading silence from tracks
 - **Online Downloads** - Download from YouTube and KHInsider
 - **Smart Auto-Download** - Automatically download music for new games
-- **Bulk Operations** - Download music for all games at once
-- **Audio Repair Tools** - Fix problematic audio files
+- **Bulk Operations** - Download music for all games at once (parallel processing)
+- **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
+- **Smart Auto-Tagging** - Automatic [UPS] music status tags for easy game filtering
 - **Cleanup & Maintenance** - Factory reset and storage management tools
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
