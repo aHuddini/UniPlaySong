@@ -10,6 +10,8 @@ A Playnite extension that provides a console-like game music preview experience 
 
 Designed for both Desktop and Fullscreen mode, with compatibility to modern themes (like ANIKI REMAKE).
 
+Built with the help of Claude Code and Cursor AI IDE (Model: Opus 4.5)
+
 ---
 
 ## What's New - v1.1.4 (MAJOR RELEASE)
