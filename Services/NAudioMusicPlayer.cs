@@ -150,7 +150,14 @@ namespace UniPlaySong.Services
         {
             try
             {
-                _outputDevice?.Stop();
+                if (_outputDevice != null)
+                {
+                    // Remove handler BEFORE stopping to prevent MediaEnded being fired
+                    _outputDevice.PlaybackStopped -= OnPlaybackStopped;
+                    _outputDevice.Stop();
+                    // Re-attach handler for future playback
+                    _outputDevice.PlaybackStopped += OnPlaybackStopped;
+                }
             }
             catch (Exception ex)
             {
