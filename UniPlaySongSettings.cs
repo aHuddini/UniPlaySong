@@ -651,7 +651,7 @@ namespace UniPlaySong
 
         // Advanced Reverb Tuning (expert mode)
         private bool advancedReverbTuningEnabled = false;
-        private int reverbWetGainMultiplier = 8;     // 1-25 (displayed as 0.01-0.25, stored as 1-25 for int slider)
+        private int reverbWetGainMultiplier = 3;     // 1-25 (displayed as 0.01-0.25, stored as 1-25 for int slider)
         private int reverbAllpassFeedback = 50;     // 30-70 (displayed as 0.30-0.70)
         private int reverbHfDampingMin = 20;        // 10-40 (displayed as 0.10-0.40)
         private int reverbHfDampingMax = 50;        // 30-70 (displayed as 0.30-0.70)

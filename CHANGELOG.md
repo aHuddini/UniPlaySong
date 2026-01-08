@@ -28,8 +28,13 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Changed
 - Live Effects reverb algorithm now uses Reverberance (not Room Size) for feedback calculation, matching Audacity behavior
-- Reverb wet gain multiplier increased from 0.015 to 0.08 for more pronounced effects
+- Reverb wet gain multiplier changed to 0.03 for balanced reverb intensity (adjustable via Advanced Tuning)
 - Reverb tuning constants extracted and documented in EffectsChain.cs for easy modification
+
+### Fixed
+- Room size slider changes now apply in real-time during playback (previously required song restart)
+- Stop() no longer incorrectly triggers MediaEnded event in NAudio player
+- Music now properly restarts when toggling Live Effects on/off (instead of just stopping)
 
 ## [1.1.3] - 2026-01-02
 

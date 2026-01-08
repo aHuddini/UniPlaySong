@@ -1022,13 +1022,19 @@ namespace UniPlaySong
 
         /// <summary>
         /// Recreates the playback service with a new player when LiveEffectsEnabled changes.
-        /// Stops current playback before switching.
+        /// Saves current playback state and restarts music after switching players.
         /// </summary>
         private void RecreateMusicPlayerForLiveEffects()
         {
             try
             {
                 _fileLogger?.Info($"Recreating music player (LiveEffectsEnabled changed to: {_settings?.LiveEffectsEnabled})");
+
+                // Save current game before stopping - we'll restart music for this game after recreation
+                var currentGame = SelectedGames?.FirstOrDefault();
+                bool wasPlaying = _playbackService?.IsPlaying == true || _playbackService?.IsLoaded == true;
+
+                _fileLogger?.Info($"Current state before recreation: Game={currentGame?.Name ?? "null"}, WasPlaying={wasPlaying}");
 
                 // Stop current playback
                 _playbackService?.Stop();
@@ -1078,6 +1084,13 @@ namespace UniPlaySong
                 );
 
                 _fileLogger?.Info($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
+
+                // Restart music for the current game if music was playing before the switch
+                if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
+                {
+                    _fileLogger?.Info($"Restarting music for game: {currentGame.Name}");
+                    _playbackService.PlayGameMusic(currentGame, _settings, forceReload: true);
+                }
             }
             catch (Exception ex)
             {

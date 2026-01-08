@@ -698,7 +698,7 @@
                                 TickPlacement="BottomRight"
                                 Margin="10,0,0,0"/>
                     </StackPanel>
-                    <TextBlock Text="Scales reverb intensity (0.01-0.25). Default: 0.08. Higher = more reverb but risk of distortion. Values &gt;0.15 can be VERY loud!"
+                    <TextBlock Text="Scales reverb intensity (0.01-0.25). Default: 0.03. Higher = more reverb but risk of distortion. Values &gt;0.15 can be VERY loud!"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

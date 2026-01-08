@@ -59,7 +59,7 @@ namespace UniPlaySong.Audio
         // RoomScaleMin/Max: Controls the range of room size scaling.
         //   - Default: 0.1 to 1.0 (maps 0-100% room size slider)
         //   - Affects comb filter delay lengths (perceived room size)
-        private const float DefaultWetGainMultiplier = 0.08f;
+        private const float DefaultWetGainMultiplier = 0.03f;
         private const float DefaultAllpassFeedback = 0.5f;
         private const float DefaultHfDampingMin = 0.2f;
         private const float DefaultHfDampingMax = 0.5f;
@@ -302,6 +302,13 @@ namespace UniPlaySong.Audio
             {
                 _preDelaySize = Math.Max(1, (int)(settings.ReverbPreDelay / 1000.0 * _sampleRate));
                 _lastPreDelay = settings.ReverbPreDelay;
+            }
+
+            // Update reverb if room size changed (reinitialize comb/allpass filter buffers)
+            if (_lastRoomSize != settings.ReverbRoomSize)
+            {
+                InitializeReverb(_sampleRate, settings.ReverbRoomSize);
+                _lastRoomSize = settings.ReverbRoomSize;
             }
 
             // Check if any effects are enabled
