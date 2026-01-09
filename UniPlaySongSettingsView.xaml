@@ -1317,6 +1317,24 @@
 
                     <Separator Margin="0,0,0,20"/>
 
+                    <!-- Delete Long Songs -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Delete Long Songs" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Scans your music library and deletes songs longer than 10 minutes. Useful for removing accidentally downloaded full albums, podcasts, or corrupted files that break bulk operations."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Content="Delete Songs &gt; 10 Minutes"
+                                Command="{Binding DeleteLongSongsCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#664422"
+                                Foreground="White"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
                     <!-- Reset Settings Only -->
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Text="Reset Settings Only" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>

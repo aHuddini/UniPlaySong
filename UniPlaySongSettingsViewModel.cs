@@ -775,6 +775,113 @@ namespace UniPlaySong
             RefreshCleanupStorageInfo();
         }
 
+        public ICommand DeleteLongSongsCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteDeleteLongSongs(),
+                context: "deleting long songs",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteDeleteLongSongs()
+        {
+            const int maxMinutes = 10;
+
+            // Scan with progress dialog
+            List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)> longSongs = null;
+            bool scanCancelled = false;
+
+            var scanOptions = new GlobalProgressOptions("Scanning for long songs...", true)
+            {
+                IsIndeterminate = false
+            };
+
+            PlayniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            {
+                longSongs = plugin.GetLongSongs(maxMinutes, args);
+                scanCancelled = args.CancelToken.IsCancellationRequested;
+            }, scanOptions);
+
+            if (scanCancelled || longSongs == null)
+            {
+                return;
+            }
+
+            if (longSongs.Count == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"No songs longer than {maxMinutes} minutes found.",
+                    "UniPlaySong");
+                return;
+            }
+
+            // Calculate total size (already captured during scan)
+            long totalBytes = longSongs.Sum(s => s.fileSize);
+            var totalMB = totalBytes / 1024.0 / 1024.0;
+
+            // Build preview list (show up to 10 files)
+            var previewList = string.Join("\n", longSongs
+                .Take(10)
+                .Select(s => $"  - {System.IO.Path.GetFileName(s.filePath)} ({s.duration:hh\\:mm\\:ss})"));
+            if (longSongs.Count > 10)
+            {
+                previewList += $"\n  ... and {longSongs.Count - 10} more files";
+            }
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"Found {longSongs.Count} songs longer than {maxMinutes} minutes ({totalMB:F1} MB total):\n\n" +
+                $"{previewList}\n\n" +
+                "Delete these files?",
+                "Delete Long Songs",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Delete with progress dialog
+            int deletedFiles = 0;
+            long freedBytes = 0;
+            bool deleteSuccess = false;
+
+            var deleteOptions = new GlobalProgressOptions("Deleting long songs...", true)
+            {
+                IsIndeterminate = false
+            };
+
+            PlayniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            {
+                var deleteResult = plugin.DeleteLongSongs(longSongs, args);
+                deletedFiles = deleteResult.deletedFiles;
+                freedBytes = deleteResult.freedBytes;
+                deleteSuccess = deleteResult.success;
+            }, deleteOptions);
+
+            var freedMB = freedBytes / 1024.0 / 1024.0;
+
+            if (deleteSuccess && deletedFiles > 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Deleted {deletedFiles} songs, freed {freedMB:F1} MB.",
+                    "Delete Complete");
+            }
+            else if (deletedFiles == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "No files were deleted (operation may have been cancelled).",
+                    "Delete Cancelled");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Some files could not be deleted. Check the log for details.",
+                    "Delete Failed");
+            }
+
+            RefreshCleanupStorageInfo();
+        }
+
         #endregion
 
         #region Music Status Tag Commands
