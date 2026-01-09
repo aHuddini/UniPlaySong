@@ -2,6 +2,14 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.5] - 2026-01-09
+
+### Added
+- **Delete Long Songs** cleanup tool - Scans music library and deletes songs longer than 10 minutes
+  - Helps remove accidentally downloaded full albums, podcasts, or corrupted files
+  - Prevents bulk operations (normalization, trimming) from getting stuck on excessively long files
+  - Shows preview of files to be deleted with duration and total size before confirmation
+
 ## [1.1.4] - 2026-01-07
 
 ### Added

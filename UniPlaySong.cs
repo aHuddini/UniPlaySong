@@ -2496,6 +2496,142 @@ namespace UniPlaySong
         }
 
         /// <summary>
+        /// Scans all music files and returns info about songs longer than the specified duration.
+        /// </summary>
+        /// <param name="maxMinutes">Maximum allowed duration in minutes</param>
+        /// <param name="progressArgs">Optional progress args for UI updates</param>
+        /// <returns>List of (filePath, duration, fileSize, gameFolder) for songs exceeding the limit</returns>
+        public List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)> GetLongSongs(int maxMinutes, GlobalProgressActionArgs progressArgs = null)
+        {
+            var longSongs = new List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)>();
+            var maxDuration = TimeSpan.FromMinutes(maxMinutes);
+
+            try
+            {
+                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+
+                if (!Directory.Exists(gamesPath))
+                    return longSongs;
+
+                // First collect all audio files
+                var allFiles = new List<(string path, string gameFolder)>();
+                var gameDirs = Directory.GetDirectories(gamesPath);
+                foreach (var gameDir in gameDirs)
+                {
+                    var gameFolder = Path.GetFileName(gameDir);
+                    var files = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories)
+                        .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+                    foreach (var file in files)
+                    {
+                        allFiles.Add((file, gameFolder));
+                    }
+                }
+
+                if (progressArgs != null)
+                {
+                    progressArgs.ProgressMaxValue = allFiles.Count;
+                }
+
+                int processed = 0;
+                foreach (var (file, gameFolder) in allFiles)
+                {
+                    if (progressArgs?.CancelToken.IsCancellationRequested == true)
+                        break;
+
+                    processed++;
+                    if (progressArgs != null)
+                    {
+                        progressArgs.CurrentProgressValue = processed;
+                        progressArgs.Text = $"Scanning ({processed}/{allFiles.Count}): {Path.GetFileName(file)}";
+                    }
+
+                    try
+                    {
+                        using (var reader = new NAudio.Wave.AudioFileReader(file))
+                        {
+                            if (reader.TotalTime > maxDuration)
+                            {
+                                var fileSize = new FileInfo(file).Length;
+                                longSongs.Add((file, reader.TotalTime, fileSize, gameFolder));
+                                _fileLogger?.Debug($"GetLongSongs: Found long song '{Path.GetFileName(file)}' ({reader.TotalTime:hh\\:mm\\:ss}) in {gameFolder}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Warn($"GetLongSongs: Failed to read duration of '{file}' - {ex.Message}");
+                    }
+                }
+
+                _fileLogger?.Info($"GetLongSongs: Found {longSongs.Count} songs longer than {maxMinutes} minutes (scanned {allFiles.Count} files)");
+                return longSongs;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"GetLongSongs: Error - {ex.Message}", ex);
+                return longSongs;
+            }
+        }
+
+        /// <summary>
+        /// Deletes the specified list of long songs.
+        /// </summary>
+        /// <param name="longSongs">List of songs to delete (from GetLongSongs)</param>
+        /// <param name="progressArgs">Optional progress args for UI updates</param>
+        /// <returns>Number of deleted files, freed bytes, and success status</returns>
+        public (int deletedFiles, long freedBytes, bool success) DeleteLongSongs(List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)> longSongs, GlobalProgressActionArgs progressArgs = null)
+        {
+            try
+            {
+                // Stop any playing music first
+                _playbackService?.Stop();
+
+                int deletedFiles = 0;
+                long freedBytes = 0;
+
+                if (progressArgs != null)
+                {
+                    progressArgs.ProgressMaxValue = longSongs.Count;
+                }
+
+                int processed = 0;
+                foreach (var (filePath, duration, fileSize, gameFolder) in longSongs)
+                {
+                    if (progressArgs?.CancelToken.IsCancellationRequested == true)
+                        break;
+
+                    processed++;
+                    if (progressArgs != null)
+                    {
+                        progressArgs.CurrentProgressValue = processed;
+                        progressArgs.Text = $"Deleting ({processed}/{longSongs.Count}): {Path.GetFileName(filePath)}";
+                    }
+
+                    try
+                    {
+                        File.Delete(filePath);
+                        deletedFiles++;
+                        freedBytes += fileSize;
+                        _fileLogger?.Info($"DeleteLongSongs: Deleted '{Path.GetFileName(filePath)}' ({duration:hh\\:mm\\:ss}, {fileSize / 1024.0 / 1024.0:F1} MB)");
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Warn($"DeleteLongSongs: Failed to delete '{filePath}' - {ex.Message}");
+                    }
+                }
+
+                _fileLogger?.Info($"DeleteLongSongs: Deleted {deletedFiles} files, freed {freedBytes / 1024.0 / 1024.0:F1} MB");
+                return (deletedFiles, freedBytes, true);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"DeleteLongSongs: Error - {ex.Message}", ex);
+                return (0, 0, false);
+            }
+        }
+
+        /// <summary>
         /// Resets all settings to their default values.
         /// </summary>
         public bool ResetSettingsToDefaults()
