@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
+using FuzzySharp;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
@@ -24,22 +25,26 @@ namespace UniPlaySong.Downloaders
         private static readonly List<string> PreferredSongEndings = Constants.PreferredSongEndings;
 
         private readonly IDownloader _khDownloader;
+        private readonly IDownloader _zopharDownloader;
         private readonly IDownloader _ytDownloader;
         private readonly string _tempPath;
         private readonly ErrorHandlerService _errorHandler;
         private readonly SearchCacheService _cacheService;
+        private readonly SearchHintsService _hintsService;
         private readonly UniPlaySongSettings _settings;
 
         public DownloadManager(HttpClient httpClient, HtmlAgilityPack.HtmlWeb htmlWeb, string tempPath,
             string ytDlpPath = null, string ffmpegPath = null, ErrorHandlerService errorHandler = null,
-            SearchCacheService cacheService = null, UniPlaySongSettings settings = null)
+            SearchCacheService cacheService = null, SearchHintsService hintsService = null, UniPlaySongSettings settings = null)
         {
             _tempPath = tempPath ?? throw new ArgumentNullException(nameof(tempPath));
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
             _cacheService = cacheService;
+            _hintsService = hintsService;
             _settings = settings;
 
             _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
+            _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
             var useFirefoxCookies = settings?.UseFirefoxCookies ?? false;
             _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, useFirefoxCookies, errorHandler);
 
@@ -72,52 +77,81 @@ namespace UniPlaySong.Downloaders
 
         private IEnumerable<Album> GetAlbumsForGameInternal(string gameName, Source source, CancellationToken cancellationToken, bool auto, bool skipCache = false)
         {
-            // For Source.All: Try KHInsider first, fallback to YouTube if no results
+            // For Source.All: Fetch from all sources (KHInsider → Zophar → YouTube), let BestAlbumPick decide
             if (source == Source.All)
             {
-                Logger.DebugIf(LogPrefix,$"[Source.All] Searching for '{gameName}' (skipCache={skipCache})");
-                Logger.DebugIf(LogPrefix,$"[Source.All] Step 1/2: Trying KHInsider...");
+                // Use Logger.Info for key diagnostic messages (visible in Playnite logs)
+                Logger.Info($"[Search] '{gameName}' - Starting search (auto={auto}, skipCache={skipCache})");
 
+                var allAlbums = new List<Album>();
+
+                // === PRIORITY 1: KHInsider (best quality, curated VGM archive) ===
                 List<Album> khAlbums = null;
 
                 // Check cache only if not skipping
                 if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
                 {
-                    if (khAlbums.Count > 0)
-                    {
-                        Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider (cached): Found {khAlbums.Count} album(s) for '{gameName}'");
-                        return khAlbums;
-                    }
-                    else
-                    {
-                        Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider (cached): No results for '{gameName}', skipping to YouTube");
-                        Logger.DebugIf(LogPrefix,$"[Source.All] Step 2/2: Falling back to YouTube...");
-                        return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto, skipCache);
-                    }
+                    Logger.Info($"[Search] '{gameName}' - KHInsider CACHE HIT: {khAlbums.Count} album(s)");
                 }
-
-                khAlbums = GetKHInsiderAlbumsWithStrategies(gameName, cancellationToken, auto);
-
-                // Only cache if not skipping cache
-                if (!skipCache && _cacheService != null)
+                else
                 {
-                    _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
+                    Logger.Info($"[Search] '{gameName}' - Querying KHInsider...");
+                    khAlbums = GetKHInsiderAlbumsWithStrategies(gameName, cancellationToken, auto);
+
+                    // Only cache if not skipping cache (empty results will be skipped by cache service)
+                    if (!skipCache && _cacheService != null)
+                    {
+                        _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
+                    }
                 }
 
-                if (khAlbums.Count > 0)
+                if (khAlbums != null && khAlbums.Count > 0)
                 {
-                    Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider: Found {khAlbums.Count} album(s) for '{gameName}'");
-                    return khAlbums;
+                    Logger.Info($"[Search] '{gameName}' - KHInsider: {khAlbums.Count} album(s) found");
+                    allAlbums.AddRange(khAlbums);
                 }
 
-                Logger.DebugIf(LogPrefix,$"[Source.All] KHInsider: No results for '{gameName}'");
-                Logger.DebugIf(LogPrefix,$"[Source.All] Step 2/2: Falling back to YouTube...");
+                // === PRIORITY 2: Zophar (good VGM archive with emulated formats) ===
+                List<Album> zopharAlbums = null;
 
-                return GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto, skipCache);
+                if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.Zophar, out zopharAlbums))
+                {
+                    Logger.Info($"[Search] '{gameName}' - Zophar CACHE HIT: {zopharAlbums.Count} album(s)");
+                }
+                else
+                {
+                    Logger.Info($"[Search] '{gameName}' - Querying Zophar...");
+                    zopharAlbums = _zopharDownloader?.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList()
+                        ?? new List<Album>();
+
+                    if (!skipCache && _cacheService != null)
+                    {
+                        _cacheService.CacheSearchResult(gameName, Source.Zophar, zopharAlbums);
+                    }
+                }
+
+                if (zopharAlbums != null && zopharAlbums.Count > 0)
+                {
+                    Logger.Info($"[Search] '{gameName}' - Zophar: {zopharAlbums.Count} album(s) found");
+                    allAlbums.AddRange(zopharAlbums);
+                }
+
+                // === PRIORITY 3: YouTube (last resort, requires yt-dlp) ===
+                Logger.Info($"[Search] '{gameName}' - Querying YouTube...");
+                var ytAlbums = GetYouTubeAlbumsWithCache(gameName, cancellationToken, auto, skipCache);
+
+                if (ytAlbums != null && ytAlbums.Count > 0)
+                {
+                    Logger.Info($"[Search] '{gameName}' - YouTube: {ytAlbums.Count} album(s) found");
+                    allAlbums.AddRange(ytAlbums);
+                }
+
+                Logger.Info($"[Search] '{gameName}' - Total: {allAlbums.Count} album(s) from all sources");
+                return allAlbums;
             }
 
             // For specific sources, use the appropriate downloader with caching
-            if (source == Source.KHInsider || source == Source.YouTube)
+            if (source == Source.KHInsider || source == Source.YouTube || source == Source.Zophar)
             {
                 // Check cache only if not skipping
                 if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, source, out var cachedAlbums))
@@ -163,6 +197,20 @@ namespace UniPlaySong.Downloaders
         private List<Album> GetKHInsiderAlbumsWithStrategies(string gameName, CancellationToken cancellationToken, bool auto)
         {
             var khAlbums = new List<Album>();
+
+            // Check for KHInsider album hint FIRST (user-provided override)
+            var hint = _hintsService?.GetHint(gameName);
+            if (hint != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
+            {
+                Logger.Info($"[KHInsider] Using hint album for '{gameName}': {hint.KHInsiderAlbum}");
+                var hintAlbum = CreateAlbumFromKHInsiderSlug(hint.KHInsiderAlbum, gameName);
+                if (hintAlbum != null)
+                {
+                    khAlbums.Add(hintAlbum);
+                    // Return immediately - direct album slug is the definitive answer
+                    return khAlbums;
+                }
+            }
 
             // Strategy 1: Exact game name
             Logger.Info($"[KHInsider] Strategy 1: Exact name '{gameName}'");
@@ -249,216 +297,350 @@ namespace UniPlaySong.Downloaders
         }
 
         /// <summary>
-        /// Gets YouTube albums with caching support, using multiple search strategies.
+        /// Gets YouTube albums with caching and search hints support.
         /// </summary>
         private List<Album> GetYouTubeAlbumsWithCache(string gameName, CancellationToken cancellationToken, bool auto, bool skipCache = false)
         {
-            // Check cache only if not skipping
+            var seenIds = new HashSet<string>();
+            var ytAlbums = new List<Album>();
+
+            // Check for search hints FIRST (user-provided overrides for problematic games)
+            // Hints take priority over cache to ensure user overrides always work
+            var hint = _hintsService?.GetHint(gameName);
+            if (hint != null)
+            {
+                // If direct playlist ID is provided, use it (highest priority)
+                if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
+                {
+                    Logger.Info($"[YouTube] Using hint playlist for '{gameName}': {hint.YouTubePlaylistId}");
+                    var playlistAlbum = CreateAlbumFromPlaylistId(hint.YouTubePlaylistId, gameName);
+                    if (playlistAlbum != null)
+                    {
+                        ytAlbums.Add(playlistAlbum);
+                        // Return immediately - direct playlist ID is the definitive answer
+                        CacheAndReturn(gameName, ytAlbums, skipCache);
+                        return ytAlbums;
+                    }
+                }
+
+                // If custom search terms are provided, use those instead of default
+                if (hint.SearchTerms != null && hint.SearchTerms.Count > 0)
+                {
+                    Logger.Info($"[YouTube] Using hint search terms for '{gameName}': [{string.Join(", ", hint.SearchTerms)}]");
+                    foreach (var query in hint.SearchTerms)
+                    {
+                        if (cancellationToken.IsCancellationRequested) break;
+                        SearchAndAddResults(query, ytAlbums, seenIds, cancellationToken, auto);
+                        if (ytAlbums.Count >= 20) break;
+                    }
+
+                    CacheAndReturn(gameName, ytAlbums, skipCache);
+                    return ytAlbums;
+                }
+            }
+
+            // Check cache for default searches (only if no hint was used)
             if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.YouTube, out var cachedAlbums))
             {
-                Logger.DebugIf(LogPrefix,$"[Source.All] YouTube (cached): Found {cachedAlbums.Count} album(s) for '{gameName}'");
+                Logger.Info($"[YouTube] Cache hit for '{gameName}': {cachedAlbums.Count} album(s)");
                 return cachedAlbums;
             }
 
-            // Try multiple YouTube search strategies
-            var ytAlbums = new List<Album>();
+            // Default search: use base game name with OST/soundtrack/music suffixes
+            var baseGameName = StringHelper.ExtractBaseGameName(gameName);
+            Logger.Info($"[YouTube] Search: '{gameName}' → base: '{baseGameName}'");
 
-            // Strategy 1: "[Game Name]" OST (quoted for exact match)
-            Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 1: Searching for '\"{gameName}\" OST'");
-            var strategy1 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" OST", cancellationToken, auto)?.ToList()
-                ?? new List<Album>();
-            ytAlbums.AddRange(strategy1);
+            var searchQueries = new[] { $"{baseGameName} OST", $"{baseGameName} soundtrack", $"{baseGameName} music" };
 
-            if (ytAlbums.Count > 0)
+            foreach (var query in searchQueries)
             {
-                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 1 found {ytAlbums.Count} result(s)");
-            }
-            else
-            {
-                // Strategy 2: "[Game Name]" soundtrack
-                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 2: Searching for '\"{gameName}\" soundtrack'");
-                var strategy2 = _ytDownloader?.GetAlbumsForGame($"\"{gameName}\" soundtrack", cancellationToken, auto)?.ToList()
-                    ?? new List<Album>();
-                ytAlbums.AddRange(strategy2);
-
-                if (ytAlbums.Count > 0)
-                {
-                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 2 found {ytAlbums.Count} result(s)");
-                }
-                else
-                {
-                    // Strategy 3: [Game Name] original soundtrack
-                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 3: Searching for '{gameName} original soundtrack'");
-                    var strategy3 = _ytDownloader?.GetAlbumsForGame($"{gameName} original soundtrack", cancellationToken, auto)?.ToList()
-                        ?? new List<Album>();
-                    ytAlbums.AddRange(strategy3);
-
-                    if (ytAlbums.Count > 0)
-                    {
-                        Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 3 found {ytAlbums.Count} result(s)");
-                    }
-                    else
-                    {
-                        // Strategy 4: Try simplified game name (without edition suffixes)
-                        // e.g., "Dishonored - Definitive Edition" -> "Dishonored"
-                        var simplifiedName = StringHelper.StripGameNameSuffixes(gameName);
-                        if (!string.IsNullOrWhiteSpace(simplifiedName) &&
-                            !simplifiedName.Equals(gameName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 4: Searching with simplified name '\"{simplifiedName}\" OST'");
-                            var strategy4 = _ytDownloader?.GetAlbumsForGame($"\"{simplifiedName}\" OST", cancellationToken, auto)?.ToList()
-                                ?? new List<Album>();
-                            ytAlbums.AddRange(strategy4);
-
-                            if (ytAlbums.Count > 0)
-                            {
-                                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 4 found {ytAlbums.Count} result(s)");
-                            }
-                            else
-                            {
-                                // Strategy 5: Simplified name + soundtrack
-                                Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 5: Searching for '\"{simplifiedName}\" soundtrack'");
-                                var strategy5 = _ytDownloader?.GetAlbumsForGame($"\"{simplifiedName}\" soundtrack", cancellationToken, auto)?.ToList()
-                                    ?? new List<Album>();
-                                ytAlbums.AddRange(strategy5);
-
-                                if (ytAlbums.Count > 0)
-                                {
-                                    Logger.DebugIf(LogPrefix,$"[YouTube] Strategy 5 found {ytAlbums.Count} result(s)");
-                                }
-                            }
-                        }
-                    }
-                }
+                if (cancellationToken.IsCancellationRequested) break;
+                SearchAndAddResults(query, ytAlbums, seenIds, cancellationToken, auto);
+                if (ytAlbums.Count >= 20) break;
             }
 
-            // Only cache if not skipping cache
-            if (!skipCache && _cacheService != null)
-            {
-                _cacheService.CacheSearchResult(gameName, Source.YouTube, ytAlbums);
-            }
-
-            Logger.DebugIf(LogPrefix,$"[Source.All] YouTube: Found {ytAlbums.Count} total album(s) for '{gameName}'");
-
+            CacheAndReturn(gameName, ytAlbums, skipCache);
             return ytAlbums;
         }
 
-        /// <summary>
-        /// Minimum score required for an album to be considered a valid match.
-        /// Simplified: We now rely on strict keyword filtering rather than complex scoring
-        /// </summary>
-        private const int MinimumAlbumRelevanceScore = 1000;
+        private void SearchAndAddResults(string query, List<Album> albums, HashSet<string> seenIds, CancellationToken ct, bool auto)
+        {
+            var results = _ytDownloader?.GetAlbumsForGame(query, ct, auto)?.ToList() ?? new List<Album>();
+            foreach (var album in results)
+            {
+                if (!string.IsNullOrEmpty(album.Id) && seenIds.Add(album.Id))
+                    albums.Add(album);
+            }
+            Logger.Info($"[YouTube] Query '{query}': {results.Count} results ({albums.Count} total)");
+        }
+
+        private void CacheAndReturn(string gameName, List<Album> albums, bool skipCache)
+        {
+            Logger.Info($"[YouTube] Total: {albums.Count} result(s) for '{gameName}'");
+            if (!skipCache && _cacheService != null)
+                _cacheService.CacheSearchResult(gameName, Source.YouTube, albums);
+        }
+
+        private Album CreateAlbumFromPlaylistId(string playlistId, string gameName)
+        {
+            // Create a synthetic album entry for the playlist
+            // The actual songs will be fetched when GetSongsFromAlbum is called
+            return new Album
+            {
+                Id = playlistId,
+                Name = $"{gameName} (User Hint)",
+                Source = Source.YouTube
+            };
+        }
+
+        private Album CreateAlbumFromKHInsiderSlug(string albumSlug, string gameName)
+        {
+            // Create an album entry for the KHInsider album slug
+            // KHInsiderDownloader.GetSongsFromAlbum builds URL as: BaseUrl + album.Id
+            // Album IDs from search are stored as "game-soundtracks/album/{slug}"
+            // So we need to prefix the slug with the path
+            var albumId = $"game-soundtracks/album/{albumSlug}";
+            return new Album
+            {
+                Id = albumId,
+                Name = $"{gameName} (User Hint)",
+                Source = Source.KHInsider
+            };
+        }
+
+        private const int MinFuzzyScoreTrusted = 50;  // KHInsider, Zophar
+        private const int MinFuzzyScoreYouTube = 70;
+        private const int YouTubeFuzzyFallback = 85;
+        private const int BroaderThreshold = 50;
+
+        // Roman ↔ Arabic numeral mappings for game series matching
+        private static readonly Dictionary<string, string> RomanToArabic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "i", "1" }, { "ii", "2" }, { "iii", "3" }, { "iv", "4" }, { "v", "5" },
+            { "vi", "6" }, { "vii", "7" }, { "viii", "8" }, { "ix", "9" }, { "x", "10" },
+            { "xi", "11" }, { "xii", "12" }, { "xiii", "13" }, { "xiv", "14" }, { "xv", "15" },
+            { "xvi", "16" }, { "xvii", "17" }, { "xviii", "18" }, { "xix", "19" }, { "xx", "20" }
+        };
+
+        private static readonly Dictionary<string, string> ArabicToRoman = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "1", "i" }, { "2", "ii" }, { "3", "iii" }, { "4", "iv" }, { "5", "v" },
+            { "6", "vi" }, { "7", "vii" }, { "8", "viii" }, { "9", "ix" }, { "10", "x" },
+            { "11", "xi" }, { "12", "xii" }, { "13", "xiii" }, { "14", "xiv" }, { "15", "xv" },
+            { "16", "xvi" }, { "17", "xvii" }, { "18", "xviii" }, { "19", "xix" }, { "20", "xx" }
+        };
+
+        private static readonly HashSet<string> StopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "the", "a", "an", "of", "and", "or", "in", "on", "at", "to", "for",
+            "with", "by", "from", "as", "is", "was", "are", "be", "been",
+            "game", "edition", "version", "vol", "volume"
+        };
+
+        private static readonly Regex SuffixPattern = new Regex(
+            @"\s*(original\s+)?soundtrack.*$|\s*ost.*$|\s*music.*$|\s*score.*$|\s*bgm.*$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public Album BestAlbumPick(IEnumerable<Album> albums, Game game)
         {
             var albumsList = albums?.ToList() ?? new List<Album>();
+            if (albumsList.Count == 0) return null;
 
-            if (albumsList.Count == 0)
-                return null;
+            var gameName = NormalizeForMatching(game.Name);
+            var keyWords = ExtractKeyWords(game.Name);
+            var seriesNumbers = ExtractSeriesNumbers(keyWords);
 
-            var gameName = StringHelper.PrepareForSearch(game.Name);
+            Logger.Info($"BestAlbumPick: '{game.Name}' → keywords [{string.Join(", ", keyWords)}], series [{string.Join(", ", seriesNumbers)}]");
 
-            // First pass: Filter out obvious non-game-music albums (auto-mode only filters)
-            var filteredAlbums = albumsList.Where(album => IsLikelyGameMusic(album, game, auto: true)).ToList();
-            
-            Logger.DebugIf(LogPrefix,$"Album filtering for '{game.Name}': {albumsList.Count} total -> {filteredAlbums.Count} after filtering");
-            
-            if (filteredAlbums.Count == 0)
-            {
-                Logger.Warn($"No valid game music albums found for '{game.Name}' after filtering");
-                return null;
-            }
-            
-            // Second pass: Score remaining albums
-            var scoredAlbums = filteredAlbums.Select(album => new
-            {
-                Album = album,
-                Score = CalculateAlbumRelevance(album, game)
-            })
-            .OrderByDescending(x => x.Score)
-            .ToList();
+            // Separate by source
+            var khAlbums = albumsList.Where(a => a.Source == Source.KHInsider).ToList();
+            var zopharAlbums = albumsList.Where(a => a.Source == Source.Zophar).ToList();
+            var ytAlbums = albumsList.Where(a => a.Source == Source.YouTube && IsLikelyGameMusic(a, game, auto: true)).ToList();
 
-            Logger.DebugIf(LogPrefix,$"Album candidates for '{game.Name}' (search: '{gameName}'):");
-            foreach (var candidate in scoredAlbums.Take(5))
-            {
-                Logger.DebugIf(LogPrefix,$"  - '{candidate.Album.Name}' (score: {candidate.Score}, source: {candidate.Album.Source})");
-            }
+            // Priority 1: KHInsider with ALL keywords
+            var result = FindBestWithKeywords(khAlbums, gameName, keyWords, 0, "KH-Keywords");
+            if (result != null) return result;
 
-            var validAlbums = scoredAlbums.Where(x => x.Score >= MinimumAlbumRelevanceScore).ToList();
+            // Priority 2: KHInsider fuzzy (must match series number)
+            result = FindBestFuzzy(khAlbums, gameName, seriesNumbers, MinFuzzyScoreTrusted, "KH-Fuzzy");
+            if (result != null) return result;
 
-            if (validAlbums.Count == 0)
-            {
-                Logger.Warn($"No albums met minimum relevance threshold ({MinimumAlbumRelevanceScore}) for game '{game.Name}'");
-                Logger.Warn($"Best candidate was '{scoredAlbums.FirstOrDefault()?.Album?.Name}' with score {scoredAlbums.FirstOrDefault()?.Score}");
-                return null;
-            }
+            // Priority 3: Zophar with ALL keywords
+            result = FindBestWithKeywords(zopharAlbums, gameName, keyWords, 0, "ZO-Keywords");
+            if (result != null) return result;
 
-            var best = validAlbums.First();
-            Logger.DebugIf(LogPrefix,$"Selected album '{best.Album.Name}' with score {best.Score} for game '{game.Name}'");
-            
-            return best.Album;
+            // Priority 4: Zophar fuzzy (must match series number)
+            result = FindBestFuzzy(zopharAlbums, gameName, seriesNumbers, MinFuzzyScoreTrusted, "ZO-Fuzzy");
+            if (result != null) return result;
+
+            // Priority 5: YouTube with ALL keywords
+            result = FindBestWithKeywords(ytAlbums, gameName, keyWords, MinFuzzyScoreYouTube, "YT-Keywords");
+            if (result != null) return result;
+
+            // Priority 6: YouTube fuzzy fallback (high threshold, must match series)
+            result = FindBestFuzzy(ytAlbums, gameName, seriesNumbers, YouTubeFuzzyFallback, "YT-Fuzzy");
+            if (result != null) return result;
+
+            Logger.Warn($"No suitable album for '{game.Name}'");
+            return null;
         }
-        
+
         /// <summary>
-        /// First-pass filter: Quickly eliminate albums that are clearly NOT game music
-        /// This prevents scoring non-game content like TV shows, movies, random music
+        /// Broader matching for retry operations. Still enforces series number matching.
         /// </summary>
-        /// <param name="album">The album to check</param>
-        /// <param name="game">The game being searched for</param>
-        /// <param name="auto">Whether this is auto-mode (applies whitelist and strict filtering) or manual mode</param>
+        public Album BestAlbumPickBroader(IEnumerable<Album> albums, Game game)
+        {
+            var albumList = albums?.ToList();
+            if (albumList == null || albumList.Count == 0) return null;
+
+            var gameName = StringHelper.ExtractBaseGameName(game?.Name ?? "");
+            var keyWords = ExtractKeyWords(game?.Name ?? "");
+            var seriesNumbers = ExtractSeriesNumbers(keyWords);
+
+            Logger.Info($"BroaderPick: '{gameName}' with series [{string.Join(", ", seriesNumbers)}]");
+
+            var scored = albumList
+                .Select(a => new { Album = a, Score = Fuzz.TokenSetRatio(gameName, CleanAlbumName(a.Name)) })
+                .Where(x => MatchesSeriesNumber(x.Album.Name, seriesNumbers))
+                .OrderByDescending(x => x.Score)
+                .ToList();
+
+            var best = scored.FirstOrDefault(x => x.Score >= BroaderThreshold)
+                    ?? (scored.FirstOrDefault()?.Score >= 30 ? scored.First() : null);
+
+            if (best != null)
+            {
+                Logger.Info($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
+                return best.Album;
+            }
+
+            return null;
+        }
+
+        private Album FindBestWithKeywords(List<Album> albums, string gameName, List<string> keyWords, int minScore, string tag)
+        {
+            if (!albums.Any()) return null;
+
+            var matches = albums
+                .Where(a => ContainsAllKeyWords(a.Name, keyWords))
+                .Select(a => new { Album = a, Score = Fuzz.TokenSetRatio(gameName, CleanAlbumName(a.Name)) })
+                .OrderByDescending(x => x.Score)
+                .FirstOrDefault();
+
+            if (matches != null && matches.Score >= minScore)
+            {
+                Logger.Info($"[{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                return matches.Album;
+            }
+            return null;
+        }
+
+        private Album FindBestFuzzy(List<Album> albums, string gameName, List<string> seriesNumbers, int minScore, string tag)
+        {
+            if (!albums.Any()) return null;
+
+            var matches = albums
+                .Select(a => new { Album = a, Score = Fuzz.TokenSetRatio(gameName, CleanAlbumName(a.Name)) })
+                .Where(x => MatchesSeriesNumber(x.Album.Name, seriesNumbers) && x.Score >= minScore)
+                .OrderByDescending(x => x.Score)
+                .FirstOrDefault();
+
+            if (matches != null)
+            {
+                Logger.Info($"[{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                return matches.Album;
+            }
+            return null;
+        }
+
+        private List<string> ExtractSeriesNumbers(List<string> keyWords)
+        {
+            return keyWords.Where(k => Regex.IsMatch(k, @"^\d{1,2}$") && int.Parse(k) <= 20).ToList();
+        }
+
+        private bool MatchesSeriesNumber(string albumName, List<string> seriesNumbers)
+        {
+            return seriesNumbers.Count == 0 || seriesNumbers.All(num => ContainsAllKeyWords(albumName, new List<string> { num }));
+        }
+
+        private string CleanAlbumName(string albumName)
+        {
+            if (string.IsNullOrWhiteSpace(albumName)) return string.Empty;
+            return SuffixPattern.Replace(NormalizeForMatching(albumName), "").Trim();
+        }
+
+        private List<string> ExtractKeyWords(string gameName)
+        {
+            if (string.IsNullOrWhiteSpace(gameName)) return new List<string>();
+
+            var baseName = StringHelper.ExtractBaseGameName(gameName);
+            var words = NormalizeForMatching(baseName).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            var keyWords = words
+                .Where(w => w.Length >= 2 || Regex.IsMatch(w, @"^[1-9]$"))
+                .Where(w => !StopWords.Contains(w))
+                .Where(w => !Regex.IsMatch(w, @"^\d{4,}$"))
+                .ToList();
+
+            if (keyWords.Count == 0 && words.Length > 0)
+                keyWords.Add(words.First(w => w.Length >= 2));
+
+            return keyWords;
+        }
+
+        private bool ContainsAllKeyWords(string albumName, List<string> keyWords)
+        {
+            if (keyWords == null || keyWords.Count == 0) return true;
+
+            var normalized = NormalizeForMatching(albumName);
+            return keyWords.All(kw => normalized.Contains(kw) ||
+                (GetNumeralAlternate(kw) is string alt && normalized.Contains(alt)));
+        }
+
+        private string GetNumeralAlternate(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword)) return null;
+            var lower = keyword.ToLowerInvariant();
+            return RomanToArabic.TryGetValue(lower, out var arabic) ? arabic
+                 : ArabicToRoman.TryGetValue(lower, out var roman) ? roman : null;
+        }
+
+        // Keywords that indicate non-music content (gameplay, streams, covers, etc.)
+        private static readonly string[] RejectKeywords = {
+            "[eng sub]", "[sub]", "[dubbed]", "episode", "ep.", "ep ", "e1", "e2", "e3", "s1", "s2",
+            "drama", "movie", "film", "trailer", "review", "reaction",
+            "gameplay", "walkthrough", "let's play", "lets play", "playthrough", "longplay",
+            "full game", "all cutscenes", "no commentary", "blind playthrough", "first playthrough",
+            "100%", "speedrun", "tutorial", "guide", "how to",
+            "cover", "remix", "fan made", "fanmade", "mashup",
+            "1 hour", "2 hour", "3 hour", "10 hour", "extended", "loop",
+            "stream", "live stream", "vod", "twitch",
+            "part 1", "part 2", "part 3", "part 4", "part 5",
+            "pt.1", "pt.2", "pt.3", "pt 1", "pt 2", "pt 3", "#1", "#2", "#3", "| 1", "| 2", "| 3"
+        };
+
+        private static readonly string[] MusicKeywords = { "ost", "soundtrack", "original soundtrack", "game music", "bgm", "score", "theme", "music" };
+
         private bool IsLikelyGameMusic(Album album, Game game, bool auto)
         {
-            if (album == null || string.IsNullOrWhiteSpace(album.Name))
-                return false;
+            if (album == null || string.IsNullOrWhiteSpace(album.Name)) return false;
 
-            var albumName = album.Name.ToLowerInvariant();
-            var gameName = game.Name.ToLowerInvariant();
+            var albumLower = album.Name.ToLowerInvariant();
 
-            // Requirement 1: Must contain game-music-related keywords
-            var musicKeywords = new[] { "ost", "soundtrack", "original soundtrack", "game music", "bgm", "score", "theme" };
-            bool hasMusicKeyword = musicKeywords.Any(keyword => albumName.Contains(keyword));
+            // Reject non-music content
+            if (RejectKeywords.Any(kw => albumLower.Contains(kw))) return false;
 
-            if (!hasMusicKeyword)
+            // KHInsider/Zophar are trusted music sources
+            if (album.Source == Source.KHInsider || album.Source == Source.Zophar) return true;
+
+            // YouTube: Must contain music-related keywords
+            if (!MusicKeywords.Any(kw => albumLower.Contains(kw))) return false;
+
+            // YouTube auto-mode: Require minimum fuzzy match
+            if (auto)
             {
-                Logger.DebugIf(LogPrefix,$"Album '{album.Name}' rejected: No music keywords (OST/soundtrack/etc)");
-                return false;
-            }
-
-            // Requirement 2: Reject obvious non-game content
-            var rejectKeywords = new[]
-            {
-                "[eng sub]", "[sub]", "episode", "drama", "movie", "film",
-                "trailer", "review", "gameplay", "walkthrough", "let's play",
-                "reaction", "cover", "remix", "fan made", "fanmade"
-            };
-
-            if (rejectKeywords.Any(keyword => albumName.Contains(keyword)))
-            {
-                Logger.DebugIf(LogPrefix,$"Album '{album.Name}' rejected: Contains non-game keyword");
-                return false;
-            }
-
-            // Requirement 3: For YouTube in auto-mode, apply stricter word matching
-            if (album.Source == Source.YouTube && auto)
-            {
-                var gameWords = GetSignificantWords(gameName);
-                var albumWords = GetSignificantWords(albumName);
-
-                if (gameWords.Count > 0)
-                {
-                    int matchedWords = gameWords.Count(gw =>
-                        albumWords.Any(aw => string.Equals(gw, aw, StringComparison.OrdinalIgnoreCase)));
-
-                    // For YouTube, require at least 50% word match (or 100% for single-word games)
-                    double matchPercentage = (double)matchedWords / gameWords.Count;
-                    double requiredMatch = gameWords.Count == 1 ? 1.0 : 0.5;
-
-                    if (matchPercentage < requiredMatch)
-                    {
-                        Logger.DebugIf(LogPrefix,$"[Auto-mode] Album '{album.Name}' rejected: Insufficient word match for YouTube ({matchPercentage:P0} < {requiredMatch:P0})");
-                        return false;
-                    }
-                }
+                var score = Fuzz.TokenSetRatio(NormalizeForMatching(game.Name), CleanAlbumName(album.Name));
+                if (score < MinFuzzyScoreYouTube) return false;
             }
 
             return true;
@@ -772,6 +954,8 @@ namespace UniPlaySong.Downloaders
             {
                 case Source.KHInsider:
                     return _khDownloader;
+                case Source.Zophar:
+                    return _zopharDownloader;
                 case Source.YouTube:
                     return _ytDownloader;
                 case Source.All:
@@ -781,114 +965,6 @@ namespace UniPlaySong.Downloaders
                     Logger.Warn($"Unknown source: {source}");
                     return null;
             }
-        }
-
-        private int CalculateAlbumRelevance(Album album, Game game)
-        {
-            if (album == null || game == null)
-                return 0;
-
-            // Normalize both names for comparison
-            var gameName = NormalizeForMatching(StringHelper.PrepareForSearch(game.Name));
-            var albumName = NormalizeForMatching(album.Name);
-            
-            // Also get individual words for partial matching
-            var gameWords = GetSignificantWords(gameName);
-            var albumWords = GetSignificantWords(albumName);
-            
-            var score = 0;
-
-            // === EXACT MATCH (highest priority) ===
-            if (string.Equals(albumName, gameName, StringComparison.OrdinalIgnoreCase))
-            {
-                score += 10000;
-            }
-            // Album starts with exact game name
-            else if (albumName.StartsWith(gameName + " ", StringComparison.OrdinalIgnoreCase) ||
-                     albumName.StartsWith(gameName + ":", StringComparison.OrdinalIgnoreCase))
-            {
-                score += 8000;
-            }
-            // Game name is contained in album name
-            else if (albumName.ContainsIgnoreCase(gameName))
-            {
-                score += 6000;
-            }
-            
-            // === WORD-BASED MATCHING (simplified) ===
-            if (gameWords.Count > 0)
-            {
-                // Count how many game words appear in album name
-                int matchedWords = gameWords.Count(gw => 
-                    albumWords.Any(aw => string.Equals(gw, aw, StringComparison.OrdinalIgnoreCase)));
-                
-                // Calculate match percentage
-                double matchPercentage = (double)matchedWords / gameWords.Count;
-                
-                // All words match
-                if (matchPercentage >= 1.0)
-                {
-                    score += 5000;
-                }
-                // Most words match (75%+)
-                else if (matchPercentage >= 0.75)
-                {
-                    score += 3000;
-                }
-                // Half words match
-                else if (matchPercentage >= 0.5)
-                {
-                    score += 1500;
-                }
-                // Some words match (33%+)
-                else if (matchPercentage >= 0.33)
-                {
-                    score += 500;
-                }
-            }
-            
-            // === SOUNDTRACK INDICATORS (bonus) ===
-            if (albumName.Contains("original soundtrack"))
-                score += 300;
-            else if (albumName.Contains("soundtrack") || albumName.Contains("ost"))
-                score += 200;
-            else if (albumName.Contains("score") || albumName.Contains("music"))
-                score += 100;
-            
-            // === PLATFORM MATCH (bonus) ===
-            if (game.Platforms != null && album.Platforms != null && album.Platforms.Any())
-            {
-                var gamePlatforms = game.Platforms.Select(p => NormalizeForMatching(p.Name)).ToList();
-                var albumPlatforms = album.Platforms.Select(NormalizeForMatching).ToList();
-                
-                bool platformMatch = gamePlatforms.Any(gp => 
-                    albumPlatforms.Any(ap => 
-                        string.Equals(gp, ap, StringComparison.OrdinalIgnoreCase) ||
-                        gp.Contains(ap) || ap.Contains(gp)));
-                
-                if (platformMatch)
-                {
-                    score += 200;
-                }
-            }
-
-            // === TYPE PREFERENCE (bonus) ===
-            if (!string.IsNullOrWhiteSpace(album.Type))
-            {
-                if (string.Equals(album.Type, "GameRip", StringComparison.OrdinalIgnoreCase))
-                    score += 150;
-                else if (string.Equals(album.Type, "Soundtrack", StringComparison.OrdinalIgnoreCase))
-                    score += 100;
-            }
-
-            // === YEAR MATCH (bonus) ===
-            if (!string.IsNullOrWhiteSpace(album.Year) && game.ReleaseYear.HasValue)
-            {
-                if (album.Year.Contains(game.ReleaseYear.Value.ToString()))
-                    score += 50;
-            }
-
-            return score;
         }
 
         /// <summary>
@@ -904,30 +980,6 @@ namespace UniPlaySong.Downloaders
             // Collapse multiple spaces
             normalized = Regex.Replace(normalized, @"\s+", " ");
             return normalized.Trim().ToLowerInvariant();
-        }
-        
-        /// <summary>
-        /// Gets significant words from a name (filters out common words)
-        /// </summary>
-        private List<string> GetSignificantWords(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return new List<string>();
-            
-            // Common words to ignore
-            var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or",
-                "vol", "volume", "part", "disc", "cd", "ost", "soundtrack", "original",
-                "sound", "music", "game", "video"
-            };
-            
-            var words = name.ToLowerInvariant()
-                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(w => w.Length > 1 && !stopWords.Contains(w))
-                .ToList();
-            
-            return words;
         }
 
         public string GetTempPath(Song song)

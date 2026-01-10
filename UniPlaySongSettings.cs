@@ -578,6 +578,19 @@ namespace UniPlaySong
             set { lastAutoLibUpdateAssetsDownload = value; OnPropertyChanged(); }
         }
 
+        private int maxConcurrentDownloads = 3;
+
+        /// <summary>
+        /// Maximum number of concurrent downloads during batch operations.
+        /// Higher values speed up batch downloads but may overwhelm servers.
+        /// Range: 1-5, Default: 3
+        /// </summary>
+        public int MaxConcurrentDownloads
+        {
+            get => maxConcurrentDownloads;
+            set { maxConcurrentDownloads = Math.Max(1, Math.Min(5, value)); OnPropertyChanged(); }
+        }
+
         // Music Status Tag Settings
         private bool autoTagOnLibraryUpdate = true;
 

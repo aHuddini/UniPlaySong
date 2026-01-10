@@ -29,6 +29,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="System.ValueTuple" Version="4.5.0" />
         <PackageReference Include="NAudio" Version="1.10.0" />
+        <PackageReference Include="FuzzySharp" Version="2.0.2" />
     </ItemGroup>
     
     <ItemGroup>
@@ -39,6 +40,9 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Include="LICENSE">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="search_hints.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

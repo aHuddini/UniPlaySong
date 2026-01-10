@@ -146,4 +146,113 @@ namespace UniPlaySong.Models
         /// </summary>
         public string FFmpegPath { get; set; }
     }
+
+    /// <summary>
+    /// Status for individual game downloads in batch operations
+    /// </summary>
+    public enum BatchDownloadStatus
+    {
+        Pending,
+        Downloading,
+        Completed,
+        Failed,
+        Skipped,
+        Cancelled
+    }
+
+    /// <summary>
+    /// Individual game download item for batch progress tracking
+    /// </summary>
+    public class BatchDownloadItem : System.ComponentModel.INotifyPropertyChanged
+    {
+        private string _gameName;
+        private BatchDownloadStatus _status;
+        private string _statusMessage;
+        private string _albumName;
+        private string _sourceName;
+
+        public string GameName
+        {
+            get => _gameName;
+            set { _gameName = value; OnPropertyChanged(nameof(GameName)); }
+        }
+
+        public BatchDownloadStatus Status
+        {
+            get => _status;
+            set { _status = value; OnPropertyChanged(nameof(Status)); OnPropertyChanged(nameof(StatusColor)); OnPropertyChanged(nameof(StatusIcon)); }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(nameof(StatusMessage)); }
+        }
+
+        public string AlbumName
+        {
+            get => _albumName;
+            set { _albumName = value; OnPropertyChanged(nameof(AlbumName)); }
+        }
+
+        public string SourceName
+        {
+            get => _sourceName;
+            set { _sourceName = value; OnPropertyChanged(nameof(SourceName)); }
+        }
+
+        public string StatusColor
+        {
+            get
+            {
+                switch (Status)
+                {
+                    case BatchDownloadStatus.Pending: return "#757575";
+                    case BatchDownloadStatus.Downloading: return "#2196F3";
+                    case BatchDownloadStatus.Completed: return "#4CAF50";
+                    case BatchDownloadStatus.Failed: return "#F44336";
+                    case BatchDownloadStatus.Skipped: return "#FF9800";
+                    case BatchDownloadStatus.Cancelled: return "#9E9E9E";
+                    default: return "#757575";
+                }
+            }
+        }
+
+        public string StatusIcon
+        {
+            get
+            {
+                switch (Status)
+                {
+                    case BatchDownloadStatus.Pending: return "Clock";
+                    case BatchDownloadStatus.Downloading: return "Download";
+                    case BatchDownloadStatus.Completed: return "Check";
+                    case BatchDownloadStatus.Failed: return "Close";
+                    case BatchDownloadStatus.Skipped: return "ArrowRightBold";
+                    case BatchDownloadStatus.Cancelled: return "Cancel";
+                    default: return "Clock";
+                }
+            }
+        }
+
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    /// <summary>
+    /// Overall progress for batch download operations
+    /// </summary>
+    public class BatchDownloadProgress
+    {
+        public int TotalGames { get; set; }
+        public int CompletedCount { get; set; }
+        public int FailedCount { get; set; }
+        public int SkippedCount { get; set; }
+        public int InProgressCount { get; set; }
+        public bool IsComplete { get; set; }
+        public string CurrentStatus { get; set; }
+    }
 }
