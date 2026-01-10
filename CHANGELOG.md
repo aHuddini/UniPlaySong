@@ -15,6 +15,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Includes double-confirmation to prevent accidental data loss
   - Cleans up empty "Music Files" folders and game directories after deletion
 
+### Fixed
+- Back button in batch download album selection now properly returns to source selection ([#36](https://github.com/aHuddini/UniPlaySong/issues/36))
+  - Previously displayed "BACK_SIGNAL" text instead of allowing source change
+  - Now shows source selection dialog (KHInsider/YouTube) when pressing Back
+
 ## [1.1.4] - 2026-01-07
 
 ### Added
