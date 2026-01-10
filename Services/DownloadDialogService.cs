@@ -1596,6 +1596,26 @@ namespace UniPlaySong.Services
             bool overwrite,
             int maxConcurrentDownloads = 3)
         {
+            return ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads, null);
+        }
+
+        /// <summary>
+        /// Shows the batch download progress dialog and performs parallel downloads
+        /// Returns full results including failed games for retry prompting
+        /// Optionally resumes playback for the current game when its download completes
+        /// </summary>
+        /// <param name="games">Games to download music for</param>
+        /// <param name="source">Download source</param>
+        /// <param name="overwrite">Whether to overwrite existing music</param>
+        /// <param name="maxConcurrentDownloads">Max concurrent downloads</param>
+        /// <param name="currentGame">Currently selected game - playback resumes when this game's download completes</param>
+        public BatchDownloadResult ShowBatchDownloadDialogWithResults(
+            List<Game> games,
+            Source source,
+            bool overwrite,
+            int maxConcurrentDownloads,
+            Game currentGame)
+        {
             var batchResult = new BatchDownloadResult();
 
             if (games == null || games.Count == 0)
@@ -1604,7 +1624,10 @@ namespace UniPlaySong.Services
                 return batchResult;
             }
 
-            Logger.Info($"[BatchDownloadDialog] Starting for {games.Count} games, source: {source}, concurrent: {maxConcurrentDownloads}");
+            // Track whether we've already resumed playback for the current game
+            bool playbackResumedForCurrentGame = false;
+
+            Logger.Info($"[BatchDownloadDialog] Starting for {games.Count} games, source: {source}, concurrent: {maxConcurrentDownloads}, currentGame: {currentGame?.Name ?? "none"}");
 
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
@@ -1643,12 +1666,24 @@ namespace UniPlaySong.Services
                 {
                     try
                     {
-                        // Progress callback to update the dialog
+                        // Progress callback to update the dialog and optionally resume playback
                         GameDownloadProgressCallback progressCallback = (gameName, status, message, albumName, sourceName) =>
                         {
                             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                             {
                                 progressDialog.UpdateGameStatus(gameName, status, message, albumName, sourceName);
+
+                                // Resume playback immediately when current game's music downloads successfully
+                                if (status == BatchDownloadStatus.Completed &&
+                                    currentGame != null &&
+                                    !playbackResumedForCurrentGame &&
+                                    string.Equals(gameName, currentGame.Name, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    Logger.Info($"[BatchDownloadDialog] Current game '{gameName}' downloaded successfully - resuming playback");
+                                    playbackResumedForCurrentGame = true;
+                                    var settings = _settingsService?.Current;
+                                    _playbackService?.PlayGameMusic(currentGame, settings, forceReload: true);
+                                }
                             }));
                         };
 
@@ -1740,6 +1775,23 @@ namespace UniPlaySong.Services
             else
             {
                 Logger.Warn("[BatchDownloadDialog] allResults is null - results may not have been captured");
+            }
+
+            // Resume playback for current game after batch completes (if not already resumed during batch)
+            if (currentGame != null && !playbackResumedForCurrentGame)
+            {
+                // Check if the current game now has music (either it was in the batch or already had music)
+                var musicDir = _fileService.GetGameMusicDirectory(currentGame);
+                if (Directory.Exists(musicDir) && Directory.GetFiles(musicDir, "*.mp3").Length > 0)
+                {
+                    Logger.Info($"[BatchDownloadDialog] Batch complete - resuming playback for current game '{currentGame.Name}'");
+                    var settings = _settingsService?.Current;
+                    _playbackService?.PlayGameMusic(currentGame, settings, forceReload: true);
+                }
+                else
+                {
+                    Logger.Info($"[BatchDownloadDialog] Batch complete - current game '{currentGame.Name}' still has no music");
+                }
             }
 
             return batchResult;

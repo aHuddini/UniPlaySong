@@ -822,8 +822,11 @@ namespace UniPlaySong.Menus
                 var settings = _getSettings?.Invoke();
                 var maxConcurrent = settings?.MaxConcurrentDownloads ?? 3;
 
+                // Get currently selected game for playback resume after batch download
+                var currentGame = _playniteApi.MainView.SelectedGames?.FirstOrDefault();
+
                 // Use the batch download dialog with results for retry support
-                var batchResult = _dialogService?.ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads: maxConcurrent);
+                var batchResult = _dialogService?.ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrent, currentGame);
                 if (batchResult != null)
                 {
                     batchDownloadedFilePaths.AddRange(batchResult.DownloadedFiles);
