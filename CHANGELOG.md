@@ -5,6 +5,20 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.1.5] - 2026-01-09
 
 ### Added
+- **Zophar Integration** - New download source for video game music
+  - Added Zophar.net as second-priority download source between KHInsider and YouTube
+  - Specializes in retro gaming soundtracks and emulated format rips
+  - Increases auto-download success rates for games not available on KHInsider
+  - Full caching and search hint support for problematic game names
+- **Search Hints Backend** - Intelligent game name resolution system
+  - Dual-source system: bundled curated hints + user-editable custom hints
+  - Provides direct album/playlist links for problematic games that cause search issues
+  - Supports fuzzy matching, base name matching, and exact lookups
+- **Revamped Auto-Download Operation** - Improved bulk download performance and UX
+  - New dedicated GUI dialog for auto-download operations with real-time progress
+  - Parallel task execution for search and download operations
+  - Improved error handling and retry logic for failed downloads
+  - Better visual feedback during multi-game bulk operations
 - **Delete Long Songs** cleanup tool - Scans music library and deletes songs longer than 10 minutes
   - Helps remove accidentally downloaded full albums, podcasts, or corrupted files
   - Prevents bulk operations (normalization, trimming) from getting stuck on excessively long files

@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,29 +14,44 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.4 (MAJOR RELEASE)
+## What's New - v1.1.5
 
-### ⚡ Real-Time Live Effects (Major Feature)
-- **Reverb Engine**: 25 studio-quality presets with Audacity-compatible algorithms
-- **Advanced Parameters**: Reverberance, Tone Low/High, Stereo Width controls
-- **Zero-Latency Processing**: Apply effects instantly without restarting playback
-- **Dynamic Effect Chaining**: 6 preset orderings for combining multiple effects
-- **Safety Warnings**: Hearing damage alerts for high-intensity settings
+### 🎵 New Download Source
+- **Zophar Integration**: Added Zophar.net as second-priority download source
+  - Specializes in retro gaming soundtracks and emulated format rips
+  - Increases auto-download success rates for games not available on KHInsider
+  - Full integration with search hints and caching systems
 
-### 🎚️ Visual Audio "Amplify" Tool
-- **Waveform Editor**: Real-time visual gain adjustment with clipping indicators
-- **Controller Support**: D-Pad and shoulder buttons for precise gain control
-- **Headroom Display**: Shows maximum safe gain to prevent clipping
-- **Original Preservation**: Files backed up before modification
+### 🔍 Auto-Search Resolution
+- **Search Hints Backend**: Intelligent game name resolution system through a dedicated search_hints.json file
+  - Provides direct links for problematic games that cause search issues
+  - Supports fuzzy matching and auto-reloads user changes
+  - Developers, users, and project author can update this file over time to "override" failed searches with better results
 
-### Smart Audio Management (Major Feature)
-- **Auto-Tagging System**: Games tagged "[UPS] Has Music" or "[UPS] No Music" for easy filtering [#18]
+### ⚡ Revamped Bulk Downloads
+- **Revamped Auto-Download**: Improved bulk download performance and UX
+  - New dedicated dialog with real-time progress tracking
+  - Parallel task execution for faster search and download operations
+  - Better error handling and retry logic for failed downloads
 
+### 🧹 More Cleanup Tools
+- **Delete Long Songs** (Cleanup Menu): Scans and removes songs longer than 10 minutes
+  - Prevents bulk operations from getting stuck on accidentally downloaded full albums
+  - Shows preview with file sizes and durations before deletion
+  - Progress dialog prevents UI freezing during large scans
 
+### 🔄 Enhanced Migration
+- **Import & Delete from PlayniteSound**: Clean two-step migration process
+  - Imports all music from PlayniteSound to UniPlaySong
+  - Removes original PlayniteSound files and cleans up empty folders
+  - Double-confirmation dialogs prevent accidental data loss
+
+### 🐛 Bug Fixes
+- **Batch Download Navigation**: Back button now properly returns to source selection instead of showing "BACK_SIGNAL"
 
 
 ### Previous Versions
-- **v1.1.3**: Parallel processing, system tray pause, taskbar dialogs
+- **v1.1.4**: Real-Time Live Effects, Visual Audio Amplify, Smart Auto-Tagging
 
 ---
 
@@ -61,11 +76,11 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Bulk Operations** - Download music for all games at once (parallel processing)
 - **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
 - **Smart Auto-Tagging** - Automatic [UPS] music status tags for easy game filtering
-- **Cleanup & Maintenance** - Factory reset and storage management tools
+- **Cleanup & Maintenance** - Factory reset, storage management, and smart cleanup tools
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
 - **Theme Compatibility** - Works with login screen themes
-- **PlayniteSound Migration** - Import/export music between UniPlaySong and PlayniteSound
+- **PlayniteSound Migration** - Import/export music between UniPlaySong and PlayniteSound, with clean import-and-delete option
 
 <img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
