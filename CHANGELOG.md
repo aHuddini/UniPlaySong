@@ -19,6 +19,12 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Manual Search Summary** - Summary popup now appears after completing manual retry for failed downloads
   - Shows total games attempted, successful downloads, and skipped/cancelled games
   - Lists game names for easy reference
+- **Auto-Search Hint Database** - New settings section for managing the search hints database
+  - Download latest search_hints.json from GitHub to get updated hints
+  - Hints are stored in AutoSearchDatabase folder in extension data
+  - Shows download status with entry count and last update time
+  - Open Database Folder button for easy access to downloaded hints
+  - Revert to Bundled option to delete downloaded hints and use bundled version
 
 ### Changed
 - Renamed "User Hint" to "UPS Hint" throughout the UI for better branding

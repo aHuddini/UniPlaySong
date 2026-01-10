@@ -403,6 +403,162 @@ namespace UniPlaySong
             }
         }
 
+        #region Search Hints Database Properties and Commands
+
+        private string _hintsDatabaseStatus = "Loading...";
+        public string HintsDatabaseStatus
+        {
+            get => _hintsDatabaseStatus;
+            set
+            {
+                _hintsDatabaseStatus = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _hasDownloadedHints = false;
+        public bool HasDownloadedHints
+        {
+            get => _hasDownloadedHints;
+            set
+            {
+                _hasDownloadedHints = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand DownloadHintsFromGitHub => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var hintsService = plugin.GetSearchHintsService();
+                    if (hintsService == null)
+                    {
+                        PlayniteApi.Dialogs.ShowMessage("Search hints service not available.", "UniPlaySong");
+                        return;
+                    }
+
+                    HintsDatabaseStatus = "Downloading...";
+
+                    var success = hintsService.DownloadHintsFromGitHub();
+
+                    if (success)
+                    {
+                        UpdateHintsDatabaseStatus();
+                        PlayniteApi.Dialogs.ShowMessage(
+                            "Search hints database downloaded successfully from GitHub.\n\n" +
+                            "The new hints will be used for future auto-download operations.",
+                            "Download Complete");
+                    }
+                    else
+                    {
+                        UpdateHintsDatabaseStatus();
+                        PlayniteApi.Dialogs.ShowErrorMessage(
+                            "Failed to download search hints from GitHub.\n\n" +
+                            "Please check your internet connection and try again.",
+                            "Download Failed");
+                    }
+                },
+                context: "downloading hints from GitHub",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand OpenHintsDatabaseFolder => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var hintsService = plugin.GetSearchHintsService();
+                    if (hintsService == null)
+                    {
+                        PlayniteApi.Dialogs.ShowMessage("Search hints service not available.", "UniPlaySong");
+                        return;
+                    }
+
+                    var folderPath = hintsService.GetAutoSearchDatabasePath();
+
+                    // Create folder if it doesn't exist
+                    if (!System.IO.Directory.Exists(folderPath))
+                    {
+                        System.IO.Directory.CreateDirectory(folderPath);
+                    }
+
+                    System.Diagnostics.Process.Start("explorer.exe", folderPath);
+                },
+                context: "opening hints database folder",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand RevertToBundledHints => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var hintsService = plugin.GetSearchHintsService();
+                    if (hintsService == null)
+                    {
+                        PlayniteApi.Dialogs.ShowMessage("Search hints service not available.", "UniPlaySong");
+                        return;
+                    }
+
+                    var result = PlayniteApi.Dialogs.ShowMessage(
+                        "Are you sure you want to delete the downloaded hints database?\n\n" +
+                        "The extension will revert to using the bundled hints that shipped with the extension.",
+                        "Revert to Bundled Hints",
+                        System.Windows.MessageBoxButton.YesNo);
+
+                    if (result == System.Windows.MessageBoxResult.Yes)
+                    {
+                        hintsService.DeleteDownloadedHints();
+                        UpdateHintsDatabaseStatus();
+                        PlayniteApi.Dialogs.ShowMessage(
+                            "Downloaded hints deleted. Now using bundled hints.",
+                            "UniPlaySong");
+                    }
+                },
+                context: "reverting to bundled hints",
+                showUserMessage: true
+            );
+        });
+
+        public void UpdateHintsDatabaseStatus()
+        {
+            try
+            {
+                var hintsService = plugin.GetSearchHintsService();
+                if (hintsService == null)
+                {
+                    HintsDatabaseStatus = "Service not available";
+                    HasDownloadedHints = false;
+                    return;
+                }
+
+                HasDownloadedHints = hintsService.HasDownloadedHints();
+
+                if (HasDownloadedHints)
+                {
+                    HintsDatabaseStatus = hintsService.GetDownloadedHintsStatus();
+                }
+                else
+                {
+                    HintsDatabaseStatus = "Using bundled database (not downloaded from GitHub)";
+                }
+            }
+            catch (Exception ex)
+            {
+                HintsDatabaseStatus = $"Error: {ex.Message}";
+                HasDownloadedHints = false;
+            }
+        }
+
+        #endregion
+
         #region Migration Properties and Commands
 
         private string _migrationPlayniteSoundStatus = "Not scanned";
@@ -1097,6 +1253,7 @@ namespace UniPlaySong
         {
             // Called when settings view is opened
             UpdateCacheStats();
+            UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();
         }
 
