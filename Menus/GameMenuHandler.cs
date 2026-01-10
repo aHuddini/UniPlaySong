@@ -803,19 +803,51 @@ namespace UniPlaySong.Menus
 
             _logger.Info($"Batch options: albumSelect={albumSelect}, songSelect={songSelect}, overwrite={overwrite}");
 
-            // Show progress dialog
-            var progressTitle = $"UniPlaySong - Downloading Music";
-            var progressOptions = new GlobalProgressOptions(progressTitle, true)
-            {
-                IsIndeterminate = false
-            };
-
             var batchDownloadedFilePaths = new List<string>();
 
-            _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
+            // If full auto mode (no manual selection), use parallel batch download with progress dialog
+            if (!albumSelect && !songSelect)
             {
-                StartBatchDownload(args, games, source, albumSelect, songSelect, overwrite, progressTitle, batchDownloadedFilePaths);
-            }, progressOptions);
+                _logger.Info("Using parallel batch download (full auto mode)");
+
+                // Get concurrent downloads setting
+                var settings = _getSettings?.Invoke();
+                var maxConcurrent = settings?.MaxConcurrentDownloads ?? 3;
+
+                // Use the batch download dialog with results for retry support
+                var batchResult = _dialogService?.ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads: maxConcurrent);
+                if (batchResult != null)
+                {
+                    batchDownloadedFilePaths.AddRange(batchResult.DownloadedFiles);
+
+                    // Prompt for retry if there were failures
+                    if (batchResult.FailedGames.Count > 0)
+                    {
+                        _logger.Info($"Batch download: {batchResult.FailedGames.Count} games failed, prompting for retry");
+                        var retryDownloads = _dialogService?.PromptAndRetryFailedDownloads(batchResult.FailedGames);
+                        if (retryDownloads != null && retryDownloads.Count > 0)
+                        {
+                            batchDownloadedFilePaths.AddRange(retryDownloads);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Manual selection mode - use sequential download with global progress
+                _logger.Info("Using sequential batch download (manual selection mode)");
+
+                var progressTitle = $"UniPlaySong - Downloading Music";
+                var progressOptions = new GlobalProgressOptions(progressTitle, true)
+                {
+                    IsIndeterminate = false
+                };
+
+                _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
+                {
+                    StartBatchDownload(args, games, source, albumSelect, songSelect, overwrite, progressTitle, batchDownloadedFilePaths);
+                }, progressOptions);
+            }
 
             // Cleanup temp files after all downloads
             _downloadManager.Cleanup();

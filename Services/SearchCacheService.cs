@@ -233,7 +233,8 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Cache search results for a game and source
+        /// Cache search results for a game and source.
+        /// IMPORTANT: Empty results are NOT cached to avoid persisting temporary failures.
         /// </summary>
         public void CacheSearchResult(string gameName, Source source, List<Album> albums)
         {
@@ -241,28 +242,36 @@ namespace UniPlaySong.Services
             {
                 return;
             }
-            
+
+            // Don't cache empty results - they might be due to temporary network issues,
+            // rate limiting, or other transient failures. We only want to cache positive results.
+            if (albums == null || albums.Count == 0)
+            {
+                Logger.Debug($"[Cache] Skipped: Not caching empty results for '{gameName}' from {source}");
+                return;
+            }
+
             lock (_cacheLock)
             {
                 var normalizedName = NormalizeGameName(gameName);
-                
+
                 if (!_cache.Entries.ContainsKey(normalizedName))
                 {
                     _cache.Entries[normalizedName] = new GameSearchCache();
                 }
-                
+
                 var gameCache = _cache.Entries[normalizedName];
                 var now = DateTime.UtcNow;
                 var expires = now.AddDays(_cacheDurationDays);
-                
+
                 var entry = new SearchCacheEntry
                 {
                     Timestamp = now,
                     Expires = expires,
-                    AlbumCount = albums?.Count ?? 0,
-                    Albums = albums?.Select(a => CachedAlbum.FromAlbum(a)).ToList() ?? new List<CachedAlbum>()
+                    AlbumCount = albums.Count,
+                    Albums = albums.Select(a => CachedAlbum.FromAlbum(a)).ToList()
                 };
-                
+
                 if (source == Source.KHInsider)
                 {
                     gameCache.KHInsider = entry;
@@ -271,9 +280,9 @@ namespace UniPlaySong.Services
                 {
                     gameCache.YouTube = entry;
                 }
-                
+
                 Logger.Info($"[Cache] Cached: {source} for '{gameName}' → {entry.AlbumCount} album(s) (expires {expires})");
-                
+
                 SaveCache();
             }
         }
@@ -293,7 +302,8 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Remove expired entries from cache
+        /// Remove expired entries and empty entries from cache.
+        /// Empty entries should no longer be created, but this cleans up any existing ones.
         /// </summary>
         public int CleanupExpiredEntries()
         {
@@ -302,54 +312,78 @@ namespace UniPlaySong.Services
                 var now = DateTime.UtcNow;
                 var removedCount = 0;
                 var gamesToRemove = new List<string>();
-                
+
                 foreach (var kvp in _cache.Entries)
                 {
                     var gameCache = kvp.Value;
                     bool hasValidEntry = false;
-                    
-                    // Check KHInsider entry
-                    if (gameCache.KHInsider != null && gameCache.KHInsider.Expires > now)
+
+                    // Check KHInsider entry - remove if expired OR empty
+                    if (gameCache.KHInsider != null)
                     {
-                        hasValidEntry = true;
+                        bool isExpired = gameCache.KHInsider.Expires <= now;
+                        bool isEmpty = gameCache.KHInsider.AlbumCount == 0 ||
+                                       gameCache.KHInsider.Albums == null ||
+                                       gameCache.KHInsider.Albums.Count == 0;
+
+                        if (isExpired || isEmpty)
+                        {
+                            if (isEmpty)
+                            {
+                                Logger.Debug($"[Cache] Removing empty KHInsider cache for game");
+                            }
+                            gameCache.KHInsider = null;
+                            removedCount++;
+                        }
+                        else
+                        {
+                            hasValidEntry = true;
+                        }
                     }
-                    else if (gameCache.KHInsider != null)
+
+                    // Check YouTube entry - remove if expired OR empty
+                    if (gameCache.YouTube != null)
                     {
-                        gameCache.KHInsider = null;
-                        removedCount++;
+                        bool isExpired = gameCache.YouTube.Expires <= now;
+                        bool isEmpty = gameCache.YouTube.AlbumCount == 0 ||
+                                       gameCache.YouTube.Albums == null ||
+                                       gameCache.YouTube.Albums.Count == 0;
+
+                        if (isExpired || isEmpty)
+                        {
+                            if (isEmpty)
+                            {
+                                Logger.Debug($"[Cache] Removing empty YouTube cache for game");
+                            }
+                            gameCache.YouTube = null;
+                            removedCount++;
+                        }
+                        else
+                        {
+                            hasValidEntry = true;
+                        }
                     }
-                    
-                    // Check YouTube entry
-                    if (gameCache.YouTube != null && gameCache.YouTube.Expires > now)
-                    {
-                        hasValidEntry = true;
-                    }
-                    else if (gameCache.YouTube != null)
-                    {
-                        gameCache.YouTube = null;
-                        removedCount++;
-                    }
-                    
+
                     // If no valid entries remain, mark game for removal
                     if (!hasValidEntry)
                     {
                         gamesToRemove.Add(kvp.Key);
                     }
                 }
-                
+
                 // Remove games with no valid entries
                 foreach (var gameName in gamesToRemove)
                 {
                     _cache.Entries.Remove(gameName);
                 }
-                
+
                 if (removedCount > 0 || gamesToRemove.Count > 0)
                 {
                     _cache.LastCleanup = now;
                     SaveCache();
-                    Logger.Info($"[Cache] Cleanup: Removed {removedCount} expired entries from {gamesToRemove.Count} games");
+                    Logger.Info($"[Cache] Cleanup: Removed {removedCount} expired/empty entries from {gamesToRemove.Count} games");
                 }
-                
+
                 return removedCount;
             }
         }

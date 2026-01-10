@@ -26,6 +26,12 @@ namespace UniPlaySong.Downloaders
         Album BestAlbumPick(IEnumerable<Album> albums, Game game);
 
         /// <summary>
+        /// Picks the best album match with broader/looser matching criteria
+        /// Used for retry operations when strict matching fails
+        /// </summary>
+        Album BestAlbumPickBroader(IEnumerable<Album> albums, Game game);
+
+        /// <summary>
         /// Picks the best song(s) from a list based on preferences (theme, title, menu songs preferred)
         /// </summary>
         /// <param name="songs">List of songs to choose from</param>

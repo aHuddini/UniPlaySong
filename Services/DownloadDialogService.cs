@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -117,7 +118,7 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Shows source selection dialog (KHInsider or YouTube) - works in fullscreen
+        /// Shows source selection dialog (KHInsider, Zophar, or YouTube) - works in fullscreen
         /// </summary>
         public Source? ShowSourceSelectionDialog()
         {
@@ -133,9 +134,10 @@ namespace UniPlaySong.Services
             var sourceOptions = new List<Playnite.SDK.GenericItemOption>
             {
                 new Playnite.SDK.GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
-                new Playnite.SDK.GenericItemOption("YouTube", 
-                    youtubeConfigured 
-                        ? "Download from YouTube (Playlists and videos)" 
+                new Playnite.SDK.GenericItemOption("Zophar", "Download from Zophar (Video game music archive)"),
+                new Playnite.SDK.GenericItemOption("YouTube",
+                    youtubeConfigured
+                        ? "Download from YouTube (Playlists and videos)"
                         : "Download from YouTube (Playlists and videos) - yt-dlp/ffmpeg required for downloads")
             };
 
@@ -212,6 +214,11 @@ namespace UniPlaySong.Services
                             Logger.DebugIf(LogPrefix,"Returning Source.KHInsider");
                             return Source.KHInsider;
                         }
+                        else if (selectedOption.Name == "Zophar")
+                        {
+                            Logger.DebugIf(LogPrefix,"Returning Source.Zophar");
+                            return Source.Zophar;
+                        }
                         else if (selectedOption.Name == "YouTube")
                         {
                             Logger.DebugIf(LogPrefix,"YouTube selected - validating configuration...");
@@ -263,7 +270,7 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Shows unified album selection dialog that searches BOTH KHInsider and YouTube
+        /// Shows unified album selection dialog that searches all sources (KHInsider, Zophar, YouTube)
         /// Used for retry feature to simplify the user experience
         /// </summary>
         public Album ShowUnifiedAlbumSelectionDialog(Game game)
@@ -1176,9 +1183,9 @@ namespace UniPlaySong.Services
 
             window.Height = 500;
             window.Width = 700;
-            window.Title = source == Source.KHInsider
-                ? "Search for Game Soundtrack (Default Music)"
-                : "Enter YouTube URL (Default Music)";
+            window.Title = source == Source.KHInsider ? "Search for Game Soundtrack (Default Music)" :
+                           source == Source.Zophar ? "Search Zophar Archive (Default Music)" :
+                           "Enter YouTube URL (Default Music)";
             window.ShowInTaskbar = !IsFullscreenMode; // Show in taskbar for Desktop mode accessibility
             window.Topmost = IsFullscreenMode; // Only set Topmost in Fullscreen mode
             window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
@@ -1194,9 +1201,9 @@ namespace UniPlaySong.Services
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             // Update title to be more descriptive
-            viewModel.Title = source == Source.KHInsider
-                ? "Enter game name to search for soundtracks"
-                : "Enter YouTube playlist or video URL";
+            viewModel.Title = source == Source.KHInsider ? "Enter game name to search for soundtracks" :
+                              source == Source.Zophar ? "Enter game name to search Zophar archive" :
+                              "Enter YouTube playlist or video URL";
 
             // Don't auto-search - let user type in search box
             window.Loaded += (s, e) =>
@@ -1559,6 +1566,626 @@ namespace UniPlaySong.Services
                 context: "auto-normalizing downloaded files",
                 showUserMessage: false
             );
+        }
+
+        /// <summary>
+        /// Shows the batch download progress dialog and performs parallel downloads
+        /// </summary>
+        /// <param name="games">Games to download music for</param>
+        /// <param name="source">Download source</param>
+        /// <param name="overwrite">Whether to overwrite existing music</param>
+        /// <param name="maxConcurrentDownloads">Maximum concurrent downloads</param>
+        /// <returns>List of downloaded file paths for auto-normalization</returns>
+        public List<string> ShowBatchDownloadDialog(
+            List<Game> games,
+            Source source,
+            bool overwrite,
+            int maxConcurrentDownloads = 3)
+        {
+            var result = ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads);
+            return result?.DownloadedFiles ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Shows the batch download progress dialog and performs parallel downloads
+        /// Returns full results including failed games for retry prompting
+        /// </summary>
+        public BatchDownloadResult ShowBatchDownloadDialogWithResults(
+            List<Game> games,
+            Source source,
+            bool overwrite,
+            int maxConcurrentDownloads = 3)
+        {
+            var batchResult = new BatchDownloadResult();
+
+            if (games == null || games.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No games selected.", "Batch Download");
+                return batchResult;
+            }
+
+            Logger.Info($"[BatchDownloadDialog] Starting for {games.Count} games, source: {source}, concurrent: {maxConcurrentDownloads}");
+
+            // Pre-load Material Design assemblies before XAML parsing
+            PreloadMaterialDesignAssemblies();
+
+            List<GameDownloadResult> allResults = null;
+            var resultsReady = new System.Threading.ManualResetEventSlim(false);
+
+            try
+            {
+                // Create the batch download service
+                var batchService = new BatchDownloadService(_downloadManager, _fileService, _errorHandler);
+                batchService.MaxConcurrentDownloads = maxConcurrentDownloads;
+
+                // Create progress dialog
+                var progressDialog = new Views.BatchDownloadProgressDialog();
+                progressDialog.Initialize(games.Select(g => g.Name));
+
+                var window = DialogHelper.CreateFullscreenDialog(
+                    _playniteApi,
+                    "Batch Download Progress",
+                    progressDialog,
+                    width: 700,
+                    height: 550,
+                    isFullscreenMode: IsFullscreenMode);
+
+                DialogHelper.AddFocusReturnHandler(window, _playniteApi, "batch download dialog close");
+
+                // Handle window closing - capture results if not already done
+                window.Closing += (s, e) =>
+                {
+                    Logger.Info($"[BatchDownloadDialog] Window closing, allResults populated: {allResults != null}");
+                };
+
+                // Start downloads asynchronously
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Progress callback to update the dialog
+                        GameDownloadProgressCallback progressCallback = (gameName, status, message, albumName, sourceName) =>
+                        {
+                            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.UpdateGameStatus(gameName, status, message, albumName, sourceName);
+                            }));
+                        };
+
+                        var results = await batchService.DownloadMusicParallelAsync(
+                            games,
+                            source,
+                            overwrite,
+                            progressDialog.CancellationToken,
+                            progressCallback);
+
+                        // Store all results for later processing
+                        allResults = results;
+
+                        var successCount = results.Count(r => r.Success);
+                        var failCount = results.Count(r => !r.Success && !r.WasSkipped);
+                        var skipCount = results.Count(r => r.WasSkipped);
+
+                        Logger.Info($"[BatchDownloadDialog] Download complete: {successCount} succeeded, {failCount} failed, {skipCount} skipped");
+                        Logger.Info($"[BatchDownloadDialog] Setting resultsReady and closing window...");
+
+                        // Close dialog on UI thread - use Invoke (blocking) to ensure it executes before continuing
+                        System.Windows.Application.Current?.Dispatcher?.Invoke(new Action(() =>
+                        {
+                            Logger.Info("[BatchDownloadDialog] Closing window from UI thread");
+                            window.Close();
+                        }));
+
+                        // Signal results ready after window closes
+                        resultsReady.Set();
+                        Logger.Info("[BatchDownloadDialog] Results ready signaled");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Logger.Info("[BatchDownloadDialog] Cancelled by user");
+                        resultsReady.Set();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "[BatchDownloadDialog] Error during batch download");
+                        resultsReady.Set();
+                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            _playniteApi.Dialogs.ShowErrorMessage($"Error during batch download: {ex.Message}", "Batch Download Error");
+                        }));
+                    }
+                });
+
+                // Show dialog (blocks until closed)
+                Logger.Info("[BatchDownloadDialog] Showing dialog (blocking)");
+                window.ShowDialog();
+                Logger.Info("[BatchDownloadDialog] Dialog closed");
+
+                // Wait for results to be ready (should be immediate since dialog closed after completion)
+                var gotResults = resultsReady.Wait(TimeSpan.FromSeconds(5));
+                Logger.Info($"[BatchDownloadDialog] Wait returned, gotResults={gotResults}, allResults={allResults?.Count ?? -1}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "[BatchDownloadDialog] Error showing dialog");
+                _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Batch Download Error");
+            }
+
+            // Process results after dialog closes
+            Logger.Info($"[BatchDownloadDialog] Processing results after dialog close, allResults={allResults?.Count ?? -1}");
+
+            if (allResults != null)
+            {
+                batchResult.SuccessCount = allResults.Count(r => r.Success);
+                batchResult.FailedCount = allResults.Count(r => !r.Success && !r.WasSkipped);
+                batchResult.SkippedCount = allResults.Count(r => r.WasSkipped);
+
+                Logger.Info($"[BatchDownloadDialog] Results breakdown: success={batchResult.SuccessCount}, failed={batchResult.FailedCount}, skipped={batchResult.SkippedCount}");
+
+                foreach (var result in allResults)
+                {
+                    if (result.Success && !string.IsNullOrEmpty(result.SongPath))
+                    {
+                        batchResult.DownloadedFiles.Add(result.SongPath);
+                    }
+                    else if (!result.Success && !result.WasSkipped)
+                    {
+                        batchResult.FailedGames.Add(result);
+                        Logger.Info($"[BatchDownloadDialog] Adding failed game: '{result.Game?.Name}' - {result.ErrorMessage}");
+                    }
+                }
+
+                Logger.Info($"[BatchDownloadDialog] Final: {batchResult.DownloadedFiles.Count} files, {batchResult.FailedGames.Count} failed games");
+            }
+            else
+            {
+                Logger.Warn("[BatchDownloadDialog] allResults is null - results may not have been captured");
+            }
+
+            return batchResult;
+        }
+
+        /// <summary>
+        /// Prompts user for retry options after batch download and handles retries
+        /// </summary>
+        /// <param name="failedGames">List of failed game download results</param>
+        /// <returns>List of additionally downloaded file paths from retries</returns>
+        public List<string> PromptAndRetryFailedDownloads(List<GameDownloadResult> failedGames)
+        {
+            var additionalDownloads = new List<string>();
+
+            if (failedGames == null || failedGames.Count == 0)
+                return additionalDownloads;
+
+            Logger.Info($"[RetryPrompt] {failedGames.Count} failed downloads to retry");
+
+            // Build message
+            var message = $"{failedGames.Count} game(s) failed to find music:\n\n";
+            foreach (var failed in failedGames.Take(8))
+            {
+                message += $"• {failed.Game.Name}\n";
+            }
+            if (failedGames.Count > 8)
+            {
+                message += $"... and {failedGames.Count - 8} more\n";
+            }
+            message += "\nHow would you like to proceed?";
+
+            // Show options dialog
+            var options = new List<MessageBoxOption>
+            {
+                new MessageBoxOption("Auto-retry with broader search", true, false),
+                new MessageBoxOption("Manual search for each game", false, false),
+                new MessageBoxOption("Skip", false, false)
+            };
+
+            var selection = _playniteApi.Dialogs.ShowMessage(
+                message,
+                "Retry Failed Downloads",
+                System.Windows.MessageBoxImage.Question,
+                options);
+
+            if (selection == null || selection.Title == "Skip")
+            {
+                Logger.Info("[RetryPrompt] User chose to skip retries");
+                return additionalDownloads;
+            }
+
+            if (selection.Title == "Auto-retry with broader search")
+            {
+                Logger.Info("[RetryPrompt] User chose auto-retry with broader search");
+                additionalDownloads = AutoRetryWithBroaderSearch(failedGames);
+            }
+            else if (selection.Title == "Manual search for each game")
+            {
+                Logger.Info("[RetryPrompt] User chose manual search");
+                additionalDownloads = ManualRetryForFailedGames(failedGames);
+            }
+
+            return additionalDownloads;
+        }
+
+        /// <summary>
+        /// Auto-retry failed downloads with broader/less restrictive search
+        /// Uses the same Material Design batch download dialog for consistency
+        /// </summary>
+        private List<string> AutoRetryWithBroaderSearch(List<GameDownloadResult> failedGames)
+        {
+            var downloadedFiles = new List<string>();
+
+            Logger.Info($"[BroaderRetry] Starting broader search retry for {failedGames.Count} games");
+
+            // Extract Game objects from failed results
+            var gamesToRetry = failedGames.Select(f => f.Game).Where(g => g != null).ToList();
+
+            if (gamesToRetry.Count == 0)
+            {
+                Logger.Info("[BroaderRetry] No valid games to retry");
+                return downloadedFiles;
+            }
+
+            // Use the Material Design batch download dialog with broader matching
+            var batchResult = ShowBatchDownloadDialogWithBroaderSearch(gamesToRetry);
+
+            if (batchResult != null)
+            {
+                downloadedFiles.AddRange(batchResult.DownloadedFiles);
+            }
+
+            Logger.Info($"[BroaderRetry] Complete: {downloadedFiles.Count} additional downloads");
+
+            if (downloadedFiles.Count > 0)
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"Broader search found music for {downloadedFiles.Count} additional game(s).",
+                    "Retry Complete");
+            }
+            else
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    "Broader search did not find any additional matches.\n\n" +
+                    "You can try manual search for specific games.",
+                    "Retry Complete");
+            }
+
+            return downloadedFiles;
+        }
+
+        /// <summary>
+        /// Shows batch download dialog with broader/looser matching for retry operations
+        /// </summary>
+        private BatchDownloadResult ShowBatchDownloadDialogWithBroaderSearch(List<Game> games)
+        {
+            var batchResult = new BatchDownloadResult();
+
+            if (games == null || games.Count == 0)
+            {
+                return batchResult;
+            }
+
+            Logger.Info($"[BroaderRetryDialog] Starting broader search for {games.Count} games");
+
+            // Pre-load Material Design assemblies before XAML parsing
+            PreloadMaterialDesignAssemblies();
+
+            List<GameDownloadResult> allResults = null;
+            var resultsReady = new System.Threading.ManualResetEventSlim(false);
+
+            try
+            {
+                // Create progress dialog
+                var progressDialog = new Views.BatchDownloadProgressDialog();
+                progressDialog.Initialize(games.Select(g => g.Name));
+
+                var window = DialogHelper.CreateFullscreenDialog(
+                    _playniteApi,
+                    "Retry with Broader Search",
+                    progressDialog,
+                    width: 700,
+                    height: 550,
+                    isFullscreenMode: IsFullscreenMode);
+
+                DialogHelper.AddFocusReturnHandler(window, _playniteApi, "broader retry dialog close");
+
+                // Start downloads asynchronously with broader matching
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    var results = new List<GameDownloadResult>();
+                    var resultsLock = new object();
+
+                    try
+                    {
+                        // Process games with concurrency control (same as normal batch)
+                        var maxConcurrent = _settingsService.Current?.MaxConcurrentDownloads ?? 3;
+                        using (var semaphore = new System.Threading.SemaphoreSlim(maxConcurrent))
+                        {
+                            var tasks = games.Select(async game =>
+                            {
+                                await semaphore.WaitAsync(progressDialog.CancellationToken);
+
+                                try
+                                {
+                                    if (progressDialog.CancellationToken.IsCancellationRequested)
+                                    {
+                                        lock (resultsLock)
+                                        {
+                                            results.Add(new GameDownloadResult
+                                            {
+                                                Game = game,
+                                                Success = false,
+                                                WasSkipped = true,
+                                                SkipReason = "Cancelled"
+                                            });
+                                        }
+                                        return;
+                                    }
+
+                                    // Update progress
+                                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    {
+                                        progressDialog.UpdateGameStatus(game.Name, BatchDownloadStatus.Downloading, "Broader search...", null, null);
+                                    }));
+
+                                    // Perform broader search and download
+                                    var downloadPath = await System.Threading.Tasks.Task.Run(() =>
+                                        RetryWithBroaderSearchInternal(game, progressDialog.CancellationToken));
+
+                                    var result = new GameDownloadResult { Game = game };
+
+                                    if (!string.IsNullOrEmpty(downloadPath))
+                                    {
+                                        result.Success = true;
+                                        result.SongPath = downloadPath;
+
+                                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                        {
+                                            progressDialog.UpdateGameStatus(game.Name, BatchDownloadStatus.Completed, "Downloaded", null, null);
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        result.Success = false;
+                                        result.ErrorMessage = "No match found";
+
+                                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                        {
+                                            progressDialog.UpdateGameStatus(game.Name, BatchDownloadStatus.Failed, "No match found", null, null);
+                                        }));
+                                    }
+
+                                    lock (resultsLock) { results.Add(result); }
+                                }
+                                catch (OperationCanceledException)
+                                {
+                                    lock (resultsLock)
+                                    {
+                                        results.Add(new GameDownloadResult
+                                        {
+                                            Game = game,
+                                            Success = false,
+                                            WasSkipped = true,
+                                            SkipReason = "Cancelled"
+                                        });
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Error(ex, $"[BroaderRetry] Error for '{game.Name}': {ex.Message}");
+                                    lock (resultsLock)
+                                    {
+                                        results.Add(new GameDownloadResult
+                                        {
+                                            Game = game,
+                                            Success = false,
+                                            ErrorMessage = ex.Message
+                                        });
+                                    }
+
+                                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    {
+                                        progressDialog.UpdateGameStatus(game.Name, BatchDownloadStatus.Failed, ex.Message, null, null);
+                                    }));
+                                }
+                                finally
+                                {
+                                    semaphore.Release();
+                                }
+                            }).ToList();
+
+                            await System.Threading.Tasks.Task.WhenAll(tasks);
+                        }
+
+                        // Store results
+                        allResults = results;
+
+                        var successCount = results.Count(r => r.Success);
+                        var failCount = results.Count(r => !r.Success && !r.WasSkipped);
+
+                        Logger.Info($"[BroaderRetryDialog] Complete: {successCount} succeeded, {failCount} failed");
+
+                        // Close dialog
+                        System.Windows.Application.Current?.Dispatcher?.Invoke(new Action(() =>
+                        {
+                            window.Close();
+                        }));
+
+                        resultsReady.Set();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Logger.Info("[BroaderRetryDialog] Cancelled by user");
+                        allResults = results;
+                        resultsReady.Set();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "[BroaderRetryDialog] Error during retry");
+                        allResults = results;
+                        resultsReady.Set();
+                    }
+                });
+
+                // Show dialog (blocks until closed)
+                window.ShowDialog();
+
+                // Wait for results
+                resultsReady.Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "[BroaderRetryDialog] Error showing dialog");
+            }
+
+            // Process results
+            if (allResults != null)
+            {
+                batchResult.SuccessCount = allResults.Count(r => r.Success);
+                batchResult.FailedCount = allResults.Count(r => !r.Success && !r.WasSkipped);
+                batchResult.SkippedCount = allResults.Count(r => r.WasSkipped);
+
+                foreach (var result in allResults)
+                {
+                    if (result.Success && !string.IsNullOrEmpty(result.SongPath))
+                    {
+                        batchResult.DownloadedFiles.Add(result.SongPath);
+                    }
+                    else if (!result.Success && !result.WasSkipped)
+                    {
+                        batchResult.FailedGames.Add(result);
+                    }
+                }
+            }
+
+            return batchResult;
+        }
+
+        /// <summary>
+        /// Internal method to retry a single game with broader search parameters
+        /// </summary>
+        private string RetryWithBroaderSearchInternal(Game game, CancellationToken cancellationToken)
+        {
+            // Get albums with cache bypass to ensure fresh results
+            var albums = _downloadManager.GetAlbumsForGame(game.Name, Source.All, cancellationToken, auto: true, skipCache: true);
+            var albumsList = albums?.ToList() ?? new List<Album>();
+
+            if (albumsList.Count == 0)
+            {
+                Logger.Info($"[BroaderRetry] No albums found for '{game.Name}' even with fresh search");
+                return null;
+            }
+
+            // Use looser matching - pick first reasonable match
+            var bestAlbum = _downloadManager.BestAlbumPickBroader(albumsList, game);
+            if (bestAlbum == null)
+            {
+                Logger.Info($"[BroaderRetry] No suitable album even with broader matching for '{game.Name}'");
+                return null;
+            }
+
+            Logger.Info($"[BroaderRetry] Found album '{bestAlbum.Name}' for '{game.Name}'");
+
+            // Get songs
+            var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cancellationToken);
+            var songsList = songs?.ToList() ?? new List<Song>();
+
+            if (songsList.Count == 0)
+            {
+                Logger.Info($"[BroaderRetry] Album '{bestAlbum.Name}' has no songs");
+                return null;
+            }
+
+            // Pick first song (broader = less picky)
+            var songToDownload = songsList.First();
+
+            // Download
+            var musicDir = _fileService.GetGameMusicDirectory(game);
+            if (!System.IO.Directory.Exists(musicDir))
+            {
+                System.IO.Directory.CreateDirectory(musicDir);
+            }
+
+            var safeFileName = Common.StringHelper.CleanForPath(songToDownload.Name);
+            var extension = System.IO.Path.GetExtension(songToDownload.Id);
+            if (string.IsNullOrEmpty(extension) || extension == songToDownload.Id)
+            {
+                extension = ".mp3";
+            }
+            var downloadPath = System.IO.Path.Combine(musicDir, safeFileName + extension);
+
+            var success = _downloadManager.DownloadSong(songToDownload, downloadPath, cancellationToken);
+
+            return success && System.IO.File.Exists(downloadPath) ? downloadPath : null;
+        }
+
+        /// <summary>
+        /// Manual retry - show album/song selection dialog for each failed game
+        /// </summary>
+        private List<string> ManualRetryForFailedGames(List<GameDownloadResult> failedGames)
+        {
+            var downloadedFiles = new List<string>();
+            int successCount = 0;
+
+            foreach (var failed in failedGames)
+            {
+                Logger.Info($"[ManualRetry] Starting manual search for '{failed.Game.Name}'");
+
+                // Check if game already has music before starting (baseline)
+                var musicDirBefore = _fileService.GetGameMusicDirectory(failed.Game);
+                var hadMusicBefore = System.IO.Directory.Exists(musicDirBefore) &&
+                    System.IO.Directory.GetFiles(musicDirBefore, "*.mp3").Any();
+
+                // Show unified album selection dialog
+                var album = ShowUnifiedAlbumSelectionDialog(failed.Game);
+                if (album == null)
+                {
+                    Logger.Info($"[ManualRetry] User cancelled album selection for '{failed.Game.Name}'");
+
+                    // Ask if user wants to continue with remaining games
+                    if (failedGames.IndexOf(failed) < failedGames.Count - 1)
+                    {
+                        var continueResult = _playniteApi.Dialogs.ShowMessage(
+                            "Continue with remaining games?",
+                            "Manual Search",
+                            System.Windows.MessageBoxButton.YesNo);
+
+                        if (continueResult != System.Windows.MessageBoxResult.Yes)
+                            break;
+                    }
+                    continue;
+                }
+
+                // Show song selection dialog (downloads happen inside)
+                ShowSongSelectionDialog(failed.Game, album);
+
+                // Check if music was downloaded by seeing if new files exist
+                var musicDirAfter = _fileService.GetGameMusicDirectory(failed.Game);
+                if (System.IO.Directory.Exists(musicDirAfter))
+                {
+                    var mp3Files = System.IO.Directory.GetFiles(musicDirAfter, "*.mp3");
+                    if (mp3Files.Any() && (!hadMusicBefore || mp3Files.Length > 0))
+                    {
+                        // Add all new mp3 files
+                        foreach (var file in mp3Files)
+                        {
+                            if (!downloadedFiles.Contains(file))
+                            {
+                                downloadedFiles.Add(file);
+                            }
+                        }
+                        successCount++;
+                        Logger.Info($"[ManualRetry] Downloaded song(s) for '{failed.Game.Name}'");
+                    }
+                }
+            }
+
+            if (successCount > 0)
+            {
+                _playniteApi.Dialogs.ShowMessage(
+                    $"Manual search downloaded music for {successCount} game(s).",
+                    "Manual Retry Complete");
+            }
+
+            return downloadedFiles;
         }
     }
 }

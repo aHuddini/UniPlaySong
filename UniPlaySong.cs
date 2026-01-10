@@ -99,6 +99,7 @@ namespace UniPlaySong
         private DownloadDialogService _downloadDialogService;
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
+        private SearchHintsService _hintsService;
         private Services.INormalizationService _normalizationService;
         private Services.ITrimService _trimService;
         private Services.AudioRepairService _repairService;
@@ -656,7 +657,7 @@ namespace UniPlaySong
                         var tempPath = Path.Combine(_api.Paths.ExtensionsDataPath, "UniPlaySong", "temp");
                         _downloadManager = new DownloadManager(
                             _httpClient, _htmlWeb, tempPath,
-                            e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, e.NewSettings);
+                            e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
                         Logger.Info("DownloadManager recreated with updated download settings");
                     }
 
@@ -916,9 +917,14 @@ namespace UniPlaySong
                 cacheDurationDays: _settings?.SearchCacheDurationDays ?? 7);
             _fileLogger?.Info("SearchCacheService initialized");
 
+            // Initialize search hints service (allows user overrides for problematic game searches)
+            var pluginInstallPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _hintsService = new SearchHintsService(pluginInstallPath, extensionDataPath);
+            _fileLogger?.Info($"SearchHintsService initialized (bundled: {_hintsService.GetBundledHintsFilePath()}, user: {_hintsService.GetUserHintsFilePath()})");
+
             _downloadManager = new DownloadManager(
                 _httpClient, _htmlWeb, tempPath,
-                _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _settings);
+                _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, _settings);
 
             _downloadDialogService = new DownloadDialogService(
                 _api, _downloadManager, _playbackService, _fileService, _settingsService, _errorHandler);
@@ -1765,6 +1771,9 @@ namespace UniPlaySong
             var items = new List<GameMenuItem>();
             var games = args.Games.ToList();
 
+            // Debug: Log how many games Playnite is passing to us
+            _fileLogger?.Info($"[Menu] GetGameMenuItems called with {games.Count} game(s)");
+
             // Multi-game selection: Show bulk operations
             if (games.Count > 1)
             {
@@ -2164,18 +2173,48 @@ namespace UniPlaySong
                 {
                     _fileLogger?.Info($"DownloadMusicForAllGames: Starting download for {gamesWithoutMusic.Count} game(s)");
 
-                    // Use Playnite's global progress dialog (non-blocking, cancelable)
-                    var progressOptions = new GlobalProgressOptions(
-                        $"Downloading music for {gamesWithoutMusic.Count} games...",
-                        cancelable: true)
-                    {
-                        IsIndeterminate = false
-                    };
+                    // Use the new parallel batch download dialog with Material Design UI
+                    var maxConcurrent = _settings?.MaxConcurrentDownloads ?? 3;
+                    var batchResult = _downloadDialogService?.ShowBatchDownloadDialogWithResults(
+                        gamesWithoutMusic,
+                        Models.Source.All,
+                        overwrite: false,
+                        maxConcurrentDownloads: maxConcurrent);
 
-                    _api.Dialogs.ActivateGlobalProgress(args =>
+                    var allDownloadedPaths = new List<string>();
+
+                    _fileLogger?.Info($"DownloadMusicForAllGames: batchResult={batchResult != null}, SuccessCount={batchResult?.SuccessCount}, FailedCount={batchResult?.FailedCount}, FailedGames.Count={batchResult?.FailedGames?.Count}");
+
+                    if (batchResult != null)
                     {
-                        BulkDownloadMusicWithProgress(gamesWithoutMusic, args);
-                    }, progressOptions);
+                        allDownloadedPaths.AddRange(batchResult.DownloadedFiles);
+
+                        // Prompt for retry if there were failures
+                        if (batchResult.FailedGames.Count > 0)
+                        {
+                            _fileLogger?.Info($"DownloadMusicForAllGames: {batchResult.FailedGames.Count} games failed, prompting for retry");
+                            var retryDownloads = _downloadDialogService?.PromptAndRetryFailedDownloads(batchResult.FailedGames);
+                            if (retryDownloads != null && retryDownloads.Count > 0)
+                            {
+                                allDownloadedPaths.AddRange(retryDownloads);
+                            }
+                        }
+                        else
+                        {
+                            _fileLogger?.Info("DownloadMusicForAllGames: No failed games to retry");
+                        }
+                    }
+                    else
+                    {
+                        _fileLogger?.Warn("DownloadMusicForAllGames: batchResult is null");
+                    }
+
+                    // Trigger auto-normalize if any files were downloaded
+                    if (allDownloadedPaths.Count > 0)
+                    {
+                        _fileLogger?.Info($"DownloadMusicForAllGames: {allDownloadedPaths.Count} files downloaded, triggering auto-normalize");
+                        _downloadDialogService?.AutoNormalizeDownloadedFiles(allDownloadedPaths);
+                    }
                 }
             }
             catch (Exception ex)

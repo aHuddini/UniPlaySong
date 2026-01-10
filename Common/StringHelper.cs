@@ -52,11 +52,12 @@ namespace UniPlaySong.Common
             result = Regex.Replace(result, @"\s*\((PC|PS[0-9]?|Xbox[^)]*|Switch|Steam|GOG|Epic)\)\s*$", "", RegexOptions.IgnoreCase);
             
             // Remove common edition suffixes (case-insensitive)
+            // Include both "- Edition" and " Edition" variants
             var suffixes = new[]
             {
-                // Edition variants
+                // Edition variants (with dash)
                 " - Definitive Edition",
-                " - Complete Edition", 
+                " - Complete Edition",
                 " - Game of the Year Edition",
                 " - GOTY Edition",
                 " - Enhanced Edition",
@@ -69,6 +70,21 @@ namespace UniPlaySong.Common
                 " - Anniversary Edition",
                 " - Director's Cut",
                 " - Final Cut",
+                // Edition variants (without dash) - e.g., "CONTROL ULTIMATE EDITION"
+                " Definitive Edition",
+                " Complete Edition",
+                " Game of the Year Edition",
+                " GOTY Edition",
+                " Enhanced Edition",
+                " Special Edition",
+                " Collector's Edition",
+                " Ultimate Edition",
+                " Deluxe Edition",
+                " Premium Edition",
+                " Gold Edition",
+                " Anniversary Edition",
+                " Director's Cut",
+                " Final Cut",
                 // Remaster variants
                 " - Remastered",
                 " - HD Remaster",
@@ -176,6 +192,70 @@ namespace UniPlaySong.Common
                 cleaned = cleaned.Replace(c, '_');
             }
             return cleaned.Trim();
+        }
+
+        /// <summary>
+        /// Extracts the base/core game name for broad searching.
+        /// "The Elder Scrolls IV: Oblivion - Game of the Year Edition" -> "Elder Scrolls 4 Oblivion"
+        /// "Mafia III: Definitive Edition" -> "Mafia 3"
+        /// "Tomb Raider: Anniversary" -> "Tomb Raider Anniversary"
+        /// </summary>
+        public static string ExtractBaseGameName(string gameName)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+                return string.Empty;
+
+            var result = gameName;
+
+            // Strip edition suffixes first
+            result = StripGameNameSuffixes(result);
+
+            // Remove colons, dashes, and normalize
+            result = Regex.Replace(result, @"[:–—\-]+", " ");
+            result = Regex.Replace(result, @"\s+", " ").Trim();
+
+            // Remove common prefixes that don't help with searching
+            if (result.StartsWith("The ", StringComparison.OrdinalIgnoreCase))
+            {
+                result = result.Substring(4);
+            }
+
+            // Convert Roman numerals to Arabic for better YouTube search matching
+            // YouTube playlists often use "Mafia 3" instead of "Mafia III"
+            result = ConvertRomanNumeralsToArabic(result);
+
+            return result.Trim();
+        }
+
+        /// <summary>
+        /// Converts Roman numerals in a string to Arabic numerals.
+        /// "Mafia III" -> "Mafia 3", "Final Fantasy VII" -> "Final Fantasy 7"
+        /// </summary>
+        public static string ConvertRomanNumeralsToArabic(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return input;
+
+            // Roman numeral mappings (order matters - check longer patterns first)
+            var romanToArabic = new (string roman, string arabic)[]
+            {
+                ("XX", "20"), ("XIX", "19"), ("XVIII", "18"), ("XVII", "17"), ("XVI", "16"),
+                ("XV", "15"), ("XIV", "14"), ("XIII", "13"), ("XII", "12"), ("XI", "11"),
+                ("X", "10"), ("IX", "9"), ("VIII", "8"), ("VII", "7"), ("VI", "6"),
+                ("V", "5"), ("IV", "4"), ("III", "3"), ("II", "2"), ("I", "1")
+            };
+
+            var result = input;
+
+            foreach (var (roman, arabic) in romanToArabic)
+            {
+                // Match Roman numeral as a whole word (surrounded by word boundaries or spaces)
+                // This prevents matching "I" in words like "Infinity" or "VI" in "Civilization"
+                var pattern = $@"\b{roman}\b";
+                result = Regex.Replace(result, pattern, arabic, RegexOptions.IgnoreCase);
+            }
+
+            return result;
         }
 
         /// <summary>

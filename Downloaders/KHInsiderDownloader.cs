@@ -49,10 +49,9 @@ namespace UniPlaySong.Downloaders
 
             try
             {
-                // Note: Do NOT manually URL-encode the game name here.
-                // HtmlWeb.LoadFromWebAsync handles encoding internally, and manual encoding
-                // can cause double-encoding issues or break KHInsider's search.
-                // PlayniteSound also uses this approach successfully.
+                // Do NOT URL-encode the game name here.
+                // HtmlWeb.LoadFromWebAsync handles encoding internally.
+                // KHInsider uses + for spaces (e.g., "wasteland+3"), not %20.
                 var searchUrl = $"{KhInsiderBaseUrl}search?search={gameName}";
 
                 // Always log the actual search URL being used (this is key for debugging)
@@ -198,7 +197,7 @@ namespace UniPlaySong.Downloaders
 
                 // Get the actual download URL from the song page
                 var songUrl = $"{KhInsiderBaseUrl}{song.Id}";
-                Logger.DebugIf(LogPrefix,$"Loading song page: {songUrl}");
+                Logger.Info($"[KHInsider] Loading song page: {songUrl}");
 
                 var htmlDoc = _htmlWeb.LoadFromWebAsync(songUrl, cancellationToken).GetAwaiter().GetResult();
                 if (htmlDoc == null)
@@ -248,7 +247,7 @@ namespace UniPlaySong.Downloaders
                 }
 
                 // Download the file
-                Logger.DebugIf(LogPrefix,$"Downloading song from: {fileUrl}");
+                Logger.Info($"[KHInsider] Downloading: {fileUrl}");
                 // Use SendAsync with HttpRequestMessage to avoid overload ambiguity in .NET Framework 4.6.2
                 var request = new HttpRequestMessage(HttpMethod.Get, fileUrl);
                 var response = _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).GetAwaiter().GetResult();
@@ -267,7 +266,7 @@ namespace UniPlaySong.Downloaders
                     var fileInfo = new FileInfo(path);
                     if (fileInfo.Length > 0)
                     {
-                        Logger.DebugIf(LogPrefix,$"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)");
+                        Logger.Info($"[KHInsider] Downloaded: {song.Name} ({fileInfo.Length} bytes)");
                         return true;
                     }
                     else
@@ -285,11 +284,22 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.DebugIf(LogPrefix,$"Download cancelled for: {song?.Name}");
+                Logger.Info($"[KHInsider] Download cancelled: {song?.Name}");
+                return false;
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.Error($"[KHInsider] Download HTTP error for '{song?.Name}': {ex.Message}");
+                _errorHandler?.HandleError(
+                    ex,
+                    context: $"downloading song '{song?.Name}'",
+                    showUserMessage: false
+                );
                 return false;
             }
             catch (Exception ex)
             {
+                Logger.Error($"[KHInsider] Download failed for '{song?.Name}': {ex.GetType().Name} - {ex.Message}");
                 _errorHandler?.HandleError(
                     ex,
                     context: $"downloading song '{song?.Name}'",
