@@ -986,21 +986,76 @@ namespace UniPlaySong.Menus
 
             // Step 1: Get/Select album
             Album album = null;
+            var currentSource = source;
 
             if (albumSelect)
             {
-                // Show album selection dialog (dispatched to UI thread)
-                album = System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                    _dialogService.ShowAlbumSelectionDialog(game, source));
+                // Loop to allow user to go back to source selection
+                while (true)
+                {
+                    // Show album selection dialog (dispatched to UI thread)
+                    album = System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                        _dialogService.ShowAlbumSelectionDialog(game, currentSource));
+
+                    // Check if user pressed Back button (return to source selection)
+                    if (Album.IsBackSignal(album))
+                    {
+                        _logger.Info($"User pressed back in album selection for '{game.Name}' - showing source selection");
+
+                        // Show source selection dialog on UI thread with custom button labels
+                        var newSource = System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                        {
+                            var sourceOptions = new List<Playnite.SDK.MessageBoxOption>
+                            {
+                                new Playnite.SDK.MessageBoxOption("KHInsider", true, false),  // isDefault = true
+                                new Playnite.SDK.MessageBoxOption("YouTube", false, false),
+                                new Playnite.SDK.MessageBoxOption("Skip Game", false, true)   // isCancel = true
+                            };
+
+                            var selected = _playniteApi.Dialogs.ShowMessage(
+                                $"Select music source for '{game.Name}':\n\n" +
+                                "• KHInsider: Video game soundtracks database\n" +
+                                "• YouTube: Search YouTube for game music\n" +
+                                "• Skip Game: Skip this game and continue",
+                                "Select Source",
+                                System.Windows.MessageBoxImage.Question,
+                                sourceOptions);
+
+                            if (selected == null || selected.Title == "Skip Game")
+                                return (Source?)null;
+
+                            if (selected.Title == "KHInsider")
+                                return Source.KHInsider;
+                            else if (selected.Title == "YouTube")
+                                return Source.YouTube;
+                            else
+                                return (Source?)null;
+                        });
+
+                        if (newSource == null)
+                        {
+                            // User cancelled or chose to skip - skip this game
+                            _logger.Info($"User cancelled/skipped source selection for '{game.Name}'");
+                            return false;
+                        }
+
+                        currentSource = newSource.Value;
+                        _logger.Info($"User selected new source: {currentSource} for '{game.Name}'");
+                        continue; // Loop back to show album selection with new source
+                    }
+
+                    // User either selected an album or cancelled
+                    break;
+                }
             }
             else
             {
                 // Auto-select best album with fallback logic
                 args.Text = $"{progressTitle}\n\n{game.Name}\nSearching for albums...";
-                
+
                 // Use Source.All for automatic fallback (KHInsider -> YouTube)
-                var effectiveSource = source == Source.KHInsider ? Source.All : source;
-                
+                var effectiveSource = currentSource == Source.KHInsider ? Source.All : currentSource;
+
                 _logger.Info($"Getting albums for '{game.Name}' with source: {effectiveSource}");
                 var albums = _downloadManager.GetAlbumsForGame(searchGameName, effectiveSource, args.CancelToken, auto: true)?.ToList();
 
@@ -1013,11 +1068,11 @@ namespace UniPlaySong.Menus
 
                 _logger.Info($"Found {albums.Count} album(s) for '{game.Name}'");
                 album = _downloadManager.BestAlbumPick(albums, game);
-                
+
                 if (album != null)
                 {
                     // Show which source we're using
-                    var sourceIcon = album.Source == Source.KHInsider ? "🎮" : 
+                    var sourceIcon = album.Source == Source.KHInsider ? "🎮" :
                                     album.Source == Source.YouTube ? "📺" : "🎵";
                     _logger.Info($"Auto-selected album from {album.Source}: '{album.Name}' for game: {game.Name}");
                     args.Text = $"{progressTitle}\n\n{game.Name}\n{sourceIcon} {album.Source}: {album.Name}";
