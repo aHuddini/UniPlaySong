@@ -1,6 +1,6 @@
 # Contributing to the UPS Search Hints Database
 
-The `search_hints.json` file helps UniPlaySong find the correct music for games with problematic names. This guide explains how to add new entries to help the community.
+The `search_hints.json` file helps UniPlaySong find the correct music for games with problematic names or that are hard to get search results for. This guide explains how to add new entries to help the community.
 
 ## When to Add a Hint
 
