@@ -502,6 +502,11 @@ namespace UniPlaySong.ViewModels
         private DateTime _lastPreviewRequestTime = DateTime.MinValue;
         private const int MinPreviewIntervalMs = 2000; // Minimum 2 seconds between preview requests to avoid rate limiting
 
+        /// <summary>
+        /// Returns true if a preview is currently playing
+        /// </summary>
+        public bool IsPreviewPlaying => !string.IsNullOrEmpty(_currentlyPreviewing) && _previewPlayer != null;
+
         private void PreviewSong(Song song)
         {
             try
