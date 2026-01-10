@@ -110,8 +110,7 @@ if (Test-Path $extensionYamlPath) {
 $coreFiles = @(
     "extension.yaml",
     "icon.png",
-    "LICENSE",
-    "search_hints.json"
+    "LICENSE"
 )
 
 foreach ($file in $coreFiles) {
@@ -121,6 +120,16 @@ foreach ($file in $coreFiles) {
     } else {
         Write-Host "  WARNING: $file not found (optional)" -ForegroundColor Yellow
     }
+}
+
+# Copy AutoSearchDatabase folder (bundled search hints)
+$autoSearchDbDir = Join-Path $scriptDir "AutoSearchDatabase"
+if (Test-Path $autoSearchDbDir) {
+    $destAutoSearchDb = Join-Path $packageDir "AutoSearchDatabase"
+    Copy-Item $autoSearchDbDir -Destination $destAutoSearchDb -Recurse -Force
+    Write-Host "  Copied folder: AutoSearchDatabase" -ForegroundColor Gray
+} else {
+    Write-Host "  WARNING: AutoSearchDatabase folder not found (bundled hints missing)" -ForegroundColor Yellow
 }
 
 # Copy main DLL

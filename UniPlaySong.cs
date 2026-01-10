@@ -2474,7 +2474,12 @@ namespace UniPlaySong
         /// Gets the search cache service.
         /// </summary>
         public SearchCacheService GetSearchCacheService() => _cacheService;
-        
+
+        /// <summary>
+        /// Gets the search hints service.
+        /// </summary>
+        public SearchHintsService GetSearchHintsService() => _hintsService;
+
         /// <summary>
         /// Gets the error handler service.
         /// </summary>
