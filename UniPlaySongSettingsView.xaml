@@ -1223,6 +1223,30 @@
 
                     <Separator Margin="0,0,0,20"/>
 
+                    <!-- Import from PlayniteSound & Delete -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Import from PlayniteSound &amp; Delete" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Import all music from PlayniteSound to UniPlaySong, then DELETE the original PlayniteSound files. Use this for a clean migration when you no longer need PlayniteSound."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,5"/>
+                        <TextBlock Text="WARNING: Original PlayniteSound music files will be permanently deleted after import!"
+                                   FontSize="11"
+                                   Foreground="#FF6666"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Content="Import &amp; Delete PlayniteSound Music"
+                                Command="{Binding MigrateFromPlayniteSoundAndDeleteCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#664422"
+                                Foreground="White"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
                     <!-- Export to PlayniteSound -->
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Text="Export to PlayniteSound" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
