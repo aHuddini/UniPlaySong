@@ -2,6 +2,28 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.6] - 2026-01-10
+
+### Added
+- **UPS Hints in Manual Search** - Search hints now appear at the top of manual album search results
+  - Gold/orange color-coded highlighting makes hint albums easy to identify
+  - Hints from search_hints.json displayed with "★ UPS Hint" label
+- **Auto-Download Uses Search Hints First** - Search hints are now prioritized in auto-download
+  - `BestAlbumPick` now checks for hint albums before fuzzy matching
+  - Games with configured YouTube playlists or KHInsider albums in search_hints.json will use those directly
+  - Significantly improves auto-download success rate for problematic game names
+
+### Changed
+- Renamed "User Hint" to "UPS Hint" throughout the UI for better branding
+- Added "GOG Cut" to game name suffix stripping (e.g., "Daggerfall Unity - GOG Cut" → "Daggerfall Unity")
+
+### Fixed
+- Search hints not being used during auto-download despite being configured
+  - Hint albums now have `Type = "Hint"` flag for proper identification
+  - `BestAlbumPick` and `BestAlbumPickBroader` now return hint albums immediately without fuzzy matching
+- Removed "Continue with remaining games?" popup during manual retry after auto-download failures
+  - Canceling manual search now silently continues to the next game
+
 ## [1.1.5] - 2026-01-09
 
 ### Added
