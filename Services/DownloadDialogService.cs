@@ -2181,6 +2181,10 @@ namespace UniPlaySong.Services
         {
             var downloadedFiles = new List<string>();
             int successCount = 0;
+            int skippedCount = 0;
+            var successfulGames = new List<string>();
+            var skippedGames = new List<string>();
+            int totalGames = failedGames.Count;
 
             foreach (var failed in failedGames)
             {
@@ -2196,6 +2200,8 @@ namespace UniPlaySong.Services
                 if (album == null)
                 {
                     Logger.Info($"[ManualRetry] User cancelled album selection for '{failed.Game.Name}'");
+                    skippedCount++;
+                    skippedGames.Add(failed.Game.Name);
                     continue;
                 }
 
@@ -2218,17 +2224,61 @@ namespace UniPlaySong.Services
                             }
                         }
                         successCount++;
+                        successfulGames.Add(failed.Game.Name);
                         Logger.Info($"[ManualRetry] Downloaded song(s) for '{failed.Game.Name}'");
                     }
+                    else
+                    {
+                        skippedCount++;
+                        skippedGames.Add(failed.Game.Name);
+                    }
+                }
+                else
+                {
+                    skippedCount++;
+                    skippedGames.Add(failed.Game.Name);
                 }
             }
 
-            if (successCount > 0)
+            // Show summary popup
+            var summaryBuilder = new System.Text.StringBuilder();
+            summaryBuilder.AppendLine($"Manual Search Results:");
+            summaryBuilder.AppendLine($"────────────────────────");
+            summaryBuilder.AppendLine($"Total games attempted: {totalGames}");
+            summaryBuilder.AppendLine($"Successfully downloaded: {successCount}");
+            summaryBuilder.AppendLine($"Skipped/Cancelled: {skippedCount}");
+
+            if (successfulGames.Count > 0)
             {
-                _playniteApi.Dialogs.ShowMessage(
-                    $"Manual search downloaded music for {successCount} game(s).",
-                    "Manual Retry Complete");
+                summaryBuilder.AppendLine();
+                summaryBuilder.AppendLine("✓ Downloaded:");
+                foreach (var game in successfulGames.Take(10)) // Limit to first 10
+                {
+                    summaryBuilder.AppendLine($"  • {game}");
+                }
+                if (successfulGames.Count > 10)
+                {
+                    summaryBuilder.AppendLine($"  ... and {successfulGames.Count - 10} more");
+                }
             }
+
+            if (skippedGames.Count > 0 && skippedGames.Count <= 5)
+            {
+                summaryBuilder.AppendLine();
+                summaryBuilder.AppendLine("✗ Skipped:");
+                foreach (var game in skippedGames)
+                {
+                    summaryBuilder.AppendLine($"  • {game}");
+                }
+            }
+            else if (skippedGames.Count > 5)
+            {
+                summaryBuilder.AppendLine();
+                summaryBuilder.AppendLine($"✗ Skipped: {skippedGames.Count} games");
+            }
+
+            _playniteApi.Dialogs.ShowMessage(summaryBuilder.ToString(), "Manual Search Complete");
+            Logger.Info($"[ManualRetry] Complete - {successCount} succeeded, {skippedCount} skipped out of {totalGames} total");
 
             return downloadedFiles;
         }

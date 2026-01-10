@@ -16,6 +16,9 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Auto-Download Playback Resume** - Music playback now resumes during/after batch downloads
   - Playback starts immediately when the currently-selected game's music downloads successfully
   - If current game isn't in the batch, playback resumes after batch completes
+- **Manual Search Summary** - Summary popup now appears after completing manual retry for failed downloads
+  - Shows total games attempted, successful downloads, and skipped/cancelled games
+  - Lists game names for easy reference
 
 ### Changed
 - Renamed "User Hint" to "UPS Hint" throughout the UI for better branding
