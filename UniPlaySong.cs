@@ -2173,13 +2173,17 @@ namespace UniPlaySong
                 {
                     _fileLogger?.Info($"DownloadMusicForAllGames: Starting download for {gamesWithoutMusic.Count} game(s)");
 
+                    // Get currently selected game for playback resume after batch download
+                    var currentGame = SelectedGames?.FirstOrDefault();
+
                     // Use the new parallel batch download dialog with Material Design UI
                     var maxConcurrent = _settings?.MaxConcurrentDownloads ?? 3;
                     var batchResult = _downloadDialogService?.ShowBatchDownloadDialogWithResults(
                         gamesWithoutMusic,
                         Models.Source.All,
                         overwrite: false,
-                        maxConcurrentDownloads: maxConcurrent);
+                        maxConcurrentDownloads: maxConcurrent,
+                        currentGame: currentGame);
 
                     var allDownloadedPaths = new List<string>();
 

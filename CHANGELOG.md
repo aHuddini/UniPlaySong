@@ -12,6 +12,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - `BestAlbumPick` now checks for hint albums before fuzzy matching
   - Games with configured YouTube playlists or KHInsider albums in search_hints.json will use those directly
   - Significantly improves auto-download success rate for problematic game names
+- **Auto-Download Playback Resume** - Music playback now resumes during/after batch downloads
+  - Playback starts immediately when the currently-selected game's music downloads successfully
+  - If current game isn't in the batch, playback resumes after batch completes
 
 ### Changed
 - Renamed "User Hint" to "UPS Hint" throughout the UI for better branding
