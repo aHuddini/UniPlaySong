@@ -8,6 +8,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - **UPS Hints in Manual Search** - Search hints now appear at the top of manual album search results
   - Gold/orange color-coded highlighting makes hint albums easy to identify
   - Hints from search_hints.json displayed with "★ UPS Hint" label
+  - Available in both Desktop and Fullscreen/Controller modes
 - **Auto-Download Uses Search Hints First** - Search hints are now prioritized in auto-download
   - `BestAlbumPick` now checks for hint albums before fuzzy matching
   - Games with configured YouTube playlists or KHInsider albums in search_hints.json will use those directly

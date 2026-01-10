@@ -229,32 +229,46 @@ namespace UniPlaySong.Views
                             Margin = new Thickness(0),
                             HorizontalAlignment = HorizontalAlignment.Stretch
                         };
-                        
+
+                        // Use gold color for hint items, default for others
+                        var isHint = item.IsFromHint;
+                        var nameColor = isHint
+                            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xD7, 0x00)) // Gold #FFD700
+                            : System.Windows.Media.Brushes.White;
+                        var descColor = isHint
+                            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xA5, 0x00)) // Orange #FFA500
+                            : null; // Use default
+
                         var nameBlock = new TextBlock
                         {
-                            Text = $"🎵 {item.Name}",
+                            Text = isHint ? $"★ {item.Name}" : $"🎵 {item.Name}",
                             FontWeight = FontWeights.SemiBold,
                             FontSize = 16,
                             TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 0, 0, 4)
+                            Margin = new Thickness(0, 0, 0, 4),
+                            Foreground = nameColor
                         };
-                        
+
                         stackPanel.Children.Add(nameBlock);
-                        
+
                         if (!string.IsNullOrEmpty(item.Description))
                         {
                             var descBlock = new TextBlock
                             {
                                 Text = item.Description,
                                 FontSize = 13,
-                                Opacity = 0.85,
+                                Opacity = isHint ? 0.95 : 0.85,
                                 TextWrapping = TextWrapping.Wrap,
                                 Margin = new Thickness(16, 0, 0, 0), // Indent description
                                 LineHeight = 16
                             };
+                            if (descColor != null)
+                            {
+                                descBlock.Foreground = descColor;
+                            }
                             stackPanel.Children.Add(descBlock);
                         }
-                        
+
                         listItem.Content = stackPanel;
                         listItem.HorizontalContentAlignment = HorizontalAlignment.Stretch;
                         ResultsListBox.Items.Add(listItem);
@@ -961,22 +975,51 @@ namespace UniPlaySong.Views
                     {
                         var cancellationToken = new CancellationTokenSource().Token;
                         var gameName = _currentGame?.Name ?? "Unknown Game";
-                        
+
                         Logger.DebugIf(LogPrefix, $"Searching for albums: Game='{gameName}', Source={source}");
-                        
+
+                        // First, get hint albums for this game (prioritized at top)
+                        var hintAlbums = _downloadManager?.GetHintAlbums(gameName);
+                        var hintViewModels = new List<DownloadItemViewModel>();
+
+                        if (hintAlbums != null && hintAlbums.Count > 0)
+                        {
+                            // Filter hints by current source
+                            var sourceHints = hintAlbums.Where(h => h.Source == source).ToList();
+                            foreach (var hint in sourceHints)
+                            {
+                                hintViewModels.Add(new DownloadItemViewModel
+                                {
+                                    Name = hint.Name,
+                                    Description = $"★ UPS Hint [{hint.Source}]",
+                                    Item = hint,
+                                    Source = hint.Source,
+                                    IsFromHint = true
+                                });
+                            }
+                            Logger.DebugIf(LogPrefix, $"Found {sourceHints.Count} hint album(s) for '{gameName}' from {source}");
+                        }
+
                         // Search for real albums using the download manager
                         var albums = _downloadManager?.GetAlbumsForGame(gameName, source, cancellationToken, auto: false);
                         var albumsList = albums?.ToList() ?? new List<Album>();
-                        
+
                         Logger.DebugIf(LogPrefix, $"Found {albumsList.Count} albums for '{gameName}' from {source}");
-                        
+
                         // Convert to view models
                         var albumViewModels = albumsList.Select(a => new DownloadItemViewModel
                         {
                             Name = a.Name,
                             Description = $"{a.Type} • {a.Year} • {a.Count} songs",
-                            Item = a
+                            Item = a,
+                            IsFromHint = false
                         }).ToList();
+
+                        // Prepend hint albums at the top
+                        if (hintViewModels.Count > 0)
+                        {
+                            albumViewModels.InsertRange(0, hintViewModels);
+                        }
 
                         // Update UI on main thread
                         Dispatcher.BeginInvoke(new Action(() =>
