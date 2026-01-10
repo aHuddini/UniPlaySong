@@ -49,10 +49,9 @@ namespace UniPlaySong.Downloaders
 
             try
             {
-                // Do NOT URL-encode the game name here.
-                // HtmlWeb.LoadFromWebAsync handles encoding internally.
-                // KHInsider uses + for spaces (e.g., "wasteland+3"), not %20.
-                var searchUrl = $"{KhInsiderBaseUrl}search?search={gameName}";
+                // URL-encode the game name - KHInsider uses + for spaces
+                var encodedName = Uri.EscapeDataString(gameName).Replace("%20", "+");
+                var searchUrl = $"{KhInsiderBaseUrl}search?search={encodedName}";
 
                 // Always log the actual search URL being used (this is key for debugging)
                 Logger.Info($"[KHInsider] Search: '{gameName}' → {searchUrl}");

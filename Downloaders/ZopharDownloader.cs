@@ -436,18 +436,34 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
-        // Common console/platform names that appear as standalone results
+        // Common console/platform names that appear as standalone results on Zophar
+        // These match the exact names returned by Zophar's search results
         private static readonly HashSet<string> ConsoleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
+            // Nintendo
             "NES", "SNES", "N64", "GameCube", "Wii", "Wii U", "Switch",
-            "Game Boy", "Game Boy Color", "Game Boy Advance", "GBA", "DS", "3DS",
-            "PlayStation", "PS1", "PS2", "PS3", "PS4", "PS5", "PSP", "PS Vita",
+            "Nintendo DS", "Nintendo DS (old)", "Nintendo 3DS", "Nintendo 64", "Nintendo Gamecube", "Nintendo Wii",
+            "Game Boy", "Game Boy Color", "Game Boy Advance", "Gameboy", "Gameboy Advance", "GBA", "DS", "3DS",
+            // Sony
+            "PlayStation", "Playstation", "PS1", "PS2", "PS3", "PS4", "PS5", "PSP", "PS Vita",
+            "Playstation 2", "Playstation 3",
+            // Microsoft
             "Xbox", "Xbox 360", "Xbox One", "Xbox Series",
+            // Sega
             "Genesis", "Mega Drive", "Saturn", "Dreamcast",
             "Master System", "Game Gear",
-            "TurboGrafx-16", "PC Engine", "Neo Geo", "Arcade",
-            "Atari", "Atari 2600", "Atari 7800", "Atari Lynx", "Jaguar",
-            "DOS", "PC", "Windows", "Amiga", "C64", "Commodore 64"
+            "Sega Game Gear", "Sega Master System", "Sega Genesis / Mega Drive", "Sega Saturn", "Sega Dreamcast",
+            // Other consoles
+            "TurboGrafx-16", "PC Engine", "Neo Geo", "Arcade", "WonderSwan",
+            "Atari", "Atari 2600", "Atari 7800", "Atari Lynx", "Jaguar", "Atari ST", "Atari 8-Bit",
+            "Philips CD-i",
+            // Computers
+            "DOS", "MS-DOS", "PC", "Windows", "Amiga", "C64", "Commodore 64",
+            "MSX", "MSX2", "PC-88", "PC-98", "X68000", "ZX Spectrum", "Sharp X1", "FM Towns",
+            "NEC and Sharp systems",
+            // Archive categories (not actual games)
+            "Top 100 Games", "Developers", "Publishers", "Music by Year",
+            "High Voltage SID Collection"
         };
 
         private bool IsGenericConsolePage(string albumName, string searchedGameName)

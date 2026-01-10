@@ -803,6 +803,14 @@ namespace UniPlaySong.Menus
 
             _logger.Info($"Batch options: albumSelect={albumSelect}, songSelect={songSelect}, overwrite={overwrite}");
 
+            // Stop playback before downloading if we're overwriting files
+            // This prevents file lock errors when the currently playing song is being replaced
+            if (overwrite)
+            {
+                _logger.Info("Stopping playback before overwrite download to prevent file locks");
+                _playbackService?.Stop();
+            }
+
             var batchDownloadedFilePaths = new List<string>();
 
             // If full auto mode (no manual selection), use parallel batch download with progress dialog

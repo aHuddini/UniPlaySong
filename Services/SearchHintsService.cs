@@ -86,7 +86,7 @@ namespace UniPlaySong.Services
                 return hint;
             }
 
-            // Try normalized name
+            // Try normalized exact match
             var normalized = StringHelper.NormalizeForComparison(gameName);
             foreach (var kvp in _hints)
             {
@@ -94,6 +94,39 @@ namespace UniPlaySong.Services
                 {
                     Logger.Info($"[SearchHints] Normalized match: '{gameName}' → '{kvp.Key}'");
                     return kvp.Value;
+                }
+            }
+
+            // Try prefix matching - hint key should be prefix of game name
+            // e.g., "The Coma 2" matches "The Coma 2: Vicious Sisters"
+            // Also handles cases like "Deus Ex 2" matching "Deus Ex 2: Invisible War"
+            foreach (var kvp in _hints)
+            {
+                var hintKeyNorm = StringHelper.NormalizeForComparison(kvp.Key);
+                // Check if game name starts with hint key (with word boundary)
+                if (normalized.StartsWith(hintKeyNorm) &&
+                    (normalized.Length == hintKeyNorm.Length ||
+                     normalized[hintKeyNorm.Length] == ' '))
+                {
+                    Logger.Info($"[SearchHints] Prefix match: '{gameName}' starts with '{kvp.Key}'");
+                    return kvp.Value;
+                }
+            }
+
+            // Try prefix matching on base name as well
+            var baseNormalized = StringHelper.NormalizeForComparison(baseName);
+            if (baseNormalized != normalized)
+            {
+                foreach (var kvp in _hints)
+                {
+                    var hintKeyNorm = StringHelper.NormalizeForComparison(kvp.Key);
+                    if (baseNormalized.StartsWith(hintKeyNorm) &&
+                        (baseNormalized.Length == hintKeyNorm.Length ||
+                         baseNormalized[hintKeyNorm.Length] == ' '))
+                    {
+                        Logger.Info($"[SearchHints] Base prefix match: '{baseName}' starts with '{kvp.Key}'");
+                        return kvp.Value;
+                    }
                 }
             }
 
@@ -175,24 +208,49 @@ namespace UniPlaySong.Services
             }
 
             _lastLoadTime = DateTime.Now;
-            Logger.Info($"[SearchHints] Loaded {_hints.Count} total hints");
+            Logger.Info($"[SearchHints] Loaded {_hints.Count} total hints: [{string.Join(", ", _hints.Keys)}]");
         }
 
         private void LoadHintsFromFile(string path, string source)
         {
             try
             {
-                if (!File.Exists(path)) return;
+                if (!File.Exists(path))
+                {
+                    Logger.Warn($"[SearchHints] {source} hints file not found: {path}");
+                    return;
+                }
 
                 var json = File.ReadAllText(path);
-                var loaded = JsonConvert.DeserializeObject<Dictionary<string, SearchHint>>(json);
-                if (loaded == null) return;
 
-                foreach (var kvp in loaded)
+                // Parse as JObject first to handle mixed types (like _comment being a string)
+                var jObject = Newtonsoft.Json.Linq.JObject.Parse(json);
+                if (jObject == null) return;
+
+                var count = 0;
+                foreach (var prop in jObject.Properties())
                 {
-                    _hints[kvp.Key] = kvp.Value;
+                    // Skip special keys like _comment
+                    if (prop.Name.StartsWith("_")) continue;
+
+                    // Only process objects, skip strings or other types
+                    if (prop.Value.Type != Newtonsoft.Json.Linq.JTokenType.Object) continue;
+
+                    try
+                    {
+                        var hint = prop.Value.ToObject<SearchHint>();
+                        if (hint != null)
+                        {
+                            _hints[prop.Name] = hint;
+                            count++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn($"[SearchHints] Failed to parse hint '{prop.Name}': {ex.Message}");
+                    }
                 }
-                Logger.Info($"[SearchHints] Loaded {loaded.Count} {source} hints from {path}");
+                Logger.Info($"[SearchHints] Loaded {count} {source} hints from {path}");
             }
             catch (Exception ex)
             {

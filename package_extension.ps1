@@ -110,7 +110,8 @@ if (Test-Path $extensionYamlPath) {
 $coreFiles = @(
     "extension.yaml",
     "icon.png",
-    "LICENSE"
+    "LICENSE",
+    "search_hints.json"
 )
 
 foreach ($file in $coreFiles) {
