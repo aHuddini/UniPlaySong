@@ -2139,18 +2139,6 @@ namespace UniPlaySong.Services
                 if (album == null)
                 {
                     Logger.Info($"[ManualRetry] User cancelled album selection for '{failed.Game.Name}'");
-
-                    // Ask if user wants to continue with remaining games
-                    if (failedGames.IndexOf(failed) < failedGames.Count - 1)
-                    {
-                        var continueResult = _playniteApi.Dialogs.ShowMessage(
-                            "Continue with remaining games?",
-                            "Manual Search",
-                            System.Windows.MessageBoxButton.YesNo);
-
-                        if (continueResult != System.Windows.MessageBoxResult.Yes)
-                            break;
-                    }
                     continue;
                 }
 

@@ -388,8 +388,9 @@ namespace UniPlaySong.Downloaders
             return new Album
             {
                 Id = playlistId,
-                Name = $"{gameName} (User Hint)",
-                Source = Source.YouTube
+                Name = $"{gameName} (UPS Hint)",
+                Source = Source.YouTube,
+                Type = "Hint"
             };
         }
 
@@ -403,8 +404,9 @@ namespace UniPlaySong.Downloaders
             return new Album
             {
                 Id = albumId,
-                Name = $"{gameName} (User Hint)",
-                Source = Source.KHInsider
+                Name = $"{gameName} (UPS Hint)",
+                Source = Source.KHInsider,
+                Type = "Hint"
             };
         }
 
@@ -445,6 +447,14 @@ namespace UniPlaySong.Downloaders
         {
             var albumsList = albums?.ToList() ?? new List<Album>();
             if (albumsList.Count == 0) return null;
+
+            // Priority 0: Hint albums from search_hints.json (highest priority - user-defined overrides)
+            var hintAlbum = albumsList.FirstOrDefault(a => a.Type == "Hint");
+            if (hintAlbum != null)
+            {
+                Logger.Info($"BestAlbumPick: Using UPS Hint album '{hintAlbum.Name}' for '{game.Name}'");
+                return hintAlbum;
+            }
 
             var gameName = NormalizeForMatching(game.Name);
             var keyWords = ExtractKeyWords(game.Name);
@@ -492,6 +502,14 @@ namespace UniPlaySong.Downloaders
         {
             var albumList = albums?.ToList();
             if (albumList == null || albumList.Count == 0) return null;
+
+            // Priority 0: Hint albums from search_hints.json (highest priority - user-defined overrides)
+            var hintAlbum = albumList.FirstOrDefault(a => a.Type == "Hint");
+            if (hintAlbum != null)
+            {
+                Logger.Info($"BroaderPick: Using UPS Hint album '{hintAlbum.Name}' for '{game?.Name}'");
+                return hintAlbum;
+            }
 
             var gameName = StringHelper.ExtractBaseGameName(game?.Name ?? "");
             var keyWords = ExtractKeyWords(game?.Name ?? "");
@@ -946,6 +964,55 @@ namespace UniPlaySong.Downloaders
                     Logger.Warn($"Error cleaning up temp directory: {ex.Message}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets hint-based albums for a game (from search_hints.json).
+        /// Returns albums created from YouTubePlaylistId and KHInsiderAlbum hints.
+        /// </summary>
+        public List<Album> GetHintAlbums(string gameName)
+        {
+            var hintAlbums = new List<Album>();
+
+            if (_hintsService == null || string.IsNullOrWhiteSpace(gameName))
+            {
+                return hintAlbums;
+            }
+
+            var hint = _hintsService.GetHint(gameName);
+            if (hint == null)
+            {
+                return hintAlbums;
+            }
+
+            // Add YouTube playlist album if available
+            if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
+            {
+                hintAlbums.Add(new Album
+                {
+                    Id = hint.YouTubePlaylistId,
+                    Name = $"{gameName} (UPS Hint - YouTube Playlist)",
+                    Source = Source.YouTube,
+                    Type = "Hint"
+                });
+                Logger.Info($"[Hints] Added YouTube playlist hint album for '{gameName}': {hint.YouTubePlaylistId}");
+            }
+
+            // Add KHInsider album if available
+            if (!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
+            {
+                var albumId = $"game-soundtracks/album/{hint.KHInsiderAlbum}";
+                hintAlbums.Add(new Album
+                {
+                    Id = albumId,
+                    Name = $"{gameName} (UPS Hint - KHInsider)",
+                    Source = Source.KHInsider,
+                    Type = "Hint"
+                });
+                Logger.Info($"[Hints] Added KHInsider hint album for '{gameName}': {hint.KHInsiderAlbum}");
+            }
+
+            return hintAlbums;
         }
 
         private IDownloader GetDownloaderForSource(Source source)

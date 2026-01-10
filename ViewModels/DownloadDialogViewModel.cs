@@ -407,23 +407,46 @@ namespace UniPlaySong.ViewModels
                     
                     Logger.DebugIf(LogPrefix,$"Searching for albums: Game='{gameName}', Source={_source}");
 
+                    results = new List<DownloadItemViewModel>();
+
+                    // Add hint albums at the top (from search_hints.json)
+                    // Use game name for hint lookup, not the search keyword
+                    var gameNameForHints = _game?.Name ?? gameName;
+                    var hintAlbums = _downloadManager.GetHintAlbums(gameNameForHints);
+                    if (hintAlbums != null && hintAlbums.Count > 0)
+                    {
+                        Logger.DebugIf(LogPrefix,$"Found {hintAlbums.Count} hint album(s) for '{gameNameForHints}'");
+                        foreach (var hintAlbum in hintAlbums)
+                        {
+                            results.Add(new DownloadItemViewModel
+                            {
+                                Name = hintAlbum.Name,
+                                Description = $"★ UPS Hint [{hintAlbum.Source}]",
+                                Item = hintAlbum,
+                                Source = hintAlbum.Source,
+                                IsFromHint = true
+                            });
+                        }
+                    }
+
                     // Manual search mode: auto=false means no whitelist filtering
                     var albums = _downloadManager.GetAlbumsForGame(gameName, _source, cancellationToken, auto: false);
 
                     // IEnumerable is never null, but can be empty
                     var albumsList = albums?.ToList() ?? new List<Album>();
                     Logger.DebugIf(LogPrefix,$"Found {albumsList.Count} albums for '{gameName}' from {_source}");
-                    
-                    results = albumsList.Select(a => new DownloadItemViewModel
+
+                    results.AddRange(albumsList.Select(a => new DownloadItemViewModel
                     {
                         Name = a.Name,
                         Description = _source == Source.All
                             ? $"[{a.Source}] {a.Type} • {a.Year} • {a.Count} songs"
                             : $"{a.Type} • {a.Year} • {a.Count} songs",
                         Item = a,
-                        Source = a.Source
-                    }).ToList();
-                    
+                        Source = a.Source,
+                        IsFromHint = false
+                    }));
+
                     if (results.Count == 0)
                     {
                         Logger.Warn($"No albums found for '{gameName}' from {_source}. This might indicate a search error.");
@@ -1060,6 +1083,11 @@ namespace UniPlaySong.ViewModels
 
         public object Item { get; set; }
         public Source Source { get; set; }
+
+        /// <summary>
+        /// Indicates if this item comes from a user-defined search hint (search_hints.json)
+        /// </summary>
+        public bool IsFromHint { get; set; } = false;
     }
 }
 

@@ -60,6 +60,14 @@ namespace UniPlaySong.Downloaders
         /// Cleans up resources
         /// </summary>
         void Cleanup();
+
+        /// <summary>
+        /// Gets hint-based albums for a game (from search_hints.json).
+        /// Returns albums created from YouTubePlaylistId and KHInsiderAlbum hints.
+        /// </summary>
+        /// <param name="gameName">Name of the game to check for hints</param>
+        /// <returns>List of albums from hints, or empty list if no hints exist</returns>
+        List<Album> GetHintAlbums(string gameName);
     }
 }
 

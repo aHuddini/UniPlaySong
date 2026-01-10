@@ -100,7 +100,10 @@ namespace UniPlaySong.Common
                 " - Classic",
                 " - Trilogy",
                 " - Collection",
-                " - Bundle"
+                " - Bundle",
+                // Platform-specific cuts/versions
+                " - GOG Cut",
+                " GOG Cut"
             };
             
             // Apply suffix removal (may need multiple passes)

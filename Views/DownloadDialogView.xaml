@@ -144,16 +144,40 @@
                         
                         <!-- Item Info - Compact -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}" 
-                                       FontWeight="SemiBold" 
+                            <TextBlock Text="{Binding Name}"
+                                       FontWeight="SemiBold"
                                        FontSize="13"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding Description}" 
-                                       Foreground="{DynamicResource MaterialDesignBodyLight}" 
-                                       FontSize="11" 
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Style.Triggers>
+                                            <!-- Highlight hint entries with gold color -->
+                                            <DataTrigger Binding="{Binding IsFromHint}" Value="True">
+                                                <Setter Property="Foreground" Value="#FFD700"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Description}"
+                                       FontSize="11"
                                        Margin="0,2,0,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Opacity="0.7"/>
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <Setter Property="Opacity" Value="0.7"/>
+                                        <Style.Triggers>
+                                            <!-- Highlight hint description with orange color -->
+                                            <DataTrigger Binding="{Binding IsFromHint}" Value="True">
+                                                <Setter Property="Foreground" Value="#FFA500"/>
+                                                <Setter Property="Opacity" Value="0.9"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                         
                         <!-- Preview Button - Material Design Icon Button -->
