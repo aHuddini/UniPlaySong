@@ -1561,6 +1561,95 @@ namespace UniPlaySong
         }
 
         /// <summary>
+        /// Run a delete operation with progress dialog (no completion report)
+        /// </summary>
+        public void RunDeleteWithProgress(
+            string title,
+            Func<IProgress<Services.MigrationProgress>, System.Threading.CancellationToken, System.Threading.Tasks.Task<Services.PlayniteSoundDeleteResult>> deleteTask)
+        {
+            try
+            {
+                // Create progress dialog
+                var progressDialog = new Views.MigrationProgressDialog();
+                progressDialog.SetTitle(title);
+
+                var window = Common.DialogHelper.CreateFixedDialog(
+                    PlayniteApi,
+                    title,
+                    progressDialog,
+                    width: 550,
+                    height: 450);
+
+                Common.DialogHelper.AddFocusReturnHandler(window, PlayniteApi, "delete dialog close");
+
+                // Start delete asynchronously
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        var progress = new Progress<Services.MigrationProgress>(p =>
+                        {
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.ReportProgress(p);
+                            }));
+                        });
+
+                        var result = await deleteTask(progress, progressDialog.CancellationToken);
+
+                        // Report completion as a batch result for UI
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            var batchResult = new Services.MigrationBatchResult
+                            {
+                                TotalGames = result.TotalGames,
+                                SuccessfulGames = result.GamesProcessed,
+                                FailedGames = result.GamesFailed,
+                                TotalFilesCopied = result.FilesDeleted, // Using FilesDeleted for display
+                                WasCancelled = result.WasCancelled
+                            };
+                            progressDialog.ReportCompletion(batchResult);
+
+                            if (!result.WasCancelled)
+                            {
+                                var message = $"Delete Complete!\n\n" +
+                                            $"Games processed: {result.GamesProcessed}\n" +
+                                            $"Files deleted: {result.FilesDeleted}\n" +
+                                            $"Folders removed: {result.FoldersDeleted}\n" +
+                                            $"Failed: {result.FilesFailed}";
+
+                                PlayniteApi.Dialogs.ShowMessage(message, "Delete Complete");
+                            }
+                        }));
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            PlayniteApi.Dialogs.ShowMessage("Delete operation was cancelled.", "Delete Cancelled");
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error during delete");
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during delete: {ex.Message}", "Delete Error");
+                        }));
+                    }
+                });
+
+                // Show dialog (blocks until closed)
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error showing delete progress dialog");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Delete Error");
+            }
+        }
+
+        /// <summary>
         /// Runs game music tag scanning with progress dialog.
         /// </summary>
         public void RunTagScanWithProgress(Services.GameMusicTagService tagService)

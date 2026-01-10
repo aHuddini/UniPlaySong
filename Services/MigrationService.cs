@@ -368,6 +368,124 @@ namespace UniPlaySong.Services
                 UniPlaySongFileCount = uniPlaySongGames.Sum(g => g.FileCount)
             };
         }
+
+        /// <summary>
+        /// Deletes all PlayniteSound music files (Music Files folders within game directories)
+        /// </summary>
+        /// <param name="progress">Progress reporter for UI updates</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result containing counts of deleted files and folders</returns>
+        public async Task<PlayniteSoundDeleteResult> DeletePlayniteSoundMusicAsync(
+            IProgress<MigrationProgress> progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new PlayniteSoundDeleteResult();
+            var games = ScanPlayniteSoundGames();
+            result.TotalGames = games.Count;
+
+            for (int i = 0; i < games.Count; i++)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    result.WasCancelled = true;
+                    break;
+                }
+
+                var game = games[i];
+
+                progress?.Report(new MigrationProgress
+                {
+                    CurrentIndex = i + 1,
+                    TotalCount = games.Count,
+                    CurrentGameId = game.GameId,
+                    CurrentGameName = game.GameName ?? game.GameId,
+                    Status = $"Deleting PlayniteSound music: {game.GameName ?? game.GameId}..."
+                });
+
+                try
+                {
+                    var musicFolderPath = game.SourcePath; // This is the "Music Files" folder
+
+                    if (Directory.Exists(musicFolderPath))
+                    {
+                        // Count and delete audio files
+                        var audioFiles = Directory.GetFiles(musicFolderPath).Where(IsAudioFile).ToList();
+                        foreach (var file in audioFiles)
+                        {
+                            try
+                            {
+                                File.Delete(file);
+                                result.FilesDeleted++;
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Warn($"Failed to delete file: {file} - {ex.Message}");
+                                result.FilesFailed++;
+                            }
+                        }
+
+                        // Try to delete the Music Files folder if empty
+                        try
+                        {
+                            if (Directory.GetFiles(musicFolderPath).Length == 0 &&
+                                Directory.GetDirectories(musicFolderPath).Length == 0)
+                            {
+                                Directory.Delete(musicFolderPath);
+                                result.FoldersDeleted++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Warn($"Failed to delete folder: {musicFolderPath} - {ex.Message}");
+                        }
+
+                        // Try to delete parent game folder if now empty (no other ExtraMetadata content)
+                        var gameFolder = Path.GetDirectoryName(musicFolderPath);
+                        try
+                        {
+                            if (Directory.Exists(gameFolder) &&
+                                Directory.GetFiles(gameFolder).Length == 0 &&
+                                Directory.GetDirectories(gameFolder).Length == 0)
+                            {
+                                Directory.Delete(gameFolder);
+                                result.FoldersDeleted++;
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore - folder may contain other metadata
+                        }
+
+                        result.GamesProcessed++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Failed to delete PlayniteSound music for game: {game.GameId}");
+                    result.GamesFailed++;
+                }
+
+                // Small delay to allow UI updates
+                await Task.Delay(10, cancellationToken);
+            }
+
+            Logger.Info($"DeletePlayniteSoundMusic: Deleted {result.FilesDeleted} files from {result.GamesProcessed} games");
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Result of deleting PlayniteSound music files
+    /// </summary>
+    public class PlayniteSoundDeleteResult
+    {
+        public int TotalGames { get; set; }
+        public int GamesProcessed { get; set; }
+        public int GamesFailed { get; set; }
+        public int FilesDeleted { get; set; }
+        public int FilesFailed { get; set; }
+        public int FoldersDeleted { get; set; }
+        public bool WasCancelled { get; set; }
     }
 
     #region Migration Models

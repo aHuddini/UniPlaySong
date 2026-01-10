@@ -510,6 +510,87 @@ namespace UniPlaySong
             RefreshMigrationStatus();
         }
 
+        public ICommand MigrateFromPlayniteSoundAndDeleteCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteMigrateFromPlayniteSoundAndDelete(),
+                context: "migrating from PlayniteSound and deleting originals",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteMigrateFromPlayniteSoundAndDelete()
+        {
+            var migrationService = plugin.GetMigrationService();
+            if (migrationService == null)
+            {
+                PlayniteApi.Dialogs.ShowMessage("Migration service not available.", "UniPlaySong");
+                return;
+            }
+
+            var games = migrationService.ScanPlayniteSoundGames();
+
+            if (games.Count == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "No music files found in PlayniteSound directories.\n\n" +
+                    "PlayniteSound stores music in:\n" +
+                    "%APPDATA%\\Playnite\\ExtraMetadata\\Games\\{GameId}\\Music Files\\",
+                    "No Music Found");
+                return;
+            }
+
+            var totalFiles = games.Sum(g => g.FileCount);
+
+            // Warning dialog with clear message about deletion
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"Found {games.Count} games with {totalFiles} music files in PlayniteSound.\n\n" +
+                "This will:\n" +
+                "1. Copy all music files to UniPlaySong format\n" +
+                "2. DELETE the original PlayniteSound music files\n\n" +
+                "WARNING: Original PlayniteSound music files will be permanently deleted!\n" +
+                "This cannot be undone.\n\n" +
+                "Do you want to proceed?",
+                "Import from PlayniteSound & Delete",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Second confirmation
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                "FINAL CONFIRMATION\n\n" +
+                $"After import, {totalFiles} music files in PlayniteSound will be DELETED.\n\n" +
+                "Are you sure you want to continue?",
+                "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (confirm != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            // Step 1: Import
+            plugin.RunMigrationWithProgress(
+                "Importing from PlayniteSound",
+                async (progress, token) => await migrationService.MigrateAllFromPlayniteSoundAsync(progress, token));
+
+            // Step 2: Delete PlayniteSound files
+            plugin.RunDeleteWithProgress(
+                "Deleting PlayniteSound Music",
+                async (progress, token) => await migrationService.DeletePlayniteSoundMusicAsync(progress, token));
+
+            // Show completion message
+            var summary = migrationService.GetMigrationSummary();
+            PlayniteApi.Dialogs.ShowMessage(
+                $"Migration complete!\n\n" +
+                $"UniPlaySong now has: {summary.UniPlaySongGameCount} games, {summary.UniPlaySongFileCount} files\n" +
+                $"PlayniteSound remaining: {summary.PlayniteSoundGameCount} games, {summary.PlayniteSoundFileCount} files",
+                "Import & Delete Complete");
+
+            // Refresh status after migration
+            RefreshMigrationStatus();
+        }
+
         public ICommand MigrateToPlayniteSoundCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

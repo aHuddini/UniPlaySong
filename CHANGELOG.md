@@ -9,6 +9,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Helps remove accidentally downloaded full albums, podcasts, or corrupted files
   - Prevents bulk operations (normalization, trimming) from getting stuck on excessively long files
   - Shows preview of files to be deleted with duration and total size before confirmation
+  - Uses progress dialog to prevent UI freeze during scan
+- **Import from PlayniteSound & Delete** migration option - Clean migration that imports music then removes PlayniteSound originals
+  - Two-step process: imports all music, then deletes original PlayniteSound files
+  - Includes double-confirmation to prevent accidental data loss
+  - Cleans up empty "Music Files" folders and game directories after deletion
 
 ## [1.1.4] - 2026-01-07
 
