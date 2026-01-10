@@ -694,7 +694,8 @@ namespace UniPlaySong.Services
             {
                 // After successful download, trigger music refresh so music plays immediately
                 // This addresses the issue where music doesn't play after download completes
-                if (success && game != null && _playbackService != null)
+                // BUT: Don't interrupt preview playback - let the user finish previewing
+                if (success && game != null && _playbackService != null && !viewModel.IsPreviewPlaying)
                 {
                     _errorHandler.Try(
                         () =>
@@ -706,6 +707,10 @@ namespace UniPlaySong.Services
                         },
                         context: $"refreshing music after download for '{game.Name}'"
                     );
+                }
+                else if (success && viewModel.IsPreviewPlaying)
+                {
+                    Logger.DebugIf(LogPrefix,$"Download complete for '{game?.Name}' but preview is playing - not auto-starting game music");
                 }
             };
 

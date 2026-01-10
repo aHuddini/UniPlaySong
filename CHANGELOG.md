@@ -26,6 +26,8 @@ All notable changes to UniPlaySong will be documented in this file.
   - `BestAlbumPick` and `BestAlbumPickBroader` now return hint albums immediately without fuzzy matching
 - Removed "Continue with remaining games?" popup during manual retry after auto-download failures
   - Canceling manual search now silently continues to the next game
+- Manual download no longer interrupts preview playback
+  - Downloaded music won't auto-start if a preview is currently playing
 
 ## [1.1.5] - 2026-01-09
 
