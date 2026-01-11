@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,33 +14,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.6
+## What's New - v1.1.7
 
-### Smart Search Hints
-- **UPS Hints in Manual Search**: Gold-highlighted hint albums appear at the top of search results (pulled from search_hints.json file)
-  - Available in Desktop and Fullscreen/Controller modes
-  - Helps identify the best albums for problematic game names
+### 🔧 Critical Fixes
+- **Download UI Performance**: Fixed UI freezing during batch downloads with 100+ games
+  - Optimized progress tracking with O(1) counters instead of O(n) LINQ operations
+  - Added throttled UI updates (max 10/second) to prevent dispatcher overload
 
-- **Auto-Download Prioritizes Hints**: Search hints are checked first during auto-download
-  - Uses direct YouTube playlists, Zophar or KHInsider albums when available
-  - Dramatically improves success rates for difficult-to-find games
-
-- **Search Hints Database Manager**: New settings section for managing hints
-  - Download latest hints from GitHub with status tracking
-  - Easy folder access and revert-to-bundled options
-
-### Enhanced Playback
-- **Seamless Batch Downloads**: Music continues playing during bulk operations
-  - No more silent gaps when downloading multiple games
-  - Playback resumes automatically after batch completion
-
-### Better Feedback
-- **Manual Search Summary**: Detailed popup after manual retry operations
-  - Shows success/failure stats and game lists
-  - Helps track progress during large manual sessions
+- **Music Playback During Downloads**: Corrected shuffle behavior and queue management
+  - Fixed random music playback interruptions during bulk operations
+  - Improved music queue handling for better user experience
 
 ### Previous Versions
-- **v1.1.5**: Zophar Download Source, Search Hints Backend, Enhanced Auto-Download
+- **v1.1.6**: Smart Search Resolution, Enhanced Playback Experience
 ---
 
 ## 🎬 Demo
