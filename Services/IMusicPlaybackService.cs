@@ -93,11 +93,23 @@ namespace UniPlaySong.Services
         /// Event fired when music stops (for native music restoration)
         /// </summary>
         event System.Action<UniPlaySongSettings> OnMusicStopped;
-        
+
         /// <summary>
         /// Event fired when music starts (for native music suppression)
         /// </summary>
         event System.Action<UniPlaySongSettings> OnMusicStarted;
+
+        /// <summary>
+        /// Event fired when a song reaches its natural end (before looping/randomizing).
+        /// Used by batch download to queue next random game's music.
+        /// </summary>
+        event System.Action OnSongEnded;
+
+        /// <summary>
+        /// When true, suppresses the default loop/restart behavior when a song ends.
+        /// Set by external handlers (like batch download) that want to take over playback.
+        /// </summary>
+        bool SuppressAutoLoop { get; set; }
     }
 }
 

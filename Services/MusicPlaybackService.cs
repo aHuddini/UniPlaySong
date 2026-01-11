@@ -28,12 +28,24 @@ namespace UniPlaySong.Services
         /// Event fired when music stops (for native music restoration)
         /// </summary>
         public event Action<UniPlaySongSettings> OnMusicStopped;
-        
+
         /// <summary>
         /// Event fired when music starts (for native music suppression)
         /// </summary>
         public event Action<UniPlaySongSettings> OnMusicStarted;
-        
+
+        /// <summary>
+        /// Event fired when a song reaches its natural end (before looping/randomizing).
+        /// Used by batch download to queue next random game's music.
+        /// </summary>
+        public event Action OnSongEnded;
+
+        /// <summary>
+        /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
+        /// Set by external handlers (like batch download) that want to take over playback.
+        /// </summary>
+        public bool SuppressAutoLoop { get; set; }
+
         // PNS-style state tracking for default music (single-player approach)
         private bool _isPlayingDefaultMusic = false;
         private string _lastDefaultMusicPath = null;
@@ -966,6 +978,15 @@ namespace UniPlaySong.Services
             {
                 try
                 {
+                    // Fire OnSongEnded event before handling looping/randomization
+                    OnSongEnded?.Invoke();
+
+                    // If SuppressAutoLoop is set, an external handler manages playback
+                    if (SuppressAutoLoop)
+                    {
+                        return;
+                    }
+
                     // PNS PATTERN: Check for randomization on song end (similar to PlayniteSound)
                     if (_currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null)
                     {

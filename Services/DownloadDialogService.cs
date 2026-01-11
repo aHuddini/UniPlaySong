@@ -1632,6 +1632,13 @@ namespace UniPlaySong.Services
             // Track whether we've already resumed playback for the current game
             bool playbackResumedForCurrentGame = false;
 
+            // Track successfully downloaded games for music queue during download
+            var downloadedGamesForPlayback = new List<Game>();
+            var downloadedGamesLock = new object();
+            var random = new Random();
+            bool isPlayingDownloadedMusic = false;
+            Game lastPlayedGame = null; // Track last played to avoid immediate repeats
+
             Logger.Info($"[BatchDownloadDialog] Starting for {games.Count} games, source: {source}, concurrent: {maxConcurrentDownloads}, currentGame: {currentGame?.Name ?? "none"}");
 
             // Pre-load Material Design assemblies before XAML parsing
@@ -1666,28 +1673,89 @@ namespace UniPlaySong.Services
                     Logger.Info($"[BatchDownloadDialog] Window closing, allResults populated: {allResults != null}");
                 };
 
+                // Helper to play a random game from the downloaded queue
+                Action playRandomDownloadedGame = () =>
+                {
+                    Game gameToPlay = null;
+                    lock (downloadedGamesLock)
+                    {
+                        if (downloadedGamesForPlayback.Count > 0)
+                        {
+                            // Pick a random game, avoiding immediate repeat if possible
+                            var candidates = downloadedGamesForPlayback.Count > 1
+                                ? downloadedGamesForPlayback.Where(g => g != lastPlayedGame).ToList()
+                                : downloadedGamesForPlayback;
+
+                            gameToPlay = candidates[random.Next(candidates.Count)];
+                            lastPlayedGame = gameToPlay;
+                        }
+                    }
+
+                    if (gameToPlay != null)
+                    {
+                        Logger.Info($"[BatchDownloadDialog] Playing: '{gameToPlay.Name}' (queue: {downloadedGamesForPlayback.Count})");
+                        isPlayingDownloadedMusic = true;
+                        // Must dispatch to UI thread - OnSongEnded fires from media player thread
+                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            _playbackService?.PlayGameMusic(gameToPlay, _settingsService?.Current, forceReload: true);
+                        }));
+                    }
+                };
+
+                // Enable SuppressAutoLoop so batch download controls when songs change
+                _playbackService.SuppressAutoLoop = true;
+
+                // Subscribe to OnSongEnded to queue next random song when current song finishes
+                Action onSongEndedHandler = () =>
+                {
+                    if (isPlayingDownloadedMusic && !progressDialog.CancellationToken.IsCancellationRequested)
+                    {
+                        playRandomDownloadedGame();
+                    }
+                };
+                _playbackService.OnSongEnded += onSongEndedHandler;
+
                 // Start downloads asynchronously
                 System.Threading.Tasks.Task.Run(async () =>
                 {
                     try
                     {
-                        // Progress callback to update the dialog and optionally resume playback
+                        // Progress callback to update the dialog and manage music queue
                         GameDownloadProgressCallback progressCallback = (gameName, status, message, albumName, sourceName) =>
                         {
                             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                             {
                                 progressDialog.UpdateGameStatus(gameName, status, message, albumName, sourceName);
 
-                                // Resume playback immediately when current game's music downloads successfully
-                                if (status == BatchDownloadStatus.Completed &&
-                                    currentGame != null &&
-                                    !playbackResumedForCurrentGame &&
+                                if (status != BatchDownloadStatus.Completed) return;
+
+                                // Add to music queue
+                                var downloadedGame = games.FirstOrDefault(g =>
+                                    string.Equals(g.Name, gameName, StringComparison.OrdinalIgnoreCase));
+                                if (downloadedGame != null)
+                                {
+                                    lock (downloadedGamesLock)
+                                    {
+                                        if (!downloadedGamesForPlayback.Contains(downloadedGame))
+                                            downloadedGamesForPlayback.Add(downloadedGame);
+                                    }
+                                }
+
+                                // Priority: Play current game if it just downloaded
+                                if (currentGame != null && !playbackResumedForCurrentGame &&
                                     string.Equals(gameName, currentGame.Name, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    Logger.Info($"[BatchDownloadDialog] Current game '{gameName}' downloaded successfully - resuming playback");
+                                    Logger.Info($"[BatchDownloadDialog] Current game '{gameName}' downloaded - playing");
                                     playbackResumedForCurrentGame = true;
-                                    var settings = _settingsService?.Current;
-                                    _playbackService?.PlayGameMusic(currentGame, settings, forceReload: true);
+                                    isPlayingDownloadedMusic = true;
+                                    _playbackService?.PlayGameMusic(currentGame, _settingsService?.Current, forceReload: true);
+                                }
+                                // Otherwise start random queue if not already playing
+                                else if (!isPlayingDownloadedMusic)
+                                {
+                                    Logger.Info($"[BatchDownloadDialog] First download '{gameName}' - starting music queue");
+                                    playRandomDownloadedGame();
                                 }
                             }));
                         };
@@ -1737,13 +1805,14 @@ namespace UniPlaySong.Services
                 });
 
                 // Show dialog (blocks until closed)
-                Logger.Info("[BatchDownloadDialog] Showing dialog (blocking)");
                 window.ShowDialog();
-                Logger.Info("[BatchDownloadDialog] Dialog closed");
 
-                // Wait for results to be ready (should be immediate since dialog closed after completion)
-                var gotResults = resultsReady.Wait(TimeSpan.FromSeconds(5));
-                Logger.Info($"[BatchDownloadDialog] Wait returned, gotResults={gotResults}, allResults={allResults?.Count ?? -1}");
+                // Cleanup: restore normal playback mode
+                _playbackService.OnSongEnded -= onSongEndedHandler;
+                _playbackService.SuppressAutoLoop = false;
+
+                // Wait for results
+                resultsReady.Wait(TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using UniPlaySong.Models;
 
 namespace UniPlaySong.Views
@@ -17,6 +18,19 @@ namespace UniPlaySong.Views
         private CancellationTokenSource _cancellationTokenSource;
         private ObservableCollection<BatchDownloadItem> _downloadItems;
         private readonly object _lockObject = new object();
+
+        // Cached counters to avoid expensive LINQ operations on every update
+        private int _completedCount = 0;
+        private int _failedCount = 0;
+        private int _skippedCount = 0;
+        private int _cancelledCount = 0;
+        private int _downloadingCount = 0;
+
+        // Throttle UI updates to prevent flooding the dispatcher
+        private DateTime _lastUIUpdate = DateTime.MinValue;
+        private const int UIUpdateThrottleMs = 100; // Update UI at most every 100ms
+        private bool _uiUpdatePending = false;
+        private DispatcherTimer _throttleTimer;
 
         public CancellationToken CancellationToken
         {
@@ -38,6 +52,21 @@ namespace UniPlaySong.Views
             _cancellationTokenSource = new CancellationTokenSource();
             _downloadItems = new ObservableCollection<BatchDownloadItem>();
             GamesList.ItemsSource = _downloadItems;
+
+            // Setup throttle timer for batched UI updates
+            _throttleTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(UIUpdateThrottleMs)
+            };
+            _throttleTimer.Tick += (s, e) =>
+            {
+                _throttleTimer.Stop();
+                if (_uiUpdatePending)
+                {
+                    _uiUpdatePending = false;
+                    UpdateOverallProgressInternal();
+                }
+            };
         }
 
         /// <summary>
@@ -51,6 +80,13 @@ namespace UniPlaySong.Views
                 return;
             }
 
+            // Reset counters
+            _completedCount = 0;
+            _failedCount = 0;
+            _skippedCount = 0;
+            _cancelledCount = 0;
+            _downloadingCount = 0;
+
             _downloadItems.Clear();
             foreach (var name in gameNames)
             {
@@ -62,7 +98,7 @@ namespace UniPlaySong.Views
                 });
             }
 
-            UpdateOverallProgress();
+            UpdateOverallProgressInternal(); // Force immediate update on init
         }
 
         /// <summary>
@@ -76,11 +112,13 @@ namespace UniPlaySong.Views
                 return;
             }
 
+            BatchDownloadStatus? oldStatus = null;
             lock (_lockObject)
             {
                 var item = _downloadItems.FirstOrDefault(i => i.GameName == gameName);
                 if (item != null)
                 {
+                    oldStatus = item.Status;
                     item.Status = status;
                     if (message != null)
                     {
@@ -97,7 +135,13 @@ namespace UniPlaySong.Views
                 }
             }
 
-            UpdateOverallProgress();
+            // Update counters incrementally (much faster than recounting)
+            if (oldStatus.HasValue && oldStatus.Value != status)
+            {
+                UpdateCounters(oldStatus.Value, status);
+            }
+
+            ScheduleUIUpdate();
         }
 
         /// <summary>
@@ -111,11 +155,13 @@ namespace UniPlaySong.Views
                 return;
             }
 
+            BatchDownloadStatus? oldStatus = null;
             lock (_lockObject)
             {
                 if (index >= 0 && index < _downloadItems.Count)
                 {
                     var item = _downloadItems[index];
+                    oldStatus = item.Status;
                     item.Status = status;
                     if (message != null)
                     {
@@ -132,28 +178,74 @@ namespace UniPlaySong.Views
                 }
             }
 
-            UpdateOverallProgress();
+            // Update counters incrementally
+            if (oldStatus.HasValue && oldStatus.Value != status)
+            {
+                UpdateCounters(oldStatus.Value, status);
+            }
+
+            ScheduleUIUpdate();
         }
 
         /// <summary>
-        /// Update overall progress display
+        /// Update counters when a status changes (incremental, O(1) instead of O(n))
         /// </summary>
-        private void UpdateOverallProgress()
+        private void UpdateCounters(BatchDownloadStatus oldStatus, BatchDownloadStatus newStatus)
+        {
+            // Decrement old status counter
+            switch (oldStatus)
+            {
+                case BatchDownloadStatus.Completed: Interlocked.Decrement(ref _completedCount); break;
+                case BatchDownloadStatus.Failed: Interlocked.Decrement(ref _failedCount); break;
+                case BatchDownloadStatus.Skipped: Interlocked.Decrement(ref _skippedCount); break;
+                case BatchDownloadStatus.Cancelled: Interlocked.Decrement(ref _cancelledCount); break;
+                case BatchDownloadStatus.Downloading: Interlocked.Decrement(ref _downloadingCount); break;
+            }
+
+            // Increment new status counter
+            switch (newStatus)
+            {
+                case BatchDownloadStatus.Completed: Interlocked.Increment(ref _completedCount); break;
+                case BatchDownloadStatus.Failed: Interlocked.Increment(ref _failedCount); break;
+                case BatchDownloadStatus.Skipped: Interlocked.Increment(ref _skippedCount); break;
+                case BatchDownloadStatus.Cancelled: Interlocked.Increment(ref _cancelledCount); break;
+                case BatchDownloadStatus.Downloading: Interlocked.Increment(ref _downloadingCount); break;
+            }
+        }
+
+        /// <summary>
+        /// Schedule a throttled UI update to prevent flooding the dispatcher
+        /// </summary>
+        private void ScheduleUIUpdate()
+        {
+            if (!_uiUpdatePending)
+            {
+                _uiUpdatePending = true;
+                if (!_throttleTimer.IsEnabled)
+                {
+                    _throttleTimer.Start();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update overall progress display (internal, called from timer)
+        /// </summary>
+        private void UpdateOverallProgressInternal()
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.BeginInvoke(new Action(UpdateOverallProgress));
+                Dispatcher.BeginInvoke(new Action(UpdateOverallProgressInternal));
                 return;
             }
 
             try
             {
                 int total = _downloadItems.Count;
-                int completed = _downloadItems.Count(i => i.Status == BatchDownloadStatus.Completed);
-                int failed = _downloadItems.Count(i => i.Status == BatchDownloadStatus.Failed);
-                int skipped = _downloadItems.Count(i => i.Status == BatchDownloadStatus.Skipped);
-                int inProgress = _downloadItems.Count(i => i.Status == BatchDownloadStatus.Downloading);
-                int cancelled = _downloadItems.Count(i => i.Status == BatchDownloadStatus.Cancelled);
+                int completed = _completedCount;
+                int failed = _failedCount;
+                int skipped = _skippedCount;
+                int cancelled = _cancelledCount;
 
                 int finished = completed + failed + skipped + cancelled;
 
@@ -174,11 +266,21 @@ namespace UniPlaySong.Views
                 {
                     CancelButton.Content = "Close";
                 }
+
+                _lastUIUpdate = DateTime.Now;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error updating progress: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Legacy method for compatibility - schedules throttled update
+        /// </summary>
+        private void UpdateOverallProgress()
+        {
+            ScheduleUIUpdate();
         }
 
         /// <summary>
@@ -199,13 +301,15 @@ namespace UniPlaySong.Views
                     if (item.Status == BatchDownloadStatus.Pending ||
                         item.Status == BatchDownloadStatus.Downloading)
                     {
+                        var oldStatus = item.Status;
                         item.Status = BatchDownloadStatus.Cancelled;
                         item.StatusMessage = "Cancelled";
+                        UpdateCounters(oldStatus, BatchDownloadStatus.Cancelled);
                     }
                 }
             }
 
-            UpdateOverallProgress();
+            UpdateOverallProgressInternal(); // Force immediate update on cancel
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

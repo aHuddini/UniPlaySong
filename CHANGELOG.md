@@ -2,6 +2,28 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.7] - Unreleased
+
+### Added
+- **Theme Integration Control** - PluginControl for theme developers to pause/resume music ([#43](https://github.com/aHuddini/UniPlaySong/issues/43), [#5](https://github.com/aHuddini/UniPlaySong/issues/5))
+  - Themes can use `<ContentControl x:Name="UPS_MusicControl" />` to control music playback
+  - Two methods to pause/resume:
+    - `Tag="True"/"False"` (PlayniteSound-compatible pattern)
+    - `IsThemePaused` bindable bool property (as proposed by @Mike-Aniki)
+  - Exposes `IsPlaying` and `IsPaused` read-only bindable properties for theme UI
+  - Multiple control instances supported (music pauses if ANY instance requests pause)
+  - Integrates with existing multi-source pause system via `ThemeOverlay` pause source
+- **Auto-Download Music Queue** - Random music playback during batch downloads
+  - Successfully downloaded games' music plays while waiting for remaining downloads
+  - Automatically queues next random track when current song ends
+  - Provides entertainment during long batch operations
+
+### Fixed
+- **Batch Download UI Freeze** - Progress dialog no longer freezes with large game counts
+  - Replaced expensive LINQ-based progress counting with incremental counters (O(1) vs O(n))
+  - Added throttled UI updates (max 10 updates/second) to prevent dispatcher flooding
+  - Significantly improves responsiveness when downloading 100+ games
+
 ## [1.1.6] - 2026-01-10
 
 ### Added
