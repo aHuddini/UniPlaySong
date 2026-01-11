@@ -42,7 +42,7 @@
         <None Include="LICENSE">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Include="search_hints.json">
+        <None Include="AutoSearchDatabase\search_hints.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

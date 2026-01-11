@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,45 +14,33 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.5
+## What's New - v1.1.6
 
-### 🎵 New Download Source
-- **Zophar Integration**: Added Zophar.net as second-priority download source
-  - Specializes in retro gaming soundtracks and emulated format rips
-  - Increases auto-download success rates for games not available on KHInsider
-  - Full integration with search hints and caching systems
+### Smart Search Hints
+- **UPS Hints in Manual Search**: Gold-highlighted hint albums appear at the top of search results (pulled from search_hints.json file)
+  - Available in Desktop and Fullscreen/Controller modes
+  - Helps identify the best albums for problematic game names
 
-### 🔍 Auto-Search Resolution
-- **Search Hints Backend**: Intelligent game name resolution system through a dedicated search_hints.json file
-  - Provides direct links for problematic games that cause search issues
-  - Supports fuzzy matching and auto-reloads user changes
-  - Developers, users, and project author can update this file over time to "override" failed searches with better results
+- **Auto-Download Prioritizes Hints**: Search hints are checked first during auto-download
+  - Uses direct YouTube playlists, Zophar or KHInsider albums when available
+  - Dramatically improves success rates for difficult-to-find games
 
-### ⚡ Revamped Bulk Downloads
-- **Revamped Auto-Download**: Improved bulk download performance and UX
-  - New dedicated dialog with real-time progress tracking
-  - Parallel task execution for faster search and download operations
-  - Better error handling and retry logic for failed downloads
+- **Search Hints Database Manager**: New settings section for managing hints
+  - Download latest hints from GitHub with status tracking
+  - Easy folder access and revert-to-bundled options
 
-### 🧹 More Cleanup Tools
-- **Delete Long Songs** (Cleanup Menu): Scans and removes songs longer than 10 minutes
-  - Prevents bulk operations from getting stuck on accidentally downloaded full albums
-  - Shows preview with file sizes and durations before deletion
-  - Progress dialog prevents UI freezing during large scans
+### Enhanced Playback
+- **Seamless Batch Downloads**: Music continues playing during bulk operations
+  - No more silent gaps when downloading multiple games
+  - Playback resumes automatically after batch completion
 
-### 🔄 Enhanced Migration
-- **Import & Delete from PlayniteSound**: Clean two-step migration process
-  - Imports all music from PlayniteSound to UniPlaySong
-  - Removes original PlayniteSound files and cleans up empty folders
-  - Double-confirmation dialogs prevent accidental data loss
-
-### 🐛 Bug Fixes
-- **Batch Download Navigation**: Back button now properly returns to source selection instead of showing "BACK_SIGNAL"
-
+### Better Feedback
+- **Manual Search Summary**: Detailed popup after manual retry operations
+  - Shows success/failure stats and game lists
+  - Helps track progress during large manual sessions
 
 ### Previous Versions
-- **v1.1.4**: Real-Time Live Effects, Visual Audio Amplify, Smart Auto-Tagging
-
+- **v1.1.5**: Zophar Download Source, Search Hints Backend, Enhanced Auto-Download
 ---
 
 ## 🎬 Demo
