@@ -8,9 +8,8 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Players
 {
     /// <summary>
-    /// Music fader matching PlayniteSound exactly
-    /// Uses Invoke (blocking) for reliable timer ticks
-    /// SDL2 volume control is synchronous, so no threading issues
+    /// Music fader matching PlayniteSound pattern.
+    /// Uses synchronous Invoke to ensure accurate fade timing.
     /// </summary>
     public class MusicFader : IDisposable
     {
@@ -52,18 +51,17 @@ namespace UniPlaySong.Players
             // Common practice: 16-33ms (60-30 FPS) for audio fades
             // However, frequency will be calculated dynamically based on actual tick intervals
             _fadeTimer = new Timer(16) { AutoReset = false };
-            // Match PNS exactly: simple lambda with Dispatcher.Invoke
             _fadeTimer.Elapsed += (sender, e) =>
             {
                 var app = Application.Current;
                 if (app?.Dispatcher != null)
                 {
-                    app.Dispatcher.Invoke(() => TimerTick());
+                    // Use Invoke (synchronous) to ensure fade timing is accurate
+                    // BeginInvoke can cause timing issues with the fade progression
+                    app.Dispatcher.Invoke(new Action(() => TimerTick()));
                 }
                 else
                 {
-                    // Fallback: SDL2 is thread-safe, call directly if no dispatcher
-                    Logger.Warn("MusicFader: Application.Current or Dispatcher is null, calling TimerTick directly");
                     TimerTick();
                 }
             };

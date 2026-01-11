@@ -29,7 +29,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing - prevents double-input from both XInput and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
+        private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
 
         // Dialog state
         private Game _currentGame;
@@ -47,6 +47,12 @@ namespace UniPlaySong.Views
         // Deletion state management
         private bool _isDeletionInProgress = false;
         private bool _isShowingConfirmation = false;
+
+        // Cooldown timestamp - blocks ALL button processing for a period after modal dialogs close
+        // This prevents the race condition where a button press that closed the modal is
+        // detected as a "new press" by the background polling loop
+        private DateTime _modalCooldownUntil = DateTime.MinValue;
+        private const int ModalCooldownMs = 350; // Block input for 350ms after modal closes
 
         public ControllerDeleteSongsDialog()
         {
@@ -66,7 +72,9 @@ namespace UniPlaySong.Views
             };
 
             // Handle keyboard input as fallback
-            KeyDown += OnKeyDown;
+            // Use PreviewKeyDown to intercept keyboard events BEFORE they reach child controls
+            // This prevents WPF's ListBox from also processing arrow keys alongside our handler
+            PreviewKeyDown += OnKeyDown;
         }
 
         /// <summary>
@@ -296,8 +304,25 @@ namespace UniPlaySong.Views
 
             _isMonitoring = true;
             _controllerMonitoringCancellation = new CancellationTokenSource();
-            
-            _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
+
+            // Initialize _lastButtonState with current controller state to prevent
+            // detecting held buttons from previous dialogs as new presses
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                }
+            }
+            catch { /* Ignore initialization errors */ }
+
+            _ = Task.Run(async () =>
+            {
+                // Small delay to let any held buttons be released
+                await Task.Delay(150);
+                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
+            });
             Logger.DebugIf(LogPrefix, "Started controller monitoring for delete songs dialog");
         }
 
@@ -332,7 +357,8 @@ namespace UniPlaySong.Views
 
                         if (pressedButtons != 0)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleControllerInput(pressedButtons, state.Gamepad);
                             }));
@@ -341,7 +367,7 @@ namespace UniPlaySong.Views
                         _lastButtonState = currentButtons;
                     }
 
-                    await Task.Delay(50, cancellationToken); // Check every 50ms
+                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
                 }
                 catch (OperationCanceledException)
                 {
@@ -368,6 +394,14 @@ namespace UniPlaySong.Views
                     return;
                 }
 
+                // Block input during cooldown period after modal dialogs close
+                // This prevents the button press that closed the modal from being detected as a new press
+                if (DateTime.Now < _modalCooldownUntil)
+                {
+                    Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
+                    return;
+                }
+
                 // A button - Delete selected song
                 if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
                 {
@@ -390,12 +424,24 @@ namespace UniPlaySong.Views
                 }
 
                 // D-Pad navigation with debouncing
+                // Note: Debounce check is done INSIDE HandleControllerInput (on UI thread)
+                // to prevent race conditions with Dispatcher.BeginInvoke queuing multiple actions
                 if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
                 {
                     if (TryDpadNavigation())
                         NavigateList(-1);
                 }
                 else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
+                {
+                    if (TryDpadNavigation())
+                        NavigateList(1);
+                }
+                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_LEFT) != 0)
+                {
+                    if (TryDpadNavigation())
+                        NavigateList(-1);
+                }
+                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_RIGHT) != 0)
                 {
                     if (TryDpadNavigation())
                         NavigateList(1);
@@ -635,23 +681,43 @@ namespace UniPlaySong.Views
         /// </summary>
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
+            // Ignore all input during deletion or confirmation dialogs
+            if (_isDeletionInProgress || _isShowingConfirmation)
+            {
+                e.Handled = true;
+                return;
+            }
+
             switch (e.Key)
             {
+                // D-pad Up/Down mapped to arrow keys - use debounce to prevent double-input
+                case Key.Up:
+                    if (TryDpadNavigation())
+                        NavigateList(-1);
+                    e.Handled = true;
+                    break;
+
+                case Key.Down:
+                    if (TryDpadNavigation())
+                        NavigateList(1);
+                    e.Handled = true;
+                    break;
+
                 case Key.Enter:
                     DeleteButton_Click(null, null);
                     e.Handled = true;
                     break;
-                    
+
                 case Key.Escape:
                     CancelButton_Click(null, null);
                     e.Handled = true;
                     break;
-                    
+
                 case Key.F1:
                     PreviewSelectedFile();
                     e.Handled = true;
                     break;
-                    
+
                 case Key.Delete:
                     DeleteButton_Click(null, null);
                     e.Handled = true;
@@ -707,7 +773,7 @@ namespace UniPlaySong.Views
         /// <summary>
         /// Confirm and delete the selected song
         /// </summary>
-        private void ConfirmAndDeleteSong(string filePath)
+        private async void ConfirmAndDeleteSong(string filePath)
         {
             try
             {
@@ -719,7 +785,7 @@ namespace UniPlaySong.Views
 
                 var fileName = Path.GetFileName(filePath);
                 var isPrimarySong = filePath == _currentPrimarySong;
-                
+
                 // Verify file still exists
                 if (!File.Exists(filePath))
                 {
@@ -730,41 +796,47 @@ namespace UniPlaySong.Views
 
                 // Stop any music that might be using this file
                 StopAllMusicPlayback(fileName);
-                
+
                 // Build confirmation message
                 var message = $"Are you sure you want to delete this song?\n\n" +
                              $"File: {fileName}\n" +
                              $"Path: {filePath}";
-                
+
                 if (isPrimarySong)
                 {
                     message += "\n\n⚠️ WARNING: This is your current primary song!";
                 }
-                
+
                 message += "\n\nThis action cannot be undone!";
 
                 Logger.DebugIf(LogPrefix, $"Showing confirmation dialog for: {fileName}");
 
-                // Show confirmation dialog
-                var result = _playniteApi?.Dialogs?.ShowMessage(
+                // Show controller-friendly confirmation dialog (larger text for TV/fullscreen)
+                var confirmed = DialogHelper.ShowControllerConfirmation(
+                    _playniteApi,
                     message,
-                    "Confirm Song Deletion",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+                    "Confirm Song Deletion");
 
-                // Clear confirmation flag immediately after dialog closes
+                Logger.DebugIf(LogPrefix, $"Confirmation result: {confirmed}");
+
+                // After dialog closes, refresh controller state to prevent detecting
+                // the A button that was used to open this dialog as a new press
+                RefreshControllerStateWithCooldown();
+
+                // Small delay to ensure controller state is fully updated
+                await Task.Delay(100);
+
+                // Clear confirmation flag after controller state refresh
                 _isShowingConfirmation = false;
-                
-                Logger.DebugIf(LogPrefix, $"Confirmation result: {result}");
 
-                if (result == MessageBoxResult.Yes)
+                if (confirmed)
                 {
                     UpdateInputFeedback("🗑️ Deleting file...");
                     DeleteSongFile(filePath, isPrimarySong);
                 }
                 else
                 {
-                    UpdateInputFeedback("❌ Deletion cancelled");
+                    UpdateInputFeedback("❌ Deletion cancelled - select a file to delete");
                     ResetDeletionState();
                 }
             }
@@ -773,6 +845,68 @@ namespace UniPlaySong.Views
                 Logger.Error(ex, "Error confirming song deletion");
                 UpdateInputFeedback("❌ Error confirming deletion");
                 ResetDeletionState();
+            }
+        }
+
+        /// <summary>
+        /// Wait for the A button to be released before closing the dialog.
+        /// This prevents the button press from being detected by Playnite after this dialog closes.
+        /// Uses a 3-second timeout to handle users who hold the button for extended periods.
+        /// </summary>
+        private void WaitForButtonReleaseBeforeClose(int timeoutMs = 3000)
+        {
+            try
+            {
+                var startTime = DateTime.Now;
+                while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMs)
+                {
+                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                    if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                    {
+                        // Check if A button is released
+                        if ((state.Gamepad.wButtons & XInputWrapper.XINPUT_GAMEPAD_A) == 0)
+                        {
+                            // A button released, wait a tiny bit more for debounce
+                            System.Threading.Thread.Sleep(100);
+                            Logger.DebugIf(LogPrefix, "A button released, safe to close dialog");
+                            return;
+                        }
+                    }
+                    System.Threading.Thread.Sleep(16); // ~60Hz polling
+                }
+                Logger.DebugIf(LogPrefix, $"WaitForButtonReleaseBeforeClose: timeout reached after {timeoutMs}ms");
+            }
+            catch (Exception ex)
+            {
+                Logger.DebugIf(LogPrefix, ex, "Error in WaitForButtonReleaseBeforeClose");
+            }
+        }
+
+        /// <summary>
+        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
+        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
+        /// </summary>
+        private void RefreshControllerStateWithCooldown()
+        {
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={_lastButtonState}");
+                }
+
+                // Set cooldown to block any input processing for ModalCooldownMs
+                // This is the key defense against race conditions
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
+            }
+            catch (Exception ex)
+            {
+                Logger.DebugIf(LogPrefix, ex, "Error refreshing controller state");
+                // Still set cooldown even on error
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
             }
         }
 
@@ -884,18 +1018,50 @@ namespace UniPlaySong.Views
                 }
                 
                 UpdateInputFeedback($"✅ {successMessage}");
-                
-                // Show success message
-                _playniteApi?.Dialogs?.ShowMessage(successMessage, "Song Deleted");
-                
+
+                // Block input during success message
+                _isShowingConfirmation = true;
+                try
+                {
+                    // Show controller-friendly success message (larger text for TV/fullscreen)
+                    DialogHelper.ShowControllerMessage(_playniteApi, successMessage, "Song Deleted");
+
+                    // Refresh controller state after dialog to prevent phantom button presses
+                    RefreshControllerStateWithCooldown();
+                }
+                finally
+                {
+                    _isShowingConfirmation = false;
+                }
+
                 Logger.Info($"Deletion completed successfully: {fileName}");
-                
+
                 // Close dialog if no more files
                 if (_musicFiles.Count == 0)
                 {
-                    _playniteApi?.Dialogs?.ShowMessage(
-                        "All music files have been deleted for this game.",
-                        "No Music Files Remaining");
+                    // Block input during the final message
+                    _isShowingConfirmation = true;
+                    try
+                    {
+                        DialogHelper.ShowControllerMessage(
+                            _playniteApi,
+                            "All music files have been deleted for this game.",
+                            "No Music Files Remaining");
+
+                        // Refresh controller state after dialog
+                        RefreshControllerStateWithCooldown();
+
+                        // IMPORTANT: When closing the dialog, we need a physical delay to ensure
+                        // the A button is fully released BEFORE returning to Playnite.
+                        // The cooldown only blocks input in THIS dialog, but once we close,
+                        // Playnite's own XInput polling will detect any held button.
+                        WaitForButtonReleaseBeforeClose();
+                    }
+                    finally
+                    {
+                        _isShowingConfirmation = false;
+                    }
+
                     CloseDialog(true);
                 }
             }
@@ -903,21 +1069,48 @@ namespace UniPlaySong.Views
             {
                 var errorMsg = "Access denied. The file may be in use or you may not have permission to delete it.";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _playniteApi?.Dialogs?.ShowErrorMessage(errorMsg, "Delete Failed");
+                _isShowingConfirmation = true;
+                try
+                {
+                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
+                    RefreshControllerStateWithCooldown();
+                }
+                finally
+                {
+                    _isShowingConfirmation = false;
+                }
                 Logger.Error($"Access denied deleting file: {filePath}");
             }
             catch (IOException ioEx)
             {
                 var errorMsg = $"File operation failed: {ioEx.Message}";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _playniteApi?.Dialogs?.ShowErrorMessage(errorMsg, "Delete Failed");
+                _isShowingConfirmation = true;
+                try
+                {
+                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
+                    RefreshControllerStateWithCooldown();
+                }
+                finally
+                {
+                    _isShowingConfirmation = false;
+                }
                 Logger.Error(ioEx, $"IO error deleting file: {filePath}");
             }
             catch (Exception ex)
             {
                 var errorMsg = $"Unexpected error: {ex.Message}";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _playniteApi?.Dialogs?.ShowErrorMessage(errorMsg, "Delete Failed");
+                _isShowingConfirmation = true;
+                try
+                {
+                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
+                    RefreshControllerStateWithCooldown();
+                }
+                finally
+                {
+                    _isShowingConfirmation = false;
+                }
                 Logger.Error(ex, $"Error deleting file: {filePath}");
             }
             finally

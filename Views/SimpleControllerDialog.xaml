@@ -103,13 +103,16 @@
         </Border>
 
         <!-- Results List - Controller-Optimized -->
+        <!-- Note: KeyboardNavigation.DirectionalNavigation="None" disables arrow key navigation -->
+        <!-- This prevents double-navigation when D-pad is pressed (XInput + WPF both handling it) -->
         <ListBox Grid.Row="2"
                  Name="ResultsListBox"
                  ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  Margin="0,0,0,16"
-                 MinHeight="200">
+                 MinHeight="200"
+                 KeyboardNavigation.DirectionalNavigation="None">
             <!-- Items will be populated dynamically -->
         </ListBox>
 

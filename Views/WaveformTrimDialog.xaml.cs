@@ -453,11 +453,17 @@ namespace UniPlaySong.Views
 
         private void StopPreview()
         {
+            // Only stop playback if we were actually previewing
+            // This prevents stopping music that was started after a successful trim
+            var wasPreviewingBeforeStop = _isPreviewing;
             _isPreviewing = false;
             PreviewButton.Content = "Preview";
             _previewTimer?.Stop();
             _previewTimer = null;
-            _playbackService?.Stop();
+            if (wasPreviewingBeforeStop)
+            {
+                _playbackService?.Stop();
+            }
             Playhead.Visibility = Visibility.Collapsed;
         }
 
@@ -555,6 +561,15 @@ namespace UniPlaySong.Views
                         $"Successfully trimmed '{fileName}'.\n\n" +
                         $"Original file has been preserved.",
                         "Trim Complete");
+
+                    // Clear preview state so Cleanup/StopPreview doesn't stop the music
+                    _isPreviewing = false;
+
+                    // Resume music playback with the newly trimmed file
+                    if (_game != null)
+                    {
+                        _playbackService?.PlayGameMusic(_game, null, forceReload: true);
+                    }
 
                     // Refresh file list
                     LoadFileList();

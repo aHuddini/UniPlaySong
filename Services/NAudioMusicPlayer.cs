@@ -95,6 +95,13 @@ namespace UniPlaySong.Services
         {
             try
             {
+                // If the audio has reached the end, seek back to the beginning before playing
+                // This is necessary for looping - NAudio doesn't auto-reset position on Play()
+                if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
+                {
+                    Logger.Debug($"[{LogPrefix}] Audio at end, seeking to beginning for loop");
+                    _audioFile.CurrentTime = TimeSpan.Zero;
+                }
                 _outputDevice?.Play();
             }
             catch (Exception ex)
