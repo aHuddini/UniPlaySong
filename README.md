@@ -25,6 +25,8 @@ Built with the help of Claude Code and Cursor IDE
 - **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure for UI elements
 
 ### 🔧 Fixes
+- **Settings Persistence** - Fixed critical bug where settings changes were not being saved
+  - Settings now persist correctly across all tabs and access methods
 - **Controller Mode Dialogs** - Fixed dialog handling in Fullscreen/Controller mode
   - Improved focus management and navigation context
 

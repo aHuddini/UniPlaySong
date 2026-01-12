@@ -30,6 +30,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Improves user experience especially during bulk operations
 
 ### Fixed
+- **Settings Persistence** - Fixed critical bug where settings changes were not being saved
+  - Settings like "Pause music when Playnite loses focus" and "Automatically download music for new games" now persist correctly
+  - Root cause: ViewModel instance mismatch between GetSettings and GetSettingsView methods
+  - Implemented PlayniteSound pattern: cached ViewModel initialization in constructor
+  - Playnite now correctly sets DataContext without manual override
 - **Controller Mode Dialog Windows** - Fixed dialog handling in Fullscreen/Controller mode
   - Dialogs now properly respect controller navigation context
   - Improved focus management when dialogs open and close
