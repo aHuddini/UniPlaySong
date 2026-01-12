@@ -40,6 +40,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - Dialogs now properly respect controller navigation context
   - Improved focus management when dialogs open and close
   - Fixed issues with dialogs becoming unresponsive or hidden
+- **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
+  - Resolved Playnite crashes during looped default music playback with custom music
+  - Improved stability when mixing live effects with default/fallback music sources
 
 ## [1.1.7] - 2026-01-10
 

@@ -32,6 +32,8 @@ Built with the help of Claude Code and Cursor IDE
 - **Controller Mode Dialogs** - Fixed dialog handling in Fullscreen/Controller mode
   - Improved focus management and navigation context
   - Dialogs now properly respect controller navigation
+- **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
+  - Resolved Playnite crashes during looped default music playback with custom music
 
 ### Previous Versions
 - **v1.1.7**: Download UI Performance and Music Playback Fixes
