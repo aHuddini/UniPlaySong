@@ -5,12 +5,13 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.1.8] - 2026-01-11
 
 ### Added
-- **Toast Notifications** - New lightweight notification system for user feedback
-  - Modern acrylic blur background effect using Windows Composition API
+- **Toast Notifications** - New lightweight notification system for controller-mode operations
+  - Custom Windows API blur effects (direct SetWindowCompositionAttribute calls, not WPF Blur Effect)
   - Color-coded accent bars: green for success, red for errors, blue for info
   - Non-intrusive positioning with smooth fade animations
   - Customizable appearance settings in new "Toast Notifications" settings tab
-- **Toast Notification Customization** - Full control over notification appearance
+  - Specifically designed for controller-mode features to replace buggy confirmation dialogs
+- **Toast Notification Customization (DEBUG ONLY, NOT IN RELEASE)** - Full control over notification appearance
   - Background opacity slider (0-100%)
   - Blur intensity control (0-25)
   - Corner radius adjustment (0-20px)
@@ -18,16 +19,17 @@ All notable changes to UniPlaySong will be documented in this file.
   - Border color customization with RGB sliders
   - Border thickness control (0-5px)
   - Live preview of all color settings
-- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure
+- **Custom Windows Blur System** - Direct Windows API blur infrastructure (Windows 10+ compatible)
   - `SetWindowCompositionAttribute` Windows API integration
   - `AccentPolicy` structure for blur/transparency control
-  - Extensible for future UI elements requiring glass effects
+  - Support for both Basic blur (Windows 10+) and Acrylic blur (Windows 10 1803+) modes
+  - Extensible for future UI elements requiring native Windows blur effects
 
 ### Changed
-- **Dialog System Overhaul** - Replaced pop-up confirmation dialogs with toast notifications
-  - Removes disruptive modal dialogs that interrupted workflow
+- **Controller-Mode Dialog System** - Replaced problematic confirmation dialogs with toast notifications in controller mode
+  - Removes disruptive modal dialogs that interrupted controller navigation workflow
   - Confirmation feedback now appears as subtle toast notifications
-  - Improves user experience especially during bulk operations
+  - Improves user experience in fullscreen/controller mode operations
 
 ### Fixed
 - **Settings Persistence** - Fixed critical bug where settings changes were not being saved
@@ -39,6 +41,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - Dialogs now properly respect controller navigation context
   - Improved focus management when dialogs open and close
   - Fixed issues with dialogs becoming unresponsive or hidden
+- **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
+  - Resolved Playnite crashes during looped default music playback with custom music
+  - Improved stability when mixing live effects with default/fallback music sources
 
 ## [1.1.7] - 2026-01-10
 
