@@ -16,23 +16,26 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.1.8
 
-### ✨ New Features
-- **Toast Notifications** - Modern, non-intrusive notification system with acrylic blur effects
-  - Replaces disruptive pop-up confirmation dialogs with sleek toast notifications
-  - Customizable appearance: opacity, blur intensity, corner radius, colors, and border settings
-  - Color-coded accent bars for success/error/info feedback
+### New Features
+- **Toast Notifications** - Modern notification system for controller-mode operations
+  - Replaces buggy confirmation dialogs with non-intrusive toast notifications
+  - Customizable appearance with opacity, blur, colors, and border settings
+  - Color-coded feedback for different message types
+  - Available only for controller-mode related features and actions
 
-- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure for UI elements
+- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure
 
-### 🔧 Fixes
+### Fixes
 - **Settings Persistence** - Fixed critical bug where settings changes were not being saved
-  - Settings now persist correctly across all tabs and access methods
+  - Settings should now persist correctly across all tabs and access methods
+  - Root cause was ViewModel instance mismatch in GetSettings vs GetSettingsView methods
 - **Controller Mode Dialogs** - Fixed dialog handling in Fullscreen/Controller mode
   - Improved focus management and navigation context
+  - Dialogs now properly respect controller navigation
 
 ### Previous Versions
-- **v1.1.7**: Download UI Performance, Music Playback Fixes
-- **v1.1.6**: Smart Search Resolution, Enhanced Playback Experience
+- **v1.1.7**: Download UI Performance and Music Playback Fixes
+- **v1.1.6**: Smart Search Resolution and Enhanced Playback
 ---
 
 ## 🎬 Demo
@@ -56,7 +59,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Bulk Operations** - Download music for all games at once (parallel processing)
 - **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
 - **Smart Auto-Tagging** - Automatic [UPS] music status tags for easy game filtering
-- **Toast Notifications** - Modern notifications with acrylic blur effects and customizable appearance
+- **Toast Notifications** - Modern notifications with acrylic blur effects and customizable appearance (controller-mode only)
 - **Cleanup & Maintenance** - Factory reset, storage management, and smart cleanup tools
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
