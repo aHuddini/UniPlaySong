@@ -33,9 +33,9 @@ namespace UniPlaySong.Views
         private byte _lastLeftTrigger = 0;
         private byte _lastRightTrigger = 0;
 
-        // D-pad debouncing for file selection
+        // D-pad debouncing for file selection (300ms for reliable single-item navigation)
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 100;
+        private const int DpadDebounceMs = 300;
 
         // Continuous D-pad input tracking for waveform editor
         private ushort _heldDpadDirection = 0;
@@ -65,6 +65,15 @@ namespace UniPlaySong.Views
         private DateTime _previewStartTime;
         private bool _isPreviewing = false;
 
+        // Flag to block input during modal dialogs
+        private volatile bool _isShowingModalDialog = false;
+
+        // Cooldown timestamp - blocks ALL button processing for a period after modal dialogs close
+        // This prevents the race condition where a button press that closed the modal is
+        // detected as a "new press" by the background polling loop
+        private DateTime _modalCooldownUntil = DateTime.MinValue;
+        private const int ModalCooldownMs = 350; // Block input for 350ms after modal closes
+
         // Current step
         private enum DialogStep { FileSelection, WaveformEditor }
         private DialogStep _currentStep = DialogStep.FileSelection;
@@ -86,7 +95,9 @@ namespace UniPlaySong.Views
                 _loadingCancellation?.Cancel();
             };
 
-            KeyDown += OnKeyDown;
+            // Use PreviewKeyDown to intercept keyboard events BEFORE they reach child controls
+            // This prevents WPF's ListBox from also processing arrow keys alongside our handler
+            PreviewKeyDown += OnKeyDown;
         }
 
         /// <summary>
@@ -299,7 +310,8 @@ namespace UniPlaySong.Views
 
                         if (token.IsCancellationRequested) return;
 
-                        Dispatcher.BeginInvoke(new Action(() =>
+                        // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                        _ = Dispatcher.BeginInvoke(new Action(() =>
                         {
                             try
                             {
@@ -332,7 +344,7 @@ namespace UniPlaySong.Views
                     catch (Exception ex)
                     {
                         Logger.Error(ex, "Error generating waveform");
-                        Dispatcher.BeginInvoke(new Action(() =>
+                        _ = Dispatcher.BeginInvoke(new Action(() =>
                         {
                             UpdateFeedback("Waveform", $"Error: {ex.Message}");
                             LoadingOverlay.Visibility = Visibility.Collapsed;
@@ -453,7 +465,27 @@ namespace UniPlaySong.Views
             _isMonitoring = true;
             _controllerMonitoringCancellation = new CancellationTokenSource();
 
-            _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
+            // Initialize _lastButtonState with current controller state to prevent
+            // detecting held buttons from previous dialogs as new presses
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                    _lastLeftTrigger = state.Gamepad.bLeftTrigger;
+                    _lastRightTrigger = state.Gamepad.bRightTrigger;
+                    Logger.DebugIf(LogPrefix, $"Initialized controller state: buttons={state.Gamepad.wButtons}");
+                }
+            }
+            catch { /* Ignore initialization errors */ }
+
+            _ = Task.Run(async () =>
+            {
+                // Small delay to let any held buttons be released
+                await Task.Delay(150);
+                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
+            });
             Logger.DebugIf(LogPrefix,"Started controller monitoring for waveform trim dialog");
         }
 
@@ -464,6 +496,37 @@ namespace UniPlaySong.Views
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
             Logger.DebugIf(LogPrefix,"Stopped controller monitoring for waveform trim dialog");
+        }
+
+        /// <summary>
+        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
+        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
+        /// </summary>
+        private void RefreshControllerStateWithCooldown()
+        {
+            try
+            {
+                // First, refresh the stored button state to current
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                    _lastLeftTrigger = state.Gamepad.bLeftTrigger;
+                    _lastRightTrigger = state.Gamepad.bRightTrigger;
+                    Logger.DebugIf(LogPrefix, $"Refreshed controller state: buttons={state.Gamepad.wButtons}");
+                }
+
+                // Set cooldown to block any input processing for ModalCooldownMs
+                // This is the key defense against race conditions
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
+            }
+            catch (Exception ex)
+            {
+                Logger.DebugIf(LogPrefix, $"Error refreshing controller state: {ex.Message}");
+                // Still set cooldown even on error
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+            }
         }
 
         private async Task CheckButtonPresses(CancellationToken cancellationToken)
@@ -483,7 +546,8 @@ namespace UniPlaySong.Views
                         // Handle newly pressed buttons (edge detection)
                         if (pressedButtons != 0)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleControllerInput(pressedButtons, state.Gamepad);
                             }));
@@ -492,7 +556,7 @@ namespace UniPlaySong.Views
                         // In waveform editor mode, also check for held D-pad for continuous movement
                         if (_currentStep == DialogStep.WaveformEditor)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleDpadContinuousInput(state.Gamepad);
                             }));
@@ -504,7 +568,7 @@ namespace UniPlaySong.Views
                         _lastRightTrigger = state.Gamepad.bRightTrigger;
                     }
 
-                    await Task.Delay(50, cancellationToken);
+                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
                 }
                 catch (OperationCanceledException)
                 {
@@ -522,6 +586,20 @@ namespace UniPlaySong.Views
         {
             try
             {
+                // Block input if a modal dialog is being shown
+                if (_isShowingModalDialog)
+                {
+                    return;
+                }
+
+                // Block input during cooldown period after modal dialogs close
+                // This prevents the button press that closed the modal from being detected as a new press
+                if (DateTime.Now < _modalCooldownUntil)
+                {
+                    Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
+                    return;
+                }
+
                 if (_currentStep == DialogStep.FileSelection)
                 {
                     HandleFileSelectionInput(pressedButtons, gamepad);
@@ -881,9 +959,11 @@ namespace UniPlaySong.Views
                 var ffmpegPath = settings?.FFmpegPath;
                 if (!_waveformTrimService.ValidateFFmpegAvailable(ffmpegPath))
                 {
-                    _playniteApi?.Dialogs?.ShowErrorMessage(
-                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings → Audio Normalization.",
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
+                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings.",
                         "FFmpeg Required");
+                    UpdateFeedback("Waveform", "FFmpeg not configured - check Settings");
                     return;
                 }
 
@@ -898,14 +978,26 @@ namespace UniPlaySong.Views
                 if (success)
                 {
                     var fileName = Path.GetFileName(_selectedFilePath);
-                    _playniteApi?.Dialogs?.ShowMessage(
-                        $"Successfully trimmed: {fileName}\n\nOriginal file preserved in PreservedOriginals folder.",
+
+                    // Use auto-closing toast popup instead of modal dialog
+                    DialogHelper.ShowSuccessToast(
+                        _playniteApi,
+                        $"Successfully trimmed: {fileName}\nOriginal preserved.",
                         "Trim Complete");
 
-                    CloseDialog(true);
+                    // Resume music playback with the newly trimmed file
+                    if (_currentGame != null)
+                    {
+                        _playbackService?.PlayGameMusic(_currentGame, settings, forceReload: true);
+                    }
+
+                    // Return to file selection step for intuitive workflow
+                    // (user can continue editing other songs without reopening dialog)
+                    ReturnToFileSelectionAfterSuccess();
                 }
                 else
                 {
+                    DialogHelper.ShowErrorToast(_playniteApi, "Trim operation failed.", "Trim Failed");
                     UpdateFeedback("Waveform", "Trim failed");
                     ApplyTrimButton.IsEnabled = true;
                 }
@@ -940,10 +1032,28 @@ namespace UniPlaySong.Views
 
         private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            // Block input if a modal dialog is being shown
+            if (_isShowingModalDialog)
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (_currentStep == DialogStep.FileSelection)
             {
                 switch (e.Key)
                 {
+                    // D-pad Up/Down mapped to arrow keys - use debounce to prevent double-input
+                    case System.Windows.Input.Key.Up:
+                        if (TryDpadNavigation())
+                            NavigateList(-1);
+                        e.Handled = true;
+                        break;
+                    case System.Windows.Input.Key.Down:
+                        if (TryDpadNavigation())
+                            NavigateList(1);
+                        e.Handled = true;
+                        break;
                     case System.Windows.Input.Key.Enter:
                         SelectFileAndProceed();
                         e.Handled = true;
@@ -956,8 +1066,16 @@ namespace UniPlaySong.Views
             }
             else
             {
+                // In waveform editor mode, D-pad adjusts markers - handled by XInput continuous input
+                // Arrow keys here just mark as handled to prevent WPF default behavior
                 switch (e.Key)
                 {
+                    case System.Windows.Input.Key.Up:
+                    case System.Windows.Input.Key.Down:
+                    case System.Windows.Input.Key.Left:
+                    case System.Windows.Input.Key.Right:
+                        e.Handled = true;
+                        break;
                     case System.Windows.Input.Key.Space:
                         PreviewButton_Click(null, null);
                         e.Handled = true;
@@ -1025,11 +1143,26 @@ namespace UniPlaySong.Views
 
         #endregion
 
-        private void CloseDialog(bool success)
+        private void CloseDialog(bool success, bool skipStopPreview = false)
         {
             try
             {
-                StopPreview();
+                // Only stop preview if not skipping (e.g., when we're about to start new music)
+                if (!skipStopPreview)
+                {
+                    StopPreview();
+                }
+                else
+                {
+                    // Still stop timers but don't stop playback service
+                    _previewStopTimer?.Stop();
+                    _previewStopTimer = null;
+                    _playheadTimer?.Stop();
+                    _playheadTimer = null;
+                    _isPreviewing = false;
+                    Playhead.Visibility = Visibility.Collapsed;
+                }
+
                 StopControllerMonitoring();
                 _loadingCancellation?.Cancel();
 
@@ -1059,6 +1192,44 @@ namespace UniPlaySong.Views
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error closing dialog");
+            }
+        }
+
+        /// <summary>
+        /// Returns to the file selection step after a successful operation.
+        /// Resets the trim state and reloads the file list so the user can
+        /// continue editing other songs without reopening the dialog.
+        /// </summary>
+        private void ReturnToFileSelectionAfterSuccess()
+        {
+            try
+            {
+                // Stop any preview
+                StopPreview();
+
+                // Reset trim state
+                _waveformData = null;
+                _trimWindow = null;
+                _selectedFilePath = null;
+
+                // Clear waveform display
+                WaveformLine.Points?.Clear();
+
+                // Cancel any pending waveform loading
+                _loadingCancellation?.Cancel();
+
+                // Return to file selection
+                ShowFileSelectionStep();
+
+                // Reload file list to reflect any changes (new trimmed files, updated labels)
+                LoadMusicFiles();
+
+                UpdateFeedback("FileSelection", "Select another file to edit, or press B to exit");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error returning to file selection");
+                UpdateFeedback("FileSelection", "Ready for selection");
             }
         }
     }

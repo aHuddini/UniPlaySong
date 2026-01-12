@@ -985,6 +985,142 @@ namespace UniPlaySong
             set { reverbHfDampingMax = Math.Max(30, Math.Min(70, value)); OnPropertyChanged(); }
         }
 
+        // ===== Toast Notification Settings =====
+        private bool enableToastAcrylicBlur = true;
+        private int toastBlurOpacity = 94;  // 0-255, stored as int for slider
+        private string toastBlurTintColor = "000521";  // Hex RGB without #
+        private int toastBlurMode = 1;  // 0 = Basic blur, 1 = Acrylic blur (with noise texture)
+        private double toastCornerRadius = 0;  // 0 = square corners (avoids blur corner artifacts)
+        private double toastWidth = 420;
+        private double toastMinHeight = 90;
+        private double toastMaxHeight = 180;
+        private int toastDurationMs = 4000;
+        private int toastEdgeMargin = 30;
+        private string toastBorderColor = "2A2A2A";  // Hex RGB without # - darker border that blends better
+        private double toastBorderThickness = 1;  // Border thickness in pixels - thinner looks cleaner
+
+        /// <summary>
+        /// Enable acrylic blur effect on toast notifications.
+        /// Uses Windows DWM APIs for native blur - requires Windows 10 1803+.
+        /// Falls back gracefully on older systems.
+        /// </summary>
+        public bool EnableToastAcrylicBlur
+        {
+            get => enableToastAcrylicBlur;
+            set { enableToastAcrylicBlur = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast blur opacity (0-255). Higher = more opaque/darker, lower = more transparent.
+        /// Default: 221 (87% opacity). Recommended range: 150-240.
+        /// </summary>
+        public int ToastBlurOpacity
+        {
+            get => toastBlurOpacity;
+            set { toastBlurOpacity = Math.Max(0, Math.Min(255, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast blur tint color (RGB hex without #). This colors the blur effect.
+        /// Default: "1E1E1E" (dark gray). Format: "RRGGBB"
+        /// </summary>
+        public string ToastBlurTintColor
+        {
+            get => toastBlurTintColor;
+            set { toastBlurTintColor = value ?? "1E1E1E"; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture).
+        /// Acrylic blur requires Windows 10 1803+.
+        /// Default: 1 (Acrylic)
+        /// </summary>
+        public int ToastBlurMode
+        {
+            get => toastBlurMode;
+            set { toastBlurMode = Math.Max(0, Math.Min(1, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast corner radius in pixels. Set to 0 for square corners.
+        /// Default: 8
+        /// </summary>
+        public double ToastCornerRadius
+        {
+            get => toastCornerRadius;
+            set { toastCornerRadius = Math.Max(0, Math.Min(32, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast width in pixels.
+        /// Default: 420
+        /// </summary>
+        public double ToastWidth
+        {
+            get => toastWidth;
+            set { toastWidth = Math.Max(200, Math.Min(800, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast minimum height in pixels.
+        /// Default: 90
+        /// </summary>
+        public double ToastMinHeight
+        {
+            get => toastMinHeight;
+            set { toastMinHeight = Math.Max(50, Math.Min(300, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast maximum height in pixels.
+        /// Default: 180
+        /// </summary>
+        public double ToastMaxHeight
+        {
+            get => toastMaxHeight;
+            set { toastMaxHeight = Math.Max(100, Math.Min(500, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast display duration in milliseconds.
+        /// Default: 4000 (4 seconds). Range: 1000-10000
+        /// </summary>
+        public int ToastDurationMs
+        {
+            get => toastDurationMs;
+            set { toastDurationMs = Math.Max(1000, Math.Min(10000, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Margin from screen edge for toast positioning (in pixels).
+        /// Default: 30
+        /// </summary>
+        public int ToastEdgeMargin
+        {
+            get => toastEdgeMargin;
+            set { toastEdgeMargin = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast border color (RGB hex without #). This is the outer border color.
+        /// Default: "2A2A2A" (dark gray that blends with blur background)
+        /// </summary>
+        public string ToastBorderColor
+        {
+            get => toastBorderColor;
+            set { toastBorderColor = value ?? "2A2A2A"; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Toast border thickness in pixels.
+        /// Default: 1 (thin border that's subtle). Range: 0-5
+        /// </summary>
+        public double ToastBorderThickness
+        {
+            get => toastBorderThickness;
+            set { toastBorderThickness = Math.Max(0, Math.Min(5, value)); OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Applies a reverb preset by setting all reverb parameters.
         /// Presets are based on Audacity's exact factory preset values.

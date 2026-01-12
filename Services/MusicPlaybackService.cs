@@ -971,6 +971,7 @@ namespace UniPlaySong.Services
         /// <summary>
         /// Handles media ended events from the music player.
         /// Handles randomization on song end, preview mode restart, and normal looping.
+        /// Note: Threading is handled at the player level (NAudioMusicPlayer/SDL2MusicPlayer).
         /// </summary>
         private void OnMediaEnded(object sender, EventArgs e)
         {

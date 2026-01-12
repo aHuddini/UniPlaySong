@@ -29,7 +29,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing - prevents double-input from both XInput and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
+        private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
 
         // Dialog state
         private Game _currentGame;
@@ -73,7 +73,9 @@ namespace UniPlaySong.Views
             };
 
             // Handle keyboard input as fallback
-            KeyDown += OnKeyDown;
+            // Use PreviewKeyDown to intercept keyboard events BEFORE they reach child controls
+            // This prevents WPF's ListBox from also processing arrow keys alongside our handler
+            PreviewKeyDown += OnKeyDown;
         }
 
         /// <summary>
@@ -321,8 +323,25 @@ namespace UniPlaySong.Views
 
             _isMonitoring = true;
             _controllerMonitoringCancellation = new CancellationTokenSource();
-            
-            _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
+
+            // Initialize _lastButtonState with current controller state to prevent
+            // detecting held buttons from previous dialogs as new presses
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                }
+            }
+            catch { /* Ignore initialization errors */ }
+
+            _ = Task.Run(async () =>
+            {
+                // Small delay to let any held buttons be released
+                await Task.Delay(150);
+                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
+            });
             Logger.DebugIf(LogPrefix, "Started controller monitoring for file picker");
         }
 
@@ -357,7 +376,8 @@ namespace UniPlaySong.Views
 
                         if (pressedButtons != 0)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleControllerInput(pressedButtons, state.Gamepad);
                             }));
@@ -366,7 +386,7 @@ namespace UniPlaySong.Views
                         _lastButtonState = currentButtons;
                     }
 
-                    await Task.Delay(50, cancellationToken); // Check every 50ms
+                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
                 }
                 catch (OperationCanceledException)
                 {
@@ -656,16 +676,29 @@ namespace UniPlaySong.Views
         {
             switch (e.Key)
             {
+                // D-pad Up/Down mapped to arrow keys - use debounce to prevent double-input
+                case Key.Up:
+                    if (TryDpadNavigation())
+                        NavigateList(-1);
+                    e.Handled = true;
+                    break;
+
+                case Key.Down:
+                    if (TryDpadNavigation())
+                        NavigateList(1);
+                    e.Handled = true;
+                    break;
+
                 case Key.Enter:
                     ConfirmButton_Click(null, null);
                     e.Handled = true;
                     break;
-                    
+
                 case Key.Escape:
                     CancelButton_Click(null, null);
                     e.Handled = true;
                     break;
-                    
+
                 case Key.F1:
                     PreviewSelectedFile();
                     e.Handled = true;

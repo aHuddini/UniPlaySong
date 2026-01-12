@@ -1205,6 +1205,328 @@ namespace UniPlaySong
 
         #endregion
 
+        #region Toast Notification Test Commands
+
+        public ICommand ShowTestToastCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    // Sync current settings to DialogHelper before showing test
+                    DialogHelper.SyncToastSettings(settings);
+
+                    // Show a test success toast
+                    DialogHelper.ShowSuccessToast(
+                        PlayniteApi,
+                        "This is a test toast notification.\nLine 2 shows spacing.",
+                        "Test Toast");
+                },
+                context: "showing test toast",
+                showUserMessage: false
+            );
+        });
+
+        public ICommand ShowTestErrorToastCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    // Sync current settings to DialogHelper before showing test
+                    DialogHelper.SyncToastSettings(settings);
+
+                    // Show a test error toast
+                    DialogHelper.ShowErrorToast(
+                        PlayniteApi,
+                        "This is a test error toast.\nError details would appear here.",
+                        "Test Error");
+                },
+                context: "showing test error toast",
+                showUserMessage: false
+            );
+        });
+
+        /// <summary>
+        /// Command to set the toast tint color from a preset hex value
+        /// </summary>
+        public ICommand SetToastColorCommand => new Common.RelayCommand<string>((hexColor) =>
+        {
+            if (!string.IsNullOrEmpty(hexColor) && settings != null)
+            {
+                settings.ToastBlurTintColor = hexColor;
+                // Trigger property changed for RGB values
+                OnPropertyChanged(nameof(ToastColorRed));
+                OnPropertyChanged(nameof(ToastColorGreen));
+                OnPropertyChanged(nameof(ToastColorBlue));
+            }
+        });
+
+        /// <summary>
+        /// Red component (0-255) of the toast tint color
+        /// </summary>
+        public int ToastColorRed
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBlurTintColor))
+                    return 30; // 0x1E
+                try
+                {
+                    var hex = settings.ToastBlurTintColor.TrimStart('#');
+                    if (hex.Length >= 2)
+                        return Convert.ToInt32(hex.Substring(0, 2), 16);
+                }
+                catch { }
+                return 30;
+            }
+            set
+            {
+                var r = Math.Max(0, Math.Min(255, value));
+                var g = ToastColorGreen;
+                var b = ToastColorBlue;
+                if (settings != null)
+                {
+                    settings.ToastBlurTintColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Green component (0-255) of the toast tint color
+        /// </summary>
+        public int ToastColorGreen
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBlurTintColor))
+                    return 30; // 0x1E
+                try
+                {
+                    var hex = settings.ToastBlurTintColor.TrimStart('#');
+                    if (hex.Length >= 4)
+                        return Convert.ToInt32(hex.Substring(2, 2), 16);
+                }
+                catch { }
+                return 30;
+            }
+            set
+            {
+                var r = ToastColorRed;
+                var g = Math.Max(0, Math.Min(255, value));
+                var b = ToastColorBlue;
+                if (settings != null)
+                {
+                    settings.ToastBlurTintColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Blue component (0-255) of the toast tint color
+        /// </summary>
+        public int ToastColorBlue
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBlurTintColor))
+                    return 30; // 0x1E
+                try
+                {
+                    var hex = settings.ToastBlurTintColor.TrimStart('#');
+                    if (hex.Length >= 6)
+                        return Convert.ToInt32(hex.Substring(4, 2), 16);
+                }
+                catch { }
+                return 30;
+            }
+            set
+            {
+                var r = ToastColorRed;
+                var g = ToastColorGreen;
+                var b = Math.Max(0, Math.Min(255, value));
+                if (settings != null)
+                {
+                    settings.ToastBlurTintColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Command to adjust the brightness of the current tint color.
+        /// Positive values lighten, negative values darken.
+        /// </summary>
+        public ICommand AdjustBrightnessCommand => new Common.RelayCommand<string>((deltaStr) =>
+        {
+            if (settings == null || string.IsNullOrEmpty(deltaStr)) return;
+
+            if (int.TryParse(deltaStr, out int delta))
+            {
+                // Get current RGB values
+                int r = ToastColorRed;
+                int g = ToastColorGreen;
+                int b = ToastColorBlue;
+
+                // Adjust each channel by delta, clamping to 0-255
+                r = Math.Max(0, Math.Min(255, r + delta));
+                g = Math.Max(0, Math.Min(255, g + delta));
+                b = Math.Max(0, Math.Min(255, b + delta));
+
+                // Update the color
+                settings.ToastBlurTintColor = $"{r:X2}{g:X2}{b:X2}";
+
+                // Notify all RGB properties changed
+                OnPropertyChanged(nameof(ToastColorRed));
+                OnPropertyChanged(nameof(ToastColorGreen));
+                OnPropertyChanged(nameof(ToastColorBlue));
+            }
+        });
+
+        // ===== Toast Border Color Settings =====
+
+        /// <summary>
+        /// Command to set the toast border color from a preset hex value
+        /// </summary>
+        public ICommand SetToastBorderColorCommand => new Common.RelayCommand<string>((hexColor) =>
+        {
+            if (!string.IsNullOrEmpty(hexColor) && settings != null)
+            {
+                settings.ToastBorderColor = hexColor;
+                // Trigger property changed for RGB values
+                OnPropertyChanged(nameof(ToastBorderRed));
+                OnPropertyChanged(nameof(ToastBorderGreen));
+                OnPropertyChanged(nameof(ToastBorderBlue));
+            }
+        });
+
+        /// <summary>
+        /// Red component (0-255) of the toast border color
+        /// </summary>
+        public int ToastBorderRed
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBorderColor))
+                    return 42; // 0x2A
+                try
+                {
+                    var hex = settings.ToastBorderColor.TrimStart('#');
+                    if (hex.Length >= 2)
+                        return Convert.ToInt32(hex.Substring(0, 2), 16);
+                }
+                catch { }
+                return 42;
+            }
+            set
+            {
+                var r = Math.Max(0, Math.Min(255, value));
+                var g = ToastBorderGreen;
+                var b = ToastBorderBlue;
+                if (settings != null)
+                {
+                    settings.ToastBorderColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Green component (0-255) of the toast border color
+        /// </summary>
+        public int ToastBorderGreen
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBorderColor))
+                    return 42; // 0x2A
+                try
+                {
+                    var hex = settings.ToastBorderColor.TrimStart('#');
+                    if (hex.Length >= 4)
+                        return Convert.ToInt32(hex.Substring(2, 2), 16);
+                }
+                catch { }
+                return 42;
+            }
+            set
+            {
+                var r = ToastBorderRed;
+                var g = Math.Max(0, Math.Min(255, value));
+                var b = ToastBorderBlue;
+                if (settings != null)
+                {
+                    settings.ToastBorderColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Blue component (0-255) of the toast border color
+        /// </summary>
+        public int ToastBorderBlue
+        {
+            get
+            {
+                if (settings == null || string.IsNullOrEmpty(settings.ToastBorderColor))
+                    return 42; // 0x2A
+                try
+                {
+                    var hex = settings.ToastBorderColor.TrimStart('#');
+                    if (hex.Length >= 6)
+                        return Convert.ToInt32(hex.Substring(4, 2), 16);
+                }
+                catch { }
+                return 42;
+            }
+            set
+            {
+                var r = ToastBorderRed;
+                var g = ToastBorderGreen;
+                var b = Math.Max(0, Math.Min(255, value));
+                if (settings != null)
+                {
+                    settings.ToastBorderColor = $"{r:X2}{g:X2}{b:X2}";
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Command to adjust the brightness of the border color.
+        /// Positive values lighten, negative values darken.
+        /// </summary>
+        public ICommand AdjustBorderBrightnessCommand => new Common.RelayCommand<string>((deltaStr) =>
+        {
+            if (settings == null || string.IsNullOrEmpty(deltaStr)) return;
+
+            if (int.TryParse(deltaStr, out int delta))
+            {
+                // Get current RGB values
+                int r = ToastBorderRed;
+                int g = ToastBorderGreen;
+                int b = ToastBorderBlue;
+
+                // Adjust each channel by delta, clamping to 0-255
+                r = Math.Max(0, Math.Min(255, r + delta));
+                g = Math.Max(0, Math.Min(255, g + delta));
+                b = Math.Max(0, Math.Min(255, b + delta));
+
+                // Update the color
+                settings.ToastBorderColor = $"{r:X2}{g:X2}{b:X2}";
+
+                // Notify all RGB properties changed
+                OnPropertyChanged(nameof(ToastBorderRed));
+                OnPropertyChanged(nameof(ToastBorderGreen));
+                OnPropertyChanged(nameof(ToastBorderBlue));
+            }
+        });
+
+        #endregion
+
         private void UpdateCacheStats()
         {
             try
@@ -1292,7 +1614,10 @@ namespace UniPlaySong
                     }
                     
                     plugin.SavePluginSettings(settings);
-                    
+
+                    // Sync toast settings to DialogHelper
+                    DialogHelper.SyncToastSettings(settings);
+
                     // Notify plugin that settings were saved so it can reload them
                     plugin.OnSettingsSaved();
                 },

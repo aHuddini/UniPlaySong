@@ -11,6 +11,7 @@
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <local:ReverbPresetConverter x:Key="ReverbPresetConverter"/>
         <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
+        <local:HexToColorConverter x:Key="HexToColorConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -1319,6 +1320,314 @@
                             <Run Text=" %APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\"/>
                         </TextBlock>
                     </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Toast Notifications Tab (Hidden - keep code for future editing) -->
+        <TabItem Header="Toast Notifications" Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Toast Notification Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Customize the appearance and behavior of toast notifications shown in fullscreen/controller mode."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,20"/>
+
+                    <!-- Test Toast Button -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Preview" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="Test the current toast settings to see how they look."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Show Test Toast"
+                                        Width="140"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding ShowTestToastCommand}"/>
+                                <Button Content="Show Error Toast"
+                                        Width="140"
+                                        Command="{Binding ShowTestErrorToastCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Separator Margin="0,0,0,20"/>
+
+                    <!-- Blur Effect Settings -->
+                    <TextBlock Text="Blur Effect" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Acrylic blur effect creates a frosted glass appearance. Requires Windows 10 1803 or later."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Acrylic Blur Effect"
+                              IsChecked="{Binding Settings.EnableToastAcrylicBlur}"
+                              Margin="0,5"/>
+
+                    <!-- Blur Opacity -->
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
+                        <TextBlock Text="Blur Opacity: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastBlurOpacity}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <Slider Minimum="0" Maximum="255"
+                                Value="{Binding Settings.ToastBlurOpacity}"
+                                Width="200"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="32"
+                                TickPlacement="BottomRight"
+                                Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Higher = more opaque/darker. Lower = more transparent (more blur visible). 0 = fully transparent. Default: 221"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Blur Mode -->
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
+                        <TextBlock Text="Blur Mode: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.ToastBlurMode}" Width="200">
+                            <ComboBoxItem Content="Basic Blur (Less Intense)"/>
+                            <ComboBoxItem Content="Acrylic Blur (More Intense)"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Acrylic blur has a frosted glass effect with noise texture and supports tint color. Basic blur is smoother but does NOT support tint color (Windows API limitation)."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,10,0,15"/>
+
+                    <!-- Blur Tint Color Section (Acrylic mode only) -->
+                    <TextBlock Text="Tint Color (Acrylic Mode Only)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <!-- Color Preview and Hex Input -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
+                        <TextBlock Text="Color: " VerticalAlignment="Center" Width="120"/>
+                        <Border Width="40" Height="24" CornerRadius="4" BorderBrush="#555" BorderThickness="1" Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                Background="{Binding Settings.ToastBlurTintColor, Converter={StaticResource HexToColorConverter}}"/>
+                        <TextBlock Text="#" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Settings.ToastBlurTintColor, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="80"
+                                 MaxLength="6"
+                                 VerticalContentAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Quick Color Presets -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                        <TextBlock Text="Presets: " VerticalAlignment="Center" Width="120"/>
+                        <Button Content="Dark" Width="50" Margin="0,0,5,0" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="1E1E1E"
+                                ToolTip="Dark gray (#1E1E1E)"/>
+                        <Button Content="Black" Width="50" Margin="0,0,5,0" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="000000"
+                                ToolTip="Pure black (#000000)"/>
+                        <Button Content="Blue" Width="50" Margin="0,0,5,0" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="1A237E"
+                                ToolTip="Dark blue (#1A237E)"/>
+                        <Button Content="Purple" Width="50" Margin="0,0,5,0" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="4A148C"
+                                ToolTip="Dark purple (#4A148C)"/>
+                        <Button Content="Green" Width="50" Margin="0,0,5,0" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="1B5E20"
+                                ToolTip="Dark green (#1B5E20)"/>
+                        <Button Content="Red" Width="50" Padding="5,2"
+                                Command="{Binding SetToastColorCommand}" CommandParameter="B71C1C"
+                                ToolTip="Dark red (#B71C1C)"/>
+                    </StackPanel>
+
+                    <!-- RGB Sliders with Brightness -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="RGB Color Mixer" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                            <!-- Brightness -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
+                                <TextBlock Text="Brightness:" VerticalAlignment="Center" Width="70" Foreground="#FFD93D"/>
+                                <Button Content="-" Width="30" Margin="0,0,5,0" Padding="5,2"
+                                        Command="{Binding AdjustBrightnessCommand}" CommandParameter="-20"
+                                        ToolTip="Darken color"/>
+                                <Button Content="--" Width="30" Margin="0,0,10,0" Padding="5,2"
+                                        Command="{Binding AdjustBrightnessCommand}" CommandParameter="-50"
+                                        ToolTip="Darken more"/>
+                                <Button Content="+" Width="30" Margin="0,0,5,0" Padding="5,2"
+                                        Command="{Binding AdjustBrightnessCommand}" CommandParameter="20"
+                                        ToolTip="Lighten color"/>
+                                <Button Content="++" Width="30" Padding="5,2"
+                                        Command="{Binding AdjustBrightnessCommand}" CommandParameter="50"
+                                        ToolTip="Lighten more"/>
+                            </StackPanel>
+
+                            <!-- Red -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="R:" VerticalAlignment="Center" Width="25" Foreground="#FF6B6B"/>
+                                <TextBlock Text="{Binding ToastColorRed}" VerticalAlignment="Center" Width="35"/>
+                                <Slider Minimum="0" Maximum="255"
+                                        Value="{Binding ToastColorRed}"
+                                        Width="200"
+                                        SmallChange="1"
+                                        LargeChange="16"/>
+                            </StackPanel>
+
+                            <!-- Green -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="G:" VerticalAlignment="Center" Width="25" Foreground="#69DB7C"/>
+                                <TextBlock Text="{Binding ToastColorGreen}" VerticalAlignment="Center" Width="35"/>
+                                <Slider Minimum="0" Maximum="255"
+                                        Value="{Binding ToastColorGreen}"
+                                        Width="200"
+                                        SmallChange="1"
+                                        LargeChange="16"/>
+                            </StackPanel>
+
+                            <!-- Blue -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="B:" VerticalAlignment="Center" Width="25" Foreground="#74C0FC"/>
+                                <TextBlock Text="{Binding ToastColorBlue}" VerticalAlignment="Center" Width="35"/>
+                                <Slider Minimum="0" Maximum="255"
+                                        Value="{Binding ToastColorBlue}"
+                                        Width="200"
+                                        SmallChange="1"
+                                        LargeChange="16"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="Use the RGB sliders, brightness buttons, or presets to pick a tint color. Only works with Acrylic blur mode."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Size Settings -->
+                    <TextBlock Text="Size &amp; Position" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+
+                    <!-- Width -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Width: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastWidth, StringFormat='{}{0:F0}'}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="200" Maximum="800"
+                                Value="{Binding Settings.ToastWidth}"
+                                Width="200"
+                                SmallChange="10"
+                                LargeChange="50"
+                                TickFrequency="100"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+
+                    <!-- Min Height -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Min Height: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastMinHeight, StringFormat='{}{0:F0}'}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="50" Maximum="200"
+                                Value="{Binding Settings.ToastMinHeight}"
+                                Width="200"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="25"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+
+                    <!-- Max Height -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Max Height: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastMaxHeight, StringFormat='{}{0:F0}'}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="100" Maximum="400"
+                                Value="{Binding Settings.ToastMaxHeight}"
+                                Width="200"
+                                SmallChange="10"
+                                LargeChange="50"
+                                TickFrequency="50"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+
+                    <!-- Corner Radius -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Corner Radius: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastCornerRadius, StringFormat='{}{0:F0}'}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="32"
+                                Value="{Binding Settings.ToastCornerRadius}"
+                                Width="200"
+                                SmallChange="1"
+                                LargeChange="4"
+                                TickFrequency="4"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="0 = square corners, higher = more rounded. Default: 8"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Edge Margin -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Edge Margin: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastEdgeMargin}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ToastEdgeMargin}"
+                                Width="200"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Distance from screen edge where toast appears. Default: 30"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Timing Settings -->
+                    <TextBlock Text="Timing" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+
+                    <!-- Duration -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="Duration: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ToastDurationMs, StringFormat='{}{0:F0}'}"
+                                   VerticalAlignment="Center"
+                                   Width="50"/>
+                        <TextBlock Text="ms" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1000" Maximum="10000"
+                                Value="{Binding Settings.ToastDurationMs}"
+                                Width="200"
+                                SmallChange="250"
+                                LargeChange="1000"
+                                TickFrequency="1000"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How long the toast stays on screen (in milliseconds). 1000 = 1 second. Default: 4000 (4 seconds)"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

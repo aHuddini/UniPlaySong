@@ -30,7 +30,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing - prevents double-input from both XInput and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations
+        private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
 
         // Download functionality dependencies
         private Game _currentGame;
@@ -41,7 +41,16 @@ namespace UniPlaySong.Views
         private DialogStep _currentStep = DialogStep.SourceSelection;
         private Source? _selectedSource;
         private Album _selectedAlbum;
-        
+
+        // Flag to block input during modal dialogs (e.g., download success message)
+        private volatile bool _isShowingModalDialog = false;
+
+        // Cooldown timestamp - blocks ALL button processing for a period after modal dialogs close
+        // This prevents the race condition where a button press that closed the modal is
+        // detected as a "new press" by the background polling loop
+        private DateTime _modalCooldownUntil = DateTime.MinValue;
+        private const int ModalCooldownMs = 350; // Block input for 350ms after modal closes
+
         // Dialog state
         private List<GenericItemOption> _sourceOptions;
         private List<DownloadItemViewModel> _currentResults;
@@ -80,7 +89,9 @@ namespace UniPlaySong.Views
             };
             
             // Add keyboard/controller input handling
-            KeyDown += OnKeyDown;
+            // Use PreviewKeyDown to intercept keyboard events BEFORE they reach child controls
+            // This prevents WPF's ListBox from also processing arrow keys alongside our handler
+            PreviewKeyDown += OnKeyDown;
             Focusable = true;
             
             // Start monitoring Xbox controller
@@ -288,7 +299,7 @@ namespace UniPlaySong.Views
         }
 
         /// <summary>
-        /// Show an error message in a controller-friendly way
+        /// Show an error message in a controller-friendly way using non-blocking notifications
         /// </summary>
         private void ShowError(string message)
         {
@@ -297,9 +308,10 @@ namespace UniPlaySong.Views
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     UpdateInputFeedback($"❌ Error: {message}");
-                    
-                    // Also show a message box but ensure it doesn't steal focus from fullscreen
-                    _playniteApi?.Dialogs?.ShowMessage(message, "Download Error");
+
+                    // Use auto-closing toast popup instead of modal dialog
+                    // This avoids the XInput double-press issues entirely and works in fullscreen
+                    DialogHelper.ShowErrorToast(_playniteApi, message, "Download Error");
                 }));
             }
             catch (Exception ex)
@@ -525,18 +537,9 @@ namespace UniPlaySong.Views
                         break;
                 }
 
-                UpdateInputFeedback($"📋 Preview: {sourceOption.Name}");
-                
-                // Show preview in a non-blocking way
-                Task.Run(() =>
-                {
-                    System.Threading.Thread.Sleep(100); // Brief delay to show feedback
-                    Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        _playniteApi?.Dialogs?.ShowMessage(previewInfo, $"Preview: {sourceOption.Name}");
-                        UpdateInputFeedback("🎮 A: Select source, B: Cancel, X/Y: Preview");
-                    }));
-                });
+                UpdateInputFeedback($"📋 {previewInfo}");
+                // Note: Preview info is now shown inline in the feedback text
+                // No modal dialog needed - this prevents XInput issues
                 
                 Logger.DebugIf(LogPrefix, $"Previewed source: {sourceOption.Name}");
             }
@@ -569,17 +572,10 @@ namespace UniPlaySong.Views
                                    $"This album contains the soundtrack for {_currentGame?.Name}.\n" +
                                    $"Select to view individual songs for download.";
 
-                UpdateInputFeedback($"📋 Preview: {album.Name}");
-                
-                Task.Run(() =>
-                {
-                    System.Threading.Thread.Sleep(100);
-                    Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        _playniteApi?.Dialogs?.ShowMessage(previewInfo, $"Preview: {album.Name}");
-                        UpdateInputFeedback("🎮 A: Select album, B: Back to sources, X/Y: Preview");
-                    }));
-                });
+                // Show short preview info in the feedback line
+                UpdateInputFeedback($"📋 Album: {album.Name} • Source: {album.Source}");
+                // Note: Preview info is now shown inline in the feedback text
+                // No modal dialog needed - this prevents XInput issues
                 
                 Logger.DebugIf(LogPrefix, $"Previewed album: {album.Name}");
             }
@@ -888,6 +884,21 @@ namespace UniPlaySong.Views
         {
             try
             {
+                // Block input if a modal dialog is being shown
+                if (_isShowingModalDialog)
+                {
+                    Logger.DebugIf(LogPrefix, "Ignoring confirm action - modal dialog is showing");
+                    return;
+                }
+
+                // Block input during cooldown period after modal dialogs close
+                // This prevents the button press that closed the modal from being detected as a new press
+                if (DateTime.Now < _modalCooldownUntil)
+                {
+                    Logger.DebugIf(LogPrefix, "Ignoring confirm action - modal cooldown active");
+                    return;
+                }
+
                 var selectedItem = ResultsListBox.SelectedItem as ListBoxItem;
                 if (selectedItem?.Tag == null)
                 {
@@ -1275,9 +1286,11 @@ namespace UniPlaySong.Views
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
                                     Logger.DebugIf(LogPrefix, $"Successfully downloaded: {selectedSong.Name} to {filePath}");
 
-                                    // Show success message first (blocking dialog)
-                                    _playniteApi?.Dialogs?.ShowMessage(
-                                        $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}",
+                                    // Use auto-closing toast popup instead of modal dialog
+                                    // This avoids the XInput double-press issues entirely and works in fullscreen
+                                    DialogHelper.ShowSuccessToast(
+                                        _playniteApi,
+                                        $"Downloaded: {selectedSong.Name}",
                                         "Download Complete");
 
                                     // Trigger auto-normalize if enabled (after download message dismissed)
@@ -1299,6 +1312,15 @@ namespace UniPlaySong.Views
                                     {
                                         if (_playbackService != null && _currentGame != null)
                                         {
+                                            // IMPORTANT: Stop any preview first to prevent overlap
+                                            // This clears _currentlyPreviewing and _previewPlayer, and resets _wasGameMusicPlaying
+                                            // so that RestoreGameMusic() won't interfere with our PlayGameMusic call
+                                            StopCurrentPreview();
+
+                                            // Reset the flag since we're about to start fresh game music
+                                            // (StopCurrentPreview would have tried to Resume, but we want a fresh start)
+                                            _wasGameMusicPlaying = false;
+
                                             Logger.DebugIf(LogPrefix, $"Download complete - triggering music refresh for game: {_currentGame.Name}");
                                             // Use forceReload: true to ensure newly downloaded song plays
                                             // Pass null settings - playback service uses its cached _currentSettings
@@ -1309,21 +1331,20 @@ namespace UniPlaySong.Views
                                     {
                                         Logger.DebugIf(LogPrefix, refreshEx, "Error refreshing music after download");
                                     }
+                                    // Return to song selection (same album) so user can download more songs
+                                    Logger.DebugIf(LogPrefix, "Returning to song selection for more downloads");
+                                    _currentStep = DialogStep.SongSelection;
+                                    UpdateInputFeedback("✅ Downloaded! Select another song or B to go back");
                                 }
                                 else
                                 {
                                     UpdateInputFeedback($"❌ Download failed: {selectedSong.Name}");
                                     ShowError($"Failed to download: {selectedSong.Name}");
-                                }
 
-                                // Close the dialog after a brief delay
-                                Task.Delay(1000).ContinueWith(_ =>
-                                {
-                                    Dispatcher.BeginInvoke(new Action(() =>
-                                    {
-                                        CloseDialog(success);
-                                    }));
-                                });
+                                    // Return to song selection on failure so user can retry
+                                    _currentStep = DialogStep.SongSelection;
+                                    UpdateInputFeedback("🎵 Download failed - A to retry, B to go back");
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -1385,13 +1406,17 @@ namespace UniPlaySong.Views
                         break;
                         
                     // D-Pad Up/Down (Arrow keys) - Navigate list
+                    // Use same debounce as XInput D-pad to prevent double navigation
+                    // when both keyboard and XInput fire for the same D-pad press
                     case System.Windows.Input.Key.Up:
-                        NavigateList(-1);
+                        if (TryDpadNavigation())
+                            NavigateList(-1);
                         e.Handled = true;
                         break;
-                        
+
                     case System.Windows.Input.Key.Down:
-                        NavigateList(1);
+                        if (TryDpadNavigation())
+                            NavigateList(1);
                         e.Handled = true;
                         break;
                         
@@ -1528,10 +1553,27 @@ namespace UniPlaySong.Views
             {
                 _isMonitoring = true;
                 _controllerMonitoringCancellation = new CancellationTokenSource();
-                
+
+                // Initialize _lastControllerState with current controller state to prevent
+                // detecting held buttons from previous dialogs as new presses
+                try
+                {
+                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                    if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                    {
+                        _lastControllerState = state;
+                        _hasLastState = true;
+                        Logger.DebugIf(LogPrefix, $"Initialized controller state: buttons={state.Gamepad.wButtons}");
+                    }
+                }
+                catch { /* Ignore initialization errors */ }
+
                 Task.Run(async () =>
                 {
                     Logger.DebugIf(LogPrefix, "Starting Xbox controller monitoring");
+
+                    // Small delay to let any held buttons be released
+                    await Task.Delay(150);
                     
                     while (!_controllerMonitoringCancellation.Token.IsCancellationRequested)
                     {
@@ -1553,7 +1595,7 @@ namespace UniPlaySong.Views
                                 _hasLastState = true;
                             }
                             
-                            await Task.Delay(50, _controllerMonitoringCancellation.Token); // Check every 50ms
+                            await Task.Delay(33, _controllerMonitoringCancellation.Token); // Check every 33ms (~30Hz) for smoother polling
                         }
                         catch (OperationCanceledException)
                         {
@@ -1591,6 +1633,35 @@ namespace UniPlaySong.Views
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error stopping controller monitoring");
+            }
+        }
+
+        /// <summary>
+        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
+        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
+        /// </summary>
+        private void RefreshControllerStateWithCooldown()
+        {
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastControllerState = state;
+                    _hasLastState = true;
+                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={state.Gamepad.wButtons}");
+                }
+
+                // Set cooldown to block any input processing for ModalCooldownMs
+                // This is the key defense against race conditions
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
+            }
+            catch (Exception ex)
+            {
+                Logger.DebugIf(LogPrefix, ex, "Error refreshing controller state");
+                // Still set cooldown even on error
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
             }
         }
 

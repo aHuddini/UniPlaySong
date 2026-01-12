@@ -30,7 +30,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing for file selection
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 100;
+        private const int DpadDebounceMs = 300; // 300ms for reliable single-item navigation
 
         // Continuous D-pad input tracking for gain adjustment
         private ushort _heldDpadDirection = 0;
@@ -60,6 +60,15 @@ namespace UniPlaySong.Views
         private const float FineGainStep = 0.5f;
         private const float CoarseGainStep = 3f;
 
+        // Flag to block input during modal dialogs
+        private volatile bool _isShowingModalDialog = false;
+
+        // Cooldown timestamp - blocks ALL button processing for a period after modal dialogs close
+        // This prevents the race condition where a button press that closed the modal is
+        // detected as a "new press" by the background polling loop
+        private DateTime _modalCooldownUntil = DateTime.MinValue;
+        private const int ModalCooldownMs = 350; // Block input for 350ms after modal closes
+
         // Current step
         private enum DialogStep { FileSelection, AmplifyEditor }
         private DialogStep _currentStep = DialogStep.FileSelection;
@@ -80,7 +89,9 @@ namespace UniPlaySong.Views
                 _loadingCancellation?.Cancel();
             };
 
-            KeyDown += OnKeyDown;
+            // Use PreviewKeyDown to intercept keyboard events BEFORE they reach child controls
+            // This prevents WPF's ListBox from also processing arrow keys alongside our handler
+            PreviewKeyDown += OnKeyDown;
         }
 
         /// <summary>
@@ -278,7 +289,8 @@ namespace UniPlaySong.Views
 
                         if (token.IsCancellationRequested) return;
 
-                        Dispatcher.BeginInvoke(new Action(() =>
+                        // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                        _ = Dispatcher.BeginInvoke(new Action(() =>
                         {
                             try
                             {
@@ -310,7 +322,7 @@ namespace UniPlaySong.Views
                     catch (Exception ex)
                     {
                         Logger.Error(ex, "Error generating waveform");
-                        Dispatcher.BeginInvoke(new Action(() =>
+                        _ = Dispatcher.BeginInvoke(new Action(() =>
                         {
                             UpdateFeedback("Amplify", $"Error: {ex.Message}");
                             LoadingOverlay.Visibility = Visibility.Collapsed;
@@ -525,7 +537,24 @@ namespace UniPlaySong.Views
             _isMonitoring = true;
             _controllerMonitoringCancellation = new CancellationTokenSource();
 
-            _ = Task.Run(() => CheckButtonPresses(_controllerMonitoringCancellation.Token));
+            // Initialize _lastButtonState with current controller state to prevent
+            // detecting held buttons from previous dialogs as new presses
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                }
+            }
+            catch { /* Ignore initialization errors */ }
+
+            _ = Task.Run(async () =>
+            {
+                // Small delay to let any held buttons be released
+                await Task.Delay(150);
+                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
+            });
             Logger.DebugIf(LogPrefix,"Started controller monitoring for amplify dialog");
         }
 
@@ -536,6 +565,34 @@ namespace UniPlaySong.Views
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
             Logger.DebugIf(LogPrefix,"Stopped controller monitoring for amplify dialog");
+        }
+
+        /// <summary>
+        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
+        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
+        /// </summary>
+        private void RefreshControllerStateWithCooldown()
+        {
+            try
+            {
+                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
+                if (XInputWrapper.XInputGetState(0, ref state) == 0)
+                {
+                    _lastButtonState = state.Gamepad.wButtons;
+                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={state.Gamepad.wButtons}");
+                }
+
+                // Set cooldown to block any input processing for ModalCooldownMs
+                // This is the key defense against race conditions
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
+            }
+            catch (Exception ex)
+            {
+                Logger.DebugIf(LogPrefix, $"Error refreshing controller state: {ex.Message}");
+                // Still set cooldown even on error
+                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
+            }
         }
 
         private async Task CheckButtonPresses(CancellationToken cancellationToken)
@@ -554,7 +611,8 @@ namespace UniPlaySong.Views
 
                         if (pressedButtons != 0)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleControllerInput(pressedButtons, state.Gamepad);
                             }));
@@ -563,7 +621,7 @@ namespace UniPlaySong.Views
                         // In amplify editor mode, check for held D-pad
                         if (_currentStep == DialogStep.AmplifyEditor)
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            _ = Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 HandleDpadContinuousInput(state.Gamepad);
                             }));
@@ -572,7 +630,7 @@ namespace UniPlaySong.Views
                         _lastButtonState = currentButtons;
                     }
 
-                    await Task.Delay(50, cancellationToken);
+                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
                 }
                 catch (OperationCanceledException)
                 {
@@ -590,6 +648,20 @@ namespace UniPlaySong.Views
         {
             try
             {
+                // Block input if a modal dialog is being shown
+                if (_isShowingModalDialog)
+                {
+                    return;
+                }
+
+                // Block input during cooldown period after modal dialogs close
+                // This prevents the button press that closed the modal from being detected as a new press
+                if (DateTime.Now < _modalCooldownUntil)
+                {
+                    Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
+                    return;
+                }
+
                 if (_currentStep == DialogStep.FileSelection)
                 {
                     HandleFileSelectionInput(pressedButtons, gamepad);
@@ -714,12 +786,17 @@ namespace UniPlaySong.Views
                     _dpadHoldStartTime = now;
                     _lastDpadRepeatTime = now;
 
-                    // Immediate response
-                    ProcessDpadGainAdjustment(currentDpad);
+                    // Use shared debounce to prevent double-input from keyboard handler
+                    // TryDpadNavigation() updates _lastDpadNavigationTime which is shared
+                    // with the keyboard handler, so only one of them will process the initial press
+                    if (TryDpadNavigation())
+                    {
+                        ProcessDpadGainAdjustment(currentDpad);
+                    }
                 }
                 else
                 {
-                    // Same direction held
+                    // Same direction held - continuous repeat (keyboard won't fire repeatedly)
                     var holdDuration = (now - _dpadHoldStartTime).TotalMilliseconds;
 
                     if (holdDuration >= InitialRepeatDelayMs)
@@ -758,10 +835,44 @@ namespace UniPlaySong.Views
 
         private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            // Block input if a modal dialog is being shown
+            if (_isShowingModalDialog)
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (_currentStep == DialogStep.FileSelection)
             {
                 switch (e.Key)
                 {
+                    // D-pad Up/Down mapped to arrow keys - use debounce to prevent double-input
+                    case System.Windows.Input.Key.Up:
+                        if (TryDpadNavigation())
+                        {
+                            int currentIndex = FilesListBox.SelectedIndex;
+                            int newIndex = Math.Max(0, currentIndex - 1);
+                            if (newIndex != currentIndex)
+                            {
+                                FilesListBox.SelectedIndex = newIndex;
+                                FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
+                            }
+                        }
+                        e.Handled = true;
+                        break;
+                    case System.Windows.Input.Key.Down:
+                        if (TryDpadNavigation())
+                        {
+                            int currentIndex = FilesListBox.SelectedIndex;
+                            int newIndex = Math.Min(FilesListBox.Items.Count - 1, currentIndex + 1);
+                            if (newIndex != currentIndex)
+                            {
+                                FilesListBox.SelectedIndex = newIndex;
+                                FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
+                            }
+                        }
+                        e.Handled = true;
+                        break;
                     case System.Windows.Input.Key.Enter:
                         SelectFileAndProceed();
                         e.Handled = true;
@@ -776,12 +887,15 @@ namespace UniPlaySong.Views
             {
                 switch (e.Key)
                 {
+                    // In amplify editor mode, Up/Down adjusts gain - use debounce
                     case System.Windows.Input.Key.Up:
-                        AdjustGain(+FineGainStep);
+                        if (TryDpadNavigation())
+                            AdjustGain(+FineGainStep);
                         e.Handled = true;
                         break;
                     case System.Windows.Input.Key.Down:
-                        AdjustGain(-FineGainStep);
+                        if (TryDpadNavigation())
+                            AdjustGain(-FineGainStep);
                         e.Handled = true;
                         break;
                     case System.Windows.Input.Key.PageUp:
@@ -806,6 +920,21 @@ namespace UniPlaySong.Views
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Check if enough time has passed since last D-pad navigation (debouncing)
+        /// </summary>
+        private bool TryDpadNavigation()
+        {
+            var now = DateTime.Now;
+            var timeSinceLastNav = (now - _lastDpadNavigationTime).TotalMilliseconds;
+            if (timeSinceLastNav < DpadDebounceMs)
+            {
+                return false; // Too soon, ignore this input
+            }
+            _lastDpadNavigationTime = now;
+            return true;
         }
 
         #endregion
@@ -888,13 +1017,14 @@ namespace UniPlaySong.Views
                 clippingWarning = "\n\nWARNING: This will cause clipping!";
             }
 
-            var result = _playniteApi.Dialogs.ShowMessage(
+            // Use controller-friendly confirmation dialog (larger text for TV/fullscreen)
+            var confirmed = DialogHelper.ShowControllerConfirmation(
+                _playniteApi,
                 $"Apply {_currentGainDb:+0.0;-0.0;0}dB gain to '{fileName}'?{clippingWarning}\n\n" +
                 $"Original will be moved to PreservedOriginals.",
-                "Confirm Amplify",
-                MessageBoxButton.YesNo);
+                "Confirm Amplify");
 
-            if (result != MessageBoxResult.Yes)
+            if (!confirmed)
             {
                 return;
             }
@@ -902,18 +1032,34 @@ namespace UniPlaySong.Views
             try
             {
                 ApplyButton.IsEnabled = false;
-                UpdateFeedback("Amplify", "Applying amplification...");
+                UpdateFeedback("Amplify", "Stopping playback...");
 
+                // Stop playback and wait for file to be released
                 _playbackService?.Stop();
+
+                // Cancel any waveform loading that might have a file lock
+                _loadingCancellation?.Cancel();
+
+                // Wait for file handles to be released
+                await Task.Delay(200);
+
+                // Force garbage collection to release any remaining file handles
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                await Task.Delay(100);
+
+                UpdateFeedback("Amplify", "Applying amplification...");
 
                 var settings = _getSettings?.Invoke();
                 var ffmpegPath = settings?.FFmpegPath;
 
                 if (string.IsNullOrEmpty(ffmpegPath))
                 {
-                    _playniteApi.Dialogs.ShowErrorMessage(
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
                         "FFmpeg path is not configured.",
-                        "FFmpeg Not Found");
+                        "FFmpeg Required");
+                    UpdateFeedback("Amplify", "FFmpeg not configured - check Settings");
                     return;
                 }
 
@@ -923,17 +1069,26 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
-                    _playniteApi.Dialogs.ShowMessage(
-                        $"Created amplified version with {_currentGainDb:+0.0;-0.0;0}dB gain.\n\n" +
-                        $"Original file moved to PreservedOriginals.",
+                    // Use auto-closing toast popup instead of modal dialog
+                    DialogHelper.ShowSuccessToast(
+                        _playniteApi,
+                        $"Created amplified version with {_currentGainDb:+0.0;-0.0;0}dB gain.\nOriginal preserved.",
                         "Amplify Complete");
 
-                    ShowFileSelectionStep();
-                    LoadMusicFiles();
+                    // Resume music playback with the newly amplified file
+                    if (_currentGame != null)
+                    {
+                        _playbackService?.PlayGameMusic(_currentGame, settings, forceReload: true);
+                    }
+
+                    // Return to file selection step for intuitive workflow
+                    // (user can continue editing other songs without reopening dialog)
+                    ReturnToFileSelectionAfterSuccess();
                 }
                 else
                 {
-                    _playniteApi.Dialogs.ShowErrorMessage(
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
                         $"Failed to amplify '{fileName}'.",
                         "Amplify Failed");
                     UpdateFeedback("Amplify", "Amplification failed");
@@ -942,7 +1097,7 @@ namespace UniPlaySong.Views
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error applying amplify");
-                _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Amplify Error");
+                DialogHelper.ShowErrorToast(_playniteApi, $"Error: {ex.Message}", "Amplify Error");
             }
             finally
             {
@@ -950,11 +1105,48 @@ namespace UniPlaySong.Views
             }
         }
 
-        private void CloseDialog()
+        private void CloseDialog(bool skipStop = false)
         {
-            _playbackService?.Stop();
+            // Stop any preview playback, unless we're closing after a successful operation
+            // that will immediately start new music playback
+            if (!skipStop)
+            {
+                _playbackService?.Stop();
+            }
             var window = Window.GetWindow(this);
             window?.Close();
+        }
+
+        /// <summary>
+        /// Returns to the file selection step after a successful operation.
+        /// Resets the amplify state and reloads the file list so the user can
+        /// continue editing other songs without reopening the dialog.
+        /// </summary>
+        private void ReturnToFileSelectionAfterSuccess()
+        {
+            try
+            {
+                // Reset amplify state
+                _waveformData = null;
+                _selectedFilePath = null;
+                _currentGainDb = 0f;
+
+                // Cancel any pending waveform loading
+                _loadingCancellation?.Cancel();
+
+                // Return to file selection
+                ShowFileSelectionStep();
+
+                // Reload file list to reflect any changes (new amplified files, etc.)
+                LoadMusicFiles();
+
+                UpdateFeedback("FileSelection", "Select another file to edit, or press B to exit");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error returning to file selection");
+                UpdateFeedback("FileSelection", "Ready for selection");
+            }
         }
 
         #endregion
