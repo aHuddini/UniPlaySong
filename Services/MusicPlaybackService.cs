@@ -101,6 +101,7 @@ namespace UniPlaySong.Services
         /// <summary>
         /// Adds a pause source and pauses playback if this is the first pause source.
         /// Multiple sources can pause independently without conflicts.
+        /// Uses fader for smooth fade-out before pausing.
         /// </summary>
         /// <param name="source">The source requesting pause</param>
         public void AddPauseSource(PauseSource source)
@@ -110,9 +111,9 @@ namespace UniPlaySong.Services
 
             if (wasPlaying && _isPaused)
             {
-                // First pause source added - actually pause the player
-                _fileLogger?.Info($"Pause added: {source} (total sources: {_activePauseSources.Count})");
-                _musicPlayer?.Pause();
+                // First pause source added - fade out then pause
+                _fileLogger?.Info($"Pause added: {source} (total sources: {_activePauseSources.Count}) - fading out");
+                _fader?.Pause();
             }
             else if (_activePauseSources.Contains(source))
             {
