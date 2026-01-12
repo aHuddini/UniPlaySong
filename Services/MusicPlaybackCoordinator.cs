@@ -289,38 +289,34 @@ namespace UniPlaySong.Services
         
         /// <summary>
         /// Handles video playback state changes from MediaElementsMonitor.
-        /// Pauses music when video starts, resumes or starts music when video stops.
+        /// Uses the multi-source pause system to properly integrate with other pause reasons.
+        ///
+        /// When VideoIsPlaying=true, adds Video pause source (pauses music).
+        /// When VideoIsPlaying=false, removes Video pause source (resumes if no other sources).
+        /// If music is not loaded when video stops, attempts to start playback.
         /// </summary>
         /// <param name="isPlaying">True if video is playing; false if video stopped.</param>
         public void HandleVideoStateChange(bool isPlaying)
         {
             if (isPlaying)
             {
-                _fileLogger?.Debug("HandleVideoStateChange: Video playing - pausing music");
-                if (_playbackService?.IsLoaded == true)
-                {
-                    _playbackService.Pause();
-                }
+                _fileLogger?.Debug("HandleVideoStateChange: Video playing - adding Video pause source");
+                _playbackService?.AddPauseSource(Models.PauseSource.Video);
             }
             else
             {
-                _fileLogger?.Debug("HandleVideoStateChange: Video stopped - resuming music");
-                var game = _getSelectedGame();
-                if (game != null && ShouldPlayMusic(game))
+                _fileLogger?.Debug("HandleVideoStateChange: Video stopped - removing Video pause source");
+                _playbackService?.RemovePauseSource(Models.PauseSource.Video);
+
+                // If music wasn't loaded (e.g., stopped completely), try to start it
+                if (_playbackService?.IsLoaded != true)
                 {
-                    if (_playbackService?.IsLoaded == true)
-                    {
-                        _playbackService.Resume();
-                    }
-                    else
+                    var game = _getSelectedGame();
+                    if (game != null && ShouldPlayMusic(game))
                     {
                         _fileLogger?.Debug($"HandleVideoStateChange: Starting music for {game.Name}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
-                }
-                else
-                {
-                    _fileLogger?.Debug("HandleVideoStateChange: Not resuming - game null or ShouldPlayMusic returned false");
                 }
             }
         }
@@ -331,6 +327,7 @@ namespace UniPlaySong.Services
         ///
         /// When ThemeOverlayActive=true, adds ThemeOverlay pause source (pauses music).
         /// When ThemeOverlayActive=false, removes ThemeOverlay pause source (resumes if no other sources).
+        /// If music is not loaded when overlay ends, attempts to start playback.
         ///
         /// This is separate from HandleVideoStateChange to prevent conflicts between
         /// theme pause requests (via MusicControl) and MediaElementsMonitor video detection.
@@ -347,6 +344,18 @@ namespace UniPlaySong.Services
             {
                 _fileLogger?.Info("HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source");
                 _playbackService?.RemovePauseSource(Models.PauseSource.ThemeOverlay);
+
+                // If music wasn't loaded or paused music didn't resume, try to start it
+                // This handles cases where music was stopped completely during the overlay
+                if (_playbackService?.IsPlaying != true && _playbackService?.IsPaused != true)
+                {
+                    var game = _getSelectedGame();
+                    if (game != null && ShouldPlayMusic(game))
+                    {
+                        _fileLogger?.Info($"HandleThemeOverlayChange: Starting music for {game.Name}");
+                        _playbackService?.PlayGameMusic(game, _settings, false);
+                    }
+                }
             }
         }
 
