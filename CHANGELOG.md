@@ -2,6 +2,39 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.1.8] - 2026-01-11
+
+### Added
+- **Toast Notifications** - New lightweight notification system for user feedback
+  - Modern acrylic blur background effect using Windows Composition API
+  - Color-coded accent bars: green for success, red for errors, blue for info
+  - Non-intrusive positioning with smooth fade animations
+  - Customizable appearance settings in new "Toast Notifications" settings tab
+- **Toast Notification Customization** - Full control over notification appearance
+  - Background opacity slider (0-100%)
+  - Blur intensity control (0-25)
+  - Corner radius adjustment (0-20px)
+  - Custom accent color with RGB sliders and brightness adjustment
+  - Border color customization with RGB sliders
+  - Border thickness control (0-5px)
+  - Live preview of all color settings
+- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure
+  - `SetWindowCompositionAttribute` Windows API integration
+  - `AccentPolicy` structure for blur/transparency control
+  - Extensible for future UI elements requiring glass effects
+
+### Changed
+- **Dialog System Overhaul** - Replaced pop-up confirmation dialogs with toast notifications
+  - Removes disruptive modal dialogs that interrupted workflow
+  - Confirmation feedback now appears as subtle toast notifications
+  - Improves user experience especially during bulk operations
+
+### Fixed
+- **Controller Mode Dialog Windows** - Fixed dialog handling in Fullscreen/Controller mode
+  - Dialogs now properly respect controller navigation context
+  - Improved focus management when dialogs open and close
+  - Fixed issues with dialogs becoming unresponsive or hidden
+
 ## [1.1.7] - 2026-01-10
 
 ### Fixed

@@ -9,154 +9,114 @@ using Playnite.SDK;
 namespace UniPlaySong.Common
 {
     /// <summary>
-    /// Helper class for creating and configuring Playnite dialog windows.
-    /// Centralizes window creation patterns for consistent styling and behavior.
+    /// Helper class for creating dialogs and toast notifications.
+    /// NOTE: Consider extracting color/UI constants to a separate UIConstants.cs file in the future.
     /// </summary>
     public static class DialogHelper
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        /// <summary>
-        /// Default dark background color for dialogs (matches Playnite dark theme)
-        /// </summary>
+        // ============================================================================
+        // Color Constants
+        // ============================================================================
+
+        /// Dialog background (#212121)
         public static readonly Color DefaultDarkBackground = Color.FromRgb(33, 33, 33);
 
-        // ============================================================================
-        // Toast Notification Styling Constants
-        // These can be customized to match different themes
-        // ============================================================================
-
-        /// <summary>
-        /// Toast background color - matches our controller dialog background (#1E1E1E)
-        /// </summary>
+        /// Toast background (#1E1E1E)
         public static readonly Color ToastBackgroundColor = Color.FromRgb(30, 30, 30);
 
-        /// <summary>
-        /// Toast border color for success messages (Material Design green)
-        /// </summary>
+        /// Success border - Material Design green (#4CAF50)
         public static readonly Color ToastSuccessBorderColor = Color.FromRgb(76, 175, 80);
 
-        /// <summary>
-        /// Toast accent/title color for success messages
-        /// </summary>
+        /// Success accent (#81C784)
         public static readonly Color ToastSuccessAccentColor = Color.FromRgb(129, 199, 132);
 
-        /// <summary>
-        /// Toast border color for error messages (Material Design red - #F44336)
-        /// </summary>
+        /// Error border - Material Design red (#F44336)
         public static readonly Color ToastErrorBorderColor = Color.FromRgb(244, 67, 54);
 
-        /// <summary>
-        /// Toast accent/title color for error messages
-        /// </summary>
+        /// Error accent (#FF8A80)
         public static readonly Color ToastErrorAccentColor = Color.FromRgb(255, 138, 128);
 
-        /// <summary>
-        /// Toast text color (light gray for readability on dark background)
-        /// </summary>
+        /// Toast text (#E0E0E0)
         public static readonly Color ToastTextColor = Color.FromRgb(224, 224, 224);
 
-        /// <summary>
-        /// Toast outer border color (default medium gray - #424242, matches controller dialog border)
-        /// This is the default value; the actual value used is ToastBorderColorValue which is configurable.
-        /// </summary>
+        /// Default border (#424242) - configurable via ToastBorderColorValue
         public static readonly Color ToastOuterBorderColorDefault = Color.FromRgb(66, 66, 66);
 
-        /// <summary>
-        /// Configurable toast border color (RGB uint format: 0xRRGGBB).
-        /// Default: 0x2A2A2A (dark gray that blends with blur background)
-        /// </summary>
+        // Controller Dialog UI Colors
+        private static readonly Color ErrorTextColor = Color.FromRgb(255, 100, 100);          // #FF6464
+        private static readonly Color HintTextColor = Color.FromRgb(150, 150, 150);           // #969696
+        private static readonly Color ButtonBlue = Color.FromRgb(33, 150, 243);               // Material Blue #2196F3
+        private static readonly Color ButtonUnselectedBg = Color.FromRgb(60, 60, 60);         // #3C3C3C
+        private static readonly Color ButtonUnselectedBorder = Color.FromRgb(100, 100, 100);  // #646464
+
+        // ============================================================================
+        // Configurable Toast Settings (synced from UniPlaySongSettings)
+        // ============================================================================
+
+        /// Border color as 0xRRGGBB (default: #2A2A2A)
         public static uint ToastBorderColorValue = 0x2A2A2A;
 
-        /// <summary>
-        /// Toast border thickness in pixels.
-        /// Default: 1 (thin border that's subtle)
-        /// </summary>
+        /// Border thickness in pixels (default: 1)
         public static double ToastBorderThickness = 1;
 
-        /// <summary>
-        /// Toast position on screen. Change this to reposition all toasts.
-        /// </summary>
-        public enum ToastPosition
-        {
-            TopRight,
-            TopLeft,
-            BottomRight,
-            BottomLeft,
-            TopCenter,
-            BottomCenter
-        }
+        public enum ToastPosition { TopRight, TopLeft, BottomRight, BottomLeft, TopCenter, BottomCenter }
 
-        /// <summary>
-        /// Current toast position setting. Modify this to change where toasts appear.
-        /// Default is TopRight for non-intrusive notifications.
-        /// </summary>
+        /// Where toasts appear on screen (default: TopRight)
         public static ToastPosition CurrentToastPosition = ToastPosition.TopRight;
 
-        /// <summary>
-        /// Margin from screen edge for toast positioning (in pixels)
-        /// </summary>
+        /// Margin from screen edge in pixels (default: 30)
         public static int ToastEdgeMargin = 30;
 
-        /// <summary>
-        /// Whether to enable acrylic blur effect on toast notifications.
-        /// Uses Windows DWM APIs for native blur - falls back gracefully if unavailable.
-        /// </summary>
+        /// Enable acrylic blur effect (default: true, requires Windows 10 1803+)
         public static bool EnableToastAcrylicBlur = true;
 
-        /// <summary>
-        /// Toast blur opacity (0-255). Higher = more opaque/darker, lower = more transparent/more blur visible.
-        /// Default: 94 (37% opacity)
-        /// </summary>
+        /// Blur opacity 0-255 (default: 94 = 37%)
         public static byte ToastBlurOpacity = 94;
 
-        /// <summary>
-        /// Toast blur tint color (RGB). This is the color that tints the blur effect.
-        /// Default: #000521 (very dark blue)
-        /// Format: 0xRRGGBB
-        /// </summary>
+        /// Blur tint color as 0xRRGGBB (default: #000521)
         public static uint ToastBlurTintColor = 0x000521;
 
-        /// <summary>
-        /// Toast blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture).
-        /// Default: 1 (Acrylic)
-        /// </summary>
+        /// Blur mode: 0 = Basic, 1 = Acrylic (default: 1)
         public static int ToastBlurMode = 1;
 
-        /// <summary>
-        /// Toast corner radius in pixels. Set to 0 for square corners.
-        /// Default: 0 (square corners avoid blur corner artifacts)
-        /// </summary>
+        /// Corner radius in pixels (default: 0 to avoid blur artifacts)
         public static double ToastCornerRadius = 0;
 
-        /// <summary>
-        /// Toast width in pixels.
-        /// Default: 420
-        /// </summary>
+        /// Toast width in pixels (default: 420)
         public static double ToastWidth = 420;
 
-        /// <summary>
-        /// Toast minimum height in pixels.
-        /// Default: 90
-        /// </summary>
+        /// Toast min height in pixels (default: 90)
         public static double ToastMinHeight = 90;
 
-        /// <summary>
-        /// Toast maximum height in pixels.
-        /// Default: 180
-        /// </summary>
+        /// Toast max height in pixels (default: 180)
         public static double ToastMaxHeight = 180;
 
-        /// <summary>
-        /// Toast display duration in milliseconds. Default: 4000
-        /// </summary>
+        /// Display duration in ms (default: 4000)
         public static int ToastDurationMs = 4000;
 
-        /// <summary>
-        /// Synchronizes toast settings from UniPlaySongSettings to DialogHelper static fields.
-        /// Call this when settings are loaded or changed.
-        /// </summary>
-        /// <param name="settings">The settings object to sync from</param>
+        // ============================================================================
+        // Helper Methods
+        // ============================================================================
+
+        /// Parses hex color string ("RRGGBB" or "#RRGGBB") to uint (0xRRGGBB). Returns defaultValue on error.
+        private static uint ParseHexColor(string hexColor, uint defaultValue)
+        {
+            if (string.IsNullOrEmpty(hexColor)) return defaultValue;
+            try
+            {
+                var hex = hexColor.TrimStart('#');
+                return hex.Length == 6 ? Convert.ToUInt32(hex, 16) : defaultValue;
+            }
+            catch { return defaultValue; }
+        }
+
+        /// Extracts RGB bytes from uint color (0xRRGGBB format).
+        private static (byte R, byte G, byte B) HexToRgb(uint hexColor) =>
+            ((byte)((hexColor >> 16) & 0xFF), (byte)((hexColor >> 8) & 0xFF), (byte)(hexColor & 0xFF));
+
+        /// Syncs toast settings from UniPlaySongSettings to DialogHelper static fields.
         public static void SyncToastSettings(UniPlaySongSettings settings)
         {
             if (settings == null) return;
@@ -170,42 +130,10 @@ namespace UniPlaySong.Common
             ToastMaxHeight = settings.ToastMaxHeight;
             ToastDurationMs = settings.ToastDurationMs;
             ToastEdgeMargin = settings.ToastEdgeMargin;
-
-            // Parse hex color string to uint (format: "RRGGBB" -> 0xRRGGBB)
-            if (!string.IsNullOrEmpty(settings.ToastBlurTintColor))
-            {
-                try
-                {
-                    string hex = settings.ToastBlurTintColor.TrimStart('#');
-                    if (hex.Length == 6)
-                    {
-                        ToastBlurTintColor = Convert.ToUInt32(hex, 16);
-                    }
-                }
-                catch
-                {
-                    // Keep default value on parse error
-                }
-            }
-
-            // Parse border color hex string to uint
-            if (!string.IsNullOrEmpty(settings.ToastBorderColor))
-            {
-                try
-                {
-                    string hex = settings.ToastBorderColor.TrimStart('#');
-                    if (hex.Length == 6)
-                    {
-                        ToastBorderColorValue = Convert.ToUInt32(hex, 16);
-                    }
-                }
-                catch
-                {
-                    // Keep default value on parse error
-                }
-            }
-
             ToastBorderThickness = settings.ToastBorderThickness;
+
+            ToastBlurTintColor = ParseHexColor(settings.ToastBlurTintColor, ToastBlurTintColor);
+            ToastBorderColorValue = ParseHexColor(settings.ToastBorderColor, ToastBorderColorValue);
         }
 
         // ============================================================================
@@ -276,28 +204,18 @@ namespace UniPlaySong.Common
             public int AnimationId;
         }
 
-        /// <summary>
-        /// Checks if the current Windows version supports the DWM backdrop API (Windows 11 22H2+, build 22621+).
-        /// This API provides native acrylic with proper rounded corner support.
-        /// </summary>
+        /// Returns true if Windows 11 22H2+ (build 22621+) with DWMWA_SYSTEMBACKDROP_TYPE support.
         private static bool IsWindows11WithBackdropSupport()
         {
             try
             {
-                // Windows 11 22H2 is build 22621+
-                // The DWMWA_SYSTEMBACKDROP_TYPE attribute was added in this version
                 var version = Environment.OSVersion.Version;
                 return version.Major >= 10 && version.Build >= 22621;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
-        /// <summary>
-        /// Checks if we're on Windows 11 (build 22000+) which supports DWMWA_WINDOW_CORNER_PREFERENCE.
-        /// </summary>
+        /// Returns true if Windows 11 (build 22000+) with DWMWA_WINDOW_CORNER_PREFERENCE support.
         private static bool IsWindows11()
         {
             try
@@ -305,19 +223,10 @@ namespace UniPlaySong.Common
                 var version = Environment.OSVersion.Version;
                 return version.Major >= 10 && version.Build >= 22000;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
-        /// <summary>
-        /// Sets a rounded rectangle region on the window at the native Win32 level.
-        /// This clips the actual window (including acrylic blur) to rounded corners,
-        /// not just the WPF content.
-        /// </summary>
-        /// <param name="window">The window to clip</param>
-        /// <param name="cornerRadius">Radius for rounded corners in pixels</param>
+        /// Sets a rounded rectangle region on the window at Win32 level (clips blur to rounded corners).
         private static void SetRoundedWindowRegion(Window window, int cornerRadius)
         {
             try
@@ -350,12 +259,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Enables acrylic blur effect on a window using SetWindowCompositionAttribute.
-        /// Uses configurable ToastBlurOpacity and ToastBlurTintColor settings.
-        /// Requires Windows 10 1803+ for acrylic effect, falls back to basic blur on older versions.
-        /// </summary>
-        /// <param name="window">The window to apply blur to</param>
+        /// Enables acrylic blur on a window (Windows 10 1803+, falls back to basic blur).
         private static void EnableWindowBlur(Window window)
         {
             try
@@ -363,14 +267,11 @@ namespace UniPlaySong.Common
                 var windowHelper = new WindowInteropHelper(window);
                 var hwnd = windowHelper.EnsureHandle();
 
-                // GradientColor format is AABBGGRR (Alpha, Blue, Green, Red)
-                // Convert RGB (0xRRGGBB) to BGR format and add alpha
-                uint r = (ToastBlurTintColor >> 16) & 0xFF;
-                uint g = (ToastBlurTintColor >> 8) & 0xFF;
-                uint b = ToastBlurTintColor & 0xFF;
-                uint gradientColor = ((uint)ToastBlurOpacity << 24) | (b << 16) | (g << 8) | r;
+                // GradientColor format is AABBGGRR - convert from RGB to BGR and add alpha
+                var (r, g, b) = HexToRgb(ToastBlurTintColor);
+                uint gradientColor = ((uint)ToastBlurOpacity << 24) | ((uint)b << 16) | ((uint)g << 8) | r;
 
-                // Select blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture)
+                // Blur mode: 0 = Basic, 1 = Acrylic (with noise texture)
                 var blurState = ToastBlurMode == 0
                     ? AccentState.ACCENT_ENABLE_BLURBEHIND
                     : AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
@@ -448,71 +349,33 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
         /// Scales a dimension based on DPI scale factor.
-        /// For 4K displays at 150% scaling, dimensions will be multiplied by 1.5.
-        /// </summary>
         public static double ScaleForDpi(double baseDimension)
         {
             var scaleFactor = GetDpiScaleFactor();
             return baseDimension * scaleFactor;
         }
 
-        /// <summary>
-        /// Options for configuring a dialog window
-        /// </summary>
+        /// Dialog window configuration options.
         public class DialogOptions
         {
-            /// <summary>Window title</summary>
             public string Title { get; set; } = "Dialog";
-
-            /// <summary>Window width in pixels</summary>
             public double Width { get; set; } = 600;
-
-            /// <summary>Window height in pixels</summary>
             public double Height { get; set; } = 500;
-
-            /// <summary>Whether the window can be resized</summary>
             public bool CanResize { get; set; } = true;
-
-            /// <summary>Whether to show the maximize button</summary>
             public bool ShowMaximizeButton { get; set; } = true;
-
-            /// <summary>Whether to show the minimize button</summary>
             public bool ShowMinimizeButton { get; set; } = false;
-
-            /// <summary>Whether to show the close button</summary>
             public bool ShowCloseButton { get; set; } = true;
-
-            /// <summary>Whether to show the window in the taskbar (default true for Desktop mode accessibility)</summary>
             public bool ShowInTaskbar { get; set; } = true;
-
-            /// <summary>Whether to set the window as topmost (for fullscreen mode)</summary>
             public bool Topmost { get; set; } = false;
-
-            /// <summary>Whether to apply dark background (for fullscreen mode)</summary>
             public bool ApplyDarkBackground { get; set; } = false;
-
-            /// <summary>Whether to set the owner window</summary>
             public bool SetOwner { get; set; } = false;
-
-            /// <summary>Window startup location</summary>
             public WindowStartupLocation StartupLocation { get; set; } = WindowStartupLocation.CenterOwner;
-
-            /// <summary>Whether to scale width/height based on system DPI (for 4K displays)</summary>
-            /// <remarks>Disabled by default - DPI scaling doesn't work well with remote streaming scenarios</remarks>
+            /// DPI scaling (disabled by default - doesn't work well with remote streaming)
             public bool ScaleForDpi { get; set; } = false;
         }
 
-        /// <summary>
-        /// Creates a standard dialog window with common defaults.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="title">Window title</param>
-        /// <param name="content">Window content (UserControl)</param>
-        /// <param name="width">Window width</param>
-        /// <param name="height">Window height</param>
-        /// <returns>Configured Window instance</returns>
+        /// Creates a resizable dialog with maximize button.
         public static Window CreateStandardDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -530,15 +393,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// <summary>
-        /// Creates a fixed-size dialog window (no resize).
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="title">Window title</param>
-        /// <param name="content">Window content (UserControl)</param>
-        /// <param name="width">Window width</param>
-        /// <param name="height">Window height</param>
-        /// <returns>Configured Window instance</returns>
+        /// Creates a fixed-size dialog (no resize/maximize).
         public static Window CreateFixedDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -556,16 +411,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// <summary>
-        /// Creates a fullscreen-optimized dialog window with dark background and topmost setting.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="title">Window title</param>
-        /// <param name="content">Window content (UserControl)</param>
-        /// <param name="width">Window width</param>
-        /// <param name="height">Window height</param>
-        /// <param name="isFullscreenMode">Whether Playnite is in fullscreen mode</param>
-        /// <returns>Configured Window instance</returns>
+        /// Creates a fullscreen-optimized dialog (topmost, dark background when in fullscreen mode).
         public static Window CreateFullscreenDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -588,13 +434,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// <summary>
-        /// Creates a dialog window with full customization options.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="content">Window content (UserControl)</param>
-        /// <param name="options">Dialog configuration options</param>
-        /// <returns>Configured Window instance</returns>
+        /// Creates a dialog with full customization options.
         public static Window CreateDialog(
             IPlayniteAPI playniteApi,
             object content,
@@ -692,12 +532,7 @@ namespace UniPlaySong.Common
             return window;
         }
 
-        /// <summary>
-        /// Adds a closing handler that returns focus to the main Playnite window.
-        /// </summary>
-        /// <param name="window">The window to attach the handler to</param>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="context">Optional context string for logging</param>
+        /// Attaches a closing handler that returns focus to Playnite's main window.
         public static void AddFocusReturnHandler(Window window, IPlayniteAPI playniteApi, string context = null)
         {
             if (window == null || playniteApi == null)
@@ -706,12 +541,7 @@ namespace UniPlaySong.Common
             window.Closing += (s, e) => ReturnFocusToMainWindow(playniteApi, context);
         }
 
-        /// <summary>
-        /// Returns focus to the main Playnite window.
-        /// Useful for ensuring proper focus after dialogs close, especially in fullscreen mode.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="context">Optional context string for logging</param>
+        /// Returns focus to Playnite's main window (important for fullscreen mode).
         public static void ReturnFocusToMainWindow(IPlayniteAPI playniteApi, string context = null)
         {
             try
@@ -733,25 +563,13 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows a dialog and returns whether it was confirmed (DialogResult == true).
-        /// </summary>
-        /// <param name="window">The window to show</param>
-        /// <returns>True if the dialog was confirmed, false otherwise</returns>
+        /// Shows a dialog and returns true if confirmed (DialogResult == true).
         public static bool ShowDialogAndGetResult(Window window)
         {
             return window?.ShowDialog() == true;
         }
 
-        /// <summary>
-        /// Shows a controller-friendly message dialog with larger text for fullscreen mode.
-        /// This is an alternative to Playnite's ShowMessage that provides better readability on TVs.
-        /// Includes XInput controller support - press A or Enter to close.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="message">The message to display</param>
-        /// <param name="title">Dialog title</param>
-        /// <param name="isError">Whether this is an error message (changes styling)</param>
+        /// Shows a controller-friendly message dialog with XInput support (A/Enter to close).
         public static void ShowControllerMessage(IPlayniteAPI playniteApi, string message, string title, bool isError = false)
         {
             if (playniteApi == null) return;
@@ -774,9 +592,7 @@ namespace UniPlaySong.Common
                     Text = message,
                     FontSize = 18,
                     TextWrapping = TextWrapping.Wrap,
-                    Foreground = isError
-                        ? new SolidColorBrush(Color.FromRgb(255, 100, 100))
-                        : new SolidColorBrush(Colors.White),
+                    Foreground = new SolidColorBrush(isError ? ErrorTextColor : Colors.White),
                     Margin = new Thickness(20, 20, 20, 10),
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Center,
@@ -790,7 +606,7 @@ namespace UniPlaySong.Common
                 {
                     Text = "Press A or Enter to continue",
                     FontSize = 12,
-                    Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
+                    Foreground = new SolidColorBrush(HintTextColor),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 5, 0, 10)
                 };
@@ -807,7 +623,7 @@ namespace UniPlaySong.Common
                     FontWeight = FontWeights.SemiBold,
                     Margin = new Thickness(0, 10, 0, 20),
                     HorizontalAlignment = HorizontalAlignment.Center,
-                    Background = new SolidColorBrush(Color.FromRgb(33, 150, 243)),
+                    Background = new SolidColorBrush(ButtonBlue),
                     Foreground = new SolidColorBrush(Colors.White),
                     BorderBrush = new SolidColorBrush(Colors.White),
                     BorderThickness = new Thickness(3)
@@ -911,14 +727,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows a controller-friendly Yes/No confirmation dialog with larger text for fullscreen mode.
-        /// Includes XInput controller support for navigation and selection.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="message">The message to display</param>
-        /// <param name="title">Dialog title</param>
-        /// <returns>True if Yes was clicked, false otherwise</returns>
+        /// Shows a controller-friendly Yes/No dialog with XInput support. Returns true if Yes selected.
         public static bool ShowControllerConfirmation(IPlayniteAPI playniteApi, string message, string title)
         {
             if (playniteApi == null) return false;
@@ -938,22 +747,14 @@ namespace UniPlaySong.Common
                 {
                     if (yesButton == null || noButton == null) return;
 
-                    // Yes button style
-                    yesButton.Background = selectedIndex == 0
-                        ? new SolidColorBrush(Color.FromRgb(76, 175, 80))  // Green when selected
-                        : new SolidColorBrush(Color.FromRgb(60, 60, 60));   // Gray when not selected
-                    yesButton.BorderBrush = selectedIndex == 0
-                        ? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-                        : new SolidColorBrush(Color.FromRgb(100, 100, 100));
+                    // Yes button: green when selected, gray when not
+                    yesButton.Background = new SolidColorBrush(selectedIndex == 0 ? ToastSuccessBorderColor : ButtonUnselectedBg);
+                    yesButton.BorderBrush = new SolidColorBrush(selectedIndex == 0 ? Colors.White : ButtonUnselectedBorder);
                     yesButton.BorderThickness = selectedIndex == 0 ? new Thickness(3) : new Thickness(1);
 
-                    // No button style
-                    noButton.Background = selectedIndex == 1
-                        ? new SolidColorBrush(Color.FromRgb(244, 67, 54))   // Red when selected
-                        : new SolidColorBrush(Color.FromRgb(60, 60, 60));    // Gray when not selected
-                    noButton.BorderBrush = selectedIndex == 1
-                        ? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-                        : new SolidColorBrush(Color.FromRgb(100, 100, 100));
+                    // No button: red when selected, gray when not
+                    noButton.Background = new SolidColorBrush(selectedIndex == 1 ? ToastErrorBorderColor : ButtonUnselectedBg);
+                    noButton.BorderBrush = new SolidColorBrush(selectedIndex == 1 ? Colors.White : ButtonUnselectedBorder);
                     noButton.BorderThickness = selectedIndex == 1 ? new Thickness(3) : new Thickness(1);
                 };
 
@@ -983,7 +784,7 @@ namespace UniPlaySong.Common
                 {
                     Text = "D-Pad/Arrows: Select  •  A/Enter: Confirm  •  B/Esc: Cancel",
                     FontSize = 12,
-                    Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
+                    Foreground = new SolidColorBrush(HintTextColor),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 5, 0, 10)
                 };
@@ -1157,16 +958,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows a non-blocking notification using Playnite's built-in notification system.
-        /// This is ideal for controller/fullscreen mode as it doesn't require button dismissal
-        /// and avoids the double-press issues that modal dialogs have with XInput.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="id">Unique identifier for this notification (allows updating/removing)</param>
-        /// <param name="message">The message to display</param>
-        /// <param name="type">Notification type (Info, Error, etc.)</param>
-        /// <param name="onClick">Optional action to perform when notification is clicked</param>
+        /// Shows a non-blocking Playnite notification (auto-dismisses, no XInput issues).
         public static void ShowNotification(
             IPlayniteAPI playniteApi,
             string id,
@@ -1187,35 +979,19 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows a success notification (green, informational).
-        /// Notifications auto-dismiss and don't require user interaction.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="id">Unique identifier for this notification</param>
-        /// <param name="message">The success message to display</param>
+        /// Shows a success notification (Info type).
         public static void ShowSuccessNotification(IPlayniteAPI playniteApi, string id, string message)
         {
             ShowNotification(playniteApi, id, message, NotificationType.Info);
         }
 
-        /// <summary>
-        /// Shows an error notification (red, stands out).
-        /// Notifications auto-dismiss and don't require user interaction.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="id">Unique identifier for this notification</param>
-        /// <param name="message">The error message to display</param>
+        /// Shows an error notification (Error type).
         public static void ShowErrorNotification(IPlayniteAPI playniteApi, string id, string message)
         {
             ShowNotification(playniteApi, id, message, NotificationType.Error);
         }
 
-        /// <summary>
         /// Removes a notification by its ID.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="id">The notification ID to remove</param>
         public static void RemoveNotification(IPlayniteAPI playniteApi, string id)
         {
             if (playniteApi == null || string.IsNullOrEmpty(id)) return;
@@ -1230,11 +1006,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Positions a toast window based on the CurrentToastPosition setting.
-        /// Uses primary screen dimensions for consistent positioning.
-        /// </summary>
-        /// <param name="toastWindow">The toast window to position</param>
+        /// Positions a toast window based on CurrentToastPosition setting.
         private static void PositionToastWindow(Window toastWindow)
         {
             var screenWidth = SystemParameters.PrimaryScreenWidth;
@@ -1283,18 +1055,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows an auto-closing toast popup that works in fullscreen mode.
-        /// Unlike Playnite's notification system (which only shows in desktop mode),
-        /// this creates an actual WPF window that auto-closes after a specified duration.
-        /// The toast position is controlled by CurrentToastPosition setting.
-        /// No button press is required to dismiss, avoiding XInput double-press issues.
-        /// </summary>
-        /// <param name="playniteApi">Playnite API instance</param>
-        /// <param name="message">The message to display</param>
-        /// <param name="title">Toast title</param>
-        /// <param name="isError">Whether this is an error message (changes styling)</param>
-        /// <param name="durationMs">How long to show the toast. If not specified, uses ToastDurationMs setting.</param>
+        /// Shows an auto-closing toast (works in fullscreen mode, no button dismiss needed).
         public static void ShowAutoCloseToast(
             IPlayniteAPI playniteApi,
             string message,
@@ -1376,12 +1137,8 @@ namespace UniPlaySong.Common
                         System.Windows.Controls.Grid.SetRow(messageBlock, 1);
                         textGrid.Children.Add(messageBlock);
 
-                        // Create outer container with semi-transparent background
-                        // The blur effect will show through the transparency
-                        // Convert ToastBorderColorValue (0xRRGGBB) to Color
-                        var borderR = (byte)((ToastBorderColorValue >> 16) & 0xFF);
-                        var borderG = (byte)((ToastBorderColorValue >> 8) & 0xFF);
-                        var borderB = (byte)(ToastBorderColorValue & 0xFF);
+                        // Create outer container - blur effect shows through the transparent background
+                        var (borderR, borderG, borderB) = HexToRgb(ToastBorderColorValue);
                         var outerBorderColor = Color.FromRgb(borderR, borderG, borderB);
 
                         var outerBorder = new Border
@@ -1522,19 +1279,13 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Shows a success toast that auto-closes (works in fullscreen mode).
-        /// Uses ToastDurationMs setting by default.
-        /// </summary>
+        /// Shows a success toast (auto-closes).
         public static void ShowSuccessToast(IPlayniteAPI playniteApi, string message, string title = "Success", int? durationMs = null)
         {
             ShowAutoCloseToast(playniteApi, message, title, isError: false, durationMs: durationMs);
         }
 
-        /// <summary>
-        /// Shows an error toast that auto-closes (works in fullscreen mode).
-        /// Uses ToastDurationMs setting by default (errors may need longer duration).
-        /// </summary>
+        /// Shows an error toast (auto-closes, 25% longer duration than success).
         public static void ShowErrorToast(IPlayniteAPI playniteApi, string message, string title = "Error", int? durationMs = null)
         {
             // Error toasts get 25% more time by default for reading error details
@@ -1542,16 +1293,7 @@ namespace UniPlaySong.Common
             ShowAutoCloseToast(playniteApi, message, title, isError: true, durationMs: actualDuration);
         }
 
-        /// <summary>
-        /// Wait for all controller buttons to be released, then add a grace period.
-        /// Call this after modal dialogs close to prevent button presses from
-        /// "leaking" into the parent dialog.
-        ///
-        /// The grace period is critical: even after the button is released, the parent
-        /// dialog's polling loop might be in the middle of a cycle and could detect
-        /// the release as a state change. The grace period ensures the parent has
-        /// time to sync its button state.
-        /// </summary>
+        /// Waits for controller A/B buttons to be released + grace period (prevents button leak to parent dialog).
         private static void WaitForButtonRelease(int timeoutMs = 1000, int gracePeriodMs = 150)
         {
             try

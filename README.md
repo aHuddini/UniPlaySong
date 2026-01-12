@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,18 +14,22 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.7
+## What's New - v1.1.8
 
-### 🔧 Critical Fixes
-- **Download UI Performance**: Fixed UI freezing during batch downloads with 100+ games
-  - Optimized progress tracking with O(1) counters instead of O(n) LINQ operations
-  - Added throttled UI updates (max 10/second) to prevent dispatcher overload
+### ✨ New Features
+- **Toast Notifications** - Modern, non-intrusive notification system with acrylic blur effects
+  - Replaces disruptive pop-up confirmation dialogs with sleek toast notifications
+  - Customizable appearance: opacity, blur intensity, corner radius, colors, and border settings
+  - Color-coded accent bars for success/error/info feedback
 
-- **Music Playback During Downloads**: Corrected shuffle behavior and queue management
-  - Fixed random music playback interruptions during bulk operations
-  - Improved music queue handling for better user experience
+- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure for UI elements
+
+### 🔧 Fixes
+- **Controller Mode Dialogs** - Fixed dialog handling in Fullscreen/Controller mode
+  - Improved focus management and navigation context
 
 ### Previous Versions
+- **v1.1.7**: Download UI Performance, Music Playback Fixes
 - **v1.1.6**: Smart Search Resolution, Enhanced Playback Experience
 ---
 
@@ -50,6 +54,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Bulk Operations** - Download music for all games at once (parallel processing)
 - **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
 - **Smart Auto-Tagging** - Automatic [UPS] music status tags for easy game filtering
+- **Toast Notifications** - Modern notifications with acrylic blur effects and customizable appearance
 - **Cleanup & Maintenance** - Factory reset, storage management, and smart cleanup tools
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
@@ -120,6 +125,7 @@ Settings are accessible via **Add-ons → Extension Settings → UniPlaySong**:
 - **Downloads**: yt-dlp/FFmpeg paths, Firefox cookies option, auto-download settings
 - **Search Cache**: Cache search results to speed up downloads
 - **Migration**: Import/export music between PlayniteSound and UniPlaySong
+- **Toast Notifications**: Customize notification appearance (opacity, blur, colors, borders)
 - **Cleanup**: Storage info, delete all music, reset settings, factory reset
 
 Music files are stored in: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
