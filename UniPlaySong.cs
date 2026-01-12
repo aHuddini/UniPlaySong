@@ -111,6 +111,10 @@ namespace UniPlaySong
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
 
+        // Cached settings ViewModel - ensures GetSettings and GetSettingsView use the same instance
+        // Critical: Without this, GetSettingsView creates a separate ViewModel and changes aren't saved
+        private UniPlaySongSettingsViewModel _settingsViewModel;
+
         private UniPlaySongSettings _settings => _settingsService?.Current;
         
         private readonly HttpClient _httpClient;
@@ -144,6 +148,10 @@ namespace UniPlaySong
 
             _settingsService = new SettingsService(_api, Logger, _fileLogger, this);
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
+
+            // Initialize settings ViewModel once - cached for GetSettings/GetSettingsView
+            // Following PlayniteSound pattern: cache in constructor, not in GetSettings
+            _settingsViewModel = new UniPlaySongSettingsViewModel(this);
 
             // Wire up debug logging setting to FileLogger (both instance and global static)
             // This allows DEBUG-level logs to be conditional based on user preference
@@ -1757,12 +1765,17 @@ namespace UniPlaySong
 
         public override ISettings GetSettings(bool firstRunSettings)
         {
-            return new UniPlaySongSettingsViewModel(this);
+            // Return cached ViewModel (initialized in constructor)
+            // Following PlayniteSound pattern - Playnite will set this as DataContext
+            return _settingsViewModel;
         }
 
         public override UserControl GetSettingsView(bool firstRunSettings)
         {
-            return new UniPlaySongSettingsView(new UniPlaySongSettingsViewModel(this));
+            // Return view WITHOUT setting DataContext manually
+            // Playnite sets the ISettings object (from GetSettings) as DataContext automatically
+            // Following PlayniteSound pattern: pass plugin reference, not ViewModel
+            return new UniPlaySongSettingsView(this);
         }
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
