@@ -1321,10 +1321,30 @@ namespace UniPlaySong.Common
                         var accentColor = isError ? ToastErrorAccentColor : ToastSuccessAccentColor;
                         var borderColor = isError ? ToastErrorBorderColor : ToastSuccessBorderColor;
 
-                        // Create content grid first (will be placed inside borders)
-                        var grid = new System.Windows.Controls.Grid();
-                        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-                        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                        // Create content grid with accent bar as a column instead of border
+                        // Using a solid Rectangle avoids anti-aliasing artifacts from Border rendering
+                        var contentGrid = new System.Windows.Controls.Grid();
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(4) }); // Accent bar column
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Content column
+
+                        // Accent bar as a solid rectangle (no border artifacts)
+                        // Use a small margin to prevent overlap with outer border edge
+                        var accentBar = new System.Windows.Shapes.Rectangle
+                        {
+                            Fill = new SolidColorBrush(borderColor),
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            Margin = new Thickness(0.5, 0.5, 0, 0.5) // Small inset to avoid border overlap
+                        };
+                        System.Windows.Controls.Grid.SetColumn(accentBar, 0);
+                        contentGrid.Children.Add(accentBar);
+
+                        // Inner grid for text content
+                        var textGrid = new System.Windows.Controls.Grid();
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                        System.Windows.Controls.Grid.SetColumn(textGrid, 1);
+                        contentGrid.Children.Add(textGrid);
 
                         // Title - FontSize 24 matches our controller dialog title
                         var titleBlock = new System.Windows.Controls.TextBlock
@@ -1333,11 +1353,11 @@ namespace UniPlaySong.Common
                             FontSize = 24,
                             FontWeight = FontWeights.Bold,
                             Foreground = new SolidColorBrush(accentColor),
-                            Margin = new Thickness(20, 16, 20, 6),
+                            Margin = new Thickness(16, 16, 20, 6),
                             HorizontalAlignment = HorizontalAlignment.Left
                         };
                         System.Windows.Controls.Grid.SetRow(titleBlock, 0);
-                        grid.Children.Add(titleBlock);
+                        textGrid.Children.Add(titleBlock);
 
                         // Message - FontSize 18 for readability (slightly smaller than title)
                         // LineHeight provides extra spacing between lines for better readability
@@ -1347,25 +1367,14 @@ namespace UniPlaySong.Common
                             FontSize = 18,
                             TextWrapping = TextWrapping.Wrap,
                             Foreground = new SolidColorBrush(ToastTextColor),
-                            Margin = new Thickness(20, 4, 20, 16),
+                            Margin = new Thickness(16, 4, 20, 16),
                             HorizontalAlignment = HorizontalAlignment.Left,
                             TextAlignment = System.Windows.TextAlignment.Left,
                             LineHeight = 28, // Increased line height for better spacing between lines
                             LineStackingStrategy = System.Windows.LineStackingStrategy.BlockLineHeight
                         };
                         System.Windows.Controls.Grid.SetRow(messageBlock, 1);
-                        grid.Children.Add(messageBlock);
-
-                        // Inner accent border (colored line on the left side for visual distinction)
-                        // Use matching corner radius on left side to align with outer border
-                        var innerBorder = new Border
-                        {
-                            BorderBrush = new SolidColorBrush(borderColor),
-                            BorderThickness = new Thickness(4, 0, 0, 0), // Left accent bar
-                            CornerRadius = new CornerRadius(ToastCornerRadius, 0, 0, ToastCornerRadius), // Match outer radius on left
-                            Padding = new Thickness(0),
-                            Child = grid
-                        };
+                        textGrid.Children.Add(messageBlock);
 
                         // Create outer container with semi-transparent background
                         // The blur effect will show through the transparency
@@ -1383,7 +1392,7 @@ namespace UniPlaySong.Common
                             // Semi-transparent dark background - allows blur to show through
                             Background = new SolidColorBrush(Color.FromArgb(1, 45, 45, 45)), // Nearly transparent
                             Padding = new Thickness(0),
-                            Child = innerBorder
+                            Child = contentGrid
                         };
 
                         // Wrapper Grid for the toast content
