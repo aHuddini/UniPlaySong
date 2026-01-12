@@ -1055,19 +1055,11 @@ namespace UniPlaySong.Views
 
                 if (string.IsNullOrEmpty(ffmpegPath))
                 {
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            "FFmpeg path is not configured.",
-                            "FFmpeg Not Found",
-                            isError: true);
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
+                        "FFmpeg path is not configured.",
+                        "FFmpeg Required");
+                    UpdateFeedback("Amplify", "FFmpeg not configured - check Settings");
                     return;
                 }
 
@@ -1077,66 +1069,35 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            $"Created amplified version with {_currentGainDb:+0.0;-0.0;0}dB gain.\n\n" +
-                            $"Original file moved to PreservedOriginals.",
-                            "Amplify Complete");
+                    // Use auto-closing toast popup instead of modal dialog
+                    DialogHelper.ShowSuccessToast(
+                        _playniteApi,
+                        $"Created amplified version with {_currentGainDb:+0.0;-0.0;0}dB gain.\nOriginal preserved.",
+                        "Amplify Complete");
 
-                        // Refresh controller state and activate cooldown to prevent phantom button presses
-                        // The cooldown handles timing, no Thread.Sleep needed
-                        RefreshControllerStateWithCooldown();
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
-
-                    // Close the dialog after successful amplification
-                    // Pass skipStop=true to avoid stopping the music we're about to start
-                    CloseDialog(skipStop: true);
-
-                    // Resume music playback with the newly amplified file AFTER dialog closes
-                    // This ensures the playback isn't interrupted by CloseDialog
-                    // Note: 'settings' variable is already declared above for ffmpegPath
+                    // Resume music playback with the newly amplified file
                     if (_currentGame != null)
                     {
                         _playbackService?.PlayGameMusic(_currentGame, settings, forceReload: true);
                     }
+
+                    // Return to file selection step for intuitive workflow
+                    // (user can continue editing other songs without reopening dialog)
+                    ReturnToFileSelectionAfterSuccess();
                 }
                 else
                 {
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            $"Failed to amplify '{fileName}'.",
-                            "Amplify Failed",
-                            isError: true);
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
+                        $"Failed to amplify '{fileName}'.",
+                        "Amplify Failed");
                     UpdateFeedback("Amplify", "Amplification failed");
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error applying amplify");
-                _isShowingModalDialog = true;
-                try
-                {
-                    DialogHelper.ShowControllerMessage(_playniteApi, $"Error: {ex.Message}", "Amplify Error", isError: true);
-                }
-                finally
-                {
-                    _isShowingModalDialog = false;
-                }
+                DialogHelper.ShowErrorToast(_playniteApi, $"Error: {ex.Message}", "Amplify Error");
             }
             finally
             {
@@ -1154,6 +1115,38 @@ namespace UniPlaySong.Views
             }
             var window = Window.GetWindow(this);
             window?.Close();
+        }
+
+        /// <summary>
+        /// Returns to the file selection step after a successful operation.
+        /// Resets the amplify state and reloads the file list so the user can
+        /// continue editing other songs without reopening the dialog.
+        /// </summary>
+        private void ReturnToFileSelectionAfterSuccess()
+        {
+            try
+            {
+                // Reset amplify state
+                _waveformData = null;
+                _selectedFilePath = null;
+                _currentGainDb = 0f;
+
+                // Cancel any pending waveform loading
+                _loadingCancellation?.Cancel();
+
+                // Return to file selection
+                ShowFileSelectionStep();
+
+                // Reload file list to reflect any changes (new amplified files, etc.)
+                LoadMusicFiles();
+
+                UpdateFeedback("FileSelection", "Select another file to edit, or press B to exit");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error returning to file selection");
+                UpdateFeedback("FileSelection", "Ready for selection");
+            }
         }
 
         #endregion

@@ -959,22 +959,11 @@ namespace UniPlaySong.Views
                 var ffmpegPath = settings?.FFmpegPath;
                 if (!_waveformTrimService.ValidateFFmpegAvailable(ffmpegPath))
                 {
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            "FFmpeg is required for trimming. Please configure FFmpeg in Settings → Audio Normalization.",
-                            "FFmpeg Required",
-                            isError: true);
-
-                        // Refresh controller state and set cooldown
-                        RefreshControllerStateWithCooldown();
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
+                    DialogHelper.ShowErrorToast(
+                        _playniteApi,
+                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings.",
+                        "FFmpeg Required");
+                    UpdateFeedback("Waveform", "FFmpeg not configured - check Settings");
                     return;
                 }
 
@@ -989,35 +978,26 @@ namespace UniPlaySong.Views
                 if (success)
                 {
                     var fileName = Path.GetFileName(_selectedFilePath);
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            $"Successfully trimmed: {fileName}\n\nOriginal file preserved in PreservedOriginals folder.",
-                            "Trim Complete");
 
-                        // Refresh controller state and set cooldown BEFORE clearing the modal flag
-                        // This prevents the A button that dismissed the dialog from being detected as a new press
-                        RefreshControllerStateWithCooldown();
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
+                    // Use auto-closing toast popup instead of modal dialog
+                    DialogHelper.ShowSuccessToast(
+                        _playniteApi,
+                        $"Successfully trimmed: {fileName}\nOriginal preserved.",
+                        "Trim Complete");
 
-                    // Close the dialog first, skipping StopPreview to avoid stopping the music we're about to start
-                    CloseDialog(success: true, skipStopPreview: true);
-
-                    // Resume music playback with the newly trimmed file AFTER dialog closes
-                    // Note: 'settings' variable is already declared above for suffix/ffmpegPath
+                    // Resume music playback with the newly trimmed file
                     if (_currentGame != null)
                     {
                         _playbackService?.PlayGameMusic(_currentGame, settings, forceReload: true);
                     }
+
+                    // Return to file selection step for intuitive workflow
+                    // (user can continue editing other songs without reopening dialog)
+                    ReturnToFileSelectionAfterSuccess();
                 }
                 else
                 {
+                    DialogHelper.ShowErrorToast(_playniteApi, "Trim operation failed.", "Trim Failed");
                     UpdateFeedback("Waveform", "Trim failed");
                     ApplyTrimButton.IsEnabled = true;
                 }
@@ -1212,6 +1192,44 @@ namespace UniPlaySong.Views
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error closing dialog");
+            }
+        }
+
+        /// <summary>
+        /// Returns to the file selection step after a successful operation.
+        /// Resets the trim state and reloads the file list so the user can
+        /// continue editing other songs without reopening the dialog.
+        /// </summary>
+        private void ReturnToFileSelectionAfterSuccess()
+        {
+            try
+            {
+                // Stop any preview
+                StopPreview();
+
+                // Reset trim state
+                _waveformData = null;
+                _trimWindow = null;
+                _selectedFilePath = null;
+
+                // Clear waveform display
+                WaveformLine.Points?.Clear();
+
+                // Cancel any pending waveform loading
+                _loadingCancellation?.Cancel();
+
+                // Return to file selection
+                ShowFileSelectionStep();
+
+                // Reload file list to reflect any changes (new trimmed files, updated labels)
+                LoadMusicFiles();
+
+                UpdateFeedback("FileSelection", "Select another file to edit, or press B to exit");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error returning to file selection");
+                UpdateFeedback("FileSelection", "Ready for selection");
             }
         }
     }

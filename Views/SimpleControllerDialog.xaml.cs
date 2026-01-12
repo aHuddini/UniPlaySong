@@ -299,7 +299,7 @@ namespace UniPlaySong.Views
         }
 
         /// <summary>
-        /// Show an error message in a controller-friendly way
+        /// Show an error message in a controller-friendly way using non-blocking notifications
         /// </summary>
         private void ShowError(string message)
         {
@@ -309,20 +309,9 @@ namespace UniPlaySong.Views
                 {
                     UpdateInputFeedback($"❌ Error: {message}");
 
-                    // Block input during the modal dialog to prevent double-actions
-                    _isShowingModalDialog = true;
-                    try
-                    {
-                        // Use controller-friendly dialog which includes WaitForButtonRelease()
-                        DialogHelper.ShowControllerMessage(_playniteApi, message, "Download Error", isError: true);
-
-                        // Refresh controller state after dialog to prevent phantom button presses
-                        RefreshControllerStateWithCooldown();
-                    }
-                    finally
-                    {
-                        _isShowingModalDialog = false;
-                    }
+                    // Use auto-closing toast popup instead of modal dialog
+                    // This avoids the XInput double-press issues entirely and works in fullscreen
+                    DialogHelper.ShowErrorToast(_playniteApi, message, "Download Error");
                 }));
             }
             catch (Exception ex)
@@ -548,21 +537,9 @@ namespace UniPlaySong.Views
                         break;
                 }
 
-                UpdateInputFeedback($"📋 Preview: {sourceOption.Name}");
-
-                // Block input during the modal dialog to prevent double-actions
-                _isShowingModalDialog = true;
-                try
-                {
-                    // Use controller-friendly dialog which includes WaitForButtonRelease()
-                    DialogHelper.ShowControllerMessage(_playniteApi, previewInfo, $"Preview: {sourceOption.Name}");
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingModalDialog = false;
-                }
-                UpdateInputFeedback("🎮 A: Select source, B: Cancel, X/Y: Preview");
+                UpdateInputFeedback($"📋 {previewInfo}");
+                // Note: Preview info is now shown inline in the feedback text
+                // No modal dialog needed - this prevents XInput issues
                 
                 Logger.DebugIf(LogPrefix, $"Previewed source: {sourceOption.Name}");
             }
@@ -595,21 +572,10 @@ namespace UniPlaySong.Views
                                    $"This album contains the soundtrack for {_currentGame?.Name}.\n" +
                                    $"Select to view individual songs for download.";
 
-                UpdateInputFeedback($"📋 Preview: {album.Name}");
-
-                // Block input during the modal dialog to prevent double-actions
-                _isShowingModalDialog = true;
-                try
-                {
-                    // Use controller-friendly dialog which includes WaitForButtonRelease()
-                    DialogHelper.ShowControllerMessage(_playniteApi, previewInfo, $"Preview: {album.Name}");
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingModalDialog = false;
-                }
-                UpdateInputFeedback("🎮 A: Select album, B: Back to sources, X/Y: Preview");
+                // Show short preview info in the feedback line
+                UpdateInputFeedback($"📋 Album: {album.Name} • Source: {album.Source}");
+                // Note: Preview info is now shown inline in the feedback text
+                // No modal dialog needed - this prevents XInput issues
                 
                 Logger.DebugIf(LogPrefix, $"Previewed album: {album.Name}");
             }
@@ -1320,25 +1286,12 @@ namespace UniPlaySong.Views
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
                                     Logger.DebugIf(LogPrefix, $"Successfully downloaded: {selectedSong.Name} to {filePath}");
 
-                                    // Block input during the modal dialog to prevent double-downloads
-                                    _isShowingModalDialog = true;
-                                    try
-                                    {
-                                        // Show success message using controller-friendly dialog
-                                        // This includes WaitForButtonRelease() to prevent the A button
-                                        // that closes this dialog from triggering another download
-                                        DialogHelper.ShowControllerMessage(
-                                            _playniteApi,
-                                            $"Successfully downloaded: {selectedSong.Name}\n\nSaved to: {filePath}",
-                                            "Download Complete");
-
-                                        // Refresh controller state after dialog to prevent phantom button presses
-                                        RefreshControllerStateWithCooldown();
-                                    }
-                                    finally
-                                    {
-                                        _isShowingModalDialog = false;
-                                    }
+                                    // Use auto-closing toast popup instead of modal dialog
+                                    // This avoids the XInput double-press issues entirely and works in fullscreen
+                                    DialogHelper.ShowSuccessToast(
+                                        _playniteApi,
+                                        $"Downloaded: {selectedSong.Name}",
+                                        "Download Complete");
 
                                     // Trigger auto-normalize if enabled (after download message dismissed)
                                     try

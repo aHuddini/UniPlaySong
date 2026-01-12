@@ -1019,48 +1019,20 @@ namespace UniPlaySong.Views
                 
                 UpdateInputFeedback($"✅ {successMessage}");
 
-                // Block input during success message
-                _isShowingConfirmation = true;
-                try
-                {
-                    // Show controller-friendly success message (larger text for TV/fullscreen)
-                    DialogHelper.ShowControllerMessage(_playniteApi, successMessage, "Song Deleted");
-
-                    // Refresh controller state after dialog to prevent phantom button presses
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingConfirmation = false;
-                }
+                // Use auto-closing toast popup instead of modal dialog
+                // This avoids the XInput double-press issues entirely and works in fullscreen
+                DialogHelper.ShowSuccessToast(_playniteApi, successMessage, "Song Deleted");
 
                 Logger.Info($"Deletion completed successfully: {fileName}");
 
                 // Close dialog if no more files
                 if (_musicFiles.Count == 0)
                 {
-                    // Block input during the final message
-                    _isShowingConfirmation = true;
-                    try
-                    {
-                        DialogHelper.ShowControllerMessage(
-                            _playniteApi,
-                            "All music files have been deleted for this game.",
-                            "No Music Files Remaining");
-
-                        // Refresh controller state after dialog
-                        RefreshControllerStateWithCooldown();
-
-                        // IMPORTANT: When closing the dialog, we need a physical delay to ensure
-                        // the A button is fully released BEFORE returning to Playnite.
-                        // The cooldown only blocks input in THIS dialog, but once we close,
-                        // Playnite's own XInput polling will detect any held button.
-                        WaitForButtonReleaseBeforeClose();
-                    }
-                    finally
-                    {
-                        _isShowingConfirmation = false;
-                    }
+                    // Use auto-closing toast popup
+                    DialogHelper.ShowSuccessToast(
+                        _playniteApi,
+                        "All music files have been deleted for this game.",
+                        "All Files Deleted");
 
                     CloseDialog(true);
                 }
@@ -1069,48 +1041,21 @@ namespace UniPlaySong.Views
             {
                 var errorMsg = "Access denied. The file may be in use or you may not have permission to delete it.";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _isShowingConfirmation = true;
-                try
-                {
-                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingConfirmation = false;
-                }
+                DialogHelper.ShowErrorToast(_playniteApi, errorMsg, "Delete Failed");
                 Logger.Error($"Access denied deleting file: {filePath}");
             }
             catch (IOException ioEx)
             {
                 var errorMsg = $"File operation failed: {ioEx.Message}";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _isShowingConfirmation = true;
-                try
-                {
-                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingConfirmation = false;
-                }
+                DialogHelper.ShowErrorToast(_playniteApi, errorMsg, "Delete Failed");
                 Logger.Error(ioEx, $"IO error deleting file: {filePath}");
             }
             catch (Exception ex)
             {
                 var errorMsg = $"Unexpected error: {ex.Message}";
                 UpdateInputFeedback($"❌ {errorMsg}");
-                _isShowingConfirmation = true;
-                try
-                {
-                    DialogHelper.ShowControllerMessage(_playniteApi, errorMsg, "Delete Failed", isError: true);
-                    RefreshControllerStateWithCooldown();
-                }
-                finally
-                {
-                    _isShowingConfirmation = false;
-                }
+                DialogHelper.ShowErrorToast(_playniteApi, errorMsg, "Delete Failed");
                 Logger.Error(ex, $"Error deleting file: {filePath}");
             }
             finally

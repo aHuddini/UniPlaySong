@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Playnite.SDK;
@@ -18,6 +20,405 @@ namespace UniPlaySong.Common
         /// Default dark background color for dialogs (matches Playnite dark theme)
         /// </summary>
         public static readonly Color DefaultDarkBackground = Color.FromRgb(33, 33, 33);
+
+        // ============================================================================
+        // Toast Notification Styling Constants
+        // These can be customized to match different themes
+        // ============================================================================
+
+        /// <summary>
+        /// Toast background color - matches our controller dialog background (#1E1E1E)
+        /// </summary>
+        public static readonly Color ToastBackgroundColor = Color.FromRgb(30, 30, 30);
+
+        /// <summary>
+        /// Toast border color for success messages (Material Design green)
+        /// </summary>
+        public static readonly Color ToastSuccessBorderColor = Color.FromRgb(76, 175, 80);
+
+        /// <summary>
+        /// Toast accent/title color for success messages
+        /// </summary>
+        public static readonly Color ToastSuccessAccentColor = Color.FromRgb(129, 199, 132);
+
+        /// <summary>
+        /// Toast border color for error messages (Material Design red - #F44336)
+        /// </summary>
+        public static readonly Color ToastErrorBorderColor = Color.FromRgb(244, 67, 54);
+
+        /// <summary>
+        /// Toast accent/title color for error messages
+        /// </summary>
+        public static readonly Color ToastErrorAccentColor = Color.FromRgb(255, 138, 128);
+
+        /// <summary>
+        /// Toast text color (light gray for readability on dark background)
+        /// </summary>
+        public static readonly Color ToastTextColor = Color.FromRgb(224, 224, 224);
+
+        /// <summary>
+        /// Toast outer border color (default medium gray - #424242, matches controller dialog border)
+        /// This is the default value; the actual value used is ToastBorderColorValue which is configurable.
+        /// </summary>
+        public static readonly Color ToastOuterBorderColorDefault = Color.FromRgb(66, 66, 66);
+
+        /// <summary>
+        /// Configurable toast border color (RGB uint format: 0xRRGGBB).
+        /// Default: 0x2A2A2A (dark gray that blends with blur background)
+        /// </summary>
+        public static uint ToastBorderColorValue = 0x2A2A2A;
+
+        /// <summary>
+        /// Toast border thickness in pixels.
+        /// Default: 1 (thin border that's subtle)
+        /// </summary>
+        public static double ToastBorderThickness = 1;
+
+        /// <summary>
+        /// Toast position on screen. Change this to reposition all toasts.
+        /// </summary>
+        public enum ToastPosition
+        {
+            TopRight,
+            TopLeft,
+            BottomRight,
+            BottomLeft,
+            TopCenter,
+            BottomCenter
+        }
+
+        /// <summary>
+        /// Current toast position setting. Modify this to change where toasts appear.
+        /// Default is TopRight for non-intrusive notifications.
+        /// </summary>
+        public static ToastPosition CurrentToastPosition = ToastPosition.TopRight;
+
+        /// <summary>
+        /// Margin from screen edge for toast positioning (in pixels)
+        /// </summary>
+        public static int ToastEdgeMargin = 30;
+
+        /// <summary>
+        /// Whether to enable acrylic blur effect on toast notifications.
+        /// Uses Windows DWM APIs for native blur - falls back gracefully if unavailable.
+        /// </summary>
+        public static bool EnableToastAcrylicBlur = true;
+
+        /// <summary>
+        /// Toast blur opacity (0-255). Higher = more opaque/darker, lower = more transparent/more blur visible.
+        /// Default: 94 (37% opacity)
+        /// </summary>
+        public static byte ToastBlurOpacity = 94;
+
+        /// <summary>
+        /// Toast blur tint color (RGB). This is the color that tints the blur effect.
+        /// Default: #000521 (very dark blue)
+        /// Format: 0xRRGGBB
+        /// </summary>
+        public static uint ToastBlurTintColor = 0x000521;
+
+        /// <summary>
+        /// Toast blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture).
+        /// Default: 1 (Acrylic)
+        /// </summary>
+        public static int ToastBlurMode = 1;
+
+        /// <summary>
+        /// Toast corner radius in pixels. Set to 0 for square corners.
+        /// Default: 0 (square corners avoid blur corner artifacts)
+        /// </summary>
+        public static double ToastCornerRadius = 0;
+
+        /// <summary>
+        /// Toast width in pixels.
+        /// Default: 420
+        /// </summary>
+        public static double ToastWidth = 420;
+
+        /// <summary>
+        /// Toast minimum height in pixels.
+        /// Default: 90
+        /// </summary>
+        public static double ToastMinHeight = 90;
+
+        /// <summary>
+        /// Toast maximum height in pixels.
+        /// Default: 180
+        /// </summary>
+        public static double ToastMaxHeight = 180;
+
+        /// <summary>
+        /// Toast display duration in milliseconds. Default: 4000
+        /// </summary>
+        public static int ToastDurationMs = 4000;
+
+        /// <summary>
+        /// Synchronizes toast settings from UniPlaySongSettings to DialogHelper static fields.
+        /// Call this when settings are loaded or changed.
+        /// </summary>
+        /// <param name="settings">The settings object to sync from</param>
+        public static void SyncToastSettings(UniPlaySongSettings settings)
+        {
+            if (settings == null) return;
+
+            EnableToastAcrylicBlur = settings.EnableToastAcrylicBlur;
+            ToastBlurOpacity = (byte)settings.ToastBlurOpacity;
+            ToastBlurMode = settings.ToastBlurMode;
+            ToastCornerRadius = settings.ToastCornerRadius;
+            ToastWidth = settings.ToastWidth;
+            ToastMinHeight = settings.ToastMinHeight;
+            ToastMaxHeight = settings.ToastMaxHeight;
+            ToastDurationMs = settings.ToastDurationMs;
+            ToastEdgeMargin = settings.ToastEdgeMargin;
+
+            // Parse hex color string to uint (format: "RRGGBB" -> 0xRRGGBB)
+            if (!string.IsNullOrEmpty(settings.ToastBlurTintColor))
+            {
+                try
+                {
+                    string hex = settings.ToastBlurTintColor.TrimStart('#');
+                    if (hex.Length == 6)
+                    {
+                        ToastBlurTintColor = Convert.ToUInt32(hex, 16);
+                    }
+                }
+                catch
+                {
+                    // Keep default value on parse error
+                }
+            }
+
+            // Parse border color hex string to uint
+            if (!string.IsNullOrEmpty(settings.ToastBorderColor))
+            {
+                try
+                {
+                    string hex = settings.ToastBorderColor.TrimStart('#');
+                    if (hex.Length == 6)
+                    {
+                        ToastBorderColorValue = Convert.ToUInt32(hex, 16);
+                    }
+                }
+                catch
+                {
+                    // Keep default value on parse error
+                }
+            }
+
+            ToastBorderThickness = settings.ToastBorderThickness;
+        }
+
+        // ============================================================================
+        // Windows Acrylic Blur Effect API
+        // Uses SetWindowCompositionAttribute for Windows 10 1803+ acrylic blur
+        // ============================================================================
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+        [DllImport("gdi32.dll")]
+        private static extern bool DeleteObject(IntPtr hObject);
+
+        // Windows 11 DWM API for native backdrop effects with proper rounded corner support
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+        // DWM Window Attributes for Windows 11
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+        private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+        private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
+
+        // Window corner preference values
+        private const int DWMWCP_DEFAULT = 0;
+        private const int DWMWCP_DONOTROUND = 1;
+        private const int DWMWCP_ROUND = 2;
+        private const int DWMWCP_ROUNDSMALL = 3;
+
+        // System backdrop type values (Windows 11 22H2+)
+        private const int DWMSBT_AUTO = 0;
+        private const int DWMSBT_DISABLE = 1;      // None
+        private const int DWMSBT_MAINWINDOW = 2;   // Mica
+        private const int DWMSBT_TRANSIENTWINDOW = 3; // Acrylic
+        private const int DWMSBT_TABBEDWINDOW = 4; // Tabbed
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowCompositionAttributeData
+        {
+            public WindowCompositionAttribute Attribute;
+            public IntPtr Data;
+            public int SizeOfData;
+        }
+
+        private enum WindowCompositionAttribute
+        {
+            WCA_ACCENT_POLICY = 19
+        }
+
+        private enum AccentState
+        {
+            ACCENT_DISABLED = 0,
+            ACCENT_ENABLE_BLURBEHIND = 3,        // Basic blur (Windows 10+)
+            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4  // Acrylic blur (Windows 10 1803+)
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AccentPolicy
+        {
+            public AccentState AccentState;
+            public uint AccentFlags;
+            public uint GradientColor; // Format: AABBGGRR (Alpha, Blue, Green, Red)
+            public int AnimationId;
+        }
+
+        /// <summary>
+        /// Checks if the current Windows version supports the DWM backdrop API (Windows 11 22H2+, build 22621+).
+        /// This API provides native acrylic with proper rounded corner support.
+        /// </summary>
+        private static bool IsWindows11WithBackdropSupport()
+        {
+            try
+            {
+                // Windows 11 22H2 is build 22621+
+                // The DWMWA_SYSTEMBACKDROP_TYPE attribute was added in this version
+                var version = Environment.OSVersion.Version;
+                return version.Major >= 10 && version.Build >= 22621;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if we're on Windows 11 (build 22000+) which supports DWMWA_WINDOW_CORNER_PREFERENCE.
+        /// </summary>
+        private static bool IsWindows11()
+        {
+            try
+            {
+                var version = Environment.OSVersion.Version;
+                return version.Major >= 10 && version.Build >= 22000;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets a rounded rectangle region on the window at the native Win32 level.
+        /// This clips the actual window (including acrylic blur) to rounded corners,
+        /// not just the WPF content.
+        /// </summary>
+        /// <param name="window">The window to clip</param>
+        /// <param name="cornerRadius">Radius for rounded corners in pixels</param>
+        private static void SetRoundedWindowRegion(Window window, int cornerRadius)
+        {
+            try
+            {
+                var windowHelper = new WindowInteropHelper(window);
+                var hwnd = windowHelper.EnsureHandle();
+
+                // Get window dimensions in device pixels (not DIP)
+                var source = PresentationSource.FromVisual(window);
+                if (source?.CompositionTarget == null) return;
+
+                var dpiScale = source.CompositionTarget.TransformToDevice.M11;
+                int width = (int)(window.ActualWidth * dpiScale);
+                int height = (int)(window.ActualHeight * dpiScale);
+                int scaledRadius = (int)(cornerRadius * dpiScale);
+
+                // Create a rounded rectangle region
+                // Adding 1 to dimensions helps with edge cases
+                IntPtr hRgn = CreateRoundRectRgn(0, 0, width + 1, height + 1, scaledRadius * 2, scaledRadius * 2);
+                if (hRgn != IntPtr.Zero)
+                {
+                    // SetWindowRgn takes ownership of the region, so we don't delete it
+                    SetWindowRgn(hwnd, hRgn, true);
+                    // Note: Do NOT call DeleteObject on hRgn - the system owns it now
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "SetRoundedWindowRegion failed");
+            }
+        }
+
+        /// <summary>
+        /// Enables acrylic blur effect on a window using SetWindowCompositionAttribute.
+        /// Uses configurable ToastBlurOpacity and ToastBlurTintColor settings.
+        /// Requires Windows 10 1803+ for acrylic effect, falls back to basic blur on older versions.
+        /// </summary>
+        /// <param name="window">The window to apply blur to</param>
+        private static void EnableWindowBlur(Window window)
+        {
+            try
+            {
+                var windowHelper = new WindowInteropHelper(window);
+                var hwnd = windowHelper.EnsureHandle();
+
+                // GradientColor format is AABBGGRR (Alpha, Blue, Green, Red)
+                // Convert RGB (0xRRGGBB) to BGR format and add alpha
+                uint r = (ToastBlurTintColor >> 16) & 0xFF;
+                uint g = (ToastBlurTintColor >> 8) & 0xFF;
+                uint b = ToastBlurTintColor & 0xFF;
+                uint gradientColor = ((uint)ToastBlurOpacity << 24) | (b << 16) | (g << 8) | r;
+
+                // Select blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture)
+                var blurState = ToastBlurMode == 0
+                    ? AccentState.ACCENT_ENABLE_BLURBEHIND
+                    : AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
+
+                var accent = new AccentPolicy
+                {
+                    AccentState = blurState,
+                    AccentFlags = 0, // No special flags needed
+                    GradientColor = gradientColor,
+                    AnimationId = 0
+                };
+
+                var accentSize = Marshal.SizeOf(accent);
+                var accentPtr = Marshal.AllocHGlobal(accentSize);
+
+                try
+                {
+                    Marshal.StructureToPtr(accent, accentPtr, false);
+
+                    var data = new WindowCompositionAttributeData
+                    {
+                        Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY,
+                        Data = accentPtr,
+                        SizeOfData = accentSize
+                    };
+
+                    int result = SetWindowCompositionAttribute(hwnd, ref data);
+                    Logger.Debug($"EnableWindowBlur ACRYLICBLURBEHIND result: {result}");
+
+                    // Fallback to BLURBEHIND if acrylic fails
+                    if (result == 0)
+                    {
+                        accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND;
+                        Marshal.StructureToPtr(accent, accentPtr, false);
+                        result = SetWindowCompositionAttribute(hwnd, ref data);
+                        Logger.Debug($"EnableWindowBlur BLURBEHIND fallback result: {result}");
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(accentPtr);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "EnableWindowBlur failed");
+            }
+        }
 
         /// <summary>
         /// Gets the current DPI scale factor for the primary screen.
@@ -757,11 +1158,392 @@ namespace UniPlaySong.Common
         }
 
         /// <summary>
-        /// Wait for all controller buttons to be released.
+        /// Shows a non-blocking notification using Playnite's built-in notification system.
+        /// This is ideal for controller/fullscreen mode as it doesn't require button dismissal
+        /// and avoids the double-press issues that modal dialogs have with XInput.
+        /// </summary>
+        /// <param name="playniteApi">Playnite API instance</param>
+        /// <param name="id">Unique identifier for this notification (allows updating/removing)</param>
+        /// <param name="message">The message to display</param>
+        /// <param name="type">Notification type (Info, Error, etc.)</param>
+        /// <param name="onClick">Optional action to perform when notification is clicked</param>
+        public static void ShowNotification(
+            IPlayniteAPI playniteApi,
+            string id,
+            string message,
+            NotificationType type = NotificationType.Info,
+            Action onClick = null)
+        {
+            if (playniteApi == null) return;
+
+            try
+            {
+                var notification = new NotificationMessage(id, message, type, onClick);
+                playniteApi.Notifications.Add(notification);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, $"Error showing notification: {message}");
+            }
+        }
+
+        /// <summary>
+        /// Shows a success notification (green, informational).
+        /// Notifications auto-dismiss and don't require user interaction.
+        /// </summary>
+        /// <param name="playniteApi">Playnite API instance</param>
+        /// <param name="id">Unique identifier for this notification</param>
+        /// <param name="message">The success message to display</param>
+        public static void ShowSuccessNotification(IPlayniteAPI playniteApi, string id, string message)
+        {
+            ShowNotification(playniteApi, id, message, NotificationType.Info);
+        }
+
+        /// <summary>
+        /// Shows an error notification (red, stands out).
+        /// Notifications auto-dismiss and don't require user interaction.
+        /// </summary>
+        /// <param name="playniteApi">Playnite API instance</param>
+        /// <param name="id">Unique identifier for this notification</param>
+        /// <param name="message">The error message to display</param>
+        public static void ShowErrorNotification(IPlayniteAPI playniteApi, string id, string message)
+        {
+            ShowNotification(playniteApi, id, message, NotificationType.Error);
+        }
+
+        /// <summary>
+        /// Removes a notification by its ID.
+        /// </summary>
+        /// <param name="playniteApi">Playnite API instance</param>
+        /// <param name="id">The notification ID to remove</param>
+        public static void RemoveNotification(IPlayniteAPI playniteApi, string id)
+        {
+            if (playniteApi == null || string.IsNullOrEmpty(id)) return;
+
+            try
+            {
+                playniteApi.Notifications.Remove(id);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, $"Error removing notification: {id}");
+            }
+        }
+
+        /// <summary>
+        /// Positions a toast window based on the CurrentToastPosition setting.
+        /// Uses primary screen dimensions for consistent positioning.
+        /// </summary>
+        /// <param name="toastWindow">The toast window to position</param>
+        private static void PositionToastWindow(Window toastWindow)
+        {
+            var screenWidth = SystemParameters.PrimaryScreenWidth;
+            var screenHeight = SystemParameters.PrimaryScreenHeight;
+            var toastWidth = toastWindow.ActualWidth;
+            var toastHeight = toastWindow.ActualHeight;
+            var margin = ToastEdgeMargin;
+
+            switch (CurrentToastPosition)
+            {
+                case ToastPosition.TopRight:
+                    toastWindow.Left = screenWidth - toastWidth - margin;
+                    toastWindow.Top = margin;
+                    break;
+
+                case ToastPosition.TopLeft:
+                    toastWindow.Left = margin;
+                    toastWindow.Top = margin;
+                    break;
+
+                case ToastPosition.BottomRight:
+                    toastWindow.Left = screenWidth - toastWidth - margin;
+                    toastWindow.Top = screenHeight - toastHeight - margin;
+                    break;
+
+                case ToastPosition.BottomLeft:
+                    toastWindow.Left = margin;
+                    toastWindow.Top = screenHeight - toastHeight - margin;
+                    break;
+
+                case ToastPosition.TopCenter:
+                    toastWindow.Left = (screenWidth - toastWidth) / 2;
+                    toastWindow.Top = margin;
+                    break;
+
+                case ToastPosition.BottomCenter:
+                    toastWindow.Left = (screenWidth - toastWidth) / 2;
+                    toastWindow.Top = screenHeight - toastHeight - margin;
+                    break;
+
+                default:
+                    // Default to top-right
+                    toastWindow.Left = screenWidth - toastWidth - margin;
+                    toastWindow.Top = margin;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Shows an auto-closing toast popup that works in fullscreen mode.
+        /// Unlike Playnite's notification system (which only shows in desktop mode),
+        /// this creates an actual WPF window that auto-closes after a specified duration.
+        /// The toast position is controlled by CurrentToastPosition setting.
+        /// No button press is required to dismiss, avoiding XInput double-press issues.
+        /// </summary>
+        /// <param name="playniteApi">Playnite API instance</param>
+        /// <param name="message">The message to display</param>
+        /// <param name="title">Toast title</param>
+        /// <param name="isError">Whether this is an error message (changes styling)</param>
+        /// <param name="durationMs">How long to show the toast. If not specified, uses ToastDurationMs setting.</param>
+        public static void ShowAutoCloseToast(
+            IPlayniteAPI playniteApi,
+            string message,
+            string title,
+            bool isError = false,
+            int? durationMs = null)
+        {
+            if (playniteApi == null) return;
+
+            try
+            {
+                // Must run on UI thread
+                var app = Application.Current;
+                if (app == null) return;
+
+                app.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        Window toastWindow = null;
+                        System.Windows.Threading.DispatcherTimer closeTimer = null;
+
+                        // Use our toast color constants (matching controller dialog styling)
+                        var accentColor = isError ? ToastErrorAccentColor : ToastSuccessAccentColor;
+                        var borderColor = isError ? ToastErrorBorderColor : ToastSuccessBorderColor;
+
+                        // Create content grid first (will be placed inside borders)
+                        var grid = new System.Windows.Controls.Grid();
+                        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+                        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+                        // Title - FontSize 24 matches our controller dialog title
+                        var titleBlock = new System.Windows.Controls.TextBlock
+                        {
+                            Text = title,
+                            FontSize = 24,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = new SolidColorBrush(accentColor),
+                            Margin = new Thickness(20, 16, 20, 6),
+                            HorizontalAlignment = HorizontalAlignment.Left
+                        };
+                        System.Windows.Controls.Grid.SetRow(titleBlock, 0);
+                        grid.Children.Add(titleBlock);
+
+                        // Message - FontSize 18 for readability (slightly smaller than title)
+                        // LineHeight provides extra spacing between lines for better readability
+                        var messageBlock = new System.Windows.Controls.TextBlock
+                        {
+                            Text = message,
+                            FontSize = 18,
+                            TextWrapping = TextWrapping.Wrap,
+                            Foreground = new SolidColorBrush(ToastTextColor),
+                            Margin = new Thickness(20, 4, 20, 16),
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                            TextAlignment = System.Windows.TextAlignment.Left,
+                            LineHeight = 28, // Increased line height for better spacing between lines
+                            LineStackingStrategy = System.Windows.LineStackingStrategy.BlockLineHeight
+                        };
+                        System.Windows.Controls.Grid.SetRow(messageBlock, 1);
+                        grid.Children.Add(messageBlock);
+
+                        // Inner accent border (colored line on the left side for visual distinction)
+                        // Use matching corner radius on left side to align with outer border
+                        var innerBorder = new Border
+                        {
+                            BorderBrush = new SolidColorBrush(borderColor),
+                            BorderThickness = new Thickness(4, 0, 0, 0), // Left accent bar
+                            CornerRadius = new CornerRadius(ToastCornerRadius, 0, 0, ToastCornerRadius), // Match outer radius on left
+                            Padding = new Thickness(0),
+                            Child = grid
+                        };
+
+                        // Create outer container with semi-transparent background
+                        // The blur effect will show through the transparency
+                        // Convert ToastBorderColorValue (0xRRGGBB) to Color
+                        var borderR = (byte)((ToastBorderColorValue >> 16) & 0xFF);
+                        var borderG = (byte)((ToastBorderColorValue >> 8) & 0xFF);
+                        var borderB = (byte)(ToastBorderColorValue & 0xFF);
+                        var outerBorderColor = Color.FromRgb(borderR, borderG, borderB);
+
+                        var outerBorder = new Border
+                        {
+                            BorderBrush = new SolidColorBrush(outerBorderColor),
+                            BorderThickness = new Thickness(ToastBorderThickness),
+                            CornerRadius = new CornerRadius(ToastCornerRadius),
+                            // Semi-transparent dark background - allows blur to show through
+                            Background = new SolidColorBrush(Color.FromArgb(1, 45, 45, 45)), // Nearly transparent
+                            Padding = new Thickness(0),
+                            Child = innerBorder
+                        };
+
+                        // Wrapper Grid for the toast content
+                        // Note: The Windows SetWindowCompositionAttribute API applies blur to the entire
+                        // rectangular window. There's no way to clip it to rounded corners - this is a
+                        // known limitation of this undocumented API. The dark corners in rounded toasts
+                        // are unavoidable with acrylic blur enabled. To avoid them, either:
+                        // 1. Set corner radius to 0 (square corners)
+                        // 2. Disable blur (use solid background)
+                        var clipWrapper = new System.Windows.Controls.Grid
+                        {
+                            ClipToBounds = true
+                        };
+                        clipWrapper.Children.Add(outerBorder);
+
+                        // Create window WITH AllowsTransparency for blur effect
+                        // FluentWpfChromes uses AllowsTransparency=true with SetWindowCompositionAttribute
+                        toastWindow = new Window
+                        {
+                            Title = title,
+                            Width = ToastWidth,
+                            SizeToContent = SizeToContent.Height,
+                            MinHeight = ToastMinHeight,
+                            MaxHeight = ToastMaxHeight,
+                            WindowStyle = WindowStyle.None,
+                            AllowsTransparency = true, // Required for transparent/blur window
+                            Background = Brushes.Transparent, // Transparent window background
+                            ResizeMode = ResizeMode.NoResize,
+                            Content = clipWrapper,
+                            Topmost = true,
+                            ShowInTaskbar = false,
+                            ShowActivated = false, // Don't steal focus from main dialog
+                            Focusable = false
+                        };
+
+                        // Apply rounded clip to the wrapper Grid after layout to clip the blur effect
+                        // This clips everything including the blur that shows through transparent areas
+                        clipWrapper.Loaded += (wrapperSender, wrapperArgs) =>
+                        {
+                            try
+                            {
+                                var wrapper = wrapperSender as System.Windows.Controls.Grid;
+                                if (wrapper != null && wrapper.ActualWidth > 0 && wrapper.ActualHeight > 0)
+                                {
+                                    // Create a rounded rectangle geometry matching the border's corner radius
+                                    var clipGeometry = new RectangleGeometry(
+                                        new Rect(0, 0, wrapper.ActualWidth, wrapper.ActualHeight),
+                                        ToastCornerRadius,
+                                        ToastCornerRadius);
+                                    wrapper.Clip = clipGeometry;
+                                }
+                            }
+                            catch { /* Ignore clip errors */ }
+                        };
+
+                        // Position toast and apply blur effect after window loads
+                        toastWindow.SourceInitialized += (s, e) =>
+                        {
+                            try
+                            {
+                                // Apply blur effect
+                                if (EnableToastAcrylicBlur)
+                                {
+                                    EnableWindowBlur(toastWindow);
+                                }
+                            }
+                            catch (Exception blurEx)
+                            {
+                                Logger.Debug(blurEx, "Failed to apply blur effect");
+                            }
+                        };
+
+                        toastWindow.Loaded += (s, e) =>
+                        {
+                            try
+                            {
+                                PositionToastWindow(toastWindow);
+                            }
+                            catch
+                            {
+                                // Fallback positioning (top-right)
+                                toastWindow.Left = SystemParameters.PrimaryScreenWidth - toastWindow.ActualWidth - ToastEdgeMargin;
+                                toastWindow.Top = ToastEdgeMargin;
+                            }
+                        };
+
+                        // Setup auto-close timer (use provided duration or fallback to configured ToastDurationMs)
+                        var actualDuration = durationMs ?? ToastDurationMs;
+                        closeTimer = new System.Windows.Threading.DispatcherTimer
+                        {
+                            Interval = TimeSpan.FromMilliseconds(actualDuration)
+                        };
+                        closeTimer.Tick += (s, e) =>
+                        {
+                            closeTimer.Stop();
+                            try
+                            {
+                                toastWindow?.Close();
+                            }
+                            catch { /* Ignore close errors */ }
+                        };
+
+                        // Allow clicking anywhere on toast to dismiss early
+                        toastWindow.MouseDown += (s, e) =>
+                        {
+                            closeTimer?.Stop();
+                            try
+                            {
+                                toastWindow?.Close();
+                            }
+                            catch { /* Ignore close errors */ }
+                        };
+
+                        // Start timer and show window non-modally
+                        closeTimer.Start();
+                        toastWindow.Show();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug(ex, $"Error showing auto-close toast: {message}");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, $"Error dispatching auto-close toast: {message}");
+            }
+        }
+
+        /// <summary>
+        /// Shows a success toast that auto-closes (works in fullscreen mode).
+        /// Uses ToastDurationMs setting by default.
+        /// </summary>
+        public static void ShowSuccessToast(IPlayniteAPI playniteApi, string message, string title = "Success", int? durationMs = null)
+        {
+            ShowAutoCloseToast(playniteApi, message, title, isError: false, durationMs: durationMs);
+        }
+
+        /// <summary>
+        /// Shows an error toast that auto-closes (works in fullscreen mode).
+        /// Uses ToastDurationMs setting by default (errors may need longer duration).
+        /// </summary>
+        public static void ShowErrorToast(IPlayniteAPI playniteApi, string message, string title = "Error", int? durationMs = null)
+        {
+            // Error toasts get 25% more time by default for reading error details
+            var actualDuration = durationMs ?? (int)(ToastDurationMs * 1.25);
+            ShowAutoCloseToast(playniteApi, message, title, isError: true, durationMs: actualDuration);
+        }
+
+        /// <summary>
+        /// Wait for all controller buttons to be released, then add a grace period.
         /// Call this after modal dialogs close to prevent button presses from
         /// "leaking" into the parent dialog.
+        ///
+        /// The grace period is critical: even after the button is released, the parent
+        /// dialog's polling loop might be in the middle of a cycle and could detect
+        /// the release as a state change. The grace period ensures the parent has
+        /// time to sync its button state.
         /// </summary>
-        private static void WaitForButtonRelease(int timeoutMs = 500)
+        private static void WaitForButtonRelease(int timeoutMs = 1000, int gracePeriodMs = 150)
         {
             try
             {
@@ -771,32 +1553,24 @@ namespace UniPlaySong.Common
                     XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
                     if (XInputWrapper.XInputGetState(0, ref state) == 0)
                     {
-                        // Check if all buttons are released (only check face buttons, D-pad, shoulders, triggers)
-                        ushort relevantButtons = (ushort)(
+                        // Check if A and B buttons are released (these are the confirm/cancel buttons)
+                        ushort confirmButtons = (ushort)(
                             XInputWrapper.XINPUT_GAMEPAD_A |
-                            XInputWrapper.XINPUT_GAMEPAD_B |
-                            XInputWrapper.XINPUT_GAMEPAD_X |
-                            XInputWrapper.XINPUT_GAMEPAD_Y |
-                            XInputWrapper.XINPUT_GAMEPAD_DPAD_UP |
-                            XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN |
-                            XInputWrapper.XINPUT_GAMEPAD_DPAD_LEFT |
-                            XInputWrapper.XINPUT_GAMEPAD_DPAD_RIGHT |
-                            XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER |
-                            XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER
+                            XInputWrapper.XINPUT_GAMEPAD_B
                         );
 
-                        if ((state.Gamepad.wButtons & relevantButtons) == 0 &&
-                            state.Gamepad.bLeftTrigger < 50 &&
-                            state.Gamepad.bRightTrigger < 50)
+                        if ((state.Gamepad.wButtons & confirmButtons) == 0)
                         {
-                            // All buttons released, wait a tiny bit more for debounce
-                            System.Threading.Thread.Sleep(50);
+                            // Buttons released - now wait the grace period
+                            // This gives parent dialogs time to sync their button state
+                            System.Threading.Thread.Sleep(gracePeriodMs);
                             return;
                         }
                     }
                     System.Threading.Thread.Sleep(16); // ~60Hz polling
                 }
-                Logger.Debug("WaitForButtonRelease: timeout reached, some buttons may still be pressed");
+                // Timeout reached - still add grace period
+                System.Threading.Thread.Sleep(gracePeriodMs);
             }
             catch (Exception ex)
             {

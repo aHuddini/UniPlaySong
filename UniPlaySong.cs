@@ -167,11 +167,14 @@ namespace UniPlaySong
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
-                
+
                 if (_settings.PauseOnTrailer)
                 {
                     MediaElementsMonitor.Attach(_api, _settings);
                 }
+
+                // Sync toast settings to DialogHelper at startup
+                DialogHelper.SyncToastSettings(_settings);
             }
             
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
