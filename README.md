@@ -23,7 +23,7 @@ Built with the help of Claude Code and Cursor IDE
   - Color-coded feedback for different message types
   - Available only for controller-mode related features and actions
 
-- **Custom Windows Blur System** - Direct Windows API blur infrastructure (Windows 10+ compatible)
+- **Windows Blur System for Toast visuals** - Direct Windows API blur infrastructure (Windows 10+ compatible)
 
 ### Fixes
 - **Settings Persistence** - Fixed critical bug where settings changes were not being saved
@@ -37,7 +37,6 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Previous Versions
 - **v1.1.7**: Download UI Performance and Music Playback Fixes
-- **v1.1.6**: Smart Search Resolution and Enhanced Playback
 ---
 
 ## 🎬 Demo
