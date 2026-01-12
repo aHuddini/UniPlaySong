@@ -6,7 +6,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 - **Toast Notifications** - New lightweight notification system for controller-mode operations
-  - Modern acrylic blur background effect using Windows Composition API
+  - Custom Windows API blur effects (direct SetWindowCompositionAttribute calls, not WPF Blur Effect)
   - Color-coded accent bars: green for success, red for errors, blue for info
   - Non-intrusive positioning with smooth fade animations
   - Customizable appearance settings in new "Toast Notifications" settings tab
@@ -19,10 +19,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Border color customization with RGB sliders
   - Border thickness control (0-5px)
   - Live preview of all color settings
-- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure
+- **Custom Windows Blur System** - Direct Windows API blur infrastructure (Windows 10+ compatible)
   - `SetWindowCompositionAttribute` Windows API integration
   - `AccentPolicy` structure for blur/transparency control
-  - Extensible for future UI elements requiring glass effects
+  - Support for both Basic blur (Windows 10+) and Acrylic blur (Windows 10 1803+) modes
+  - Extensible for future UI elements requiring native Windows blur effects
 
 ### Changed
 - **Controller-Mode Dialog System** - Replaced problematic confirmation dialogs with toast notifications in controller mode

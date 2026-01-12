@@ -23,7 +23,7 @@ Built with the help of Claude Code and Cursor IDE
   - Color-coded feedback for different message types
   - Available only for controller-mode related features and actions
 
-- **Internal Blur Visual Effect System** - Reusable acrylic blur infrastructure
+- **Custom Windows Blur System** - Direct Windows API blur infrastructure (Windows 10+ compatible)
 
 ### Fixes
 - **Settings Persistence** - Fixed critical bug where settings changes were not being saved
