@@ -30,10 +30,16 @@ namespace UniPlaySong.Services
         void HandleViewChange();
         
         /// <summary>
-        /// Handles video state changes (pause/resume music when video plays)
+        /// Handles video state changes from MediaElementsMonitor (pause/resume music when video plays)
         /// </summary>
         void HandleVideoStateChange(bool isPlaying);
-        
+
+        /// <summary>
+        /// Handles theme overlay state changes from MusicControl (pause/resume music when theme overlay is active)
+        /// This is separate from HandleVideoStateChange to prevent conflicts.
+        /// </summary>
+        void HandleThemeOverlayChange(bool isActive);
+
         /// <summary>
         /// Gets whether this is the first game selection
         /// </summary>

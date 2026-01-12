@@ -40,6 +40,17 @@ namespace UniPlaySong.Services
         void Resume();
 
         /// <summary>
+        /// Adds a pause source and pauses playback if this is the first pause source.
+        /// Multiple sources can pause independently without conflicts.
+        /// </summary>
+        void AddPauseSource(PauseSource source);
+
+        /// <summary>
+        /// Removes a pause source and resumes playback if all pause sources are cleared.
+        /// </summary>
+        void RemovePauseSource(PauseSource source);
+
+        /// <summary>
         /// Gets available songs for a game
         /// </summary>
         List<string> GetAvailableSongs(Game game);

@@ -87,6 +87,12 @@ namespace UniPlaySong.Services
                 return false;
             }
 
+            if (_settings.ThemeOverlayActive)
+            {
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - theme overlay is active");
+                return false;
+            }
+
             if (game == null)
             {
                 _fileLogger?.Debug("ShouldPlayMusic: Returning false - game is null");
@@ -282,7 +288,7 @@ namespace UniPlaySong.Services
         }
         
         /// <summary>
-        /// Handles video playback state changes.
+        /// Handles video playback state changes from MediaElementsMonitor.
         /// Pauses music when video starts, resumes or starts music when video stops.
         /// </summary>
         /// <param name="isPlaying">True if video is playing; false if video stopped.</param>
@@ -318,7 +324,32 @@ namespace UniPlaySong.Services
                 }
             }
         }
-        
+
+        /// <summary>
+        /// Handles theme overlay state changes from MusicControl (theme Tag bindings).
+        /// Uses the multi-source pause system to properly integrate with other pause reasons.
+        ///
+        /// When ThemeOverlayActive=true, adds ThemeOverlay pause source (pauses music).
+        /// When ThemeOverlayActive=false, removes ThemeOverlay pause source (resumes if no other sources).
+        ///
+        /// This is separate from HandleVideoStateChange to prevent conflicts between
+        /// theme pause requests (via MusicControl) and MediaElementsMonitor video detection.
+        /// </summary>
+        /// <param name="isActive">True if theme overlay is active; false if ended.</param>
+        public void HandleThemeOverlayChange(bool isActive)
+        {
+            if (isActive)
+            {
+                _fileLogger?.Info("HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source");
+                _playbackService?.AddPauseSource(Models.PauseSource.ThemeOverlay);
+            }
+            else
+            {
+                _fileLogger?.Info("HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source");
+                _playbackService?.RemovePauseSource(Models.PauseSource.ThemeOverlay);
+            }
+        }
+
         /// <summary>
         /// Gets whether this is the first game selection.
         /// </summary>
