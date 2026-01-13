@@ -77,6 +77,7 @@ namespace UniPlaySong
         private string ytDlpPath = string.Empty;
         private string ffmpegPath = string.Empty;
         private bool videoIsPlaying = false;
+        private bool themeOverlayActive = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private bool enableDebugLogging = false;
@@ -213,12 +214,23 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Tracks if a video is currently playing
+        /// Tracks if a video is currently playing (set by MediaElementsMonitor)
         /// </summary>
         public bool VideoIsPlaying
         {
             get => videoIsPlaying;
             set { videoIsPlaying = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings).
+        /// This is separate from VideoIsPlaying to prevent MediaElementsMonitor from overriding
+        /// theme pause requests. Music is paused if EITHER VideoIsPlaying OR ThemeOverlayActive is true.
+        /// </summary>
+        public bool ThemeOverlayActive
+        {
+            get => themeOverlayActive;
+            set { themeOverlayActive = value; OnPropertyChanged(); }
         }
 
         /// <summary>

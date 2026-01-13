@@ -29,6 +29,11 @@ namespace UniPlaySong.Models
         /// <summary>
         /// Default music position is being preserved when switching to game music
         /// </summary>
-        DefaultMusicPreservation
+        DefaultMusicPreservation,
+
+        /// <summary>
+        /// Theme overlay is active (set by MusicControl from theme Tag bindings)
+        /// </summary>
+        ThemeOverlay
     }
 }

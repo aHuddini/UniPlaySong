@@ -169,7 +169,19 @@ namespace UniPlaySong
 
             InitializeServices();
             InitializeMenuHandlers();
-            
+
+            // Register MusicControl for theme integration (UPS_MusicControl)
+            // Allows themes to pause/resume music via Tag property binding
+            // SourceName + "_" + ElementName = "UPS_MusicControl"
+            AddCustomElementSupport(new AddCustomElementSupportArgs
+            {
+                SourceName = "UPS",
+                ElementList = new List<string> { "MusicControl" }
+            });
+
+            // Initialize MusicControl static services
+            Controls.MusicControl.UpdateServices(_settings);
+
             WindowMonitor.Attach(_playbackService, _errorHandler);
             
             if (_settings != null)
@@ -588,17 +600,25 @@ namespace UniPlaySong
             {
                 _coordinator.HandleVideoStateChange(_settings.VideoIsPlaying);
             }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
+            {
+                _coordinator.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
+            }
         }
 
         /// <summary>
         /// Handles SettingsService property change events.
-        /// Forwards video state changes to the coordinator.
+        /// Forwards video state and theme overlay changes to the coordinator.
         /// </summary>
         private void OnSettingsServicePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
             {
                 _coordinator?.HandleVideoStateChange(_settings.VideoIsPlaying);
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
+            {
+                _coordinator?.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
             }
         }
 
@@ -1776,6 +1796,21 @@ namespace UniPlaySong
             // Playnite sets the ISettings object (from GetSettings) as DataContext automatically
             // Following PlayniteSound pattern: pass plugin reference, not ViewModel
             return new UniPlaySongSettingsView(this);
+        }
+
+        /// <summary>
+        /// Returns the MusicControl for theme integration.
+        /// Called by Playnite when a theme uses UPS_MusicControl element.
+        /// args.Name will be "MusicControl" (SourceName "UPS" is handled separately)
+        /// </summary>
+        public override Control GetGameViewControl(GetGameViewControlArgs args)
+        {
+            if (args.Name == "MusicControl")
+            {
+                Logger.Info($"[GetGameViewControl] Creating MusicControl instance for theme");
+                return new Controls.MusicControl(_settings);
+            }
+            return null;
         }
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
