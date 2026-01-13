@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,28 +14,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.8
+## What's New - v1.1.9
 
 ### New Features
-- **Toast Notifications** - Modern notification system for controller-mode operations
-  - Replaces buggy confirmation dialogs with non-intrusive toast notifications
-  - Customizable appearance with opacity, blur, colors, and border settings
-  - Color-coded feedback for different message types
-  - Available only for controller-mode related features and actions
-
-- **Windows Blur System for Toast visuals** - Direct Windows API blur infrastructure (Windows 10+ compatible)
-
-### Fixes
-- **Settings Persistence** - Fixed critical bug where settings changes were not being saved
-  - Settings should now persist correctly across all tabs and access methods
-  - Root cause was ViewModel instance mismatch in GetSettings vs GetSettingsView methods
-- **Controller Mode Dialogs** - Fixed dialog handling in Fullscreen/Controller mode
-  - Improved focus management and navigation context
-  - Dialogs now properly respect controller navigation
-- **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
-  - Resolved Playnite crashes during looped default music playback with custom music
+- **Theme Integration (UPS_MusicControl)** - PluginControl support for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
+  - Allows themes to pause/resume music via XAML Tag bindings
+  - Control name: `UPS_MusicControl` (follows PlayniteSound pattern for compatibility)
+  - Multi-source pause system prevents conflicts with other pause reasons
+  - Smooth fade-out when pausing, fade-in when resuming
+  - See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md) for usage examples
 
 ### Previous Versions
+- **v1.1.8**: Toast Notifications, Settings Persistence Fix, Controller Mode Dialog Fixes
 - **v1.1.7**: Download UI Performance and Music Playback Fixes
 ---
 

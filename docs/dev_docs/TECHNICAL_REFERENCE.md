@@ -16,6 +16,7 @@ This document provides detailed technical references for key variables, logic, a
 8. [Volume and Fade Control](#volume-and-fade-control)
 9. [Controller Input Handling](#controller-input-handling)
 10. [Audio Normalization](#audio-normalization)
+11. [Theme Integration (UPS_MusicControl)](#theme-integration-ups_musiccontrol)
 
 ---
 
@@ -1014,6 +1015,191 @@ public const string ExtensionFolderName = "UniPlaySong";
 public const string GamesFolderName = "Games";
 public const string TempFolderName = "Temp";
 public const string PreservedOriginalsFolderName = "PreservedOriginals";
+```
+
+---
+
+## Theme Integration (UPS_MusicControl)
+
+### Overview
+
+UniPlaySong exposes a PluginControl called `UPS_MusicControl` that allows themes to pause/resume music through XAML bindings. This uses a multi-source pause system to prevent conflicts with other pause reasons.
+
+### Architecture
+
+**Location**: `Controls/MusicControl.xaml.cs`
+
+**Control Registration** (in `UniPlaySong.cs`):
+```csharp
+AddCustomElementSupport(new AddCustomElementSupportArgs
+{
+    SourceName = "UPS",
+    ElementList = new List<string> { "MusicControl" }
+});
+```
+
+**Control Creation**:
+```csharp
+public override Control GetGameViewControl(GetGameViewControlArgs args)
+{
+    if (args.Name == "MusicControl")
+    {
+        return new Controls.MusicControl(_settings);
+    }
+    return null;
+}
+```
+
+### State Variables
+
+**MusicControl State**:
+```csharp
+private static UniPlaySongSettings _settings;           // Shared settings reference
+private static readonly List<MusicControl> _musicControls;  // All active instances
+```
+
+**Settings Properties**:
+```csharp
+// UniPlaySongSettings.cs
+public bool VideoIsPlaying { get; set; }      // Set by MediaElementsMonitor
+public bool ThemeOverlayActive { get; set; }  // Set by MusicControl
+```
+
+### Data Flow
+
+**Theme sets Tag="True"**:
+```
+1. TagProperty.OnTagChanged() fires
+2. MusicControl.UpdateMute() aggregates all Tag values
+3. _settings.ThemeOverlayActive = true
+4. PropertyChanged event fires
+5. UniPlaySong.OnSettingsChanged() receives event
+6. MusicPlaybackCoordinator.HandleThemeOverlayChange(true)
+7. MusicPlaybackService.AddPauseSource(PauseSource.ThemeOverlay)
+8. MusicFader.Pause() - smooth fade-out
+```
+
+**Theme sets Tag="False"**:
+```
+1. TagProperty.OnTagChanged() fires
+2. MusicControl.UpdateMute() aggregates all Tag values
+3. _settings.ThemeOverlayActive = false
+4. PropertyChanged event fires
+5. UniPlaySong.OnSettingsChanged() receives event
+6. MusicPlaybackCoordinator.HandleThemeOverlayChange(false)
+7. MusicPlaybackService.RemovePauseSource(PauseSource.ThemeOverlay)
+8. If no other pause sources: MusicFader.Resume() - smooth fade-in
+9. If music not loaded: PlayGameMusic() starts fresh
+```
+
+### Multi-Source Pause System
+
+**Location**: `Services/MusicPlaybackService.cs`
+
+```csharp
+// Pause source enum (Models/PauseSource.cs)
+public enum PauseSource
+{
+    Video,                    // MediaElementsMonitor detected video
+    Manual,                   // User manually paused
+    Settings,                 // Settings being changed
+    ViewChange,               // Mode switching
+    DefaultMusicPreservation, // Default music position saved
+    ThemeOverlay              // Theme MusicControl Tag=True
+}
+
+// Active sources tracking
+private readonly HashSet<PauseSource> _activePauseSources;
+private bool _isPaused => _activePauseSources.Count > 0;
+
+// Add/Remove methods
+public void AddPauseSource(PauseSource source)
+{
+    bool wasPlaying = !_isPaused;
+    _activePauseSources.Add(source);
+
+    if (wasPlaying && _isPaused)
+    {
+        _fader?.Pause();  // Fade out then pause
+    }
+}
+
+public void RemovePauseSource(PauseSource source)
+{
+    bool wasPaused = _isPaused;
+    _activePauseSources.Remove(source);
+
+    if (wasPaused && !_isPaused && _musicPlayer?.IsLoaded == true)
+    {
+        _fader.Resume();  // Fade in from paused state
+    }
+}
+```
+
+### Integration Points
+
+**UniPlaySong.cs Event Handlers**:
+```csharp
+private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
+{
+    if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
+    {
+        _coordinator.HandleVideoStateChange(_settings.VideoIsPlaying);
+    }
+    else if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
+    {
+        _coordinator.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
+    }
+}
+```
+
+### Theme Usage
+
+**Basic Example**:
+```xml
+<ContentControl x:Name="UPS_MusicControl"
+    Tag="{Binding ElementName=MyOverlay, Path=IsVisible}" />
+```
+
+**DataTrigger Example**:
+```xml
+<ContentControl x:Name="UPS_MusicControl">
+    <ContentControl.Style>
+        <Style TargetType="ContentControl">
+            <Setter Property="Tag" Value="False"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=IntroVideo, Path=Tag}" Value="Playing">
+                    <Setter Property="Tag" Value="True"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </ContentControl.Style>
+</ContentControl>
+```
+
+### Debugging Theme Integration
+
+**Check MusicControl Creation**:
+```
+[GetGameViewControl] Creating MusicControl instance for theme
+[MusicControl] Instance created
+[MusicControl] Loaded (total instances: 1)
+```
+
+**Check Tag Changes**:
+```
+[MusicControl] Tag changed: False -> True
+[MusicControl] Setting ThemeOverlayActive=true (was false)
+HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source
+Pause added: ThemeOverlay (total sources: 1) - fading out
+```
+
+**Check Resume**:
+```
+[MusicControl] Tag changed: True -> False
+[MusicControl] Setting ThemeOverlayActive=false (was true)
+HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source
+Pause removed: ThemeOverlay - resuming playback (no pause sources remaining)
 ```
 
 ---
