@@ -6,6 +6,8 @@ This guide explains how theme developers can integrate with UniPlaySong to contr
 
 UniPlaySong exposes a **PluginControl** called `UPS_MusicControl` that allows themes to pause and resume music playback through XAML bindings. This follows the same pattern as PlayniteSound's `Sounds_MusicControl`.
 
+**🎉 Special Thanks**: Huge thanks to **Mike Aniki** for his guidance and extensive testing help on this!
+
 ## Quick Start
 
 Add this to your theme XAML:
@@ -114,6 +116,62 @@ Pause music during login and welcome screens:
 </ContentControl>
 ```
 
+### Example 5: ANIKI REMAKE Integration
+
+Here is how UPS_MusicControl can be used to support a theme like ANIKI REMAKE:
+
+```xml
+<ContentControl x:Name="UPS_MusicControl">
+    <ContentControl.Style>
+        <Style TargetType="ContentControl">
+            <Setter Property="Tag" Value="False"/>
+            <Style.Triggers>
+                <!-- Introduction video, trailer, settings, and welcome control -->
+                <DataTrigger Binding="{Binding ElementName=IntroHost, Path=Tag}" Value="Idle">
+                    <Setter Property="Tag" Value="True"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding ElementName=IntroHost, Path=Tag}" Value="Playing">
+                    <Setter Property="Tag" Value="True"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding ElementName=IntroHost, Path=Tag}" Value="Ended">
+                    <Setter Property="Tag" Value="False"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{PluginSettings Plugin=ThemeOptions, Path=Options[IntroVideo_None]}" Value="True">
+                    <Setter Property="Tag" Value="False"/>
+                </DataTrigger>
+
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=TrailerContainer, Path=Opacity}" Value="1"/>
+                        <Condition Binding="{Binding ElementName=ExtraMetadataLoader_VideoLoaderControl_NoControls_Sound, Path=Content.IsPlayerMuted}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Tag" Value="True" />
+                </MultiDataTrigger>
+
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=TrailerContainer, Path=Opacity}" Value="1"/>
+                        <Condition Binding="{Binding ElementName=ExtraMetadataLoader_VideoLoaderControl_NoControls_Sound, Path=Content.IsPlayerMuted}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Tag" Value="False"/>
+                </MultiDataTrigger>
+
+                <DataTrigger Binding="{Binding ElementName=AcceuilSettings, Path=Visibility}" Value="Visible">
+                    <Setter Property="Tag" Value="True" />
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding ElementName=WelcomeControl, Path=Tag}" Value="False">
+                    <Setter Property="Tag" Value="True" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </ContentControl.Style>
+</ContentControl>
+```
+
 ## How It Works
 
 1. **Tag Changes**: When the `Tag` property changes, UniPlaySong detects it via a property change callback
@@ -162,6 +220,7 @@ Theme sets Tag="False"
 
 - **Minimum Version**: UniPlaySong 1.1.9+
 - **Playnite**: 10.x and 11.x (Fullscreen and Desktop modes)
+- **ANIKI REMAKE**: Fully supported with special welcome hub and overlay handling
 - **PlayniteSound Pattern**: Compatible with themes that use `Sounds_MusicControl`
 
 ## Migration from PlayniteSound

@@ -11,7 +11,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Multi-source pause system prevents conflicts with other pause reasons (focus loss, video detection, etc.)
   - Smooth fade-out when pausing, fade-in when resuming
   - New `PauseSource.ThemeOverlay` and `PauseSource.Video` for independent pause tracking
+  - **Full ANIKI REMAKE Support** - Special handling for WelcomeControl and intro video systems
   - See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md) for usage examples
+
+### Credits
+- **Special thanks to Mike Aniki** for his guidance and extensive testing help with ANIKI REMAKE integration
 
 ## [1.1.8] - 2026-01-11
 

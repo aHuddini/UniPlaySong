@@ -17,12 +17,11 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.1.9
 
 ### New Features
-- **Theme Integration (UPS_MusicControl)** - PluginControl support for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
+- **Theme Integration Control** - UPS_MusicControl for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
   - Allows themes to pause/resume music via XAML Tag bindings
-  - Control name: `UPS_MusicControl` (follows PlayniteSound pattern for compatibility)
+  - **Full ANIKI REMAKE Support** - Special handling for WelcomeControl and intro video systems
   - Multi-source pause system prevents conflicts with other pause reasons
-  - Smooth fade-out when pausing, fade-in when resuming
-  - See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md) for usage examples
+  - See [THEME_INTEGRATION_GUIDE.md](docs/THEME_INTEGRATION_GUIDE.md) for implementation details
 
 ### Previous Versions
 - **v1.1.8**: Toast Notifications, Settings Persistence Fix, Controller Mode Dialog Fixes
@@ -45,7 +44,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Fade Transitions** - Customizable fade-in/fade-out effects
 - **Audio Normalization** - EBU R128 standard volume leveling
 - **Silence Trimming** - Remove leading silence from tracks
-- **Online Downloads** - Download from YouTube and KHInsider
+- **Online Downloads** - Download from YouTube, Zophar's Domain and KHInsider
 - **Smart Auto-Download** - Automatically download music for new games
 - **Bulk Operations** - Download music for all games at once (parallel processing)
 - **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
@@ -55,6 +54,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Primary Songs** - Set default songs per game
 - **Default/Fallback Music** - Play background music when games have no music
 - **Theme Compatibility** - Works with login screen themes
+- **Theme Integration Control** - UPS_MusicControl for theme developers to pause/resume music via XAML bindings
 - **PlayniteSound Migration** - Import/export music between UniPlaySong and PlayniteSound, with clean import-and-delete option
 
 <img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
