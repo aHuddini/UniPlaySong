@@ -19,7 +19,6 @@ Built with the help of Claude Code and Cursor IDE
 ### New Features
 - **Theme Integration Control** - UPS_MusicControl for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
   - Allows themes to pause/resume music via XAML Tag bindings
-  - **Full ANIKI REMAKE Support** - Special handling for WelcomeControl and intro video systems
   - Multi-source pause system prevents conflicts with other pause reasons
   - See [THEME_INTEGRATION_GUIDE.md](docs/THEME_INTEGRATION_GUIDE.md) for implementation details
 
