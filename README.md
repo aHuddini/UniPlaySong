@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.1.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,15 +14,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.1.9
+## What's New - v1.2.0
 
 ### New Features
-- **Theme Integration Control** - UPS_MusicControl for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
-  - Allows themes to pause/resume music via XAML Tag bindings
-  - Multi-source pause system prevents conflicts with other pause reasons
-  - See [THEME_INTEGRATION_GUIDE.md](docs/THEME_INTEGRATION_GUIDE.md) for implementation details
+- **Desktop Top Panel Media Controls** - Play/Pause and Skip buttons in Playnite's top panel bar ([#5](https://github.com/aHuddini/UniPlaySong/issues/5))
+  - Play/Pause button toggles music with standard media player conventions
+  - Skip button jumps to a random different song (greyed out when only one song available)
+  - Uses IcoFont icons for visual consistency with Playnite's native UI
 
 ### Previous Versions
+- **v1.1.9**: Theme Integration Control (UPS_MusicControl) for theme developers
 - **v1.1.8**: Toast Notifications, Settings Persistence Fix, Controller Mode Dialog Fixes
 - **v1.1.7**: Download UI Performance and Music Playback Fixes
 ---
@@ -35,6 +36,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 🎵 Features
 
 - **Automatic Music Playback** - Music plays when selecting games
+- **Desktop Top Panel Controls** - Play/Pause and Skip buttons in Playnite's top panel (Desktop mode)
 - **Real-Time Live Effects** - Professional reverb, effect chaining, and zero-latency processing
 - **Visual Audio Amplify** - Waveform-based gain adjustment with controller support
 - **Precise Audio Trimming** - Visual waveform editor with controller support

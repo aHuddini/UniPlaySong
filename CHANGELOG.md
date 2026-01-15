@@ -2,6 +2,20 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.0] - 2026-01-15
+
+### Added
+- **Desktop Top Panel Media Controls** - Play/Pause and Skip buttons in Playnite's top panel bar ([#5](https://github.com/aHuddini/UniPlaySong/issues/5))
+  - **Play/Pause button** - Always visible, toggles music playback with standard media player conventions
+    - Shows pause icon (⏸) when music is playing (click to pause)
+    - Shows play icon (▶) when music is paused/stopped (click to play)
+  - **Skip/Next button** - Skip to a random different song from the current game's music folder
+    - Greyed out (30% opacity) when only one song is available
+    - Full opacity and functional when 2+ songs are available
+    - Automatically updates after downloading new music or auto-normalization
+  - Uses IcoFont icons for visual consistency with Playnite's native UI
+  - Survives Live Effects toggle (properly resubscribes to recreated playback service)
+
 ## [1.1.9] - 2026-01-13
 
 ### Added

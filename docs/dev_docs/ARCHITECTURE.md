@@ -25,6 +25,10 @@ UniPlaySong/
 │   ├── RelayCommand.cs        # MVVM command pattern implementation
 │   └── XInputWrapper.cs       # Xbox controller input (single source of truth)
 │
+├── DeskMediaControl/          # Desktop mode top panel media controls
+│   ├── MediaControlIcons.cs           # IcoFont icon constants for media buttons
+│   └── TopPanelMediaControlViewModel.cs # ViewModel for play/pause and skip buttons
+│
 ├── Downloaders/               # Music download implementations
 │   ├── IDownloader.cs         # Downloader interface
 │   ├── IDownloadManager.cs    # Download manager interface
@@ -317,7 +321,53 @@ Handles precise waveform-based trim operations:
 - `ShowPreciseTrimDialog(Game)`: Desktop waveform editor with mouse interaction
 - `ShowControllerPreciseTrimDialog(Game)`: Controller-friendly two-step dialog
 
-### 10. Cleanup Operations (`UniPlaySong.cs`)
+### 10. Desktop Top Panel Media Controls (`DeskMediaControl/`)
+
+**Desktop mode media control buttons** in Playnite's top panel bar:
+
+#### Components
+
+**MediaControlIcons.cs**: Centralized IcoFont unicode constants for media control icons:
+- `Play` (`\uECA6`): Play arrow icon
+- `Pause` (`\uECA5`): Pause bars icon
+- `Next` (`\uEC6E`): Skip/next icon
+- Additional icons for future features (Stop, Previous, Shuffle, Volume)
+
+**TopPanelMediaControlViewModel.cs**: ViewModel managing the top panel buttons:
+- **Play/Pause Button**: Always visible, toggles playback state
+  - Shows pause icon (⏸) when music is playing (click to pause)
+  - Shows play icon (▶) when music is paused/stopped (click to play)
+- **Skip Button**: Skips to random different song
+  - Greyed out (30% opacity) when only one song available
+  - Full opacity and functional when 2+ songs available
+  - Updates automatically after downloads/normalization
+
+#### Key Features
+
+- **Service Getter Pattern**: Uses `Func<IMusicPlaybackService>` instead of storing service directly, allowing proper resubscription when service is recreated (e.g., Live Effects toggle)
+- **Event-Driven Updates**: Subscribes to `OnMusicStarted`, `OnMusicStopped`, `OnPlaybackStateChanged`, and `OnSongCountChanged` events
+- **Dispatcher-Safe UI Updates**: All UI updates wrapped in `Application.Current?.Dispatcher?.Invoke()`
+
+#### Integration with MusicPlaybackService
+
+New interface members added for skip functionality:
+- `void SkipToNextSong()`: Selects and plays a random different song
+- `int CurrentGameSongCount`: Returns number of songs for current game
+- `event Action OnSongCountChanged`: Fired when song count changes
+- `void RefreshSongCount()`: Manually refreshes song count (called after downloads)
+
+#### Usage
+
+The controls are automatically registered via `GetTopPanelItems()` override in `UniPlaySong.cs`:
+```csharp
+public override IEnumerable<TopPanelItem> GetTopPanelItems()
+{
+    if (!IsDesktop) return Enumerable.Empty<TopPanelItem>();
+    return _topPanelMediaControl?.GetTopPanelItems() ?? Enumerable.Empty<TopPanelItem>();
+}
+```
+
+### 11. Cleanup Operations (`UniPlaySong.cs`)
 
 **Plugin data management** operations accessible via Settings → Cleanup tab:
 
