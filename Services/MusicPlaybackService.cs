@@ -41,6 +41,12 @@ namespace UniPlaySong.Services
         public event Action OnSongEnded;
 
         /// <summary>
+        /// Event fired when playback state changes (play/pause/resume).
+        /// Used by UI controls (like top panel) to update their state.
+        /// </summary>
+        public event Action OnPlaybackStateChanged;
+
+        /// <summary>
         /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
         /// Set by external handlers (like batch download) that want to take over playback.
         /// </summary>
@@ -114,6 +120,7 @@ namespace UniPlaySong.Services
                 // First pause source added - fade out then pause
                 _fileLogger?.Info($"Pause added: {source} (total sources: {_activePauseSources.Count}) - fading out");
                 _fader?.Pause();
+                OnPlaybackStateChanged?.Invoke();
             }
             else if (_activePauseSources.Contains(source))
             {
@@ -136,6 +143,7 @@ namespace UniPlaySong.Services
                 // Last pause source removed - resume playback
                 _fileLogger?.Info($"Pause removed: {source} - resuming playback (no pause sources remaining)");
                 _fader.Resume();
+                OnPlaybackStateChanged?.Invoke();
             }
             else if (wasPaused)
             {
@@ -158,6 +166,7 @@ namespace UniPlaySong.Services
                 {
                     _fader.Resume();
                 }
+                OnPlaybackStateChanged?.Invoke();
             }
         }
 

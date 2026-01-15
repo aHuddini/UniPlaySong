@@ -117,6 +117,12 @@ namespace UniPlaySong.Services
         event System.Action OnSongEnded;
 
         /// <summary>
+        /// Event fired when playback state changes (play/pause/resume).
+        /// Used by UI controls (like top panel) to update their state.
+        /// </summary>
+        event System.Action OnPlaybackStateChanged;
+
+        /// <summary>
         /// When true, suppresses the default loop/restart behavior when a song ends.
         /// Set by external handlers (like batch download) that want to take over playback.
         /// </summary>

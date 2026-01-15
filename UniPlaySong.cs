@@ -23,6 +23,7 @@ using UniPlaySong.Common;
 using UniPlaySong.Menus;
 using UniPlaySong.Models;
 using UniPlaySong.Audio;
+using UniPlaySong.DeskMediaControl;
 
 namespace UniPlaySong
 {
@@ -110,6 +111,9 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+
+        // Desktop top panel media control (play/pause button)
+        private TopPanelMediaControlViewModel _topPanelMediaControl;
 
         // Cached settings ViewModel - ensures GetSettings and GetSettingsView use the same instance
         // Critical: Without this, GetSettingsView creates a separate ViewModel and changes aren't saved
@@ -993,6 +997,17 @@ namespace UniPlaySong
             // Initialize amplify service for audio volume adjustments
             _amplifyService = new Services.AudioAmplifyService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Info("AudioAmplifyService initialized");
+
+            // Initialize Desktop top panel media control (play/pause button)
+            // Pass a getter function so it always uses the current playback service (handles Live Effects toggle)
+            _topPanelMediaControl = new TopPanelMediaControlViewModel(
+                () => _playbackService,
+                () => _settings,
+                () => SelectedGames?.FirstOrDefault(),
+                msg => _fileLogger?.Info(msg),
+                (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
+            );
+            _fileLogger?.Info("TopPanelMediaControlViewModel initialized");
         }
 
         private void InitializeMenuHandlers()
@@ -1121,6 +1136,9 @@ namespace UniPlaySong
                 );
 
                 _fileLogger?.Info($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
+
+                // Re-subscribe top panel control to the new playback service
+                _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
 
                 // Restart music for the current game if music was playing before the switch
                 if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
@@ -2189,6 +2207,27 @@ namespace UniPlaySong
             }
 
             return items;
+        }
+
+        /// <summary>
+        /// Gets the top panel items for Desktop mode.
+        /// Provides a play/pause toggle button for music control.
+        /// </summary>
+        public override IEnumerable<TopPanelItem> GetTopPanelItems()
+        {
+            // Only show in Desktop mode
+            if (!IsDesktop)
+            {
+                return Enumerable.Empty<TopPanelItem>();
+            }
+
+            // Return the play/pause item from our ViewModel
+            if (_topPanelMediaControl?.PlayPauseItem != null)
+            {
+                return new List<TopPanelItem> { _topPanelMediaControl.PlayPauseItem };
+            }
+
+            return Enumerable.Empty<TopPanelItem>();
         }
 
         /// <summary>
