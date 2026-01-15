@@ -47,10 +47,19 @@ namespace UniPlaySong.Services
         public event Action OnPlaybackStateChanged;
 
         /// <summary>
+        /// Event fired when the current game or song count changes.
+        /// Used by UI controls to update skip button visibility.
+        /// </summary>
+        public event Action OnSongCountChanged;
+
+        /// <summary>
         /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
         /// Set by external handlers (like batch download) that want to take over playback.
         /// </summary>
         public bool SuppressAutoLoop { get; set; }
+
+        private int _currentGameSongCount = 0;
+        public int CurrentGameSongCount => _currentGameSongCount;
 
         // PNS-style state tracking for default music (single-player approach)
         private bool _isPlayingDefaultMusic = false;
@@ -265,6 +274,12 @@ namespace UniPlaySong.Services
             if (game == null)
             {
                 FadeOutAndStop();
+                // Reset song count when no game
+                if (_currentGameSongCount != 0)
+                {
+                    _currentGameSongCount = 0;
+                    OnSongCountChanged?.Invoke();
+                }
                 // Notify that we stopped music (for native music restoration)
                 OnMusicStopped?.Invoke(settings);
                 return;
@@ -355,9 +370,20 @@ namespace UniPlaySong.Services
                 // Calculate isNewGame BEFORE updating _currentGameId (critical - compare with PREVIOUS game ID)
                 var previousGameId = _currentGameId;
                 var isNewGame = previousGameId == null || previousGameId != gameId;
-                
+
                 _currentGameId = gameId;
                 _currentGame = game;
+
+                // Update song count and notify UI for skip button visibility
+                // Fire event if count changed, new game, or forceReload (after download)
+                var newSongCount = songs.Count;
+                var songCountChanged = _currentGameSongCount != newSongCount;
+                _currentGameSongCount = newSongCount;
+                if (songCountChanged || isNewGame || forceReload)
+                {
+                    _fileLogger?.Info($"Song count updated: {newSongCount} songs (changed: {songCountChanged}, newGame: {isNewGame}, forceReload: {forceReload})");
+                    OnSongCountChanged?.Invoke();
+                }
                 
                 // If switching to new game, clear current song path to force new song selection.
                 // EXCEPTION: Don't clear if current song is default music - preserve it when switching between games with no music.
@@ -657,6 +683,63 @@ namespace UniPlaySong.Services
         public List<string> GetAvailableSongs(Game game)
         {
             return _fileService?.GetAvailableSongs(game) ?? new List<string>();
+        }
+
+        public void RefreshSongCount()
+        {
+            if (_currentGame == null) return;
+
+            var songs = _fileService?.GetAvailableSongs(_currentGame) ?? new List<string>();
+            var newCount = songs.Count;
+
+            if (_currentGameSongCount != newCount)
+            {
+                _fileLogger?.Info($"RefreshSongCount: Song count changed from {_currentGameSongCount} to {newCount}");
+                _currentGameSongCount = newCount;
+                OnSongCountChanged?.Invoke();
+            }
+        }
+
+        public void SkipToNextSong()
+        {
+            if (_currentGame == null)
+            {
+                _fileLogger?.Info("SkipToNextSong: No current game, cannot skip");
+                return;
+            }
+
+            var songs = _fileService?.GetAvailableSongs(_currentGame) ?? new List<string>();
+            if (songs.Count < 2)
+            {
+                _fileLogger?.Info($"SkipToNextSong: Only {songs.Count} song(s) available, cannot skip");
+                return;
+            }
+
+            // Select random song, avoiding current song
+            var random = new Random();
+            string nextSong;
+            int attempts = 0;
+            do
+            {
+                nextSong = songs[random.Next(songs.Count)];
+                attempts++;
+            }
+            while (nextSong == _currentSongPath && attempts < 10);
+
+            _fileLogger?.Info($"SkipToNextSong: Skipping from '{Path.GetFileName(_currentSongPath)}' to '{Path.GetFileName(nextSong)}'");
+
+            _previousSongPath = _currentSongPath;
+            _currentSongPath = nextSong;
+
+            // Load and play the new song with crossfade
+            _fader?.FadeOutAndStop(() =>
+            {
+                _musicPlayer?.Load(nextSong);
+                _musicPlayer?.Play();
+                _fader?.FadeIn();
+                MarkSongStart();
+                OnPlaybackStateChanged?.Invoke();
+            });
         }
 
         public void SetVolume(double volume)

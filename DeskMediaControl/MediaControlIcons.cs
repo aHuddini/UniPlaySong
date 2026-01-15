@@ -9,7 +9,7 @@ namespace UniPlaySong.DeskMediaControl
         public const string Play = "\uECA6";
         public const string Pause = "\uECA5";
         public const string Stop = "\ued51";
-        public const string Next = "\ued4b";
+        public const string Next = "\uEC6E";
         public const string Previous = "\ued53";
         public const string Shuffle = "\uec9c";
         public const string VolumeHigh = "\ued5f";

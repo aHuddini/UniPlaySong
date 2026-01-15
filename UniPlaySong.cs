@@ -2221,10 +2221,10 @@ namespace UniPlaySong
                 return Enumerable.Empty<TopPanelItem>();
             }
 
-            // Return the play/pause item from our ViewModel
-            if (_topPanelMediaControl?.PlayPauseItem != null)
+            // Return all media control items from our ViewModel
+            if (_topPanelMediaControl != null)
             {
-                return new List<TopPanelItem> { _topPanelMediaControl.PlayPauseItem };
+                return _topPanelMediaControl.GetTopPanelItems();
             }
 
             return Enumerable.Empty<TopPanelItem>();

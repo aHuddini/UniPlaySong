@@ -127,6 +127,29 @@ namespace UniPlaySong.Services
         /// Set by external handlers (like batch download) that want to take over playback.
         /// </summary>
         bool SuppressAutoLoop { get; set; }
+
+        /// <summary>
+        /// Skips to a random different song from the current game's music folder.
+        /// </summary>
+        void SkipToNextSong();
+
+        /// <summary>
+        /// Gets the number of available songs for the current game.
+        /// Returns 0 if no game is selected or no songs available.
+        /// </summary>
+        int CurrentGameSongCount { get; }
+
+        /// <summary>
+        /// Event fired when the current game or song count changes.
+        /// Used by UI controls to update skip button visibility.
+        /// </summary>
+        event System.Action OnSongCountChanged;
+
+        /// <summary>
+        /// Refreshes the song count for the current game (e.g., after downloading new music).
+        /// Fires OnSongCountChanged if the count changed.
+        /// </summary>
+        void RefreshSongCount();
     }
 }
 

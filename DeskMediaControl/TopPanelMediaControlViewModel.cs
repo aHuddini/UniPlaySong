@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,7 +12,7 @@ using UniPlaySong.Services;
 namespace UniPlaySong.DeskMediaControl
 {
     /// <summary>
-    /// Desktop top panel play/pause control ViewModel.
+    /// Desktop top panel media controls ViewModel (play/pause, skip).
     /// </summary>
     public class TopPanelMediaControlViewModel
     {
@@ -22,9 +23,18 @@ namespace UniPlaySong.DeskMediaControl
         private readonly Action<Exception, string> _handleError;
 
         private TopPanelItem _playPauseItem;
-        private TextBlock _iconTextBlock;
+        private TopPanelItem _skipItem;
+        private TextBlock _playPauseIcon;
+        private TextBlock _skipIcon;
 
         public TopPanelItem PlayPauseItem => _playPauseItem;
+        public TopPanelItem SkipItem => _skipItem;
+
+        public IEnumerable<TopPanelItem> GetTopPanelItems()
+        {
+            yield return _playPauseItem;
+            yield return _skipItem;
+        }
 
         public TopPanelMediaControlViewModel(
             Func<IMusicPlaybackService> getPlaybackService,
@@ -39,26 +49,47 @@ namespace UniPlaySong.DeskMediaControl
             _log = log;
             _handleError = handleError;
 
-            InitializeTopPanelItem();
+            InitializeTopPanelItems();
             SubscribeToEvents(_getPlaybackService());
         }
 
-        private void InitializeTopPanelItem()
+        private void InitializeTopPanelItems()
         {
-            _iconTextBlock = new TextBlock
+            var icoFont = ResourceProvider.GetResource("FontIcoFont") as FontFamily;
+
+            // Play/Pause button
+            _playPauseIcon = new TextBlock
             {
                 Text = MediaControlIcons.Play,
                 FontSize = 18,
-                FontFamily = ResourceProvider.GetResource("FontIcoFont") as FontFamily,
+                FontFamily = icoFont,
                 FontWeight = FontWeights.Bold
             };
 
             _playPauseItem = new TopPanelItem
             {
-                Icon = _iconTextBlock,
+                Icon = _playPauseIcon,
                 Title = "UniPlaySong: Play Music",
                 Visible = true,
                 Activated = OnPlayPauseActivated
+            };
+
+            // Skip/Next button
+            _skipIcon = new TextBlock
+            {
+                Text = MediaControlIcons.Next,
+                FontSize = 18,
+                FontFamily = icoFont,
+                FontWeight = FontWeights.Bold,
+                Opacity = 0.3 // Start greyed out until 2+ songs available
+            };
+
+            _skipItem = new TopPanelItem
+            {
+                Icon = _skipIcon,
+                Title = "UniPlaySong: Skip to Next Song (No additional songs)",
+                Visible = true, // Always visible, but greyed out when disabled
+                Activated = OnSkipActivated
             };
         }
 
@@ -66,9 +97,10 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (playbackService == null) return;
 
-            playbackService.OnMusicStarted += _ => UpdateIcon();
-            playbackService.OnMusicStopped += _ => UpdateIcon();
-            playbackService.OnPlaybackStateChanged += UpdateIcon;
+            playbackService.OnMusicStarted += _ => UpdateIcons();
+            playbackService.OnMusicStopped += _ => UpdateIcons();
+            playbackService.OnPlaybackStateChanged += UpdateIcons;
+            playbackService.OnSongCountChanged += UpdateSkipVisibility;
         }
 
         /// <summary>
@@ -77,7 +109,7 @@ namespace UniPlaySong.DeskMediaControl
         public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
         {
             SubscribeToEvents(newPlaybackService);
-            UpdateIcon();
+            UpdateIcons();
         }
 
         private void OnPlayPauseActivated()
@@ -115,7 +147,7 @@ namespace UniPlaySong.DeskMediaControl
                     }
                 }
 
-                UpdateIcon();
+                UpdateIcons();
             }
             catch (Exception ex)
             {
@@ -123,9 +155,63 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        public void UpdateIcon()
+        private void OnSkipActivated()
         {
-            if (_iconTextBlock == null || _playPauseItem == null) return;
+            try
+            {
+                if (!_canSkip)
+                {
+                    _log?.Invoke("TopPanel: Skip disabled (not enough songs)");
+                    return;
+                }
+
+                var playbackService = _getPlaybackService?.Invoke();
+                if (playbackService == null)
+                {
+                    _log?.Invoke("TopPanel: PlaybackService is null, cannot skip");
+                    return;
+                }
+
+                _log?.Invoke("TopPanel: Skipping to next song");
+                playbackService.SkipToNextSong();
+            }
+            catch (Exception ex)
+            {
+                _handleError?.Invoke(ex, "skipping to next song from top panel");
+            }
+        }
+
+        private bool _canSkip = false;
+
+        private void UpdateSkipVisibility()
+        {
+            if (_skipItem == null || _skipIcon == null) return;
+
+            Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                try
+                {
+                    var playbackService = _getPlaybackService?.Invoke();
+                    _canSkip = playbackService?.CurrentGameSongCount >= 2;
+
+                    // Grey out icon when disabled (opacity 0.3), full opacity when enabled
+                    _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
+                    _skipItem.Title = _canSkip
+                        ? "UniPlaySong: Skip to Next Song"
+                        : "UniPlaySong: Skip to Next Song (No additional songs)";
+
+                    _log?.Invoke($"TopPanel: Skip button enabled: {_canSkip} (song count: {playbackService?.CurrentGameSongCount ?? 0})");
+                }
+                catch (Exception ex)
+                {
+                    _log?.Invoke($"Error updating skip state: {ex.Message}");
+                }
+            });
+        }
+
+        public void UpdateIcons()
+        {
+            if (_playPauseIcon == null || _playPauseItem == null) return;
 
             Application.Current?.Dispatcher?.Invoke(() =>
             {
@@ -134,14 +220,30 @@ namespace UniPlaySong.DeskMediaControl
                     var playbackService = _getPlaybackService?.Invoke();
                     bool isPlaying = playbackService?.IsPlaying == true && playbackService?.IsPaused != true;
 
-                    _iconTextBlock.Text = isPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
+                    _playPauseIcon.Text = isPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
                     _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
+
+                    // Also update skip state when icons update
+                    _canSkip = playbackService?.CurrentGameSongCount >= 2;
+                    if (_skipIcon != null)
+                    {
+                        _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
+                    }
+                    if (_skipItem != null)
+                    {
+                        _skipItem.Title = _canSkip
+                            ? "UniPlaySong: Skip to Next Song"
+                            : "UniPlaySong: Skip to Next Song (No additional songs)";
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _log?.Invoke($"Error updating top panel icon: {ex.Message}");
+                    _log?.Invoke($"Error updating top panel icons: {ex.Message}");
                 }
             });
         }
+
+        // Keep old method name for backwards compatibility
+        public void UpdateIcon() => UpdateIcons();
     }
 }

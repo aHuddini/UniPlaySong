@@ -1557,6 +1557,9 @@ namespace UniPlaySong.Services
 
                             var result = task.Result;
                             Logger.DebugIf(LogPrefix,$"Auto-normalize complete: {result.SuccessCount} succeeded, {result.FailureCount} failed, {result.SkippedCount} skipped");
+
+                            // Refresh song count after normalization (for skip button visibility)
+                            _playbackService?.RefreshSongCount();
                         }
                         catch (OperationCanceledException)
                         {
