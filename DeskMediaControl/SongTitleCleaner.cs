@@ -10,6 +10,9 @@ namespace UniPlaySong.DeskMediaControl
     /// </summary>
     public static class SongTitleCleaner
     {
+        // Compiled regex for collapsing multiple whitespace characters
+        private static readonly Regex WhitespaceRegex = new Regex(@"\s+", RegexOptions.Compiled);
+
         // Common suffixes to remove from entire filename (case-insensitive)
         private static readonly string[] SuffixesToRemove = new[]
         {
@@ -107,8 +110,8 @@ namespace UniPlaySong.DeskMediaControl
                 titlePart = titlePart.Replace('_', ' ');
 
                 // Collapse multiple spaces
-                artistPart = Regex.Replace(artistPart, @"\s+", " ").Trim();
-                titlePart = Regex.Replace(titlePart, @"\s+", " ").Trim();
+                artistPart = WhitespaceRegex.Replace(artistPart, " ").Trim();
+                titlePart = WhitespaceRegex.Replace(titlePart, " ").Trim();
 
                 if (!string.IsNullOrWhiteSpace(artistPart))
                 {
@@ -120,7 +123,7 @@ namespace UniPlaySong.DeskMediaControl
             {
                 // No separator - treat entire filename as title
                 title = filename.Replace('-', ' ').Replace('_', ' ');
-                title = Regex.Replace(title, @"\s+", " ").Trim();
+                title = WhitespaceRegex.Replace(title, " ").Trim();
             }
         }
 
@@ -147,6 +150,21 @@ namespace UniPlaySong.DeskMediaControl
         }
 
         /// <summary>
+        /// Formats a duration as m:ss or h:mm:ss.
+        /// </summary>
+        /// <param name="duration">Duration to format</param>
+        /// <returns>Formatted duration string, or empty string if zero/negative</returns>
+        public static string FormatDuration(TimeSpan duration)
+        {
+            if (duration.TotalSeconds <= 0)
+                return string.Empty;
+
+            return duration.TotalHours >= 1
+                ? duration.ToString(@"h\:mm\:ss")
+                : duration.ToString(@"m\:ss");
+        }
+
+        /// <summary>
         /// Formats song info for display (title with optional artist and duration).
         /// </summary>
         /// <param name="title">Song title</param>
@@ -167,12 +185,13 @@ namespace UniPlaySong.DeskMediaControl
             }
 
             // Add duration if available (with pipe separator)
-            if (duration.HasValue && duration.Value.TotalSeconds > 0)
+            if (duration.HasValue)
             {
-                string durationStr = duration.Value.TotalHours >= 1
-                    ? duration.Value.ToString(@"h\:mm\:ss")
-                    : duration.Value.ToString(@"m\:ss");
-                result = $"{result} | {durationStr}";
+                string durationStr = FormatDuration(duration.Value);
+                if (!string.IsNullOrEmpty(durationStr))
+                {
+                    result = $"{result} | {durationStr}";
+                }
             }
 
             return result;

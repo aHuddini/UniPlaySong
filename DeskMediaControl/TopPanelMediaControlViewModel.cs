@@ -270,28 +270,18 @@ namespace UniPlaySong.DeskMediaControl
 
         private void UpdateSkipVisibility()
         {
+            UpdateSkipState(_getPlaybackService?.Invoke());
+        }
+
+        private void UpdateSkipState(IMusicPlaybackService playbackService)
+        {
             if (_skipItem == null || _skipIcon == null) return;
 
-            Application.Current?.Dispatcher?.Invoke(() =>
-            {
-                try
-                {
-                    var playbackService = _getPlaybackService?.Invoke();
-                    _canSkip = playbackService?.CurrentGameSongCount >= 2;
-
-                    // Grey out icon when disabled (opacity 0.3), full opacity when enabled
-                    _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
-                    _skipItem.Title = _canSkip
-                        ? "UniPlaySong: Skip to Next Song"
-                        : "UniPlaySong: Skip to Next Song (No additional songs)";
-
-                    _log?.Invoke($"TopPanel: Skip button enabled: {_canSkip} (song count: {playbackService?.CurrentGameSongCount ?? 0})");
-                }
-                catch (Exception ex)
-                {
-                    _log?.Invoke($"Error updating skip state: {ex.Message}");
-                }
-            });
+            _canSkip = playbackService?.CurrentGameSongCount >= 2;
+            _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
+            _skipItem.Title = _canSkip
+                ? "UniPlaySong: Skip to Next Song"
+                : "UniPlaySong: Skip to Next Song (No additional songs)";
         }
 
         public void UpdateIcons()
@@ -308,18 +298,7 @@ namespace UniPlaySong.DeskMediaControl
                     _playPauseIcon.Text = isPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
                     _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
 
-                    // Also update skip state when icons update
-                    _canSkip = playbackService?.CurrentGameSongCount >= 2;
-                    if (_skipIcon != null)
-                    {
-                        _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
-                    }
-                    if (_skipItem != null)
-                    {
-                        _skipItem.Title = _canSkip
-                            ? "UniPlaySong: Skip to Next Song"
-                            : "UniPlaySong: Skip to Next Song (No additional songs)";
-                    }
+                    UpdateSkipState(playbackService);
                 }
                 catch (Exception ex)
                 {
