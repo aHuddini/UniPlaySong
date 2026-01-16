@@ -55,6 +55,16 @@ namespace UniPlaySong
                     settingsService?.ValidateNativeMusicFile(settings, showErrors: true);
                 }
             }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel))
+            {
+                // Show restart notification when Now Playing setting changes
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    "The 'Show Now Playing in Top Panel' setting requires a Playnite restart to take effect.\n\nPlease save your settings and restart Playnite.",
+                    "Restart Required",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information
+                );
+            }
         }
 
 

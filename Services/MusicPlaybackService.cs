@@ -53,6 +53,12 @@ namespace UniPlaySong.Services
         public event Action OnSongCountChanged;
 
         /// <summary>
+        /// Event fired when the current song changes (new song starts playing).
+        /// Used by UI controls to update song info display.
+        /// </summary>
+        public event Action<string> OnSongChanged;
+
+        /// <summary>
         /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
         /// Set by external handlers (like batch download) that want to take over playback.
         /// </summary>
@@ -77,9 +83,38 @@ namespace UniPlaySong.Services
         private double _fadeOutDuration = Constants.DefaultFadeOutDuration;
 
         private string _currentGameId;
-        private string _currentSongPath;
+        private string _currentSongPathBacking;
         private string _previousSongPath;
         private Game _currentGame;
+
+        /// <summary>
+        /// Gets or sets the current song path, firing OnSongChanged when changed.
+        /// </summary>
+        private string _currentSongPath
+        {
+            get => _currentSongPathBacking;
+            set
+            {
+                if (_currentSongPathBacking != value)
+                {
+                    _currentSongPathBacking = value;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        OnSongChanged?.Invoke(value);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the file path of the currently playing song.
+        /// </summary>
+        public string CurrentSongPath => _currentSongPath;
+
+        /// <summary>
+        /// Gets the current game being played.
+        /// </summary>
+        public Game CurrentGame => _currentGame;
 
         // Multi-source pause tracking (replaces simple bool _isPaused)
         private readonly HashSet<PauseSource> _activePauseSources = new HashSet<PauseSource>();
@@ -88,6 +123,7 @@ namespace UniPlaySong.Services
         public bool IsPlaying => _musicPlayer?.IsActive ?? false;
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
+        public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
         {
@@ -526,9 +562,12 @@ namespace UniPlaySong.Services
                         _fileLogger?.Info($"Switching from default music to game music with fade-out. Saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                         _isPlayingDefaultMusic = false;
                     }
-                    
+
                     _fileLogger?.Info($"Switching to: {Path.GetFileName(newSongPath)}");
-                    
+
+                    // Fire song changed early so UI can update immediately (before fade completes)
+                    OnSongChanged?.Invoke(newSongPath);
+
                     _fader.Switch(
                         stopAction: () =>
                         {

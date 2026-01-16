@@ -150,6 +150,30 @@ namespace UniPlaySong.Services
         /// Fires OnSongCountChanged if the count changed.
         /// </summary>
         void RefreshSongCount();
+
+        /// <summary>
+        /// Gets the file path of the currently playing song.
+        /// Returns null if no song is loaded.
+        /// </summary>
+        string CurrentSongPath { get; }
+
+        /// <summary>
+        /// Gets the current game being played.
+        /// Returns null if no game is selected.
+        /// </summary>
+        Playnite.SDK.Models.Game CurrentGame { get; }
+
+        /// <summary>
+        /// Event fired when the current song changes (new song starts playing).
+        /// Used by UI controls to update song info display.
+        /// </summary>
+        event System.Action<string> OnSongChanged;
+
+        /// <summary>
+        /// Whether the currently playing song is default/fallback music (not game-specific).
+        /// Used by UI controls to hide "Now Playing" display when default music is playing.
+        /// </summary>
+        bool IsPlayingDefaultMusic { get; }
     }
 }
 

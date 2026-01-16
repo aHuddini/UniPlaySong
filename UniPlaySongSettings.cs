@@ -84,6 +84,7 @@ namespace UniPlaySong
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
         private bool pauseWhenInSystemTray = true;
+        private bool showNowPlayingInTopPanel = false;
 
         public bool EnableMusic
         {
@@ -293,6 +294,16 @@ namespace UniPlaySong
         {
             get => pauseWhenInSystemTray;
             set { pauseWhenInSystemTray = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Show "Now Playing" song info in the Desktop top panel bar.
+        /// Displays song title, artist (if available), and duration next to the play/pause buttons.
+        /// </summary>
+        public bool ShowNowPlayingInTopPanel
+        {
+            get => showNowPlayingInTopPanel;
+            set { showNowPlayingInTopPanel = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

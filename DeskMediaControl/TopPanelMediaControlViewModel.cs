@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -24,16 +25,26 @@ namespace UniPlaySong.DeskMediaControl
 
         private TopPanelItem _playPauseItem;
         private TopPanelItem _skipItem;
+        private TopPanelItem _nowPlayingItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
+        private NowPlayingPanel _nowPlayingPanel;
+        private SongMetadataService _metadataService;
 
         public TopPanelItem PlayPauseItem => _playPauseItem;
         public TopPanelItem SkipItem => _skipItem;
+        public TopPanelItem NowPlayingItem => _nowPlayingItem;
 
         public IEnumerable<TopPanelItem> GetTopPanelItems()
         {
             yield return _playPauseItem;
             yield return _skipItem;
+
+            // Only include Now Playing panel if setting is enabled
+            if (_getSettings?.Invoke()?.ShowNowPlayingInTopPanel == true && _nowPlayingItem != null)
+            {
+                yield return _nowPlayingItem;
+            }
         }
 
         public TopPanelMediaControlViewModel(
@@ -50,6 +61,7 @@ namespace UniPlaySong.DeskMediaControl
             _handleError = handleError;
 
             InitializeTopPanelItems();
+            InitializeNowPlayingPanel();
             SubscribeToEvents(_getPlaybackService());
         }
 
@@ -93,6 +105,78 @@ namespace UniPlaySong.DeskMediaControl
             };
         }
 
+        private void InitializeNowPlayingPanel()
+        {
+            try
+            {
+                // Create the Now Playing panel
+                _nowPlayingPanel = new NowPlayingPanel();
+
+                // Create the TopPanelItem for the Now Playing display
+                _nowPlayingItem = new TopPanelItem
+                {
+                    Icon = _nowPlayingPanel,
+                    Title = "UniPlaySong: Now Playing (click to open music folder)",
+                    Visible = true,
+                    Activated = OnNowPlayingActivated
+                };
+
+                // Create metadata service and subscribe to song changes
+                var playbackService = _getPlaybackService?.Invoke();
+                if (playbackService != null)
+                {
+                    _metadataService = new SongMetadataService(playbackService, null);
+                    _metadataService.OnSongInfoChanged += OnSongInfoChanged;
+
+                    // If there's already a song playing, update immediately
+                    if (!string.IsNullOrEmpty(playbackService.CurrentSongPath))
+                    {
+                        var songInfo = _metadataService.ReadMetadata(playbackService.CurrentSongPath);
+                        _nowPlayingPanel.UpdateSongInfo(songInfo);
+                    }
+                }
+
+                _log?.Invoke("TopPanel: Now Playing panel initialized");
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error initializing Now Playing panel: {ex.Message}");
+            }
+        }
+
+        private void OnNowPlayingActivated()
+        {
+            try
+            {
+                var playbackService = _getPlaybackService?.Invoke();
+                var currentSongPath = playbackService?.CurrentSongPath;
+
+                if (!string.IsNullOrEmpty(currentSongPath) && File.Exists(currentSongPath))
+                {
+                    // Open the folder containing the current song
+                    var folder = Path.GetDirectoryName(currentSongPath);
+                    if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", folder);
+                        _log?.Invoke($"TopPanel: Opening music folder: {folder}");
+                    }
+                }
+                else
+                {
+                    _log?.Invoke("TopPanel: No song playing, cannot open folder");
+                }
+            }
+            catch (Exception ex)
+            {
+                _handleError?.Invoke(ex, "opening music folder from top panel");
+            }
+        }
+
+        private void OnSongInfoChanged(SongInfo songInfo)
+        {
+            _nowPlayingPanel?.UpdateSongInfo(songInfo);
+        }
+
         private void SubscribeToEvents(IMusicPlaybackService playbackService)
         {
             if (playbackService == null) return;
@@ -109,6 +193,7 @@ namespace UniPlaySong.DeskMediaControl
         public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
         {
             SubscribeToEvents(newPlaybackService);
+            _metadataService?.ResubscribeToService(newPlaybackService);
             UpdateIcons();
         }
 
