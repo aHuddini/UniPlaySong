@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.1-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,18 +14,29 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.0
+## What's New - v1.2.1
 
 ### New Features
-- **Desktop Top Panel Media Controls** - Play/Pause and Skip buttons in Playnite's top panel bar ([#5](https://github.com/aHuddini/UniPlaySong/issues/5))
-  - Play/Pause button toggles music with standard media player conventions
-  - Skip button jumps to a random different song (greyed out when only one song available)
-  - Uses IcoFont icons for visual consistency with Playnite's native UI
+- **Now Playing Display** - Shows current song title, artist, and duration in Desktop top panel
+  - Scrolling text animation for long titles
+  - Click to open the music folder in Explorer
+- **New Add-on Settings** (Settings → General)
+  - **Show Now Playing (Desktop mode)** - Toggle song info display
+  - **Show Media Controls (Desktop mode)** - Toggle Play/Pause and Skip buttons
+  - Both disabled by default; requires Playnite restart to apply
+
+### Improvements
+- **YouTube Search Reliability** - Significantly improved auto-download success rate (~99% for games with soundtracks on YouTube)
+  - Updated to latest YouTube client used to perform searches (2021 --> 2025)
+  - Dual-format playlist parser for better compatibility
+  - Addressed unicode bug #48
+- **Dedicated Download Logging** - New `downloader.log` file keeps extension logs clean
+  - Automatic log rotation at 5MB
+  - Reduced verbosity while maintaining important status info
 
 ### Previous Versions
+- **v1.2.0**: Desktop Top Panel Media Controls (Play/Pause, Skip buttons)
 - **v1.1.9**: Theme Integration Control (UPS_MusicControl) for theme developers
-- **v1.1.8**: Toast Notifications, Settings Persistence Fix, Controller Mode Dialog Fixes
-- **v1.1.7**: Download UI Performance and Music Playback Fixes
 ---
 
 ## 🎬 Demo
@@ -36,7 +47,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 🎵 Features
 
 - **Automatic Music Playback** - Music plays when selecting games
-- **Desktop Top Panel Controls** - Play/Pause and Skip buttons in Playnite's top panel (Desktop mode)
+- **Desktop Top Panel Controls** - Optional Play/Pause, Skip, and Now Playing display in Playnite's top panel (Desktop mode)
 - **Real-Time Live Effects** - Professional reverb, effect chaining, and zero-latency processing
 - **Visual Audio Amplify** - Waveform-based gain adjustment with controller support
 - **Precise Audio Trimming** - Visual waveform editor with controller support
