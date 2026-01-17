@@ -37,11 +37,17 @@ namespace UniPlaySong.DeskMediaControl
 
         public IEnumerable<TopPanelItem> GetTopPanelItems()
         {
-            yield return _playPauseItem;
-            yield return _skipItem;
+            var settings = _getSettings?.Invoke();
+
+            // Only include play/pause and skip buttons if media controls setting is enabled
+            if (settings?.ShowDesktopMediaControls != false)
+            {
+                yield return _playPauseItem;
+                yield return _skipItem;
+            }
 
             // Only include Now Playing panel if setting is enabled
-            if (_getSettings?.Invoke()?.ShowNowPlayingInTopPanel == true && _nowPlayingItem != null)
+            if (settings?.ShowNowPlayingInTopPanel == true && _nowPlayingItem != null)
             {
                 yield return _nowPlayingItem;
             }

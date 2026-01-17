@@ -55,15 +55,31 @@ namespace UniPlaySong
                     settingsService?.ValidateNativeMusicFile(settings, showErrors: true);
                 }
             }
-            else if (e.PropertyName == nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel))
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel) ||
+                     e.PropertyName == nameof(UniPlaySongSettings.ShowDesktopMediaControls))
             {
-                // Show restart notification when Now Playing setting changes
-                PlayniteApi?.Dialogs?.ShowMessage(
-                    "The 'Show Now Playing in Top Panel' setting requires a Playnite restart to take effect.\n\nPlease save your settings and restart Playnite.",
-                    "Restart Required",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information
-                );
+                // Prompt for restart when top panel settings change
+                PromptForRestart();
+            }
+        }
+
+        private void PromptForRestart()
+        {
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                "This setting requires a Playnite restart to take effect.\n\nWould you like to save settings and restart Playnite now?",
+                "Restart Required",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question
+            );
+
+            if (result == System.Windows.MessageBoxResult.Yes)
+            {
+                // Save settings first
+                plugin.SavePluginSettings(settings);
+
+                // Restart Playnite
+                System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+                System.Windows.Application.Current?.Shutdown();
             }
         }
 
@@ -410,6 +426,77 @@ namespace UniPlaySong
             {
                 _cacheStatsText = value;
                 OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Display-only property showing current song title | duration.
+        /// Not serialized to settings file. Uses same metadata reading as the top panel.
+        /// </summary>
+        public string CurrentSongDisplay
+        {
+            get
+            {
+                try
+                {
+                    var playbackService = plugin.GetPlaybackService();
+                    if (playbackService == null || !playbackService.IsPlaying)
+                        return "(No song playing)";
+
+                    var currentPath = playbackService.CurrentSongPath;
+                    if (string.IsNullOrEmpty(currentPath))
+                        return "(No song playing)";
+
+                    // If playing default music, don't show song info
+                    if (playbackService.IsPlayingDefaultMusic)
+                        return "(Default music)";
+
+                    if (!System.IO.File.Exists(currentPath))
+                        return "(File not found)";
+
+                    // Read embedded metadata from file (same as SongMetadataService)
+                    string title = null;
+                    string artist = null;
+                    var duration = System.TimeSpan.Zero;
+
+                    try
+                    {
+                        using (var file = TagLib.File.Create(currentPath))
+                        {
+                            // Get title from embedded metadata
+                            title = file.Tag?.Title;
+
+                            // Get artist from embedded metadata (first performer)
+                            if (file.Tag?.Performers != null && file.Tag.Performers.Length > 0)
+                            {
+                                artist = file.Tag.Performers[0];
+                            }
+
+                            // Get duration
+                            duration = file.Properties?.Duration ?? System.TimeSpan.Zero;
+                        }
+                    }
+                    catch { }
+
+                    // If no embedded title, fall back to parsing filename
+                    if (string.IsNullOrWhiteSpace(title))
+                    {
+                        DeskMediaControl.SongTitleCleaner.ParseFilename(currentPath, out title, out string filenameArtist);
+
+                        // Use filename-extracted artist if no embedded artist
+                        if (string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(filenameArtist))
+                        {
+                            artist = filenameArtist;
+                        }
+                    }
+
+                    // Format display text (same as SongInfo.DisplayText)
+                    return DeskMediaControl.SongTitleCleaner.FormatDisplayText(title, artist, duration);
+                }
+                catch
+                {
+                    return "(Unable to read song info)";
+                }
             }
         }
 

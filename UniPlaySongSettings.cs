@@ -85,6 +85,7 @@ namespace UniPlaySong
         private bool pauseOnMinimize = true;
         private bool pauseWhenInSystemTray = true;
         private bool showNowPlayingInTopPanel = false;
+        private bool showDesktopMediaControls = false;
 
         public bool EnableMusic
         {
@@ -304,6 +305,16 @@ namespace UniPlaySong
         {
             get => showNowPlayingInTopPanel;
             set { showNowPlayingInTopPanel = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Show media control buttons (play/pause and skip) in the Desktop top panel bar.
+        /// When disabled, only the Now Playing text is shown (if enabled).
+        /// </summary>
+        public bool ShowDesktopMediaControls
+        {
+            get => showDesktopMediaControls;
+            set { showDesktopMediaControls = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

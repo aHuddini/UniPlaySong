@@ -92,19 +92,34 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <CheckBox Content="Show Now Playing in Top Panel (Desktop mode)"
+                    <CheckBox Content="Show Now Playing (Desktop mode)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, displays song title, artist (if available), and duration next to the play/pause buttons in the Desktop top panel bar. Requires Playnite restart to take effect."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="* Changing this setting requires a Playnite restart"
-                               FontSize="10"
-                               Foreground="Orange"
-                               FontStyle="Italic"
-                               Margin="20,0,0,5"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
+                        <Run Foreground="Gray">Displays the current song title, artist, and duration.</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
+
+                    <!-- Current Song Display (non-serialized, display-only) -->
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                        <TextBlock Text="Current Song: "
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CurrentSongDisplay}"
+                                   FontSize="11"
+                                   Foreground="LightGray"
+                                   FontStyle="Italic"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <CheckBox Content="Show Media Controls (Desktop mode)"
+                              IsChecked="{Binding Settings.ShowDesktopMediaControls}"
+                              Margin="0,5"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                        <Run Foreground="Gray">Displays the play/pause and skip buttons. Disable to show only the Now Playing text.</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
 
                     <Separator Margin="0,10"/>
                     
