@@ -2,6 +2,15 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.2] - 2026-01-17
+
+### Improved
+- **Search Cache Optimization** - Significantly reduced cache file size
+  - Cache now stores only essential fields (id, name, source, year) instead of all metadata
+  - Limits cached albums to top 10 per source (was unlimited)
+  - Old bloated caches are automatically cleared on upgrade (version 2.0 format)
+  - Expected size reduction: ~90% smaller cache files
+
 ## [1.2.1] - 2026-01-17
 
 ### Improved

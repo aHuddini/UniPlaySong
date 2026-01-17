@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.1-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z11SG2IK)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -14,27 +14,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.1
-
-### New Features
-- **Now Playing Display** - Shows current song title, artist, and duration in Desktop top panel
-  - Scrolling text animation for long titles
-  - Click to open the music folder in Explorer
-- **New Add-on Settings** (Settings → General)
-  - **Show Now Playing (Desktop mode)** - Toggle song info display
-  - **Show Media Controls (Desktop mode)** - Toggle Play/Pause and Skip buttons
-  - Both disabled by default; requires Playnite restart to apply
+## What's New - v1.2.2
 
 ### Improvements
-- **YouTube Search Reliability** - Significantly improved auto-download success rate (~99% for games with soundtracks on YouTube)
-  - Updated to latest YouTube client used to perform searches (2021 --> 2025)
-  - Dual-format playlist parser for better compatibility
-  - Addressed unicode bug #48
-- **Dedicated Download Logging** - New `downloader.log` file keeps extension logs clean
-  - Automatic log rotation at 5MB
-  - Reduced verbosity while maintaining important status info
+- **Search Cache Optimization** - Significantly reduced cache file size (~90% smaller)
+  - Cache stores only essential fields (id, name, source, year)
+  - Limits to top 10 albums per source
+  - Old caches automatically cleared on upgrade
 
 ### Previous Versions
+- **v1.2.1**: Now Playing display, YouTube search reliability improvements, dedicated download logging
 - **v1.2.0**: Desktop Top Panel Media Controls (Play/Pause, Skip buttons)
 - **v1.1.9**: Theme Integration Control (UPS_MusicControl) for theme developers
 ---

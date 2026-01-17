@@ -32,34 +32,23 @@ namespace UniPlaySong.Services
     }
     
     /// <summary>
-    /// Simplified album data for caching (only essential fields)
+    /// Minimal album data for caching - only essential fields needed for auto-download.
+    /// Reduces cache file size significantly by excluding display-only metadata.
     /// </summary>
     public class CachedAlbum
     {
         [JsonProperty("id")]
         public string Id { get; set; }
-        
+
         [JsonProperty("name")]
         public string Name { get; set; }
-        
+
         [JsonProperty("source")]
         public string Source { get; set; }
-        
-        [JsonProperty("count")]
-        public uint? Count { get; set; }
-        
-        [JsonProperty("icon_url")]
-        public string IconUrl { get; set; }
-        
-        [JsonProperty("platforms")]
-        public List<string> Platforms { get; set; }
-        
-        [JsonProperty("type")]
-        public string Type { get; set; }
-        
+
         [JsonProperty("year")]
         public string Year { get; set; }
-        
+
         /// <summary>
         /// Convert cached album back to full Album object
         /// </summary>
@@ -67,22 +56,18 @@ namespace UniPlaySong.Services
         {
             Source sourceEnum;
             Enum.TryParse(Source, out sourceEnum);
-            
+
             return new Album
             {
                 Id = Id,
                 Name = Name,
                 Source = sourceEnum,
-                Count = Count,
-                IconUrl = IconUrl,
-                Platforms = Platforms,
-                Type = Type,
                 Year = Year
             };
         }
-        
+
         /// <summary>
-        /// Create cached album from full Album object
+        /// Create cached album from full Album object (only stores essential fields)
         /// </summary>
         public static CachedAlbum FromAlbum(Album album)
         {
@@ -91,10 +76,6 @@ namespace UniPlaySong.Services
                 Id = album.Id,
                 Name = album.Name,
                 Source = album.Source.ToString(),
-                Count = album.Count,
-                IconUrl = album.IconUrl,
-                Platforms = album.Platforms?.ToList(),
-                Type = album.Type,
                 Year = album.Year
             };
         }
@@ -128,7 +109,7 @@ namespace UniPlaySong.Services
         
         public SearchCacheData()
         {
-            Version = "1.0";
+            Version = "2.0"; // v2.0: Minimal cache format (id, name, source only)
             LastCleanup = DateTime.UtcNow;
             Entries = new Dictionary<string, GameSearchCache>(StringComparer.OrdinalIgnoreCase);
         }
@@ -145,6 +126,9 @@ namespace UniPlaySong.Services
         private SearchCacheData _cache;
         private bool _enabled;
         private int _cacheDurationDays;
+
+        // Limit cached albums per source to keep cache file small
+        private const int MaxCachedAlbumsPerSource = 10;
         
         public SearchCacheService(string extensionDataPath, bool enabled = true, int cacheDurationDays = 7)
         {
@@ -264,12 +248,15 @@ namespace UniPlaySong.Services
                 var now = DateTime.UtcNow;
                 var expires = now.AddDays(_cacheDurationDays);
 
+                // Only cache top N albums to keep cache file small
+                var albumsToCache = albums.Take(MaxCachedAlbumsPerSource).ToList();
+
                 var entry = new SearchCacheEntry
                 {
                     Timestamp = now,
                     Expires = expires,
-                    AlbumCount = albums.Count,
-                    Albums = albums.Select(a => CachedAlbum.FromAlbum(a)).ToList()
+                    AlbumCount = albumsToCache.Count,
+                    Albums = albumsToCache.Select(a => CachedAlbum.FromAlbum(a)).ToList()
                 };
 
                 if (source == Source.KHInsider)
@@ -435,17 +422,26 @@ namespace UniPlaySong.Services
         /// </summary>
         private void LoadCache()
         {
+            const string CurrentVersion = "2.0";
+
             try
             {
                 if (File.Exists(_cacheFilePath))
                 {
                     var json = File.ReadAllText(_cacheFilePath);
                     _cache = JsonConvert.DeserializeObject<SearchCacheData>(json);
-                    
+
                     if (_cache == null || _cache.Entries == null)
                     {
                         Logger.Warn("[Cache] Invalid cache file, creating new cache");
                         _cache = new SearchCacheData();
+                    }
+                    else if (_cache.Version != CurrentVersion)
+                    {
+                        // Cache format changed - clear old cache to use new minimal format
+                        Logger.Info($"[Cache] Cache version mismatch (found {_cache.Version}, expected {CurrentVersion}). Clearing old cache.");
+                        _cache = new SearchCacheData();
+                        SaveCache();
                     }
                     else
                     {
