@@ -2,6 +2,30 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.1] - 2026-01-17
+
+### Improved
+- **YouTube Search Reliability** - Significantly improved auto-download success rate
+  - Updated internal Youtube parser client version to 2025 iteration
+  - Added dual-format playlist parser supporting both modern `lockupViewModel` and legacy `playlistRenderer` response formats
+  - Enhanced property fallbacks for title, channel, thumbnail, and video count extraction
+  - Addressed unicode bug in search results #48
+- **Dedicated Download Logging** - Cleaner logging separation
+  - New `downloader.log` file in extension folder for all download-related operations
+  - Automatic log rotation when exceeding 5MB (keeps one `.old` backup)
+  - Session markers for batch download operations
+  - Significantly reduced logging verbosity while maintaining important status messages
+
+### Added
+- **Now Playing Display** - Shows current song title, artist, and duration in Desktop top panel
+  - Scrolling text animation for long titles
+  - Click to open the music folder in Explorer
+- **New Add-on Settings Options** (Settings → General)
+  - **Show Now Playing (Desktop mode)** - Toggle the Now Playing song info display
+  - **Show Media Controls (Desktop mode)** - Toggle the Play/Pause and Skip buttons
+  - Both options are disabled by default; changing requires Playnite restart
+- **New Search Hints: CONTRIBUTIONS WELCOME!** - Added YouTube playlist ID for Necromunda: Hired Gun (official YouTube Music album). 
+
 ## [1.2.0] - 2026-01-15
 
 ### Added
