@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -89,10 +90,8 @@ namespace UniPlaySong.Common
                 " - Remastered",
                 " - HD Remaster",
                 " - HD Edition",
-                " - HD",
                 " Remastered",
                 " HD Remaster",
-                " HD",
                 " Remake",
                 " Remaster",
                 // Other common suffixes
@@ -155,10 +154,94 @@ namespace UniPlaySong.Common
             
             // Remove leading/trailing articles for better matching (optional)
             // Keep "The" at the start as it's often part of the official name
-            
+
             return result.Trim();
         }
-        
+
+        /// <summary>
+        /// Comprehensive search query normalization for both KHInsider and YouTube.
+        /// Removes trademark symbols, normalizes Unicode, strips suffixes, and cleans formatting.
+        /// This is the main entry point for all search query normalization.
+        /// </summary>
+        public static string NormalizeSearchQuery(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return string.Empty;
+
+            var result = query;
+
+            // 1. Remove trademark/copyright/registered symbols (Issue #48)
+            result = result
+                .Replace("™", "")
+                .Replace("®", "")
+                .Replace("©", "")
+                .Replace("(TM)", "")
+                .Replace("(R)", "")
+                .Replace("(C)", "");
+
+            // 2. Normalize curly quotes and apostrophes to ASCII equivalents
+            result = result
+                .Replace("\u2019", "'")  // Right single quote '
+                .Replace("\u2018", "'")  // Left single quote '
+                .Replace("\u201C", "\"") // Left double quote "
+                .Replace("\u201D", "\"") // Right double quote "
+                .Replace("\u2026", "..."); // Ellipsis …
+
+            // 3. Strip edition suffixes (Definitive, GOTY, Remastered, etc.)
+            result = StripGameNameSuffixes(result);
+
+            // 4. Normalize dashes/colons to spaces for better search matching
+            result = Regex.Replace(result, @"[:–—\-]+", " ");
+
+            // 5. Remove remaining non-alphanumeric except spaces (but keep numbers)
+            result = Regex.Replace(result, @"[^\w\s]", " ");
+
+            // 6. Collapse multiple spaces
+            result = Regex.Replace(result, @"\s+", " ");
+
+            return result.Trim();
+        }
+
+        /// <summary>
+        /// Generates multiple search query variations for fallback searching.
+        /// Returns queries in order of specificity (most specific first).
+        /// </summary>
+        public static List<string> GenerateSearchQueries(string gameName, string suffix = "OST")
+        {
+            var queries = new List<string>();
+            if (string.IsNullOrWhiteSpace(gameName))
+                return queries;
+
+            // Tier 1: Full normalized name + suffix
+            var normalized = NormalizeSearchQuery(gameName);
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                queries.Add($"{normalized} {suffix}");
+            }
+
+            // Tier 2: Base name only (without numbers/editions) + suffix
+            var baseName = ExtractBaseGameName(gameName);
+            if (!string.IsNullOrWhiteSpace(baseName) &&
+                !baseName.Equals(normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                queries.Add($"{baseName} {suffix}");
+            }
+
+            // Tier 3: Simplified - first significant words only (for very problematic names)
+            var words = normalized.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length >= 2)
+            {
+                // Take first 2-3 significant words
+                var simplified = string.Join(" ", words.Take(Math.Min(3, words.Length)));
+                if (!queries.Any(q => q.StartsWith(simplified, StringComparison.OrdinalIgnoreCase)))
+                {
+                    queries.Add($"{simplified} game {suffix}");
+                }
+            }
+
+            return queries.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
         /// <summary>
         /// Strips HTML tags and special characters from a string
         /// </summary>

@@ -151,6 +151,7 @@ namespace UniPlaySong.Services
             // Try prefix matching - hint key should be prefix of game name
             // e.g., "The Coma 2" matches "The Coma 2: Vicious Sisters"
             // Also handles cases like "Deus Ex 2" matching "Deus Ex 2: Invisible War"
+            Logger.Info($"[SearchHints] Trying prefix match for '{gameName}' (normalized: '{normalized}'), checking {_hints.Count} hints");
             foreach (var kvp in _hints)
             {
                 var hintKeyNorm = StringHelper.NormalizeForComparison(kvp.Key);
@@ -304,6 +305,12 @@ namespace UniPlaySong.Services
                         {
                             _hints[prop.Name] = hint;
                             count++;
+
+                            // Log hints that have YouTubePlaylistId for debugging
+                            if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
+                            {
+                                Logger.Info($"[SearchHints] Loaded hint with playlist: '{prop.Name}' -> '{hint.YouTubePlaylistId}'");
+                            }
                         }
                     }
                     catch (Exception ex)

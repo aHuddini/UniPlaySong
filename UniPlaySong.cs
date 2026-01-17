@@ -142,6 +142,9 @@ namespace UniPlaySong
                 _fileLogger = new FileLogger(extensionPath);
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 _fileLogger.Info($"=== UniPlaySong v{version} Starting ===");
+
+                // Initialize dedicated downloader logger
+                Downloaders.DownloaderLogger.Initialize(extensionPath);
             }
             catch
             {

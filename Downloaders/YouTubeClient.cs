@@ -24,7 +24,8 @@ namespace UniPlaySong.Downloaders
         private readonly HttpClient _httpClient;
         private readonly ErrorHandlerService _errorHandler;
 
-        // JSON path selectors for YouTube API responses
+        // JSON path selectors for YouTube API responses (updated for 2025)
+        // Primary: lockupViewModel format (newer YouTube format)
         private const string ParserPlaylists = "..lockupViewModel";
         private const string ParserPlaylistName = "metadata.lockupMetadataViewModel.title.content";
         private const string ParserPlaylistId = "contentId";
@@ -32,6 +33,17 @@ namespace UniPlaySong.Downloaders
         private const string ParserPlaylistCount = "contentImage..overlays[?(@..imageName=='PLAYLISTS')]..text";
         private const string ParserChannelId = "metadata.lockupMetadataViewModel.metadata.contentMetadataViewModel.metadataRows[0].metadataParts[0].text.commandRuns[0].onTap.innertubeCommand.browseEndpoint.browseId";
         private const string ParserChannelName = "metadata.lockupMetadataViewModel.metadata.contentMetadataViewModel.metadataRows[0].metadataParts[0].text.content";
+
+        // Fallback: playlistRenderer format (classic YouTube format, still used for some results)
+        // Based on YouTube.js Playlist.ts parsing paths
+        private const string ParserPlaylistsLegacy = "..playlistRenderer";
+        private const string ParserPlaylistNameLegacy = "title.simpleText";
+        private const string ParserPlaylistIdLegacy = "playlistId";
+        private const string ParserPlaylistThumbnailLegacy = "thumbnail.thumbnails[0].url";
+        private const string ParserPlaylistCountLegacy = "videoCount";
+        private const string ParserChannelIdLegacy = "shortBylineText.runs[0].navigationEndpoint.browseEndpoint.browseId";
+        private const string ParserChannelNameLegacy = "shortBylineText.simpleText";
+
         private const string ParserContinuationToken = "..continuationCommand.token";
         private const string ParserVisitorData = "..visitorData";
         private const string ParserPlaylistVideos = "..playlistPanelVideoRenderer";
@@ -141,8 +153,8 @@ namespace UniPlaySong.Downloaders
                 );
 
                 var content = continuationToken == null
-                    ? $@"{{ ""query"": ""{WebUtility.UrlEncode(searchQuery)}"", ""params"": ""{searchFilter}"", ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20210408.08.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0 }} }} }}"
-                    : $@"{{ ""continuation"": ""{continuationToken}"", ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20210408.08.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0 }} }} }}";
+                    ? $@"{{ ""query"": ""{WebUtility.UrlEncode(searchQuery)}"", ""params"": ""{searchFilter}"", ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20250222.10.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0 }} }} }}"
+                    : $@"{{ ""continuation"": ""{continuationToken}"", ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20250222.10.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0 }} }} }}";
 
                 request.Content = new StringContent(content);
                 request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
@@ -179,7 +191,7 @@ namespace UniPlaySong.Downloaders
                 "https://www.youtube.com/youtubei/v1/next"
             );
 
-            var content = $@"{{ ""playlistId"": ""{playlistId}"", ""videoId"": ""{videoId ?? ""}"", ""playlistIndex"": {index}, ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20210408.08.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0, ""visitorData"": ""{visitorData ?? ""}"" }} }} }}";
+            var content = $@"{{ ""playlistId"": ""{playlistId}"", ""videoId"": ""{videoId ?? ""}"", ""playlistIndex"": {index}, ""context"": {{ ""client"": {{ ""clientName"": ""WEB"", ""clientVersion"": ""2.20250222.10.00"", ""hl"": ""en"", ""gl"": ""US"", ""utcOffsetMinutes"": 0, ""visitorData"": ""{visitorData ?? ""}"" }} }} }}";
 
             request.Content = new StringContent(content);
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
@@ -198,50 +210,43 @@ namespace UniPlaySong.Downloaders
                 }
 
                 dynamic jsonObj = Serialization.FromJson<dynamic>(json);
+
+                // Try primary format (lockupViewModel - newer YouTube format)
                 var playlists = new List<dynamic>(jsonObj.SelectTokens(ParserPlaylists));
-                
-                Logger.DebugIf(LogPrefix,$"ParseSearchResults: Found {playlists.Count} playlists in JSON response");
+                Logger.DebugIf(LogPrefix, $"ParseSearchResults: Found {playlists.Count} lockupViewModel playlists");
 
                 foreach (var playlist in playlists)
                 {
-                    try
+                    var item = ParseLockupViewModel(playlist);
+                    if (item != null && !string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Title))
                     {
-                        var item = new YouTubeItem
-                        {
-                            Id = playlist.SelectToken(ParserPlaylistId)?.ToString(),
-                            Title = playlist.SelectToken(ParserPlaylistName)?.ToString(),
-                            ThumbnailUrl = new Uri(playlist.SelectToken(ParserPlaylistThumbnail)?.ToString() ?? "https://via.placeholder.com/120"),
-                            Count = ParseCount(playlist.SelectToken(ParserPlaylistCount)?.ToString()),
-                            ChannelId = playlist.SelectToken(ParserChannelId)?.ToString(),
-                            ChannelName = playlist.SelectToken(ParserChannelName)?.ToString()
-                        };
+                        results.Add(item);
+                        Logger.DebugIf(LogPrefix, $"Added (lockup): {item.Title} (ID: {item.Id}, Count: {item.Count})");
+                    }
+                }
 
-                        if (!string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Title))
+                // Try legacy format (playlistRenderer - classic YouTube format)
+                var legacyPlaylists = new List<dynamic>(jsonObj.SelectTokens(ParserPlaylistsLegacy));
+                Logger.DebugIf(LogPrefix, $"ParseSearchResults: Found {legacyPlaylists.Count} playlistRenderer playlists");
+
+                foreach (var playlist in legacyPlaylists)
+                {
+                    var item = ParsePlaylistRenderer(playlist);
+                    if (item != null && !string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Title))
+                    {
+                        // Avoid duplicates
+                        if (!results.Any(r => r.Id == item.Id))
                         {
                             results.Add(item);
-                            Logger.DebugIf(LogPrefix,$"Added playlist: {item.Title} (ID: {item.Id}, Count: {item.Count}, Channel: {item.ChannelName})");
+                            Logger.DebugIf(LogPrefix, $"Added (legacy): {item.Title} (ID: {item.Id}, Count: {item.Count})");
                         }
-                        else
-                        {
-                            Logger.DebugIf(LogPrefix,$"Skipped playlist - missing ID or Title. ID: {item.Id}, Title: {item.Title}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _errorHandler?.HandleError(
-                            ex,
-                            context: "parsing individual playlist",
-                            showUserMessage: false
-                        );
-                        // Continue with next playlist
                     }
                 }
 
                 // Use SelectTokens (plural) because the deep scan ".." operator may match multiple tokens
-                // SelectToken (singular) throws "Path returned multiple tokens" when this happens
                 var continuationTokens = new List<dynamic>(jsonObj.SelectTokens(ParserContinuationToken));
                 var continuationToken = continuationTokens.FirstOrDefault()?.ToString();
-                Logger.DebugIf(LogPrefix,$"ParseSearchResults: Parsed {results.Count} playlists, continuation token: {continuationToken != null}");
+                Logger.DebugIf(LogPrefix, $"ParseSearchResults: Parsed {results.Count} total playlists, continuation: {continuationToken != null}");
                 return continuationToken;
             }
             catch (Exception ex)
@@ -251,6 +256,76 @@ namespace UniPlaySong.Downloaders
                     context: "parsing YouTube search results",
                     showUserMessage: false
                 );
+                return null;
+            }
+        }
+
+        private YouTubeItem ParseLockupViewModel(dynamic playlist)
+        {
+            try
+            {
+                return new YouTubeItem
+                {
+                    Id = playlist.SelectToken(ParserPlaylistId)?.ToString(),
+                    Title = playlist.SelectToken(ParserPlaylistName)?.ToString(),
+                    ThumbnailUrl = new Uri(playlist.SelectToken(ParserPlaylistThumbnail)?.ToString() ?? "https://via.placeholder.com/120"),
+                    Count = ParseCount(playlist.SelectToken(ParserPlaylistCount)?.ToString()),
+                    ChannelId = playlist.SelectToken(ParserChannelId)?.ToString(),
+                    ChannelName = playlist.SelectToken(ParserChannelName)?.ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(ex, context: "parsing lockupViewModel", showUserMessage: false);
+                return null;
+            }
+        }
+
+        private YouTubeItem ParsePlaylistRenderer(dynamic playlist)
+        {
+            try
+            {
+                // Handle title which might be in runs array or simpleText (YouTube.js: title.simpleText or title.runs[0].text)
+                string title = playlist.SelectToken(ParserPlaylistNameLegacy)?.ToString();
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    title = playlist.SelectToken("title.runs[0].text")?.ToString();
+                }
+
+                // Handle channel name: shortBylineText.simpleText or shortBylineText.runs[0].text
+                string channelName = playlist.SelectToken(ParserChannelNameLegacy)?.ToString();
+                if (string.IsNullOrWhiteSpace(channelName))
+                {
+                    channelName = playlist.SelectToken("shortBylineText.runs[0].text")?.ToString();
+                }
+
+                // Handle thumbnail: thumbnail.thumbnails[0].url or thumbnails array
+                string thumbnailUrl = playlist.SelectToken(ParserPlaylistThumbnailLegacy)?.ToString();
+                if (string.IsNullOrWhiteSpace(thumbnailUrl))
+                {
+                    thumbnailUrl = playlist.SelectToken("thumbnails[0].thumbnails[0].url")?.ToString();
+                }
+
+                // Handle video count: videoCount or thumbnailText.runs[0].text
+                string videoCount = playlist.SelectToken(ParserPlaylistCountLegacy)?.ToString();
+                if (string.IsNullOrWhiteSpace(videoCount))
+                {
+                    videoCount = playlist.SelectToken("thumbnailText.runs[0].text")?.ToString();
+                }
+
+                return new YouTubeItem
+                {
+                    Id = playlist.SelectToken(ParserPlaylistIdLegacy)?.ToString(),
+                    Title = title,
+                    ThumbnailUrl = new Uri(thumbnailUrl ?? "https://via.placeholder.com/120"),
+                    Count = ParseCount(videoCount),
+                    ChannelId = playlist.SelectToken(ParserChannelIdLegacy)?.ToString(),
+                    ChannelName = channelName
+                };
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(ex, context: "parsing playlistRenderer", showUserMessage: false);
                 return null;
             }
         }

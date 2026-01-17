@@ -152,6 +152,11 @@ namespace UniPlaySong.Common
         /// Log file name
         /// </summary>
         public const string LogFileName = "UniPlaySong.log";
+
+        /// <summary>
+        /// Downloader log file name - dedicated log for download operations
+        /// </summary>
+        public const string DownloaderLogFileName = "downloader.log";
         
         #endregion
         
