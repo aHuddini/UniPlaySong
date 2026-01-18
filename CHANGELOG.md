@@ -2,6 +2,24 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.3] - 2026-01-18
+
+### Added
+- **Bulk Delete Music (Multi-Select)** - Delete music for multiple games at once
+  - Select 2+ games → Right-click → UniPlaySong → "Delete Music (All)"
+  - Confirmation dialog shows game count before proceeding
+  - Automatically stops playback if currently playing game is in selection
+  - Shows summary of deleted files when complete
+
+### Improved
+- **Duration Filter for Downloads** - Songs over 30 minutes are automatically rejected
+  - Prevents downloading gameplay videos, livestream recordings, or full album compilations
+  - Detailed error messages when all songs in an album exceed the limit
+- **Safer Playnite Restart Handling** - Settings requiring restart now use Playnite's built-in mechanism
+  - Uses `IsRestartRequired` SDK pattern instead of manual process restart
+  - Shows red warning text at bottom of settings when restart is needed
+  - Safer, user-controlled restart prompting
+
 ## [1.2.2] - 2026-01-17
 
 ### Added
