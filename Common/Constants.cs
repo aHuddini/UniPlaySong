@@ -172,9 +172,15 @@ namespace UniPlaySong.Common
         #region Download Settings
 
         /// <summary>
-        /// Maximum preview song length in minutes
+        /// Maximum preview song length in minutes (used for scoring - songs longer than this get penalized)
         /// </summary>
         public const int MaxPreviewSongLengthMinutes = 8;
+
+        /// <summary>
+        /// Maximum allowed song duration in minutes. Songs exceeding this are rejected entirely.
+        /// This prevents downloading gameplay videos, streams, or full album compilations.
+        /// </summary>
+        public const int MaxAllowedSongDurationMinutes = 30;
 
         /// <summary>
         /// Preferred song name endings for selection

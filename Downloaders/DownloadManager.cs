@@ -23,6 +23,7 @@ namespace UniPlaySong.Downloaders
         private static DownloaderLogger DLog => DownloaderLogger.Instance;
         private const string LogPrefix = "DownloadManager";
         private static readonly TimeSpan MaxSongLength = new TimeSpan(0, Constants.MaxPreviewSongLengthMinutes, 0);
+        private static readonly TimeSpan MaxAllowedDuration = new TimeSpan(0, Constants.MaxAllowedSongDurationMinutes, 0);
         private static readonly List<string> PreferredSongEndings = Constants.PreferredSongEndings;
 
         private readonly IDownloader _khDownloader;
@@ -695,9 +696,7 @@ namespace UniPlaySong.Downloaders
             if (songsList.Count == 0)
                 return new List<Song>();
 
-            if (songsList.Count == 1)
-                return new List<Song> { songsList.First() };
-
+            // Score all songs
             var scoredSongs = songsList.Select(song => new
             {
                 Song = song,
@@ -706,7 +705,19 @@ namespace UniPlaySong.Downloaders
             .OrderByDescending(x => x.Score)
             .ToList();
 
-            var result = scoredSongs.Take(maxSongs).Select(x => x.Song).ToList();
+            // Filter out songs that were hard-rejected (int.MinValue score = exceeded duration limit)
+            var validSongs = scoredSongs.Where(x => x.Score > int.MinValue).ToList();
+
+            if (validSongs.Count == 0)
+            {
+                // All songs exceeded duration limit - this is likely a gameplay video album
+                var maxDuration = songsList.Where(s => s.Length.HasValue).Max(s => s.Length.Value.TotalMinutes);
+                DLog.Warn($"All {songsList.Count} songs for '{gameName}' exceed {Constants.MaxAllowedSongDurationMinutes}min limit (longest: {maxDuration:F1}min). Album likely contains gameplay videos.");
+                Logger.Warn($"[{LogPrefix}] No valid songs for '{gameName}' - all exceed {Constants.MaxAllowedSongDurationMinutes}min duration limit");
+                return new List<Song>();
+            }
+
+            var result = validSongs.Take(maxSongs).Select(x => x.Song).ToList();
 
             if (result.Any())
             {
@@ -715,12 +726,66 @@ namespace UniPlaySong.Downloaders
 
             return result;
         }
-        
+
+        /// <summary>
+        /// Picks the best songs with detailed rejection reason if no songs are valid.
+        /// </summary>
+        /// <returns>Tuple of (songs, rejectionReason) where rejectionReason is null if songs were found</returns>
+        public (List<Song> songs, string rejectionReason) BestSongPickWithReason(IEnumerable<Song> songs, string gameName, int maxSongs = 1)
+        {
+            var songsList = songs?.ToList() ?? new List<Song>();
+
+            if (songsList.Count == 0)
+                return (new List<Song>(), null);
+
+            // Score all songs
+            var scoredSongs = songsList.Select(song => new
+            {
+                Song = song,
+                Score = CalculateSongRelevance(song, gameName)
+            })
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+            // Filter out songs that were hard-rejected (int.MinValue score = exceeded duration limit)
+            var validSongs = scoredSongs.Where(x => x.Score > int.MinValue).ToList();
+            var rejectedDueToDuration = scoredSongs.Count - validSongs.Count;
+
+            if (validSongs.Count == 0 && rejectedDueToDuration > 0)
+            {
+                // All songs exceeded duration limit - likely gameplay videos
+                var longestSong = songsList.Where(s => s.Length.HasValue).OrderByDescending(s => s.Length.Value).FirstOrDefault();
+                var durationInfo = longestSong != null ? $" (longest: {longestSong.Length.Value.TotalMinutes:F0}min)" : "";
+                var reason = $"All {rejectedDueToDuration} songs exceed {Constants.MaxAllowedSongDurationMinutes}min limit{durationInfo}. Album likely contains gameplay videos.";
+                DLog.Warn($"Duration filter: {reason}");
+                return (new List<Song>(), reason);
+            }
+
+            if (validSongs.Count == 0)
+                return (new List<Song>(), null);
+
+            var result = validSongs.Take(maxSongs).Select(x => x.Song).ToList();
+
+            if (result.Any())
+            {
+                DLog.Debug($"Song pick for '{gameName}': '{result[0].Name}'");
+            }
+
+            return (result, null);
+        }
+
         private int CalculateSongRelevance(Song song, string gameName)
         {
             if (song == null)
                 return 0;
-                
+
+            // HARD FILTER: Reject songs over 30 minutes (likely gameplay videos, streams, or compilations)
+            if (song.Length.HasValue && song.Length.Value > MaxAllowedDuration)
+            {
+                DLog.Debug($"Rejecting '{song.Name}' - duration {song.Length.Value.TotalMinutes:F1}min exceeds {MaxAllowedDuration.TotalMinutes}min limit");
+                return int.MinValue;
+            }
+
             var score = 0;
             var songName = song.Name?.ToLowerInvariant() ?? string.Empty;
             var cleanGameName = NormalizeForMatching(gameName);

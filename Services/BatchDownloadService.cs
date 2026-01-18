@@ -235,12 +235,26 @@ namespace UniPlaySong.Services
                     return result;
                 }
 
-                // Pick best song (auto mode)
-                var bestSongs = _downloadManager.BestSongPick(songsList, game.Name, maxSongs: 1);
+                // Pick best song (auto mode) - use detailed method if available for better error messages
+                List<Song> bestSongs;
+                string rejectionReason = null;
+
+                if (_downloadManager is DownloadManager dm)
+                {
+                    var pickResult = dm.BestSongPickWithReason(songsList, game.Name, maxSongs: 1);
+                    bestSongs = pickResult.songs;
+                    rejectionReason = pickResult.rejectionReason;
+                }
+                else
+                {
+                    bestSongs = _downloadManager.BestSongPick(songsList, game.Name, maxSongs: 1);
+                }
+
                 if (bestSongs == null || bestSongs.Count == 0)
                 {
-                    Logger.Info($"[BatchDownload] No suitable song for '{game.Name}'");
-                    result.ErrorMessage = "No suitable song found";
+                    var errorMsg = rejectionReason ?? "No suitable song found";
+                    Logger.Info($"[BatchDownload] No suitable song for '{game.Name}': {errorMsg}");
+                    result.ErrorMessage = errorMsg;
                     return result;
                 }
 
