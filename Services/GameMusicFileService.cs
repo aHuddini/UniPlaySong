@@ -157,6 +157,84 @@ namespace UniPlaySong.Services
             var songs = GetAvailableSongs(game);
             return songs.Count > 0;
         }
+
+        /// <summary>
+        /// Deletes all music files for a game
+        /// </summary>
+        /// <returns>Number of files deleted</returns>
+        public int DeleteAllMusic(Game game)
+        {
+            var directory = GetGameMusicDirectory(game);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return 0;
+            }
+
+            var deletedCount = 0;
+
+            if (_errorHandler != null)
+            {
+                return _errorHandler.Try(
+                    () =>
+                    {
+                        var files = Directory.GetFiles(directory)
+                            .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                            .ToList();
+
+                        foreach (var file in files)
+                        {
+                            try
+                            {
+                                File.Delete(file);
+                                deletedCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Warn($"Failed to delete '{file}': {ex.Message}");
+                            }
+                        }
+
+                        // Also clear primary song metadata
+                        PrimarySongManager.ClearPrimarySong(directory, _errorHandler);
+
+                        return deletedCount;
+                    },
+                    defaultValue: 0,
+                    context: $"deleting all music for game '{game?.Name}'"
+                );
+            }
+            else
+            {
+                try
+                {
+                    var files = Directory.GetFiles(directory)
+                        .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .ToList();
+
+                    foreach (var file in files)
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                            deletedCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Warn($"Failed to delete '{file}': {ex.Message}");
+                        }
+                    }
+
+                    // Also clear primary song metadata
+                    PrimarySongManager.ClearPrimarySong(directory, null);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Error deleting music for game '{game?.Name}': {ex.Message}");
+                }
+            }
+
+            return deletedCount;
+        }
     }
 }
 

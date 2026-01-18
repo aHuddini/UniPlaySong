@@ -1688,6 +1688,104 @@ namespace UniPlaySong.Menus
 
         #endregion
 
+        #region Bulk Delete
+
+        /// <summary>
+        /// Deletes all music for multiple games with confirmation
+        /// </summary>
+        public void DeleteAllMusicForGames(List<Game> games)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () => ExecuteDeleteAllMusicForGames(games),
+                    context: $"deleting music for {games.Count} games",
+                    showUserMessage: true
+                );
+            }
+            else
+            {
+                try
+                {
+                    ExecuteDeleteAllMusicForGames(games);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error in DeleteAllMusicForGames: {ex.Message}");
+                    _playniteApi.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "UniPlaySong");
+                }
+            }
+        }
+
+        private void ExecuteDeleteAllMusicForGames(List<Game> games)
+        {
+            _logger.Info($"DeleteAllMusicForGames called for {games.Count} game(s)");
+
+            if (games == null || games.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No games selected.", "UniPlaySong");
+                return;
+            }
+
+            // Count games that have music
+            var gamesWithMusic = games.Where(g => _fileService?.HasMusic(g) == true).ToList();
+
+            if (gamesWithMusic.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("None of the selected games have music files.", "UniPlaySong");
+                return;
+            }
+
+            // Show confirmation dialog
+            var confirmResult = _playniteApi.Dialogs.ShowMessage(
+                $"Delete all music for {gamesWithMusic.Count} games?\n\nThis action cannot be undone.",
+                "UniPlaySong - Confirm Delete",
+                MessageBoxButton.YesNo
+            );
+
+            if (confirmResult != MessageBoxResult.Yes)
+            {
+                _logger.Info("User cancelled bulk delete");
+                return;
+            }
+
+            // Stop playback if any of the games being deleted is currently playing
+            if (_playbackService != null)
+            {
+                var currentGame = _playbackService.CurrentGame;
+                if (currentGame != null && gamesWithMusic.Any(g => g.Id == currentGame.Id))
+                {
+                    _logger.Info($"Stopping playback for '{currentGame.Name}' before deleting music");
+                    _playbackService.Stop();
+                }
+            }
+
+            // Perform deletion
+            var totalDeleted = 0;
+            var gamesDeleted = 0;
+
+            foreach (var game in gamesWithMusic)
+            {
+                var deleted = _fileService.DeleteAllMusic(game);
+                if (deleted > 0)
+                {
+                    totalDeleted += deleted;
+                    gamesDeleted++;
+                    _logger.Info($"Deleted {deleted} music file(s) for '{game.Name}'");
+                }
+            }
+
+            // Show result
+            _playniteApi.Dialogs.ShowMessage(
+                $"Deleted {totalDeleted} music file(s) from {gamesDeleted} game(s).",
+                "UniPlaySong - Delete Complete"
+            );
+
+            _logger.Info($"Bulk delete complete - {totalDeleted} files deleted from {gamesDeleted} games");
+        }
+
+        #endregion
+
         #region Batch Download Exceptions
 
         /// <summary>

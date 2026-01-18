@@ -1947,6 +1947,14 @@ namespace UniPlaySong
                     Action = _ => _trimDialogHandler.TrimSelectedGames(games)
                 });
 
+                // Delete Music (All) - bulk delete music for selected games
+                items.Add(new GameMenuItem
+                {
+                    Description = $"Delete Music (All) ({games.Count} games)",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.DeleteAllMusicForGames(games)
+                });
+
                 // Add retry option if there are failed downloads
                 var failedCount = _gameMenuHandler.FailedDownloads.Count(fd => !fd.Resolved);
                 if (failedCount > 0)
