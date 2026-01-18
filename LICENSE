@@ -22,7 +22,24 @@ SOFTWARE.
 
 ---
 
-Third-Party Acknowledgments:
+Third-Party Licenses & Acknowledgments:
+
+*Last updated: January 17, 2026 - v1.2.2 codebase*
+
+All third-party libraries and components are used "as-is" without modifications to their original source code.
+
+.NET Libraries (MIT License):
+- HtmlAgilityPack: https://github.com/zzzprojects/html-agility-pack
+- Newtonsoft.Json: https://github.com/JamesNK/Newtonsoft.Json
+- NAudio: https://github.com/naudio/NAudio
+- FuzzySharp: https://github.com/JakeBayer/FuzzySharp
+- MaterialDesignThemes: https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit
+
+Other Licenses:
+- TagLibSharp: LGPL v2.1 - https://github.com/mono/taglib-sharp
+- SDL2 & SDL2_mixer: zlib License - https://www.libsdl.org/
+- yt-dlp: Unlicense - https://github.com/yt-dlp/yt-dlp
+- FFmpeg: LGPL v2.1/GPL v2+ - https://ffmpeg.org/
 
 Reverb Algorithm:
 The reverb effect implementation is based on the public domain Freeverb algorithm
@@ -31,6 +48,8 @@ The algorithm constants and structure follow the libSoX implementation.
 
 Reverb Presets:
 The reverb preset values (Acoustic, Ambience, Vocal I, etc.) are derived from
-Audacity's factory presets for compatibility purposes. Audacity is licensed
-under GPL v2/v3 (https://www.audacityteam.org/).
+Audacity's factory presets for compatibility purposes. No actual Audacity code
+or GPL-licensed software is included or redistributed - only parameter values
+and presets are used to shape reverb algorithms. Audacity is licensed under
+GPL v2/v3 (https://www.audacityteam.org/).
 

@@ -51,28 +51,15 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 ## 🎵 Features
 
-- **Automatic Music Playback** - Music plays when selecting games
-- **Desktop Top Panel Controls** - Optional Play/Pause, Skip, and Now Playing display in Playnite's top panel (Desktop mode)
-- **Real-Time Live Effects** - Professional reverb, effect chaining, and zero-latency processing
-- **Visual Audio Amplify** - Waveform-based gain adjustment with controller support
-- **Precise Audio Trimming** - Visual waveform editor with controller support
-- **Full Controller Support** - Manage music entirely from fullscreen mode with Xbox controller
-- **Custom Preview Time** - Play 15s, 30s, or full tracks
-- **Fade Transitions** - Customizable fade-in/fade-out effects
-- **Audio Normalization** - EBU R128 standard volume leveling
-- **Silence Trimming** - Remove leading silence from tracks
-- **Online Downloads** - Download from YouTube, Zophar's Domain and KHInsider
-- **Smart Auto-Download** - Automatically download music for new games
-- **Bulk Operations** - Download music for all games at once (parallel processing)
-- **Audio Repair Tools** - Fix problematic audio files with enhanced repair options
-- **Smart Auto-Tagging** - Automatic [UPS] music status tags for easy game filtering
-- **Toast Notifications** - Modern notifications with acrylic blur effects and customizable appearance (controller-mode only)
-- **Cleanup & Maintenance** - Factory reset, storage management, and smart cleanup tools
-- **Primary Songs** - Set default songs per game
-- **Default/Fallback Music** - Play background music when games have no music
-- **Theme Compatibility** - Works with login screen themes
-- **Theme Integration Control** - UPS_MusicControl for theme developers to pause/resume music via XAML bindings
-- **PlayniteSound Migration** - Import/export music between UniPlaySong and PlayniteSound, with clean import-and-delete option
+- **Auto-Download** - Automatic music search and downloads for existing libraries and new games from YouTube, KHInsider, and Zophar's Domain
+- **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
+- **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
+- **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
+- **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations
+- **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes
+- **Migration Support** - Seamless import/export from PlayniteSound with cleanup options
+- **Desktop Controls** - Optional top panel media controls and Now Playing information
+- **Tagging & Filters** - Tag games with music/no music for better music management
 
 <img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
@@ -109,41 +96,26 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ---
 
-## 🎮 Usage
+## 🎮 Usage & Settings
 
-### Desktop Mode
-Right-click a game → **UniPlaySong**:
-- **Download Music** - Search and download from KHInsider/YouTube
-- **Download From URL** - Paste a specific YouTube URL
-- **Download for All Games** - Bulk download music for entire library
-- **Audio Processing** → Normalize/Trim individual songs or folders
-- **Audio Editing** → Precise trim with waveform editor, repair audio files
-- **Set/Clear Primary Song** - Choose which song plays first
-- **Open Music Folder** - Access game's music directory
+### Quick Start
+1. Install yt-dlp, Deno, and FFmpeg (see Requirements above)
+2. Set tool paths in **Settings → Add-ons (Generic) → UniPlaySong → Downloads**
+3. Right-click games (single or multiple) for music download and management options. Use "bulk download" in add-on settings for alternative bulk downloads
+4. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
-### Fullscreen Mode
-Press Menu button → **Extensions → UniPlaySong** → Access all features with controller
-
-All music management features are available in fullscreen mode with full controller support.
-
----
-
-## ⚙️ Settings Overview
-
-Settings are accessible via **Add-ons → Extension Settings → UniPlaySong**:
-
-- **General**: Enable/disable music, volume, fade durations, preview mode
+### Settings Tabs
+- **General**: Music playback, volume, fade effects, preview duration, desktop controls
+- **Live Effects**: Real-time reverb presets and custom controls
 - **Default Music**: Fallback music settings, native Playnite music integration
-- **Audio Processing**: Normalization (EBU R128) and silence trimming settings
-- **Downloads**: yt-dlp/FFmpeg paths, Firefox cookies option, auto-download settings
-- **Search Cache**: Cache search results to speed up downloads
-- **Migration**: Import/export music between PlayniteSound and UniPlaySong
-- **Toast Notifications**: Customize notification appearance (opacity, blur, colors, borders)
-- **Cleanup**: Storage info, delete all music, reset settings, factory reset
+- **Audio Normalization**: EBU R128 volume leveling and silence trimming
+- **Search Cache**: Cache management and auto-update hints database
+- **Downloads**: Tool paths, auto-download options, search sources
+- **Migration**: Import/export from PlayniteSound
+- **Cleanup**: Storage management, reset options, factory reset
 
-Music files are stored in: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
-
-**Supported formats**: MP3, WAV, OGG, FLAC, M4A, WMA
+**Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
+**Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA
 
 ---
 
@@ -162,8 +134,17 @@ See `docs/dev_docs/` for detailed build instructions.
 
 **Inspired by [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)** - Special thanks to the original developer for the foundation that made this project possible.
 
-### Libraries
-Playnite SDK, SDL2, MaterialDesignThemes, HtmlAgilityPack, Newtonsoft.Json, yt-dlp, FFmpeg
+### Libraries & Dependencies
+- **Playnite SDK** - Extension framework
+- **SDL2 & SDL2_mixer** - Audio playback (zlib license)
+- **MaterialDesignThemes** - WPF UI components (MIT)
+- **HtmlAgilityPack, Newtonsoft.Json, NAudio, FuzzySharp** - Core functionality (MIT)
+- **TagLibSharp** - Audio metadata (LGPL)
+- **yt-dlp** - Media downloading (Unlicense)
+- **FFmpeg** - Audio processing (LGPL/GPL)
+
+### Third-Party Acknowledgments
+See [LICENSE](LICENSE) file for component licenses and acknowledgments.
 
 ---
 
