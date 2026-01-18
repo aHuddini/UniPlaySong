@@ -6,13 +6,13 @@
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
 </p>
 
-A Playnite extension that provides a console-like game music preview experience with controller-friendly song management. Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
-
 <p align="center">
   <a href="https://ko-fi.com/Z8Z11SG2IK">
     <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi">
   </a>
 </p>
+
+A Playnite extension that provides a console-like game music preview experience with controller-friendly song management. Music plays when browsing your game library, creating an immersive experience similar to PlayStation and Xbox game selection screens.
 
 Designed for both Desktop and Fullscreen mode, with compatibility to modern themes (like ANIKI REMAKE).
 
