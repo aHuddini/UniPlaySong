@@ -868,12 +868,12 @@ namespace UniPlaySong
                 {
                     case WindowState.Normal:
                     case WindowState.Maximized:
-                        _fileLogger?.Debug("OnWindowStateChanged: Window restored - resuming music");
-                        ResumeAfterPause();
+                        _fileLogger?.Debug("OnWindowStateChanged: Window restored - removing Minimized pause source");
+                        _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
                         break;
                     case WindowState.Minimized:
-                        _fileLogger?.Debug("OnWindowStateChanged: Window minimized - pausing music");
-                        _playbackService?.Pause();
+                        _fileLogger?.Debug("OnWindowStateChanged: Window minimized - adding Minimized pause source");
+                        _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
                         break;
                 }
             }
@@ -892,13 +892,13 @@ namespace UniPlaySong
             {
                 if (isVisible)
                 {
-                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window visible - resuming music");
-                    ResumeAfterPause();
+                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window visible - removing SystemTray pause source");
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
                 }
                 else
                 {
-                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window hidden (system tray) - pausing music");
-                    _playbackService?.Pause();
+                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window hidden (system tray) - adding SystemTray pause source");
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
                 }
             }
         }
@@ -912,8 +912,8 @@ namespace UniPlaySong
             _fileLogger?.Debug($"OnApplicationDeactivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
             if (_settings?.PauseOnFocusLoss == true)
             {
-                _fileLogger?.Debug("OnApplicationDeactivate: Pausing music");
-                _playbackService?.Pause();
+                _fileLogger?.Debug("OnApplicationDeactivate: Adding FocusLoss pause source");
+                _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
             }
         }
 
@@ -926,33 +926,8 @@ namespace UniPlaySong
             _fileLogger?.Debug($"OnApplicationActivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
             if (_settings?.PauseOnFocusLoss == true)
             {
-                // Only resume if window is not minimized (minimize has its own resume logic)
-                var windowState = Application.Current?.MainWindow?.WindowState;
-                if (windowState != WindowState.Minimized)
-                {
-                    _fileLogger?.Debug("OnApplicationActivate: Resuming music");
-                    ResumeAfterPause();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resumes music after a pause (focus loss or minimize).
-        /// Uses Resume() if music is loaded.
-        /// </summary>
-        private void ResumeAfterPause()
-        {
-            if (_playbackService == null) return;
-
-            // If music is loaded, resume it
-            if (_playbackService.IsLoaded)
-            {
-                _fileLogger?.Debug("ResumeAfterPause: Music is loaded - calling Resume()");
-                _playbackService.Resume();
-            }
-            else
-            {
-                _fileLogger?.Debug("ResumeAfterPause: Music not loaded - nothing to resume");
+                _fileLogger?.Debug("OnApplicationActivate: Removing FocusLoss pause source");
+                _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
             }
         }
 

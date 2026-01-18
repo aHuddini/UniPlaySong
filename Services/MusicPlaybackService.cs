@@ -702,10 +702,17 @@ namespace UniPlaySong.Services
         {
             if (_musicPlayer?.IsLoaded == true)
             {
+                bool wasPlaying = !_isPaused;
                 StopPreviewTimer();
                 _fileLogger?.Debug("Pause: Calling fader.Pause()");
                 _fader?.Pause();
                 _activePauseSources.Add(PauseSource.Manual);
+
+                // Fire event if state changed from playing to paused
+                if (wasPlaying)
+                {
+                    OnPlaybackStateChanged?.Invoke();
+                }
             }
         }
 
@@ -713,9 +720,16 @@ namespace UniPlaySong.Services
         {
             if (_musicPlayer?.IsLoaded == true)
             {
+                bool wasPaused = _isPaused;
                 _fileLogger?.Debug("Resume: Calling fader.Resume()");
-                _fader?.Resume();
                 _activePauseSources.Remove(PauseSource.Manual);
+
+                // Only resume fader and fire event if all pause sources are cleared
+                if (wasPaused && !_isPaused)
+                {
+                    _fader?.Resume();
+                    OnPlaybackStateChanged?.Invoke();
+                }
             }
         }
 
