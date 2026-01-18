@@ -1,6 +1,7 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z11SG2IK)
+![Version](https://img.shields.io/badge/version-1.2.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z11SG2IK)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -16,7 +17,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.2
 
-This release transforms Auto-Download into a full-featured **Download Manager**.
+This release upgrades Auto-Download into a more fleshed out **Download Manager**.
 
 ### Download Manager with Review Mode
 - After auto-download completes, click **"Review Downloads"** to enter Review Mode
@@ -30,11 +31,11 @@ This release transforms Auto-Download into a full-featured **Download Manager**.
 - Newly downloaded songs **play automatically** as they complete
 
 ### Batch Manual Download Dialog
-- Unified dialog for retrying failed games with cover thumbnails
+- NEw Material Designs window for retrying failed games with cover thumbnails
 - Custom search box, preview button, and green checkmarks for progress
+- When finished, click "Finalize" to go back to the Auto-Download Manager.
 
 ### Performance
-- **Parallel processing** - Up to 4 concurrent downloads, starts immediately as albums are found
 - **Search Cache** - 90% smaller cache files with automatic migration
 
 ### Previous Versions
