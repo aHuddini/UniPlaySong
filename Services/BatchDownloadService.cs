@@ -369,6 +369,7 @@ namespace UniPlaySong.Services
                 case Source.KHInsider: return "KHInsider";
                 case Source.Zophar: return "Zophar";
                 case Source.YouTube: return "YouTube";
+                case Source.SoundCloud: return "SoundCloud";
                 default: return source.ToString();
             }
         }

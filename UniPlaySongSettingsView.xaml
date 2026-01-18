@@ -1119,13 +1119,15 @@
                         <TextBlock Text="Status: " VerticalAlignment="Center" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding HintsDatabaseStatus}"
                                    VerticalAlignment="Center"
-                                   Foreground="Gray"/>
+                                   Foreground="#90CAF9"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
-                        <Button Content="Download from GitHub"
-                                Width="160"
-                                Command="{Binding DownloadHintsFromGitHub}"/>
+                        <Button Content="Download GitHub File"
+                                Width="170"
+                                Command="{Binding DownloadHintsFromGitHub}"
+                                Background="#5E35B1"
+                                Foreground="White"/>
                         <Button Content="Open Database Folder"
                                 Width="160"
                                 Margin="10,0,0,0"
@@ -1148,6 +1150,15 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="0,5,0,0"/>
+
+                    <CheckBox Content="Check for updates on startup"
+                              IsChecked="{Binding Settings.AutoCheckHintsOnStartup}"
+                              Margin="0,15,0,5"/>
+                    <TextBlock Text="Automatically check if a newer search hints database is available on GitHub when Playnite starts. You will be notified if updates are available."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,0"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

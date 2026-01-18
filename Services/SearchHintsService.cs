@@ -32,10 +32,26 @@ namespace UniPlaySong.Services
         public string KHInsiderAlbum { get; set; }
 
         /// <summary>
+        /// SoundCloud track or playlist URL path (e.g., "artist/track-name" or "artist/sets/playlist-name")
+        /// </summary>
+        [JsonProperty("soundcloudUrl")]
+        public string SoundCloudUrl { get; set; }
+
+        /// <summary>
         /// Notes about why this hint was added (for documentation)
         /// </summary>
         [JsonProperty("notes")]
         public string Notes { get; set; }
+
+        /// <summary>
+        /// Checks if this hint has any direct links (YouTubePlaylistId, KHInsiderAlbum, or SoundCloudUrl)
+        /// </summary>
+        public bool HasDirectLinks()
+        {
+            return !string.IsNullOrWhiteSpace(YouTubePlaylistId) ||
+                   !string.IsNullOrWhiteSpace(KHInsiderAlbum) ||
+                   !string.IsNullOrWhiteSpace(SoundCloudUrl);
+        }
     }
 
     /// <summary>
@@ -69,6 +85,7 @@ namespace UniPlaySong.Services
         private readonly string _downloadedHintsPath;
         private readonly string _metadataPath;
         private Dictionary<string, SearchHint> _hints;
+        private Dictionary<string, SearchHint> _bundledHints;  // Keep bundled hints for fallback
         private DateTime _lastLoadTime;
         private const int ReloadIntervalMinutes = 5;
 
@@ -112,7 +129,8 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Gets search hint for a game if one exists
+        /// Gets search hint for a game if one exists.
+        /// If the hint from downloaded/primary source has no direct links, falls back to bundled hints.
         /// </summary>
         public SearchHint GetHint(string gameName)
         {
@@ -121,38 +139,68 @@ namespace UniPlaySong.Services
             // Reload if file might have changed
             ReloadIfNeeded();
 
+            // Find hint using matching logic, then check for fallback
+            var (hint, matchedKey) = FindHintWithKey(gameName, _hints);
+
+            if (hint != null)
+            {
+                // Check if hint has direct links - if not, try bundled fallback
+                if (!hint.HasDirectLinks() && _bundledHints != null && _bundledHints.Count > 0)
+                {
+                    Logger.Info($"[SearchHints] Hint for '{gameName}' has no direct links, checking bundled hints for fallback");
+                    var (bundledHint, _) = FindHintWithKey(gameName, _bundledHints);
+
+                    if (bundledHint != null && bundledHint.HasDirectLinks())
+                    {
+                        Logger.Info($"[SearchHints] Using bundled hint for '{gameName}' (has direct links)");
+                        return bundledHint;
+                    }
+                }
+
+                return hint;
+            }
+
+            Logger.Info($"[SearchHints] No hint found for '{gameName}'");
+            return null;
+        }
+
+        /// <summary>
+        /// Finds a hint in the specified dictionary using various matching strategies
+        /// </summary>
+        private (SearchHint hint, string matchedKey) FindHintWithKey(string gameName, Dictionary<string, SearchHint> hints)
+        {
+            if (hints == null || hints.Count == 0)
+                return (null, null);
+
             // Try exact match first
-            if (_hints.TryGetValue(gameName, out var hint))
+            if (hints.TryGetValue(gameName, out var hint))
             {
                 Logger.Info($"[SearchHints] Exact match for '{gameName}'");
-                return hint;
+                return (hint, gameName);
             }
 
             // Try base name (stripped of edition suffixes)
             var baseName = StringHelper.ExtractBaseGameName(gameName);
-            Logger.Info($"[SearchHints] Trying base name: '{gameName}' → '{baseName}'");
-            if (!string.IsNullOrWhiteSpace(baseName) && _hints.TryGetValue(baseName, out hint))
+            if (!string.IsNullOrWhiteSpace(baseName) && hints.TryGetValue(baseName, out hint))
             {
                 Logger.Info($"[SearchHints] Base name match for '{baseName}'");
-                return hint;
+                return (hint, baseName);
             }
 
             // Try normalized exact match
             var normalized = StringHelper.NormalizeForComparison(gameName);
-            foreach (var kvp in _hints)
+            foreach (var kvp in hints)
             {
                 if (StringHelper.NormalizeForComparison(kvp.Key) == normalized)
                 {
                     Logger.Info($"[SearchHints] Normalized match: '{gameName}' → '{kvp.Key}'");
-                    return kvp.Value;
+                    return (kvp.Value, kvp.Key);
                 }
             }
 
             // Try prefix matching - hint key should be prefix of game name
             // e.g., "The Coma 2" matches "The Coma 2: Vicious Sisters"
-            // Also handles cases like "Deus Ex 2" matching "Deus Ex 2: Invisible War"
-            Logger.Info($"[SearchHints] Trying prefix match for '{gameName}' (normalized: '{normalized}'), checking {_hints.Count} hints");
-            foreach (var kvp in _hints)
+            foreach (var kvp in hints)
             {
                 var hintKeyNorm = StringHelper.NormalizeForComparison(kvp.Key);
                 // Check if game name starts with hint key (with word boundary)
@@ -161,7 +209,7 @@ namespace UniPlaySong.Services
                      normalized[hintKeyNorm.Length] == ' '))
                 {
                     Logger.Info($"[SearchHints] Prefix match: '{gameName}' starts with '{kvp.Key}'");
-                    return kvp.Value;
+                    return (kvp.Value, kvp.Key);
                 }
             }
 
@@ -169,7 +217,7 @@ namespace UniPlaySong.Services
             var baseNormalized = StringHelper.NormalizeForComparison(baseName);
             if (baseNormalized != normalized)
             {
-                foreach (var kvp in _hints)
+                foreach (var kvp in hints)
                 {
                     var hintKeyNorm = StringHelper.NormalizeForComparison(kvp.Key);
                     if (baseNormalized.StartsWith(hintKeyNorm) &&
@@ -177,13 +225,12 @@ namespace UniPlaySong.Services
                          baseNormalized[hintKeyNorm.Length] == ' '))
                     {
                         Logger.Info($"[SearchHints] Base prefix match: '{baseName}' starts with '{kvp.Key}'");
-                        return kvp.Value;
+                        return (kvp.Value, kvp.Key);
                     }
                 }
             }
 
-            Logger.Info($"[SearchHints] No hint found for '{gameName}'");
-            return null;
+            return (null, null);
         }
 
         /// <summary>
@@ -249,32 +296,42 @@ namespace UniPlaySong.Services
         private void LoadHints()
         {
             _hints = new Dictionary<string, SearchHint>(StringComparer.OrdinalIgnoreCase);
+            _bundledHints = new Dictionary<string, SearchHint>(StringComparer.OrdinalIgnoreCase);
+
+            // Always load bundled hints first (for fallback when downloaded hints lack direct links)
+            LoadHintsFromFile(_bundledHintsPath, "bundled", _bundledHints);
 
             // Priority: Downloaded hints (from GitHub) > Bundled hints
-            // If downloaded hints exist, use them; otherwise fall back to bundled
+            // If downloaded hints exist, use them as primary; otherwise use bundled
             if (File.Exists(_downloadedHintsPath))
             {
                 Logger.Info($"[SearchHints] Using downloaded hints from AutoSearchDatabase");
-                LoadHintsFromFile(_downloadedHintsPath, "downloaded");
+                LoadHintsFromFile(_downloadedHintsPath, "downloaded", _hints);
             }
             else
             {
-                // Load bundled hints (read-only, ships with plugin)
-                LoadHintsFromFile(_bundledHintsPath, "bundled");
+                // No downloaded hints - copy bundled hints to main dictionary
+                foreach (var kvp in _bundledHints)
+                {
+                    _hints[kvp.Key] = kvp.Value;
+                }
             }
 
             // Load user hints on top (overwrites for same keys)
             if (File.Exists(_userHintsPath))
             {
-                LoadHintsFromFile(_userHintsPath, "user");
+                LoadHintsFromFile(_userHintsPath, "user", _hints);
             }
 
             _lastLoadTime = DateTime.Now;
-            Logger.Info($"[SearchHints] Loaded {_hints.Count} total hints");
+            Logger.Info($"[SearchHints] Loaded {_hints.Count} total hints ({_bundledHints.Count} bundled for fallback)");
         }
 
-        private void LoadHintsFromFile(string path, string source)
+        private void LoadHintsFromFile(string path, string source, Dictionary<string, SearchHint> targetDictionary = null)
         {
+            // Use provided dictionary or fall back to _hints
+            var target = targetDictionary ?? _hints;
+
             try
             {
                 if (!File.Exists(path))
@@ -303,13 +360,13 @@ namespace UniPlaySong.Services
                         var hint = prop.Value.ToObject<SearchHint>();
                         if (hint != null)
                         {
-                            _hints[prop.Name] = hint;
+                            target[prop.Name] = hint;
                             count++;
 
-                            // Log hints that have YouTubePlaylistId for debugging
-                            if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
+                            // Log hints that have direct links for debugging
+                            if (hint.HasDirectLinks())
                             {
-                                Logger.Info($"[SearchHints] Loaded hint with playlist: '{prop.Name}' -> '{hint.YouTubePlaylistId}'");
+                                Logger.Info($"[SearchHints] Loaded hint with direct links: '{prop.Name}' (YT={!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId)}, KH={!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum)}, SC={!string.IsNullOrWhiteSpace(hint.SoundCloudUrl)})");
                             }
                         }
                     }
@@ -558,6 +615,81 @@ namespace UniPlaySong.Services
             catch (Exception ex)
             {
                 Logger.Error(ex, "[SearchHints] Error deleting downloaded hints");
+            }
+        }
+
+        /// <summary>
+        /// Gets the entry count from the bundled hints file
+        /// </summary>
+        public int GetBundledHintsEntryCount()
+        {
+            return _bundledHints?.Count ?? 0;
+        }
+
+        /// <summary>
+        /// Checks if the GitHub hints database has more entries than the currently loaded hints.
+        /// This performs a lightweight check by fetching the GitHub file and comparing entry counts.
+        /// </summary>
+        /// <returns>
+        /// Tuple of (hasUpdate, gitHubEntryCount, currentEntryCount) where hasUpdate is true if GitHub has more entries.
+        /// Returns (false, 0, currentCount) if the check fails.
+        /// </returns>
+        public (bool hasUpdate, int gitHubEntryCount, int currentEntryCount) CheckForHintsUpdates()
+        {
+            var currentCount = _hints?.Count ?? 0;
+
+            try
+            {
+                Logger.Info("[SearchHints] Checking for hints updates from GitHub...");
+
+                using (var client = new System.Net.WebClient())
+                {
+                    // Add user agent to avoid GitHub blocking the request
+                    client.Headers.Add("User-Agent", "UniPlaySong/1.0");
+
+                    var json = client.DownloadString(GitHubHintsUrl);
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Logger.Warn("[SearchHints] GitHub returned empty content during update check");
+                        return (false, 0, currentCount);
+                    }
+
+                    // Parse to count entries
+                    var jObject = Newtonsoft.Json.Linq.JObject.Parse(json);
+                    if (jObject == null)
+                    {
+                        Logger.Warn("[SearchHints] Failed to parse GitHub JSON during update check");
+                        return (false, 0, currentCount);
+                    }
+
+                    // Count entries (excluding _comment and other special keys)
+                    int gitHubEntryCount = 0;
+                    foreach (var prop in jObject.Properties())
+                    {
+                        if (!prop.Name.StartsWith("_") && prop.Value.Type == Newtonsoft.Json.Linq.JTokenType.Object)
+                        {
+                            gitHubEntryCount++;
+                        }
+                    }
+
+                    Logger.Info($"[SearchHints] Update check: GitHub has {gitHubEntryCount} entries, current has {currentCount} entries");
+
+                    // Consider it an update if GitHub has more entries
+                    bool hasUpdate = gitHubEntryCount > currentCount;
+
+                    return (hasUpdate, gitHubEntryCount, currentCount);
+                }
+            }
+            catch (System.Net.WebException ex)
+            {
+                Logger.Warn($"[SearchHints] Network error checking for hints updates: {ex.Message}");
+                return (false, 0, currentCount);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[SearchHints] Error checking for hints updates: {ex.Message}");
+                return (false, 0, currentCount);
             }
         }
     }

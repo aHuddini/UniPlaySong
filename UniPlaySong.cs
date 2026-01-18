@@ -291,6 +291,77 @@ namespace UniPlaySong
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
                 Application.Current.MainWindow.IsVisibleChanged += OnWindowVisibilityChanged;
             }
+
+            // Check for search hints updates on startup (if enabled)
+            if (_settings?.AutoCheckHintsOnStartup == true)
+            {
+                CheckForHintsUpdatesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously checks for search hints database updates from GitHub.
+        /// Runs in the background to avoid blocking startup.
+        /// </summary>
+        private void CheckForHintsUpdatesAsync()
+        {
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    var hintsService = GetSearchHintsService();
+                    if (hintsService == null)
+                    {
+                        _fileLogger?.Warn("CheckForHintsUpdatesAsync: Hints service not available");
+                        return;
+                    }
+
+                    var (hasUpdate, gitHubCount, currentCount) = hintsService.CheckForHintsUpdates();
+
+                    if (hasUpdate)
+                    {
+                        _fileLogger?.Info($"CheckForHintsUpdatesAsync: Update available - GitHub has {gitHubCount} entries, current has {currentCount} entries");
+
+                        // Show notification on UI thread
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var result = _api.Dialogs.ShowMessage(
+                                $"A newer version of the search hints database is available on GitHub.\n\n" +
+                                $"Current: {currentCount} entries\n" +
+                                $"GitHub: {gitHubCount} entries ({gitHubCount - currentCount} new)\n\n" +
+                                $"The search hints database helps auto-download find correct soundtracks for games with problematic names.\n\n" +
+                                $"Would you like to download the update now?",
+                                "Search Hints Update Available",
+                                System.Windows.MessageBoxButton.YesNo);
+
+                            if (result == System.Windows.MessageBoxResult.Yes)
+                            {
+                                var success = hintsService.DownloadHintsFromGitHub();
+                                if (success)
+                                {
+                                    _api.Dialogs.ShowMessage(
+                                        "Search hints database updated successfully.",
+                                        "Update Complete");
+                                }
+                                else
+                                {
+                                    _api.Dialogs.ShowErrorMessage(
+                                        "Failed to download search hints from GitHub.\n\nPlease check your internet connection and try again from the settings menu.",
+                                        "Download Failed");
+                                }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        _fileLogger?.Info($"CheckForHintsUpdatesAsync: No update available (GitHub: {gitHubCount}, Current: {currentCount})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"CheckForHintsUpdatesAsync: Error checking for updates - {ex.Message}");
+                }
+            });
         }
 
         /// <summary>

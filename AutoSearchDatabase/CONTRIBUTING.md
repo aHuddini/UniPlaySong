@@ -20,6 +20,7 @@ Each entry is a JSON object with the game name as the key:
   "Game Name": {
     "khinsiderAlbum": "album-url-slug",
     "youtubePlaylistId": "PLxxxxxxxxxx",
+    "soundcloudUrl": "artist/track-or-set-name",
     "searchTerms": ["alternative", "search", "terms"],
     "notes": "Why this hint was added"
   }
@@ -32,10 +33,11 @@ Each entry is a JSON object with the game name as the key:
 |-------|----------|-------------|
 | `khinsiderAlbum` | No | The KHInsider album URL slug (the part after `/game-soundtracks/album/`) |
 | `youtubePlaylistId` | No | A YouTube playlist ID containing the game's soundtrack |
+| `soundcloudUrl` | No | SoundCloud track or playlist URL path (see below for format) |
 | `searchTerms` | No | Alternative search terms to try instead of the game name |
 | `notes` | No | Documentation for why this hint exists |
 
-**At least one of `khinsiderAlbum`, `youtubePlaylistId`, or `searchTerms` should be provided.**
+**At least one of `khinsiderAlbum`, `youtubePlaylistId`, `soundcloudUrl`, or `searchTerms` should be provided.**
 
 ## Examples
 
@@ -69,6 +71,25 @@ For games that need different search queries:
 }
 ```
 
+### SoundCloud Hint
+For games with music available on SoundCloud (single track):
+
+```json
+"Indie Game ABC": {
+  "soundcloudUrl": "artist-name/game-main-theme",
+  "notes": "Official soundtrack on SoundCloud"
+}
+```
+
+For SoundCloud playlists/sets:
+
+```json
+"Indie Game DEF": {
+  "soundcloudUrl": "artist-name/sets/game-ost-playlist",
+  "notes": "Full OST playlist on SoundCloud"
+}
+```
+
 ### Combined Hint
 You can specify multiple sources:
 
@@ -76,6 +97,7 @@ You can specify multiple sources:
 "Problematic Game": {
   "khinsiderAlbum": "problematic-game-ost",
   "youtubePlaylistId": "PLxxxxxxxxxxxxxxxxxxxx",
+  "soundcloudUrl": "official-game-audio/main-theme",
   "searchTerms": ["problematic game soundtrack"],
   "notes": "Multiple sources for reliability"
 }
@@ -96,6 +118,16 @@ You can specify multiple sources:
    - URL: `https://www.youtube.com/playlist?list=PLxxxxxxxxxxx`
    - ID: `PLxxxxxxxxxxx`
 
+### SoundCloud URL Path
+1. Find the track or playlist on [SoundCloud](https://soundcloud.com)
+2. The URL path is everything after `soundcloud.com/`:
+   - Track URL: `https://soundcloud.com/artist-name/track-name`
+   - Path: `artist-name/track-name`
+   - Playlist URL: `https://soundcloud.com/artist-name/sets/playlist-name`
+   - Path: `artist-name/sets/playlist-name`
+
+**Note:** SoundCloud is hints-only (no search). UPS will download directly from the URL you provide.
+
 ## Submitting Your Contribution
 
 ### Option 1: GitHub Pull Request (Preferred)
@@ -109,7 +141,7 @@ You can specify multiple sources:
 2. Title: "Search Hint Request: [Game Name]"
 3. Include:
    - Game name (exactly as it appears in Playnite)
-   - The KHInsider album URL or YouTube playlist URL
+   - The KHInsider album URL, YouTube playlist URL, or SoundCloud URL
    - Why the hint is needed
 
 ## Guidelines

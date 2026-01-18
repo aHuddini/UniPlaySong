@@ -17,29 +17,26 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.2
 
-This release upgrades Auto-Download into a more fleshed out **Download Manager**.
-
 ### Download Manager with Review Mode
-- After auto-download completes, click **"Review Downloads"** to enter Review Mode
-- Click any game to **correct wrong album picks** or add music to skipped games
-- Games you've corrected show orange highlighting for easy tracking
+- **Review Downloads** - Click any game to correct wrong album picks or retry failed downloads
+- **Auto-Add More Songs** - One-click bulk song expansion from matched albums
+- **Batch Manual Download** - Revamped window that allows better workflows for retrying failed games
 
-### Auto-Add More Songs
-- In Review Mode, click the purple **"Auto-Add More Songs"** button
-- Adds 1-3 random songs per game from matched albums with one click
-- Works for both successful downloads AND skipped games
-- Newly downloaded songs **play automatically** as they complete
+### Search Hint Database: SoundCloud Support
+- New `soundcloudUrl` field in search hints for direct SoundCloud downloads
+- Supports single tracks and playlists/sets
 
-### Batch Manual Download Dialog
-- NEw Material Designs window for retrying failed games with cover thumbnails
-- Custom search box, preview button, and green checkmarks for progress
-- When finished, click "Finalize" to go back to the Auto-Download Manager.
+### Auto-Check for Hints Updates
+- Optional startup check compares your bundled extension hints database with GitHub
+- Notifies users when new entries are available
+- Toggle in Settings → Search Cache
 
-### Performance
-- **Search Cache** - 90% smaller cache files with automatic migration
+### Fixes
+- Failed downloads now clickable in Review Mode
+- Search hints priority reordered: KHInsider → SoundCloud → YouTube
 
 ### Previous Versions
-- **v1.2.1**: Now Playing display, YouTube search reliability improvements, dedicated download logging
+- **v1.2.1**: Now Playing display, YouTube search reliability, dedicated download logging
 ---
 
 ## 🎬 Demo

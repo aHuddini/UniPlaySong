@@ -15,9 +15,18 @@ All notable changes to UniPlaySong will be documented in this file.
   - Cover thumbnails, custom search box, preview button, green checkmarks for progress
 - **Parallel Download Processing** - Up to 4 concurrent downloads, starts immediately as albums are found
 - **Music Playback Controls** - Pause/Resume button in download dialog footer
+- **SoundCloud Support** - New hints-only source for search hints database
+  - Add `soundcloudUrl` field to search_hints.json entries for direct SoundCloud downloads
+  - Supports both single tracks and playlists/sets
+  - Uses yt-dlp for reliable downloads with rate limiting
+- **Auto-Check for Hints Updates** - Optional startup check for search hints database updates
+  - Compares your local hints database with the latest GitHub version
+  - Notifies when new entries are available.
+  - Toggle in Settings → Search Cache → "Check for updates on startup"
+- **Bundled Hints Fallback** - When downloaded hints lack direct links, automatically falls back to bundled hints during download operations.
 
 ### Fixed
-- **UPS Search Hint Albums** - Album IDs now preserved for reliable re-downloads
+- **Search Hints Priority** - Reordered hint sources: KHInsider (best quality) → SoundCloud → YouTube (last resort)
 
 ### Performance
 - **Search Cache** - 90% smaller cache files with automatic migration from old format

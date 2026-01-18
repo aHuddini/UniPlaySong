@@ -1,190 +1,221 @@
 {
-  "_comment": "Search hints for games that fail automatic soundtrack detection. Add youtubePlaylistId or khinsiderAlbum when you find working sources. searchTerms are used as fallback when no direct ID is provided.",
+  "_comment": "Search hints for games that fail automatic soundtrack detection. Add youtubePlaylistId, khinsiderAlbum, or soundcloudUrl when you find working sources. searchTerms are used as fallback when no direct ID is provided.",
 
   "CONTROL": {
     "searchTerms": ["CONTROL OST", "CONTROL game soundtrack"],
     "youtubePlaylistId": "PLhwL_3lZ3YPjYuOCGx1coxBwX5GfctEw4",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Generic name causes search issues. Remedy Entertainment game."
   },
   "The Coma 2": {
     "searchTerms": ["The Coma 2 Vicious Sisters OST", "The Coma 2 soundtrack", "Coma 2 Vicious Sisters game music"],
     "youtubePlaylistId": "PLPx8PacLtr6T2lKfCUUnvqz2tUBqjeA1y",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Subtitle stripped during search. Korean horror game."
   },
   "Daggerfall Unity - GOG Cut": {
     "searchTerms": ["Elder Scrolls Daggerfall OST", "Daggerfall soundtrack", "Elder Scrolls 2 Daggerfall music"],
     "youtubePlaylistId": "PLrWckINx1zlKr4zXAhQBsmLftVDPVWswR",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Unity port of Elder Scrolls II: Daggerfall. Original game music."
   },
   "Dark Envoy": {
     "searchTerms": ["Dark Envoy OST", "Dark Envoy game soundtrack", "Dark Envoy music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "RPG by Event Horizon."
   },
   "Death Squared": {
     "searchTerms": ["Death Squared OST", "Death Squared game soundtrack", "Death Squared puzzle music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Puzzle game."
   },
   "The Darkest Tales": {
     "searchTerms": ["The Darkest Tales OST", "Darkest Tales soundtrack", "Darkest Tales game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Dark fairy tale action game. Subtitle 'Into the Nightmare' stripped."
   },
   "Deus Ex 2": {
     "searchTerms": ["Deus Ex Invisible War OST", "Deus Ex 2 Invisible War soundtrack", "Invisible War game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "deus-ex-invisible-war-original-soundtrack",
+    "soundcloudUrl": "",
     "notes": "Sequel to Deus Ex. BroaderPick was matching 'Canciones 2' incorrectly."
   },
   "Delores": {
     "searchTerms": ["Thimbleweed Park OST", "Delores Thimbleweed Park soundtrack", "Thimbleweed Park music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Mini-adventure set in Thimbleweed Park universe. May share music with main game."
   },
   "Duck Paradox": {
     "searchTerms": ["Duck Paradox OST", "Duck Paradox game soundtrack", "Duck Paradox music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Indie game."
   },
   "Fall of Porcupine": {
     "searchTerms": ["Fall of Porcupine OST", "Fall of Porcupine soundtrack", "Fall of Porcupine game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Narrative adventure game. Prologue version."
   },
   "Far Cry 2": {
     "searchTerms": ["Far Cry 2 OST", "Far Cry 2 soundtrack", "Far Cry 2 game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Fortune's Edition is same game with DLC. Ubisoft shooter."
   },
   "Hard West 2": {
     "searchTerms": ["Hard West 2 OST", "Hard West 2 soundtrack", "Hard West 2 game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Tactical western game sequel."
   },
   "Janosik": {
     "searchTerms": ["Janosik game OST", "Janosik soundtrack", "Janosik game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Polish indie game based on folk hero."
   },
   "The Life and Suffering of Sir Brante": {
     "searchTerms": ["Sir Brante OST", "Life and Suffering of Sir Brante soundtrack", "Sir Brante game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Narrative RPG. Chapter designation stripped."
   },
   "Lure of the Temptress": {
     "searchTerms": ["Lure of the Temptress OST", "Lure of the Temptress soundtrack", "Lure of the Temptress game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "1992 adventure game by Revolution Software."
   },
   "Necromunda": {
     "searchTerms": ["Necromunda Hired Gun OST", "Necromunda Hired Gun soundtrack", "Necromunda game music"],
     "youtubePlaylistId": "OLAK5uy_nnQdRWn26qVrnV9ZTgqT6qplb_9LBUdKE",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Warhammer 40K universe FPS. YouTube Music official album."
   },
   "Neverwinter Nights": {
     "searchTerms": ["Neverwinter Nights OST", "Neverwinter Nights soundtrack", "Neverwinter Nights game music", "NWN OST"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "BioWare D&D RPG. Diamond edition includes expansions."
   },
   "POSTAL": {
     "searchTerms": ["POSTAL 1 OST", "POSTAL game soundtrack", "POSTAL 1997 music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Original POSTAL game (1997). Classic and Uncut edition."
   },
   "Sang-Froid": {
     "searchTerms": ["Sang-Froid Tales of Werewolves OST", "Sang-Froid soundtrack", "Sang Froid game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Tower defense action game."
   },
   "Showgunners": {
     "searchTerms": ["Showgunners OST", "Showgunners game soundtrack", "Showgunners music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Tactical RPG."
   },
   "The Silent Age": {
     "searchTerms": ["The Silent Age OST", "Silent Age game soundtrack", "Silent Age music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Point and click adventure game."
   },
   "Sin Slayers": {
     "searchTerms": ["Sin Slayers OST", "Sin Slayers game soundtrack", "Sin Slayers music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Dark fantasy roguelike RPG."
   },
   "STAR WARS Battlefront 2": {
     "searchTerms": ["Star Wars Battlefront 2 2005 OST", "Battlefront 2 Classic soundtrack", "Star Wars Battlefront II Classic music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Classic 2005 version, not EA's 2017 remake."
   },
-  "Starcom": {
+  "Starcom: Unknown Space": {
     "searchTerms": ["Starcom Unknown Space OST", "Starcom game soundtrack", "Starcom Unknown Space music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "more-sound/starcom-unknown-space-ost",
     "notes": "Space exploration game."
   },
   "Stellar Tactics": {
     "searchTerms": ["Stellar Tactics OST", "Stellar Tactics game soundtrack", "Stellar Tactics music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Space RPG."
   },
   "Symphonia": {
     "searchTerms": ["Symphonia game OST", "Symphonia student project soundtrack"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Student project game. Generic name may cause search issues."
   },
   "Tomb Raider 1": {
     "searchTerms": ["Tomb Raider 1 OST", "Tomb Raider original soundtrack", "Tomb Raider 1996 music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "For Tomb Raider I-III Remastered. May need separate entries for TR2/TR3."
   },
   "Tomb Raider 2": {
     "searchTerms": ["Tomb Raider 2 OST", "Tomb Raider II soundtrack", "Tomb Raider 2 music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "For Tomb Raider I-III Remastered collection."
   },
   "Tomb Raider 3": {
     "searchTerms": ["Tomb Raider 3 OST", "Tomb Raider III soundtrack", "Tomb Raider 3 music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "For Tomb Raider I-III Remastered collection."
   },
   "Urbek City Builder": {
     "searchTerms": ["Urbek City Builder OST", "Urbek City Builder soundtrack", "Urbek game music"],
     "youtubePlaylistId": "",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "City builder game. Prologue version."
   },
   "OKAMI HD": {
     "searchTerms": ["OKAMI OST", "OKAMI HD soundtrack", "OKAMI soundtrack"],
     "youtubePlaylistId": "PL9cUgqw5cAf5puFXGP-TjWdzktsaopJGF",
     "khinsiderAlbum": "",
+    "soundcloudUrl": "",
     "notes": "Okami HD. No search results through auto mode"
   }
 }

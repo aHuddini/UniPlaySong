@@ -421,6 +421,7 @@ namespace UniPlaySong
         // Search Cache Settings
         private bool enableSearchCache = true;
         private int searchCacheDurationDays = 7;
+        private bool autoCheckHintsOnStartup = true;
 
         /// <summary>
         /// Enable search result caching to optimize KHInsider → YouTube fallback
@@ -440,6 +441,16 @@ namespace UniPlaySong
         {
             get => searchCacheDurationDays;
             set { searchCacheDurationDays = Math.Max(1, Math.Min(30, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Automatically check for search hints database updates on application startup.
+        /// Compares the bundled version with the GitHub version and notifies if updates are available.
+        /// </summary>
+        public bool AutoCheckHintsOnStartup
+        {
+            get => autoCheckHintsOnStartup;
+            set { autoCheckHintsOnStartup = value; OnPropertyChanged(); }
         }
 
         // Audio Normalization Settings

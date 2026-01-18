@@ -23,7 +23,12 @@ namespace UniPlaySong.Models
         /// <summary>
         /// YouTube - Video platform (last resort)
         /// </summary>
-        YouTube
+        YouTube,
+
+        /// <summary>
+        /// SoundCloud - Music streaming platform (hints-only, no search)
+        /// </summary>
+        SoundCloud
     }
 }
 

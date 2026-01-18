@@ -605,7 +605,7 @@ namespace UniPlaySong.Views
         }
 
         /// <summary>
-        /// Handle click on a game item - in review mode, allow re-download for completed or skipped items
+        /// Handle click on a game item - in review mode, allow re-download for completed, skipped, or failed items
         /// </summary>
         private void GameItem_Click(object sender, MouseButtonEventArgs e)
         {
@@ -616,9 +616,12 @@ namespace UniPlaySong.Views
             var element = sender as FrameworkElement;
             if (element?.DataContext is BatchDownloadItem item)
             {
-                // Allow re-download for completed items (user wants to correct a wrong download)
-                // or skipped items (user wants to download/replace music for games that were skipped)
-                if ((item.Status == BatchDownloadStatus.Completed || item.Status == BatchDownloadStatus.Skipped) && item.Game != null)
+                // Allow re-download for completed items (user wants to correct a wrong download),
+                // skipped items (user wants to download/replace music for games that were skipped),
+                // or failed items (user wants to manually search and retry)
+                if ((item.Status == BatchDownloadStatus.Completed ||
+                     item.Status == BatchDownloadStatus.Skipped ||
+                     item.Status == BatchDownloadStatus.Failed) && item.Game != null)
                 {
                     Logger.Info($"[BatchDownloadProgressDialog] Re-download requested for: {item.GameName} (status: {item.Status})");
                     OnGameRedownloadRequested?.Invoke(item);
