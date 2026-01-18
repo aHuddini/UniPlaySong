@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
 
@@ -55,32 +57,53 @@ namespace UniPlaySong
                     settingsService?.ValidateNativeMusicFile(settings, showErrors: true);
                 }
             }
-            else if (e.PropertyName == nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel) ||
-                     e.PropertyName == nameof(UniPlaySongSettings.ShowDesktopMediaControls))
-            {
-                // Prompt for restart when top panel settings change
-                PromptForRestart();
-            }
+            // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls now use SetRestartRequired command
+            // which sets IsRestartRequired on the Playnite settings window for safe restart handling
         }
 
-        private void PromptForRestart()
+        /// <summary>
+        /// Command that sets IsRestartRequired on the Playnite settings window.
+        /// This triggers Playnite's built-in restart prompt when settings are saved.
+        /// Bound to checkboxes that require restart (like top panel settings).
+        /// </summary>
+        public static ICommand SetRestartRequired => new Common.RelayCommand<object>((sender) =>
         {
-            var result = PlayniteApi?.Dialogs?.ShowMessage(
-                "This setting requires a Playnite restart to take effect.\n\nWould you like to save settings and restart Playnite now?",
-                "Restart Required",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Question
-            );
-
-            if (result == System.Windows.MessageBoxResult.Yes)
+            try
             {
-                // Save settings first
-                plugin.SavePluginSettings(settings);
-
-                // Restart Playnite
-                System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
-                System.Windows.Application.Current?.Shutdown();
+                if (sender is FrameworkElement element)
+                {
+                    // Walk up the visual tree to find the settings window
+                    var window = FindParentWindow(element);
+                    if (window?.DataContext != null)
+                    {
+                        // Use reflection to set IsRestartRequired property on the window's DataContext
+                        // This is a Playnite SDK property not exposed publicly but accessible via reflection
+                        var property = window.DataContext.GetType().GetProperty("IsRestartRequired");
+                        if (property != null && property.CanWrite)
+                        {
+                            property.SetValue(window.DataContext, true);
+                        }
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger().Error(ex, "Error setting IsRestartRequired");
+            }
+        });
+
+        /// <summary>
+        /// Finds the parent Window of a given element by walking up the visual tree.
+        /// </summary>
+        private static Window FindParentWindow(DependencyObject element)
+        {
+            while (element != null)
+            {
+                if (element is Window window)
+                    return window;
+                element = VisualTreeHelper.GetParent(element);
+            }
+            return null;
         }
 
 

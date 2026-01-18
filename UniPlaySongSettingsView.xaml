@@ -94,6 +94,8 @@
 
                     <CheckBox Content="Show Now Playing (Desktop mode)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
                         <Run Foreground="Gray">Displays the current song title, artist, and duration.</Run>
@@ -115,6 +117,8 @@
 
                     <CheckBox Content="Show Media Controls (Desktop mode)"
                               IsChecked="{Binding Settings.ShowDesktopMediaControls}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
                         <Run Foreground="Gray">Displays the play/pause and skip buttons. Disable to show only the Now Playing text.</Run>
