@@ -4,7 +4,17 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.2.2] - 2026-01-17
 
-### Improved
+### Added
+- **Batch Manual Download Dialog** - New workflow for manually downloading music after auto-download fails with a more user friendly experience
+  - Single unified dialog window lists all failed games with status indicators
+  - Click a game to see combined album results from all sources (KHInsider, Zophar, YouTube)
+  - Custom search box allows trying different search terms when game name doesn't match
+  - Select an album to auto-download the best track (uses BestSongPick algorithm)
+  - Preview button to listen to a random track before downloading
+  - Game shows green checkmark when download completes, then returns to game list
+  - When user clicks Finalize/Cancel buttons, show a summary of completed/failed/skipped games
+
+### Performance Improvements
 - **Search Cache Optimization** - Significantly reduced cache file size
   - Cache now stores only essential fields (id, name, source, year) instead of all metadata
   - Limits cached albums to top 10 per source (was unlimited)

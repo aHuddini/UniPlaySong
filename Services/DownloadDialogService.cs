@@ -2247,112 +2247,127 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Manual retry - show album/song selection dialog for each failed game
+        /// Manual retry - show batch manual download dialog for all failed games
+        /// Uses the new BatchManualDownloadDialog for a unified experience
         /// </summary>
         private List<string> ManualRetryForFailedGames(List<GameDownloadResult> failedGames)
         {
             var downloadedFiles = new List<string>();
-            int successCount = 0;
-            int skippedCount = 0;
-            var successfulGames = new List<string>();
-            var skippedGames = new List<string>();
-            int totalGames = failedGames.Count;
 
-            foreach (var failed in failedGames)
+            if (failedGames == null || failedGames.Count == 0)
             {
-                Logger.Info($"[ManualRetry] Starting manual search for '{failed.Game.Name}'");
+                Logger.Info("[ManualRetry] No failed games to retry");
+                return downloadedFiles;
+            }
 
-                // Check if game already has music before starting (baseline)
-                var musicDirBefore = _fileService.GetGameMusicDirectory(failed.Game);
-                var hadMusicBefore = System.IO.Directory.Exists(musicDirBefore) &&
-                    System.IO.Directory.GetFiles(musicDirBefore, "*.mp3").Any();
+            // Extract Game objects from failed results
+            var gamesToRetry = failedGames.Select(f => f.Game).Where(g => g != null).ToList();
 
-                // Show unified album selection dialog
-                var album = ShowUnifiedAlbumSelectionDialog(failed.Game);
-                if (album == null)
+            if (gamesToRetry.Count == 0)
+            {
+                Logger.Info("[ManualRetry] No valid games to retry");
+                return downloadedFiles;
+            }
+
+            Logger.Info($"[ManualRetry] Opening batch manual download dialog for {gamesToRetry.Count} games");
+
+            // Use the new batch manual download dialog
+            var anySuccess = ShowBatchManualDownloadDialog(gamesToRetry);
+
+            // Check for downloaded files after dialog closes
+            foreach (var game in gamesToRetry)
+            {
+                var musicDir = _fileService.GetGameMusicDirectory(game);
+                if (System.IO.Directory.Exists(musicDir))
                 {
-                    Logger.Info($"[ManualRetry] User cancelled album selection for '{failed.Game.Name}'");
-                    skippedCount++;
-                    skippedGames.Add(failed.Game.Name);
-                    continue;
-                }
+                    var audioFiles = System.IO.Directory.GetFiles(musicDir)
+                        .Where(f => Constants.SupportedAudioExtensions.Contains(
+                            System.IO.Path.GetExtension(f).ToLowerInvariant()))
+                        .ToList();
 
-                // Show song selection dialog (downloads happen inside)
-                ShowSongSelectionDialog(failed.Game, album);
-
-                // Check if music was downloaded by seeing if new files exist
-                var musicDirAfter = _fileService.GetGameMusicDirectory(failed.Game);
-                if (System.IO.Directory.Exists(musicDirAfter))
-                {
-                    var mp3Files = System.IO.Directory.GetFiles(musicDirAfter, "*.mp3");
-                    if (mp3Files.Any() && (!hadMusicBefore || mp3Files.Length > 0))
+                    foreach (var file in audioFiles)
                     {
-                        // Add all new mp3 files
-                        foreach (var file in mp3Files)
+                        if (!downloadedFiles.Contains(file))
                         {
-                            if (!downloadedFiles.Contains(file))
-                            {
-                                downloadedFiles.Add(file);
-                            }
+                            downloadedFiles.Add(file);
                         }
-                        successCount++;
-                        successfulGames.Add(failed.Game.Name);
-                        Logger.Info($"[ManualRetry] Downloaded song(s) for '{failed.Game.Name}'");
-                    }
-                    else
-                    {
-                        skippedCount++;
-                        skippedGames.Add(failed.Game.Name);
                     }
                 }
-                else
-                {
-                    skippedCount++;
-                    skippedGames.Add(failed.Game.Name);
-                }
             }
 
-            // Show summary popup
-            var summaryBuilder = new System.Text.StringBuilder();
-            summaryBuilder.AppendLine($"Manual Search Results:");
-            summaryBuilder.AppendLine($"────────────────────────");
-            summaryBuilder.AppendLine($"Total games attempted: {totalGames}");
-            summaryBuilder.AppendLine($"Successfully downloaded: {successCount}");
-            summaryBuilder.AppendLine($"Skipped/Cancelled: {skippedCount}");
-
-            if (successfulGames.Count > 0)
-            {
-                summaryBuilder.AppendLine();
-                summaryBuilder.AppendLine("✓ Downloaded:");
-                foreach (var game in successfulGames.Take(10)) // Limit to first 10
-                {
-                    summaryBuilder.AppendLine($"  • {game}");
-                }
-                if (successfulGames.Count > 10)
-                {
-                    summaryBuilder.AppendLine($"  ... and {successfulGames.Count - 10} more");
-                }
-            }
-
-            if (skippedGames.Count > 0 && skippedGames.Count <= 5)
-            {
-                summaryBuilder.AppendLine();
-                summaryBuilder.AppendLine("✗ Skipped:");
-                foreach (var game in skippedGames)
-                {
-                    summaryBuilder.AppendLine($"  • {game}");
-                }
-            }
-            else if (skippedGames.Count > 5)
-            {
-                summaryBuilder.AppendLine();
-                summaryBuilder.AppendLine($"✗ Skipped: {skippedGames.Count} games");
-            }
-
-            _playniteApi.Dialogs.ShowMessage(summaryBuilder.ToString(), "Manual Search Complete");
-            Logger.Info($"[ManualRetry] Complete - {successCount} succeeded, {skippedCount} skipped out of {totalGames} total");
+            Logger.Info($"[ManualRetry] Complete - {downloadedFiles.Count} files downloaded");
 
             return downloadedFiles;
+        }
+
+        /// <summary>
+        /// Shows the batch manual download dialog for multiple failed games.
+        /// This provides a unified UI where users can search and download music for all failed games
+        /// from a single dialog instead of opening individual dialogs for each game.
+        /// </summary>
+        /// <param name="failedGames">List of games that failed auto-download</param>
+        /// <returns>True if any downloads were successful</returns>
+        public bool ShowBatchManualDownloadDialog(List<Game> failedGames)
+        {
+            if (failedGames == null || failedGames.Count == 0)
+            {
+                Logger.DebugIf(LogPrefix, "ShowBatchManualDownloadDialog called with no games");
+                return false;
+            }
+
+            Logger.Info($"[BatchManualDownload] Opening dialog for {failedGames.Count} failed games");
+
+            // Pre-load Material Design assemblies before XAML parsing
+            PreloadMaterialDesignAssemblies();
+
+            var viewModel = new BatchManualDownloadViewModel(
+                failedGames,
+                _downloadManager,
+                _playbackService,
+                _fileService,
+                _playniteApi,
+                _errorHandler);
+
+            var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = true
+            });
+
+            window.Height = 550;
+            window.Width = 750;
+            window.Title = "Manual Download - Select Albums";
+            window.ShowInTaskbar = !IsFullscreenMode;
+            window.Topmost = IsFullscreenMode;
+
+            // Set background color for fullscreen mode (fixes transparency issue)
+            window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
+
+            var view = new BatchManualDownloadDialog();
+            window.Content = view;
+            window.DataContext = viewModel;
+            var ownerWindow = _playniteApi.Dialogs.GetCurrentAppWindow();
+            window.Owner = ownerWindow;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            // Set up close handler
+            viewModel.CloseDialog = dialogResult =>
+            {
+                window.DialogResult = dialogResult;
+                window.Close();
+            };
+
+            window.Loaded += (s, e) =>
+            {
+                window.Activate();
+                window.Focus();
+            };
+
+            var dialogOutcome = window.ShowDialog();
+            Logger.Info($"[BatchManualDownload] Dialog closed - Success: {viewModel.SuccessCount}, Failed: {viewModel.FailedCount}");
+
+            return dialogOutcome == true;
         }
     }
 }

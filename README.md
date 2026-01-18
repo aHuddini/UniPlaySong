@@ -16,16 +16,22 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.2
 
-### Improvements
-- **Search Cache Optimization** - Significantly reduced cache file size (~90% smaller)
+### New Feature
+- **Batch Manual Download Dialog** - Completely revamped retry workflow after auto-download fails. Significantly more efficient workflows to fix failed game downloads
+  - Single unified window shows all failed games with status indicators
+  - Click a game → search all sources → select album → auto-downloads best track
+  - Custom search box to try different terms when game name doesn't match
+  - Preview albums before downloading, green checkmarks show completed games
+  - When finished, click "Finalize" to complete the bulk operation.
+
+### Performance Improvements
+- **Search Cache Optimization** - Significantly reduced cache file size for large game libraries
   - Cache stores only essential fields (id, name, source, year)
   - Limits to top 10 albums per source
-  - Old caches automatically cleared on upgrade
+  - Old caches will automatically be cleared when users upgrade
 
 ### Previous Versions
 - **v1.2.1**: Now Playing display, YouTube search reliability improvements, dedicated download logging
-- **v1.2.0**: Desktop Top Panel Media Controls (Play/Pause, Skip buttons)
-- **v1.1.9**: Theme Integration Control (UPS_MusicControl) for theme developers
 ---
 
 ## 🎬 Demo
