@@ -11,14 +11,13 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Result of a single game download operation
-    /// </summary>
+    /// <summary>Single game download result</summary>
     public class GameDownloadResult
     {
         public Game Game { get; set; }
         public bool Success { get; set; }
         public string AlbumName { get; set; }
+        public string AlbumId { get; set; }
         public string SourceName { get; set; }
         public string SongPath { get; set; }
         public string ErrorMessage { get; set; }
@@ -26,9 +25,7 @@ namespace UniPlaySong.Services
         public string SkipReason { get; set; }
     }
 
-    /// <summary>
-    /// Result of a batch download operation containing both successes and failures
-    /// </summary>
+    /// <summary>Batch download result with successes and failures</summary>
     public class BatchDownloadResult
     {
         public List<string> DownloadedFiles { get; set; } = new List<string>();
@@ -38,19 +35,10 @@ namespace UniPlaySong.Services
         public int SkippedCount { get; set; }
     }
 
-    /// <summary>
-    /// Callback for reporting individual game download progress
-    /// </summary>
-    /// <param name="gameName">Name of the game</param>
-    /// <param name="status">Current download status</param>
-    /// <param name="message">Status message</param>
-    /// <param name="albumName">Album name if found</param>
-    /// <param name="sourceName">Source name (KHInsider or YouTube)</param>
-    public delegate void GameDownloadProgressCallback(string gameName, BatchDownloadStatus status, string message, string albumName = null, string sourceName = null);
+    /// <summary>Progress callback for batch downloads</summary>
+    public delegate void GameDownloadProgressCallback(Game game, string gameName, BatchDownloadStatus status, string message, string albumName = null, string sourceName = null);
 
-    /// <summary>
-    /// Service for batch downloading music for multiple games with parallel support
-    /// </summary>
+    /// <summary>Batch music download service with parallel support</summary>
     public class BatchDownloadService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -58,9 +46,6 @@ namespace UniPlaySong.Services
         private readonly GameMusicFileService _fileService;
         private readonly ErrorHandlerService _errorHandler;
 
-        /// <summary>
-        /// Maximum number of concurrent downloads (default: 3)
-        /// </summary>
         public int MaxConcurrentDownloads { get; set; } = 3;
 
         public BatchDownloadService(
@@ -73,15 +58,7 @@ namespace UniPlaySong.Services
             _errorHandler = errorHandler;
         }
 
-        /// <summary>
-        /// Downloads music for multiple games in parallel
-        /// </summary>
-        /// <param name="games">Games to download music for</param>
-        /// <param name="source">Download source (KHInsider, YouTube, or All)</param>
-        /// <param name="overwrite">Whether to overwrite existing music</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <param name="progressCallback">Callback for reporting per-game progress</param>
-        /// <returns>List of download results for each game</returns>
+        /// <summary>Downloads music for multiple games in parallel</summary>
         public async Task<List<GameDownloadResult>> DownloadMusicParallelAsync(
             List<Game> games,
             Source source,
@@ -102,11 +79,17 @@ namespace UniPlaySong.Services
             {
                 var tasks = games.Select(async game =>
                 {
-                    // Wait for semaphore slot
-                    await semaphore.WaitAsync(cancellationToken);
-
+                    bool acquiredSemaphore = false;
                     try
                     {
+                        Logger.Info($"[BatchDownload] Queued: '{game.Name}' - waiting for semaphore slot");
+
+                        // Wait for semaphore slot - must be inside try to handle cancellation
+                        await semaphore.WaitAsync(cancellationToken);
+                        acquiredSemaphore = true;
+
+                        Logger.Info($"[BatchDownload] Starting: '{game.Name}'");
+
                         if (cancellationToken.IsCancellationRequested)
                         {
                             var cancelResult = new GameDownloadResult
@@ -117,7 +100,7 @@ namespace UniPlaySong.Services
                                 SkipReason = "Cancelled"
                             };
                             lock (resultsLock) { results.Add(cancelResult); }
-                            progressCallback?.Invoke(game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
+                            progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
                             return;
                         }
 
@@ -134,30 +117,31 @@ namespace UniPlaySong.Services
                                 SkipReason = "Already has music"
                             };
                             lock (resultsLock) { results.Add(skipResult); }
-                            progressCallback?.Invoke(game.Name, BatchDownloadStatus.Skipped, "Already has music", null, null);
+                            progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Skipped, "Already has music", null, null);
                             return;
                         }
 
                         // Report downloading status
-                        progressCallback?.Invoke(game.Name, BatchDownloadStatus.Downloading, "Searching for music...", null, null);
+                        progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Downloading, "Searching for music...", null, null);
 
-                        // Perform the download
-                        var result = await Task.Run(() => DownloadMusicForGameInternal(game, source, cancellationToken), cancellationToken);
+                        // Perform the download - don't pass cancellation token to Task.Run to avoid
+                        // OperationCanceledException before the task body runs
+                        var result = await Task.Run(() => DownloadMusicForGameInternal(game, source, cancellationToken));
 
                         lock (resultsLock) { results.Add(result); }
 
                         if (result.Success)
                         {
                             var sourceInfo = !string.IsNullOrEmpty(result.SourceName) ? $" ({result.SourceName})" : "";
-                            progressCallback?.Invoke(game.Name, BatchDownloadStatus.Completed, $"Downloaded{sourceInfo}", result.AlbumName, result.SourceName);
+                            progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Completed, $"Downloaded{sourceInfo}", result.AlbumName, result.SourceName);
                         }
                         else if (result.WasSkipped)
                         {
-                            progressCallback?.Invoke(game.Name, BatchDownloadStatus.Skipped, result.SkipReason, null, null);
+                            progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Skipped, result.SkipReason, null, null);
                         }
                         else
                         {
-                            progressCallback?.Invoke(game.Name, BatchDownloadStatus.Failed, result.ErrorMessage ?? "No music found", null, null);
+                            progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Failed, result.ErrorMessage ?? "No music found", null, null);
                         }
                     }
                     catch (OperationCanceledException)
@@ -170,7 +154,7 @@ namespace UniPlaySong.Services
                             SkipReason = "Cancelled"
                         };
                         lock (resultsLock) { results.Add(cancelResult); }
-                        progressCallback?.Invoke(game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
+                        progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
                     }
                     catch (Exception ex)
                     {
@@ -182,11 +166,15 @@ namespace UniPlaySong.Services
                             ErrorMessage = ex.Message
                         };
                         lock (resultsLock) { results.Add(errorResult); }
-                        progressCallback?.Invoke(game.Name, BatchDownloadStatus.Failed, ex.Message, null, null);
+                        progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Failed, ex.Message, null, null);
                     }
                     finally
                     {
-                        semaphore.Release();
+                        // Only release if we actually acquired the semaphore
+                        if (acquiredSemaphore)
+                        {
+                            semaphore.Release();
+                        }
                     }
                 }).ToList();
 
@@ -203,9 +191,6 @@ namespace UniPlaySong.Services
             return results;
         }
 
-        /// <summary>
-        /// Internal method to download music for a single game (auto-mode)
-        /// </summary>
         private GameDownloadResult DownloadMusicForGameInternal(Game game, Source source, CancellationToken cancellationToken)
         {
             var result = new GameDownloadResult { Game = game };
@@ -235,8 +220,9 @@ namespace UniPlaySong.Services
                 }
 
                 result.AlbumName = bestAlbum.Name;
+                result.AlbumId = bestAlbum.Id;
                 result.SourceName = GetSourceDisplayName(bestAlbum.Source);
-                Logger.Info($"[BatchDownload] Selected album '{bestAlbum.Name}' from {result.SourceName} for '{game.Name}'");
+                Logger.Info($"[BatchDownload] Selected album '{bestAlbum.Name}' (id: {bestAlbum.Id}) from {result.SourceName} for '{game.Name}'");
 
                 // Get songs from album
                 var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cancellationToken);
@@ -306,9 +292,7 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Downloads music for multiple games sequentially (for backward compatibility)
-        /// </summary>
+        /// <summary>Downloads music for multiple games sequentially</summary>
         public List<GameDownloadResult> DownloadMusicSequential(
             List<Game> games,
             Source source,
@@ -330,7 +314,7 @@ namespace UniPlaySong.Services
                         WasSkipped = true,
                         SkipReason = "Cancelled"
                     });
-                    progressCallback?.Invoke(game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
+                    progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Cancelled, "Cancelled", null, null);
                     continue;
                 }
 
@@ -345,11 +329,11 @@ namespace UniPlaySong.Services
                         WasSkipped = true,
                         SkipReason = "Already has music"
                     });
-                    progressCallback?.Invoke(game.Name, BatchDownloadStatus.Skipped, "Already has music", null, null);
+                    progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Skipped, "Already has music", null, null);
                     continue;
                 }
 
-                progressCallback?.Invoke(game.Name, BatchDownloadStatus.Downloading, "Downloading...", null, null);
+                progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Downloading, "Downloading...", null, null);
 
                 var result = DownloadMusicForGameInternal(game, source, cancellationToken);
                 results.Add(result);
@@ -357,15 +341,15 @@ namespace UniPlaySong.Services
                 if (result.Success)
                 {
                     var sourceInfo = !string.IsNullOrEmpty(result.SourceName) ? $" ({result.SourceName})" : "";
-                    progressCallback?.Invoke(game.Name, BatchDownloadStatus.Completed, $"Downloaded{sourceInfo}", result.AlbumName, result.SourceName);
+                    progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Completed, $"Downloaded{sourceInfo}", result.AlbumName, result.SourceName);
                 }
                 else if (result.WasSkipped)
                 {
-                    progressCallback?.Invoke(game.Name, BatchDownloadStatus.Skipped, result.SkipReason, null, null);
+                    progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Skipped, result.SkipReason, null, null);
                 }
                 else
                 {
-                    progressCallback?.Invoke(game.Name, BatchDownloadStatus.Failed, result.ErrorMessage ?? "No music found", null, null);
+                    progressCallback?.Invoke(game, game.Name, BatchDownloadStatus.Failed, result.ErrorMessage ?? "No music found", null, null);
                 }
 
                 // Rate limiting delay
@@ -378,21 +362,14 @@ namespace UniPlaySong.Services
             return results;
         }
 
-        /// <summary>
-        /// Gets display name for a source
-        /// </summary>
         private static string GetSourceDisplayName(Source source)
         {
             switch (source)
             {
-                case Source.KHInsider:
-                    return "KHInsider";
-                case Source.Zophar:
-                    return "Zophar";
-                case Source.YouTube:
-                    return "YouTube";
-                default:
-                    return source.ToString();
+                case Source.KHInsider: return "KHInsider";
+                case Source.Zophar: return "Zophar";
+                case Source.YouTube: return "YouTube";
+                default: return source.ToString();
             }
         }
     }

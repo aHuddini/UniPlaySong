@@ -7,17 +7,19 @@ using System.Threading;
 using System.Windows;
 using Playnite.SDK;
 using Playnite.SDK.Models;
-using UniPlaySong;
 using UniPlaySong.Common;
 using UniPlaySong.Downloaders;
 using UniPlaySong.Models;
 using UniPlaySong.ViewModels;
 using UniPlaySong.Views;
 
+// CS4014: BeginInvoke calls are intentionally fire-and-forget for UI updates from background threads
+#pragma warning disable CS4014
+
 namespace UniPlaySong.Services
 {
     /// <summary>
-    /// Service for showing download dialogs (album/song selection)
+    /// Service for showing download dialogs
     /// </summary>
     public class DownloadDialogService
     {
@@ -32,12 +34,8 @@ namespace UniPlaySong.Services
         private readonly ErrorHandlerService _errorHandler;
         private INormalizationService _normalizationService;
         private GameMusicTagService _tagService;
+        private SearchCacheService _searchCacheService;
 
-        /// <summary>
-        /// Returns true if Playnite is in Fullscreen mode.
-        /// Topmost dialogs are only needed in Fullscreen mode to appear above the fullscreen window.
-        /// In Desktop mode, Topmost causes dialogs to block other applications.
-        /// </summary>
         private bool IsFullscreenMode => _playniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen;
 
         public DownloadDialogService(
@@ -56,27 +54,15 @@ namespace UniPlaySong.Services
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
-        /// <summary>
-        /// Sets the normalization service for auto-normalize after download feature.
-        /// Called after service initialization in UniPlaySong.cs.
-        /// </summary>
-        public void SetNormalizationService(INormalizationService normalizationService)
-        {
+        public void SetNormalizationService(INormalizationService normalizationService) =>
             _normalizationService = normalizationService;
-        }
 
-        /// <summary>
-        /// Sets the tag service for updating game music status tags after downloads.
-        /// Called after service initialization in UniPlaySong.cs.
-        /// </summary>
-        public void SetTagService(GameMusicTagService tagService)
-        {
+        public void SetTagService(GameMusicTagService tagService) =>
             _tagService = tagService;
-        }
 
-        /// <summary>
-        /// Pre-loads Material Design assemblies to ensure they're available for XAML parsing
-        /// </summary>
+        public void SetSearchCacheService(SearchCacheService searchCacheService) =>
+            _searchCacheService = searchCacheService;
+
         private static void PreloadMaterialDesignAssemblies()
         {
             try
@@ -117,9 +103,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Shows source selection dialog (KHInsider, Zophar, or YouTube) - works in fullscreen
-        /// </summary>
+        /// <summary>Shows source selection dialog (KHInsider, Zophar, YouTube)</summary>
         public Source? ShowSourceSelectionDialog()
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -269,10 +253,7 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        /// <summary>
-        /// Shows unified album selection dialog that searches all sources (KHInsider, Zophar, YouTube)
-        /// Used for retry feature to simplify the user experience
-        /// </summary>
+        /// <summary>Shows unified album selection (searches all sources)</summary>
         public Album ShowUnifiedAlbumSelectionDialog(Game game)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -411,9 +392,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Shows album selection dialog and returns selected album
-        /// </summary>
+        /// <summary>Shows album selection dialog</summary>
         public Album ShowAlbumSelectionDialog(Game game, Source source)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -600,9 +579,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Shows song selection dialog and returns selected songs
-        /// </summary>
+        /// <summary>Shows song selection dialog</summary>
         public List<Song> ShowSongSelectionDialog(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -775,10 +752,7 @@ namespace UniPlaySong.Services
             return new List<Song>();
         }
 
-        /// <summary>
-        /// Shows song selection dialog and returns selected songs (for batch download)
-        /// Unlike ShowSongSelectionDialog, this returns the selected songs instead of downloading inline
-        /// </summary>
+        /// <summary>Shows song selection dialog, returns selections (for batch download)</summary>
         public List<Song> ShowSongSelectionDialogWithReturn(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -909,10 +883,7 @@ namespace UniPlaySong.Services
             return new List<Song>();
         }
 
-        /// <summary>
-        /// Shows download dialog for default music (no game context)
-        /// Downloads directly to the specified default music path
-        /// </summary>
+        /// <summary>Shows download dialog for default music (no game context)</summary>
         public bool ShowDefaultMusicDownloadDialog(string defaultMusicPath)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -1020,10 +991,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Shows song selection dialog and returns the selected song (for default music downloads)
-        /// Unlike ShowSongSelectionDialog, this returns the selected song instead of downloading inline
-        /// </summary>
+        /// <summary>Shows song selection for default music downloads</summary>
         private Song ShowSongSelectionForDefaultMusic(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -1658,17 +1626,47 @@ namespace UniPlaySong.Services
 
                 // Create progress dialog
                 var progressDialog = new Views.BatchDownloadProgressDialog();
-                progressDialog.Initialize(games.Select(g => g.Name));
+                progressDialog.Initialize(games, _playniteApi);
 
                 var window = DialogHelper.CreateFullscreenDialog(
                     _playniteApi,
                     "Batch Download Progress",
                     progressDialog,
-                    width: 700,
-                    height: 550,
+                    width: 900,
+                    height: 650,
                     isFullscreenMode: IsFullscreenMode);
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "batch download dialog close");
+
+                // Handle re-download requests during review mode
+                progressDialog.OnGameRedownloadRequested += (item) =>
+                {
+                    HandleRedownloadRequest(item, progressDialog);
+                };
+
+                // Handle music pause/play button click
+                progressDialog.OnMusicPausePlayRequested += () =>
+                {
+                    if (_playbackService != null)
+                    {
+                        if (_playbackService.IsPaused)
+                        {
+                            Logger.Info("[BatchDownloadDialog] Resuming music playback");
+                            _playbackService.Resume();
+                        }
+                        else
+                        {
+                            Logger.Info("[BatchDownloadDialog] Pausing music playback");
+                            _playbackService.Pause();
+                        }
+                    }
+                };
+
+                // Handle Auto-Add More Songs request
+                progressDialog.OnAutoAddSongsRequested += (songCount) =>
+                {
+                    HandleAutoAddMoreSongs(progressDialog, allResults, songCount);
+                };
 
                 // Handle window closing - capture results if not already done
                 window.Closing += (s, e) =>
@@ -1725,29 +1723,28 @@ namespace UniPlaySong.Services
                     try
                     {
                         // Progress callback to update the dialog and manage music queue
-                        GameDownloadProgressCallback progressCallback = (gameName, status, message, albumName, sourceName) =>
+                        GameDownloadProgressCallback progressCallback = (game, gameName, status, message, albumName, sourceName) =>
                         {
                             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                             {
-                                progressDialog.UpdateGameStatus(gameName, status, message, albumName, sourceName);
+                                // Use Game ID-based matching to handle duplicate game names correctly
+                                progressDialog.UpdateGameStatusByGame(game, status, message, albumName, sourceName);
 
                                 if (status != BatchDownloadStatus.Completed) return;
 
-                                // Add to music queue
-                                var downloadedGame = games.FirstOrDefault(g =>
-                                    string.Equals(g.Name, gameName, StringComparison.OrdinalIgnoreCase));
-                                if (downloadedGame != null)
+                                // Add to music queue - use the game object directly
+                                if (game != null)
                                 {
                                     lock (downloadedGamesLock)
                                     {
-                                        if (!downloadedGamesForPlayback.Contains(downloadedGame))
-                                            downloadedGamesForPlayback.Add(downloadedGame);
+                                        if (!downloadedGamesForPlayback.Contains(game))
+                                            downloadedGamesForPlayback.Add(game);
                                     }
                                 }
 
                                 // Priority: Play current game if it just downloaded
                                 if (currentGame != null && !playbackResumedForCurrentGame &&
-                                    string.Equals(gameName, currentGame.Name, StringComparison.OrdinalIgnoreCase))
+                                    game != null && game.Id == currentGame.Id)
                                 {
                                     Logger.Info($"[BatchDownloadDialog] Current game '{gameName}' downloaded - playing");
                                     playbackResumedForCurrentGame = true;
@@ -1778,18 +1775,19 @@ namespace UniPlaySong.Services
                         var skipCount = results.Count(r => r.WasSkipped);
 
                         Logger.Info($"[BatchDownloadDialog] Download complete: {successCount} succeeded, {failCount} failed, {skipCount} skipped");
-                        Logger.Info($"[BatchDownloadDialog] Setting resultsReady and closing window...");
 
-                        // Close dialog on UI thread - use Invoke (blocking) to ensure it executes before continuing
-                        System.Windows.Application.Current?.Dispatcher?.Invoke(new Action(() =>
+                        // Don't auto-close - let user review results and close manually
+                        // The UI will show "Close" button and "Review Downloads" button when complete
+                        Logger.Info("[BatchDownloadDialog] Downloads complete - waiting for user to close dialog");
+
+                        // Force final UI update to ensure Close/Review buttons appear immediately
+                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
-                            Logger.Info("[BatchDownloadDialog] Closing window from UI thread");
-                            window.Close();
+                            progressDialog.ForceUIUpdate();
                         }));
 
-                        // Signal results ready after window closes
+                        // Signal that results are ready (but don't close the dialog)
                         resultsReady.Set();
-                        Logger.Info("[BatchDownloadDialog] Results ready signaled");
                     }
                     catch (OperationCanceledException)
                     {
@@ -1807,15 +1805,15 @@ namespace UniPlaySong.Services
                     }
                 });
 
-                // Show dialog (blocks until closed)
+                // Show dialog (blocks until user closes it)
                 window.ShowDialog();
 
                 // Cleanup: restore normal playback mode
                 _playbackService.OnSongEnded -= onSongEndedHandler;
                 _playbackService.SuppressAutoLoop = false;
 
-                // Wait for results
-                resultsReady.Wait(TimeSpan.FromSeconds(5));
+                // Give a moment for any pending async operations to complete
+                resultsReady.Wait(TimeSpan.FromMilliseconds(500));
             }
             catch (Exception ex)
             {
@@ -2004,14 +2002,14 @@ namespace UniPlaySong.Services
             {
                 // Create progress dialog
                 var progressDialog = new Views.BatchDownloadProgressDialog();
-                progressDialog.Initialize(games.Select(g => g.Name));
+                progressDialog.Initialize(games, _playniteApi);
 
                 var window = DialogHelper.CreateFullscreenDialog(
                     _playniteApi,
                     "Retry with Broader Search",
                     progressDialog,
-                    width: 700,
-                    height: 550,
+                    width: 900,
+                    height: 650,
                     isFullscreenMode: IsFullscreenMode);
 
                 DialogHelper.AddFocusReturnHandler(window, _playniteApi, "broader retry dialog close");
@@ -2368,6 +2366,527 @@ namespace UniPlaySong.Services
             Logger.Info($"[BatchManualDownload] Dialog closed - Success: {viewModel.SuccessCount}, Failed: {viewModel.FailedCount}");
 
             return dialogOutcome == true;
+        }
+
+        /// <summary>Handle Auto-Add More Songs - downloads additional songs as albums are found</summary>
+        private void HandleAutoAddMoreSongs(Views.BatchDownloadProgressDialog progressDialog, List<GameDownloadResult> allResults, int songsPerGame)
+        {
+            if (allResults == null)
+            {
+                Logger.Warn("[AutoAddMoreSongs] No download results available");
+                _playniteApi.Dialogs.ShowMessage("No download results available. Please wait for the initial download to complete.", "Auto-Add Songs");
+                return;
+            }
+
+            // Get successful downloads that have album info
+            var successfulResults = allResults.Where(r => r.Success && !string.IsNullOrEmpty(r.AlbumName)).ToList();
+
+            // Also include skipped games (already have music) - try to find album info from cache or fresh search
+            var skippedResults = allResults.Where(r => r.WasSkipped && r.Game != null && r.SkipReason == "Already has music").ToList();
+
+            Logger.Info($"[AutoAddMoreSongs] Found {successfulResults.Count} successful downloads and {skippedResults.Count} skipped games");
+
+            // Run the entire process in the background
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                int totalAdded = 0;
+                int gamesProcessed = 0;
+                int gamesFailed = 0;
+
+                // Track downloaded songs for playback queue
+                var downloadedSongPaths = new List<string>();
+                var downloadedSongsLock = new object();
+                var isPlayingNewSongs = false;
+
+                // Helper to play the next song from the queue
+                Action playNextDownloadedSong = null;
+                playNextDownloadedSong = () =>
+                {
+                    string songToPlay = null;
+                    lock (downloadedSongsLock)
+                    {
+                        if (downloadedSongPaths.Count > 0)
+                        {
+                            songToPlay = downloadedSongPaths[0];
+                            downloadedSongPaths.RemoveAt(0);
+                        }
+                        else
+                        {
+                            isPlayingNewSongs = false;
+                        }
+                    }
+
+                    if (songToPlay != null && _playbackService != null)
+                    {
+                        Logger.Info($"[AutoAddMoreSongs] Playing newly downloaded: {Path.GetFileName(songToPlay)}");
+                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                        {
+                            _playbackService.LoadAndPlayFile(songToPlay);
+                        }));
+                    }
+                };
+
+                // Subscribe to song ended event to play next queued song
+                Action onSongEndedHandler = () =>
+                {
+                    if (isPlayingNewSongs)
+                    {
+                        playNextDownloadedSong();
+                    }
+                };
+                _playbackService.OnSongEnded += onSongEndedHandler;
+
+                try
+                {
+                    // Process a single game result - search for album if needed, then download songs
+                    Func<GameDownloadResult, bool, System.Threading.Tasks.Task> processGameAsync = async (result, needsAlbumSearch) =>
+                    {
+                        string albumName = result.AlbumName;
+                        string albumId = result.AlbumId;
+                        string sourceName = result.SourceName;
+
+                        // If we need to search for album (skipped games), do it first
+                        if (needsAlbumSearch)
+                        {
+                            progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Downloading, "Searching for albums...");
+                            }));
+
+                            Album bestAlbum = null;
+
+                            // Try cache first
+                            if (_searchCacheService != null)
+                            {
+                                List<Album> cachedAlbums = null;
+                                if (_searchCacheService.TryGetCachedAlbums(result.Game.Name, Source.KHInsider, out cachedAlbums) && cachedAlbums?.Count > 0)
+                                {
+                                    bestAlbum = _downloadManager.BestAlbumPick(cachedAlbums, result.Game);
+                                    if (bestAlbum != null)
+                                    {
+                                        sourceName = "KHInsider";
+                                        Logger.Info($"[AutoAddMoreSongs] Cache hit (KHInsider) for '{result.Game.Name}': {bestAlbum.Name}");
+                                    }
+                                }
+
+                                if (bestAlbum == null && _searchCacheService.TryGetCachedAlbums(result.Game.Name, Source.YouTube, out cachedAlbums) && cachedAlbums?.Count > 0)
+                                {
+                                    bestAlbum = _downloadManager.BestAlbumPick(cachedAlbums, result.Game);
+                                    if (bestAlbum != null)
+                                    {
+                                        sourceName = "YouTube";
+                                        Logger.Info($"[AutoAddMoreSongs] Cache hit (YouTube) for '{result.Game.Name}': {bestAlbum.Name}");
+                                    }
+                                }
+                            }
+
+                            // Fresh search if no cache hit
+                            if (bestAlbum == null)
+                            {
+                                try
+                                {
+                                    var searchAlbums = await System.Threading.Tasks.Task.Run(() =>
+                                        _downloadManager.GetAlbumsForGame(result.Game.Name, Source.All, CancellationToken.None, auto: true));
+                                    var searchAlbumsList = searchAlbums?.ToList() ?? new List<Album>();
+
+                                    if (searchAlbumsList.Count > 0)
+                                    {
+                                        bestAlbum = _downloadManager.BestAlbumPick(searchAlbumsList, result.Game);
+                                        if (bestAlbum != null)
+                                        {
+                                            sourceName = bestAlbum.Source.ToString();
+                                            Logger.Info($"[AutoAddMoreSongs] Fresh search found album for '{result.Game.Name}': {bestAlbum.Name}");
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Warn($"[AutoAddMoreSongs] Error searching for '{result.Game.Name}': {ex.Message}");
+                                }
+                            }
+
+                            if (bestAlbum == null)
+                            {
+                                progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                                {
+                                    progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Skipped, "No albums found");
+                                }));
+                                return;
+                            }
+
+                            albumName = bestAlbum.Name;
+                            albumId = bestAlbum.Id;
+                            progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Downloading, $"Found: {bestAlbum.Name}");
+                            }));
+                        }
+
+                        // Now download songs for this game
+                        progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Downloading, $"Adding {songsPerGame} more songs...");
+                        }));
+
+                        var musicDir = _fileService.GetGameMusicDirectory(result.Game);
+                        var existingSongs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (Directory.Exists(musicDir))
+                        {
+                            foreach (var file in Directory.GetFiles(musicDir))
+                            {
+                                var ext = Path.GetExtension(file).ToLowerInvariant();
+                                if (Constants.SupportedAudioExtensions.Contains(ext))
+                                {
+                                    existingSongs.Add(Path.GetFileNameWithoutExtension(file));
+                                }
+                            }
+                        }
+
+                        int songsAdded = 0;
+                        var source = GetSourceFromName(sourceName);
+
+                        Album matchingAlbum = null;
+
+                        // If we have an album ID (e.g., from UPS Search Hint), use it directly
+                        if (!string.IsNullOrEmpty(albumId))
+                        {
+                            matchingAlbum = new Album
+                            {
+                                Id = albumId,
+                                Name = albumName,
+                                Source = source
+                            };
+                            Logger.Info($"[AutoAddMoreSongs] Using album ID directly for '{result.Game.Name}': {albumId}");
+                        }
+                        else
+                        {
+                            // Search using game name (not album name) to find matching albums
+                            var albums = await System.Threading.Tasks.Task.Run(() =>
+                                _downloadManager.GetAlbumsForGame(result.Game.Name, source, CancellationToken.None, auto: true));
+                            var albumsList = albums?.ToList() ?? new List<Album>();
+
+                            matchingAlbum = albumsList.FirstOrDefault(a =>
+                                string.Equals(a.Name, albumName, StringComparison.OrdinalIgnoreCase));
+
+                            if (matchingAlbum == null && albumsList.Count > 0)
+                            {
+                                matchingAlbum = albumsList.OrderByDescending(a =>
+                                    FuzzySharp.Fuzz.Ratio(a.Name.ToLowerInvariant(), albumName.ToLowerInvariant()))
+                                    .FirstOrDefault();
+                            }
+                        }
+
+                        if (matchingAlbum != null)
+                        {
+                            var songs = await System.Threading.Tasks.Task.Run(() =>
+                                _downloadManager.GetSongsFromAlbum(matchingAlbum, CancellationToken.None));
+                            var songsList = songs?.ToList() ?? new List<Song>();
+
+                            if (songsList.Count > 0)
+                            {
+                                var availableSongs = songsList.Where(s =>
+                                    !existingSongs.Any(existing => SongNameMatches(existing, s.Name))).ToList();
+
+                                var random = new Random(Guid.NewGuid().GetHashCode());
+                                var songsToAdd = availableSongs.OrderBy(x => random.Next()).Take(songsPerGame).ToList();
+
+                                foreach (var song in songsToAdd)
+                                {
+                                    try
+                                    {
+                                        if (!Directory.Exists(musicDir))
+                                            Directory.CreateDirectory(musicDir);
+
+                                        var safeFileName = Common.StringHelper.CleanForPath(song.Name);
+                                        var extension = Path.GetExtension(song.Id);
+                                        if (string.IsNullOrEmpty(extension) || extension == song.Id)
+                                            extension = ".mp3";
+                                        var downloadPath = Path.Combine(musicDir, safeFileName + extension);
+
+                                        var downloadSuccess = await System.Threading.Tasks.Task.Run(() =>
+                                            _downloadManager.DownloadSong(song, downloadPath, CancellationToken.None));
+
+                                        if (downloadSuccess && File.Exists(downloadPath))
+                                        {
+                                            songsAdded++;
+                                            Interlocked.Increment(ref totalAdded);
+                                            existingSongs.Add(safeFileName);
+                                            Logger.Info($"[AutoAddMoreSongs] Added '{song.Name}' for '{result.Game.Name}'");
+
+                                            bool shouldStartPlayback = false;
+                                            lock (downloadedSongsLock)
+                                            {
+                                                downloadedSongPaths.Add(downloadPath);
+                                                if (!isPlayingNewSongs)
+                                                {
+                                                    isPlayingNewSongs = true;
+                                                    shouldStartPlayback = true;
+                                                }
+                                            }
+
+                                            if (shouldStartPlayback)
+                                                playNextDownloadedSong();
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.Warn($"[AutoAddMoreSongs] Failed to download song '{song.Name}': {ex.Message}");
+                                    }
+                                }
+                            }
+                        }
+
+                        progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            if (songsAdded > 0)
+                            {
+                                progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Completed,
+                                    $"+{songsAdded} songs added", albumName, sourceName);
+                                progressDialog.MarkGameAsSongsAdded(result.Game);
+                            }
+                            else
+                            {
+                                progressDialog.UpdateGameStatusByGame(result.Game, BatchDownloadStatus.Completed,
+                                    "No new songs available", albumName, sourceName);
+                            }
+                        }));
+
+                        Interlocked.Increment(ref gamesProcessed);
+                    };
+
+                    // Process all games in parallel (up to 4 concurrent) - downloads start immediately as albums are found
+                    const int MaxConcurrent = 4;
+                    using (var semaphore = new SemaphoreSlim(MaxConcurrent))
+                    {
+                        // Combine successful results (no search needed) and skipped results (need album search)
+                        var allTasks = new List<System.Threading.Tasks.Task>();
+
+                        // Add tasks for successful results (already have album info)
+                        foreach (var result in successfulResults)
+                        {
+                            allTasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                            {
+                                await semaphore.WaitAsync();
+                                try
+                                {
+                                    await processGameAsync(result, false);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Error(ex, $"[AutoAddMoreSongs] Error processing '{result.Game?.Name}': {ex.Message}");
+                                    Interlocked.Increment(ref gamesFailed);
+                                }
+                                finally
+                                {
+                                    semaphore.Release();
+                                }
+                            }));
+                        }
+
+                        // Add tasks for skipped results (need to search for album first)
+                        foreach (var skipped in skippedResults)
+                        {
+                            var result = new GameDownloadResult { Game = skipped.Game };
+                            allTasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                            {
+                                await semaphore.WaitAsync();
+                                try
+                                {
+                                    await processGameAsync(result, true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Error(ex, $"[AutoAddMoreSongs] Error processing '{result.Game?.Name}': {ex.Message}");
+                                    Interlocked.Increment(ref gamesFailed);
+                                }
+                                finally
+                                {
+                                    semaphore.Release();
+                                }
+                            }));
+                        }
+
+                        if (allTasks.Count == 0)
+                        {
+                            Logger.Info("[AutoAddMoreSongs] No games to process");
+                            progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                _playniteApi.Dialogs.ShowMessage(
+                                    "No games with album information found.\n\nTip: Click on individual games in Review Mode to manually search and download.",
+                                    "Auto-Add Songs");
+                            }));
+                            return;
+                        }
+
+                        Logger.Info($"[AutoAddMoreSongs] Starting parallel processing for {allTasks.Count} games (downloads begin immediately as albums are found)");
+                        await System.Threading.Tasks.Task.WhenAll(allTasks);
+                    }
+
+                    Logger.Info($"[AutoAddMoreSongs] Complete: {totalAdded} songs added to {gamesProcessed} games, {gamesFailed} failed");
+
+                    progressDialog.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        progressDialog.HideAutoAddButton();
+                        _playbackService?.RefreshSongCount();
+                    }));
+                }
+                finally
+                {
+                    if (_playbackService != null)
+                    {
+                        _playbackService.OnSongEnded -= onSongEndedHandler;
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Check if two song names match (accounting for cleaned filenames)
+        /// </summary>
+        private bool SongNameMatches(string existingFileName, string newSongName)
+        {
+            if (string.IsNullOrEmpty(existingFileName) || string.IsNullOrEmpty(newSongName))
+                return false;
+
+            var cleanedNew = Common.StringHelper.CleanForPath(newSongName);
+            return string.Equals(existingFileName, cleanedNew, StringComparison.OrdinalIgnoreCase) ||
+                   existingFileName.IndexOf(cleanedNew, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   cleanedNew.IndexOf(existingFileName, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Get Source enum from display name
+        /// </summary>
+        private Source GetSourceFromName(string sourceName)
+        {
+            if (string.IsNullOrEmpty(sourceName))
+                return Source.All;
+
+            if (sourceName.IndexOf("KH", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceName.IndexOf("Insider", StringComparison.OrdinalIgnoreCase) >= 0)
+                return Source.KHInsider;
+
+            if (sourceName.IndexOf("Zophar", StringComparison.OrdinalIgnoreCase) >= 0)
+                return Source.Zophar;
+
+            if (sourceName.IndexOf("YouTube", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceName.IndexOf("YT", StringComparison.OrdinalIgnoreCase) >= 0)
+                return Source.YouTube;
+
+            return Source.All;
+        }
+
+        private void HandleRedownloadRequest(BatchDownloadItem item, Views.BatchDownloadProgressDialog progressDialog)
+        {
+            if (item?.Game == null)
+            {
+                Logger.Warn("[HandleRedownloadRequest] Item or Game is null");
+                return;
+            }
+
+            Logger.Info($"[HandleRedownloadRequest] Opening album search for: {item.GameName}");
+
+            // Create a single-game batch manual download dialog
+            // This gives us the big preview buttons and one-click album download behavior
+            var singleGameList = new List<Game> { item.Game };
+            var viewModel = new BatchManualDownloadViewModel(
+                singleGameList,
+                _downloadManager,
+                _playbackService,
+                _fileService,
+                _playniteApi,
+                _errorHandler)
+            {
+                // Enable single game mode to auto-close after download
+                IsSingleGameMode = true
+            };
+
+            // Pre-load Material Design assemblies
+            PreloadMaterialDesignAssemblies();
+
+            var window = _playniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = true
+            });
+
+            window.Height = 500;
+            window.Width = 700;
+            window.Title = $"Re-download Music for: {item.GameName}";
+            window.ShowInTaskbar = !IsFullscreenMode;
+            window.Topmost = IsFullscreenMode;
+            window.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 33, 33));
+
+            var view = new BatchManualDownloadDialog();
+            window.Content = view;
+            window.DataContext = viewModel;
+            var ownerWindow = _playniteApi.Dialogs.GetCurrentAppWindow();
+            window.Owner = ownerWindow;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            // Auto-select the game and go to album view on load
+            window.Loaded += (s, e) =>
+            {
+                window.Activate();
+                window.Focus();
+
+                // Auto-select the game to immediately show album search
+                var gameItem = viewModel.Games.FirstOrDefault();
+                if (gameItem != null)
+                {
+                    // Simulate game selection to show album list
+                    viewModel.SearchQuery = gameItem.GameName;
+
+                    // Switch to album view
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        viewModel.IsGameListVisible = false;
+                        viewModel.IsAlbumListVisible = true;
+                        viewModel.SelectedGameItem = gameItem;
+
+                        // Trigger search via the SearchCommand
+                        if (viewModel.SearchCommand.CanExecute(null))
+                        {
+                            viewModel.SearchCommand.Execute(null);
+                        }
+                    }), System.Windows.Threading.DispatcherPriority.Loaded);
+                }
+            };
+
+            // Set up close handler - when user clicks Complete/Cancel, close the dialog
+            viewModel.CloseDialog = dialogResult =>
+            {
+                window.DialogResult = dialogResult;
+                window.Close();
+            };
+
+            // Show the dialog (blocking)
+            var result = window.ShowDialog();
+
+            // Check if download was successful and update the progress dialog
+            if (result == true || viewModel.SuccessCount > 0)
+            {
+                // Get the new music info from the downloaded game
+                var musicDir = _fileService.GetGameMusicDirectory(item.Game);
+                if (Directory.Exists(musicDir))
+                {
+                    var audioFiles = Directory.GetFiles(musicDir)
+                        .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .ToList();
+
+                    if (audioFiles.Count > 0)
+                    {
+                        // Update the progress dialog item
+                        progressDialog.UpdateItemAfterRedownload(item, Path.GetFileNameWithoutExtension(audioFiles.First()), "Manual");
+                        Logger.Info($"[HandleRedownloadRequest] Successfully re-downloaded for: {item.GameName}");
+                    }
+                }
+            }
+            else
+            {
+                Logger.Info($"[HandleRedownloadRequest] Re-download cancelled or failed for: {item.GameName}");
+            }
         }
     }
 }

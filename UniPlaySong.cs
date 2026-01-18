@@ -997,6 +997,9 @@ namespace UniPlaySong
             // Wire up tag service to download dialog service for post-download tag updates
             _downloadDialogService.SetTagService(_tagService);
 
+            // Wire up search cache service to download dialog service for Auto-Add Songs on skipped games
+            _downloadDialogService.SetSearchCacheService(_cacheService);
+
             // Initialize amplify service for audio volume adjustments
             _amplifyService = new Services.AudioAmplifyService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Info("AudioAmplifyService initialized");

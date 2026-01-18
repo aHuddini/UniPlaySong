@@ -211,6 +211,12 @@ namespace UniPlaySong.ViewModels
         public int FailedCount { get; private set; }
         public int TotalGames => Games.Count;
 
+        /// <summary>
+        /// When true (single game mode), auto-close after first successful download
+        /// instead of returning to game list view
+        /// </summary>
+        public bool IsSingleGameMode { get; set; } = false;
+
         public string HeaderText
         {
             get
@@ -452,12 +458,21 @@ namespace UniPlaySong.ViewModels
 
                 // Stop any preview
                 StopPreview();
-
-                // Return to game list
-                IsAlbumListVisible = false;
-                IsGameListVisible = true;
-                SelectedGameItem = null;
             }
+
+            // Handle post-download navigation (must be outside finally block)
+            // In single game mode, auto-close after successful download
+            if (IsSingleGameMode && SuccessCount > 0)
+            {
+                Logger.Info($"[{LogPrefix}] Single game mode - auto-closing after successful download");
+                CloseDialog?.Invoke(true);
+                return;
+            }
+
+            // Return to game list
+            IsAlbumListVisible = false;
+            IsGameListVisible = true;
+            SelectedGameItem = null;
         }
 
         private string SanitizeFileName(string fileName)

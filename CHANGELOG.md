@@ -5,21 +5,22 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.2.2] - 2026-01-17
 
 ### Added
-- **Batch Manual Download Dialog** - New workflow for manually downloading music after auto-download fails with a more user friendly experience
-  - Single unified dialog window lists all failed games with status indicators
-  - Click a game to see combined album results from all sources (KHInsider, Zophar, YouTube)
-  - Custom search box allows trying different search terms when game name doesn't match
-  - Select an album to auto-download the best track (uses BestSongPick algorithm)
-  - Preview button to listen to a random track before downloading
-  - Game shows green checkmark when download completes, then returns to game list
-  - When user clicks Finalize/Cancel buttons, show a summary of completed/failed/skipped games
+- **Download Manager with Review Mode** - Correct wrong album picks after auto-download
+  - Click "Review Downloads" to enter Review Mode, click games to re-download with different albums
+  - Games you've corrected show orange highlighting for easy tracking
+- **Auto-Add More Songs** - One-click bulk song expansion in Review Mode
+  - Adds 1-3 random songs per game from matched albums (works for successful AND skipped games)
+  - Newly downloaded songs play automatically as they complete
+- **Batch Manual Download Dialog** - Unified dialog for retrying failed games
+  - Cover thumbnails, custom search box, preview button, green checkmarks for progress
+- **Parallel Download Processing** - Up to 4 concurrent downloads, starts immediately as albums are found
+- **Music Playback Controls** - Pause/Resume button in download dialog footer
 
-### Performance Improvements
-- **Search Cache Optimization** - Significantly reduced cache file size
-  - Cache now stores only essential fields (id, name, source, year) instead of all metadata
-  - Limits cached albums to top 10 per source (was unlimited)
-  - Old bloated caches are automatically cleared on upgrade (version 2.0 format)
-  - Expected size reduction: ~90% smaller cache files
+### Fixed
+- **UPS Search Hint Albums** - Album IDs now preserved for reliable re-downloads
+
+### Performance
+- **Search Cache** - 90% smaller cache files with automatic migration from old format
 
 ## [1.2.1] - 2026-01-17
 

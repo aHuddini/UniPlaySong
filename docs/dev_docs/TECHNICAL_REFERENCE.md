@@ -16,7 +16,8 @@ This document provides detailed technical references for key variables, logic, a
 8. [Volume and Fade Control](#volume-and-fade-control)
 9. [Controller Input Handling](#controller-input-handling)
 10. [Audio Normalization](#audio-normalization)
-11. [Theme Integration (UPS_MusicControl)](#theme-integration-ups_musiccontrol)
+11. [Download Manager](#download-manager)
+12. [Theme Integration (UPS_MusicControl)](#theme-integration-ups_musiccontrol)
 
 ---
 
@@ -979,6 +980,135 @@ private async Task NormalizeFileAsync(
 - Suffix: `-normalized` (configurable)
 - Example: `song.mp3` → `song-normalized.mp3`
 - Original file preserved unless `DoNotPreserveOriginals = true`
+
+---
+
+## Download Manager
+
+### Overview
+
+The Download Manager handles bulk music downloads with Review Mode for correcting wrong album picks and Auto-Add Songs for expanding music libraries.
+
+### Key Classes
+
+**Location**: `Services/DownloadDialogService.cs`
+
+#### Review Mode State
+
+```csharp
+// Review mode tracking
+private bool _isReviewMode = false;              // Whether review mode is active
+private List<GameDownloadResult> _downloadResults; // Results from batch download
+
+// In BatchDownloadItem (Models/NormalizationSettings.cs)
+public bool WasRedownloaded { get; set; }        // Orange highlight for corrected games
+public bool HadSongsAdded { get; set; }          // Purple highlight for games with new songs
+```
+
+#### GameDownloadResult
+
+**Location**: `Services/BatchDownloadService.cs`
+
+```csharp
+public class GameDownloadResult
+{
+    public Game Game { get; set; }
+    public bool Success { get; set; }
+    public string AlbumName { get; set; }
+    public string AlbumId { get; set; }           // Preserved for hint-based re-downloads
+    public string SourceName { get; set; }        // "KHInsider", "YouTube", "Zophar"
+    public string SongPath { get; set; }
+    public string ErrorMessage { get; set; }
+    public bool WasSkipped { get; set; }
+    public string SkipReason { get; set; }
+}
+```
+
+### Auto-Add Songs Flow
+
+```
+HandleAutoAddMoreSongs():
+├── Show song count picker dialog (1, 2, or 3 songs per game)
+├── For each game in parallel (SemaphoreSlim limit 4):
+│   ├── If AlbumId exists:
+│   │   └── Create Album directly from stored ID (skip search)
+│   ├── Else if AlbumName exists:
+│   │   ├── Search using game name (NOT album name)
+│   │   ├── Match album by name or fuzzy match
+│   │   └── Use matched album for download
+│   ├── Else (skipped game):
+│   │   ├── Search for albums using game name
+│   │   └── Use BestAlbumPick to select
+│   ├── Get song list from album
+│   ├── Filter out already-downloaded songs
+│   ├── Pick N random songs
+│   └── Download songs (play each as completed)
+└── Update UI with purple highlighting for games that got songs
+```
+
+### Album ID Preservation
+
+UPS Search Hints store album identifiers (YouTube playlist IDs, KHInsider slugs) that must be preserved for reliable re-downloads:
+
+```csharp
+// In BatchDownloadService.DownloadMusicForGameInternal():
+result.AlbumName = bestAlbum.Name;
+result.AlbumId = bestAlbum.Id;    // Preserve ID for Auto-Add Songs
+
+// In HandleAutoAddMoreSongs():
+if (!string.IsNullOrEmpty(albumId))
+{
+    // Use ID directly - no search needed
+    matchingAlbum = new Album
+    {
+        Id = albumId,
+        Name = albumName,
+        Source = source
+    };
+}
+```
+
+### Parallel Processing
+
+Downloads use `SemaphoreSlim` for controlled parallelism:
+
+```csharp
+private static readonly SemaphoreSlim _downloadSemaphore = new SemaphoreSlim(4, 4);
+
+// Downloads start immediately as albums are found (no waiting for all searches)
+var downloadTasks = games.Select(async game =>
+{
+    await _downloadSemaphore.WaitAsync(cancellationToken);
+    try
+    {
+        return await DownloadMusicForGameInternal(game, settings, ...);
+    }
+    finally
+    {
+        _downloadSemaphore.Release();
+    }
+});
+```
+
+### Search Cache Optimization
+
+**Location**: `Services/SearchCacheService.cs`
+
+Cache stores only essential fields to reduce file size (~90% reduction):
+
+```csharp
+// Cached per album (v2.0 format):
+public class CachedAlbum
+{
+    public string Id { get; set; }      // Album/playlist ID for downloading
+    public string Name { get; set; }    // Album name for display
+    public string Source { get; set; }  // "KHInsider", "YouTube"
+    public string Year { get; set; }    // Release year
+}
+// Maximum 10 albums per source per game
+```
+
+Old v1.0 caches are automatically cleared on first access.
 
 ---
 

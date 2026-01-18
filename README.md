@@ -16,19 +16,26 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.2
 
-### New Feature
-- **Batch Manual Download Dialog** - Completely revamped retry workflow after auto-download fails. Significantly more efficient workflows to fix failed game downloads
-  - Single unified window shows all failed games with status indicators
-  - Click a game → search all sources → select album → auto-downloads best track
-  - Custom search box to try different terms when game name doesn't match
-  - Preview albums before downloading, green checkmarks show completed games
-  - When finished, click "Finalize" to complete the bulk operation.
+This release transforms Auto-Download into a full-featured **Download Manager**.
 
-### Performance Improvements
-- **Search Cache Optimization** - Significantly reduced cache file size for large game libraries
-  - Cache stores only essential fields (id, name, source, year)
-  - Limits to top 10 albums per source
-  - Old caches will automatically be cleared when users upgrade
+### Download Manager with Review Mode
+- After auto-download completes, click **"Review Downloads"** to enter Review Mode
+- Click any game to **correct wrong album picks** or add music to skipped games
+- Games you've corrected show orange highlighting for easy tracking
+
+### Auto-Add More Songs
+- In Review Mode, click the purple **"Auto-Add More Songs"** button
+- Adds 1-3 random songs per game from matched albums with one click
+- Works for both successful downloads AND skipped games
+- Newly downloaded songs **play automatically** as they complete
+
+### Batch Manual Download Dialog
+- Unified dialog for retrying failed games with cover thumbnails
+- Custom search box, preview button, and green checkmarks for progress
+
+### Performance
+- **Parallel processing** - Up to 4 concurrent downloads, starts immediately as albums are found
+- **Search Cache** - 90% smaller cache files with automatic migration
 
 ### Previous Versions
 - **v1.2.1**: Now Playing display, YouTube search reliability improvements, dedicated download logging
