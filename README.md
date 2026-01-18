@@ -92,7 +92,6 @@ Download or update directly from the Playnite add-on database, or browse Generic
 2. Place `deno.exe` in the same folder as `yt-dlp.exe`
 3. In Playnite: **Settings → Add-ons → Extension Settings → UniPlaySong → Downloads Tab**
 4. Set paths to `yt-dlp.exe` and `ffmpeg.exe`
-5. Optional: Enable "Use cookies from browser (Firefox)" for better YouTube reliability
 
 ---
 
@@ -100,9 +99,8 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Quick Start
 1. Install yt-dlp, Deno, and FFmpeg (see Requirements above)
-2. Set tool paths in **Settings → Add-ons (Generic) → UniPlaySong → Downloads**
-3. Right-click games (single or multiple) for music download and management options. Use "bulk download" in add-on settings for alternative bulk downloads
-4. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
+2. Right-click games (single or multiple) for music download and management options. Use "bulk download" in add-on settings for alternative bulk downloads
+3. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
 - **General**: Music playback, volume, fade effects, preview duration, desktop controls
