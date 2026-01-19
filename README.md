@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,28 +20,23 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.2
+## What's New - v1.2.3
 
-### Download Manager with Review Mode
-- **Review Downloads** - Click any game to correct wrong album picks or retry failed downloads
-- **Auto-Add More Songs** - One-click bulk song expansion from matched albums
-- **Batch Manual Download** - Revamped window that allows better workflows for retrying failed games
+### Bulk Delete Music
+- Delete music for multiple games at once with new "Delete Music (All)" context menu option
+- Select 2+ games, right-click, and clean up in one action
 
-### Search Hint Database: SoundCloud Support
-- New `soundcloudUrl` field in search hints for direct SoundCloud downloads
-- Supports single tracks and playlists/sets
+### Safer Restart Handling
+- Settings requiring restart now use Playnite's built-in mechanism
+- Safer, user-controlled restart prompting
 
-### Auto-Check for Hints Updates
-- Optional startup check compares your bundled extension hints database with GitHub
-- Notifies users when new entries are available
-- Toggle in Settings → Search Cache
-
-### Fixes
-- Failed downloads now clickable in Review Mode
-- Search hints priority reordered: KHInsider → SoundCloud → YouTube
+### Bug Fixes
+- Fixed window state pause settings not working at startup
+- Music no longer plays briefly when Playnite opens minimized or in system tray
+- Music now correctly auto-plays when window is restored
 
 ### Previous Versions
-- **v1.2.1**: Now Playing display, YouTube search reliability, dedicated download logging
+- **v1.2.2**: Download Manager with Review Mode, Auto-Add Songs, SoundCloud support
 ---
 
 ## 🎬 Demo
