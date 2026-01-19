@@ -72,6 +72,15 @@ namespace UniPlaySong.Services
         private string _lastDefaultMusicPath = null;
         private TimeSpan _defaultMusicPausedOnTime = default;
 
+        // Initialization gate to prevent music playback until OnApplicationStarted completes
+        // This ensures window state is checked before any music can play
+        private bool _initializationComplete = false;
+
+        // Deferred playback request - stores the game/settings to play after initialization
+        private Game _deferredGame = null;
+        private UniPlaySongSettings _deferredSettings = null;
+        private bool _deferredForceReload = false;
+
         // Preview mode state tracking
         private DateTime _songStartTime = DateTime.MinValue;
         private UniPlaySongSettings _currentSettings;
@@ -162,14 +171,9 @@ namespace UniPlaySong.Services
 
             if (wasPlaying && _isPaused)
             {
-                // First pause source added - fade out then pause
-                _fileLogger?.Info($"Pause added: {source} (total sources: {_activePauseSources.Count}) - fading out");
+                _fileLogger?.Debug($"Pause: {source} (fading out)");
                 _fader?.Pause();
                 OnPlaybackStateChanged?.Invoke();
-            }
-            else if (_activePauseSources.Contains(source))
-            {
-                _fileLogger?.Debug($"Pause source already active: {source}");
             }
         }
 
@@ -185,33 +189,87 @@ namespace UniPlaySong.Services
 
             if (wasPaused && !_isPaused && _musicPlayer?.IsLoaded == true)
             {
-                // Last pause source removed - resume playback
-                _fileLogger?.Info($"Pause removed: {source} - resuming playback (no pause sources remaining)");
+                _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
                 _fader.Resume();
                 OnPlaybackStateChanged?.Invoke();
-            }
-            else if (wasPaused)
-            {
-                _fileLogger?.Debug($"Pause removed: {source} (still paused by {_activePauseSources.Count} sources)");
             }
         }
 
         /// <summary>
-        /// Clears all pause sources and resumes playback.
-        /// Use cautiously - only when you're certain all pause reasons are resolved.
+        /// Clears all pause sources EXCEPT window-state sources (FocusLoss, Minimized, SystemTray).
+        /// Window-state sources should only be cleared by the window event handlers.
+        /// This ensures music stays paused if the window started minimized/in tray/unfocused.
         /// </summary>
         public void ClearAllPauseSources()
         {
             if (_activePauseSources.Count > 0)
             {
-                _fileLogger?.Info($"Clearing all pause sources ({_activePauseSources.Count} active)");
+                // Preserve window-state pause sources - they should only be cleared by window events
+                var windowStateSources = new HashSet<PauseSource>();
+                if (_activePauseSources.Contains(PauseSource.FocusLoss))
+                    windowStateSources.Add(PauseSource.FocusLoss);
+                if (_activePauseSources.Contains(PauseSource.Minimized))
+                    windowStateSources.Add(PauseSource.Minimized);
+                if (_activePauseSources.Contains(PauseSource.SystemTray))
+                    windowStateSources.Add(PauseSource.SystemTray);
+
+                var clearedCount = _activePauseSources.Count - windowStateSources.Count;
                 _activePauseSources.Clear();
 
-                if (_musicPlayer?.IsLoaded == true)
+                // Re-add preserved window-state sources
+                foreach (var source in windowStateSources)
+                {
+                    _activePauseSources.Add(source);
+                }
+
+                if (clearedCount > 0)
+                {
+                    _fileLogger?.Info($"Cleared {clearedCount} pause sources (preserved {windowStateSources.Count} window-state sources: {string.Join(", ", windowStateSources)})");
+                }
+
+                // Only resume if no pause sources remain (including preserved ones)
+                if (_activePauseSources.Count == 0 && _musicPlayer?.IsLoaded == true)
                 {
                     _fader.Resume();
                 }
                 OnPlaybackStateChanged?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray).
+        /// Used to prevent playback from starting when Playnite is minimized/in tray/unfocused.
+        /// </summary>
+        private bool HasWindowStatePauseSources()
+        {
+            return _activePauseSources.Contains(PauseSource.FocusLoss) ||
+                   _activePauseSources.Contains(PauseSource.Minimized) ||
+                   _activePauseSources.Contains(PauseSource.SystemTray);
+        }
+
+        /// <summary>
+        /// Called when application initialization is complete (after CheckInitialWindowState).
+        /// Processes any deferred playback request if window state allows.
+        /// </summary>
+        public void MarkInitializationComplete()
+        {
+            _initializationComplete = true;
+
+            // Process deferred playback if we have one
+            if (_deferredGame != null)
+            {
+                var game = _deferredGame;
+                var settings = _deferredSettings;
+                var forceReload = _deferredForceReload;
+
+                // Clear deferred state
+                _deferredGame = null;
+                _deferredSettings = null;
+                _deferredForceReload = false;
+
+                // Now attempt to play - this will check pause sources
+                _fileLogger?.Debug($"Processing deferred playback for {game.Name}");
+                PlayGameMusic(game, settings, forceReload);
             }
         }
 
@@ -309,6 +367,9 @@ namespace UniPlaySong.Services
         {
             if (game == null)
             {
+                // Clear any deferred playback
+                _deferredGame = null;
+                _deferredSettings = null;
                 FadeOutAndStop();
                 // Reset song count when no game
                 if (_currentGameSongCount != 0)
@@ -318,6 +379,25 @@ namespace UniPlaySong.Services
                 }
                 // Notify that we stopped music (for native music restoration)
                 OnMusicStopped?.Invoke(settings);
+                return;
+            }
+
+            // Wait for initialization to complete before playing music
+            // This ensures CheckInitialWindowState has run and added any necessary pause sources
+            if (!_initializationComplete)
+            {
+                _fileLogger?.Debug($"Deferring playback for {game.Name} (waiting for initialization)");
+                _deferredGame = game;
+                _deferredSettings = settings;
+                _deferredForceReload = forceReload;
+                return;
+            }
+
+            // Don't start playback if window-state pause sources are active
+            // This prevents music from playing when Playnite is minimized/in tray/unfocused
+            if (HasWindowStatePauseSources())
+            {
+                _fileLogger?.Debug($"Playback blocked for {game.Name} (window state pause sources active)");
                 return;
             }
 

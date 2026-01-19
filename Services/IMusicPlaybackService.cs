@@ -52,6 +52,12 @@ namespace UniPlaySong.Services
 
         /// <summary>True if playing default/fallback music (not game-specific)</summary>
         bool IsPlayingDefaultMusic { get; }
+
+        /// <summary>
+        /// Called when application initialization is complete (after CheckInitialWindowState).
+        /// Processes any deferred playback request if window state allows.
+        /// </summary>
+        void MarkInitializationComplete();
     }
 }
 

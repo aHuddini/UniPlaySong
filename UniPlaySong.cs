@@ -292,6 +292,14 @@ namespace UniPlaySong
                 Application.Current.MainWindow.IsVisibleChanged += OnWindowVisibilityChanged;
             }
 
+            // Check initial window state and add pause sources if starting minimized/in tray/unfocused
+            // This must be called AFTER event handlers are registered but BEFORE music can start playing
+            CheckInitialWindowState();
+
+            // Mark initialization complete - this allows deferred playback to proceed
+            // Any game selection that happened during startup will now be processed
+            _playbackService?.MarkInitializationComplete();
+
             // Check for search hints updates on startup (if enabled)
             if (_settings?.AutoCheckHintsOnStartup == true)
             {
@@ -859,23 +867,18 @@ namespace UniPlaySong
         /// </summary>
         private void OnWindowStateChanged(object sender, EventArgs e)
         {
-            var windowState = Application.Current?.MainWindow?.WindowState;
-            _fileLogger?.Debug($"OnWindowStateChanged - WindowState: {windowState}, PauseOnMinimize: {_settings?.PauseOnMinimize}");
+            if (_settings?.PauseOnMinimize != true) return;
 
-            if (_settings?.PauseOnMinimize == true)
+            var windowState = Application.Current?.MainWindow?.WindowState;
+            switch (windowState)
             {
-                switch (windowState)
-                {
-                    case WindowState.Normal:
-                    case WindowState.Maximized:
-                        _fileLogger?.Debug("OnWindowStateChanged: Window restored - removing Minimized pause source");
-                        _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
-                        break;
-                    case WindowState.Minimized:
-                        _fileLogger?.Debug("OnWindowStateChanged: Window minimized - adding Minimized pause source");
-                        _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
-                        break;
-                }
+                case WindowState.Normal:
+                case WindowState.Maximized:
+                    _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
+                    break;
+                case WindowState.Minimized:
+                    _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
+                    break;
             }
         }
 
@@ -885,22 +888,13 @@ namespace UniPlaySong
         /// </summary>
         private void OnWindowVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            var isVisible = (bool)e.NewValue;
-            _fileLogger?.Debug($"OnWindowVisibilityChanged - IsVisible: {isVisible}, PauseWhenInSystemTray: {_settings?.PauseWhenInSystemTray}");
+            if (_settings?.PauseWhenInSystemTray != true) return;
 
-            if (_settings?.PauseWhenInSystemTray == true)
-            {
-                if (isVisible)
-                {
-                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window visible - removing SystemTray pause source");
-                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
-                }
-                else
-                {
-                    _fileLogger?.Debug("OnWindowVisibilityChanged: Window hidden (system tray) - adding SystemTray pause source");
-                    _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
-                }
-            }
+            var isVisible = (bool)e.NewValue;
+            if (isVisible)
+                _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
+            else
+                _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
         /// <summary>
@@ -909,12 +903,8 @@ namespace UniPlaySong
         /// </summary>
         private void OnApplicationDeactivate(object sender, EventArgs e)
         {
-            _fileLogger?.Debug($"OnApplicationDeactivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
             if (_settings?.PauseOnFocusLoss == true)
-            {
-                _fileLogger?.Debug("OnApplicationDeactivate: Adding FocusLoss pause source");
                 _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
-            }
         }
 
         /// <summary>
@@ -923,12 +913,55 @@ namespace UniPlaySong
         /// </summary>
         private void OnApplicationActivate(object sender, EventArgs e)
         {
-            _fileLogger?.Debug($"OnApplicationActivate - PauseOnFocusLoss: {_settings?.PauseOnFocusLoss}");
             if (_settings?.PauseOnFocusLoss == true)
-            {
-                _fileLogger?.Debug("OnApplicationActivate: Removing FocusLoss pause source");
                 _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
+        }
+
+        /// <summary>
+        /// Early check of initial window state during service initialization.
+        /// Called before OnGameSelected can trigger music playback.
+        /// This is a best-effort check - if MainWindow isn't available yet, we retry in CheckInitialWindowState().
+        /// </summary>
+        private void CheckInitialWindowStateEarly()
+        {
+            try
+            {
+                var window = Application.Current?.MainWindow;
+                if (window == null) return;
+
+                if (_settings?.PauseOnMinimize == true && window.WindowState == WindowState.Minimized)
+                    _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
+
+                if (_settings?.PauseWhenInSystemTray == true && !window.IsVisible)
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
+
+                if (_settings?.PauseOnFocusLoss == true && !window.IsActive)
+                    _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
             }
+            catch
+            {
+                // Early initialization - window may not be fully available yet
+            }
+        }
+
+        /// <summary>
+        /// Checks the initial window state at startup and adds appropriate pause sources.
+        /// This ensures music doesn't play if Playnite starts minimized, in system tray, or unfocused.
+        /// Called once after event handlers are registered in OnApplicationStarted.
+        /// </summary>
+        private void CheckInitialWindowState()
+        {
+            var window = Application.Current?.MainWindow;
+            if (window == null) return;
+
+            if (_settings?.PauseOnMinimize == true && window.WindowState == WindowState.Minimized)
+                _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
+
+            if (_settings?.PauseWhenInSystemTray == true && !window.IsVisible)
+                _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
+
+            if (_settings?.PauseOnFocusLoss == true && !window.IsActive)
+                _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
         }
 
         private void OnLoginDismissKeyPress(object sender, KeyEventArgs e)
@@ -980,6 +1013,10 @@ namespace UniPlaySong
             {
                 _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
             }
+
+            // Check initial window state EARLY - before any music can start playing
+            // This ensures pause sources are set before OnGameSelected triggers
+            CheckInitialWindowStateEarly();
 
             // Initialize coordinator - centralizes all music playback logic and state management
             _coordinator = new MusicPlaybackCoordinator(
