@@ -180,6 +180,7 @@ namespace UniPlaySong.Services
         /// <summary>
         /// Removes a pause source and resumes playback if all pause sources are cleared.
         /// Only resumes when no other pause sources remain active.
+        /// If music isn't loaded but we have a deferred game, triggers deferred playback.
         /// </summary>
         /// <param name="source">The source releasing pause</param>
         public void RemovePauseSource(PauseSource source)
@@ -187,11 +188,28 @@ namespace UniPlaySong.Services
             bool wasPaused = _isPaused;
             _activePauseSources.Remove(source);
 
-            if (wasPaused && !_isPaused && _musicPlayer?.IsLoaded == true)
+            if (wasPaused && !_isPaused)
             {
-                _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
-                _fader.Resume();
-                OnPlaybackStateChanged?.Invoke();
+                if (_musicPlayer?.IsLoaded == true)
+                {
+                    _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
+                    _fader.Resume();
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_deferredGame != null && _initializationComplete)
+                {
+                    // Music not loaded but we have a deferred game - trigger playback now
+                    var game = _deferredGame;
+                    var settings = _deferredSettings;
+                    var forceReload = _deferredForceReload;
+
+                    _deferredGame = null;
+                    _deferredSettings = null;
+                    _deferredForceReload = false;
+
+                    _fileLogger?.Debug($"Triggering deferred playback for {game.Name} (pause sources cleared)");
+                    PlayGameMusic(game, settings, forceReload);
+                }
             }
         }
 
@@ -395,9 +413,13 @@ namespace UniPlaySong.Services
 
             // Don't start playback if window-state pause sources are active
             // This prevents music from playing when Playnite is minimized/in tray/unfocused
+            // Store game info so we can play when pause sources are cleared
             if (HasWindowStatePauseSources())
             {
-                _fileLogger?.Debug($"Playback blocked for {game.Name} (window state pause sources active)");
+                _fileLogger?.Debug($"Playback blocked for {game.Name} (window state pause sources active) - storing for later");
+                _deferredGame = game;
+                _deferredSettings = settings;
+                _deferredForceReload = forceReload;
                 return;
             }
 
