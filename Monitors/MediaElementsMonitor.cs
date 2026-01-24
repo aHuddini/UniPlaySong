@@ -49,7 +49,7 @@ namespace UniPlaySong.Monitors
             EventManager.RegisterClassHandler(typeof(MediaElement), MediaElement.MediaOpenedEvent, new RoutedEventHandler(MediaElement_Opened));
 
             timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(10);
+            timer.Interval = TimeSpan.FromMilliseconds(100);
             timer.Tick += Timer_Tick;
             
             Logger.Info($"[UniPlaySong] MediaElementsMonitor: Timer created (interval: 10ms), waiting for MediaElement_Opened to start");
