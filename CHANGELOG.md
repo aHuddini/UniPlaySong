@@ -5,33 +5,18 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.2.4] - 2026-01-30
 
 ### Added
-- **Auto-Delete Music on Game Removal** - Music files are now automatically deleted when their associated games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
-  - Subscribes to Playnite's `Games.ItemCollectionChanged` event for real-time cleanup
-  - Stops playback if the currently playing game is removed
-  - Enabled by default; toggle in Settings → Cleanup tab
-- **Clean Up Orphaned Music** - New button in Settings → Cleanup to scan for and remove music folders belonging to games no longer in your library
-  - Shows count of orphaned folders before confirming deletion
-  - Useful for cleaning up music left behind from games removed before this feature existed
+- **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
+- **Clean Up Orphaned Music** - New cleanup tool removes music folders for games no longer in your library
 
 ### Changed
 - **Playnite SDK** updated to version 6.15.0
 
 ### Fixed
-- **Fullscreen Background Music Volume** - Playnite's fullscreen "Background Music Volume" slider now controls UniPlaySong's volume ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
-  - Effective volume = plugin volume × Playnite background volume, applied in real-time
-  - Setting Playnite's volume to 0 fully mutes music
-  - Native Playnite music is always suppressed in fullscreen to prevent SDL2_mixer conflicts
-  - Desktop mode is unaffected
-- **Now Playing GPU Usage** - Fixed top panel "Now Playing" animation causing permanent ~4% GPU usage ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-  - Render loop now only subscribes when animation is active (fade-in or scrolling), unsubscribes when idle
-  - Animation suspends entirely when Playnite loses focus, resumes on reactivation
-- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing and resuming during trailer/ScreenshotVisualizer video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
-  - Increased MediaElementsMonitor timer interval from 10ms to 100ms to prevent race conditions with video framerates
-- **Media Controls After Live Effects Toggle** - Fixed play/pause and skip buttons becoming unresponsive after toggling live effects on/off ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
-  - Recreated playback service was missing initialization flag, causing all playback requests to be silently deferred until a forced restart.
-- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback
-  - New game's song is loaded (Now Playing updates) but stays paused until the user presses play
-  - Manual pause is now preserved through `ClearAllPauseSources`, matching window-state pause behavior
+- **Fullscreen Background Music Volume** - Playnite's volume slider now controls UniPlaySong playback in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+- **Now Playing GPU Usage** - Fixed animation causing permanent GPU usage when app loses focus ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing during trailer/video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
+- **Media Controls After Live Effects Toggle** - Fixed play/pause and skip buttons becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
+- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games now properly stays paused
 
 ## [1.2.3] - 2026-01-18
 

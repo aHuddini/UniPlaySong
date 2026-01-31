@@ -30,15 +30,14 @@ Built with the help of Claude Code and Cursor IDE
 - **Playnite SDK** updated to version 6.15.0
 
 ### Bug Fixes
-- **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
-- **Now Playing GPU Usage** - Fixed top panel animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now properly controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+- **Now Playing GPU Usage** - Fixed top panel Now Playing animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 - **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
-- **Media Controls After Live Effects Toggle** - Fixed media control buttons and music becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
+- **Media Controls Work After Live Effects Toggle** - Fixed media control buttons and music becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
 - **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback; song loads silently until play is pressed
 
 ### Previous Versions
 - **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes
-- **v1.2.2**: Download Manager with Review Mode, Auto-Add Songs, SoundCloud support
 ---
 
 ## 🎬 Demo
