@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,20 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.3
+## What's New - v1.2.4
 
-### Bulk Delete Music
-- Delete music for multiple games at once with new "Delete Music (All)" context menu option
-- Select 2+ games, right-click, and clean up in one action
+### New Features
+- **[PLACEHOLDER]** New features for v1.2.4 coming soon
 
-### Safer Restart Handling
-- Settings requiring restart now use Playnite's built-in mechanism
-- Safer, user-controlled restart prompting
+### Improvements
+- **[PLACEHOLDER]** Improvements for v1.2.4 coming soon
 
 ### Bug Fixes
-- Fixed window state pause settings not working at startup
-- Music no longer plays briefly when Playnite opens minimized or in system tray
-- Music now correctly auto-plays when window is restored
+- **[PLACEHOLDER]** Bug fixes for v1.2.4 coming soon
 
 ### Previous Versions
 - **v1.2.2**: Download Manager with Review Mode, Auto-Add Songs, SoundCloud support

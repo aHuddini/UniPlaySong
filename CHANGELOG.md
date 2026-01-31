@@ -2,6 +2,17 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.4] - 2026-01-18
+
+### Added
+- **[PLACEHOLDER]** New features for v1.2.4 coming soon
+
+### Changed
+- **[PLACEHOLDER]** Changes for v1.2.4 coming soon
+
+### Fixed
+- **[PLACEHOLDER]** Bug fixes for v1.2.4 coming soon
+
 ## [1.2.3] - 2026-01-18
 
 ### Added
