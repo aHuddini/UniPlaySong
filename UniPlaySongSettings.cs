@@ -86,6 +86,7 @@ namespace UniPlaySong
         private bool pauseWhenInSystemTray = true;
         private bool showNowPlayingInTopPanel = false;
         private bool showDesktopMediaControls = false;
+        private bool autoDeleteMusicOnGameRemoval = true;
 
         public bool EnableMusic
         {
@@ -315,6 +316,15 @@ namespace UniPlaySong
         {
             get => showDesktopMediaControls;
             set { showDesktopMediaControls = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Automatically delete music files when their associated games are removed from Playnite.
+        /// </summary>
+        public bool AutoDeleteMusicOnGameRemoval
+        {
+            get => autoDeleteMusicOnGameRemoval;
+            set { autoDeleteMusicOnGameRemoval = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

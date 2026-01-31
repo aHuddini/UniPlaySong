@@ -1756,6 +1756,27 @@
 
                     <Separator Margin="0,0,0,20"/>
 
+                    <!-- Clean Up Orphaned Music -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Clean Up Orphaned Music" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Scans for music folders belonging to games that are no longer in your Playnite library and removes them."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <CheckBox Content="Automatically delete music when games are removed from library"
+                                  IsChecked="{Binding Settings.AutoDeleteMusicOnGameRemoval}"
+                                  Margin="0,0,0,10"/>
+                        <Button Content="Clean Up Orphaned Music"
+                                Command="{Binding CleanupOrphanedMusicCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#664422"
+                                Foreground="White"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
                     <!-- Reset Settings Only -->
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Text="Reset Settings Only" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>

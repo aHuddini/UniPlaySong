@@ -2,16 +2,22 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.2.4] - 2026-01-18
+## [1.2.4] - 2026-01-30
 
 ### Added
-- **[PLACEHOLDER]** New features for v1.2.4 coming soon
+- **Auto-Delete Music on Game Removal** - Music files are now automatically deleted when their associated games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
+  - Subscribes to Playnite's `Games.ItemCollectionChanged` event for real-time cleanup
+  - Stops playback if the currently playing game is removed
+  - Enabled by default; toggle in Settings → Cleanup tab
+- **Clean Up Orphaned Music** - New button in Settings → Cleanup to scan for and remove music folders belonging to games no longer in your library
+  - Shows count of orphaned folders before confirming deletion
+  - Useful for cleaning up music left behind from games removed before this feature existed
 
 ### Changed
-- **[PLACEHOLDER]** Changes for v1.2.4 coming soon
+- **Playnite SDK** updated to version 6.15.0.0
 
 ### Fixed
-- **[PLACEHOLDER]** Bug fixes for v1.2.4 coming soon
+- **Audio Stuttering** - Fixed audio stuttering by increasing timer interval ([#60](https://github.com/aHuddini/UniPlaySong/issues/60)) - Credit: @rovri
 
 ## [1.2.3] - 2026-01-18
 

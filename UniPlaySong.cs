@@ -111,6 +111,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+        private string _gamesPath;
 
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
@@ -282,6 +283,9 @@ namespace UniPlaySong
                 SuppressNativeMusic();
                 StartNativeMusicSuppression();
             }
+
+            // Subscribe to game collection changes for auto-cleanup of music on game removal
+            _api.Database.Games.ItemCollectionChanged += OnGamesCollectionChanged;
 
             // Subscribe to application focus/minimize events for PauseOnDeactivate feature
             Application.Current.Deactivated += OnApplicationDeactivate;
@@ -641,6 +645,9 @@ namespace UniPlaySong
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
 
+            // Unsubscribe from game collection changes
+            _api.Database.Games.ItemCollectionChanged -= OnGamesCollectionChanged;
+
             // Unsubscribe from focus/minimize events
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
@@ -679,6 +686,53 @@ namespace UniPlaySong
         #endregion
 
         #region Event Handlers
+
+        /// <summary>
+        /// Handles changes to the games database collection.
+        /// When games are removed, deletes their associated music directories if the setting is enabled.
+        /// </summary>
+        private void OnGamesCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> args)
+        {
+            if (_settings?.AutoDeleteMusicOnGameRemoval != true)
+            {
+                return;
+            }
+
+            if (args.RemovedItems == null || args.RemovedItems.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var removedGame in args.RemovedItems)
+            {
+                try
+                {
+                    var gameId = removedGame.Id.ToString();
+                    var musicDir = Path.Combine(_gamesPath, gameId);
+
+                    if (!Directory.Exists(musicDir))
+                    {
+                        continue;
+                    }
+
+                    // Stop playback if the removed game is currently playing
+                    if (_playbackService?.CurrentGame?.Id == removedGame.Id)
+                    {
+                        _fileLogger?.Info($"OnGamesCollectionChanged: Stopping playback for removed game '{removedGame.Name}'");
+                        _playbackService.Stop();
+                    }
+
+                    var fileCount = Directory.GetFiles(musicDir, "*.*", SearchOption.AllDirectories).Length;
+                    Directory.Delete(musicDir, true);
+                    _fileLogger?.Info($"OnGamesCollectionChanged: Deleted music directory for removed game '{removedGame.Name}' (ID: {gameId}, {fileCount} files)");
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"OnGamesCollectionChanged: Failed to delete music for removed game '{removedGame.Name}' - {ex.Message}");
+                    Logger.Warn($"Failed to delete music directory for removed game '{removedGame.Name}': {ex.Message}");
+                }
+            }
+        }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -983,6 +1037,7 @@ namespace UniPlaySong
         {
             var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
             var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+            _gamesPath = gamesPath;
             var tempPath = Path.Combine(basePath, Constants.TempFolderName);
 
             // Initialize error handler service (for centralized error handling)
@@ -2816,6 +2871,112 @@ namespace UniPlaySong
             {
                 _fileLogger?.Error($"DeleteAllMusic: Error - {ex.Message}", ex);
                 return (0, 0, false);
+            }
+        }
+
+        /// <summary>
+        /// Scans the Games music folder for orphaned directories (music for games no longer in the library)
+        /// and deletes them.
+        /// </summary>
+        /// <returns>Tuple of (deletedFolders, deletedFiles, success)</returns>
+        public (int deletedFolders, int deletedFiles, bool success) CleanupOrphanedMusic()
+        {
+            try
+            {
+                if (!Directory.Exists(_gamesPath))
+                {
+                    _fileLogger?.Info("CleanupOrphanedMusic: Games path does not exist, nothing to clean");
+                    return (0, 0, true);
+                }
+
+                var gameDirs = Directory.GetDirectories(_gamesPath);
+                int deletedFolders = 0;
+                int deletedFiles = 0;
+
+                foreach (var gameDir in gameDirs)
+                {
+                    try
+                    {
+                        var dirName = Path.GetFileName(gameDir);
+
+                        if (!Guid.TryParse(dirName, out var gameId))
+                        {
+                            _fileLogger?.Debug($"CleanupOrphanedMusic: Skipping non-GUID directory '{dirName}'");
+                            continue;
+                        }
+
+                        // Check if this game still exists in the database
+                        var game = _api.Database.Games[gameId];
+                        if (game != null)
+                        {
+                            continue;
+                        }
+
+                        // Game no longer exists — this is an orphaned music folder
+                        // Stop playback if this orphaned folder is somehow playing
+                        if (_playbackService?.CurrentGame?.Id == gameId)
+                        {
+                            _playbackService.Stop();
+                        }
+
+                        var fileCount = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories).Length;
+                        Directory.Delete(gameDir, true);
+                        deletedFiles += fileCount;
+                        deletedFolders++;
+                        _fileLogger?.Info($"CleanupOrphanedMusic: Deleted orphaned music directory '{dirName}' ({fileCount} files)");
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Warn($"CleanupOrphanedMusic: Failed to delete '{gameDir}' - {ex.Message}");
+                    }
+                }
+
+                _fileLogger?.Info($"CleanupOrphanedMusic: Completed - Deleted {deletedFolders} orphaned folders ({deletedFiles} files)");
+                return (deletedFolders, deletedFiles, true);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"CleanupOrphanedMusic: Error - {ex.Message}", ex);
+                return (0, 0, false);
+            }
+        }
+
+        /// <summary>
+        /// Counts orphaned music directories (music for games no longer in the library).
+        /// </summary>
+        /// <returns>Number of orphaned game music directories</returns>
+        public int CountOrphanedMusicFolders()
+        {
+            try
+            {
+                if (!Directory.Exists(_gamesPath))
+                {
+                    return 0;
+                }
+
+                int count = 0;
+                var gameDirs = Directory.GetDirectories(_gamesPath);
+
+                foreach (var gameDir in gameDirs)
+                {
+                    var dirName = Path.GetFileName(gameDir);
+                    if (!Guid.TryParse(dirName, out var gameId))
+                    {
+                        continue;
+                    }
+
+                    if (_api.Database.Games[gameId] == null)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"CountOrphanedMusicFolders: Error - {ex.Message}");
+                return 0;
             }
         }
 
