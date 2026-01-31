@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayniteSDK" Version="6.11.0.0" PrivateAssets="none" />
+        <PackageReference Include="PlayniteSDK" Version="6.15.0.0" PrivateAssets="none" />
         <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
         <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
         <PackageReference Include="System.Net.Http" Version="4.3.4" />
