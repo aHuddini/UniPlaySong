@@ -29,6 +29,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - Increased MediaElementsMonitor timer interval from 10ms to 100ms to prevent race conditions with video framerates
 - **Media Controls After Live Effects Toggle** - Fixed play/pause and skip buttons becoming unresponsive after toggling live effects on/off ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
   - Recreated playback service was missing initialization flag, causing all playback requests to be silently deferred until a forced restart.
+- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback
+  - New game's song is loaded (Now Playing updates) but stays paused until the user presses play
+  - Manual pause is now preserved through `ClearAllPauseSources`, matching window-state pause behavior
 
 ## [1.2.3] - 2026-01-18
 
