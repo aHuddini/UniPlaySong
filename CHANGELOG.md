@@ -22,6 +22,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - Setting Playnite's volume to 0 fully mutes music
   - Native Playnite music is always suppressed in fullscreen to prevent SDL2_mixer conflicts
   - Desktop mode is unaffected
+- **Now Playing GPU Usage** - Fixed top panel "Now Playing" animation causing permanent ~4% GPU usage ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+  - Render loop now only subscribes when animation is active (fade-in or scrolling), unsubscribes when idle
+  - Animation suspends entirely when Playnite loses focus, resumes on reactivation
 - **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing and resuming during trailer/ScreenshotVisualizer video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
   - Increased MediaElementsMonitor timer interval from 10ms to 100ms to prevent race conditions with video framerates
 

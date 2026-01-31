@@ -31,6 +31,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Bug Fixes
 - **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+- **Now Playing GPU Usage** - Fixed top panel animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 - **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
 
 ### Previous Versions
