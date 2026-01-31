@@ -1018,6 +1018,55 @@ namespace UniPlaySong
             RefreshCleanupStorageInfo();
         }
 
+        public ICommand CleanupOrphanedMusicCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteCleanupOrphanedMusic(),
+                context: "cleaning up orphaned music",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteCleanupOrphanedMusic()
+        {
+            var orphanCount = plugin.CountOrphanedMusicFolders();
+
+            if (orphanCount == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    "No orphaned music folders found. All music folders belong to games in your library.",
+                    "UniPlaySong");
+                return;
+            }
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                $"Found {orphanCount} orphaned music folder(s) belonging to games no longer in your library.\n\n" +
+                $"Do you want to delete them?",
+                "Clean Up Orphaned Music",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+                return;
+
+            var (deletedFolders, deletedFiles, success) = plugin.CleanupOrphanedMusic();
+
+            if (success)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Cleaned up {deletedFolders} orphaned folder(s) ({deletedFiles} files).",
+                    "Cleanup Complete");
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Some folders could not be deleted. Check the log for details.",
+                    "Cleanup Failed");
+            }
+
+            RefreshCleanupStorageInfo();
+        }
+
         public ICommand ResetSettingsCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

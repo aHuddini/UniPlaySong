@@ -1231,40 +1231,34 @@ public bool ThemeOverlayActive { get; set; }  // Set by MusicControl
 public enum PauseSource
 {
     Video,                    // MediaElementsMonitor detected video
-    Manual,                   // User manually paused
+    Manual,                   // User manually paused via top panel button
     Settings,                 // Settings being changed
-    ViewChange,               // Mode switching
-    DefaultMusicPreservation, // Default music position saved
-    ThemeOverlay              // Theme MusicControl Tag=True
+    ViewChange,               // Mode switching (desktop ↔ fullscreen)
+    DefaultMusicPreservation, // Default music position saved during switch
+    ThemeOverlay,             // Theme MusicControl Tag=True
+    FocusLoss,                // Playnite window lost focus (PauseOnFocusLoss setting)
+    Minimized,                // Playnite window minimized (PauseOnMinimize setting)
+    SystemTray                // Playnite hidden in system tray (PauseWhenInSystemTray setting)
 }
 
 // Active sources tracking
 private readonly HashSet<PauseSource> _activePauseSources;
 private bool _isPaused => _activePauseSources.Count > 0;
-
-// Add/Remove methods
-public void AddPauseSource(PauseSource source)
-{
-    bool wasPlaying = !_isPaused;
-    _activePauseSources.Add(source);
-
-    if (wasPlaying && _isPaused)
-    {
-        _fader?.Pause();  // Fade out then pause
-    }
-}
-
-public void RemovePauseSource(PauseSource source)
-{
-    bool wasPaused = _isPaused;
-    _activePauseSources.Remove(source);
-
-    if (wasPaused && !_isPaused && _musicPlayer?.IsLoaded == true)
-    {
-        _fader.Resume();  // Fade in from paused state
-    }
-}
 ```
+
+**Source categories**:
+- **Transient sources** (`Video`, `Settings`, `ViewChange`, `DefaultMusicPreservation`, `ThemeOverlay`) — cleared automatically by `ClearAllPauseSources()` during game music transitions.
+- **Preserved sources** (`Manual`, `FocusLoss`, `Minimized`, `SystemTray`) — survive `ClearAllPauseSources()` and must be cleared by their own handlers (user press play, window events, etc.).
+
+**Key methods**:
+
+| Method | Behavior |
+|--------|----------|
+| `AddPauseSource(source)` | Adds source to set; calls `_fader.Pause()` if this is the first source (transitions from playing to paused). |
+| `RemovePauseSource(source)` | Removes source from set; if all sources cleared and player is actively playing, calls `_fader.Resume()`. If player is loaded but not active (song loaded during manual pause), starts playback with `Play()` + `FadeIn()`. |
+| `ClearAllPauseSources()` | Clears all **transient** sources. Preserves `Manual`, `FocusLoss`, `Minimized`, and `SystemTray`. Only calls `_fader.Resume()` if zero sources remain after clearing. |
+
+**Manual pause and game switching**: When the user manually pauses and then switches games, `PlayGameMusic()` loads the new song (updating `CurrentSongPath` and firing `OnSongChanged` for Now Playing), but checks `_isPaused` after `ClearAllPauseSources()`. Since `Manual` is preserved, `_isPaused` remains true and `Play()`/`FadeIn()` are skipped. The song is loaded but silent. When the user presses play, `RemovePauseSource(Manual)` detects the loaded-but-not-active state and starts playback with fade-in.
 
 ### Integration Points
 

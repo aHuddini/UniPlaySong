@@ -111,6 +111,11 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+        private string _gamesPath;
+
+        // Fullscreen volume integration - respects Playnite's Background Music Volume slider
+        private double _playniteFullscreenVolume = 1.0;
+        private dynamic _fullscreenSettingsObj;
 
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
@@ -207,23 +212,17 @@ namespace UniPlaySong
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
             SubscribeToMainModel();
             
-            // Try early native music suppression in fullscreen mode
+            // Always suppress native music early in fullscreen mode to avoid SDL2_mixer volume conflicts
             // Catches native music that starts before OnApplicationStarted
             if (IsFullscreen)
             {
-                bool shouldSuppress = _settings?.SuppressPlayniteBackgroundMusic == true ||
-                                     (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
-                
-                if (shouldSuppress)
+                try
                 {
-                    try
-                    {
-                        SuppressNativeMusic();
-                    }
-                    catch
-                    {
-                        // Audio system may not be initialized yet - ignore
-                    }
+                    SuppressNativeMusic();
+                }
+                catch
+                {
+                    // Audio system may not be initialized yet - ignore
                 }
             }
 
@@ -270,18 +269,22 @@ namespace UniPlaySong
                 AttachLoginInputHandler();
             }
             
-            // Suppress native music if:
-            // 1. SuppressPlayniteBackgroundMusic is explicitly enabled, OR
-            // 2. UseNativeMusicAsDefault is enabled (we play the same file, suppress duplicate)
-            bool shouldSuppressOnStartup = _settings?.SuppressPlayniteBackgroundMusic == true ||
-                                          (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
-            
-            if (IsFullscreen && shouldSuppressOnStartup)
+            // In fullscreen mode: always suppress native music to avoid SDL2_mixer volume conflicts,
+            // and integrate with Playnite's BackgroundVolume slider
+            if (IsFullscreen)
             {
-                _fileLogger?.Info($"OnApplicationStarted: Starting native music suppression (SuppressPlayniteBackgroundMusic={_settings?.SuppressPlayniteBackgroundMusic}, UseNativeMusicAsDefault={_settings?.UseNativeMusicAsDefault})");
+                _fileLogger?.Info("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
                 SuppressNativeMusic();
                 StartNativeMusicSuppression();
+
+                // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
+                InitializeFullscreenSettingsRef();
+                SubscribeToFullscreenVolumeChanges();
+                _playbackService?.SetVolumeMultiplier(_playniteFullscreenVolume);
             }
+
+            // Subscribe to game collection changes for auto-cleanup of music on game removal
+            _api.Database.Games.ItemCollectionChanged += OnGamesCollectionChanged;
 
             // Subscribe to application focus/minimize events for PauseOnDeactivate feature
             Application.Current.Deactivated += OnApplicationDeactivate;
@@ -641,6 +644,9 @@ namespace UniPlaySong
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
 
+            // Unsubscribe from game collection changes
+            _api.Database.Games.ItemCollectionChanged -= OnGamesCollectionChanged;
+
             // Unsubscribe from focus/minimize events
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
@@ -658,6 +664,7 @@ namespace UniPlaySong
 
             StopControllerLoginMonitoring();
             StopNativeMusicSuppression();
+            UnsubscribeFromFullscreenVolumeChanges();
 
             _fileLogger?.Info("Application stopped");
         }
@@ -679,6 +686,53 @@ namespace UniPlaySong
         #endregion
 
         #region Event Handlers
+
+        /// <summary>
+        /// Handles changes to the games database collection.
+        /// When games are removed, deletes their associated music directories if the setting is enabled.
+        /// </summary>
+        private void OnGamesCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> args)
+        {
+            if (_settings?.AutoDeleteMusicOnGameRemoval != true)
+            {
+                return;
+            }
+
+            if (args.RemovedItems == null || args.RemovedItems.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var removedGame in args.RemovedItems)
+            {
+                try
+                {
+                    var gameId = removedGame.Id.ToString();
+                    var musicDir = Path.Combine(_gamesPath, gameId);
+
+                    if (!Directory.Exists(musicDir))
+                    {
+                        continue;
+                    }
+
+                    // Stop playback if the removed game is currently playing
+                    if (_playbackService?.CurrentGame?.Id == removedGame.Id)
+                    {
+                        _fileLogger?.Info($"OnGamesCollectionChanged: Stopping playback for removed game '{removedGame.Name}'");
+                        _playbackService.Stop();
+                    }
+
+                    var fileCount = Directory.GetFiles(musicDir, "*.*", SearchOption.AllDirectories).Length;
+                    Directory.Delete(musicDir, true);
+                    _fileLogger?.Info($"OnGamesCollectionChanged: Deleted music directory for removed game '{removedGame.Name}' (ID: {gameId}, {fileCount} files)");
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"OnGamesCollectionChanged: Failed to delete music for removed game '{removedGame.Name}' - {ex.Message}");
+                    Logger.Warn($"Failed to delete music directory for removed game '{removedGame.Name}': {ex.Message}");
+                }
+            }
+        }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -983,6 +1037,7 @@ namespace UniPlaySong
         {
             var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
             var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
+            _gamesPath = gamesPath;
             var tempPath = Path.Combine(basePath, Constants.TempFolderName);
 
             // Initialize error handler service (for centralized error handling)
@@ -994,19 +1049,13 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
-            // Suppress native music when our music starts (if suppression enabled or using native as default)
+            // Always suppress native music in fullscreen when our music starts (avoids SDL2_mixer volume conflicts)
             _playbackService.OnMusicStarted += (settings) =>
             {
                 if (!IsFullscreen)
                     return;
 
-                bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
-                                     (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
-
-                if (shouldSuppress)
-                {
-                    SuppressNativeMusic();
-                }
+                SuppressNativeMusic();
             };
 
             if (_settings != null)
@@ -1193,24 +1242,27 @@ namespace UniPlaySong
                 var oldService = _playbackService;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
 
-                // Re-attach event handlers
+                // Mark initialization complete — app is already running, skip deferred-playback gate
+                _playbackService.MarkInitializationComplete();
+
+                // Re-attach event handlers - always suppress native music in fullscreen
                 _playbackService.OnMusicStarted += (settings) =>
                 {
                     if (!IsFullscreen)
                         return;
 
-                    bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
-                                         (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
-
-                    if (shouldSuppress)
-                    {
-                        SuppressNativeMusic();
-                    }
+                    SuppressNativeMusic();
                 };
 
                 if (_settings != null)
                 {
                     _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
+                }
+
+                // Reapply fullscreen volume multiplier to the new service
+                if (IsFullscreen)
+                {
+                    _playbackService.SetVolumeMultiplier(_playniteFullscreenVolume);
                 }
 
                 // Update coordinator with new playback service
@@ -1289,6 +1341,127 @@ namespace UniPlaySong
             catch
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference.
+        /// Returns 1.0 if not in fullscreen or reflection fails (graceful degradation).
+        /// </summary>
+        private double GetPlayniteFullscreenVolume()
+        {
+            try
+            {
+                if (_fullscreenSettingsObj == null)
+                {
+                    return 1.0;
+                }
+
+                float bgVolume = (float)(_fullscreenSettingsObj.BackgroundVolume);
+                return Math.Max(0.0, Math.Min(1.0, bgVolume));
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"GetPlayniteFullscreenVolume: Failed to read BackgroundVolume - {ex.Message}");
+                return 1.0;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the cached reference to Playnite's internal fullscreen settings object.
+        /// Uses the same reflection pattern proven by PlayniteSound.
+        /// </summary>
+        private void InitializeFullscreenSettingsRef()
+        {
+            try
+            {
+                _fullscreenSettingsObj = _api.ApplicationSettings.Fullscreen
+                    .GetType()
+                    .GetField("settings", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?.GetValue(_api.ApplicationSettings.Fullscreen);
+
+                if (_fullscreenSettingsObj != null)
+                {
+                    _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
+                    _fileLogger?.Info($"InitializeFullscreenSettingsRef: Got fullscreen settings, BackgroundVolume={_playniteFullscreenVolume:F2}");
+                }
+                else
+                {
+                    _fileLogger?.Warn("InitializeFullscreenSettingsRef: Could not get fullscreen settings object");
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"InitializeFullscreenSettingsRef: Failed - {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
+        /// Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as INotifyPropertyChanged).
+        /// </summary>
+        private void SubscribeToFullscreenVolumeChanges()
+        {
+            try
+            {
+                dynamic ctx = Application.Current.MainWindow?.DataContext;
+                if (ctx == null)
+                {
+                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: MainWindow.DataContext is null");
+                    return;
+                }
+
+                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
+                if (fullscreenSettings != null)
+                {
+                    fullscreenSettings.PropertyChanged += OnFullscreenSettingsChanged;
+                    _fileLogger?.Info("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
+                }
+                else
+                {
+                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: Could not cast fullscreen settings to INotifyPropertyChanged");
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"SubscribeToFullscreenVolumeChanges: Failed - {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribes from Playnite's fullscreen settings PropertyChanged.
+        /// </summary>
+        private void UnsubscribeFromFullscreenVolumeChanges()
+        {
+            try
+            {
+                dynamic ctx = Application.Current?.MainWindow?.DataContext;
+                if (ctx == null)
+                    return;
+
+                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
+                if (fullscreenSettings != null)
+                {
+                    fullscreenSettings.PropertyChanged -= OnFullscreenSettingsChanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"UnsubscribeFromFullscreenVolumeChanges: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles changes to Playnite's fullscreen settings.
+        /// When BackgroundVolume changes, updates the volume multiplier on the playback service.
+        /// </summary>
+        private void OnFullscreenSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "BackgroundVolume")
+            {
+                _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
+                _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
+                _playbackService?.SetVolumeMultiplier(IsFullscreen ? _playniteFullscreenVolume : 1.0);
             }
         }
 
@@ -2816,6 +2989,112 @@ namespace UniPlaySong
             {
                 _fileLogger?.Error($"DeleteAllMusic: Error - {ex.Message}", ex);
                 return (0, 0, false);
+            }
+        }
+
+        /// <summary>
+        /// Scans the Games music folder for orphaned directories (music for games no longer in the library)
+        /// and deletes them.
+        /// </summary>
+        /// <returns>Tuple of (deletedFolders, deletedFiles, success)</returns>
+        public (int deletedFolders, int deletedFiles, bool success) CleanupOrphanedMusic()
+        {
+            try
+            {
+                if (!Directory.Exists(_gamesPath))
+                {
+                    _fileLogger?.Info("CleanupOrphanedMusic: Games path does not exist, nothing to clean");
+                    return (0, 0, true);
+                }
+
+                var gameDirs = Directory.GetDirectories(_gamesPath);
+                int deletedFolders = 0;
+                int deletedFiles = 0;
+
+                foreach (var gameDir in gameDirs)
+                {
+                    try
+                    {
+                        var dirName = Path.GetFileName(gameDir);
+
+                        if (!Guid.TryParse(dirName, out var gameId))
+                        {
+                            _fileLogger?.Debug($"CleanupOrphanedMusic: Skipping non-GUID directory '{dirName}'");
+                            continue;
+                        }
+
+                        // Check if this game still exists in the database
+                        var game = _api.Database.Games[gameId];
+                        if (game != null)
+                        {
+                            continue;
+                        }
+
+                        // Game no longer exists — this is an orphaned music folder
+                        // Stop playback if this orphaned folder is somehow playing
+                        if (_playbackService?.CurrentGame?.Id == gameId)
+                        {
+                            _playbackService.Stop();
+                        }
+
+                        var fileCount = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories).Length;
+                        Directory.Delete(gameDir, true);
+                        deletedFiles += fileCount;
+                        deletedFolders++;
+                        _fileLogger?.Info($"CleanupOrphanedMusic: Deleted orphaned music directory '{dirName}' ({fileCount} files)");
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Warn($"CleanupOrphanedMusic: Failed to delete '{gameDir}' - {ex.Message}");
+                    }
+                }
+
+                _fileLogger?.Info($"CleanupOrphanedMusic: Completed - Deleted {deletedFolders} orphaned folders ({deletedFiles} files)");
+                return (deletedFolders, deletedFiles, true);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"CleanupOrphanedMusic: Error - {ex.Message}", ex);
+                return (0, 0, false);
+            }
+        }
+
+        /// <summary>
+        /// Counts orphaned music directories (music for games no longer in the library).
+        /// </summary>
+        /// <returns>Number of orphaned game music directories</returns>
+        public int CountOrphanedMusicFolders()
+        {
+            try
+            {
+                if (!Directory.Exists(_gamesPath))
+                {
+                    return 0;
+                }
+
+                int count = 0;
+                var gameDirs = Directory.GetDirectories(_gamesPath);
+
+                foreach (var gameDir in gameDirs)
+                {
+                    var dirName = Path.GetFileName(gameDir);
+                    if (!Guid.TryParse(dirName, out var gameId))
+                    {
+                        continue;
+                    }
+
+                    if (_api.Database.Games[gameId] == null)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"CountOrphanedMusicFolders: Error - {ex.Message}");
+                return 0;
             }
         }
 

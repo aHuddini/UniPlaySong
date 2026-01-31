@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,23 +20,24 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.3
+## What's New - v1.2.4
 
-### Bulk Delete Music
-- Delete music for multiple games at once with new "Delete Music (All)" context menu option
-- Select 2+ games, right-click, and clean up in one action
+### New Features
+- **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
+- **Clean Up Orphaned Music** - New cleanup tool: Manually remove music folders for games no longer in your library
 
-### Safer Restart Handling
-- Settings requiring restart now use Playnite's built-in mechanism
-- Safer, user-controlled restart prompting
+### Improvements
+- **Playnite SDK** updated to version 6.15.0
 
 ### Bug Fixes
-- Fixed window state pause settings not working at startup
-- Music no longer plays briefly when Playnite opens minimized or in system tray
-- Music now correctly auto-plays when window is restored
+- **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now properly controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+- **Now Playing GPU Usage** - Fixed top panel Now Playing animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
+- **Media Controls Work After Live Effects Toggle** - Fixed media control buttons and music becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
+- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback; song loads silently until play is pressed
 
 ### Previous Versions
-- **v1.2.2**: Download Manager with Review Mode, Auto-Add Songs, SoundCloud support
+- **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes
 ---
 
 ## 🎬 Demo

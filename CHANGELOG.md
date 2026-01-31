@@ -2,6 +2,22 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.4] - 2026-01-30
+
+### Added
+- **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
+- **Clean Up Orphaned Music** - New cleanup tool removes music folders for games no longer in your library
+
+### Changed
+- **Playnite SDK** updated to version 6.15.0
+
+### Fixed
+- **Fullscreen Background Music Volume** - Playnite's volume slider now controls UniPlaySong playback in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+- **Now Playing GPU Usage** - Fixed animation causing permanent GPU usage when app loses focus ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing during trailer/video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
+- **Media Controls After Live Effects Toggle** - Fixed play/pause and skip buttons becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
+- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games now properly stays paused
+
 ## [1.2.3] - 2026-01-18
 
 ### Added

@@ -11,6 +11,7 @@ namespace UniPlaySong.DeskMediaControl
     /// A custom panel that displays "Now Playing" song info with scrolling text
     /// and subtle fade edges for long text. Designed for the Desktop top panel bar.
     /// Uses CompositionTarget.Rendering for smooth, frame-based animation.
+    /// Only subscribes to the render loop when animation is active to avoid GPU waste.
     /// </summary>
     public class NowPlayingPanel : Grid
     {
@@ -45,6 +46,10 @@ namespace UniPlaySong.DeskMediaControl
         // Fade-in animation state
         private bool _isFadingIn = false;
         private DateTime _fadeStartTime;
+
+        // Render hook management — only subscribe when animating to avoid GPU waste
+        private bool _isRenderHooked = false;
+        private bool _isAppFocused = true;
 
         public NowPlayingPanel()
         {
@@ -88,13 +93,45 @@ namespace UniPlaySong.DeskMediaControl
 
             // Mouse events for pause on hover
             MouseEnter += (s, e) => _isScrollPaused = true;
-            MouseLeave += (s, e) => _isScrollPaused = false;
+            MouseLeave += (s, e) =>
+            {
+                _isScrollPaused = false;
+                // Re-hook if scrolling was active while paused
+                if (_isScrolling)
+                    EnsureRenderHooked();
+            };
+
+            // Suspend animation when app loses focus to save GPU
+            if (Application.Current != null)
+            {
+                Application.Current.Activated += OnAppActivated;
+                Application.Current.Deactivated += OnAppDeactivated;
+            }
 
             Visibility = Visibility.Collapsed;
             _scrollCanvas.Opacity = 0;
+        }
 
-            // Hook into WPF's render loop for smooth animation
-            CompositionTarget.Rendering += OnRenderFrame;
+        private void OnAppActivated(object sender, EventArgs e)
+        {
+            _isAppFocused = true;
+            // Resume animation if there's something to animate
+            if (_isScrolling || _isFadingIn)
+            {
+                _lastFrameTime = DateTime.UtcNow;
+                // Push pause start forward so we don't skip through the pause
+                if (_isPausedAtEnd)
+                    _pauseStartTime = DateTime.UtcNow;
+                if (_isFadingIn)
+                    _fadeStartTime = DateTime.UtcNow;
+                EnsureRenderHooked();
+            }
+        }
+
+        private void OnAppDeactivated(object sender, EventArgs e)
+        {
+            _isAppFocused = false;
+            UnhookRender();
         }
 
         private Rectangle CreateFadeRectangle()
@@ -116,6 +153,36 @@ namespace UniPlaySong.DeskMediaControl
 
             rect.Fill = gradient;
             return rect;
+        }
+
+        private void EnsureRenderHooked()
+        {
+            if (!_isRenderHooked && _isAppFocused)
+            {
+                _lastFrameTime = DateTime.UtcNow;
+                CompositionTarget.Rendering += OnRenderFrame;
+                _isRenderHooked = true;
+            }
+        }
+
+        private void UnhookRender()
+        {
+            if (_isRenderHooked)
+            {
+                CompositionTarget.Rendering -= OnRenderFrame;
+                _isRenderHooked = false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if anything needs the render loop running.
+        /// </summary>
+        private bool NeedsRendering()
+        {
+            if (!_isAppFocused) return false;
+            if (_isFadingIn) return true;
+            if (_isScrolling && !_isScrollPaused) return true;
+            return false;
         }
 
         private void OnRenderFrame(object sender, EventArgs e)
@@ -181,6 +248,10 @@ namespace UniPlaySong.DeskMediaControl
             }
 
             _lastFrameTime = now;
+
+            // Unhook when there's nothing left to animate
+            if (!NeedsRendering())
+                UnhookRender();
         }
 
         public void UpdateSongInfo(SongInfo songInfo)
@@ -270,6 +341,7 @@ namespace UniPlaySong.DeskMediaControl
             _fadeStartTime = DateTime.UtcNow;
             _scrollCanvas.Opacity = 0;
             _canvasTransform.X = SlideDistance;
+            EnsureRenderHooked();
         }
 
         private void StartScroll(double textWidth)
@@ -279,17 +351,20 @@ namespace UniPlaySong.DeskMediaControl
             _scrollDirection = -1; // Start by scrolling left
             _isPausedAtEnd = true; // Start with initial pause
             _pauseStartTime = DateTime.UtcNow;
-            _lastFrameTime = DateTime.UtcNow;
             _isScrolling = true;
             _textTransform.X = 0;
             _rightFade.Visibility = Visibility.Visible;
+            EnsureRenderHooked();
         }
 
         private void StopScroll()
         {
             _isScrolling = false;
+            _isPausedAtEnd = false;
             _scrollPosition = 0;
             _textTransform.X = 0;
+            if (!NeedsRendering())
+                UnhookRender();
         }
 
         public void Clear()
