@@ -2,6 +2,11 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.5] - Unreleased
+
+### Added
+- *(In progress)*
+
 ## [1.2.4] - 2026-01-30
 
 ### Added
