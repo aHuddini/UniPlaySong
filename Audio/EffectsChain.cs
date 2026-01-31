@@ -95,6 +95,10 @@ namespace UniPlaySong.Audio
         private OnePoleFilter _toneHpL, _toneHpR;
         private OnePoleFilter _toneLpL, _toneLpR;
 
+        // Slow effect (resampling) state
+        private float[] _resampleBuffer;
+        private double _resamplePosition;
+
         // Cache last settings to detect changes
         private int _lastHighPassCutoff;
         private int _lastLowPassCutoff;
@@ -144,6 +148,9 @@ namespace UniPlaySong.Audio
 
             // Reinitialize tone filters to clear state
             InitializeToneFilters(_sampleRate, 0, 100);
+
+            // Reset slow effect state
+            _resamplePosition = 0.0;
 
             // Reinitialize pre-reverb filters to clear state
             var settings = _settingsService.Current;
@@ -283,12 +290,66 @@ namespace UniPlaySong.Audio
 
         public int Read(float[] buffer, int offset, int count)
         {
-            int samplesRead = _source.Read(buffer, offset, count);
+            var settings = _settingsService.Current;
+            bool slowActive = settings.SlowEnabled && settings.SlowAmount > 0;
+
+            int samplesRead;
+
+            if (slowActive)
+            {
+                // Speed: SlowAmount 0-50 maps to 1.0x-0.5x
+                double speed = 1.0 - (settings.SlowAmount / 100.0);
+
+                // Calculate source samples needed (fewer than output) + margin for interpolation
+                int sourceSamplesNeeded = (int)(count * speed) + _channels + 2;
+
+                // Ensure resample buffer is large enough
+                if (_resampleBuffer == null || _resampleBuffer.Length < sourceSamplesNeeded)
+                    _resampleBuffer = new float[sourceSamplesNeeded + 64];
+
+                int sourceRead = _source.Read(_resampleBuffer, 0, sourceSamplesNeeded);
+                if (sourceRead == 0)
+                    return 0;
+
+                // Linear interpolation resampling (frame-based for stereo correctness)
+                int outputFrames = count / _channels;
+                int sourceFrames = sourceRead / _channels;
+                int outputSampleIndex = 0;
+
+                for (int frame = 0; frame < outputFrames; frame++)
+                {
+                    int srcFrame = (int)_resamplePosition;
+                    double frac = _resamplePosition - srcFrame;
+
+                    if (srcFrame + 1 >= sourceFrames)
+                        break;
+
+                    for (int ch = 0; ch < _channels; ch++)
+                    {
+                        float s0 = _resampleBuffer[srcFrame * _channels + ch];
+                        float s1 = _resampleBuffer[(srcFrame + 1) * _channels + ch];
+                        buffer[offset + outputSampleIndex] = (float)(s0 + (s1 - s0) * frac);
+                        outputSampleIndex++;
+                    }
+
+                    _resamplePosition += speed;
+                }
+
+                // Carry over fractional position for next call
+                int framesConsumed = (int)_resamplePosition;
+                _resamplePosition -= framesConsumed;
+
+                samplesRead = outputSampleIndex;
+            }
+            else
+            {
+                samplesRead = _source.Read(buffer, offset, count);
+                // Reset resample position when slow is disabled
+                _resamplePosition = 0.0;
+            }
 
             if (samplesRead == 0)
                 return 0;
-
-            var settings = _settingsService.Current;
 
             // Update filters if cutoff frequencies changed
             if (_lastHighPassCutoff != settings.HighPassCutoff ||
@@ -312,7 +373,8 @@ namespace UniPlaySong.Audio
             }
 
             // Check if any effects are enabled
-            bool anyEffectEnabled = settings.HighPassEnabled || settings.LowPassEnabled || settings.ReverbEnabled;
+            bool anyEffectEnabled = settings.HighPassEnabled || settings.LowPassEnabled
+                                    || settings.ReverbEnabled || slowActive;
             bool hasMakeupGain = settings.MakeupGainEnabled && settings.MakeupGain != 0;
 
             if (!anyEffectEnabled && !hasMakeupGain)

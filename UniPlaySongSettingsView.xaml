@@ -387,6 +387,41 @@
 
                     <Separator Margin="0,15"/>
 
+                    <!-- Slow Effect Section -->
+                    <TextBlock Text="Slow Effect" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Reduces playback speed with proportional pitch drop. Creates the classic 'slowed' aesthetic — like a vinyl record playing at a lower RPM."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Slow Effect"
+                              IsChecked="{Binding Settings.SlowEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Slow Amount: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.SlowAmount}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="50"
+                                Value="{Binding Settings.SlowAmount}"
+                                Width="180"
+                                SmallChange="1"
+                                LargeChange="5"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="0% = normal speed, 25% = 0.75x speed, 50% = half speed. Higher values = slower playback and lower pitch."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- Reverb Section -->
                     <TextBlock Text="Reverb" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="Adds spatial depth and ambience to the audio. Creates a sense of space or room. Based on libSoX/Audacity algorithm."

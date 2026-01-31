@@ -716,6 +716,8 @@ namespace UniPlaySong
         private int makeupGain = 0;       // dB (-6 to +12) - output gain after effects
         private ReverbPreset selectedReverbPreset = ReverbPreset.Custom;
         private EffectChainPreset effectChainPreset = EffectChainPreset.Standard;
+        private bool slowEnabled = false;
+        private int slowAmount = 0;           // 0-50 (maps to speed: 1.0x to 0.5x)
 
         // Advanced Reverb Tuning (expert mode)
         private bool advancedReverbTuningEnabled = false;
@@ -912,6 +914,28 @@ namespace UniPlaySong
         {
             get => makeupGain;
             set { makeupGain = Math.Max(-6, Math.Min(12, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Enable slow effect (reduces playback speed with proportional pitch drop).
+        /// Only works when LiveEffectsEnabled is true.
+        /// Creates a vinyl-slowdown aesthetic by resampling audio at a lower rate.
+        /// </summary>
+        public bool SlowEnabled
+        {
+            get => slowEnabled;
+            set { slowEnabled = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Slow effect amount as a percentage (0-50%).
+        /// Maps to speed multiplier: speed = 1.0 - (SlowAmount / 100.0)
+        /// 0% = normal speed (1.0x), 25% = 0.75x, 50% = 0.5x (half speed).
+        /// </summary>
+        public int SlowAmount
+        {
+            get => slowAmount;
+            set { slowAmount = Math.Max(0, Math.Min(50, value)); OnPropertyChanged(); }
         }
 
         /// <summary>
