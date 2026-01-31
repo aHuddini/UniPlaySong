@@ -113,6 +113,10 @@ namespace UniPlaySong
         private bool _isUsingLiveEffectsPlayer;
         private string _gamesPath;
 
+        // Fullscreen volume integration - respects Playnite's Background Music Volume slider
+        private double _playniteFullscreenVolume = 1.0;
+        private dynamic _fullscreenSettingsObj;
+
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
 
@@ -208,23 +212,17 @@ namespace UniPlaySong
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
             SubscribeToMainModel();
             
-            // Try early native music suppression in fullscreen mode
+            // Always suppress native music early in fullscreen mode to avoid SDL2_mixer volume conflicts
             // Catches native music that starts before OnApplicationStarted
             if (IsFullscreen)
             {
-                bool shouldSuppress = _settings?.SuppressPlayniteBackgroundMusic == true ||
-                                     (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
-                
-                if (shouldSuppress)
+                try
                 {
-                    try
-                    {
-                        SuppressNativeMusic();
-                    }
-                    catch
-                    {
-                        // Audio system may not be initialized yet - ignore
-                    }
+                    SuppressNativeMusic();
+                }
+                catch
+                {
+                    // Audio system may not be initialized yet - ignore
                 }
             }
 
@@ -271,17 +269,18 @@ namespace UniPlaySong
                 AttachLoginInputHandler();
             }
             
-            // Suppress native music if:
-            // 1. SuppressPlayniteBackgroundMusic is explicitly enabled, OR
-            // 2. UseNativeMusicAsDefault is enabled (we play the same file, suppress duplicate)
-            bool shouldSuppressOnStartup = _settings?.SuppressPlayniteBackgroundMusic == true ||
-                                          (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
-            
-            if (IsFullscreen && shouldSuppressOnStartup)
+            // In fullscreen mode: always suppress native music to avoid SDL2_mixer volume conflicts,
+            // and integrate with Playnite's BackgroundVolume slider
+            if (IsFullscreen)
             {
-                _fileLogger?.Info($"OnApplicationStarted: Starting native music suppression (SuppressPlayniteBackgroundMusic={_settings?.SuppressPlayniteBackgroundMusic}, UseNativeMusicAsDefault={_settings?.UseNativeMusicAsDefault})");
+                _fileLogger?.Info("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
                 SuppressNativeMusic();
                 StartNativeMusicSuppression();
+
+                // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
+                InitializeFullscreenSettingsRef();
+                SubscribeToFullscreenVolumeChanges();
+                _playbackService?.SetVolumeMultiplier(_playniteFullscreenVolume);
             }
 
             // Subscribe to game collection changes for auto-cleanup of music on game removal
@@ -665,6 +664,7 @@ namespace UniPlaySong
 
             StopControllerLoginMonitoring();
             StopNativeMusicSuppression();
+            UnsubscribeFromFullscreenVolumeChanges();
 
             _fileLogger?.Info("Application stopped");
         }
@@ -1049,19 +1049,13 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
-            // Suppress native music when our music starts (if suppression enabled or using native as default)
+            // Always suppress native music in fullscreen when our music starts (avoids SDL2_mixer volume conflicts)
             _playbackService.OnMusicStarted += (settings) =>
             {
                 if (!IsFullscreen)
                     return;
 
-                bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
-                                     (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
-
-                if (shouldSuppress)
-                {
-                    SuppressNativeMusic();
-                }
+                SuppressNativeMusic();
             };
 
             if (_settings != null)
@@ -1248,24 +1242,24 @@ namespace UniPlaySong
                 var oldService = _playbackService;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
 
-                // Re-attach event handlers
+                // Re-attach event handlers - always suppress native music in fullscreen
                 _playbackService.OnMusicStarted += (settings) =>
                 {
                     if (!IsFullscreen)
                         return;
 
-                    bool shouldSuppress = settings?.SuppressPlayniteBackgroundMusic == true ||
-                                         (settings?.EnableDefaultMusic == true && settings?.UseNativeMusicAsDefault == true);
-
-                    if (shouldSuppress)
-                    {
-                        SuppressNativeMusic();
-                    }
+                    SuppressNativeMusic();
                 };
 
                 if (_settings != null)
                 {
                     _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
+                }
+
+                // Reapply fullscreen volume multiplier to the new service
+                if (IsFullscreen)
+                {
+                    _playbackService.SetVolumeMultiplier(_playniteFullscreenVolume);
                 }
 
                 // Update coordinator with new playback service
@@ -1344,6 +1338,127 @@ namespace UniPlaySong
             catch
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference.
+        /// Returns 1.0 if not in fullscreen or reflection fails (graceful degradation).
+        /// </summary>
+        private double GetPlayniteFullscreenVolume()
+        {
+            try
+            {
+                if (_fullscreenSettingsObj == null)
+                {
+                    return 1.0;
+                }
+
+                float bgVolume = (float)(_fullscreenSettingsObj.BackgroundVolume);
+                return Math.Max(0.0, Math.Min(1.0, bgVolume));
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"GetPlayniteFullscreenVolume: Failed to read BackgroundVolume - {ex.Message}");
+                return 1.0;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the cached reference to Playnite's internal fullscreen settings object.
+        /// Uses the same reflection pattern proven by PlayniteSound.
+        /// </summary>
+        private void InitializeFullscreenSettingsRef()
+        {
+            try
+            {
+                _fullscreenSettingsObj = _api.ApplicationSettings.Fullscreen
+                    .GetType()
+                    .GetField("settings", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?.GetValue(_api.ApplicationSettings.Fullscreen);
+
+                if (_fullscreenSettingsObj != null)
+                {
+                    _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
+                    _fileLogger?.Info($"InitializeFullscreenSettingsRef: Got fullscreen settings, BackgroundVolume={_playniteFullscreenVolume:F2}");
+                }
+                else
+                {
+                    _fileLogger?.Warn("InitializeFullscreenSettingsRef: Could not get fullscreen settings object");
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"InitializeFullscreenSettingsRef: Failed - {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
+        /// Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as INotifyPropertyChanged).
+        /// </summary>
+        private void SubscribeToFullscreenVolumeChanges()
+        {
+            try
+            {
+                dynamic ctx = Application.Current.MainWindow?.DataContext;
+                if (ctx == null)
+                {
+                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: MainWindow.DataContext is null");
+                    return;
+                }
+
+                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
+                if (fullscreenSettings != null)
+                {
+                    fullscreenSettings.PropertyChanged += OnFullscreenSettingsChanged;
+                    _fileLogger?.Info("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
+                }
+                else
+                {
+                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: Could not cast fullscreen settings to INotifyPropertyChanged");
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"SubscribeToFullscreenVolumeChanges: Failed - {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribes from Playnite's fullscreen settings PropertyChanged.
+        /// </summary>
+        private void UnsubscribeFromFullscreenVolumeChanges()
+        {
+            try
+            {
+                dynamic ctx = Application.Current?.MainWindow?.DataContext;
+                if (ctx == null)
+                    return;
+
+                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
+                if (fullscreenSettings != null)
+                {
+                    fullscreenSettings.PropertyChanged -= OnFullscreenSettingsChanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"UnsubscribeFromFullscreenVolumeChanges: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles changes to Playnite's fullscreen settings.
+        /// When BackgroundVolume changes, updates the volume multiplier on the playback service.
+        /// </summary>
+        private void OnFullscreenSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "BackgroundVolume")
+            {
+                _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
+                _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
+                _playbackService?.SetVolumeMultiplier(IsFullscreen ? _playniteFullscreenVolume : 1.0);
             }
         }
 

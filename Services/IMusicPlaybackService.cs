@@ -24,6 +24,12 @@ namespace UniPlaySong.Services
         void SetVolume(double volume);
         double GetVolume();
 
+        /// <summary>
+        /// Sets a volume multiplier applied on top of the base volume.
+        /// Used to respect Playnite's fullscreen BackgroundVolume setting.
+        /// </summary>
+        void SetVolumeMultiplier(double multiplier);
+
         bool IsPlaying { get; }
         bool IsPaused { get; }
         bool IsLoaded { get; }
