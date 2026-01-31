@@ -1242,6 +1242,9 @@ namespace UniPlaySong
                 var oldService = _playbackService;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
 
+                // Mark initialization complete — app is already running, skip deferred-playback gate
+                _playbackService.MarkInitializationComplete();
+
                 // Re-attach event handlers - always suppress native music in fullscreen
                 _playbackService.OnMusicStarted += (settings) =>
                 {
