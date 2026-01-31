@@ -191,10 +191,21 @@ namespace UniPlaySong.Services
 
             if (wasPaused && !_isPaused)
             {
-                if (_musicPlayer?.IsLoaded == true)
+                if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
+                    // Player is loaded and actively playing (was paused mid-playback) — resume via fader
                     _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
                     _fader.Resume();
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_musicPlayer?.IsLoaded == true && !_musicPlayer.IsActive)
+                {
+                    // Player is loaded but not playing (was loaded during manual pause) — start playback
+                    _fileLogger?.Debug($"Resume: {source} removed, starting loaded song with fade-in");
+                    _musicPlayer.Volume = 0;
+                    _musicPlayer.Play();
+                    MarkSongStart();
+                    _fader.FadeIn();
                     OnPlaybackStateChanged?.Invoke();
                 }
                 else if (_deferredGame != null && _initializationComplete)
@@ -223,27 +234,29 @@ namespace UniPlaySong.Services
         {
             if (_activePauseSources.Count > 0)
             {
-                // Preserve window-state pause sources - they should only be cleared by window events
-                var windowStateSources = new HashSet<PauseSource>();
+                // Preserve window-state and manual pause sources - they should only be cleared by their own handlers
+                var preservedSources = new HashSet<PauseSource>();
                 if (_activePauseSources.Contains(PauseSource.FocusLoss))
-                    windowStateSources.Add(PauseSource.FocusLoss);
+                    preservedSources.Add(PauseSource.FocusLoss);
                 if (_activePauseSources.Contains(PauseSource.Minimized))
-                    windowStateSources.Add(PauseSource.Minimized);
+                    preservedSources.Add(PauseSource.Minimized);
                 if (_activePauseSources.Contains(PauseSource.SystemTray))
-                    windowStateSources.Add(PauseSource.SystemTray);
+                    preservedSources.Add(PauseSource.SystemTray);
+                if (_activePauseSources.Contains(PauseSource.Manual))
+                    preservedSources.Add(PauseSource.Manual);
 
-                var clearedCount = _activePauseSources.Count - windowStateSources.Count;
+                var clearedCount = _activePauseSources.Count - preservedSources.Count;
                 _activePauseSources.Clear();
 
-                // Re-add preserved window-state sources
-                foreach (var source in windowStateSources)
+                // Re-add preserved sources
+                foreach (var source in preservedSources)
                 {
                     _activePauseSources.Add(source);
                 }
 
                 if (clearedCount > 0)
                 {
-                    _fileLogger?.Info($"Cleared {clearedCount} pause sources (preserved {windowStateSources.Count} window-state sources: {string.Join(", ", windowStateSources)})");
+                    _fileLogger?.Info($"Cleared {clearedCount} pause sources (preserved {preservedSources.Count}: {string.Join(", ", preservedSources)})");
                 }
 
                 // Only resume if no pause sources remain (including preserved ones)
@@ -616,12 +629,20 @@ namespace UniPlaySong.Services
                                 {
                                     _musicPlayer.Load(songToPlay);
                                     _musicPlayer.Volume = 0;
-                                    _musicPlayer.Play(_defaultMusicPausedOnTime);
                                     _currentSongPath = songToPlay;
                                     ClearAllPauseSources();
                                     _isPlayingDefaultMusic = true;
                                     _lastDefaultMusicPath = songToPlay;
                                     _songStartTime = DateTime.MinValue;
+
+                                    if (_isPaused)
+                                    {
+                                        _fileLogger?.Info($"Loaded default music (manual pause active, not playing): {Path.GetFileName(songToPlay)}");
+                                        OnMusicStarted?.Invoke(settings);
+                                        return;
+                                    }
+
+                                    _musicPlayer.Play(_defaultMusicPausedOnTime);
                                     _fileLogger?.Info($"Playing default music (switched from game music) at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                                     OnMusicStarted?.Invoke(settings);
                                 }
@@ -687,9 +708,18 @@ namespace UniPlaySong.Services
                         {
                             // PNS pattern: Fader sets volume to 0 before calling this - don't set volume (fader controls it)
                             _musicPlayer.Load(newSongPath);
-                            _musicPlayer.Play();
                             _currentSongPath = newSongPath;
                             ClearAllPauseSources();
+
+                            if (_isPaused)
+                            {
+                                // Manual pause is active — load song for metadata/Now Playing but don't play
+                                _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                                OnMusicStarted?.Invoke(settings);
+                                return;
+                            }
+
+                            _musicPlayer.Play();
                             MarkSongStart();
                             _fileLogger?.Info($"Playing (switched): {Path.GetFileName(newSongPath)}");
                             OnMusicStarted?.Invoke(settings);
@@ -699,37 +729,53 @@ namespace UniPlaySong.Services
                 else if (_isPaused && wasDefaultMusic)
                 {
                     _fileLogger?.Info($"Switching from paused default music to game music: {Path.GetFileName(newSongPath)}");
-                    
+
                     _musicPlayer?.Close();
                     _currentSongPath = null;
                     ClearAllPauseSources();
-                    
+
                     _musicPlayer.Load(newSongPath);
                     _musicPlayer.Volume = 0;
-                    _musicPlayer.Play();
                     _currentSongPath = newSongPath;
-                    MarkSongStart();
-                    _fader.FadeIn();
-                    _fileLogger?.Info($"Playing game music (from paused default): {Path.GetFileName(newSongPath)}");
-                    OnMusicStarted?.Invoke(settings);
+
+                    if (_isPaused)
+                    {
+                        _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                        OnMusicStarted?.Invoke(settings);
+                    }
+                    else
+                    {
+                        _musicPlayer.Play();
+                        MarkSongStart();
+                        _fader.FadeIn();
+                        _fileLogger?.Info($"Playing game music (from paused default): {Path.GetFileName(newSongPath)}");
+                        OnMusicStarted?.Invoke(settings);
+                    }
                 }
                 else
                 {
                     _fileLogger?.Info($"Initial playback with fade-in: {Path.GetFileName(newSongPath)}");
-                    
+
                     _currentSongPath = null;
-                    
+
                     _musicPlayer.Load(newSongPath);
                     _musicPlayer.Volume = 0;
-                    _musicPlayer.Play();
                     _currentSongPath = newSongPath;
                     ClearAllPauseSources();
-                    MarkSongStart();
 
-                    _fader.FadeIn();
-
-                    _fileLogger?.Info($"Playing (initial with fade-in): {Path.GetFileName(newSongPath)}, starting at volume 0");
-                    OnMusicStarted?.Invoke(settings);
+                    if (_isPaused)
+                    {
+                        _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                        OnMusicStarted?.Invoke(settings);
+                    }
+                    else
+                    {
+                        _musicPlayer.Play();
+                        MarkSongStart();
+                        _fader.FadeIn();
+                        _fileLogger?.Info($"Playing (initial with fade-in): {Path.GetFileName(newSongPath)}, starting at volume 0");
+                        OnMusicStarted?.Invoke(settings);
+                    }
                 }
 
                 Logger.Info($"Playing music for '{game.Name}': {Path.GetFileName(songToPlay)}");
