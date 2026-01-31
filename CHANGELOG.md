@@ -17,6 +17,11 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Playnite SDK** updated to version 6.15.0
 
 ### Fixed
+- **Fullscreen Background Music Volume** - Playnite's fullscreen "Background Music Volume" slider now controls UniPlaySong's volume ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
+  - Effective volume = plugin volume × Playnite background volume, applied in real-time
+  - Setting Playnite's volume to 0 fully mutes music
+  - Native Playnite music is always suppressed in fullscreen to prevent SDL2_mixer conflicts
+  - Desktop mode is unaffected
 - **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing and resuming during trailer/ScreenshotVisualizer video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
   - Increased MediaElementsMonitor timer interval from 10ms to 100ms to prevent race conditions with video framerates
 
