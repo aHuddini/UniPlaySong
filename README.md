@@ -24,13 +24,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ### New Features
 - **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
-- **Clean Up Orphaned Music** - New cleanup tool in Settings → Cleanup to remove music folders for games no longer in your library
+- **Clean Up Orphaned Music** - New cleanup tool: Manually remove music folders for games no longer in your library
 
 ### Improvements
-- **Playnite SDK** updated to version 6.15.0.0
+- **Playnite SDK** updated to version 6.15.0
 
 ### Bug Fixes
-- **Audio Stuttering** - Fixed audio stuttering by increasing timer interval ([#60](https://github.com/aHuddini/UniPlaySong/issues/60)) - Credit: @rovri
+- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
 
 ### Previous Versions
 - **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes

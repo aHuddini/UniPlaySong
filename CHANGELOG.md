@@ -14,10 +14,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Useful for cleaning up music left behind from games removed before this feature existed
 
 ### Changed
-- **Playnite SDK** updated to version 6.15.0.0
+- **Playnite SDK** updated to version 6.15.0
 
 ### Fixed
-- **Audio Stuttering** - Fixed audio stuttering by increasing timer interval ([#60](https://github.com/aHuddini/UniPlaySong/issues/60)) - Credit: @rovri
+- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing and resuming during trailer/ScreenshotVisualizer video playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
+  - Increased MediaElementsMonitor timer interval from 10ms to 100ms to prevent race conditions with video framerates
 
 ## [1.2.3] - 2026-01-18
 
