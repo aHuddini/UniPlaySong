@@ -127,7 +127,7 @@
                     </TextBlock>
 
                     <Separator Margin="0,10"/>
-                    
+
                     <!-- Volume -->
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Music Volume: " VerticalAlignment="Center" Width="120"/>
@@ -315,8 +315,6 @@
                                FontWeight="SemiBold"
                                TextWrapping="Wrap"
                                Margin="20,0,0,20"/>
-
-                    <Separator Margin="0,10"/>
 
                     <!-- Style Preset Section -->
                     <TextBlock Text="Style Preset" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
@@ -983,6 +981,165 @@
                                 Margin="10,0,0,0"/>
                     </StackPanel>
                     <TextBlock Text="Maximum damping at 100% setting (0.30-0.70). Default: 0.50. Higher = darker reverb at max damping."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <!-- Spectrum Visualizer (Experimental) -->
+                    <TextBlock Text="Spectrum Visualizer (Experimental)" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Real-time 8-bar frequency spectrum visualizer for the Desktop top panel. Tune the animation behavior to your preference."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Show Spectrum Visualizer in Top Panel"
+                              IsChecked="{Binding Settings.ShowSpectrumVisualizer}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                              Margin="0,5"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                        <Run Foreground="Gray">Displays a real-time frequency spectrum visualizer in the Desktop top panel bar alongside media controls.</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
+
+                    <!-- Opacity Min -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Idle Opacity: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizOpacityMin}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.VizOpacityMin}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="20"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Bar opacity when idle. Lower = stronger glow/pulse effect. 100 = no opacity change. Default: 30%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Gain Boost -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Gain Boost: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizBarGainBoost}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="-50" Maximum="100"
+                                Value="{Binding Settings.VizBarGainBoost}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="25"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Global gain offset applied to all bars. Positive = taller peaks, negative = subtler. Default: 0%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Peak Hold -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Peak Hold: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizPeakHoldMs}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="ms" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="300"
+                                Value="{Binding Settings.VizPeakHoldMs}"
+                                Width="180"
+                                SmallChange="10"
+                                LargeChange="50"
+                                TickFrequency="50"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How long bars hold at peak before falling. 0 = instant drop, 300 = long freeze. Default: 80ms"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Gravity -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Gravity: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizGravity}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="10" Maximum="200"
+                                Value="{Binding Settings.VizGravity}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="30"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Base fall acceleration. Higher = bars drop faster after peaks. Lower = floaty trails. Default: 80"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Rolling Peak Decay -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Peak Adapt: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizRollingPeakDecay}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="10" Maximum="200"
+                                Value="{Binding Settings.VizRollingPeakDecay}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="30"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How fast the dynamic range adapts to volume changes. Higher = quicker adaptation, lower = more stable. Default: 50"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Bass/Treble Gravity Bias -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Bass Punch: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizBassGravityBias}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.VizBassGravityBias}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="20"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Bass/treble gravity contrast. 0 = all bars same speed. Higher = bass snappy + treble floaty. Default: 50%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <Separator Margin="0,5,0,10"/>
+
+                    <!-- Reset Visualizer Defaults button -->
+                    <Button Content="Reset Visualizer to Defaults"
+                            Click="ResetVisualizerDefaults_Click"
+                            HorizontalAlignment="Left"
+                            Padding="15,5"
+                            Margin="0,0,0,15"/>
+                    <TextBlock Text="Resets all visualizer tuning parameters above to their hardcoded defaults."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

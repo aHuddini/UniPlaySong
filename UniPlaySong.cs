@@ -182,13 +182,12 @@ namespace UniPlaySong
             InitializeServices();
             InitializeMenuHandlers();
 
-            // Register MusicControl for theme integration (UPS_MusicControl)
-            // Allows themes to pause/resume music via Tag property binding
-            // SourceName + "_" + ElementName = "UPS_MusicControl"
+            // Register custom elements for theme integration
+            // SourceName + "_" + ElementName = "UPS_MusicControl", "UPS_SpectrumVisualizer"
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer" }
             });
 
             // Initialize MusicControl static services
@@ -2079,9 +2078,8 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Returns the MusicControl for theme integration.
-        /// Called by Playnite when a theme uses UPS_MusicControl element.
-        /// args.Name will be "MusicControl" (SourceName "UPS" is handled separately)
+        /// Returns custom controls for theme integration.
+        /// Called by Playnite when a theme uses UPS_MusicControl or UPS_SpectrumVisualizer elements.
         /// </summary>
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
@@ -2089,6 +2087,11 @@ namespace UniPlaySong
             {
                 Logger.Info($"[GetGameViewControl] Creating MusicControl instance for theme");
                 return new Controls.MusicControl(_settings);
+            }
+            if (args.Name == "SpectrumVisualizer")
+            {
+                Logger.Info($"[GetGameViewControl] Creating SpectrumVisualizer instance for theme");
+                return new Controls.SpectrumVisualizerPluginControl(() => _settings);
             }
             return null;
         }

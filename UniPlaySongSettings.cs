@@ -123,6 +123,7 @@ namespace UniPlaySong
         private bool pauseWhenInSystemTray = true;
         private bool showNowPlayingInTopPanel = false;
         private bool showDesktopMediaControls = false;
+        private bool showSpectrumVisualizer = false;
         private bool autoDeleteMusicOnGameRemoval = true;
 
         public bool EnableMusic
@@ -353,6 +354,16 @@ namespace UniPlaySong
         {
             get => showDesktopMediaControls;
             set { showDesktopMediaControls = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Show a spectrum visualizer in the Desktop top panel bar.
+        /// Displays real-time frequency bars next to the media controls (requires Live Effects enabled).
+        /// </summary>
+        public bool ShowSpectrumVisualizer
+        {
+            get => showSpectrumVisualizer;
+            set { showSpectrumVisualizer = value; OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -1263,6 +1274,82 @@ namespace UniPlaySong
             get => reverbHfDampingMax;
             set { reverbHfDampingMax = Math.Max(30, Math.Min(70, value)); OnPropertyChanged(); }
         }
+
+        // ===== Spectrum Visualizer Tuning (Experimental) =====
+
+        /// <summary>
+        /// Linear fall rate for bar decay (1-30). Higher = faster drop after peaks. Default: 15
+        /// </summary>
+        public int VizFallSpeed
+        {
+            get => vizFallSpeed;
+            set { vizFallSpeed = Math.Max(1, Math.Min(30, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Minimum bar opacity percentage at idle (0-100). Controls brightness modulation range.
+        /// 0 = bars fade to invisible, 100 = no opacity change.
+        /// </summary>
+        public int VizOpacityMin
+        {
+            get => vizOpacityMin;
+            set { vizOpacityMin = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Global gain boost/cut in percent (-50 to +100). Applied on top of per-bar A-weighting.
+        /// Positive = bars jump higher, negative = more subtle.
+        /// </summary>
+        public int VizBarGainBoost
+        {
+            get => vizBarGainBoost;
+            set { vizBarGainBoost = Math.Max(-50, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Peak hold duration in milliseconds (0-300). Bars hold at peak this long before falling. Default: 80
+        /// </summary>
+        public int VizPeakHoldMs
+        {
+            get => vizPeakHoldMs;
+            set { vizPeakHoldMs = Math.Max(0, Math.Min(300, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Base gravity in tenths (10-200). Controls how fast bars fall after peak hold. 80 = 8.0. Default: 80
+        /// </summary>
+        public int VizGravity
+        {
+            get => vizGravity;
+            set { vizGravity = Math.Max(10, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Rolling peak decay rate in hundredths per second (10-200). Higher = faster adaptation to volume changes. Default: 50
+        /// </summary>
+        public int VizRollingPeakDecay
+        {
+            get => vizRollingPeakDecay;
+            set { vizRollingPeakDecay = Math.Max(10, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Bass/Treble gravity contrast (0-100). 0 = all bars fall same speed. 100 = bass snappy, treble floaty. Default: 50
+        /// </summary>
+        public int VizBassGravityBias
+        {
+            get => vizBassGravityBias;
+            set { vizBassGravityBias = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        // Spectrum Visualizer Tuning
+        private int vizFallSpeed = 15;           // 1-30 — gravity multiplier
+        private int vizOpacityMin = 30;          // 0-100 (%) — idle bar opacity
+        private int vizBarGainBoost = 0;         // -50 to +100 (%) — global gain offset
+        private int vizPeakHoldMs = 80;          // 0-300 ms — how long bars hold at peak
+        private int vizGravity = 80;             // 10-200 — base gravity (tenths, 80 = 8.0)
+        private int vizRollingPeakDecay = 50;    // 10-200 — rolling peak decay rate (hundredths/sec)
+        private int vizBassGravityBias = 50;     // 0-100 — bass/treble gravity spread (0=uniform, 100=max contrast)
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;

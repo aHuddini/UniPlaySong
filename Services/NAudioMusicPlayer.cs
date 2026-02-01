@@ -20,6 +20,7 @@ namespace UniPlaySong.Services
         private AudioFileReader _audioFile;
         private WaveOutEvent _outputDevice;
         private EffectsChain _effectsChain;
+        private VisualizationDataProvider _visualizationProvider;
         private VolumeSampleProvider _volumeProvider;
         private readonly SettingsService _settingsService;
         private bool _isDisposed;
@@ -72,7 +73,9 @@ namespace UniPlaySong.Services
 
                 _audioFile = new AudioFileReader(filePath);
                 _effectsChain = new EffectsChain(_audioFile, _settingsService);
-                _volumeProvider = new VolumeSampleProvider(_effectsChain);
+                _visualizationProvider = new VisualizationDataProvider(_effectsChain);
+                VisualizationDataProvider.Current = _visualizationProvider;
+                _volumeProvider = new VolumeSampleProvider(_visualizationProvider);
 
                 _outputDevice = new WaveOutEvent();
                 _outputDevice.PlaybackStopped += OnPlaybackStopped;
@@ -185,6 +188,10 @@ namespace UniPlaySong.Services
                 }
 
                 _effectsChain = null;
+                if (VisualizationDataProvider.Current == _visualizationProvider)
+                    VisualizationDataProvider.Current = null;
+                _visualizationProvider?.Dispose();
+                _visualizationProvider = null;
                 _volumeProvider = null;
 
                 if (_audioFile != null)

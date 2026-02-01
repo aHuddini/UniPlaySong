@@ -119,6 +119,23 @@ namespace UniPlaySong
             ShowButtonFeedback(sender, "Reset!");
         }
 
+        private void ResetVisualizerDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as UniPlaySongSettingsViewModel;
+            if (vm == null) return;
+            var s = vm.Settings;
+
+            s.VizFallSpeed = 15;
+            s.VizOpacityMin = 30;
+            s.VizBarGainBoost = 0;
+            s.VizPeakHoldMs = 80;
+            s.VizGravity = 80;
+            s.VizRollingPeakDecay = 50;
+            s.VizBassGravityBias = 50;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
         private void ShowButtonFeedback(object sender, string message)
         {
             if (sender is Button btn)

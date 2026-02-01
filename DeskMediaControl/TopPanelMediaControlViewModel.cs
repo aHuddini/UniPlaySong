@@ -26,9 +26,11 @@ namespace UniPlaySong.DeskMediaControl
         private TopPanelItem _playPauseItem;
         private TopPanelItem _skipItem;
         private TopPanelItem _nowPlayingItem;
+        private TopPanelItem _spectrumItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
         private NowPlayingPanel _nowPlayingPanel;
+        private SpectrumVisualizerControl _spectrumVisualizer;
         private SongMetadataService _metadataService;
 
         public TopPanelItem PlayPauseItem => _playPauseItem;
@@ -44,6 +46,12 @@ namespace UniPlaySong.DeskMediaControl
             {
                 yield return _playPauseItem;
                 yield return _skipItem;
+            }
+
+            // Spectrum visualizer (between controls and now playing)
+            if (settings?.ShowSpectrumVisualizer == true && _spectrumItem != null)
+            {
+                yield return _spectrumItem;
             }
 
             // Only include Now Playing panel if setting is enabled
@@ -67,6 +75,7 @@ namespace UniPlaySong.DeskMediaControl
             _handleError = handleError;
 
             InitializeTopPanelItems();
+            InitializeSpectrumVisualizer();
             InitializeNowPlayingPanel();
             SubscribeToEvents(_getPlaybackService());
         }
@@ -109,6 +118,26 @@ namespace UniPlaySong.DeskMediaControl
                 Visible = true, // Always visible, but greyed out when disabled
                 Activated = OnSkipActivated
             };
+        }
+
+        private void InitializeSpectrumVisualizer()
+        {
+            try
+            {
+                _spectrumVisualizer = new SpectrumVisualizerControl();
+                _spectrumVisualizer.SetSettingsProvider(_getSettings);
+                _spectrumItem = new TopPanelItem
+                {
+                    Icon = _spectrumVisualizer,
+                    Title = "UniPlaySong: Spectrum Visualizer",
+                    Visible = true
+                };
+                _log?.Invoke("TopPanel: Spectrum visualizer initialized");
+            }
+            catch (System.Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error initializing spectrum visualizer: {ex.Message}");
+            }
         }
 
         private void InitializeNowPlayingPanel()
@@ -305,6 +334,7 @@ namespace UniPlaySong.DeskMediaControl
                     _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
 
                     UpdateSkipState(playbackService);
+                    _spectrumVisualizer?.SetActive(isPlaying);
                 }
                 catch (Exception ex)
                 {
