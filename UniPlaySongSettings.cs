@@ -41,7 +41,44 @@ namespace UniPlaySong
         LoungeCafe,         // Relaxed cafe/lounge atmosphere
         JazzClub,           // Intimate jazz club
         NightClub,          // Club/dance floor energy
-        ConcertHall         // Live concert experience
+        ConcertHall,        // Live concert experience
+        // UniPlaySong custom presets - Creative/Stylistic
+        Dreamy,             // Ethereal, lush wash — pairs well with slow effect
+        LoFi,               // Muffled, tape-like warmth — lo-fi hip hop aesthetic
+        Underwater,         // Deep, submerged, surreal atmosphere
+        SciFiCorridor,      // Metallic, spacious, futuristic echo
+        VinylWarmth,        // Subtle warm coloring — pairs with slow for full vinyl feel
+        Vaporwave           // The classic slowed+reverb aesthetic — huge, wet, dreamy
+    }
+
+    /// <summary>
+    /// High-level style presets that configure all live effects at once.
+    /// Each style creatively combines HP, LP, reverb, slow, and gain settings.
+    /// </summary>
+    public enum StylePreset
+    {
+        None = 0,
+        // --- Huddini Styles ---
+        HuddiniRehearsal,   // Wide stereo, rich reverb, live rehearsal room feel
+        HuddiniBrightRoom,  // Open, spacious large room with wide stereo and bright tone
+        HuddiniRetroRadio,  // Narrow bandpass, bathroom reverb, bitcrushed — old AM radio
+        HuddiniLoBit,       // Dark lo-fi bandpass, heavy bitcrusher, LoFi reverb
+        HuddiniSlowedDream, // Deep slow + vaporwave reverb, wide stereo, dreamy
+        HuddiniCaveLake,    // Submerged cave — heavy slow, underwater reverb, chorus drift
+        HuddiniHoneyRoom,   // Bright sci-fi reverb, subtle bitcrush, wide stereo, slight slow
+        // --- No slow effect ---
+        CleanBoost,         // Pure volume boost, no effects
+        WarmFMRadio,        // Gentle low-pass + subtle reverb, FM station feel
+        BrightAiry,         // High-pass cleanup + bright spacious reverb, light & open
+        Telephone,          // Aggressive bandpass (HP + LP), tinny phone-call effect
+        ConcertLive,        // Concert reverb + slight HP cleanup, live show feel
+        MuffledNextRoom,    // Heavy low-pass + small room reverb, music from another room
+        // --- With slow effect ---
+        LoFiChill,          // Dark low-pass + slow + lo-fi reverb, study beats vibe
+        SlowedReverb,       // The classic: slow + big wet reverb
+        VinylNight,         // Gentle slow + warm reverb + soft low-pass, old record player
+        UnderwaterDream,    // Heavy low-pass + slow + deep submerged reverb
+        Cyberpunk           // Sci-fi reverb + HP + slight slow, dark futuristic city
     }
 
     /// <summary>
@@ -712,12 +749,35 @@ namespace UniPlaySong
         private int reverbToneHigh = 100; // % (0-100) - treble content of reverb (Audacity parameter)
         private int reverbPreDelay = 10;  // ms (0-200) - delay before reverb starts
         private int reverbStereoWidth = 100; // % (0-100) - stereo spread
+        private int reverbMix = 50;          // % (0-100) - wet/dry crossfade (0=fully dry, 100=fully wet)
         private bool makeupGainEnabled = false;
         private int makeupGain = 0;       // dB (-6 to +12) - output gain after effects
         private ReverbPreset selectedReverbPreset = ReverbPreset.Custom;
         private EffectChainPreset effectChainPreset = EffectChainPreset.Standard;
         private bool slowEnabled = false;
         private int slowAmount = 0;           // 0-50 (maps to speed: 1.0x to 0.5x)
+        private StylePreset selectedStylePreset = StylePreset.None;
+        private bool _applyingStylePreset = false;
+
+        // Stereo Widener
+        private bool stereoWidenerEnabled = false;
+        private int stereoWidenerWidth = 50;      // 0-100 (0=mono, 50=normal, 100=max wide)
+
+        // Chorus
+        private bool chorusEnabled = false;
+        private int chorusRate = 30;              // tenths of Hz (1-50 → 0.1-5.0 Hz)
+        private int chorusDepth = 50;             // % (0-100) - modulation depth
+        private int chorusMix = 40;               // % (0-100) - wet/dry
+
+        // Bitcrusher
+        private bool bitcrusherEnabled = false;
+        private int bitcrusherBitDepth = 8;       // bits (2-16)
+        private int bitcrusherDownsample = 1;     // rate divisor (1-32, 1=off)
+
+        // Tremolo
+        private bool tremoloEnabled = false;
+        private int tremoloRate = 40;             // tenths of Hz (1-100 → 0.1-10.0 Hz)
+        private int tremoloDepth = 50;            // % (0-100)
 
         // Advanced Reverb Tuning (expert mode)
         private bool advancedReverbTuningEnabled = false;
@@ -746,7 +806,7 @@ namespace UniPlaySong
         public bool LowPassEnabled
         {
             get => lowPassEnabled;
-            set { lowPassEnabled = value; OnPropertyChanged(); }
+            set { lowPassEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -757,7 +817,7 @@ namespace UniPlaySong
         public bool HighPassEnabled
         {
             get => highPassEnabled;
-            set { highPassEnabled = value; OnPropertyChanged(); }
+            set { highPassEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -768,7 +828,7 @@ namespace UniPlaySong
         public bool ReverbEnabled
         {
             get => reverbEnabled;
-            set { reverbEnabled = value; OnPropertyChanged(); }
+            set { reverbEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -779,7 +839,7 @@ namespace UniPlaySong
         public int LowPassCutoff
         {
             get => lowPassCutoff;
-            set { lowPassCutoff = Math.Max(200, Math.Min(20000, value)); OnPropertyChanged(); }
+            set { lowPassCutoff = Math.Max(200, Math.Min(20000, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -790,7 +850,7 @@ namespace UniPlaySong
         public int HighPassCutoff
         {
             get => highPassCutoff;
-            set { highPassCutoff = Math.Max(20, Math.Min(2000, value)); OnPropertyChanged(); }
+            set { highPassCutoff = Math.Max(20, Math.Min(2000, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -802,7 +862,7 @@ namespace UniPlaySong
         public int ReverbWetGain
         {
             get => reverbWetGain;
-            set { reverbWetGain = Math.Max(-20, Math.Min(10, value)); OnPropertyChanged(); }
+            set { reverbWetGain = Math.Max(-20, Math.Min(10, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -813,7 +873,7 @@ namespace UniPlaySong
         public int ReverbDryGain
         {
             get => reverbDryGain;
-            set { reverbDryGain = Math.Max(-20, Math.Min(0, value)); OnPropertyChanged(); }
+            set { reverbDryGain = Math.Max(-20, Math.Min(0, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -824,7 +884,7 @@ namespace UniPlaySong
         public int ReverbRoomSize
         {
             get => reverbRoomSize;
-            set { reverbRoomSize = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbRoomSize = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -836,7 +896,7 @@ namespace UniPlaySong
         public int ReverbReverberance
         {
             get => reverbReverberance;
-            set { reverbReverberance = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbReverberance = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -847,7 +907,7 @@ namespace UniPlaySong
         public int ReverbDamping
         {
             get => reverbDamping;
-            set { reverbDamping = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbDamping = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -858,7 +918,7 @@ namespace UniPlaySong
         public int ReverbToneLow
         {
             get => reverbToneLow;
-            set { reverbToneLow = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbToneLow = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -869,7 +929,7 @@ namespace UniPlaySong
         public int ReverbToneHigh
         {
             get => reverbToneHigh;
-            set { reverbToneHigh = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbToneHigh = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -880,7 +940,7 @@ namespace UniPlaySong
         public int ReverbPreDelay
         {
             get => reverbPreDelay;
-            set { reverbPreDelay = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
+            set { reverbPreDelay = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -891,7 +951,20 @@ namespace UniPlaySong
         public int ReverbStereoWidth
         {
             get => reverbStereoWidth;
-            set { reverbStereoWidth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+            set { reverbStereoWidth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Reverb wet/dry mix percentage.
+        /// Range: 0 - 100%. Default: 50%.
+        /// Controls the balance between dry (original) and wet (reverb) signal.
+        /// 0% = fully dry (no reverb audible), 50% = equal blend, 100% = fully wet.
+        /// Applied as a crossfade on top of WetGain/DryGain dB controls.
+        /// </summary>
+        public int ReverbMix
+        {
+            get => reverbMix;
+            set { reverbMix = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -901,7 +974,7 @@ namespace UniPlaySong
         public bool MakeupGainEnabled
         {
             get => makeupGainEnabled;
-            set { makeupGainEnabled = value; OnPropertyChanged(); }
+            set { makeupGainEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -913,7 +986,7 @@ namespace UniPlaySong
         public int MakeupGain
         {
             get => makeupGain;
-            set { makeupGain = Math.Max(-6, Math.Min(12, value)); OnPropertyChanged(); }
+            set { makeupGain = Math.Max(-6, Math.Min(12, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -924,7 +997,7 @@ namespace UniPlaySong
         public bool SlowEnabled
         {
             get => slowEnabled;
-            set { slowEnabled = value; OnPropertyChanged(); }
+            set { slowEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
         /// <summary>
@@ -935,7 +1008,133 @@ namespace UniPlaySong
         public int SlowAmount
         {
             get => slowAmount;
-            set { slowAmount = Math.Max(0, Math.Min(50, value)); OnPropertyChanged(); }
+            set { slowAmount = Math.Max(0, Math.Min(50, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        // ===== Stereo Widener =====
+
+        public bool StereoWidenerEnabled
+        {
+            get => stereoWidenerEnabled;
+            set { stereoWidenerEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Stereo width. 0 = mono, 50 = normal (unchanged), 100 = maximum widening.
+        /// </summary>
+        public int StereoWidenerWidth
+        {
+            get => stereoWidenerWidth;
+            set { stereoWidenerWidth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        // ===== Chorus =====
+
+        public bool ChorusEnabled
+        {
+            get => chorusEnabled;
+            set { chorusEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Chorus LFO rate in tenths of Hz (1-50 → 0.1-5.0 Hz).
+        /// </summary>
+        public int ChorusRate
+        {
+            get => chorusRate;
+            set { chorusRate = Math.Max(1, Math.Min(50, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Chorus modulation depth percentage. Higher = more pitch wobble.
+        /// </summary>
+        public int ChorusDepth
+        {
+            get => chorusDepth;
+            set { chorusDepth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Chorus wet/dry mix. 0% = dry only, 100% = wet only.
+        /// </summary>
+        public int ChorusMix
+        {
+            get => chorusMix;
+            set { chorusMix = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        // ===== Bitcrusher =====
+
+        public bool BitcrusherEnabled
+        {
+            get => bitcrusherEnabled;
+            set { bitcrusherEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Bit depth for quantization (2-16). Lower = more distortion.
+        /// </summary>
+        public int BitcrusherBitDepth
+        {
+            get => bitcrusherBitDepth;
+            set { bitcrusherBitDepth = Math.Max(2, Math.Min(16, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Sample rate reduction factor (1-32). 1 = no reduction. Higher = grittier.
+        /// </summary>
+        public int BitcrusherDownsample
+        {
+            get => bitcrusherDownsample;
+            set { bitcrusherDownsample = Math.Max(1, Math.Min(32, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        // ===== Tremolo =====
+
+        public bool TremoloEnabled
+        {
+            get => tremoloEnabled;
+            set { tremoloEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Tremolo LFO rate in tenths of Hz (1-100 → 0.1-10.0 Hz).
+        /// </summary>
+        public int TremoloRate
+        {
+            get => tremoloRate;
+            set { tremoloRate = Math.Max(1, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Tremolo modulation depth. 0% = no effect, 100% = full volume swing.
+        /// </summary>
+        public int TremoloDepth
+        {
+            get => tremoloDepth;
+            set { tremoloDepth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
+        }
+
+        /// <summary>
+        /// Currently selected style preset.
+        /// Applies a complete configuration of all live effects (HP, LP, reverb, slow, gain).
+        /// Selecting a style overrides all individual effect settings.
+        /// </summary>
+        public StylePreset SelectedStylePreset
+        {
+            get => selectedStylePreset;
+            set
+            {
+                if (selectedStylePreset != value)
+                {
+                    selectedStylePreset = value;
+                    OnPropertyChanged();
+                    if (value != StylePreset.None)
+                    {
+                        ApplyStylePreset(value);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -975,6 +1174,7 @@ namespace UniPlaySong
                     effectChainPreset = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(EffectChainOrderDisplay));
+                    ClearStylePresetIfActive();
                 }
             }
         }
@@ -1546,10 +1746,562 @@ namespace UniPlaySong
                     ReverbStereoWidth = 100;
                     break;
 
+                // ===== UniPlaySong Custom Presets - Creative/Stylistic =====
+
+                case ReverbPreset.Dreamy:
+                    // Dreamy - ethereal, lush wash for ambient/chill vibes
+                    // Rich reverb engine, mix controls how much washes over the dry signal
+                    ReverbRoomSize = 85;
+                    ReverbPreDelay = 30;
+                    ReverbReverberance = 75;
+                    ReverbDamping = 60;
+                    ReverbToneLow = 85;
+                    ReverbToneHigh = 35;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    ReverbMix = 30;
+                    break;
+
+                case ReverbPreset.LoFi:
+                    // Lo-Fi - muffled, tape-like warmth
+                    // Dark, damped reverb blended in subtly for texture
+                    ReverbRoomSize = 45;
+                    ReverbPreDelay = 8;
+                    ReverbReverberance = 40;
+                    ReverbDamping = 85;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 10;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 45;
+                    ReverbMix = 25;
+                    break;
+
+                case ReverbPreset.Underwater:
+                    // Underwater - deep, submerged, surreal atmosphere
+                    // Full reverb character with heavy damping, mix pushes you under
+                    ReverbRoomSize = 90;
+                    ReverbPreDelay = 40;
+                    ReverbReverberance = 75;
+                    ReverbDamping = 95;
+                    ReverbToneLow = 100;
+                    ReverbToneHigh = 5;
+                    ReverbWetGain = 2;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 80;
+                    ReverbMix = 45;
+                    break;
+
+                case ReverbPreset.SciFiCorridor:
+                    // Sci-Fi Corridor - metallic, spacious, futuristic echo
+                    // Bright, undamped reflections with long pre-delay for distinct echoes
+                    ReverbRoomSize = 70;
+                    ReverbPreDelay = 80;
+                    ReverbReverberance = 50;
+                    ReverbDamping = 10;
+                    ReverbToneLow = 25;
+                    ReverbToneHigh = 95;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 95;
+                    ReverbMix = 30;
+                    break;
+
+                case ReverbPreset.VinylWarmth:
+                    // Vinyl Warmth - subtle warm coloring, like vinyl playback
+                    // Small, dark room character, low mix for gentle texture
+                    ReverbRoomSize = 30;
+                    ReverbPreDelay = 5;
+                    ReverbReverberance = 30;
+                    ReverbDamping = 75;
+                    ReverbToneLow = 95;
+                    ReverbToneHigh = 20;
+                    ReverbWetGain = 0;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 40;
+                    ReverbMix = 20;
+                    break;
+
+                case ReverbPreset.Vaporwave:
+                    // Vaporwave - the classic slowed+reverb aesthetic
+                    // Big lush room cranked up, mix brings it to a dreamy blend
+                    ReverbRoomSize = 90;
+                    ReverbPreDelay = 25;
+                    ReverbReverberance = 60;
+                    ReverbDamping = 45;
+                    ReverbToneLow = 80;
+                    ReverbToneHigh = 40;
+                    ReverbWetGain = 2;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    ReverbMix = 35;
+                    break;
+
                 case ReverbPreset.Custom:
                 default:
                     // Custom - don't change anything
                     break;
+            }
+        }
+
+        /// <summary>
+        /// When the user manually changes any individual effect parameter,
+        /// clear the style preset back to None so it doesn't re-apply on settings reload.
+        /// Suppressed during ApplyStylePreset so the preset's own property changes don't trigger clearing.
+        /// </summary>
+        private void ClearStylePresetIfActive()
+        {
+            if (!_applyingStylePreset && selectedStylePreset != StylePreset.None)
+            {
+                selectedStylePreset = StylePreset.None;
+                OnPropertyChanged(nameof(SelectedStylePreset));
+            }
+        }
+
+        public void ApplyStylePreset(StylePreset style)
+        {
+            _applyingStylePreset = true;
+            try
+            {
+            switch (style)
+            {
+                case StylePreset.HuddiniRehearsal:
+                    // Huddini Style — wide stereo, rich reverb, live rehearsal room
+                    // Full-range with gentle filtering, high reverb mix for immersion
+                    HighPassEnabled = true;
+                    HighPassCutoff = 145;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 7870;
+                    ReverbEnabled = true;
+                    ReverbRoomSize = 80;
+                    ReverbReverberance = 65;
+                    ReverbDamping = 35;
+                    ReverbPreDelay = 22;
+                    ReverbToneLow = 95;
+                    ReverbToneHigh = 75;
+                    ReverbWetGain = -1;
+                    ReverbDryGain = -3;
+                    ReverbStereoWidth = 96;
+                    ReverbMix = 50;
+                    selectedReverbPreset = ReverbPreset.Custom;
+                    OnPropertyChanged(nameof(SelectedReverbPreset));
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 58;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 0;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.HuddiniBrightRoom:
+                    // Huddini Style — open, spacious large room with bright tone
+                    // Wide stereo, LargeRoom reverb at moderate mix
+                    HighPassEnabled = true;
+                    HighPassCutoff = 180;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.LargeRoom;
+                    ReverbToneHigh = 49;
+                    ReverbMix = 40;
+                    selectedReverbPreset = ReverbPreset.Custom;
+                    OnPropertyChanged(nameof(SelectedReverbPreset));
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 72;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 0;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.HuddiniRetroRadio:
+                    // Huddini Style — narrow bandpass, bathroom reverb, bitcrushed
+                    // Old AM radio — tight band, collapsed stereo, gritty digital
+                    HighPassEnabled = true;
+                    HighPassCutoff = 636;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 3530;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Bathroom;
+                    ReverbWetGain = -3;
+                    ReverbMix = 26;
+                    selectedReverbPreset = ReverbPreset.Custom;
+                    OnPropertyChanged(nameof(SelectedReverbPreset));
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 24;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 9;
+                    BitcrusherDownsample = 2;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.HuddiniLoBit:
+                    // Huddini Style — dark lo-fi, heavy bitcrusher, narrow and gritty
+                    // LoFi reverb for warmth, aggressive downsample for crunch
+                    HighPassEnabled = true;
+                    HighPassCutoff = 509;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 5445;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.LoFi;
+                    ReverbMix = 35;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 12;
+                    BitcrusherDownsample = 3;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.HuddiniSlowedDream:
+                    // Huddini Style — deep slow with vaporwave reverb, wide and dreamy
+                    // Gentle slowdown with lush reverb and wide stereo, subdued gain
+                    HighPassEnabled = false;
+                    HighPassCutoff = 200;
+                    LowPassEnabled = false;
+                    LowPassCutoff = 1270;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Vaporwave;
+                    // Override reverb params from Vaporwave preset
+                    ReverbRoomSize = 90;
+                    ReverbReverberance = 60;
+                    ReverbDamping = 45;
+                    ReverbPreDelay = 25;
+                    ReverbToneLow = 80;
+                    ReverbToneHigh = 40;
+                    ReverbWetGain = 2;
+                    ReverbDryGain = 0;
+                    ReverbStereoWidth = 100;
+                    ReverbMix = 35;
+                    selectedReverbPreset = ReverbPreset.Custom;
+                    OnPropertyChanged(nameof(SelectedReverbPreset));
+                    SlowEnabled = true;
+                    SlowAmount = 25;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 65;
+                    ChorusEnabled = false;
+                    ChorusRate = 2;
+                    ChorusDepth = 30;
+                    ChorusMix = 20;
+                    BitcrusherEnabled = false;
+                    BitcrusherBitDepth = 14;
+                    BitcrusherDownsample = 1;
+                    TremoloEnabled = false;
+                    TremoloRate = 10;
+                    TremoloDepth = 25;
+                    MakeupGainEnabled = true;
+                    MakeupGain = -2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.HuddiniCaveLake:
+                    // Huddini Style — submerged cave, heavy slow, underwater reverb
+                    // Chorus adds murky pitch drift, LP-first chain for deep filtering
+                    HighPassEnabled = true;
+                    HighPassCutoff = 191;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 1270;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Underwater;
+                    ReverbMix = 60;
+                    SlowEnabled = true;
+                    SlowAmount = 40;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = true;
+                    ChorusRate = 2;
+                    ChorusDepth = 30;
+                    ChorusMix = 20;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = -1;
+                    EffectChainPreset = EffectChainPreset.LowPassFirst;
+                    break;
+
+                case StylePreset.HuddiniHoneyRoom:
+                    // Huddini Style — bright metallic reverb, subtle bitcrush, wide
+                    // Sci-fi corridor with boosted wet, reverb-first chain for shimmer
+                    HighPassEnabled = true;
+                    HighPassCutoff = 200;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.SciFiCorridor;
+                    ReverbDamping = 24;
+                    ReverbWetGain = 1;
+                    ReverbMix = 40;
+                    selectedReverbPreset = ReverbPreset.Custom;
+                    OnPropertyChanged(nameof(SelectedReverbPreset));
+                    SlowEnabled = true;
+                    SlowAmount = 4;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 65;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 14;
+                    BitcrusherDownsample = 1;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.ReverbFirst;
+                    break;
+
+                case StylePreset.CleanBoost:
+                    // Volume boost + stereo widening — makes everything bigger
+                    HighPassEnabled = false;
+                    LowPassEnabled = false;
+                    ReverbEnabled = false;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 62;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 6;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.WarmFMRadio:
+                    // Cozy radio broadcast — soft top end, lounge cafe warmth
+                    // Chorus for analog broadcast texture, makeup gain for presence
+                    HighPassEnabled = false;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 5500;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.LoungeCafe;
+                    ReverbMix = 30;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = true;
+                    ChorusRate = 4;
+                    ChorusDepth = 12;
+                    ChorusMix = 12;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.BrightAiry:
+                    // Crisp, open, spacious — bass cleaned up, wide stereo field
+                    // Large room reverb with bright tone, high mix for atmosphere
+                    HighPassEnabled = true;
+                    HighPassCutoff = 180;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.LargeRoom;
+                    ReverbMix = 40;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 72;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.Telephone:
+                    // Tinny phone speaker — narrow band, collapsed stereo, bit-reduced
+                    // Bitcrusher degrades quality, narrow width sells the phone speaker
+                    HighPassEnabled = true;
+                    HighPassCutoff = 500;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 3000;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Bathroom;
+                    ReverbMix = 10;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 10;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 10;
+                    BitcrusherDownsample = 1;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 3;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.ConcertLive:
+                    // In the audience — big hall, wide stereo, full range
+                    // Concert hall at high mix, widener for immersion
+                    HighPassEnabled = true;
+                    HighPassCutoff = 80;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.ConcertHall;
+                    ReverbMix = 45;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 75;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.MuffledNextRoom:
+                    // Music bleeding through a wall — heavy LP, dark room, quiet
+                    // Very narrow stereo, high reverb mix to sell the distance
+                    HighPassEnabled = true;
+                    HighPassCutoff = 100;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 1200;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.SmallRoomDark;
+                    ReverbMix = 55;
+                    SlowEnabled = false;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 15;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = -5;
+                    EffectChainPreset = EffectChainPreset.LowPassFirst;
+                    break;
+
+                case StylePreset.LoFiChill:
+                    // Lo-fi study beats — dark, warm, gritty
+                    // Bitcrusher for texture, LoFi reverb at low mix for warmth
+                    HighPassEnabled = true;
+                    HighPassCutoff = 120;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 3500;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.LoFi;
+                    ReverbMix = 35;
+                    SlowEnabled = true;
+                    SlowAmount = 6;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 12;
+                    BitcrusherDownsample = 2;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.SlowedReverb:
+                    // The classic vaporwave aesthetic — slowed with lush reverb
+                    // High reverb mix is the point, widener for dreamy space
+                    HighPassEnabled = false;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Vaporwave;
+                    ReverbMix = 55;
+                    SlowEnabled = true;
+                    SlowAmount = 12;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 68;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = false;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.VinylNight:
+                    // Old record player — warm, gentle, slightly slowed
+                    // Chorus for analog pitch drift, vinyl reverb kept subtle
+                    HighPassEnabled = false;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 5000;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.VinylWarmth;
+                    ReverbMix = 30;
+                    SlowEnabled = true;
+                    SlowAmount = 5;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = true;
+                    ChorusRate = 2;
+                    ChorusDepth = 18;
+                    ChorusMix = 18;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = false;
+                    EffectChainPreset = EffectChainPreset.Standard;
+                    break;
+
+                case StylePreset.UnderwaterDream:
+                    // Submerged — deep, murky, everything filtered and distant
+                    // Underwater reverb cranked high, chorus for pitch drift
+                    HighPassEnabled = true;
+                    HighPassCutoff = 150;
+                    LowPassEnabled = true;
+                    LowPassCutoff = 1800;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.Underwater;
+                    ReverbMix = 60;
+                    SlowEnabled = true;
+                    SlowAmount = 10;
+                    StereoWidenerEnabled = false;
+                    ChorusEnabled = true;
+                    ChorusRate = 2;
+                    ChorusDepth = 30;
+                    ChorusMix = 20;
+                    BitcrusherEnabled = false;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = -3;
+                    EffectChainPreset = EffectChainPreset.LowPassFirst;
+                    break;
+
+                case StylePreset.Cyberpunk:
+                    // Neon dystopia — bright metallic reverb, digital edge
+                    // Sci-fi corridor at high mix, bitcrusher for digital grit
+                    HighPassEnabled = true;
+                    HighPassCutoff = 200;
+                    LowPassEnabled = false;
+                    ReverbEnabled = true;
+                    SelectedReverbPreset = ReverbPreset.SciFiCorridor;
+                    ReverbMix = 40;
+                    SlowEnabled = true;
+                    SlowAmount = 4;
+                    StereoWidenerEnabled = true;
+                    StereoWidenerWidth = 78;
+                    ChorusEnabled = false;
+                    BitcrusherEnabled = true;
+                    BitcrusherBitDepth = 13;
+                    BitcrusherDownsample = 1;
+                    TremoloEnabled = false;
+                    MakeupGainEnabled = true;
+                    MakeupGain = 2;
+                    EffectChainPreset = EffectChainPreset.ReverbFirst;
+                    break;
+
+                case StylePreset.None:
+                default:
+                    // None - don't change anything
+                    break;
+            }
+            }
+            finally
+            {
+                _applyingStylePreset = false;
             }
         }
     }

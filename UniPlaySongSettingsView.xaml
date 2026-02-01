@@ -10,6 +10,7 @@
         <local:AudioStateConverter x:Key="AudioStateConverter"/>
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <local:ReverbPresetConverter x:Key="ReverbPresetConverter"/>
+        <local:StylePresetConverter x:Key="StylePresetConverter"/>
         <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
         <local:HexToColorConverter x:Key="HexToColorConverter"/>
     </UserControl.Resources>
@@ -317,6 +318,57 @@
 
                     <Separator Margin="0,10"/>
 
+                    <!-- Style Preset Section -->
+                    <TextBlock Text="Style Preset" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Quick-start styles that configure all effects at once. Selecting a style will override your current effect settings. Set to 'None' for manual control."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Style: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.SelectedStylePreset, Converter={StaticResource StylePresetConverter}}"
+                                  Width="200">
+                            <ComboBoxItem Content="None (Manual)"/>
+                            <ComboBoxItem Content="Huddini - Rehearsal"/>
+                            <ComboBoxItem Content="Huddini - Bright Room"/>
+                            <ComboBoxItem Content="Huddini - Retro Radio"/>
+                            <ComboBoxItem Content="Huddini - Lo-Bit"/>
+                            <ComboBoxItem Content="Huddini - Slowed Dream (Slow)"/>
+                            <ComboBoxItem Content="Huddini - Cave Lake (Slow)"/>
+                            <ComboBoxItem Content="Huddini - Honey Room (Slow)"/>
+                            <ComboBoxItem Content="Clean Boost"/>
+                            <ComboBoxItem Content="Warm FM Radio"/>
+                            <ComboBoxItem Content="Bright &amp; Airy"/>
+                            <ComboBoxItem Content="Telephone"/>
+                            <ComboBoxItem Content="Concert Live"/>
+                            <ComboBoxItem Content="Muffled Next Room"/>
+                            <ComboBoxItem Content="Lo-Fi Chill (Slow)"/>
+                            <ComboBoxItem Content="Slowed + Reverb (Slow)"/>
+                            <ComboBoxItem Content="Vinyl Night (Slow)"/>
+                            <ComboBoxItem Content="Underwater Dream (Slow)"/>
+                            <ComboBoxItem Content="Cyberpunk (Slow)"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Each style creatively combines filters, reverb, slow effect, and more. After selecting a style, tweaking any individual setting below will automatically switch back to 'None (Manual)' so your changes are preserved."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                        <Button Content="Copy Current Settings to Clipboard"
+                                Click="CopyLiveEffectsToClipboard_Click"
+                                Padding="12,4"
+                                Margin="0,0,10,0"/>
+                        <Button Content="Reset All Effects to Defaults"
+                                Click="ResetLiveEffects_Click"
+                                Padding="12,4"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- High-Pass Filter Section -->
                     <TextBlock Text="High-Pass Filter" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."
@@ -427,6 +479,94 @@
 
                     <Separator Margin="0,15"/>
 
+                    <!-- Stereo Widener Section -->
+                    <TextBlock Text="Stereo Widener" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Adjusts the stereo image using mid-side processing. Widen for an immersive feel or narrow toward mono."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <CheckBox Content="Enable Stereo Widener" IsChecked="{Binding Settings.StereoWidenerEnabled}" IsEnabled="{Binding Settings.LiveEffectsEnabled}" Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Width: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.StereoWidenerWidth}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding Settings.StereoWidenerWidth}" Width="180" SmallChange="5" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="0% = mono, 50% = normal stereo (unchanged), 100% = maximum widening. Default: 50%" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Chorus Section -->
+                    <TextBlock Text="Chorus" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Thickens the sound by mixing in a slightly delayed, pitch-modulated copy. Creates a lush doubling effect."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <CheckBox Content="Enable Chorus" IsChecked="{Binding Settings.ChorusEnabled}" IsEnabled="{Binding Settings.LiveEffectsEnabled}" Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Rate: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ChorusRate}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="(×0.1 Hz)" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="50" Value="{Binding Settings.ChorusRate}" Width="180" SmallChange="1" LargeChange="5" TickFrequency="5" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="LFO speed. 10 = 1.0 Hz, 30 = 3.0 Hz. Slower = gentle sway, faster = vibrato. Default: 30 (3.0 Hz)" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Depth: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ChorusDepth}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding Settings.ChorusDepth}" Width="180" SmallChange="5" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How much the delay time wobbles. Higher = more pitch variation. Default: 50%" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Mix: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ChorusMix}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding Settings.ChorusMix}" Width="180" SmallChange="5" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Wet/dry blend. 0% = dry, 100% = fully chorused. Default: 40%" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Bitcrusher Section -->
+                    <TextBlock Text="Bitcrusher" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Reduces bit depth and sample rate for lo-fi digital distortion. Creates retro, crunchy, or chiptune-style effects."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <CheckBox Content="Enable Bitcrusher" IsChecked="{Binding Settings.BitcrusherEnabled}" IsEnabled="{Binding Settings.LiveEffectsEnabled}" Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Bit Depth: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.BitcrusherBitDepth}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="bits" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="2" Maximum="16" Value="{Binding Settings.BitcrusherBitDepth}" Width="180" SmallChange="1" LargeChange="2" TickFrequency="2" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Audio resolution. 16 = CD quality (subtle), 8 = retro, 4 = crunchy, 2 = extreme. Default: 8" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Downsample: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.BitcrusherDownsample}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="×" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="32" Value="{Binding Settings.BitcrusherDownsample}" Width="180" SmallChange="1" LargeChange="4" TickFrequency="4" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Sample rate reduction. 1 = none, 4 = gritty, 16+ = heavily degraded. Default: 1" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Tremolo Section -->
+                    <TextBlock Text="Tremolo" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <TextBlock Text="Periodic volume modulation that creates a pulsing, wavering effect. Slow rates feel atmospheric, fast rates feel intense."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <CheckBox Content="Enable Tremolo" IsChecked="{Binding Settings.TremoloEnabled}" IsEnabled="{Binding Settings.LiveEffectsEnabled}" Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Rate: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.TremoloRate}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="(×0.1 Hz)" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="100" Value="{Binding Settings.TremoloRate}" Width="180" SmallChange="1" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Pulse speed. 10 = 1.0 Hz (slow swell), 40 = 4.0 Hz (classic tremolo), 80+ = fast flutter. Default: 40 (4.0 Hz)" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Depth: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.TremoloDepth}" VerticalAlignment="Center" Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding Settings.TremoloDepth}" Width="180" SmallChange="5" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How much the volume swings. 0% = no effect, 50% = moderate pulse, 100% = full silence-to-loud. Default: 50%" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- Reverb Section -->
                     <TextBlock Text="Reverb" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="Adds spatial depth and ambience to the audio. Creates a sense of space or room. Based on libSoX/Audacity algorithm."
@@ -475,6 +615,13 @@
                             <ComboBoxItem Content="Jazz Club"/>
                             <ComboBoxItem Content="Night Club"/>
                             <ComboBoxItem Content="Concert Hall"/>
+                            <!-- Creative/Stylistic (UniPlaySong) -->
+                            <ComboBoxItem Content="Dreamy"/>
+                            <ComboBoxItem Content="Lo-Fi"/>
+                            <ComboBoxItem Content="Underwater"/>
+                            <ComboBoxItem Content="Sci-Fi Corridor"/>
+                            <ComboBoxItem Content="Vinyl Warmth"/>
+                            <ComboBoxItem Content="Vaporwave"/>
                         </ComboBox>
                     </StackPanel>
                     <TextBlock Text="Audacity-compatible presets plus UniPlaySong environments (Living Room, Home Theater, etc.). Adjusting sliders sets preset to 'Custom'."
@@ -562,6 +709,27 @@
                                 TickPlacement="BottomRight"/>
                     </StackPanel>
                     <TextBlock Text="Stereo spread of reverb. 0% = mono reverb, 100% = full stereo. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Wet/Dry Mix -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Wet/Dry Mix: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.ReverbMix}"
+                                   VerticalAlignment="Center"
+                                   Width="35"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.ReverbMix}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Wet/dry crossfade. 0% = no reverb, 50% = balanced blend, 100% = full reverb effect. Default: 50%"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
