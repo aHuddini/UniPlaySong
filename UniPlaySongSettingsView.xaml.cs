@@ -129,7 +129,7 @@ namespace UniPlaySong
             s.VizOpacityMin = 30;
             s.VizBarGainBoost = 0;
             s.VizPeakHoldMs = 80;
-            s.VizGravity = 80;
+            s.VizGravity = 100;
             s.VizRollingPeakDecay = 50;
             s.VizBassGravityBias = 50;
 

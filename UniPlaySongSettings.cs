@@ -1347,7 +1347,7 @@ namespace UniPlaySong
         private int vizOpacityMin = 30;          // 0-100 (%) — idle bar opacity
         private int vizBarGainBoost = 0;         // -50 to +100 (%) — global gain offset
         private int vizPeakHoldMs = 80;          // 0-300 ms — how long bars hold at peak
-        private int vizGravity = 80;             // 10-200 — base gravity (tenths, 80 = 8.0)
+        private int vizGravity = 100;            // 10-200 — base gravity (tenths, 100 = 10.0)
         private int vizRollingPeakDecay = 50;    // 10-200 — rolling peak decay rate (hundredths/sec)
         private int vizBassGravityBias = 50;     // 0-100 — bass/treble gravity spread (0=uniform, 100=max contrast)
 

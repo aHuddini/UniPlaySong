@@ -47,16 +47,10 @@ namespace UniPlaySong.DeskMediaControl
         private readonly float[] _peakHoldTimer; // seconds remaining at peak before falling
         private readonly float[] _fallVelocity;  // current fall speed (accelerates via gravity)
 
-        // Per-band smoothed FFT target (light EMA to reduce frame-to-frame jitter)
-        private readonly float[] _smoothedTarget;
-
-        // CAVA-style auto-sensitivity: global multiplier that adapts to audio content
-        // Ramps up slowly when bars don't clip, drops instantly on overshoot
-        private float _sensitivity = 1.5f;
-        private const float SensitivityMin = 0.5f;
-        private const float SensitivityMax = 5.0f;
-        private const float SensitivityRampUp = 1.002f;    // +0.2% per frame (~12% per sec at 60fps)
-        private const float SensitivityDropDown = 0.94f;    // -6% instant on clip
+            // Per-bar auto-sensitivity: each bar tracks its own rolling max and normalizes against it.
+        private readonly float[] _barPeak;          // rolling max RMS per bar (slow decay)
+        private const float PeakDecayRate = 0.5f;   // per-second decay multiplier
+        private const float PeakFloor = 0.01f;       // minimum peak to prevent division by near-zero
 
         // Bar elements
         private readonly Rectangle[] _bars;
@@ -88,15 +82,6 @@ namespace UniPlaySong.DeskMediaControl
         private const float MinBarScale = 0.056f;   // ~1px out of 18px
         private const float DirtyThreshold = 0.028f; // ~0.5px out of 18px — skip GPU update below this
 
-        // Bars with fewer bins than this threshold use weighted average instead of peak
-        // (peak-picking on 2-3 bins is too spiky)
-        private const int WeightedAvgBinThreshold = 5;
-
-        // Asymmetric EMA — near-instant attack, gentle release
-        // Rise is close to 1.0 so beats punch through with minimal filtering
-        // Fall is slower to smooth jitter on decay (FFT temporal smoothing handles spike reduction)
-        private const float SmoothAlphaRise = 0.85f;
-        private const float SmoothAlphaFall = 0.35f;
 
         // Frame timing (CompositionTarget.Rendering dedup)
         private bool _isRendering;
@@ -114,28 +99,26 @@ namespace UniPlaySong.DeskMediaControl
         private int _frameCounter;
         private const int DiagLogInterval = 60; // Log every 60 frames (~1 sec)
 
-        // Global noise floor in normalized units (below this = absolute zero)
-        // With -45dB range, -40dB maps to ~0.11 so 0.03 catches deep silence only
-        private const float NoiseFloor = 0.03f;
+        // Noise floor — below this, bar is zeroed
+        private const float NoiseFloor = 0.005f;
 
-        // Per-bar A-weighting gain (tuned for -45dB + auto-sensitivity + sqrt scaling)
-        // Bass bars (0-3) have fewer bins and produce hotter values via averaging,
-        // so they need lower gain. Treble bars (8-11) use peak-picking across many bins
-        // and natural FFT energy rolloff means they need aggressive boosting.
+        // Per-bar direct gain — calibrated for -80dB FFT range with squared curve.
+        // After squaring, RMS drops significantly: bass ~0.16-0.36, treble ~0.01-0.09.
+        // Gains compensate to target ~0.3-0.7 scaled output.
         private static readonly float[] BarGain =
         {
-            0.80f, // Bar 0:  40-88 Hz sub-bass  (2 bins, avg — naturally hot)
-            0.80f, // Bar 1:  88-177 Hz bass      (2 bins, avg)
-            0.85f, // Bar 2:  177-280 Hz low-mid  (2 bins, avg)
-            0.90f, // Bar 3:  280-430 Hz mid       (4 bins, avg)
-            1.00f, // Bar 4:  430-710 Hz upper-mid (6 bins, peak)
-            1.10f, // Bar 5:  710-1.0k Hz vocal    (7 bins, peak)
-            1.20f, // Bar 6:  1.0k-1.4k Hz         (9 bins, peak)
-            1.35f, // Bar 7:  1.4k-2.0k Hz         (14 bins, peak)
-            1.55f, // Bar 8:  2.0k-2.8k Hz         (19 bins, peak)
-            1.80f, // Bar 9:  2.8k-4.2k Hz         (33 bins, peak)
-            2.20f, // Bar 10: 4.2k-7.0k Hz         (65 bins, peak)
-            2.60f, // Bar 11: 7.0k-11.3k Hz        (100 bins, peak — most rolloff)
+            2.5f,  // Bar 0:  40-88 Hz     (2 bins)
+            2.8f,  // Bar 1:  88-177 Hz    (2 bins)
+            3.0f,  // Bar 2:  177-280 Hz   (2 bins)
+            3.2f,  // Bar 3:  280-430 Hz   (4 bins)
+            3.5f,  // Bar 4:  430-710 Hz   (6 bins)
+            4.0f,  // Bar 5:  710-1.0k Hz  (7 bins)
+            4.5f,  // Bar 6:  1.0k-1.4k Hz (9 bins)
+            5.5f,  // Bar 7:  1.4k-2.0k Hz (14 bins)
+            7.0f,  // Bar 8:  2.0k-2.8k Hz (19 bins)
+            9.0f,  // Bar 9:  2.8k-4.2k Hz (33 bins)
+            12.0f, // Bar 10: 4.2k-7.0k Hz (65 bins)
+            16.0f, // Bar 11: 7.0k-11.3k Hz (100 bins)
         };
 
         // Per-bar gravity multiplier — bass drops fast (punchy), treble floats (shimmery)
@@ -172,7 +155,7 @@ namespace UniPlaySong.DeskMediaControl
             _barHeights = new float[BarCount];
             _peakHoldTimer = new float[BarCount];
             _fallVelocity = new float[BarCount];
-            _smoothedTarget = new float[BarCount];
+            _barPeak = new float[BarCount];
             _lastScaleY = new float[BarCount];
             _lastOpacity = new float[BarCount];
             _spectrumData = new float[512];
@@ -218,6 +201,7 @@ namespace UniPlaySong.DeskMediaControl
                 Canvas.SetTop(bar, yOffset);
                 Children.Add(bar);
                 _bars[i] = bar;
+                _barPeak[i] = PeakFloor;
             }
 
             Visibility = Visibility.Collapsed;
@@ -279,7 +263,7 @@ namespace UniPlaySong.DeskMediaControl
             float opacityMin = (settings?.VizOpacityMin ?? 30) / 100f;
             float gainMult = 1f + (settings?.VizBarGainBoost ?? 0) / 100f;
             float peakHold = (settings?.VizPeakHoldMs ?? 80) / 1000f;  // ms → seconds
-            float gravity = (settings?.VizGravity ?? 80) / 10f;        // tenths → actual
+            float gravity = (settings?.VizGravity ?? 100) / 10f;        // tenths → actual
             float biasPct = (settings?.VizBassGravityBias ?? 50) / 100f; // 0..1
 
             var provider = VisualizationDataProvider.Current;
@@ -289,7 +273,6 @@ namespace UniPlaySong.DeskMediaControl
                 provider.GetSpectrumData(_spectrumData, 0, _spectrumData.Length);
 
             bool anyBarVisible = false;
-            bool anyClip = false;
 
             for (int i = 0; i < BarCount; i++)
             {
@@ -298,51 +281,32 @@ namespace UniPlaySong.DeskMediaControl
                 if (hasData)
                 {
                     int end = Math.Min(_binEnds[i], _spectrumData.Length);
-
                     int binCount = end - _binStarts[i];
-                    float value;
-                    if (binCount < WeightedAvgBinThreshold)
+
+                    // RMS energy across all bins in the band
+                    float sumSq = 0f;
+                    for (int bin = _binStarts[i]; bin < end; bin++)
                     {
-                        // Few bins: weighted average (peak-picking on 2-3 bins is too spiky)
-                        float sum = 0f;
-                        for (int bin = _binStarts[i]; bin < end; bin++)
-                            sum += _spectrumData[bin];
-                        value = binCount > 0 ? sum / binCount : 0f;
+                        float v = _spectrumData[bin];
+                        sumSq += v * v;
                     }
-                    else
-                    {
-                        // Many bins: peak magnitude from FFT bin range
-                        float peak = 0f;
-                        for (int bin = _binStarts[i]; bin < end; bin++)
-                        {
-                            if (_spectrumData[bin] > peak)
-                                peak = _spectrumData[bin];
-                        }
-                        value = peak;
-                    }
+                    float rms = binCount > 0 ? (float)Math.Sqrt(sumSq / binCount) : 0f;
 
-                    // Global noise floor — anything below is absolute zero
-                    if (value < NoiseFloor)
-                        value = 0f;
+                    // Apply per-bar gain to compensate for treble energy spread
+                    float value = rms * BarGain[i] * gainMult;
 
-                    // Auto-sensitivity scaling (CAVA-inspired)
-                    // Global multiplier adapts to content — replaces fixed ceiling normalization
-                    float amplified = value * _sensitivity;
+                    // Noise floor gate
+                    if (rms < NoiseFloor) value = 0f;
 
-                    // Sqrt scaling for poppier mid-range response + A-weighting gain
-                    float scaled = (float)Math.Sqrt(amplified > 1f ? 1f : amplified);
-                    target = scaled * BarGain[i] * gainMult;
+                    // Clamp to 0..1
+                    if (value > 1f) value = 1f;
 
-                    // Track if any bar clips (drives auto-sensitivity adjustment below)
-                    if (target > 1f) { target = 1f; anyClip = true; }
+                    target = value;
                 }
 
-                // Conservative asymmetric EMA — smooths FFT jitter without killing beat response
-                float alpha = target > _smoothedTarget[i] ? SmoothAlphaRise : SmoothAlphaFall;
-                _smoothedTarget[i] += alpha * (target - _smoothedTarget[i]);
-                target = _smoothedTarget[i];
-
                 // Peak hold + gravity drop animation
+                // No EMA smoothing — FFT temporal smoothing handles jitter at the source,
+                // and peak-hold + gravity provides all the visual smoothing needed on fall.
                 float current = _barHeights[i];
                 if (target > current)
                 {
@@ -390,19 +354,6 @@ namespace UniPlaySong.DeskMediaControl
                     anyBarVisible = true;
             }
 
-            // Auto-sensitivity adjustment (CAVA-inspired):
-            // Drop instantly on clip, ramp slowly when headroom available
-            if (anyClip)
-            {
-                _sensitivity *= SensitivityDropDown;
-                if (_sensitivity < SensitivityMin) _sensitivity = SensitivityMin;
-            }
-            else if (hasData)
-            {
-                _sensitivity *= SensitivityRampUp;
-                if (_sensitivity > SensitivityMax) _sensitivity = SensitivityMax;
-            }
-
             // Diagnostic logging (~1/sec, gated by EnableDebugLogging)
             if (settings?.EnableDebugLogging == true && hasData)
             {
@@ -410,15 +361,17 @@ namespace UniPlaySong.DeskMediaControl
                 if (_frameCounter >= DiagLogInterval)
                 {
                     _frameCounter = 0;
-                    Logger.Debug($"[Viz] dt={dt:F4} sens={_sensitivity:F3} gravity={gravity:F2} peakHold={peakHold:F3} bias={biasPct:F2} gainMult={gainMult:F2}");
+                    Logger.Debug($"[Viz] dt={dt:F4} gravity={gravity:F2} peakHold={peakHold:F3} bias={biasPct:F2} gainMult={gainMult:F2}");
                     for (int i = 0; i < BarCount; i++)
                     {
                         int end = Math.Min(_binEnds[i], _spectrumData.Length);
-                        float rawPeak = 0f;
+                        int bc = end - _binStarts[i];
+                        float ss = 0f;
                         for (int bin = _binStarts[i]; bin < end; bin++)
-                            if (_spectrumData[bin] > rawPeak) rawPeak = _spectrumData[bin];
-                        float amplified = rawPeak * _sensitivity;
-                        Logger.Debug($"[Viz] Bar{i}: raw={rawPeak:F3} amp={amplified:F3} height={_barHeights[i]:F3} scaleY={_barScales[i].ScaleY:F3}");
+                        { float v = _spectrumData[bin]; ss += v * v; }
+                        float rms = bc > 0 ? (float)Math.Sqrt(ss / bc) : 0f;
+                        float scaled = rms * BarGain[i];
+                        Logger.Debug($"[Viz] Bar{i}: bins={bc} rms={rms:F4} gain={BarGain[i]:F1} scaled={scaled:F4} h={_barHeights[i]:F3}");
                     }
                 }
             }

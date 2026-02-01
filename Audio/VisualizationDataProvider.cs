@@ -34,8 +34,11 @@ namespace UniPlaySong.Audio
         private readonly Complex[] _fftBuffer = new Complex[FftSize];
         private readonly float[] _hannWindow = new float[FftSize];
         private readonly float[] _fftSpectrum = new float[SpectrumSize];
-        private readonly float[] _prevSpectrum = new float[SpectrumSize]; // temporal smoothing
-        private const float FftSmoothAlpha = 0.35f; // blend factor: 0=all previous, 1=all current
+        private readonly float[] _smoothedSpectrum = new float[SpectrumSize];
+
+        // Temporal smoothing: asymmetric — fast rise, gradual fall
+        private const float SmoothRiseAlpha = 0.8f;  // fast rise — near-instant attack with slight spike damping
+        private const float SmoothFallAlpha = 0.3f;   // slower fall for smoother decay (~5 frame decay)
 
         // Double-buffered spectrum output
         private float[] _spectrumFront = new float[SpectrumSize];
@@ -153,23 +156,31 @@ namespace UniPlaySong.Audio
                     float im = _fftBuffer[i].Y;
                     float magSq = re * re + im * im;
                     float db = 10f * (float)Math.Log10(Math.Max(magSq, 1e-20f));
-                    // Map -45dB..0dB to 0..1 — tighter range preserves transient punch
-                    float normalized = (db + 45f) / 45f;
+                    // Map -80dB..0dB to 0..1 — wide range ensures treble bins register.
+                    // -45dB was too tight: treble bins are naturally 30-50dB below bass,
+                    // so they were clamped to zero before reaching the visualizer.
+                    float normalized = (db + 80f) / 80f;
                     if (normalized < 0f) normalized = 0f;
                     else if (normalized > 1f) normalized = 1f;
+                    // Square the value to expand dynamic range: quiet bins (0.3) → 0.09,
+                    // loud bins (0.8) → 0.64. This prevents all bars starting mid-height.
+                    _fftSpectrum[i] = normalized * normalized;
+                }
 
-                    // Temporal smoothing: asymmetric — fast rise (instant), gentle fall
-                    // Prevents single-frame FFT spikes from dominating while preserving beat attacks
-                    float prev = _prevSpectrum[i];
-                    if (normalized >= prev)
-                        _fftSpectrum[i] = normalized; // instant rise — beats punch through
+                // Asymmetric temporal smoothing: instant rise, gradual fall.
+                // Smoothes jitter on the fall side without dulling transient attacks.
+                for (int i = 0; i < SpectrumSize; i++)
+                {
+                    float raw = _fftSpectrum[i];
+                    float prev = _smoothedSpectrum[i];
+                    if (raw >= prev)
+                        _smoothedSpectrum[i] = prev + (raw - prev) * SmoothRiseAlpha;  // fast rise
                     else
-                        _fftSpectrum[i] = prev + FftSmoothAlpha * (normalized - prev); // smooth fall
-                    _prevSpectrum[i] = _fftSpectrum[i];
+                        _smoothedSpectrum[i] = prev + (raw - prev) * SmoothFallAlpha;  // gradual fall
                 }
 
                 // Swap into front buffer for UI consumption
-                Array.Copy(_fftSpectrum, 0, _spectrumBack, 0, SpectrumSize);
+                Array.Copy(_smoothedSpectrum, 0, _spectrumBack, 0, SpectrumSize);
                 var temp = _spectrumFront;
                 _spectrumFront = _spectrumBack;
                 _spectrumBack = temp;
