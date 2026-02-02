@@ -13,6 +13,8 @@
         <local:StylePresetConverter x:Key="StylePresetConverter"/>
         <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
         <local:HexToColorConverter x:Key="HexToColorConverter"/>
+        <local:VizPresetConverter x:Key="VizPresetConverter"/>
+        <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -1007,6 +1009,73 @@
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
+                    <!-- Visualizer Preset -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Viz Preset: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
+                                  SelectionChanged="VizPreset_SelectionChanged"
+                                  Width="200">
+                            <ComboBoxItem Content="Custom"/>
+                            <ComboBoxItem Content="Default"/>
+                            <ComboBoxItem Content="Smooth"/>
+                            <ComboBoxItem Content="Punchy"/>
+                            <ComboBoxItem Content="Cinematic"/>
+                            <ComboBoxItem Content="Minimal"/>
+                            <ComboBoxItem Content="Reactive"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Select a preset to configure all visualizer parameters at once. Choose 'Custom' to keep your current settings. Selecting a preset overwrites all values below — you can then fine-tune."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Color Theme (top-level, next to preset) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Color Theme: " VerticalAlignment="Center" Width="120"/>
+                        <ComboBox SelectedIndex="{Binding Settings.VizColorTheme, Converter={StaticResource VizColorThemeConverter}}"
+                                  Width="200">
+                            <ComboBoxItem Content="Classic (White)"/>
+                            <ComboBoxItem Content="Neon (Cyan → Magenta)"/>
+                            <ComboBoxItem Content="Fire (Orange → Red)"/>
+                            <ComboBoxItem Content="Ocean (Teal → Blue)"/>
+                            <ComboBoxItem Content="Sunset (Yellow → Pink)"/>
+                            <ComboBoxItem Content="Matrix (Green)"/>
+                            <ComboBoxItem Content="Ice (White → Blue)"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Bar color theme. Gradient colors shift from bottom to top of each bar. Classic uses the original white style."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Advanced Customization (collapsed by default) -->
+                    <Expander Header="Advanced Customization (Experimental)"
+                              IsExpanded="False"
+                              Margin="0,10,0,0"
+                              IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <StackPanel Margin="10,10,0,0">
+
+                    <TextBlock Text="Fine-tune individual visualizer parameters. Most users should use the presets above."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <!-- Gradient Toggle -->
+                    <CheckBox Content="Enable Gradient Bars"
+                              IsChecked="{Binding Settings.VizGradientEnabled}"
+                              IsEnabled="{Binding Settings.ShowSpectrumVisualizer}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When enabled, non-Classic themes use a two-tone gradient. When disabled, bars use a solid color."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,0,0,10"/>
+
                     <!-- Opacity Min -->
                     <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
                         <TextBlock Text="Idle Opacity: " VerticalAlignment="Center" Width="120"/>
@@ -1090,26 +1159,6 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
 
-                    <!-- Rolling Peak Decay -->
-                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                        <TextBlock Text="Peak Adapt: " VerticalAlignment="Center" Width="120"/>
-                        <TextBlock Text="{Binding Settings.VizRollingPeakDecay}"
-                                   VerticalAlignment="Center"
-                                   Width="30"/>
-                        <Slider Minimum="10" Maximum="200"
-                                Value="{Binding Settings.VizRollingPeakDecay}"
-                                Width="180"
-                                SmallChange="5"
-                                LargeChange="20"
-                                TickFrequency="30"
-                                TickPlacement="BottomRight"/>
-                    </StackPanel>
-                    <TextBlock Text="How fast the dynamic range adapts to volume changes. Higher = quicker adaptation, lower = more stable. Default: 50"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
-
                     <!-- Bass/Treble Gravity Bias -->
                     <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
                         <TextBlock Text="Bass Punch: " VerticalAlignment="Center" Width="120"/>
@@ -1131,6 +1180,255 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
 
+                    <!-- FFT Size -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="FFT Size: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizFftSize}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                        <Slider Minimum="512" Maximum="2048"
+                                Value="{Binding Settings.VizFftSize}"
+                                Width="180"
+                                SmallChange="512"
+                                LargeChange="1024"
+                                TickFrequency="512"
+                                IsSnapToTickEnabled="True"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="FFT analysis window size. 512 = snappy but coarse bass. 1024 = balanced. 2048 = precise but slower attack. Requires song restart. Default: 1024"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Bass Gain -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Bass Gain: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizBassGain}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="200"
+                                Value="{Binding Settings.VizBassGain}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="25"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Scales gain for bass bars (sub-bass through vocal presence). Lower = shorter bass bars. Higher = taller. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Treble Gain -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Treble Gain: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizTrebleGain}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="200"
+                                Value="{Binding Settings.VizTrebleGain}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="25"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Scales gain for treble bars (upper vocal through high treble). Lower = shorter treble bars. Higher = taller. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Bleed Amount -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Freq Bleed: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizBleedAmount}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="200"
+                                Value="{Binding Settings.VizBleedAmount}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="25"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How much energy bleeds between adjacent bars. 0 = bars independent. 100 = default coupling. 200 = heavy bleed. Default: 100%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Compression -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Compression: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizCompression}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.VizCompression}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Soft-knee peak compression. 0 = no compression (linear). Higher = peaks tamed more aggressively, bars more uniform. Default: 50%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Smooth Rise -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Smooth Rise: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizSmoothRise}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.VizSmoothRise}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly bars respond to rising energy (beat attack). Higher = snappier. Lower = sluggish. Default: 85%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- Smooth Fall -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Smooth Fall: " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizSmoothFall}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.VizSmoothFall}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly bars decay after energy drops. Lower = smoother trailing. Higher = snappy drop. Default: 15%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <Separator Margin="0,5,0,10"/>
+
+                    <!-- FFT Smoothing Alphas -->
+                    <TextBlock Text="FFT Smoothing (Advanced)"
+                               FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Controls the pre-render FFT temporal smoothing. These shape how the raw spectrum data responds before it reaches the UI. Changes apply live."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <!-- FFT Timer Mode -->
+                    <CheckBox Content="Use Fixed Timer (~62fps)"
+                              IsChecked="{Binding Settings.VizFftTimerMode}"
+                              IsEnabled="{Binding Settings.ShowSpectrumVisualizer}"
+                              Margin="0,0,0,0"/>
+                    <TextBlock Text="Signal mode (default): FFT runs when audio delivers new samples (~43fps at 1024). Timer mode: FFT runs at a fixed ~62fps matching the UI refresh rate. Timer uses slightly more CPU but may feel smoother."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- FFT Rise Low (bass attack) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="FFT Rise (Bass): " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizFftRiseLow}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="0" Maximum="95"
+                                Value="{Binding Settings.VizFftRiseLow}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly bass FFT bins rise to new peaks. Higher = snappier bass attack. Default: 88"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- FFT Rise High (treble attack) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="FFT Rise (Treble): " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizFftRiseHigh}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="0" Maximum="95"
+                                Value="{Binding Settings.VizFftRiseHigh}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly treble FFT bins rise to new peaks. Higher = snappier treble attack. Default: 93"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- FFT Fall Low (bass decay) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="FFT Fall (Bass): " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizFftFallLow}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="0" Maximum="95"
+                                Value="{Binding Settings.VizFftFallLow}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly bass FFT bins decay after energy drops. Lower = smoother bass trailing. Default: 50"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <!-- FFT Fall High (treble decay) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="FFT Fall (Treble): " VerticalAlignment="Center" Width="120"/>
+                        <TextBlock Text="{Binding Settings.VizFftFallHigh}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="0" Maximum="95"
+                                Value="{Binding Settings.VizFftFallHigh}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="How quickly treble FFT bins decay after energy drops. Lower = smoother treble trailing. Default: 65"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
                     <Separator Margin="0,5,0,10"/>
 
                     <!-- Reset Visualizer Defaults button -->
@@ -1144,6 +1442,9 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
+
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

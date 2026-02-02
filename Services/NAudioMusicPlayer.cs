@@ -73,7 +73,8 @@ namespace UniPlaySong.Services
 
                 _audioFile = new AudioFileReader(filePath);
                 _effectsChain = new EffectsChain(_audioFile, _settingsService);
-                _visualizationProvider = new VisualizationDataProvider(_effectsChain);
+                int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
+                _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
                 VisualizationDataProvider.Current = _visualizationProvider;
                 _volumeProvider = new VolumeSampleProvider(_visualizationProvider);
 

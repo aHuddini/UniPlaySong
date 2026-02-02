@@ -101,6 +101,35 @@ namespace UniPlaySong
         ReverbThenLowPass = 5
     }
 
+    /// <summary>
+    /// Visualizer tuning presets — curated combinations of all viz parameters.
+    /// Selecting a preset overwrites all visualizer settings; user can then tweak.
+    /// </summary>
+    /// <summary>
+    /// Visualizer bar color themes.
+    /// </summary>
+    public enum VizColorTheme
+    {
+        Classic = 0,    // White (current look — solid frozen brush)
+        Neon,           // Cyan → Magenta gradient
+        Fire,           // Orange → Red gradient
+        Ocean,          // Teal → Blue gradient
+        Sunset,         // Yellow → Pink gradient
+        Matrix,         // Dark green → Bright green gradient
+        Ice             // White → Light blue gradient
+    }
+
+    public enum VizPreset
+    {
+        Custom = 0,
+        Default,        // Factory defaults — balanced starting point
+        Smooth,         // Gentle, flowing bars — low gravity, heavy smoothing
+        Punchy,         // Snappy beats, fast attack — good for hip-hop/EDM
+        Cinematic,      // Wide, slow-moving — film score / orchestral
+        Minimal,        // Subtle, understated — low gain, high compression
+        Reactive        // Maximum responsiveness — minimal smoothing, high gain
+    }
+
     public class UniPlaySongSettings : ObservableObject
     {
         private bool enableMusic = true;
@@ -1278,15 +1307,6 @@ namespace UniPlaySong
         // ===== Spectrum Visualizer Tuning (Experimental) =====
 
         /// <summary>
-        /// Linear fall rate for bar decay (1-30). Higher = faster drop after peaks. Default: 15
-        /// </summary>
-        public int VizFallSpeed
-        {
-            get => vizFallSpeed;
-            set { vizFallSpeed = Math.Max(1, Math.Min(30, value)); OnPropertyChanged(); }
-        }
-
-        /// <summary>
         /// Minimum bar opacity percentage at idle (0-100). Controls brightness modulation range.
         /// 0 = bars fade to invisible, 100 = no opacity change.
         /// </summary>
@@ -1325,15 +1345,6 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Rolling peak decay rate in hundredths per second (10-200). Higher = faster adaptation to volume changes. Default: 50
-        /// </summary>
-        public int VizRollingPeakDecay
-        {
-            get => vizRollingPeakDecay;
-            set { vizRollingPeakDecay = Math.Max(10, Math.Min(200, value)); OnPropertyChanged(); }
-        }
-
-        /// <summary>
         /// Bass/Treble gravity contrast (0-100). 0 = all bars fall same speed. 100 = bass snappy, treble floaty. Default: 50
         /// </summary>
         public int VizBassGravityBias
@@ -1342,14 +1353,185 @@ namespace UniPlaySong
             set { vizBassGravityBias = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
+        /// <summary>
+        /// FFT window size for spectrum analysis (512, 1024, or 2048).
+        /// Higher = better frequency resolution but slower temporal response.
+        /// 512: ~86Hz/bin, ~11.6ms window — snappy but coarse bass
+        /// 1024: ~43Hz/bin, ~23ms window — balanced
+        /// 2048: ~21.5Hz/bin, ~46ms window — precise but slower attack
+        /// Requires song restart to take effect.
+        /// </summary>
+        public int VizFftSize
+        {
+            get => vizFftSize;
+            set
+            {
+                // Only allow valid FFT sizes
+                if (value <= 512) vizFftSize = 512;
+                else if (value <= 1024) vizFftSize = 1024;
+                else vizFftSize = 2048;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Bass gain multiplier (0-200%). Scales the gain applied to bars 0-5 (sub-bass through vocal presence).
+        /// Lower = bass bars shorter. Higher = bass bars taller. Default: 100%
+        /// </summary>
+        public int VizBassGain
+        {
+            get => vizBassGain;
+            set { vizBassGain = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Treble gain multiplier (0-200%). Scales the gain applied to bars 6-11 (upper vocal through high treble).
+        /// Lower = treble bars shorter. Higher = treble bars taller. Default: 100%
+        /// </summary>
+        public int VizTrebleGain
+        {
+            get => vizTrebleGain;
+            set { vizTrebleGain = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Frequency bleed amount (0-200%). Scales how much energy bleeds between adjacent bars.
+        /// 0 = no bleed (bars independent). 100 = default. 200 = heavy coupling. Default: 100%
+        /// </summary>
+        public int VizBleedAmount
+        {
+            get => vizBleedAmount;
+            set { vizBleedAmount = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Soft-knee compression strength (0-100%). Controls how aggressively peaks are tamed.
+        /// 0 = no compression (linear). 50 = moderate. 100 = heavy compression. Default: 50%
+        /// </summary>
+        public int VizCompression
+        {
+            get => vizCompression;
+            set { vizCompression = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// UI smoothing rise alpha (0-100%). How quickly bars respond to rising energy.
+        /// Higher = snappier beat attack. Lower = sluggish rise. Default: 85%
+        /// </summary>
+        public int VizSmoothRise
+        {
+            get => vizSmoothRise;
+            set { vizSmoothRise = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// UI smoothing fall alpha (0-100%). How quickly bars decay after energy drops.
+        /// Lower = smoother trailing. Higher = snappy drop. Default: 15%
+        /// </summary>
+        public int VizSmoothFall
+        {
+            get => vizSmoothFall;
+            set { vizSmoothFall = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// FFT rise alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins
+        /// respond to rising energy. Higher = snappier bass attack. Default: 88
+        /// </summary>
+        public int VizFftRiseLow
+        {
+            get => vizFftRiseLow;
+            set { vizFftRiseLow = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// FFT rise alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins
+        /// respond to rising energy. Higher = snappier treble attack. Default: 93
+        /// </summary>
+        public int VizFftRiseHigh
+        {
+            get => vizFftRiseHigh;
+            set { vizFftRiseHigh = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// FFT fall alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins
+        /// decay after energy drops. Higher = faster decay, lower = smoother trailing. Default: 50
+        /// </summary>
+        public int VizFftFallLow
+        {
+            get => vizFftFallLow;
+            set { vizFftFallLow = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// FFT fall alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins
+        /// decay after energy drops. Higher = faster decay, lower = smoother trailing. Default: 65
+        /// </summary>
+        public int VizFftFallHigh
+        {
+            get => vizFftFallHigh;
+            set { vizFftFallHigh = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// FFT timing mode. False = signal-based (wakes on new audio data, ~43fps at 1024 samples).
+        /// True = fixed 16ms timer (~62fps, matches UI refresh rate). Timer mode uses slightly more
+        /// CPU but provides consistent update rate that matches CompositionTarget.Rendering.
+        /// </summary>
+        public bool VizFftTimerMode
+        {
+            get => vizFftTimerMode;
+            set { vizFftTimerMode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Bar color theme for the spectrum visualizer.
+        /// Classic (0) uses the original solid white brush. Other themes use colored gradients.
+        /// </summary>
+        public int VizColorTheme
+        {
+            get => vizColorTheme;
+            set { vizColorTheme = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// When true, non-Classic themes use a bottom-to-top gradient.
+        /// When false, bars use a solid color from the theme's primary color.
+        /// </summary>
+        public bool VizGradientEnabled
+        {
+            get => vizGradientEnabled;
+            set { vizGradientEnabled = value; OnPropertyChanged(); }
+        }
+
+        public VizPreset SelectedVizPreset
+        {
+            get => selectedVizPreset;
+            set { selectedVizPreset = value; OnPropertyChanged(); }
+        }
+
         // Spectrum Visualizer Tuning
-        private int vizFallSpeed = 15;           // 1-30 — gravity multiplier
         private int vizOpacityMin = 30;          // 0-100 (%) — idle bar opacity
         private int vizBarGainBoost = 0;         // -50 to +100 (%) — global gain offset
         private int vizPeakHoldMs = 80;          // 0-300 ms — how long bars hold at peak
-        private int vizGravity = 100;            // 10-200 — base gravity (tenths, 100 = 10.0)
-        private int vizRollingPeakDecay = 50;    // 10-200 — rolling peak decay rate (hundredths/sec)
+        private int vizGravity = 120;            // 10-200 — base gravity (tenths, 120 = 12.0)
         private int vizBassGravityBias = 50;     // 0-100 — bass/treble gravity spread (0=uniform, 100=max contrast)
+        private int vizFftSize = 1024;           // 512, 1024, or 2048 — FFT window size (requires restart)
+        private int vizBassGain = 100;           // 0-200 (%) — scales gain for bass bars (0-5)
+        private int vizTrebleGain = 100;         // 0-200 (%) — scales gain for treble bars (6-11)
+        private int vizBleedAmount = 100;        // 0-200 (%) — scales frequency bleed between bars
+        private int vizCompression = 50;         // 0-100 (%) — soft-knee compression strength
+        private int vizSmoothRise = 85;          // 0-100 (%) — UI smoothing rise speed (higher = snappier attack)
+        private int vizSmoothFall = 15;          // 0-100 (%) — UI smoothing fall speed (lower = smoother decay)
+        private int vizFftRiseLow = 88;          // 0-95 — FFT rise alpha for bass bins (mapped to 0.00-0.95)
+        private int vizFftRiseHigh = 93;         // 0-95 — FFT rise alpha for treble bins
+        private int vizFftFallLow = 50;          // 0-95 — FFT fall alpha for bass bins
+        private int vizFftFallHigh = 65;         // 0-95 — FFT fall alpha for treble bins
+        private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
+        private VizPreset selectedVizPreset = VizPreset.Custom; // Current visualizer preset
+        private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Classic white)
+        private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;

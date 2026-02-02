@@ -125,15 +125,160 @@ namespace UniPlaySong
             if (vm == null) return;
             var s = vm.Settings;
 
-            s.VizFallSpeed = 15;
-            s.VizOpacityMin = 30;
-            s.VizBarGainBoost = 0;
-            s.VizPeakHoldMs = 80;
-            s.VizGravity = 100;
-            s.VizRollingPeakDecay = 50;
-            s.VizBassGravityBias = 50;
+            ApplyVizPresetValues(s, VizPreset.Default);
+            s.SelectedVizPreset = VizPreset.Custom;
 
             ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void VizPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var vm = DataContext as UniPlaySongSettingsViewModel;
+            if (vm == null) return;
+            var s = vm.Settings;
+
+            if (s.SelectedVizPreset != VizPreset.Custom)
+            {
+                ApplyVizPresetValues(s, s.SelectedVizPreset);
+            }
+        }
+
+        private static void ApplyVizPresetValues(UniPlaySongSettings s, VizPreset preset)
+        {
+            switch (preset)
+            {
+                case VizPreset.Default:
+                    s.VizOpacityMin = 30;
+                    s.VizBarGainBoost = 0;
+                    s.VizPeakHoldMs = 80;
+                    s.VizGravity = 120;
+                    s.VizBassGravityBias = 50;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 100;
+                    s.VizTrebleGain = 100;
+                    s.VizBleedAmount = 100;
+                    s.VizCompression = 60;
+                    s.VizSmoothRise = 85;
+                    s.VizSmoothFall = 15;
+                    s.VizFftRiseLow = 88;
+                    s.VizFftRiseHigh = 93;
+                    s.VizFftFallLow = 50;
+                    s.VizFftFallHigh = 65;
+                    s.VizFftTimerMode = false;
+                    s.VizColorTheme = (int)VizColorTheme.Classic;
+                    s.VizGradientEnabled = true;
+                    break;
+
+                case VizPreset.Smooth:
+                    // Gentle, flowing bars — smoothness comes from UI EMA + low gravity, not FFT throttling
+                    s.VizOpacityMin = 40;
+                    s.VizBarGainBoost = -20;
+                    s.VizPeakHoldMs = 120;
+                    s.VizGravity = 60;
+                    s.VizBassGravityBias = 30;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 75;
+                    s.VizTrebleGain = 70;
+                    s.VizBleedAmount = 160;
+                    s.VizCompression = 75;
+                    s.VizSmoothRise = 50;
+                    s.VizSmoothFall = 8;
+                    s.VizFftRiseLow = 85;
+                    s.VizFftRiseHigh = 92;
+                    s.VizFftFallLow = 45;
+                    s.VizFftFallHigh = 60;
+                    s.VizColorTheme = (int)VizColorTheme.Ice;
+                    s.VizGradientEnabled = true;
+                    break;
+
+                case VizPreset.Punchy:
+                    // Snappy beats, fast attack — good for hip-hop/EDM
+                    s.VizOpacityMin = 20;
+                    s.VizBarGainBoost = 0;
+                    s.VizPeakHoldMs = 40;
+                    s.VizGravity = 160;
+                    s.VizBassGravityBias = 70;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 110;
+                    s.VizTrebleGain = 90;
+                    s.VizBleedAmount = 60;
+                    s.VizCompression = 35;
+                    s.VizSmoothRise = 95;
+                    s.VizSmoothFall = 30;
+                    s.VizFftRiseLow = 92;
+                    s.VizFftRiseHigh = 95;
+                    s.VizFftFallLow = 55;
+                    s.VizFftFallHigh = 70;
+                    s.VizColorTheme = (int)VizColorTheme.Fire;
+                    s.VizGradientEnabled = true;
+                    break;
+
+                case VizPreset.Cinematic:
+                    // Wide, slow-moving — the "slow" feel comes from UI smoothing + low gravity
+                    s.VizOpacityMin = 45;
+                    s.VizBarGainBoost = -15;
+                    s.VizPeakHoldMs = 150;
+                    s.VizGravity = 40;
+                    s.VizBassGravityBias = 20;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 65;
+                    s.VizTrebleGain = 70;
+                    s.VizBleedAmount = 180;
+                    s.VizCompression = 85;
+                    s.VizSmoothRise = 40;
+                    s.VizSmoothFall = 5;
+                    s.VizFftRiseLow = 85;
+                    s.VizFftRiseHigh = 90;
+                    s.VizFftFallLow = 45;
+                    s.VizFftFallHigh = 58;
+                    s.VizColorTheme = (int)VizColorTheme.Ocean;
+                    s.VizGradientEnabled = true;
+                    break;
+
+                case VizPreset.Minimal:
+                    // Subtle, understated — low gain + high compression tame the output
+                    s.VizOpacityMin = 50;
+                    s.VizBarGainBoost = -30;
+                    s.VizPeakHoldMs = 60;
+                    s.VizGravity = 100;
+                    s.VizBassGravityBias = 40;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 50;
+                    s.VizTrebleGain = 55;
+                    s.VizBleedAmount = 120;
+                    s.VizCompression = 95;
+                    s.VizSmoothRise = 60;
+                    s.VizSmoothFall = 10;
+                    s.VizFftRiseLow = 85;
+                    s.VizFftRiseHigh = 90;
+                    s.VizFftFallLow = 45;
+                    s.VizFftFallHigh = 58;
+                    s.VizColorTheme = (int)VizColorTheme.Classic;
+                    s.VizGradientEnabled = true;
+                    break;
+
+                case VizPreset.Reactive:
+                    // Maximum responsiveness — everything cranked
+                    s.VizOpacityMin = 15;
+                    s.VizBarGainBoost = 10;
+                    s.VizPeakHoldMs = 20;
+                    s.VizGravity = 180;
+                    s.VizBassGravityBias = 60;
+                    s.VizFftSize = 1024;
+                    s.VizBassGain = 115;
+                    s.VizTrebleGain = 105;
+                    s.VizBleedAmount = 40;
+                    s.VizCompression = 20;
+                    s.VizSmoothRise = 98;
+                    s.VizSmoothFall = 45;
+                    s.VizFftRiseLow = 93;
+                    s.VizFftRiseHigh = 95;
+                    s.VizFftFallLow = 60;
+                    s.VizFftFallHigh = 75;
+                    s.VizColorTheme = (int)VizColorTheme.Neon;
+                    s.VizGradientEnabled = true;
+                    break;
+            }
         }
 
         private void ShowButtonFeedback(object sender, string message)
