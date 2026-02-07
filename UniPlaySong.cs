@@ -763,97 +763,90 @@ namespace UniPlaySong
         /// </summary>
         private void OnSettingsServiceChanged(object sender, SettingsChangedEventArgs e)
         {
-            try
+            // Coordinator subscribes directly to SettingsService - no manual update needed
+
+            // Check if MusicState or EnableMusic changed - if so, re-evaluate playback
+            bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
+                (e.OldSettings.MusicState != e.NewSettings.MusicState ||
+                 e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
+
+            if (musicSettingsChanged)
             {
-                // Coordinator subscribes directly to SettingsService - no manual update needed
-
-                // Check if MusicState or EnableMusic changed - if so, re-evaluate playback
-                bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
-                    (e.OldSettings.MusicState != e.NewSettings.MusicState ||
-                     e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
-
-                if (musicSettingsChanged)
+                var game = SelectedGames?.FirstOrDefault();
+                if (game != null && _coordinator != null)
                 {
-                    var game = SelectedGames?.FirstOrDefault();
-                    if (game != null && _coordinator != null)
+                    // Re-evaluate if music should be playing with new settings
+                    if (!_coordinator.ShouldPlayMusic(game))
                     {
-                        // Re-evaluate if music should be playing with new settings
-                        if (!_coordinator.ShouldPlayMusic(game))
-                        {
-                            _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - stopping music (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic})");
-                            _playbackService?.Stop();
-                        }
-                    }
-                    else if (e.NewSettings?.EnableMusic == false || e.NewSettings?.MusicState == AudioState.Never)
-                    {
-                        // No game selected but music disabled - stop any default music
-                        _fileLogger?.Debug("OnSettingsServiceChanged: Music disabled - stopping all playback");
+                        _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - stopping music (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic})");
                         _playbackService?.Stop();
                     }
                 }
-
-                // Update playback service volume if needed
-                if (_playbackService != null && e.NewSettings != null)
+                else if (e.NewSettings?.EnableMusic == false || e.NewSettings?.MusicState == AudioState.Never)
                 {
-                    _playbackService.SetVolume(e.NewSettings.MusicVolume / Constants.VolumeDivisor);
+                    // No game selected but music disabled - stop any default music
+                    _fileLogger?.Debug("OnSettingsServiceChanged: Music disabled - stopping all playback");
+                    _playbackService?.Stop();
                 }
-                
-                // Always update MediaElementsMonitor's settings reference on every settings change.
-                // Without this, the monitor writes VideoIsPlaying to a stale settings object
-                // after any plugin's settings are saved (Playnite creates a new settings instance).
-                MediaElementsMonitor.UpdateSettings(e.NewSettings);
-
-                // Attach media monitor if pause on trailer setting was just enabled
-                if (e.OldSettings?.PauseOnTrailer != e.NewSettings?.PauseOnTrailer)
-                {
-                    if (e.NewSettings?.PauseOnTrailer == true)
-                    {
-                        MediaElementsMonitor.Attach(_api, e.NewSettings);
-                    }
-                }
-
-                // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
-                if (e.OldSettings != null && e.NewSettings != null)
-                {
-                    bool downloadSettingsChanged = 
-                        e.OldSettings.YtDlpPath != e.NewSettings.YtDlpPath ||
-                        e.OldSettings.FFmpegPath != e.NewSettings.FFmpegPath ||
-                        e.OldSettings.UseFirefoxCookies != e.NewSettings.UseFirefoxCookies;
-                    
-                    if (downloadSettingsChanged && _downloadManager != null)
-                    {
-                        var tempPath = Path.Combine(_api.Paths.ExtensionsDataPath, "UniPlaySong", "temp");
-                        _downloadManager = new DownloadManager(
-                            _httpClient, _htmlWeb, tempPath,
-                            e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
-                        // DownloadManager recreated
-                    }
-
-                    // Check if LiveEffectsEnabled changed - need to switch music players
-                    bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
-                    if (liveEffectsChanged)
-                    {
-                        _fileLogger?.Debug($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
-                        RecreateMusicPlayerForLiveEffects();
-                    }
-                }
-
-                // Re-subscribe to PropertyChanged for backward compatibility
-                if (e.OldSettings != null)
-                {
-                    e.OldSettings.PropertyChanged -= OnSettingsChanged;
-                }
-                if (e.NewSettings != null)
-                {
-                    e.NewSettings.PropertyChanged += OnSettingsChanged;
-                }
-
-                // Settings updated and services notified
             }
-            catch (Exception ex)
+
+            // Update playback service volume if needed
+            if (_playbackService != null && e.NewSettings != null)
             {
-                Logger.Error(ex, "Error handling settings change");
+                _playbackService.SetVolume(e.NewSettings.MusicVolume / Constants.VolumeDivisor);
             }
+
+            // Always update MediaElementsMonitor's settings reference on every settings change.
+            // Without this, the monitor writes VideoIsPlaying to a stale settings object
+            // after any plugin's settings are saved (Playnite creates a new settings instance).
+            MediaElementsMonitor.UpdateSettings(e.NewSettings);
+
+            // Attach media monitor if pause on trailer setting was just enabled
+            if (e.OldSettings?.PauseOnTrailer != e.NewSettings?.PauseOnTrailer)
+            {
+                if (e.NewSettings?.PauseOnTrailer == true)
+                {
+                    MediaElementsMonitor.Attach(_api, e.NewSettings);
+                }
+            }
+
+            // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
+            if (e.OldSettings != null && e.NewSettings != null)
+            {
+                bool downloadSettingsChanged =
+                    e.OldSettings.YtDlpPath != e.NewSettings.YtDlpPath ||
+                    e.OldSettings.FFmpegPath != e.NewSettings.FFmpegPath ||
+                    e.OldSettings.UseFirefoxCookies != e.NewSettings.UseFirefoxCookies;
+
+                if (downloadSettingsChanged && _downloadManager != null)
+                {
+                    var tempPath = Path.Combine(_api.Paths.ExtensionsDataPath, "UniPlaySong", "temp");
+                    _downloadManager = new DownloadManager(
+                        _httpClient, _htmlWeb, tempPath,
+                        e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
+                    // DownloadManager recreated
+                }
+
+                // Check if LiveEffectsEnabled changed - need to switch music players
+                bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
+                if (liveEffectsChanged)
+                {
+                    _fileLogger?.Debug($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
+                    RecreateMusicPlayerForLiveEffects();
+                }
+            }
+
+            // Re-subscribe to PropertyChanged for backward compatibility
+            if (e.OldSettings != null)
+            {
+                e.OldSettings.PropertyChanged -= OnSettingsChanged;
+            }
+            if (e.NewSettings != null)
+            {
+                e.NewSettings.PropertyChanged += OnSettingsChanged;
+            }
+
+            // Settings updated and services notified
         }
 
         /// <summary>
@@ -862,48 +855,41 @@ namespace UniPlaySong
         /// </summary>
         public void OnSettingsSaved()
         {
-            try
+            // Reload settings from disk via SettingsService
+            // SettingsService will automatically notify all subscribers via SettingsChanged event
+            _settingsService.LoadSettings();
+
+            // Immediately check if music should be stopped based on new settings
+            // This handles the case where MusicState was changed to Never or a mode-specific setting
+            var currentSettings = _settingsService.Current;
+            if (currentSettings != null && _coordinator != null)
             {
-                // Reload settings from disk via SettingsService
-                // SettingsService will automatically notify all subscribers via SettingsChanged event
-                _settingsService.LoadSettings();
+                var game = SelectedGames?.FirstOrDefault();
+                bool shouldStop = false;
 
-                // Immediately check if music should be stopped based on new settings
-                // This handles the case where MusicState was changed to Never or a mode-specific setting
-                var currentSettings = _settingsService.Current;
-                if (currentSettings != null && _coordinator != null)
+                // Check if music should be completely disabled
+                if (!currentSettings.EnableMusic || currentSettings.MusicState == AudioState.Never)
                 {
-                    var game = SelectedGames?.FirstOrDefault();
-                    bool shouldStop = false;
-
-                    // Check if music should be completely disabled
-                    if (!currentSettings.EnableMusic || currentSettings.MusicState == AudioState.Never)
-                    {
-                        shouldStop = true;
-                    }
-                    // Check mode-specific settings
-                    else if (IsDesktop && currentSettings.MusicState == AudioState.Fullscreen)
-                    {
-                        shouldStop = true;
-                    }
-                    else if (IsFullscreen && currentSettings.MusicState == AudioState.Desktop)
-                    {
-                        shouldStop = true;
-                    }
-
-                    if (shouldStop)
-                    {
-                        _fileLogger?.Debug($"OnSettingsSaved: Stopping music immediately (State: {currentSettings.MusicState}, Mode: {(IsFullscreen ? "Fullscreen" : "Desktop")})");
-                        _playbackService?.Stop();
-                    }
+                    shouldStop = true;
+                }
+                // Check mode-specific settings
+                else if (IsDesktop && currentSettings.MusicState == AudioState.Fullscreen)
+                {
+                    shouldStop = true;
+                }
+                else if (IsFullscreen && currentSettings.MusicState == AudioState.Desktop)
+                {
+                    shouldStop = true;
                 }
 
-                // Settings saved and reloaded
+                if (shouldStop)
+                {
+                    _fileLogger?.Debug($"OnSettingsSaved: Stopping music immediately (State: {currentSettings.MusicState}, Mode: {(IsFullscreen ? "Fullscreen" : "Desktop")})");
+                    _playbackService?.Stop();
+                }
             }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error reloading settings");
-            }
+
+            // Settings saved and reloaded
         }
 
         private void OnMainModelChanged(object sender, PropertyChangedEventArgs e)
