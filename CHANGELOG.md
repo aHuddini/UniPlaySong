@@ -6,9 +6,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Improved
 - **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log
-  - Removed 214 debug log statements (81% reduction) from hot-path and mature service code
+  - Removed 216 debug log statements (82% reduction) from hot-path and mature service code
   - Eliminated per-operation logs that fired on every game switch, song load, and video state change
-  - Remaining debug logs are only in low-frequency, user-triggered code paths
+  - Removed spectrum visualizer diagnostics (720+ potential logs/second when debug enabled)
   - Extension.log now significantly quieter even when Playnite's log level is set to Debug
   - All diagnostic logging still available via UniPlaySong's own debug log when enabled in settings
 

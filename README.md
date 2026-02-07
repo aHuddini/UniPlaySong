@@ -23,8 +23,9 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.2.5
 
 ### Improvements
-- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (81% reduction)
+- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (82% reduction)
   - Removed chatty per-operation debug logs that fired on every game switch and song load
+  - Removed spectrum visualizer diagnostics (720+ potential logs/second)
   - Diagnostic logging still available via UniPlaySong's own debug log when enabled in settings
 
 ### Previous Versions
