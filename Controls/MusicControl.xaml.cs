@@ -48,8 +48,6 @@ namespace UniPlaySong.Controls
             Unloaded += OnUnloaded;
 
             _musicControls.Add(this);
-
-            Logger.Debug("[MusicControl] Instance created");
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -59,14 +57,12 @@ namespace UniPlaySong.Controls
                 _musicControls.Add(this);
             }
             UpdateMute();
-            Logger.Debug($"[MusicControl] Loaded (total instances: {_musicControls.Count})");
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _musicControls.Remove(this);
             UpdateMute();
-            Logger.Debug($"[MusicControl] Unloaded (total instances: {_musicControls.Count})");
         }
 
         /// <summary>
@@ -91,7 +87,6 @@ namespace UniPlaySong.Controls
 
             if (_settings.ThemeOverlayActive != mute)
             {
-                Logger.Debug($"[MusicControl] Setting ThemeOverlayActive={mute} (was {_settings.ThemeOverlayActive})");
                 _settings.ThemeOverlayActive = mute;
             }
         }
@@ -126,7 +121,6 @@ namespace UniPlaySong.Controls
         {
             if (d is MusicControl)
             {
-                Logger.Debug($"[MusicControl] Tag changed: {e.OldValue} -> {e.NewValue}");
                 UpdateMute();
             }
         }
@@ -207,8 +201,6 @@ namespace UniPlaySong.Controls
             {
                 _settings.PropertyChanged += OnSettingsChangedStatic;
             }
-
-            Logger.Debug("[MusicControl] Static services updated");
         }
 
         private static void OnSettingsChangedStatic(object sender, PropertyChangedEventArgs e)
