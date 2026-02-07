@@ -12,9 +12,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// Desktop top panel media controls ViewModel (play/pause, skip).
-    /// </summary>
+    // Desktop top panel media controls ViewModel (play/pause, skip).
     public class TopPanelMediaControlViewModel
     {
         private readonly Func<IMusicPlaybackService> _getPlaybackService;
@@ -225,9 +223,7 @@ namespace UniPlaySong.DeskMediaControl
             playbackService.OnSongCountChanged += UpdateSkipVisibility;
         }
 
-        /// <summary>
-        /// Re-subscribe to events after playback service recreation (e.g., Live Effects toggle).
-        /// </summary>
+        // Re-subscribe to events after playback service recreation (e.g., Live Effects toggle).
         public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
         {
             SubscribeToEvents(newPlaybackService);

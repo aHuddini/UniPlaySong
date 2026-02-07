@@ -18,9 +18,7 @@ using UniPlaySong.Views;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for showing download dialogs
-    /// </summary>
+    // Service for showing download dialogs
     public class DownloadDialogService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -1110,10 +1108,7 @@ namespace UniPlaySong.Services
             return selectedSong;
         }
 
-        /// <summary>
-        /// Shows album selection dialog for default music downloads
-        /// Unlike regular album selection, this doesn't auto-search - user types game name in search box
-        /// </summary>
+        // Album selection for default music (no auto-search - user types game name)
         private Album ShowAlbumSelectionDialogForDefaultMusic(Source source)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -1225,10 +1220,7 @@ namespace UniPlaySong.Services
             return selectedAlbum;
         }
 
-        /// <summary>
-        /// Shows a dialog to download audio from a specific YouTube URL
-        /// </summary>
-        /// <param name="game">The game to download music for</param>
+        // Download audio from a specific YouTube URL for a game
         public void ShowDownloadFromUrlDialog(Game game)
         {
             if (game == null)
@@ -1351,9 +1343,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Normalize an individual song (desktop mode)
-        /// </summary>
+        // Normalize an individual song (desktop mode)
         public void ShowNormalizeIndividualSongProgress(Game game, string selectedFile)
         {
             if (game == null || string.IsNullOrEmpty(selectedFile))
@@ -1392,9 +1382,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Silence-trim an individual song (desktop mode)
-        /// </summary>
+        // Silence-trim an individual song (desktop mode)
         public void ShowTrimIndividualSongProgress(Game game, string selectedFile)
         {
             if (game == null || string.IsNullOrEmpty(selectedFile))
@@ -1433,10 +1421,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Automatically normalizes downloaded files if auto-normalize setting is enabled.
-        /// Called after successful downloads. Public so controller dialog can also use it.
-        /// </summary>
+        // Auto-normalize downloaded files if setting is enabled (public for controller dialog)
         public void AutoNormalizeDownloadedFiles(List<string> downloadedFiles)
         {
             if (downloadedFiles == null || downloadedFiles.Count == 0)
@@ -1544,14 +1529,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// </summary>
-        /// <param name="games">Games to download music for</param>
-        /// <param name="source">Download source</param>
-        /// <param name="overwrite">Whether to overwrite existing music</param>
-        /// <param name="maxConcurrentDownloads">Maximum concurrent downloads</param>
-        /// <returns>List of downloaded file paths for auto-normalization</returns>
+        // Batch download with parallel execution, returns downloaded file paths
         public List<string> ShowBatchDownloadDialog(
             List<Game> games,
             Source source,
@@ -1562,10 +1540,7 @@ namespace UniPlaySong.Services
             return result?.DownloadedFiles ?? new List<string>();
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// Returns full results including failed games for retry prompting
-        /// </summary>
+        // Batch download returning full results including failed games for retry
         public BatchDownloadResult ShowBatchDownloadDialogWithResults(
             List<Game> games,
             Source source,
@@ -1575,16 +1550,7 @@ namespace UniPlaySong.Services
             return ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads, null);
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// Returns full results including failed games for retry prompting
-        /// Optionally resumes playback for the current game when its download completes
-        /// </summary>
-        /// <param name="games">Games to download music for</param>
-        /// <param name="source">Download source</param>
-        /// <param name="overwrite">Whether to overwrite existing music</param>
-        /// <param name="maxConcurrentDownloads">Max concurrent downloads</param>
-        /// <param name="currentGame">Currently selected game - playback resumes when this game's download completes</param>
+        // Batch download with optional playback resume for currentGame when its download completes
         public BatchDownloadResult ShowBatchDownloadDialogWithResults(
             List<Game> games,
             Source source,
@@ -1850,11 +1816,7 @@ namespace UniPlaySong.Services
             return batchResult;
         }
 
-        /// <summary>
-        /// Prompts user for retry options after batch download and handles retries
-        /// </summary>
-        /// <param name="failedGames">List of failed game download results</param>
-        /// <returns>List of additionally downloaded file paths from retries</returns>
+        // Prompt user for retry options after batch download failures
         public List<string> PromptAndRetryFailedDownloads(List<GameDownloadResult> failedGames)
         {
             var additionalDownloads = new List<string>();
@@ -1905,10 +1867,7 @@ namespace UniPlaySong.Services
             return additionalDownloads;
         }
 
-        /// <summary>
-        /// Auto-retry failed downloads with broader/less restrictive search
-        /// Uses the same Material Design batch download dialog for consistency
-        /// </summary>
+        // Auto-retry failed downloads with broader search parameters
         private List<string> AutoRetryWithBroaderSearch(List<GameDownloadResult> failedGames)
         {
             var downloadedFiles = new List<string>();
@@ -1946,9 +1905,7 @@ namespace UniPlaySong.Services
             return downloadedFiles;
         }
 
-        /// <summary>
-        /// Shows batch download dialog with broader/looser matching for retry operations
-        /// </summary>
+        // Batch download dialog with broader matching for retry operations
         private BatchDownloadResult ShowBatchDownloadDialogWithBroaderSearch(List<Game> games)
         {
             var batchResult = new BatchDownloadResult();
@@ -2149,9 +2106,7 @@ namespace UniPlaySong.Services
             return batchResult;
         }
 
-        /// <summary>
-        /// Internal method to retry a single game with broader search parameters
-        /// </summary>
+        // Retry a single game with broader search parameters
         private string RetryWithBroaderSearchInternal(Game game, CancellationToken cancellationToken)
         {
             // Get albums with cache bypass to ensure fresh results
@@ -2202,10 +2157,7 @@ namespace UniPlaySong.Services
             return success && System.IO.File.Exists(downloadPath) ? downloadPath : null;
         }
 
-        /// <summary>
-        /// Manual retry - show batch manual download dialog for all failed games
-        /// Uses the new BatchManualDownloadDialog for a unified experience
-        /// </summary>
+        // Manual retry using BatchManualDownloadDialog for all failed games
         private List<string> ManualRetryForFailedGames(List<GameDownloadResult> failedGames)
         {
             var downloadedFiles = new List<string>();
@@ -2250,13 +2202,7 @@ namespace UniPlaySong.Services
             return downloadedFiles;
         }
 
-        /// <summary>
-        /// Shows the batch manual download dialog for multiple failed games.
-        /// This provides a unified UI where users can search and download music for all failed games
-        /// from a single dialog instead of opening individual dialogs for each game.
-        /// </summary>
-        /// <param name="failedGames">List of games that failed auto-download</param>
-        /// <returns>True if any downloads were successful</returns>
+        // Unified UI for searching and downloading music for all failed games in one dialog
         public bool ShowBatchManualDownloadDialog(List<Game> failedGames)
         {
             if (failedGames == null || failedGames.Count == 0)
@@ -2677,9 +2623,7 @@ namespace UniPlaySong.Services
             });
         }
 
-        /// <summary>
-        /// Check if two song names match (accounting for cleaned filenames)
-        /// </summary>
+        // Check if two song names match (accounting for cleaned filenames)
         private bool SongNameMatches(string existingFileName, string newSongName)
         {
             if (string.IsNullOrEmpty(existingFileName) || string.IsNullOrEmpty(newSongName))
@@ -2691,9 +2635,7 @@ namespace UniPlaySong.Services
                    cleanedNew.IndexOf(existingFileName, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Get Source enum from display name
-        /// </summary>
+        // Get Source enum from display name
         private Source GetSourceFromName(string sourceName)
         {
             if (string.IsNullOrEmpty(sourceName))

@@ -2,9 +2,7 @@ using System;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Represents song metadata for display.
-    /// </summary>
+    // Represents song metadata for display
     public class SongInfo
     {
         public static readonly SongInfo Empty = new SongInfo(null, null, null, TimeSpan.Zero);
@@ -18,15 +16,10 @@ namespace UniPlaySong.Services
         public bool HasArtist => !string.IsNullOrWhiteSpace(Artist);
         public bool HasDuration => Duration.TotalSeconds > 0;
 
-        /// <summary>
-        /// Gets the formatted display text for the song.
-        /// Format: "Title - Artist  3:45" or "Title  3:45" or just "Title"
-        /// </summary>
+        // Formatted display text: "Title - Artist | 3:45" or "Title | 3:45" or just "Title"
         public string DisplayText => DeskMediaControl.SongTitleCleaner.FormatDisplayText(Title, Artist, Duration);
 
-        /// <summary>
-        /// Gets the duration formatted as m:ss or h:mm:ss.
-        /// </summary>
+        // Duration formatted as m:ss or h:mm:ss
         public string DurationText => DeskMediaControl.SongTitleCleaner.FormatDuration(Duration);
 
         public SongInfo(string filePath, string title, string artist, TimeSpan duration)

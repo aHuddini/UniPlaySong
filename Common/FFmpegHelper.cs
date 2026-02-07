@@ -5,9 +5,7 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Helper class for FFmpeg validation and common operations
-    /// </summary>
+    // FFmpeg validation and common operations
     public static class FFmpegHelper
     {
         private static readonly ILogger Logger = LogManager.GetLogger();

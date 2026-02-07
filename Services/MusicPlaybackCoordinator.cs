@@ -7,10 +7,8 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Coordinates music playback decisions, state management, and skip logic
-    /// Centralizes all "should play" logic to prevent timing issues and complexity
-    /// </summary>
+    // Coordinates playback decisions, state management, and skip logic.
+    // Centralizes all "should play" logic to prevent timing issues.
     public class MusicPlaybackCoordinator : IMusicPlaybackCoordinator
     {
         private readonly IMusicPlaybackService _playbackService;
@@ -129,12 +127,7 @@ namespace UniPlaySong.Services
             return true;
         }
         
-        /// <summary>
-        /// Handles game selection events.
-        /// Coordinates skip logic and initiates music playback if appropriate.
-        /// </summary>
-        /// <param name="game">The selected game. Can be null.</param>
-        /// <param name="isFullscreen">Whether Playnite is in fullscreen mode.</param>
+        // Handles game selection: coordinates skip logic and initiates playback if appropriate
         public void HandleGameSelected(Game game, bool isFullscreen)
         {
             // Reset skip state when entering fullscreen for first time (matches PNS "Skip on startup" behavior)
@@ -214,9 +207,7 @@ namespace UniPlaySong.Services
             _firstSelect = false;
         }
         
-        /// <summary>
-        /// Handles login screen dismissal (controller/keyboard input)
-        /// </summary>
+        // Handles login screen dismissal (controller/keyboard input)
         public void HandleLoginDismiss()
         {
             if (!_loginSkipActive)
@@ -257,10 +248,7 @@ namespace UniPlaySong.Services
             timer.Start();
         }
         
-        /// <summary>
-        /// Handles view changes (e.g., user left login screen).
-        /// Clears login skip and starts music if appropriate.
-        /// </summary>
+        // Handles view changes (e.g., user left login screen). Clears login skip and starts music.
         public void HandleViewChange()
         {
             if (!_loginSkipActive || !_isFullscreen())
@@ -359,37 +347,17 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets whether this is the first game selection.
-        /// </summary>
         public bool IsFirstSelect() => _firstSelect;
 
-        /// <summary>
-        /// Gets whether login skip is currently active.
-        /// </summary>
         public bool IsLoginSkipActive() => _loginSkipActive;
         
-        /// <summary>
-        /// Resets the first select flag.
-        /// </summary>
         public void ResetFirstSelect() => _firstSelect = false;
 
-        /// <summary>
-        /// Sets the first select flag.
-        /// </summary>
-        /// <param name="value">The value to set.</param>
         public void SetFirstSelect(bool value) => _firstSelect = value;
 
-        /// <summary>
-        /// Sets the login skip active state.
-        /// </summary>
-        /// <param name="active">True to activate login skip; false to deactivate.</param>
         public void SetLoginSkipActive(bool active) => _loginSkipActive = active;
         
-        /// <summary>
-        /// Resets skip state when switching to fullscreen mode.
-        /// Used for SkipFirstSelectionAfterModeSwitch feature.
-        /// </summary>
+        // Resets skip state for SkipFirstSelectionAfterModeSwitch when switching to fullscreen
         public void ResetSkipStateForModeSwitch()
         {
             if (_settings?.SkipFirstSelectionAfterModeSwitch == true)
@@ -401,10 +369,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Handles SettingsService settings changed events.
-        /// Automatically called when settings are updated - no manual UpdateSettings() needed.
-        /// </summary>
+        // Handles SettingsService change events - auto-called, no manual UpdateSettings() needed
         private void OnSettingsChanged(object sender, SettingsChangedEventArgs e)
         {
             if (e.NewSettings != null)
@@ -414,14 +379,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Updates the settings reference.
-        /// </summary>
-        /// <param name="newSettings">The new settings instance.</param>
-        /// <remarks>
-        /// DEPRECATED: SettingsService now handles updates automatically via events.
-        /// Kept for backward compatibility.
-        /// </remarks>
+        // DEPRECATED: SettingsService now handles updates automatically via events. Kept for backward compatibility.
         [Obsolete("SettingsService now handles updates automatically. This method will be removed in a future version.")]
         public void UpdateSettings(UniPlaySongSettings newSettings)
         {

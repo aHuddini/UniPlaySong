@@ -14,9 +14,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for normalizing audio files using FFmpeg loudnorm filter (two-pass)
-    /// </summary>
+    // Audio normalization using FFmpeg loudnorm filter (two-pass)
     public class AudioNormalizationService : INormalizationService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -36,12 +34,6 @@ namespace UniPlaySong.Services
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
-        /// <summary>
-        /// Checks if a file is already normalized (has the normalization suffix).
-        /// </summary>
-        /// <param name="filePath">The file path to check.</param>
-        /// <param name="suffix">The normalization suffix to look for.</param>
-        /// <returns>True if the file is already normalized; otherwise, false.</returns>
         private bool IsFileAlreadyNormalized(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
@@ -51,21 +43,13 @@ namespace UniPlaySong.Services
             return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Builds output filename by simply appending the normalization suffix.
-        /// Simple approach: always append suffix to current filename.
-        /// Examples:
-        /// - "song.mp3" -> "song-normalized.mp3"
-        /// - "song-trimmed.mp3" -> "song-trimmed-normalized.mp3"
-        /// </summary>
+        // Appends normalization suffix: "song.mp3" -> "song-normalized.mp3"
         private string BuildNormalizedFileName(string baseFileName, string normalizeSuffix)
         {
             return $"{baseFileName}{normalizeSuffix}";
         }
 
-        /// <summary>
-        /// Gets the duration of an audio file in seconds using FFmpeg
-        /// </summary>
+        // Gets audio duration in seconds using FFmpeg
         private async Task<double?> GetAudioDurationAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken)
         {
             try
@@ -133,9 +117,7 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        /// <summary>
-        /// Sanitizes filename by removing or replacing problematic characters for FFmpeg
-        /// </summary>
+        // Replace problematic characters for FFmpeg command-line parsing
         private string SanitizeFilenameForFFmpeg(string fileName)
         {
             // Characters that commonly cause issues with FFmpeg command-line parsing
@@ -156,9 +138,6 @@ namespace UniPlaySong.Services
             return sanitized;
         }
 
-        /// <summary>
-        /// Checks if a filename contains problematic characters for FFmpeg
-        /// </summary>
         private bool HasProblematicCharacters(string fileName)
         {
             var problematicChars = new[] { '[', ']', '(', ')', '{', '}', '\'', '"', '`', '&', '|', ';', '<', '>', '!', '$', '#', '%' };
@@ -178,9 +157,7 @@ namespace UniPlaySong.Services
             return await NormalizeFileInternalAsync(filePath, settings, progress, cancellationToken);
         }
 
-        /// <summary>
-        /// Stops music playback if currently playing. Used before normalization to prevent file locking.
-        /// </summary>
+        // Stop playback before normalization to prevent file locking
         private async Task StopPlaybackIfNeededAsync(CancellationToken cancellationToken)
         {
             try
@@ -197,9 +174,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Internal normalization method that doesn't stop playback (for use in parallel bulk operations).
-        /// </summary>
+        // Internal normalization (no playback stop) for parallel bulk operations
         private async Task<bool> NormalizeFileInternalAsync(
             string filePath,
             NormalizationSettings settings,
@@ -617,9 +592,7 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// First pass: Analyze audio to get loudness measurements
-        /// </summary>
+        // First pass: analyze audio to get loudness measurements
         private async Task<LoudnormMeasurements> AnalyzeAudioAsync(
             string filePath,
             NormalizationSettings settings,
@@ -700,12 +673,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Parses loudnorm JSON output from FFmpeg.
-        /// FFmpeg outputs JSON directly to stderr with root-level properties.
-        /// </summary>
-        /// <param name="jsonOutput">The JSON output string from FFmpeg stderr.</param>
-        /// <returns>Parsed loudness measurements, or null if parsing fails.</returns>
+        // Parse loudnorm JSON from FFmpeg stderr (root-level properties)
         private LoudnormMeasurements ParseLoudnormJson(string jsonOutput)
         {
             try
@@ -759,10 +727,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Second pass: Applies normalization using measurements from first pass.
-        /// Creates normalized file and optionally preserves original.
-        /// </summary>
+        // Second pass: apply normalization using first-pass measurements
         private async Task<bool> ApplyNormalizationAsync(
             string filePath,
             NormalizationSettings settings,

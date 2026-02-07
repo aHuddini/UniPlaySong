@@ -9,36 +9,10 @@ using UniPlaySong.Audio;
 
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// Compact 12-bar spectrum visualizer for the Desktop top panel.
-    /// Uses WPF Rectangle elements with ScaleTransform for GPU-composited animation.
-    /// Only ScaleY changes per frame — no layout invalidation, no bitmap writes.
-    /// CompositionTarget.Rendering drives updates synced to WPF's render pipeline (~60fps).
-    ///
-    /// === Animation Model (v5 — 12-bar peak hold + gravity drop) ===
-    /// - Snap up instantly on new peak, hold briefly, then gravity-accelerated fall
-    /// - Per-band soft compression with rolling peak reference
-    /// - Sqrt scaling for poppier mid-range response
-    /// - Dirty checking skips GPU property updates when pixel delta &lt; 0.5px
-    ///
-    /// === Frequency Binning ===
-    /// 12 bands with frequency-based bin mapping (auto-configured for FFT size):
-    ///   Bar 0:  40-108 Hz      Sub-bass / Kick
-    ///   Bar 1:  108-194 Hz     Bass / Snare body
-    ///   Bar 2:  194-301 Hz     Low mids
-    ///   Bar 3:  301-452 Hz     Mids
-    ///   Bar 4:  452-732 Hz     Upper mids / Vocals
-    ///   Bar 5:  732-1.0k Hz    Vocal presence
-    ///   Bar 6:  1.0k-1.4k Hz   Upper vocal
-    ///   Bar 7:  1.4k-2.0k Hz   Low presence
-    ///   Bar 8:  2.0k-2.8k Hz   Presence
-    ///   Bar 9:  2.8k-4.2k Hz   Detail
-    ///   Bar 10: 4.2k-7.0k Hz   Shimmer
-    ///   Bar 11: 7.0k-11.3k Hz  High treble
-    /// Bin indices computed from frequency boundaries: bin = freq * fftSize / 44100
-    ///
-    /// Layout: 12 bars, 3px wide, 1px gap, 18px max height
-    /// </summary>
+    // Compact 12-bar spectrum visualizer for the Desktop top panel.
+    // Uses WPF Rectangles with ScaleTransform for GPU-composited animation (no layout invalidation).
+    // Animation: peak hold + gravity drop, per-band compression, dirty checking (<0.5px skips GPU writes).
+    // 12 frequency bands from 40Hz-11.3kHz, auto-configured for FFT size. Layout: 3px bars, 1px gap, 18px height.
     public class SpectrumVisualizerControl : Canvas
     {
         // Visualization data
@@ -235,18 +209,13 @@ namespace UniPlaySong.DeskMediaControl
             Visibility = Visibility.Collapsed;
         }
 
-        /// <summary>
-        /// Provide a settings accessor so the visualizer can read tuning parameters live.
-        /// </summary>
+        // Provide a settings accessor so the visualizer can read tuning parameters live
         public void SetSettingsProvider(Func<UniPlaySongSettings> getSettings)
         {
             _getSettings = getSettings;
         }
 
-        /// <summary>
-        /// Checks if the color theme setting changed and updates all bar brushes if needed.
-        /// Called once per frame — dirty check is a cheap int + bool compare.
-        /// </summary>
+        // Checks if color theme changed and updates bar brushes (cheap int+bool dirty check per frame)
         private void UpdateBarBrushes(UniPlaySongSettings settings)
         {
             int themeIndex = settings?.VizColorTheme ?? 0;
@@ -304,11 +273,7 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        /// <summary>
-        /// Configure bin ranges for the given FFT size. Called once at construction and
-        /// auto-reconfigured if the provider's FFT size changes (e.g., after settings change + restart).
-        /// Frequency boundaries target the same ranges regardless of FFT size.
-        /// </summary>
+        // Configure bin ranges for the given FFT size (auto-reconfigures if provider's FFT size changes)
         private void ConfigureBinRanges(int fftSize)
         {
             if (fftSize == _currentFftSize) return;

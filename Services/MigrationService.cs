@@ -10,10 +10,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for migrating music files between PlayniteSound and UniPlaySong extensions.
-    /// Supports bidirectional migration with progress reporting.
-    /// </summary>
+    // Bidirectional music file migration between PlayniteSound and UniPlaySong
     public class MigrationService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -42,30 +39,19 @@ namespace UniPlaySong.Services
             _errorHandler = errorHandler;
         }
 
-        /// <summary>
-        /// Gets the PlayniteSound games base path: ExtraMetadata\Games\
-        /// </summary>
-        private string PlayniteSoundGamesPath =>
+        private string PlayniteSoundGamesPath => // ExtraMetadata\Games\
             Path.Combine(_playniteConfigPath, ExtraMetadataFolder, GamesFolder);
 
-        /// <summary>
-        /// Gets the UniPlaySong games base path: ExtraMetadata\UniPlaySong\Games\
-        /// </summary>
-        private string UniPlaySongGamesPath =>
+        private string UniPlaySongGamesPath => // ExtraMetadata\UniPlaySong\Games\
             Path.Combine(_playniteConfigPath, ExtraMetadataFolder, UniPlaySongFolder, GamesFolder);
 
-        /// <summary>
-        /// Checks if a file has an audio extension
-        /// </summary>
         private bool IsAudioFile(string filePath)
         {
             var extension = Path.GetExtension(filePath)?.ToLowerInvariant();
             return !string.IsNullOrEmpty(extension) && AudioExtensions.Contains(extension);
         }
 
-        /// <summary>
-        /// Scans PlayniteSound directory for game IDs that have music files
-        /// </summary>
+        // Scan PlayniteSound directory for game IDs with music files
         public List<MigrationGameInfo> ScanPlayniteSoundGames()
         {
             var games = new List<MigrationGameInfo>();
@@ -113,9 +99,7 @@ namespace UniPlaySong.Services
             return games;
         }
 
-        /// <summary>
-        /// Scans UniPlaySong directory for game IDs that have music files
-        /// </summary>
+        // Scan UniPlaySong directory for game IDs with music files
         public List<MigrationGameInfo> ScanUniPlaySongGames()
         {
             var games = new List<MigrationGameInfo>();
@@ -158,9 +142,6 @@ namespace UniPlaySong.Services
             return games;
         }
 
-        /// <summary>
-        /// Attempts to get the game name from the Playnite database by ID
-        /// </summary>
         private string GetGameNameById(string gameIdStr)
         {
             try
@@ -182,9 +163,7 @@ namespace UniPlaySong.Services
             return null; // Unknown game
         }
 
-        /// <summary>
-        /// Migrates music files from PlayniteSound to UniPlaySong for a single game
-        /// </summary>
+        // Migrate music files from PlayniteSound to UniPlaySong for a single game
         public MigrationResult MigrateFromPlayniteSound(string gameId, bool overwrite = false)
         {
             var sourcePath = Path.Combine(PlayniteSoundGamesPath, gameId, PlayniteSoundMusicFolder);
@@ -193,9 +172,7 @@ namespace UniPlaySong.Services
             return MigrateFiles(gameId, sourcePath, destPath, overwrite);
         }
 
-        /// <summary>
-        /// Migrates music files from UniPlaySong to PlayniteSound for a single game
-        /// </summary>
+        // Migrate music files from UniPlaySong to PlayniteSound for a single game
         public MigrationResult MigrateToPlayniteSound(string gameId, bool overwrite = false)
         {
             var sourcePath = Path.Combine(UniPlaySongGamesPath, gameId);
@@ -204,9 +181,6 @@ namespace UniPlaySong.Services
             return MigrateFiles(gameId, sourcePath, destPath, overwrite);
         }
 
-        /// <summary>
-        /// Core file migration logic
-        /// </summary>
         private MigrationResult MigrateFiles(string gameId, string sourcePath, string destPath, bool overwrite)
         {
             var result = new MigrationResult
@@ -272,9 +246,7 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Migrates all games from PlayniteSound to UniPlaySong
-        /// </summary>
+        // Migrate all games from PlayniteSound to UniPlaySong
         public async Task<MigrationBatchResult> MigrateAllFromPlayniteSoundAsync(
             IProgress<MigrationProgress> progress = null,
             CancellationToken cancellationToken = default,
@@ -284,9 +256,7 @@ namespace UniPlaySong.Services
             return await MigrateBatchAsync(games, MigrateFromPlayniteSound, progress, cancellationToken, overwrite);
         }
 
-        /// <summary>
-        /// Migrates all games from UniPlaySong to PlayniteSound
-        /// </summary>
+        // Migrate all games from UniPlaySong to PlayniteSound
         public async Task<MigrationBatchResult> MigrateAllToPlayniteSoundAsync(
             IProgress<MigrationProgress> progress = null,
             CancellationToken cancellationToken = default,
@@ -296,9 +266,6 @@ namespace UniPlaySong.Services
             return await MigrateBatchAsync(games, MigrateToPlayniteSound, progress, cancellationToken, overwrite);
         }
 
-        /// <summary>
-        /// Core batch migration logic with async progress reporting
-        /// </summary>
         private async Task<MigrationBatchResult> MigrateBatchAsync(
             List<MigrationGameInfo> games,
             Func<string, bool, MigrationResult> migrateFunc,
@@ -352,9 +319,6 @@ namespace UniPlaySong.Services
             return batchResult;
         }
 
-        /// <summary>
-        /// Gets summary statistics for both directions
-        /// </summary>
         public MigrationSummary GetMigrationSummary()
         {
             var playniteSoundGames = ScanPlayniteSoundGames();
@@ -369,12 +333,7 @@ namespace UniPlaySong.Services
             };
         }
 
-        /// <summary>
-        /// Deletes all PlayniteSound music files (Music Files folders within game directories)
-        /// </summary>
-        /// <param name="progress">Progress reporter for UI updates</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result containing counts of deleted files and folders</returns>
+        // Delete all PlayniteSound music files (Music Files folders within game directories)
         public async Task<PlayniteSoundDeleteResult> DeletePlayniteSoundMusicAsync(
             IProgress<MigrationProgress> progress = null,
             CancellationToken cancellationToken = default)
@@ -474,9 +433,6 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Result of deleting PlayniteSound music files
-    /// </summary>
     public class PlayniteSoundDeleteResult
     {
         public int TotalGames { get; set; }
@@ -490,9 +446,6 @@ namespace UniPlaySong.Services
 
     #region Migration Models
 
-    /// <summary>
-    /// Information about a game with music files
-    /// </summary>
     public class MigrationGameInfo
     {
         public string GameId { get; set; }
@@ -503,9 +456,6 @@ namespace UniPlaySong.Services
         public string DisplayName => GameName ?? $"Unknown ({GameId.Substring(0, 8)}...)";
     }
 
-    /// <summary>
-    /// Result of migrating a single game
-    /// </summary>
     public class MigrationResult
     {
         public bool Success { get; set; }
@@ -520,9 +470,6 @@ namespace UniPlaySong.Services
         public int TotalFilesProcessed => FilesCopied + FilesSkipped + FilesOverwritten + FilesFailed;
     }
 
-    /// <summary>
-    /// Result of batch migration
-    /// </summary>
     public class MigrationBatchResult
     {
         public int TotalGames { get; set; }
@@ -534,9 +481,6 @@ namespace UniPlaySong.Services
         public List<MigrationResult> Results { get; set; } = new List<MigrationResult>();
     }
 
-    /// <summary>
-    /// Progress update for migration operations
-    /// </summary>
     public class MigrationProgress
     {
         public int CurrentIndex { get; set; }
@@ -548,9 +492,6 @@ namespace UniPlaySong.Services
         public double ProgressPercentage => TotalCount > 0 ? (CurrentIndex * 100.0 / TotalCount) : 0;
     }
 
-    /// <summary>
-    /// Summary of available migrations
-    /// </summary>
     public class MigrationSummary
     {
         public int PlayniteSoundGameCount { get; set; }

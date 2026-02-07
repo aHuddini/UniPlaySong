@@ -13,9 +13,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for KHInsider (downloads.khinsider.com)
-    /// </summary>
+    // KHInsider downloader (downloads.khinsider.com)
     public class KHInsiderDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();

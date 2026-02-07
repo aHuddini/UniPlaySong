@@ -5,11 +5,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Audio
 {
-    /// <summary>
-    /// Audio effects chain implementing ISampleProvider.
-    /// Applies high-pass, low-pass, reverb (libSoX/Audacity algorithm), and makeup gain.
-    /// Reads effect parameters directly from SettingsService for real-time changes.
-    /// </summary>
+    // Audio effects chain: high-pass, low-pass, reverb (libSoX), and makeup gain
     public class EffectsChain : ISampleProvider
     {
         private readonly ISampleProvider _source;
@@ -124,10 +120,7 @@ namespace UniPlaySong.Audio
 
         public WaveFormat WaveFormat => _source.WaveFormat;
 
-        /// <summary>
-        /// Resets all effect buffers to clear any residual audio.
-        /// Call this when switching songs to prevent reverb tail bleed.
-        /// </summary>
+        // Resets all effect buffers (call when switching songs to prevent reverb tail bleed)
         public void Reset()
         {
             // Clear pre-delay buffers
@@ -307,9 +300,7 @@ namespace UniPlaySong.Audio
             return 440.0 * Math.Pow(2, (midiNote - 69) / 12.0);
         }
 
-        /// <summary>
-        /// Process input through pre-delay buffer, returns delayed sample
-        /// </summary>
+        // Process input through pre-delay buffer, returns delayed sample
         private float ProcessPreDelay(float input, float[] buffer, int preDelaySize)
         {
             // Read from buffer (delayed output)
@@ -926,9 +917,7 @@ namespace UniPlaySong.Audio
             if (_tremoloLfoPhase >= 1.0) _tremoloLfoPhase -= 1.0;
         }
 
-        /// <summary>
-        /// Process a single sample through the reverb algorithm (libSoX style).
-        /// </summary>
+        // Process a single sample through the reverb algorithm (libSoX style)
         private static float ProcessReverbChannel(
             float input,
             float[][] combBuffers, int[] combIndex, int[] combSize, float[] combStore,
@@ -978,17 +967,12 @@ namespace UniPlaySong.Audio
             _lastLowPassCutoff = settings.LowPassCutoff;
         }
 
-        /// <summary>
-        /// Convert dB to linear gain
-        /// </summary>
-        private static float DbToLinear(int db)
+        private static float DbToLinear(int db) // dB to linear gain
         {
             return (float)Math.Pow(10, db / 20.0);
         }
 
-        /// <summary>
-        /// Soft-knee limiter to prevent harsh clipping.
-        /// </summary>
+        // Soft-knee limiter to prevent harsh clipping
         private static float SoftKneeLimiter(float sample)
         {
             float absValue = Math.Abs(sample);
@@ -1011,9 +995,7 @@ namespace UniPlaySong.Audio
             return sign * compressed;
         }
 
-        /// <summary>
-        /// Simple one-pole filter for post-reverb tone control (from libSoX).
-        /// </summary>
+        // Simple one-pole filter for post-reverb tone control (from libSoX)
         private class OnePoleFilter
         {
             private double _b0, _b1, _a1;

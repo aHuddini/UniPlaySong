@@ -3,9 +3,7 @@ using Playnite.SDK.Models;
 
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Represents music associated with a game
-    /// </summary>
+    // Represents music associated with a game
     public class GameMusic
     {
         public Game Game { get; set; }
@@ -14,9 +12,7 @@ namespace UniPlaySong.Models
 
         public List<Song> AvailableSongs { get; set; } = new List<Song>();
 
-        /// <summary>
-        /// Primary song that plays on first selection (console-like preview)
-        /// </summary>
+        // Primary song that plays on first selection (console-like preview)
         public Song PrimarySong { get; set; }
     }
 }

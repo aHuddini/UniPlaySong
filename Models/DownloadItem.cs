@@ -1,15 +1,11 @@
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Base class for downloadable items (songs, albums)
-    /// </summary>
+    // Base class for downloadable items (songs, albums)
     public abstract class DownloadItem
     {
         public string Name { get; set; }
 
-        /// <summary>
-        /// Unique identifier for the item (URL path, video ID, etc.)
-        /// </summary>
+        // Unique identifier for the item (URL path, video ID, etc.)
         public string Id { get; set; }
 
         public string IconUrl { get; set; }

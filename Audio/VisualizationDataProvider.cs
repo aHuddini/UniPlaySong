@@ -7,12 +7,7 @@ using NAudio.Wave;
 
 namespace UniPlaySong.Audio
 {
-    /// <summary>
-    /// Wraps an ISampleProvider to tap audio samples for visualization.
-    /// Audio thread: buffers mono samples into a circular buffer, signals FFT thread.
-    /// Background thread: wakes on signal, runs FFT, writes normalized spectrum to double-buffered array.
-    /// UI thread: GetSpectrumData() is a simple Array.Copy — zero computation.
-    /// </summary>
+    // Audio visualization tap: circular buffer -> FFT thread -> double-buffered spectrum for UI
     public class VisualizationDataProvider : ISampleProvider, IDisposable
     {
         private readonly ISampleProvider _source;
@@ -61,15 +56,9 @@ namespace UniPlaySong.Audio
 
         public WaveFormat WaveFormat => _source.WaveFormat;
 
-        /// <summary>
-        /// The FFT size used by this provider. UI reads this to configure matching bin ranges.
-        /// </summary>
-        public int FftSize => _fftSize;
+        public int FftSize => _fftSize; // UI reads this to configure matching bin ranges
 
-        /// <summary>
-        /// Half the FFT size — number of usable spectrum bins.
-        /// </summary>
-        public int SpectrumSize => _spectrumSize;
+        public int SpectrumSize => _spectrumSize; // Half FFT size = usable spectrum bins
 
         public VisualizationDataProvider(ISampleProvider source, int fftSize = 1024, UniPlaySongSettings settings = null)
         {
@@ -110,10 +99,7 @@ namespace UniPlaySong.Audio
             _fftThread.Start();
         }
 
-        /// <summary>
-        /// Recomputes per-bin rise/fall alphas from current settings (or defaults).
-        /// Called at construction and each FFT tick. Skips recomputation if settings unchanged.
-        /// </summary>
+        // Recomputes per-bin rise/fall alphas from settings; skips if unchanged
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecomputeAlphas()
         {
@@ -182,18 +168,14 @@ namespace UniPlaySong.Audio
             return samplesRead;
         }
 
-        /// <summary>
-        /// Fast path: get simple peak and RMS levels. No FFT. Near-zero cost.
-        /// </summary>
+        // Fast path: peak and RMS levels (no FFT, near-zero cost)
         public void GetLevels(out float peak, out float rms)
         {
             peak = _currentPeak;
             rms = _currentRms;
         }
 
-        /// <summary>
-        /// UI thread: copies pre-calculated spectrum data. Zero computation — just Array.Copy.
-        /// </summary>
+        // UI thread: copies pre-calculated spectrum data (just Array.Copy)
         public int GetSpectrumData(float[] destination, int destOffset, int count)
         {
             int toCopy = Math.Min(count, _spectrumSize);
@@ -202,15 +184,7 @@ namespace UniPlaySong.Audio
             return toCopy;
         }
 
-        /// <summary>
-        /// Background thread: runs FFT and temporal smoothing.
-        /// Two modes controlled by VizFftTimerMode setting (live-switchable):
-        /// - Signal mode (default): wakes on new audio data via ManualResetEventSlim.
-        ///   Runs at audio buffer rate (~43fps at 1024/44.1kHz). Zero CPU when idle.
-        /// - Timer mode: fixed ~16ms intervals via Stopwatch for consistent ~62fps.
-        ///   Matches CompositionTarget.Rendering rate. Uses SpinWait for sub-ms precision
-        ///   (Thread.Sleep has ~15ms granularity on Windows and can't reliably hit 16ms).
-        /// </summary>
+        // Background FFT thread: signal mode (wakes on audio data) or timer mode (~16ms fixed intervals)
         private void FftLoop()
         {
             long targetTicksPerFrame = 16L * Stopwatch.Frequency / 1000L; // ~16ms in Stopwatch ticks

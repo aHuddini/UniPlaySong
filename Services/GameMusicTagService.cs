@@ -9,10 +9,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for managing game music status tags.
-    /// Adds/removes tags to games based on whether they have music downloaded.
-    /// </summary>
+    // Manages game music status tags (adds/removes based on whether music is downloaded)
     public class GameMusicTagService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -29,9 +26,6 @@ namespace UniPlaySong.Services
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
         }
 
-        /// <summary>
-        /// Gets or creates a tag by name and returns its ID.
-        /// </summary>
         private Guid GetOrCreateTag(string tagName)
         {
             // Check if tag already exists
@@ -47,9 +41,6 @@ namespace UniPlaySong.Services
             return newTag.Id;
         }
 
-        /// <summary>
-        /// Gets the cached "Has Music" tag ID, creating the tag if needed.
-        /// </summary>
         private Guid GetHasMusicTagId()
         {
             if (!_hasMusicTagId.HasValue)
@@ -59,9 +50,6 @@ namespace UniPlaySong.Services
             return _hasMusicTagId.Value;
         }
 
-        /// <summary>
-        /// Gets the cached "No Music" tag ID, creating the tag if needed.
-        /// </summary>
         private Guid GetNoMusicTagId()
         {
             if (!_noMusicTagId.HasValue)
@@ -205,10 +193,6 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Updates tags for a specific list of games (e.g., after download).
-        /// </summary>
-        /// <param name="games">Games to update</param>
         public void UpdateTagsForGames(IEnumerable<Game> games)
         {
             if (games == null) return;
@@ -230,10 +214,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Removes all UniPlaySong tags from all games.
-        /// Useful for cleanup or reset.
-        /// </summary>
+        // Removes all UniPlaySong music tags from all games (for cleanup/reset)
         public void RemoveAllMusicTags()
         {
             try
@@ -289,9 +270,7 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Progress information for tag scanning
-    /// </summary>
+    // Progress information for tag scanning
     public class TagScanProgress
     {
         public string CurrentGame { get; set; }
@@ -300,9 +279,7 @@ namespace UniPlaySong.Services
         public bool HasMusic { get; set; }
     }
 
-    /// <summary>
-    /// Result of a tag scan operation
-    /// </summary>
+    // Result of a tag scan operation
     public class TagScanResult
     {
         public int TotalGames { get; set; }

@@ -14,9 +14,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Manages music downloads from various sources
-    /// </summary>
+    // Manages music downloads from various sources
     public class DownloadManager : IDownloadManager
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -200,10 +198,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets KHInsider albums using multiple search strategies to improve match rate.
-        /// KHInsider album titles often differ slightly from game names (e.g., colons removed).
-        /// </summary>
+        // Gets KHInsider albums using multiple search strategies (exact, cleaned, simplified)
         private List<Album> GetKHInsiderAlbumsWithStrategies(string gameName, CancellationToken cancellationToken, bool auto)
         {
             var khAlbums = new List<Album>();
@@ -290,9 +285,7 @@ namespace UniPlaySong.Downloaders
             return khAlbums;
         }
 
-        /// <summary>
-        /// Gets YouTube albums with caching and search hints support.
-        /// </summary>
+        // Gets YouTube albums with caching and search hints support
         private List<Album> GetYouTubeAlbumsWithCache(string gameName, CancellationToken cancellationToken, bool auto, bool skipCache = false)
         {
             var seenIds = new HashSet<string>();
@@ -508,9 +501,7 @@ namespace UniPlaySong.Downloaders
             return null;
         }
 
-        /// <summary>
-        /// Broader matching for retry operations. Still enforces series number matching.
-        /// </summary>
+        // Broader matching for retry operations (still enforces series number matching)
         public Album BestAlbumPickBroader(IEnumerable<Album> albums, Game game)
         {
             var albumList = albums?.ToList();
@@ -727,10 +718,7 @@ namespace UniPlaySong.Downloaders
             return result;
         }
 
-        /// <summary>
-        /// Picks the best songs with detailed rejection reason if no songs are valid.
-        /// </summary>
-        /// <returns>Tuple of (songs, rejectionReason) where rejectionReason is null if songs were found</returns>
+        // Picks best songs with rejection reason if none are valid
         public (List<Song> songs, string rejectionReason) BestSongPickWithReason(IEnumerable<Song> songs, string gameName, int maxSongs = 1)
         {
             var songsList = songs?.ToList() ?? new List<Song>();
@@ -1048,10 +1036,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets hint-based albums for a game (from search_hints.json).
-        /// Returns albums created from YouTubePlaylistId, KHInsiderAlbum, and SoundCloudUrl hints.
-        /// </summary>
+        // Gets hint-based albums from search_hints.json (YouTube, KHInsider, SoundCloud)
         public List<Album> GetHintAlbums(string gameName)
         {
             var hintAlbums = new List<Album>();
@@ -1141,9 +1126,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Normalizes a string for matching (lowercase, remove special chars, collapse spaces)
-        /// </summary>
+        // Normalizes for matching: lowercase, remove special chars, collapse spaces
         private string NormalizeForMatching(string name)
         {
             if (string.IsNullOrWhiteSpace(name))

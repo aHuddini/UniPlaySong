@@ -4,18 +4,10 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Simple helper to find Playnite's default background music file
-    /// The file is always at: AppData\Local\Playnite\Themes\Fullscreen\Default\audio\background.*
-    /// </summary>
+    // Finds Playnite's default background music file
     public static class PlayniteThemeHelper
     {
-        /// <summary>
-        /// Finds Playnite's default background music file
-        /// Simple approach: Just check the known location
-        /// </summary>
-        /// <param name="api">Playnite API instance (not used, but kept for compatibility)</param>
-        /// <returns>Path to background music file, or null if not found</returns>
+        // Checks known location: AppData\Local\Playnite\Themes\Fullscreen\Default\audio\background.*
         public static string FindBackgroundMusicFile(IPlayniteAPI api)
         {
             try

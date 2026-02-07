@@ -11,9 +11,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// High-level service for managing music playback for games
-    /// </summary>
+    // High-level service for managing music playback for games
     public class MusicPlaybackService : IMusicPlaybackService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -24,44 +22,23 @@ namespace UniPlaySong.Services
         private readonly ErrorHandlerService _errorHandler;
         private readonly Dictionary<string, bool> _primarySongPlayed = new Dictionary<string, bool>();
         
-        /// <summary>
-        /// Event fired when music stops (for native music restoration)
-        /// </summary>
-        public event Action<UniPlaySongSettings> OnMusicStopped;
+        public event Action<UniPlaySongSettings> OnMusicStopped; // Fired when music stops (for native music restoration)
 
-        /// <summary>
-        /// Event fired when music starts (for native music suppression)
-        /// </summary>
-        public event Action<UniPlaySongSettings> OnMusicStarted;
+        public event Action<UniPlaySongSettings> OnMusicStarted; // Fired when music starts (for native music suppression)
 
-        /// <summary>
-        /// Event fired when a song reaches its natural end (before looping/randomizing).
-        /// Used by batch download to queue next random game's music.
-        /// </summary>
+        // Fired when a song reaches its natural end (before looping/randomizing).
+        // Used by batch download to queue next random game's music.
         public event Action OnSongEnded;
 
-        /// <summary>
-        /// Event fired when playback state changes (play/pause/resume).
-        /// Used by UI controls (like top panel) to update their state.
-        /// </summary>
+        // Fired when playback state changes (play/pause/resume). Used by UI controls to update state.
         public event Action OnPlaybackStateChanged;
 
-        /// <summary>
-        /// Event fired when the current game or song count changes.
-        /// Used by UI controls to update skip button visibility.
-        /// </summary>
+        // Fired when current game or song count changes. Used by UI for skip button visibility.
         public event Action OnSongCountChanged;
 
-        /// <summary>
-        /// Event fired when the current song changes (new song starts playing).
-        /// Used by UI controls to update song info display.
-        /// </summary>
-        public event Action<string> OnSongChanged;
+        public event Action<string> OnSongChanged; // Fired when current song changes (for UI song info display)
 
-        /// <summary>
-        /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
-        /// Set by external handlers (like batch download) that want to take over playback.
-        /// </summary>
+        // When true, suppresses loop/restart in OnMediaEnded. Set by batch download to take over playback.
         public bool SuppressAutoLoop { get; set; }
 
         private int _currentGameSongCount = 0;
@@ -97,9 +74,7 @@ namespace UniPlaySong.Services
         private string _previousSongPath;
         private Game _currentGame;
 
-        /// <summary>
-        /// Gets or sets the current song path, firing OnSongChanged when changed.
-        /// </summary>
+        // Gets/sets current song path, fires OnSongChanged when changed
         private string _currentSongPath
         {
             get => _currentSongPathBacking;
@@ -116,14 +91,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets the file path of the currently playing song.
-        /// </summary>
         public string CurrentSongPath => _currentSongPath;
 
-        /// <summary>
-        /// Gets the current game being played.
-        /// </summary>
         public Game CurrentGame => _currentGame;
 
         // Multi-source pause tracking (replaces simple bool _isPaused)
@@ -268,10 +237,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray).
-        /// Used to prevent playback from starting when Playnite is minimized/in tray/unfocused.
-        /// </summary>
+        // Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray)
         private bool HasWindowStatePauseSources()
         {
             return _activePauseSources.Contains(PauseSource.FocusLoss) ||
@@ -279,10 +245,7 @@ namespace UniPlaySong.Services
                    _activePauseSources.Contains(PauseSource.SystemTray);
         }
 
-        /// <summary>
-        /// Called when application initialization is complete (after CheckInitialWindowState).
-        /// Processes any deferred playback request if window state allows.
-        /// </summary>
+        // Called after CheckInitialWindowState. Processes any deferred playback request.
         public void MarkInitializationComplete()
         {
             _initializationComplete = true;
@@ -307,10 +270,7 @@ namespace UniPlaySong.Services
 
         #endregion
 
-        /// <summary>
-        /// Checks if a given path is the default music (either native or custom)
-        /// UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time
-        /// </summary>
+        // Checks if path is default music (native or custom). The two options are mutually exclusive.
         private bool IsDefaultMusicPath(string path, UniPlaySongSettings settings)
         {
             if (string.IsNullOrWhiteSpace(path) || settings == null || !settings.EnableDefaultMusic)
@@ -331,14 +291,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Pauses default music when switching to game music (PNS-style pattern).
-        /// Saves position BEFORE pausing so it can be restored later.
-        /// </summary>
-        /// <remarks>
-        /// CRITICAL: Position must be saved before pausing/closing.
-        /// This is only called when we want to pause (not when switching to game music).
-        /// </remarks>
+        // Pauses default music when switching to game music (PNS-style pattern).
+        // CRITICAL: Saves position BEFORE pausing so it can be restored later.
         private void PauseDefaultMusic(UniPlaySongSettings settings)
         {
             if (_isPlayingDefaultMusic &&
@@ -352,13 +306,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Resumes default music when switching back from game music (PNS-style pattern).
-        /// Resumes from saved position if same file is paused, otherwise loads and plays from saved position.
-        /// </summary>
-        /// <remarks>
-        /// Note: defaultMusicPath can be either native or custom, so we check by path equality.
-        /// </remarks>
+        // Resumes default music from saved position when switching back from game music (PNS-style pattern).
+        // defaultMusicPath can be either native or custom, checked by path equality.
         private void ResumeDefaultMusic(string defaultMusicPath, UniPlaySongSettings settings)
         {
             if (!_isPlayingDefaultMusic &&
@@ -1118,10 +1067,7 @@ namespace UniPlaySong.Services
             return firstSong;
         }
 
-        /// <summary>
-        /// Marks the start time for preview mode tracking.
-        /// Starts preview timer if preview mode is enabled for game music.
-        /// </summary>
+        // Marks song start time and starts preview timer if preview mode is enabled for game music
         private void MarkSongStart()
         {
             _songStartTime = DateTime.Now;
@@ -1135,9 +1081,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Stops the preview timer.
-        /// </summary>
         private void StopPreviewTimer()
         {
             if (_previewTimer.IsEnabled)
@@ -1147,12 +1090,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Timer tick handler for preview mode.
-        /// Checks if preview duration has been reached and handles song transition.
-        /// If RandomizeOnMusicEnd is enabled, switches to a different random song.
-        /// Otherwise, restarts the same song from the beginning.
-        /// </summary>
+        // Preview timer tick: checks if preview duration reached, then either randomizes or restarts song
         private void OnPreviewTimerTick(object sender, EventArgs e)
         {
             try
@@ -1229,9 +1167,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if preview mode should apply and if the song should restart
-        /// </summary>
+        // Checks if preview mode is active and song has exceeded preview duration
         private bool ShouldRestartForPreview()
         {
             // Preview mode only applies to game music (not default music)
@@ -1258,11 +1194,8 @@ namespace UniPlaySong.Services
             return elapsed >= previewDuration;
         }
 
-        /// <summary>
-        /// Handles media ended events from the music player.
-        /// Handles randomization on song end, preview mode restart, and normal looping.
-        /// Note: Threading is handled at the player level (NAudioMusicPlayer/SDL2MusicPlayer).
-        /// </summary>
+        // Handles media ended: randomization on song end, preview restart, or normal looping.
+        // Threading is handled at the player level (NAudioMusicPlayer/SDL2MusicPlayer).
         private void OnMediaEnded(object sender, EventArgs e)
         {
             if (sender == _musicPlayer && !string.IsNullOrWhiteSpace(_currentSongPath) && File.Exists(_currentSongPath))

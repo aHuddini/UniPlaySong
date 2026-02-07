@@ -11,9 +11,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Result of audio file analysis
-    /// </summary>
+    // Result of audio file analysis
     public class AudioProbeResult
     {
         public bool Success { get; set; }
@@ -27,15 +25,10 @@ namespace UniPlaySong.Services
         public double? Duration { get; set; }
         public string ErrorMessage { get; set; }
 
-        /// <summary>
-        /// Specific issues detected with the file
-        /// </summary>
         public AudioIssues Issues { get; set; } = new AudioIssues();
     }
 
-    /// <summary>
-    /// Specific issues that can be detected in audio files
-    /// </summary>
+    // Specific issues detectable in audio files
     public class AudioIssues
     {
         public bool MissingBitrate { get; set; }
@@ -63,11 +56,7 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Service for detecting and repairing problematic audio files that may cause
-    /// SDL_mixer "Out of memory" or similar playback errors.
-    /// Uses FFmpeg to probe files for issues and re-encode them if necessary.
-    /// </summary>
+    // Detects and repairs audio files causing SDL_mixer errors via FFmpeg probe/re-encode
     public class AudioRepairService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -90,18 +79,12 @@ namespace UniPlaySong.Services
             _backupBasePath = backupBasePath;
         }
 
-        /// <summary>
-        /// Validates that FFmpeg is available at the specified path
-        /// </summary>
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
-        /// <summary>
-        /// Probes an audio file using FFmpeg to detect potential issues
-        /// that could cause SDL_mixer to fail loading the file.
-        /// </summary>
+        /// <summary>Probes an audio file for issues that could cause SDL_mixer failures.</summary>
         /// <param name="filePath">Path to the audio file</param>
         /// <param name="ffmpegPath">Path to FFmpeg executable</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -199,9 +182,7 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Parses FFmpeg probe output to extract audio metadata
-        /// </summary>
+        // Parse FFmpeg probe output to extract audio metadata
         private void ParseProbeOutput(AudioProbeResult result, string stderr)
         {
             if (string.IsNullOrWhiteSpace(stderr))
@@ -268,9 +249,7 @@ namespace UniPlaySong.Services
             result.Format = Path.GetExtension(result.FilePath)?.TrimStart('.').ToUpperInvariant() ?? "UNKNOWN";
         }
 
-        /// <summary>
-        /// Detects potential issues with the audio file that could cause playback problems
-        /// </summary>
+        // Detect issues that could cause playback problems
         private void DetectIssues(AudioProbeResult result)
         {
             // Missing critical metadata
@@ -322,14 +301,11 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Repairs a problematic audio file by re-encoding it to a standard format.
-        /// Creates a backup of the original file before repair.
-        /// </summary>
+        /// <summary>Re-encodes a problematic audio file to standard format. Backs up original first.</summary>
         /// <param name="filePath">Path to the audio file to repair</param>
         /// <param name="ffmpegPath">Path to FFmpeg executable</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if repair was successful, false otherwise</returns>
+        /// <returns>True if repair was successful</returns>
         public async Task<bool> RepairFileAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
@@ -502,9 +478,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets codec arguments for FFmpeg based on file extension
-        /// </summary>
         private string GetCodecArgs(string extension)
         {
             switch (extension.ToLowerInvariant())
@@ -527,14 +500,11 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if a file needs repair and repairs it if necessary.
-        /// This is a convenience method that combines probe and repair.
-        /// </summary>
+        /// <summary>Probes file and repairs if needed. Convenience wrapper combining probe + repair.</summary>
         /// <param name="filePath">Path to the audio file</param>
         /// <param name="ffmpegPath">Path to FFmpeg executable</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if file is now playable (was already OK or was repaired), false if repair failed</returns>
+        /// <returns>True if file is now playable (was OK or repaired successfully)</returns>
         public async Task<bool> CheckAndRepairIfNeededAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
         {
             var probeResult = await ProbeFileAsync(filePath, ffmpegPath, cancellationToken);

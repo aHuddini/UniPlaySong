@@ -4,7 +4,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>High-level music playback service for games</summary>
+    // High-level music playback service for games
     public interface IMusicPlaybackService
     {
         void PlayGameMusic(Game game);
@@ -14,20 +14,14 @@ namespace UniPlaySong.Services
         void Pause();
         void Resume();
 
-        /// <summary>Add pause source; pauses if first source</summary>
-        void AddPauseSource(PauseSource source);
-
-        /// <summary>Remove pause source; resumes if all cleared</summary>
-        void RemovePauseSource(PauseSource source);
+        void AddPauseSource(PauseSource source); // pauses if first source
+        void RemovePauseSource(PauseSource source); // resumes if all sources cleared
 
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);
         double GetVolume();
 
-        /// <summary>
-        /// Sets a volume multiplier applied on top of the base volume.
-        /// Used to respect Playnite's fullscreen BackgroundVolume setting.
-        /// </summary>
+        // Sets a volume multiplier on top of base volume (for Playnite fullscreen BackgroundVolume)
         void SetVolumeMultiplier(double multiplier);
 
         bool IsPlaying { get; }
@@ -37,16 +31,14 @@ namespace UniPlaySong.Services
         void LoadAndPlayFile(string filePath);
         void LoadAndPlayFileFrom(string filePath, System.TimeSpan startFrom);
 
-        /// <summary>Play preview at specific volume (no fading)</summary>
-        void PlayPreview(string filePath, double volume);
+        void PlayPreview(string filePath, double volume); // no fading
 
         event System.Action<UniPlaySongSettings> OnMusicStopped;
         event System.Action<UniPlaySongSettings> OnMusicStarted;
         event System.Action OnSongEnded;
         event System.Action OnPlaybackStateChanged;
 
-        /// <summary>When true, suppresses auto-loop on song end</summary>
-        bool SuppressAutoLoop { get; set; }
+        bool SuppressAutoLoop { get; set; } // suppresses auto-loop on song end
 
         void SkipToNextSong();
         int CurrentGameSongCount { get; }
@@ -56,13 +48,9 @@ namespace UniPlaySong.Services
         Game CurrentGame { get; }
         event System.Action<string> OnSongChanged;
 
-        /// <summary>True if playing default/fallback music (not game-specific)</summary>
-        bool IsPlayingDefaultMusic { get; }
+        bool IsPlayingDefaultMusic { get; } // true if playing default/fallback music
 
-        /// <summary>
-        /// Called when application initialization is complete (after CheckInitialWindowState).
-        /// Processes any deferred playback request if window state allows.
-        /// </summary>
+        // Called when app init is complete; processes any deferred playback if window state allows
         void MarkInitializationComplete();
     }
 }

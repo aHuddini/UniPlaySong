@@ -5,10 +5,7 @@ using System.Windows.Media;
 
 namespace UniPlaySong
 {
-    /// <summary>
-    /// Converts a hex color string (e.g., "1E1E1E" or "#1E1E1E") to a SolidColorBrush.
-    /// Used for live color preview in settings UI.
-    /// </summary>
+    // Converts hex color string to SolidColorBrush for settings UI preview
     public class HexToColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

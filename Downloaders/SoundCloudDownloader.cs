@@ -12,10 +12,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for SoundCloud (hints-only, no search).
-    /// Uses yt-dlp for both metadata extraction and downloads.
-    /// </summary>
+    // SoundCloud downloader (hints-only, uses yt-dlp)
     public class SoundCloudDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -37,19 +34,14 @@ namespace UniPlaySong.Downloaders
 
         public Source DownloadSource() => Source.SoundCloud;
 
-        /// <summary>
-        /// SoundCloud is hints-only, no search functionality
-        /// </summary>
+        // SoundCloud is hints-only, no search functionality
         public IEnumerable<Album> GetAlbumsForGame(string gameName, CancellationToken cancellationToken, bool auto = false)
         {
             // SoundCloud doesn't support search - only direct URLs from hints
             return Enumerable.Empty<Album>();
         }
 
-        /// <summary>
-        /// Gets songs from a SoundCloud track or playlist.
-        /// For single tracks, returns one song. For playlists, fetches all tracks.
-        /// </summary>
+        // Gets songs from a SoundCloud track or playlist
         public IEnumerable<Song> GetSongsFromAlbum(Album album, CancellationToken cancellationToken = default)
         {
             if (album == null || string.IsNullOrEmpty(album.Id))
@@ -98,9 +90,7 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
-        /// <summary>
-        /// Gets metadata for a single SoundCloud track using yt-dlp
-        /// </summary>
+        // Gets metadata for a single SoundCloud track using yt-dlp
         private Song GetTrackMetadata(string trackUrl, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || !File.Exists(_ytDlpPath))
@@ -175,9 +165,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets all tracks from a SoundCloud playlist/set using yt-dlp
-        /// </summary>
+        // Gets all tracks from a SoundCloud playlist/set using yt-dlp
         private IEnumerable<Song> GetPlaylistSongs(string playlistUrl, string albumName, CancellationToken cancellationToken)
         {
             var songs = new List<Song>();
@@ -282,9 +270,7 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
-        /// <summary>
-        /// Downloads a SoundCloud track to the specified path using yt-dlp
-        /// </summary>
+        // Downloads a SoundCloud track using yt-dlp
         public bool DownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview = false)
         {
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || string.IsNullOrWhiteSpace(_ffmpegPath))
@@ -411,9 +397,6 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Extracts the URL path from a full SoundCloud URL
-        /// </summary>
         private static string ExtractUrlPath(string url)
         {
             if (string.IsNullOrEmpty(url))
@@ -440,9 +423,6 @@ namespace UniPlaySong.Downloaders
             return null;
         }
 
-        /// <summary>
-        /// Searches for a downloaded file with various audio extensions
-        /// </summary>
         private static string FindDownloadedFile(string pathWithoutExt)
         {
             var extensions = new[] { ".mp3", ".m4a", ".opus", ".webm", ".ogg", ".wav" };

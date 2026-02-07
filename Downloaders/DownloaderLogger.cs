@@ -4,10 +4,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Dedicated logger for download operations. Writes to downloader.log in the extension folder.
-    /// Keeps download-related logging separate from main extension log to reduce noise.
-    /// </summary>
+    // Dedicated logger for download operations (writes to downloader.log)
     public class DownloaderLogger
     {
         private static DownloaderLogger _instance;
@@ -17,9 +14,6 @@ namespace UniPlaySong.Downloaders
         private readonly object _writeLock = new object();
         private bool _initialized;
 
-        /// <summary>
-        /// Gets the singleton instance of DownloaderLogger.
-        /// </summary>
         public static DownloaderLogger Instance
         {
             get
@@ -38,10 +32,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Initializes the singleton with a specific extension path.
-        /// Should be called once during plugin initialization.
-        /// </summary>
+        // Initialize once during plugin startup with extension path
         public static void Initialize(string extensionPath)
         {
             lock (_instanceLock)
@@ -137,24 +128,11 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Logs an info message (always logged).
-        /// </summary>
         public void Info(string message) => Write("INFO", message);
-
-        /// <summary>
-        /// Logs a warning message (always logged).
-        /// </summary>
         public void Warn(string message) => Write("WARN", message);
-
-        /// <summary>
-        /// Logs an error message (always logged).
-        /// </summary>
         public void Error(string message) => Write("ERROR", message);
 
-        /// <summary>
-        /// Logs a debug message (only when debug logging is enabled).
-        /// </summary>
+        // Only logs when debug logging is enabled
         public void Debug(string message)
         {
             if (FileLogger.IsDebugLoggingEnabled)
@@ -163,10 +141,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Writes a session separator with timestamp.
-        /// Call at start of batch download or manual download session.
-        /// </summary>
+        // Writes a session separator (call at start of batch/manual download)
         public void StartSession(string sessionType)
         {
             if (!_initialized) return;
@@ -183,9 +158,6 @@ namespace UniPlaySong.Downloaders
             catch { }
         }
 
-        /// <summary>
-        /// Writes a session end marker.
-        /// </summary>
         public void EndSession(string summary)
         {
             if (!_initialized) return;

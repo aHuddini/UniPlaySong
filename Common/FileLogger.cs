@@ -6,28 +6,19 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Simple file-based logger with conditional debug logging support.
-    /// </summary>
+    // Simple file-based logger with conditional debug logging
     public class FileLogger
     {
         private readonly string _logFilePath;
         private readonly object _lockObject = new object();
         private bool _initialized = false;
 
-        /// <summary>
-        /// Global debug logging check. When null or returns true, debug logging is enabled.
-        /// </summary>
+        // When null or returns true, debug logging is enabled
         public static Func<bool> GlobalDebugEnabled { get; set; }
 
-        /// <summary>
-        /// Returns true if debug logging is currently enabled.
-        /// </summary>
         public static bool IsDebugLoggingEnabled => GlobalDebugEnabled == null || GlobalDebugEnabled();
 
-        /// <summary>
-        /// Instance-level debug check for this logger.
-        /// </summary>
+        // Instance-level debug check
         public Func<bool> IsDebugEnabled { get; set; }
 
         public FileLogger(string extensionPath)

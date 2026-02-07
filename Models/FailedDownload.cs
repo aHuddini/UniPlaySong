@@ -3,16 +3,12 @@ using System;
 
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Represents a failed download attempt that can be retried manually
-    /// </summary>
+    // Represents a failed download attempt that can be retried manually
     public class FailedDownload
     {
         public Game Game { get; set; }
 
-        /// <summary>
-        /// Reason for failure (e.g., "No albums found", "Download error")
-        /// </summary>
+        // Reason for failure (e.g., "No albums found", "Download error")
         public string FailureReason { get; set; }
 
         public DateTime FailedAt { get; set; }

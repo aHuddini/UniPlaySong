@@ -4,10 +4,7 @@ using System.Windows.Data;
 
 namespace UniPlaySong
 {
-    /// <summary>
-    /// Converts boolean to its inverse (true -> false, false -> true)
-    /// Used for enabling/disabling UI elements based on inverted boolean values
-    /// </summary>
+    // Inverts boolean values for UI element binding
     public class InverseBooleanConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

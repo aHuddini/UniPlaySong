@@ -8,9 +8,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Cache entry for search results
-    /// </summary>
+    // Cache entry for search results
     public class SearchCacheEntry
     {
         [JsonProperty("timestamp")]
@@ -31,10 +29,7 @@ namespace UniPlaySong.Services
         }
     }
     
-    /// <summary>
-    /// Minimal album data for caching - only essential fields needed for auto-download.
-    /// Reduces cache file size significantly by excluding display-only metadata.
-    /// </summary>
+    // Minimal album data for caching (id, name, source, year only) to reduce cache file size
     public class CachedAlbum
     {
         [JsonProperty("id")]
@@ -49,9 +44,6 @@ namespace UniPlaySong.Services
         [JsonProperty("year")]
         public string Year { get; set; }
 
-        /// <summary>
-        /// Convert cached album back to full Album object
-        /// </summary>
         public Album ToAlbum()
         {
             Source sourceEnum;
@@ -66,9 +58,6 @@ namespace UniPlaySong.Services
             };
         }
 
-        /// <summary>
-        /// Create cached album from full Album object (only stores essential fields)
-        /// </summary>
         public static CachedAlbum FromAlbum(Album album)
         {
             return new CachedAlbum
@@ -81,9 +70,7 @@ namespace UniPlaySong.Services
         }
     }
     
-    /// <summary>
-    /// Game search cache data structure
-    /// </summary>
+    // Game search cache data structure
     public class GameSearchCache
     {
         [JsonProperty("khinsider")]
@@ -93,9 +80,7 @@ namespace UniPlaySong.Services
         public SearchCacheEntry YouTube { get; set; }
     }
     
-    /// <summary>
-    /// Root cache structure
-    /// </summary>
+    // Root cache structure
     public class SearchCacheData
     {
         [JsonProperty("version")]
@@ -115,9 +100,7 @@ namespace UniPlaySong.Services
         }
     }
     
-    /// <summary>
-    /// Service for caching search results to optimize KHInsider → YouTube fallback
-    /// </summary>
+    // Caches search results to optimize KHInsider -> YouTube fallback
     public class SearchCacheService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -140,18 +123,12 @@ namespace UniPlaySong.Services
             CleanupExpiredEntries();
         }
         
-        /// <summary>
-        /// Enable or disable caching
-        /// </summary>
         public bool Enabled
         {
             get => _enabled;
             set => _enabled = value;
         }
         
-        /// <summary>
-        /// Cache duration in days
-        /// </summary>
         public int CacheDurationDays
         {
             get => _cacheDurationDays;
@@ -164,9 +141,6 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Try to get cached albums for a game and source
-        /// </summary>
         public bool TryGetCachedAlbums(string gameName, Source source, out List<Album> albums)
         {
             albums = null;
@@ -212,10 +186,7 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Cache search results for a game and source.
-        /// IMPORTANT: Empty results are NOT cached to avoid persisting temporary failures.
-        /// </summary>
+        // Cache search results. Empty results are NOT cached to avoid persisting temporary failures.
         public void CacheSearchResult(string gameName, Source source, List<Album> albums)
         {
             if (!_enabled)
@@ -267,9 +238,6 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Clear all cached entries
-        /// </summary>
         public void ClearCache()
         {
             lock (_cacheLock)
@@ -279,10 +247,7 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Remove expired entries and empty entries from cache.
-        /// Empty entries should no longer be created, but this cleans up any existing ones.
-        /// </summary>
+        // Removes expired and empty entries from cache (empty entries are legacy, no longer created)
         public int CleanupExpiredEntries()
         {
             lock (_cacheLock)
@@ -357,9 +322,6 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Get cache statistics
-        /// </summary>
         public CacheStats GetCacheStats()
         {
             lock (_cacheLock)
@@ -388,9 +350,6 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Normalize game name for cache key (lowercase, trim)
-        /// </summary>
         private string NormalizeGameName(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName))
@@ -399,9 +358,6 @@ namespace UniPlaySong.Services
             return gameName.Trim().ToLowerInvariant();
         }
         
-        /// <summary>
-        /// Load cache from disk
-        /// </summary>
         private void LoadCache()
         {
             const string CurrentVersion = "2.0";
@@ -437,9 +393,7 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Save cache to disk (atomic write)
-        /// </summary>
+        // Saves cache to disk via atomic write (temp file + move)
         private void SaveCache()
         {
             try
@@ -470,9 +424,7 @@ namespace UniPlaySong.Services
         }
     }
     
-    /// <summary>
-    /// Cache statistics
-    /// </summary>
+    // Cache statistics
     public class CacheStats
     {
         public int GameCount { get; set; }

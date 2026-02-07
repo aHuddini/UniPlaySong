@@ -11,9 +11,7 @@ using UniPlaySong.Models.WaveformTrim;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for waveform generation and precise audio trimming using NAudio and FFmpeg
-    /// </summary>
+    // Waveform generation and precise audio trimming using NAudio and FFmpeg
     public class WaveformTrimService : IWaveformTrimService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -35,9 +33,7 @@ namespace UniPlaySong.Services
             _backupBasePath = backupBasePath;
         }
 
-        /// <summary>
-        /// Generate waveform data for display
-        /// </summary>
+        // Generate waveform data for display
         public async Task<WaveformData> GenerateWaveformAsync(string audioFilePath, CancellationToken token = default)
         {
             Logger.DebugIf(LogPrefix,$"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
@@ -129,9 +125,6 @@ namespace UniPlaySong.Services
             }, token);
         }
 
-        /// <summary>
-        /// Get audio duration
-        /// </summary>
         public async Task<TimeSpan> GetAudioDurationAsync(string audioFilePath)
         {
             return await Task.Run(() =>
@@ -156,9 +149,7 @@ namespace UniPlaySong.Services
             });
         }
 
-        /// <summary>
-        /// Apply trim using FFmpeg (uses reflection to get FFmpeg path - prefer the overload that accepts ffmpegPath directly)
-        /// </summary>
+        // Apply trim via FFmpeg (reflection fallback - prefer the overload with explicit ffmpegPath)
         public async Task<bool> ApplyTrimAsync(string inputPath, TrimWindow trimWindow, string suffix, CancellationToken token = default)
         {
             // Try to get FFmpeg path from settings via reflection (fallback method)
@@ -171,9 +162,7 @@ namespace UniPlaySong.Services
             return await ApplyTrimAsync(inputPath, trimWindow, suffix, ffmpegPath, token);
         }
 
-        /// <summary>
-        /// Apply trim using FFmpeg with explicit FFmpeg path
-        /// </summary>
+        // Apply trim using FFmpeg with explicit FFmpeg path
         public async Task<bool> ApplyTrimAsync(string inputPath, TrimWindow trimWindow, string suffix, string ffmpegPath, CancellationToken token = default)
         {
             Logger.DebugIf(LogPrefix,$"ApplyTrimAsync started - input: {Path.GetFileName(inputPath)}, suffix: {suffix}");
@@ -287,9 +276,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Preserve original file to PreservedOriginals folder
-        /// </summary>
+        // Preserve original file to PreservedOriginals folder
         private async Task<string> PreserveOriginalAsync(string inputPath, string directory, string fileName, string extension)
         {
             Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync - preserving: {fileName}{extension}");
@@ -340,9 +327,6 @@ namespace UniPlaySong.Services
             });
         }
 
-        /// <summary>
-        /// Get codec arguments based on file extension
-        /// </summary>
         private string GetCodecArgs(string extension)
         {
             var ext = extension.ToLowerInvariant();
@@ -364,9 +348,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Get FFmpeg path from settings (via Application.Current.Properties)
-        /// </summary>
+        // Get FFmpeg path from settings via Application.Current.Properties (reflection)
         private string GetFFmpegPath()
         {
             try
@@ -388,9 +370,6 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        /// <summary>
-        /// Run FFmpeg with given arguments
-        /// </summary>
         private async Task<bool> RunFFmpegAsync(string ffmpegPath, string args, CancellationToken token)
         {
             Logger.DebugIf(LogPrefix,$"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
@@ -474,9 +453,6 @@ namespace UniPlaySong.Services
             }, token);
         }
 
-        /// <summary>
-        /// Validate FFmpeg is available
-        /// </summary>
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
             Logger.DebugIf(LogPrefix,$"ValidateFFmpegAvailable - path: {ffmpegPath}");
@@ -485,9 +461,6 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Check if file has already been precise-trimmed
-        /// </summary>
         public bool IsAlreadyTrimmed(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;

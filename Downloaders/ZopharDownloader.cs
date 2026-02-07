@@ -14,10 +14,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for Zophar.net (zophar.net/music)
-    /// Video game music archive with emulated formats and MP3s
-    /// </summary>
+    // Zophar.net downloader (VGM archive with emulated formats and MP3s)
     public class ZopharDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();

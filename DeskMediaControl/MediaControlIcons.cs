@@ -1,8 +1,6 @@
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// IcoFont icon constants for Desktop media controls.
-    /// </summary>
+    // IcoFont icon constants for Desktop media controls
     public static class MediaControlIcons
     {
         // IcoFont unicode glyphs (Playnite's bundled font)

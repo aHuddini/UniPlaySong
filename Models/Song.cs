@@ -2,9 +2,7 @@ using System;
 
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Represents a single music track/song
-    /// </summary>
+    // Represents a single music track/song
     public class Song : DownloadItem
     {
         public string Description { get; set; }

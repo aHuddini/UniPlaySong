@@ -6,12 +6,7 @@ using UniPlaySong.DeskMediaControl;
 
 namespace UniPlaySong.Controls
 {
-    /// <summary>
-    /// PluginUserControl wrapper for the spectrum visualizer.
-    /// Registered as "UPS_SpectrumVisualizer" for theme integration.
-    /// Themes can place this anywhere via:
-    ///   &lt;ContentControl x:Name="UPS_SpectrumVisualizer" /&gt;
-    /// </summary>
+    // Spectrum visualizer wrapper registered as "UPS_SpectrumVisualizer" for theme integration
     public class SpectrumVisualizerPluginControl : PluginUserControl
     {
         private readonly SpectrumVisualizerControl _visualizer;

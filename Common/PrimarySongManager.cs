@@ -5,10 +5,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Manages primary song selection for games
-    /// Primary songs play once on first selection (console-like preview experience)
-    /// </summary>
+    // Manages primary song selection for games (plays once on first selection, console-like preview)
     public static class PrimarySongManager
     {
         private const string PrimarySongFileName = ".primarysong.json";
@@ -53,9 +50,7 @@ namespace UniPlaySong.Common
             ) ?? TryGetPrimarySongFallback(musicDirectory, metadataPath);
         }
 
-        /// <summary>
-        /// Fallback method for when ErrorHandlerService is not available
-        /// </summary>
+        // Fallback when ErrorHandlerService is not available
         private static string TryGetPrimarySongFallback(string musicDirectory, string metadataPath)
         {
             try
@@ -119,9 +114,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Fallback method for when ErrorHandlerService is not available
-        /// </summary>
+        // Fallback when ErrorHandlerService is not available
         private static void TrySetPrimarySongFallback(string metadataPath, PrimarySongMetadata metadata)
         {
             try
@@ -135,9 +128,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Clears the primary song for a music directory
-        /// </summary>
+        // Clears the primary song for a music directory
         public static void ClearPrimarySong(string musicDirectory, ErrorHandlerService errorHandler = null)
         {
             if (string.IsNullOrWhiteSpace(musicDirectory))
@@ -163,9 +154,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Fallback method for when ErrorHandlerService is not available
-        /// </summary>
+        // Fallback when ErrorHandlerService is not available
         private static void TryClearPrimarySongFallback(string metadataPath)
         {
             try
@@ -178,9 +167,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Checks if a song file is the primary for its directory
-        /// </summary>
+        // Checks if a song file is the primary for its directory
         public static bool IsPrimarySong(string songFilePath, ErrorHandlerService errorHandler = null)
         {
             if (string.IsNullOrWhiteSpace(songFilePath))
@@ -195,9 +182,7 @@ namespace UniPlaySong.Common
         }
     }
 
-    /// <summary>
-    /// Metadata structure for storing primary song information
-    /// </summary>
+    // Metadata structure for storing primary song information
     internal class PrimarySongMetadata
     {
         public string PrimarySongFileName { get; set; }
