@@ -776,8 +776,6 @@ namespace UniPlaySong.Services
                         OnMusicStarted?.Invoke(settings);
                     }
                 }
-
-                // Music playback initiated
             }
             catch (Exception ex)
             {

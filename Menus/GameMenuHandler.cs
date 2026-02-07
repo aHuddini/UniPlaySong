@@ -79,8 +79,7 @@ namespace UniPlaySong.Menus
                     () =>
                     {
                         _logger.Debug($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                        // Removed redundant Debug.WriteLine
-                        
+
                         if (_downloadManager == null)
                         {
                             _playniteApi.Dialogs.ShowMessage("Download manager not initialized. Please check extension settings.");
@@ -161,8 +160,7 @@ namespace UniPlaySong.Menus
                 try
                 {
                     _logger.Debug($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                    // Removed redundant Debug.WriteLine
-                    
+
                     if (_downloadManager == null)
                     {
                         _playniteApi.Dialogs.ShowMessage("Download manager not initialized. Please check extension settings.");

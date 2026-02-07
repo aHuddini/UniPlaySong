@@ -26,9 +26,6 @@ namespace UniPlaySong.Services
             Directory.CreateDirectory(_baseMusicPath);
         }
 
-        /// <summary>
-        /// Gets the music directory path for a game
-        /// </summary>
         public string GetGameMusicDirectory(Game game)
         {
             if (game == null)
@@ -40,9 +37,6 @@ namespace UniPlaySong.Services
             return Path.Combine(_baseMusicPath, gameId);
         }
 
-        /// <summary>
-        /// Gets all available music files for a game
-        /// </summary>
         public List<string> GetAvailableSongs(Game game)
         {
             var directory = GetGameMusicDirectory(game);
@@ -136,9 +130,6 @@ namespace UniPlaySong.Services
             ClearPrimarySong(game);
         }
 
-        /// <summary>
-        /// Creates the music directory for a game if it doesn't exist
-        /// </summary>
         public string EnsureGameMusicDirectory(Game game)
         {
             var directory = GetGameMusicDirectory(game);

@@ -8,19 +8,10 @@ namespace UniPlaySong.Models
     /// </summary>
     public class GameMusic
     {
-        /// <summary>
-        /// The game this music is associated with
-        /// </summary>
         public Game Game { get; set; }
 
-        /// <summary>
-        /// Directory path where game music is stored
-        /// </summary>
         public string MusicDirectory { get; set; }
 
-        /// <summary>
-        /// Available songs for this game
-        /// </summary>
         public List<Song> AvailableSongs { get; set; } = new List<Song>();
 
         /// <summary>

@@ -9,73 +9,33 @@ namespace UniPlaySong.Common
     public static class Constants
     {
         #region Fade Durations
-        
-        /// <summary>
-        /// Default fade-in duration in seconds
-        /// </summary>
+
         public const double DefaultFadeInDuration = 0.5;
-        
-        /// <summary>
-        /// Default fade-out duration in seconds
-        /// </summary>
         public const double DefaultFadeOutDuration = 0.3;
-        
-        /// <summary>
-        /// Minimum fade duration in seconds
-        /// </summary>
         public const double MinFadeDuration = 0.05;
-        
-        /// <summary>
-        /// Maximum fade duration in seconds
-        /// </summary>
         public const double MaxFadeDuration = 10.0;
-        
+
         #endregion
         
         #region Volume
-        
-        /// <summary>
-        /// Default target volume (0.0 to 1.0)
-        /// </summary>
+
         public const double DefaultTargetVolume = 0.5;
-        
-        /// <summary>
-        /// Minimum volume (0.0)
-        /// </summary>
         public const double MinVolume = 0.0;
-        
-        /// <summary>
-        /// Maximum volume (1.0)
-        /// </summary>
         public const double MaxVolume = 1.0;
-        
+
         /// <summary>
         /// Divisor to convert percentage volume (0-100) to decimal (0.0-1.0)
         /// </summary>
         public const double VolumeDivisor = 100.0;
-        
-        /// <summary>
-        /// Default music volume percentage (0-100)
-        /// </summary>
+
         public const int DefaultMusicVolume = 50;
-        
-        /// <summary>
-        /// Minimum music volume percentage (0-100)
-        /// </summary>
         public const int MinMusicVolume = 0;
-        
-        /// <summary>
-        /// Maximum music volume percentage (0-100)
-        /// </summary>
         public const int MaxMusicVolume = 100;
-        
+
         #endregion
 
         #region Preview Duration
 
-        /// <summary>
-        /// Default preview duration in seconds for game music
-        /// </summary>
         public const int DefaultPreviewDuration = 30;
 
         /// <summary>
@@ -103,32 +63,13 @@ namespace UniPlaySong.Common
         #endregion
         
         #region Directory Names
-        
-        /// <summary>
-        /// ExtraMetadata folder name in Playnite configuration
-        /// </summary>
+
         public const string ExtraMetadataFolderName = "ExtraMetadata";
-        
-        /// <summary>
-        /// Extension folder name
-        /// </summary>
         public const string ExtensionFolderName = "UniPlaySong";
-        
-        /// <summary>
-        /// Games music folder name
-        /// </summary>
         public const string GamesFolderName = "Games";
-        
-        /// <summary>
-        /// Temporary files folder name
-        /// </summary>
         public const string TempFolderName = "Temp";
-        
-        /// <summary>
-        /// Default music folder name
-        /// </summary>
         public const string DefaultMusicFolderName = "DefaultMusic";
-        
+
         /// <summary>
         /// Preserved originals folder name for original files moved during normalization
         /// </summary>

@@ -223,9 +223,6 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        // TODO: OnScreenKeyboard feature not yet implemented
-        // private object _activeOSK = null;
-
         public void ShowOnScreenKeyboard(Panel oskContainer)
         {
             // OnScreenKeyboard not yet implemented - stub method

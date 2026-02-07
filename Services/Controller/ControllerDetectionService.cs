@@ -251,9 +251,7 @@ namespace UniPlaySong.Services.Controller
         {
             try
             {
-                // TODO: Add Playnite API controller detection if available
-                // This would require checking Playnite's input system
-                // For now, return false as this is a future enhancement
+                // Playnite API doesn't expose controller state
                 return false;
             }
             catch (Exception ex)

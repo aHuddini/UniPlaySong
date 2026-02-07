@@ -13,17 +13,11 @@ namespace UniPlaySong.Common
     {
         private const string PrimarySongFileName = ".primarysong.json";
 
-        /// <summary>
-        /// Gets the path to the primary song metadata file
-        /// </summary>
         private static string GetPrimarySongFilePath(string musicDirectory)
         {
             return Path.Combine(musicDirectory, PrimarySongFileName);
         }
 
-        /// <summary>
-        /// Gets the primary song file path for a music directory
-        /// </summary>
         public static string GetPrimarySong(string musicDirectory, ErrorHandlerService errorHandler = null)
         {
             if (string.IsNullOrWhiteSpace(musicDirectory) || !Directory.Exists(musicDirectory))
@@ -86,9 +80,6 @@ namespace UniPlaySong.Common
             return null;
         }
 
-        /// <summary>
-        /// Sets the primary song for a music directory
-        /// </summary>
         public static void SetPrimarySong(string musicDirectory, string songFilePath, ErrorHandlerService errorHandler = null)
         {
             if (string.IsNullOrWhiteSpace(musicDirectory) || string.IsNullOrWhiteSpace(songFilePath))

@@ -45,8 +45,6 @@ namespace UniPlaySong.Monitors
             playniteApi = api;
             MediaElementsMonitor.settings = settings;
 
-            // MediaElementsMonitor attached
-
             // RegisterClassHandler is permanent (no unregister API) — only call once
             if (!_classHandlerRegistered)
             {
@@ -61,8 +59,6 @@ namespace UniPlaySong.Monitors
                 timer.Interval = TimeSpan.FromMilliseconds(100);
                 timer.Tick += Timer_Tick;
             }
-
-            // MediaElementsMonitor ready
         }
 
         /// <summary>
@@ -146,7 +142,6 @@ namespace UniPlaySong.Monitors
 
             if (settings.VideoIsPlaying != someIsPlaying)
             {
-                // VideoIsPlaying state changed
                 settings.VideoIsPlaying = someIsPlaying;
             }
 
@@ -164,7 +159,6 @@ namespace UniPlaySong.Monitors
 
         static private void MediaElement_Opened(object sender, RoutedEventArgs e)
         {
-            // MediaElement opened
             Timer_Tick(sender, e);
             // Always start timer when a MediaElement is detected (matches PlayniteSound pattern)
             timer.Start();

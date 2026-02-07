@@ -824,7 +824,6 @@ namespace UniPlaySong
                     _downloadManager = new DownloadManager(
                         _httpClient, _htmlWeb, tempPath,
                         e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
-                    // DownloadManager recreated
                 }
 
                 // Check if LiveEffectsEnabled changed - need to switch music players
@@ -845,8 +844,6 @@ namespace UniPlaySong
             {
                 e.NewSettings.PropertyChanged += OnSettingsChanged;
             }
-
-            // Settings updated and services notified
         }
 
         /// <summary>
@@ -888,8 +885,6 @@ namespace UniPlaySong
                     _playbackService?.Stop();
                 }
             }
-
-            // Settings saved and reloaded
         }
 
         private void OnMainModelChanged(object sender, PropertyChangedEventArgs e)

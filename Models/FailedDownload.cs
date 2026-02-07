@@ -8,9 +8,6 @@ namespace UniPlaySong.Models
     /// </summary>
     public class FailedDownload
     {
-        /// <summary>
-        /// The game for which the download failed
-        /// </summary>
         public Game Game { get; set; }
 
         /// <summary>
@@ -18,14 +15,8 @@ namespace UniPlaySong.Models
         /// </summary>
         public string FailureReason { get; set; }
 
-        /// <summary>
-        /// Timestamp of the failure
-        /// </summary>
         public DateTime FailedAt { get; set; }
 
-        /// <summary>
-        /// Whether this failed download has been resolved/retried
-        /// </summary>
         public bool Resolved { get; set; }
 
         public FailedDownload()

@@ -30,11 +30,8 @@ Built with the help of Claude Code and Cursor IDE
   - Toggle gradient/solid rendering
 
 ### Improvements
-- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (89% reduction)
-  - Removed chatty per-operation debug logs that fired on every game switch and song load
-  - Removed controller navigation and UI lifecycle logs
-  - Removed spectrum visualizer diagnostics (720+ potential logs/second)
-  - Diagnostic logging still available via UniPlaySong's own debug log when enabled in settings
+- **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
+- **Desktop Media Controls** - Tighter button spacing for more compact top panel layout
 
 ### Previous Versions
 - **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes
