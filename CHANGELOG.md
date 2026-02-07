@@ -4,10 +4,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.2.5] - Unreleased
 
+### Added
+- **Audio-Reactive Spectrum Visualizer (Desktop Mode)** - New real-time frequency spectrum visualizer that reacts to your game music
+  - 6 gradient color themes: Classic (white), Neon (cyan→magenta), Sunset (orange→pink), Ocean (blue→teal), Fire (red→yellow), Ice (white→blue)
+  - Best viewed in Harmony and Vanilla desktop themes
+  - Toggle between smooth gradient bars and solid color rendering
+  - 5 tuning presets (Default, Dynamic, Smooth, Energetic, Minimal) plus Custom mode
+  - Advanced tuning controls: FFT size, smoothing, rise/fall speeds, frequency-dependent behavior
+  - Creates vibrant visual feedback that responds to music energy and frequency in real-time
+
 ### Improved
 - **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log
-  - Removed 216 debug log statements (82% reduction) from hot-path and mature service code
+  - Removed 234 debug log statements (89% reduction) from hot-path code and UI navigation
   - Eliminated per-operation logs that fired on every game switch, song load, and video state change
+  - Removed controller navigation and UI lifecycle logs from dialogs
   - Removed spectrum visualizer diagnostics (720+ potential logs/second when debug enabled)
   - Extension.log now significantly quieter even when Playnite's log level is set to Debug
   - All diagnostic logging still available via UniPlaySong's own debug log when enabled in settings

@@ -90,7 +90,8 @@ namespace UniPlaySong.DeskMediaControl
                 Text = MediaControlIcons.Play,
                 FontSize = 18,
                 FontFamily = icoFont,
-                FontWeight = FontWeights.Bold
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, -12, 0) // Reduce spacing to skip button
             };
 
             _playPauseItem = new TopPanelItem
@@ -108,7 +109,8 @@ namespace UniPlaySong.DeskMediaControl
                 FontSize = 18,
                 FontFamily = icoFont,
                 FontWeight = FontWeights.Bold,
-                Opacity = 0.3 // Start greyed out until 2+ songs available
+                Opacity = 0.3, // Start greyed out until 2+ songs available
+                Margin = new Thickness(-12, 0, 0, 0) // Reduce spacing from play/pause button
             };
 
             _skipItem = new TopPanelItem
@@ -126,6 +128,7 @@ namespace UniPlaySong.DeskMediaControl
             {
                 _spectrumVisualizer = new SpectrumVisualizerControl();
                 _spectrumVisualizer.SetSettingsProvider(_getSettings);
+                _spectrumVisualizer.Margin = new Thickness(-8, 0, 0, 0); // Reduce spacing from skip button
                 _spectrumItem = new TopPanelItem
                 {
                     Icon = _spectrumVisualizer,

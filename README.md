@@ -22,9 +22,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.5
 
+### New Features
+- **Audio-Reactive Spectrum Visualizer (Desktop Mode)** - Real-time frequency spectrum visualization
+  - 6 gradient color themes (Classic, Neon, Sunset, Ocean, Fire, Ice)
+  - Best viewed in Harmony and Vanilla desktop themes
+  - 5 tuning presets plus advanced customization controls
+  - Toggle gradient/solid rendering
+
 ### Improvements
-- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (82% reduction)
+- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (89% reduction)
   - Removed chatty per-operation debug logs that fired on every game switch and song load
+  - Removed controller navigation and UI lifecycle logs
   - Removed spectrum visualizer diagnostics (720+ potential logs/second)
   - Diagnostic logging still available via UniPlaySong's own debug log when enabled in settings
 
@@ -43,6 +51,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Auto-Download** - Automatic music search and downloads for existing libraries and new games from YouTube, KHInsider, and Zophar's Domain
 - **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
 - **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
+- **Audio-Reactive Visualizer** - Real-time frequency spectrum visualizer with 6 gradient color themes and tuning presets (Desktop mode - best in Harmony/Vanilla themes)
 - **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
 - **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations
 - **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes
