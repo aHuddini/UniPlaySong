@@ -22,21 +22,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.5
 
-### New Features
-- **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
-- **Clean Up Orphaned Music** - New cleanup tool: Manually remove music folders for games no longer in your library
-
 ### Improvements
-- **Playnite SDK** updated to version 6.15.0
-
-### Bug Fixes
-- **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now properly controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
-- **Now Playing GPU Usage** - Fixed top panel Now Playing animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
-- **Media Controls Work After Live Effects Toggle** - Fixed media control buttons and music becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
-- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback; song loads silently until play is pressed
+- **Logging Cleanup** - Dramatically reduced log verbosity in Playnite's extension.log (81% reduction)
+  - Removed chatty per-operation debug logs that fired on every game switch and song load
+  - Diagnostic logging still available via UniPlaySong's own debug log when enabled in settings
 
 ### Previous Versions
+- **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes
 - **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes
 ---
 

@@ -33,7 +33,7 @@ namespace UniPlaySong.Monitors
                 Window.LoadedEvent, 
                 new RoutedEventHandler(Window_Loaded));
             
-            Logger.Info("WindowMonitor attached - ready for universal theme support");
+            Logger.Debug("WindowMonitor attached - ready for universal theme support");
         }
 
         /// <summary>

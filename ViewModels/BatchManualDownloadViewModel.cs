@@ -433,7 +433,7 @@ namespace UniPlaySong.ViewModels
                             SelectedGameItem.Status = BatchDownloadStatus.Completed;
                             SelectedGameItem.StatusMessage = $"Downloaded: {bestSong.Name}";
                             SuccessCount++;
-                            Logger.Info($"[{LogPrefix}] Downloaded music for {SelectedGameItem.GameName}: {bestSong.Name}");
+                            Logger.Debug($"[{LogPrefix}] Downloaded music for {SelectedGameItem.GameName}: {bestSong.Name}");
                         }
                         else
                         {
@@ -464,7 +464,7 @@ namespace UniPlaySong.ViewModels
             // In single game mode, auto-close after successful download
             if (IsSingleGameMode && SuccessCount > 0)
             {
-                Logger.Info($"[{LogPrefix}] Single game mode - auto-closing after successful download");
+                Logger.Debug($"[{LogPrefix}] Single game mode - auto-closing after successful download");
                 CloseDialog?.Invoke(true);
                 return;
             }

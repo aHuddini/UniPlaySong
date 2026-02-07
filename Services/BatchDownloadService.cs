@@ -69,8 +69,6 @@ namespace UniPlaySong.Services
             if (games == null || games.Count == 0)
                 return new List<GameDownloadResult>();
 
-            Logger.Info($"[BatchDownload] Starting parallel download for {games.Count} games (max concurrent: {MaxConcurrentDownloads})");
-
             var results = new List<GameDownloadResult>();
             var resultsLock = new object();
 
@@ -82,13 +80,9 @@ namespace UniPlaySong.Services
                     bool acquiredSemaphore = false;
                     try
                     {
-                        Logger.Info($"[BatchDownload] Queued: '{game.Name}' - waiting for semaphore slot");
-
                         // Wait for semaphore slot - must be inside try to handle cancellation
                         await semaphore.WaitAsync(cancellationToken);
                         acquiredSemaphore = true;
-
-                        Logger.Info($"[BatchDownload] Starting: '{game.Name}'");
 
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -108,7 +102,6 @@ namespace UniPlaySong.Services
                         var musicDir = _fileService.GetGameMusicDirectory(game);
                         if (!overwrite && Directory.Exists(musicDir) && Directory.GetFiles(musicDir, "*.mp3").Length > 0)
                         {
-                            Logger.Info($"[BatchDownload] Skipping '{game.Name}' - already has music");
                             var skipResult = new GameDownloadResult
                             {
                                 Game = game,
@@ -182,12 +175,6 @@ namespace UniPlaySong.Services
                 await Task.WhenAll(tasks);
             }
 
-            // Log summary
-            var successCount = results.Count(r => r.Success);
-            var skipCount = results.Count(r => r.WasSkipped);
-            var failCount = results.Count(r => !r.Success && !r.WasSkipped);
-            Logger.Info($"[BatchDownload] Complete: {successCount} succeeded, {skipCount} skipped, {failCount} failed");
-
             return results;
         }
 
@@ -197,15 +184,12 @@ namespace UniPlaySong.Services
 
             try
             {
-                Logger.Info($"[BatchDownload] Processing '{game.Name}'");
-
                 // Get albums (auto mode)
                 var albums = _downloadManager.GetAlbumsForGame(game.Name, source, cancellationToken, auto: true);
                 var albumsList = albums?.ToList() ?? new List<Album>();
 
                 if (albumsList.Count == 0)
                 {
-                    Logger.Info($"[BatchDownload] No albums found for '{game.Name}'");
                     result.ErrorMessage = "No albums found";
                     return result;
                 }
@@ -214,7 +198,6 @@ namespace UniPlaySong.Services
                 var bestAlbum = _downloadManager.BestAlbumPick(albumsList, game);
                 if (bestAlbum == null)
                 {
-                    Logger.Info($"[BatchDownload] No suitable album for '{game.Name}'");
                     result.ErrorMessage = "No suitable album match";
                     return result;
                 }
@@ -222,7 +205,6 @@ namespace UniPlaySong.Services
                 result.AlbumName = bestAlbum.Name;
                 result.AlbumId = bestAlbum.Id;
                 result.SourceName = GetSourceDisplayName(bestAlbum.Source);
-                Logger.Info($"[BatchDownload] Selected album '{bestAlbum.Name}' (id: {bestAlbum.Id}) from {result.SourceName} for '{game.Name}'");
 
                 // Get songs from album
                 var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cancellationToken);
@@ -230,7 +212,6 @@ namespace UniPlaySong.Services
 
                 if (songsList.Count == 0)
                 {
-                    Logger.Info($"[BatchDownload] No songs in album '{bestAlbum.Name}'");
                     result.ErrorMessage = "Album has no songs";
                     return result;
                 }
@@ -253,13 +234,11 @@ namespace UniPlaySong.Services
                 if (bestSongs == null || bestSongs.Count == 0)
                 {
                     var errorMsg = rejectionReason ?? "No suitable song found";
-                    Logger.Info($"[BatchDownload] No suitable song for '{game.Name}': {errorMsg}");
                     result.ErrorMessage = errorMsg;
                     return result;
                 }
 
                 var songToDownload = bestSongs.First();
-                Logger.Info($"[BatchDownload] Selected song '{songToDownload.Name}' for '{game.Name}'");
 
                 // Ensure music directory exists
                 var musicDir = _fileService.GetGameMusicDirectory(game);
@@ -284,7 +263,6 @@ namespace UniPlaySong.Services
                 {
                     result.Success = true;
                     result.SongPath = downloadPath;
-                    Logger.Info($"[BatchDownload] Successfully downloaded '{songToDownload.Name}' for '{game.Name}'");
                 }
                 else
                 {

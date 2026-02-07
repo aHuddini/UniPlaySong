@@ -92,11 +92,6 @@ namespace UniPlaySong.DeskMediaControl
         private float _fadeOpacity = 1f;
         private const float FadeOutSpeed = 2.5f; // full fade in ~0.4 seconds
 
-        // Diagnostic logging (gated by EnableDebugLogging, logs ~1/sec)
-        private static readonly ILogger Logger = LogManager.GetLogger();
-        private int _frameCounter;
-        private const int DiagLogInterval = 60; // Log every 60 frames (~1 sec)
-
         // Noise floor — below this, bar is zeroed
         private const float NoiseFloor = 0.005f;
 
@@ -542,27 +537,7 @@ namespace UniPlaySong.DeskMediaControl
                     anyBarVisible = true;
             }
 
-            // Diagnostic logging (~1/sec, gated by EnableDebugLogging)
-            if (settings?.EnableDebugLogging == true && hasData)
-            {
-                _frameCounter++;
-                if (_frameCounter >= DiagLogInterval)
-                {
-                    _frameCounter = 0;
-                    Logger.Debug($"[Viz] dt={dt:F4} gravity={gravity:F2} peakHold={peakHold:F3} bias={biasPct:F2} gainMult={gainMult:F2}");
-                    for (int i = 0; i < BarCount; i++)
-                    {
-                        int end = Math.Min(_binEnds[i], _spectrumData.Length);
-                        int bc = end - _binStarts[i];
-                        float ss = 0f;
-                        for (int bin = _binStarts[i]; bin < end; bin++)
-                        { float v = _spectrumData[bin]; ss += v * v; }
-                        float rms = bc > 0 ? (float)Math.Sqrt(ss / bc) : 0f;
-                        float scaled = rms * BarGain[i];
-                        Logger.Debug($"[Viz] Bar{i}: bins={bc} rms={rms:F4} gain={BarGain[i]:F1} scaled={scaled:F4} h={_barHeights[i]:F3}");
-                    }
-                }
-            }
+            // Visualization rendering (no diagnostic logging - use performance profiler if needed)
 
             // Smooth fade-out when music stops: bars decay first, then control fades to transparent
             if (!_isActive)

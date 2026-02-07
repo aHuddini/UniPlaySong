@@ -44,7 +44,6 @@ namespace UniPlaySong.Services
             // Create new tag
             var newTag = new Tag(tagName);
             _playniteApi.Database.Tags.Add(newTag);
-            Logger.Info($"Created new tag: {tagName} with ID: {newTag.Id}");
             return newTag.Id;
         }
 
@@ -121,7 +120,6 @@ namespace UniPlaySong.Services
 
                 // Save changes
                 _playniteApi.Database.Games.Update(game);
-                Logger.Debug($"Updated tag for '{game.Name}': {(hasMusic ? "Has Music" : "No Music")}");
                 return true;
             }
             catch (Exception ex)
@@ -148,8 +146,6 @@ namespace UniPlaySong.Services
                 var allGames = _playniteApi.Database.Games.ToList();
                 result.TotalGames = allGames.Count;
 
-                Logger.Info($"Starting music tag scan for {result.TotalGames} games");
-
                 // Ensure tags exist before scanning
                 GetHasMusicTagId();
                 GetNoMusicTagId();
@@ -162,7 +158,6 @@ namespace UniPlaySong.Services
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            Logger.Info("Tag scan cancelled by user");
                             break;
                         }
 
@@ -196,11 +191,9 @@ namespace UniPlaySong.Services
                 }, cancellationToken);
 
                 result.IsComplete = !cancellationToken.IsCancellationRequested;
-                Logger.Info($"Tag scan complete: {result.GamesWithMusic} with music, {result.GamesWithoutMusic} without music, {result.GamesModified} modified");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Tag scan was cancelled");
                 result.IsComplete = false;
             }
             catch (Exception ex)
@@ -229,11 +222,6 @@ namespace UniPlaySong.Services
                     {
                         updated++;
                     }
-                }
-
-                if (updated > 0)
-                {
-                    Logger.Info($"Updated music tags for {updated} game(s)");
                 }
             }
             catch (Exception ex)
@@ -293,8 +281,6 @@ namespace UniPlaySong.Services
                 // Clear cached IDs
                 _hasMusicTagId = null;
                 _noMusicTagId = null;
-
-                Logger.Info($"Removed music tags from {removed} game(s)");
             }
             catch (Exception ex)
             {

@@ -601,7 +601,7 @@ namespace UniPlaySong.Views
         private void ReviewButton_Click(object sender, RoutedEventArgs e)
         {
             IsReviewMode = true;
-            Logger.Info("[BatchDownloadProgressDialog] Entered review mode");
+            Logger.Debug("[BatchDownloadProgressDialog] Entered review mode");
         }
 
         /// <summary>
@@ -623,7 +623,7 @@ namespace UniPlaySong.Views
                      item.Status == BatchDownloadStatus.Skipped ||
                      item.Status == BatchDownloadStatus.Failed) && item.Game != null)
                 {
-                    Logger.Info($"[BatchDownloadProgressDialog] Re-download requested for: {item.GameName} (status: {item.Status})");
+                    Logger.Debug($"[BatchDownloadProgressDialog] Re-download requested for: {item.GameName} (status: {item.Status})");
                     OnGameRedownloadRequested?.Invoke(item);
                 }
             }
@@ -646,7 +646,7 @@ namespace UniPlaySong.Views
                 item.SourceName = newSourceName;
                 item.StatusMessage = $"Re-downloaded ({newSourceName})";
                 item.WasRedownloaded = true;  // Mark as re-downloaded for orange bold styling
-                Logger.Info($"[BatchDownloadProgressDialog] Updated item after re-download: {item.GameName} -> {newAlbumName}");
+                Logger.Debug($"[BatchDownloadProgressDialog] Updated item after re-download: {item.GameName} -> {newAlbumName}");
             }
         }
 
@@ -766,7 +766,7 @@ namespace UniPlaySong.Views
                 if (selected.Title.StartsWith("1")) songCount = 1;
                 else if (selected.Title.StartsWith("3")) songCount = 3;
 
-                Logger.Info($"[BatchDownloadProgressDialog] Auto-Add More Songs requested: {songCount} songs per game");
+                Logger.Debug($"[BatchDownloadProgressDialog] Auto-Add More Songs requested: {songCount} songs per game");
                 OnAutoAddSongsRequested?.Invoke(songCount);
             }
         }

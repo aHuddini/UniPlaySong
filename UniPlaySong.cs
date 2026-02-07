@@ -65,15 +65,15 @@ namespace UniPlaySong
                     string dllPath = Path.Combine(extensionPath, $"{assemblyName}.dll");
                     if (File.Exists(dllPath))
                     {
-                        Logger?.Info($"Resolving assembly {assemblyName} from {dllPath}");
+                        // Resolving assembly dependency
                         return Assembly.LoadFrom(dllPath);
                     }
-                    
+
                     // Also try with .exe extension (for some dependencies)
                     string exePath = Path.Combine(extensionPath, $"{assemblyName}.exe");
                     if (File.Exists(exePath))
                     {
-                        Logger?.Info($"Resolving assembly {assemblyName} from {exePath}");
+                        // Resolving assembly dependency
                         return Assembly.LoadFrom(exePath);
                     }
                 }
@@ -247,7 +247,7 @@ namespace UniPlaySong
         /// </summary>
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            _fileLogger?.Info($"Application started - Mode: {_api.ApplicationInfo.Mode}");
+            _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
             // Register plugin instance for access from dialogs and services
             Application.Current.Properties["UniPlaySongPlugin"] = this;
@@ -272,7 +272,7 @@ namespace UniPlaySong
             // and integrate with Playnite's BackgroundVolume slider
             if (IsFullscreen)
             {
-                _fileLogger?.Info("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
+                _fileLogger?.Debug("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
                 SuppressNativeMusic();
                 StartNativeMusicSuppression();
 
@@ -330,7 +330,7 @@ namespace UniPlaySong
 
                     if (hasUpdate)
                     {
-                        _fileLogger?.Info($"CheckForHintsUpdatesAsync: Update available - GitHub has {gitHubCount} entries, current has {currentCount} entries");
+                        _fileLogger?.Debug($"CheckForHintsUpdatesAsync: Update available - GitHub has {gitHubCount} entries, current has {currentCount} entries");
 
                         // Show notification on UI thread
                         Application.Current.Dispatcher.Invoke(() =>
@@ -364,7 +364,7 @@ namespace UniPlaySong
                     }
                     else
                     {
-                        _fileLogger?.Info($"CheckForHintsUpdatesAsync: No update available (GitHub: {gitHubCount}, Current: {currentCount})");
+                        _fileLogger?.Debug($"CheckForHintsUpdatesAsync: No update available (GitHub: {gitHubCount}, Current: {currentCount})");
                     }
                 }
                 catch (Exception ex)
@@ -383,7 +383,7 @@ namespace UniPlaySong
         {
             try
             {
-                _fileLogger?.Info($"OnLibraryUpdated: Library updated event received");
+                _fileLogger?.Debug($"OnLibraryUpdated: Library updated event received");
 
                 if (_settings == null)
                 {
@@ -396,13 +396,13 @@ namespace UniPlaySong
                 {
                     // Get games added since last auto-download check
                     var lastCheck = _settings.LastAutoLibUpdateAssetsDownload;
-                    _fileLogger?.Info($"OnLibraryUpdated: Checking for games added after {lastCheck}");
+                    _fileLogger?.Debug($"OnLibraryUpdated: Checking for games added after {lastCheck}");
 
                     var newGames = _api.Database.Games
                         .Where(g => g.Added.HasValue && g.Added.Value > lastCheck)
                         .ToList();
 
-                    _fileLogger?.Info($"OnLibraryUpdated: Found {newGames.Count} new game(s)");
+                    _fileLogger?.Debug($"OnLibraryUpdated: Found {newGames.Count} new game(s)");
 
                     // Start auto-download in background if we have new games
                     if (newGames.Count > 0)
@@ -425,13 +425,13 @@ namespace UniPlaySong
                 // Handle auto-tagging (scans all games, not just new ones)
                 if (_settings.AutoTagOnLibraryUpdate && _tagService != null)
                 {
-                    _fileLogger?.Info("OnLibraryUpdated: Starting auto-tag scan in background");
+                    _fileLogger?.Debug("OnLibraryUpdated: Starting auto-tag scan in background");
                     Task.Run(async () =>
                     {
                         try
                         {
                             var result = await _tagService.ScanAndTagAllGamesAsync();
-                            _fileLogger?.Info($"OnLibraryUpdated: Auto-tag complete - {result.GamesWithMusic} with music, {result.GamesWithoutMusic} without, {result.GamesModified} updated");
+                            _fileLogger?.Debug($"OnLibraryUpdated: Auto-tag complete - {result.GamesWithMusic} with music, {result.GamesWithoutMusic} without, {result.GamesModified} updated");
                         }
                         catch (Exception ex)
                         {
@@ -456,7 +456,7 @@ namespace UniPlaySong
             if (games == null || games.Count == 0)
                 return;
 
-            _fileLogger?.Info($"AutoDownloadMusicForGamesAsync: Starting auto-download for {games.Count} game(s)");
+            _fileLogger?.Debug($"AutoDownloadMusicForGamesAsync: Starting auto-download for {games.Count} game(s)");
 
             var successCount = 0;
             var skipCount = 0;
@@ -494,7 +494,7 @@ namespace UniPlaySong
                 }
             }
 
-            _fileLogger?.Info($"AutoDownloadMusicForGamesAsync: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
+            _fileLogger?.Debug($"AutoDownloadMusicForGamesAsync: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
 
             // Show notification with results
             if (successCount > 0 || failCount > 0)
@@ -581,7 +581,7 @@ namespace UniPlaySong
                     var success = _downloadManager.DownloadSong(bestSong, downloadPath, cts.Token, isPreview: false);
                     if (success)
                     {
-                        _fileLogger?.Info($"AutoDownload: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
+                        _fileLogger?.Debug($"AutoDownload: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
 
                         // Auto-normalize if enabled
                         if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)
@@ -665,7 +665,7 @@ namespace UniPlaySong
             StopNativeMusicSuppression();
             UnsubscribeFromFullscreenVolumeChanges();
 
-            _fileLogger?.Info("Application stopped");
+            _fileLogger?.Debug("Application stopped");
         }
 
         #endregion
@@ -717,13 +717,13 @@ namespace UniPlaySong
                     // Stop playback if the removed game is currently playing
                     if (_playbackService?.CurrentGame?.Id == removedGame.Id)
                     {
-                        _fileLogger?.Info($"OnGamesCollectionChanged: Stopping playback for removed game '{removedGame.Name}'");
+                        _fileLogger?.Debug($"OnGamesCollectionChanged: Stopping playback for removed game '{removedGame.Name}'");
                         _playbackService.Stop();
                     }
 
                     var fileCount = Directory.GetFiles(musicDir, "*.*", SearchOption.AllDirectories).Length;
                     Directory.Delete(musicDir, true);
-                    _fileLogger?.Info($"OnGamesCollectionChanged: Deleted music directory for removed game '{removedGame.Name}' (ID: {gameId}, {fileCount} files)");
+                    _fileLogger?.Debug($"OnGamesCollectionChanged: Deleted music directory for removed game '{removedGame.Name}' (ID: {gameId}, {fileCount} files)");
                 }
                 catch (Exception ex)
                 {
@@ -826,14 +826,14 @@ namespace UniPlaySong
                         _downloadManager = new DownloadManager(
                             _httpClient, _htmlWeb, tempPath,
                             e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
-                        Logger.Info("DownloadManager recreated with updated download settings");
+                        // DownloadManager recreated
                     }
 
                     // Check if LiveEffectsEnabled changed - need to switch music players
                     bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
                     if (liveEffectsChanged)
                     {
-                        _fileLogger?.Info($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
+                        _fileLogger?.Debug($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
                         RecreateMusicPlayerForLiveEffects();
                     }
                 }
@@ -847,8 +847,8 @@ namespace UniPlaySong
                 {
                     e.NewSettings.PropertyChanged += OnSettingsChanged;
                 }
-                
-                Logger.Info("SettingsService: Settings updated and services notified");
+
+                // Settings updated and services notified
             }
             catch (Exception ex)
             {
@@ -898,7 +898,7 @@ namespace UniPlaySong
                     }
                 }
 
-                Logger.Info("Settings saved and reloaded via SettingsService");
+                // Settings saved and reloaded
             }
             catch (Exception ex)
             {
@@ -1073,7 +1073,7 @@ namespace UniPlaySong
                 () => IsDesktop,
                 () => SelectedGames?.FirstOrDefault()
             );
-            _fileLogger?.Info("MusicPlaybackCoordinator initialized");
+            _fileLogger?.Debug("MusicPlaybackCoordinator initialized");
 
             // Initialize search cache service
             var extensionDataPath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
@@ -1081,12 +1081,12 @@ namespace UniPlaySong
                 extensionDataPath,
                 enabled: _settings?.EnableSearchCache ?? true,
                 cacheDurationDays: _settings?.SearchCacheDurationDays ?? 7);
-            _fileLogger?.Info("SearchCacheService initialized");
+            _fileLogger?.Debug("SearchCacheService initialized");
 
             // Initialize search hints service (allows user overrides for problematic game searches)
             var pluginInstallPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _hintsService = new SearchHintsService(pluginInstallPath, extensionDataPath);
-            _fileLogger?.Info($"SearchHintsService initialized (bundled: {_hintsService.GetBundledHintsFilePath()}, user: {_hintsService.GetUserHintsFilePath()})");
+            _fileLogger?.Debug($"SearchHintsService initialized (bundled: {_hintsService.GetBundledHintsFilePath()}, user: {_hintsService.GetUserHintsFilePath()})");
 
             _downloadManager = new DownloadManager(
                 _httpClient, _htmlWeb, tempPath,
@@ -1097,30 +1097,30 @@ namespace UniPlaySong
 
             // Initialize normalization service with playback service and base path for backups
             _normalizationService = new Services.AudioNormalizationService(_errorHandler, _playbackService, basePath);
-            _fileLogger?.Info("AudioNormalizationService initialized");
+            _fileLogger?.Debug("AudioNormalizationService initialized");
 
             // Wire up normalization service to download dialog service for auto-normalize feature
             _downloadDialogService.SetNormalizationService(_normalizationService);
 
             // Initialize trim service with playback service and base path for backups
             _trimService = new Services.AudioTrimService(_errorHandler, _playbackService, basePath);
-            _fileLogger?.Info("AudioTrimService initialized");
+            _fileLogger?.Debug("AudioTrimService initialized");
 
             // Initialize waveform trim service for precise trimming
             _waveformTrimService = new Services.WaveformTrimService(_errorHandler, _playbackService, basePath);
-            _fileLogger?.Info("WaveformTrimService initialized");
+            _fileLogger?.Debug("WaveformTrimService initialized");
 
             // Initialize migration service for PlayniteSound <-> UniPlaySong migration
             _migrationService = new Services.MigrationService(_api, _errorHandler);
-            _fileLogger?.Info("MigrationService initialized");
+            _fileLogger?.Debug("MigrationService initialized");
 
             // Initialize audio repair service for fixing problematic audio files
             _repairService = new Services.AudioRepairService(_errorHandler, _playbackService, basePath);
-            _fileLogger?.Info("AudioRepairService initialized");
+            _fileLogger?.Debug("AudioRepairService initialized");
 
             // Initialize game music tag service for tagging games by music status
             _tagService = new Services.GameMusicTagService(_api, _fileService);
-            _fileLogger?.Info("GameMusicTagService initialized");
+            _fileLogger?.Debug("GameMusicTagService initialized");
 
             // Wire up tag service to download dialog service for post-download tag updates
             _downloadDialogService.SetTagService(_tagService);
@@ -1130,7 +1130,7 @@ namespace UniPlaySong
 
             // Initialize amplify service for audio volume adjustments
             _amplifyService = new Services.AudioAmplifyService(_errorHandler, _playbackService, basePath);
-            _fileLogger?.Info("AudioAmplifyService initialized");
+            _fileLogger?.Debug("AudioAmplifyService initialized");
 
             // Initialize Desktop top panel media control (play/pause button)
             // Pass a getter function so it always uses the current playback service (handles Live Effects toggle)
@@ -1138,10 +1138,10 @@ namespace UniPlaySong
                 () => _playbackService,
                 () => _settings,
                 () => SelectedGames?.FirstOrDefault(),
-                msg => _fileLogger?.Info(msg),
+                msg => _fileLogger?.Debug(msg),
                 (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
             );
-            _fileLogger?.Info("TopPanelMediaControlViewModel initialized");
+            _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
         }
 
         private void InitializeMenuHandlers()
@@ -1179,7 +1179,7 @@ namespace UniPlaySong
                 try
                 {
                     var player = new NAudioMusicPlayer(_settingsService);
-                    Logger.Info("Initialized NAudioMusicPlayer (Live Effects enabled)");
+                    // NAudioMusicPlayer initialized (Live Effects enabled)
                     _isUsingLiveEffectsPlayer = true;
                     return player;
                 }
@@ -1196,7 +1196,7 @@ namespace UniPlaySong
             try
             {
                 var player = new SDL2MusicPlayer(_errorHandler);
-                Logger.Info("Initialized SDL2MusicPlayer");
+                // SDL2MusicPlayer initialized
                 return player;
             }
             catch (Exception ex)
@@ -1214,13 +1214,13 @@ namespace UniPlaySong
         {
             try
             {
-                _fileLogger?.Info($"Recreating music player (LiveEffectsEnabled changed to: {_settings?.LiveEffectsEnabled})");
+                _fileLogger?.Debug($"Recreating music player (LiveEffectsEnabled changed to: {_settings?.LiveEffectsEnabled})");
 
                 // Save current game before stopping - we'll restart music for this game after recreation
                 var currentGame = SelectedGames?.FirstOrDefault();
                 bool wasPlaying = _playbackService?.IsPlaying == true || _playbackService?.IsLoaded == true;
 
-                _fileLogger?.Info($"Current state before recreation: Game={currentGame?.Name ?? "null"}, WasPlaying={wasPlaying}");
+                _fileLogger?.Debug($"Current state before recreation: Game={currentGame?.Name ?? "null"}, WasPlaying={wasPlaying}");
 
                 // Stop current playback
                 _playbackService?.Stop();
@@ -1272,7 +1272,7 @@ namespace UniPlaySong
                     () => SelectedGames?.FirstOrDefault()
                 );
 
-                _fileLogger?.Info($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
+                _fileLogger?.Debug($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
 
                 // Re-subscribe top panel control to the new playback service
                 _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
@@ -1280,7 +1280,7 @@ namespace UniPlaySong
                 // Restart music for the current game if music was playing before the switch
                 if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
                 {
-                    _fileLogger?.Info($"Restarting music for game: {currentGame.Name}");
+                    _fileLogger?.Debug($"Restarting music for game: {currentGame.Name}");
                     _playbackService.PlayGameMusic(currentGame, _settings, forceReload: true);
                 }
             }
@@ -1313,7 +1313,7 @@ namespace UniPlaySong
                 if (Application.Current?.MainWindow != null)
                 {
                     Application.Current.MainWindow.PreviewKeyDown += OnLoginDismissKeyPress;
-                    _fileLogger?.Info("Login input handler attached");
+                    _fileLogger?.Debug("Login input handler attached");
                     
                     // Also start monitoring Xbox controller for login bypass
                     StartControllerLoginMonitoring();
@@ -1379,7 +1379,7 @@ namespace UniPlaySong
                 if (_fullscreenSettingsObj != null)
                 {
                     _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
-                    _fileLogger?.Info($"InitializeFullscreenSettingsRef: Got fullscreen settings, BackgroundVolume={_playniteFullscreenVolume:F2}");
+                    _fileLogger?.Debug($"InitializeFullscreenSettingsRef: Got fullscreen settings, BackgroundVolume={_playniteFullscreenVolume:F2}");
                 }
                 else
                 {
@@ -1411,7 +1411,7 @@ namespace UniPlaySong
                 if (fullscreenSettings != null)
                 {
                     fullscreenSettings.PropertyChanged += OnFullscreenSettingsChanged;
-                    _fileLogger?.Info("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
+                    _fileLogger?.Debug("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
                 }
                 else
                 {
@@ -1493,7 +1493,7 @@ namespace UniPlaySong
                 };
                 
                 _nativeMusicSuppressionTimer.Start();
-                _fileLogger?.Info("Started native music suppression monitoring (15 second window)");
+                _fileLogger?.Debug("Started native music suppression monitoring (15 second window)");
                 
                 // Stop after 15 seconds to catch delayed audio initialization and theme transitions
                 Task.Delay(15000).ContinueWith(_ =>
@@ -1528,7 +1528,7 @@ namespace UniPlaySong
                     _nativeMusicSuppressionTimer = null;
                 }
                 
-                _fileLogger?.Info("Stopped native music suppression monitoring");
+                _fileLogger?.Debug("Stopped native music suppression monitoring");
             }
             catch (Exception ex)
             {
@@ -1590,7 +1590,7 @@ namespace UniPlaySong
                     
                     if (!_hasLoggedSuppression)
                     {
-                        _fileLogger?.Info("SuppressNativeMusic: Successfully stopped native background music");
+                        _fileLogger?.Debug("SuppressNativeMusic: Successfully stopped native background music");
                         _hasLoggedSuppression = true;
                     }
                 }
@@ -1719,7 +1719,7 @@ namespace UniPlaySong
         private void RepairSingleFileWithProgress(Game game, string filePath, string ffmpegPath)
         {
             var fileName = System.IO.Path.GetFileName(filePath);
-            Logger.Info($"Starting audio repair for: {fileName}");
+            // Starting audio repair
 
             var progressTitle = "UniPlaySong - Repairing Audio";
             var progressOptions = new GlobalProgressOptions(progressTitle, false)
@@ -1773,7 +1773,7 @@ namespace UniPlaySong
                     "The repaired file should now play correctly.",
                     "UniPlaySong - Repair Complete");
 
-                Logger.Info($"Audio repair completed successfully for: {fileName}");
+                // Audio repair completed successfully
             }
             else
             {
@@ -2082,12 +2082,12 @@ namespace UniPlaySong
         {
             if (args.Name == "MusicControl")
             {
-                Logger.Info($"[GetGameViewControl] Creating MusicControl instance for theme");
+                // Creating MusicControl instance for theme
                 return new Controls.MusicControl(_settings);
             }
             if (args.Name == "SpectrumVisualizer")
             {
-                Logger.Info($"[GetGameViewControl] Creating SpectrumVisualizer instance for theme");
+                // Creating SpectrumVisualizer instance for theme
                 return new Controls.SpectrumVisualizerPluginControl(() => _settings);
             }
             return null;
@@ -2103,7 +2103,7 @@ namespace UniPlaySong
             var games = args.Games.ToList();
 
             // Debug: Log how many games Playnite is passing to us
-            _fileLogger?.Info($"[Menu] GetGameMenuItems called with {games.Count} game(s)");
+            _fileLogger?.Debug($"[Menu] GetGameMenuItems called with {games.Count} game(s)");
 
             // Multi-game selection: Show bulk operations
             if (games.Count > 1)
@@ -2531,7 +2531,7 @@ namespace UniPlaySong
 
                 if (result == System.Windows.MessageBoxResult.Yes)
                 {
-                    _fileLogger?.Info($"DownloadMusicForAllGames: Starting download for {gamesWithoutMusic.Count} game(s)");
+                    _fileLogger?.Debug($"DownloadMusicForAllGames: Starting download for {gamesWithoutMusic.Count} game(s)");
 
                     // Get currently selected game for playback resume after batch download
                     var currentGame = SelectedGames?.FirstOrDefault();
@@ -2547,7 +2547,7 @@ namespace UniPlaySong
 
                     var allDownloadedPaths = new List<string>();
 
-                    _fileLogger?.Info($"DownloadMusicForAllGames: batchResult={batchResult != null}, SuccessCount={batchResult?.SuccessCount}, FailedCount={batchResult?.FailedCount}, FailedGames.Count={batchResult?.FailedGames?.Count}");
+                    _fileLogger?.Debug($"DownloadMusicForAllGames: batchResult={batchResult != null}, SuccessCount={batchResult?.SuccessCount}, FailedCount={batchResult?.FailedCount}, FailedGames.Count={batchResult?.FailedGames?.Count}");
 
                     if (batchResult != null)
                     {
@@ -2556,7 +2556,7 @@ namespace UniPlaySong
                         // Prompt for retry if there were failures
                         if (batchResult.FailedGames.Count > 0)
                         {
-                            _fileLogger?.Info($"DownloadMusicForAllGames: {batchResult.FailedGames.Count} games failed, prompting for retry");
+                            _fileLogger?.Debug($"DownloadMusicForAllGames: {batchResult.FailedGames.Count} games failed, prompting for retry");
                             var retryDownloads = _downloadDialogService?.PromptAndRetryFailedDownloads(batchResult.FailedGames);
                             if (retryDownloads != null && retryDownloads.Count > 0)
                             {
@@ -2565,7 +2565,7 @@ namespace UniPlaySong
                         }
                         else
                         {
-                            _fileLogger?.Info("DownloadMusicForAllGames: No failed games to retry");
+                            _fileLogger?.Debug("DownloadMusicForAllGames: No failed games to retry");
                         }
                     }
                     else
@@ -2576,7 +2576,7 @@ namespace UniPlaySong
                     // Trigger auto-normalize if any files were downloaded
                     if (allDownloadedPaths.Count > 0)
                     {
-                        _fileLogger?.Info($"DownloadMusicForAllGames: {allDownloadedPaths.Count} files downloaded, triggering auto-normalize");
+                        _fileLogger?.Debug($"DownloadMusicForAllGames: {allDownloadedPaths.Count} files downloaded, triggering auto-normalize");
                         _downloadDialogService?.AutoNormalizeDownloadedFiles(allDownloadedPaths);
                     }
                 }
@@ -2606,7 +2606,7 @@ namespace UniPlaySong
                 // Check for cancellation
                 if (progressArgs.CancelToken.IsCancellationRequested)
                 {
-                    _fileLogger?.Info($"BulkDownload: Cancelled by user at {i}/{totalGames}");
+                    _fileLogger?.Debug($"BulkDownload: Cancelled by user at {i}/{totalGames}");
                     break;
                 }
 
@@ -2645,7 +2645,7 @@ namespace UniPlaySong
                 }
                 catch (OperationCanceledException)
                 {
-                    _fileLogger?.Info($"BulkDownload: Cancelled during '{game.Name}'");
+                    _fileLogger?.Debug($"BulkDownload: Cancelled during '{game.Name}'");
                     break;
                 }
                 catch (Exception ex)
@@ -2658,7 +2658,7 @@ namespace UniPlaySong
             // Final progress update
             progressArgs.CurrentProgressValue = totalGames;
 
-            _fileLogger?.Info($"BulkDownload: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
+            _fileLogger?.Debug($"BulkDownload: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
 
             // Show completion notification
             var wasCancelled = progressArgs.CancelToken.IsCancellationRequested;
@@ -2749,7 +2749,7 @@ namespace UniPlaySong
                     var success = _downloadManager.DownloadSong(bestSong, downloadPath, cts.Token, isPreview: false);
                     if (success)
                     {
-                        _fileLogger?.Info($"AutoDownloadSync: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
+                        _fileLogger?.Debug($"AutoDownloadSync: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
 
                         // Auto-normalize if enabled
                         if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)
@@ -2974,7 +2974,7 @@ namespace UniPlaySong
                         var files = Directory.GetFiles(preservedPath, "*.*", SearchOption.AllDirectories);
                         deletedFiles += files.Length;
                         Directory.Delete(preservedPath, true);
-                        _fileLogger?.Info("DeleteAllMusic: Deleted PreservedOriginals folder");
+                        _fileLogger?.Debug("DeleteAllMusic: Deleted PreservedOriginals folder");
                     }
                     catch (Exception ex)
                     {
@@ -2982,7 +2982,7 @@ namespace UniPlaySong
                     }
                 }
 
-                _fileLogger?.Info($"DeleteAllMusic: Deleted {deletedFiles} files in {deletedFolders} folders");
+                _fileLogger?.Debug($"DeleteAllMusic: Deleted {deletedFiles} files in {deletedFolders} folders");
                 return (deletedFiles, deletedFolders, true);
             }
             catch (Exception ex)
@@ -3003,7 +3003,7 @@ namespace UniPlaySong
             {
                 if (!Directory.Exists(_gamesPath))
                 {
-                    _fileLogger?.Info("CleanupOrphanedMusic: Games path does not exist, nothing to clean");
+                    _fileLogger?.Debug("CleanupOrphanedMusic: Games path does not exist, nothing to clean");
                     return (0, 0, true);
                 }
 
@@ -3041,7 +3041,7 @@ namespace UniPlaySong
                         Directory.Delete(gameDir, true);
                         deletedFiles += fileCount;
                         deletedFolders++;
-                        _fileLogger?.Info($"CleanupOrphanedMusic: Deleted orphaned music directory '{dirName}' ({fileCount} files)");
+                        _fileLogger?.Debug($"CleanupOrphanedMusic: Deleted orphaned music directory '{dirName}' ({fileCount} files)");
                     }
                     catch (Exception ex)
                     {
@@ -3049,7 +3049,7 @@ namespace UniPlaySong
                     }
                 }
 
-                _fileLogger?.Info($"CleanupOrphanedMusic: Completed - Deleted {deletedFolders} orphaned folders ({deletedFiles} files)");
+                _fileLogger?.Debug($"CleanupOrphanedMusic: Completed - Deleted {deletedFolders} orphaned folders ({deletedFiles} files)");
                 return (deletedFolders, deletedFiles, true);
             }
             catch (Exception ex)
@@ -3167,7 +3167,7 @@ namespace UniPlaySong
                     }
                 }
 
-                _fileLogger?.Info($"GetLongSongs: Found {longSongs.Count} songs longer than {maxMinutes} minutes (scanned {allFiles.Count} files)");
+                _fileLogger?.Debug($"GetLongSongs: Found {longSongs.Count} songs longer than {maxMinutes} minutes (scanned {allFiles.Count} files)");
                 return longSongs;
             }
             catch (Exception ex)
@@ -3216,7 +3216,7 @@ namespace UniPlaySong
                         File.Delete(filePath);
                         deletedFiles++;
                         freedBytes += fileSize;
-                        _fileLogger?.Info($"DeleteLongSongs: Deleted '{Path.GetFileName(filePath)}' ({duration:hh\\:mm\\:ss}, {fileSize / 1024.0 / 1024.0:F1} MB)");
+                        _fileLogger?.Debug($"DeleteLongSongs: Deleted '{Path.GetFileName(filePath)}' ({duration:hh\\:mm\\:ss}, {fileSize / 1024.0 / 1024.0:F1} MB)");
                     }
                     catch (Exception ex)
                     {
@@ -3224,7 +3224,7 @@ namespace UniPlaySong
                     }
                 }
 
-                _fileLogger?.Info($"DeleteLongSongs: Deleted {deletedFiles} files, freed {freedBytes / 1024.0 / 1024.0:F1} MB");
+                _fileLogger?.Debug($"DeleteLongSongs: Deleted {deletedFiles} files, freed {freedBytes / 1024.0 / 1024.0:F1} MB");
                 return (deletedFiles, freedBytes, true);
             }
             catch (Exception ex)
@@ -3297,7 +3297,7 @@ namespace UniPlaySong
 
                 // Save the settings
                 SavePluginSettings(currentSettings);
-                _fileLogger?.Info("ResetSettingsToDefaults: Settings reset to defaults");
+                _fileLogger?.Debug("ResetSettingsToDefaults: Settings reset to defaults");
 
                 return true;
             }
@@ -3315,7 +3315,7 @@ namespace UniPlaySong
         {
             try
             {
-                _fileLogger?.Info("FactoryReset: Starting factory reset...");
+                _fileLogger?.Debug("FactoryReset: Starting factory reset...");
 
                 // Stop any playing music first
                 _playbackService?.Stop();
@@ -3327,7 +3327,7 @@ namespace UniPlaySong
                 try
                 {
                     _cacheService?.ClearCache();
-                    _fileLogger?.Info("FactoryReset: Search cache cleared");
+                    _fileLogger?.Debug("FactoryReset: Search cache cleared");
                 }
                 catch (Exception ex)
                 {
@@ -3342,7 +3342,7 @@ namespace UniPlaySong
                     if (Directory.Exists(tempPath))
                     {
                         Directory.Delete(tempPath, true);
-                        _fileLogger?.Info("FactoryReset: Temp folder deleted");
+                        _fileLogger?.Debug("FactoryReset: Temp folder deleted");
                     }
                 }
                 catch (Exception ex)
@@ -3353,7 +3353,7 @@ namespace UniPlaySong
                 // Reset settings to defaults
                 var settingsReset = ResetSettingsToDefaults();
 
-                _fileLogger?.Info($"FactoryReset: Complete - Deleted {deletedFiles} files in {deletedFolders} folders, settings reset: {settingsReset}");
+                _fileLogger?.Debug($"FactoryReset: Complete - Deleted {deletedFiles} files in {deletedFolders} folders, settings reset: {settingsReset}");
 
                 return (deletedFiles, deletedFolders, deleteSuccess && settingsReset);
             }
@@ -3386,7 +3386,7 @@ namespace UniPlaySong
                 
                 Task.Run(async () =>
                 {
-                    _fileLogger?.Info("Starting Xbox controller login monitoring");
+                    _fileLogger?.Debug("Starting Xbox controller login monitoring");
                     
                     while (!_controllerLoginMonitoringCancellation.Token.IsCancellationRequested)
                     {
@@ -3421,7 +3421,7 @@ namespace UniPlaySong
                         }
                     }
                     
-                    _fileLogger?.Info("Xbox controller login monitoring stopped");
+                    _fileLogger?.Debug("Xbox controller login monitoring stopped");
                 }, _controllerLoginMonitoringCancellation.Token);
             }
             catch (Exception ex)
@@ -3466,7 +3466,7 @@ namespace UniPlaySong
                 if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 || (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_START) != 0)
                 {
                     string buttonName = (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 ? "A" : "Start";
-                    _fileLogger?.Info($"Xbox controller {buttonName} button pressed - triggering login dismiss");
+                    _fileLogger?.Debug($"Xbox controller {buttonName} button pressed - triggering login dismiss");
                     
                     Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                     {

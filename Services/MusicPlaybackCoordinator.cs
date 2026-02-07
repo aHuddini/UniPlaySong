@@ -208,7 +208,7 @@ namespace UniPlaySong.Services
             }
 
             // Service handles: music file detection, default music fallback, and settings
-            _fileLogger?.Info($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
+            _fileLogger?.Debug($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
             _playbackService?.PlayGameMusic(game, _settings, false);
 
             _firstSelect = false;
@@ -337,12 +337,12 @@ namespace UniPlaySong.Services
         {
             if (isActive)
             {
-                _fileLogger?.Info("HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source");
+                _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source");
                 _playbackService?.AddPauseSource(Models.PauseSource.ThemeOverlay);
             }
             else
             {
-                _fileLogger?.Info("HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source");
+                _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source");
                 _playbackService?.RemovePauseSource(Models.PauseSource.ThemeOverlay);
 
                 // If music wasn't loaded or paused music didn't resume, try to start it
@@ -352,7 +352,7 @@ namespace UniPlaySong.Services
                     var game = _getSelectedGame();
                     if (game != null && ShouldPlayMusic(game))
                     {
-                        _fileLogger?.Info($"HandleThemeOverlayChange: Starting music for {game.Name}");
+                        _fileLogger?.Debug($"HandleThemeOverlayChange: Starting music for {game.Name}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
                 }

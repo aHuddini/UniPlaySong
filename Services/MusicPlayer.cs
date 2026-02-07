@@ -115,8 +115,6 @@ namespace UniPlaySong.Services
                 
                 // Pause at start
                 _preloadedMediaPlayer.Clock.Controller?.Pause();
-                
-                Logger.Debug($"Preloaded: {filePath}");
             }
             catch (Exception ex)
             {
@@ -141,16 +139,14 @@ namespace UniPlaySong.Services
                 // Check if this file was preloaded
                 if (_preloadedMediaPlayer != null && _preloadedFile == filePath)
                 {
-                    // Swap players - instant!
+                    // Swap players - instant
                     SwapMediaPlayers();
-                    Logger.Debug($"Swapped to preloaded: {filePath}");
                 }
                 else
                 {
                     // Load fresh (matching PNS exactly - no volume restoration)
                     _timeLine.Source = new Uri(filePath);
                     _mediaPlayer.Clock = _timeLine.CreateClock();
-                    Logger.Debug($"Loaded fresh: {filePath}");
                 }
                 
                 // Dispose any remaining preloaded player

@@ -785,7 +785,7 @@ namespace UniPlaySong.Views
                     $"Primary song set to:\n{fileName}",
                     "UniPlaySong");
                 
-                Logger.Info($"Set primary song for {_currentGame?.Name}: {fileName}");
+                Logger.Debug($"Set primary song for {_currentGame?.Name}: {fileName}");
                 CloseDialog(true);
             }
             catch (Exception ex)
@@ -808,7 +808,7 @@ namespace UniPlaySong.Views
                     "Primary song removed. The game will use randomized selection.",
                     "UniPlaySong");
 
-                Logger.Info($"Removed primary song for {_currentGame?.Name}");
+                Logger.Debug($"Removed primary song for {_currentGame?.Name}");
                 CloseDialog(true);
             }
             catch (Exception ex)
@@ -826,7 +826,7 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting normalization for individual song: {fileName}");
+                Logger.Debug($"Starting normalization for individual song: {fileName}");
 
                 // Close dialog first, then trigger normalization
                 CloseDialog(true);
@@ -862,7 +862,7 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting trim for individual song: {fileName}");
+                Logger.Debug($"Starting trim for individual song: {fileName}");
 
                 // Close dialog first, then trigger trim
                 CloseDialog(true);
@@ -898,7 +898,7 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting repair for individual song: {fileName}");
+                Logger.Debug($"Starting repair for individual song: {fileName}");
 
                 // Close dialog first, then trigger repair
                 CloseDialog(true);

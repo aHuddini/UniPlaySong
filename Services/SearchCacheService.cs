@@ -182,7 +182,6 @@ namespace UniPlaySong.Services
                 
                 if (!_cache.Entries.TryGetValue(normalizedName, out var gameCache))
                 {
-                    Logger.Debug($"[Cache] Miss: No cache entry for '{gameName}'");
                     return false;
                 }
                 
@@ -198,20 +197,17 @@ namespace UniPlaySong.Services
                 
                 if (entry == null)
                 {
-                    Logger.Debug($"[Cache] Miss: No {source} cache for '{gameName}'");
                     return false;
                 }
                 
                 // Check if expired
                 if (DateTime.UtcNow > entry.Expires)
                 {
-                    Logger.Debug($"[Cache] Expired: {source} cache for '{gameName}' (expired {entry.Expires})");
                     return false;
                 }
                 
-                // Cache hit!
+                // Cache hit
                 albums = entry.Albums.Select(ca => ca.ToAlbum()).ToList();
-                Logger.Info($"[Cache] Hit: {source} for '{gameName}' → {albums.Count} album(s) (cached {entry.Timestamp})");
                 return true;
             }
         }
@@ -231,7 +227,6 @@ namespace UniPlaySong.Services
             // rate limiting, or other transient failures. We only want to cache positive results.
             if (albums == null || albums.Count == 0)
             {
-                Logger.Debug($"[Cache] Skipped: Not caching empty results for '{gameName}' from {source}");
                 return;
             }
 
@@ -268,8 +263,6 @@ namespace UniPlaySong.Services
                     gameCache.YouTube = entry;
                 }
 
-                Logger.Info($"[Cache] Cached: {source} for '{gameName}' → {entry.AlbumCount} album(s) (expires {expires})");
-
                 SaveCache();
             }
         }
@@ -281,10 +274,8 @@ namespace UniPlaySong.Services
         {
             lock (_cacheLock)
             {
-                var entryCount = _cache.Entries.Count;
                 _cache = new SearchCacheData();
                 SaveCache();
-                Logger.Info($"[Cache] Cleared all cache entries ({entryCount} games)");
             }
         }
         
@@ -315,10 +306,6 @@ namespace UniPlaySong.Services
 
                         if (isExpired || isEmpty)
                         {
-                            if (isEmpty)
-                            {
-                                Logger.Debug($"[Cache] Removing empty KHInsider cache for game");
-                            }
                             gameCache.KHInsider = null;
                             removedCount++;
                         }
@@ -338,10 +325,6 @@ namespace UniPlaySong.Services
 
                         if (isExpired || isEmpty)
                         {
-                            if (isEmpty)
-                            {
-                                Logger.Debug($"[Cache] Removing empty YouTube cache for game");
-                            }
                             gameCache.YouTube = null;
                             removedCount++;
                         }
@@ -368,7 +351,6 @@ namespace UniPlaySong.Services
                 {
                     _cache.LastCleanup = now;
                     SaveCache();
-                    Logger.Info($"[Cache] Cleanup: Removed {removedCount} expired/empty entries from {gamesToRemove.Count} games");
                 }
 
                 return removedCount;
@@ -439,18 +421,12 @@ namespace UniPlaySong.Services
                     else if (_cache.Version != CurrentVersion)
                     {
                         // Cache format changed - clear old cache to use new minimal format
-                        Logger.Info($"[Cache] Cache version mismatch (found {_cache.Version}, expected {CurrentVersion}). Clearing old cache.");
                         _cache = new SearchCacheData();
                         SaveCache();
-                    }
-                    else
-                    {
-                        Logger.Info($"[Cache] Loaded cache: {_cache.Entries.Count} games");
                     }
                 }
                 else
                 {
-                    Logger.Info("[Cache] No cache file found, creating new cache");
                     _cache = new SearchCacheData();
                 }
             }
@@ -486,8 +462,6 @@ namespace UniPlaySong.Services
                     File.Delete(_cacheFilePath);
                 }
                 File.Move(tempPath, _cacheFilePath);
-                
-                Logger.Debug($"[Cache] Saved cache: {_cache.Entries.Count} games");
             }
             catch (Exception ex)
             {

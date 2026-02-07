@@ -392,7 +392,7 @@ namespace UniPlaySong.Handlers
                     Directory.Delete(preservedOriginalsDir, true);
                     Directory.CreateDirectory(preservedOriginalsDir); // Recreate empty directory
 
-                    Logger.Info($"Deleted {fileCount} files from PreservedOriginals folder");
+                    Logger.Debug($"Deleted {fileCount} files from PreservedOriginals folder");
                     _playniteApi.Dialogs.ShowMessage(
                         $"Successfully deleted {fileCount} preserved original file(s).\n\nDisk space has been freed.",
                         "Deletion Complete");
@@ -547,7 +547,7 @@ namespace UniPlaySong.Handlers
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    Logger.Info($"Stopping music playback before {context}");
+                    Logger.Debug($"Stopping music playback before {context}");
                     _playbackService.Stop();
 
                     // Give a moment for files to be released

@@ -45,8 +45,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ShowControllerSetPrimarySong called for game: {game?.Name}");
-
                 var filePickerDialog = new Views.ControllerFilePickerDialog();
                 var window = DialogHelper.CreateStandardDialog(
                     _playniteApi,
@@ -74,8 +72,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ClearPrimarySong called for game: {game?.Name}");
-
                 // Check if there is a primary song to remove
                 var currentPrimary = _fileService?.GetPrimarySong(game);
                 if (string.IsNullOrEmpty(currentPrimary))
@@ -94,8 +90,6 @@ namespace UniPlaySong.Handlers
                 _playniteApi.Dialogs.ShowMessage(
                     $"Primary song cleared:\n{fileName}\n\nSong selection will be randomized on application startup.",
                     "UniPlaySong");
-
-                Logger.Info($"Cleared primary song for game '{game?.Name}': {fileName}");
             }
             catch (Exception ex)
             {
@@ -111,8 +105,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ShowControllerDeleteSongs called for game: {game?.Name}");
-
                 // Check if there are any songs to delete
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                 if (availableSongs.Count == 0)
@@ -148,8 +140,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Info($"Opening controller download dialog for game: {game?.Name}");
-
                 var controllerDialog = new Views.SimpleControllerDialog();
                 var window = DialogHelper.CreateDialog(_playniteApi, controllerDialog, new DialogHelper.DialogOptions
                 {
@@ -179,7 +169,6 @@ namespace UniPlaySong.Handlers
                 // Handle window closing to prevent focus loss and dark overlay
                 window.Closing += (s, e) =>
                 {
-                    Logger.Debug("Controller dialog window closing");
                     DialogHelper.ReturnFocusToMainWindow(_playniteApi, "controller download dialog close");
                 };
 
@@ -187,8 +176,6 @@ namespace UniPlaySong.Handlers
                 {
                     try
                     {
-                        Logger.Debug("Controller dialog window closed");
-
                         // Additional focus restoration after window is fully closed
                         Task.Delay(50).ContinueWith(_ =>
                         {
@@ -206,19 +193,17 @@ namespace UniPlaySong.Handlers
                             }
                             catch (Exception delayEx)
                             {
-                                Logger.Debug(delayEx, "Error in delayed focus restoration");
+                                // Ignore focus restoration errors
                             }
                         });
                     }
                     catch (Exception ex)
                     {
-                        Logger.Debug(ex, "Error in window closed handler");
+                        // Ignore window closed handler errors
                     }
                 };
 
-                var result = window.ShowDialog();
-
-                Logger.Info($"Controller download dialog completed with result: {result}");
+                window.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -234,8 +219,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ShowNormalizeIndividualSong called for game: {game?.Name}");
-
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                 if (availableSongs.Count == 0)
@@ -271,8 +254,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ShowTrimIndividualSong called for game: {game?.Name}");
-
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                 if (availableSongs.Count == 0)
@@ -308,8 +289,6 @@ namespace UniPlaySong.Handlers
         {
             try
             {
-                Logger.Debug($"ShowRepairIndividualSong called for game: {game?.Name}");
-
                 // Check if there are any songs
                 var availableSongs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
                 if (availableSongs.Count == 0)

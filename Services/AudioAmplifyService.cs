@@ -173,8 +173,7 @@ namespace UniPlaySong.Services
 
                 if (Math.Abs(gainDb) < 0.1f)
                 {
-                    Logger.Info("Gain too small, skipping amplification");
-                    return true; // No change needed
+                    return true; // Gain too small, no change needed
                 }
 
                 var directory = Path.GetDirectoryName(inputPath);
@@ -188,7 +187,6 @@ namespace UniPlaySong.Services
 
                 Logger.DebugIf(LogPrefix,$"Output path: {finalOutputPath}");
                 Logger.DebugIf(LogPrefix,$"Temp path: {tempPath}");
-                Logger.Info($"Amplify: {fileName} by {gainDb:+0.0;-0.0;0}dB");
 
                 // Stop playback if this file is playing
                 _playbackService?.Stop();
@@ -232,7 +230,6 @@ namespace UniPlaySong.Services
                     Logger.DebugIf(LogPrefix,$"Moving temp to final: {finalOutputPath}");
                     File.Move(tempPath, finalOutputPath);
 
-                    Logger.Info($"Amplify completed: {Path.GetFileName(finalOutputPath)} (original moved to PreservedOriginals)");
                     return true;
                 }
                 else
@@ -251,7 +248,6 @@ namespace UniPlaySong.Services
                         try
                         {
                             File.Copy(preservedOriginalPath, inputPath, true);
-                            Logger.Info("Restored original file after failed amplify");
                         }
                         catch (Exception restoreEx)
                         {

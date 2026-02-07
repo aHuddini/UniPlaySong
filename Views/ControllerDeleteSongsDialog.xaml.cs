@@ -966,7 +966,7 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting deletion of file: {filePath}");
+                Logger.Debug($"Starting deletion of file: {filePath}");
                 
                 // Verify file still exists before attempting deletion
                 if (!File.Exists(filePath))
@@ -987,7 +987,7 @@ namespace UniPlaySong.Views
                 if (isPrimarySong)
                 {
                     _fileService?.RemovePrimarySong(_currentGame);
-                    Logger.Info($"Cleared primary song before deletion: {fileName}");
+                    Logger.Debug($"Cleared primary song before deletion: {fileName}");
                 }
 
                 // Wait a moment to ensure file handles are released
@@ -996,7 +996,7 @@ namespace UniPlaySong.Views
                 // Delete the file
                 Logger.DebugIf(LogPrefix, $"Attempting to delete file: {filePath}");
                 File.Delete(filePath);
-                Logger.Info($"File deleted successfully: {filePath}");
+                Logger.Debug($"File deleted successfully: {filePath}");
                 
                 // Verify deletion was successful
                 if (File.Exists(filePath))
@@ -1023,7 +1023,7 @@ namespace UniPlaySong.Views
                 // This avoids the XInput double-press issues entirely and works in fullscreen
                 DialogHelper.ShowSuccessToast(_playniteApi, successMessage, "Song Deleted");
 
-                Logger.Info($"Deletion completed successfully: {fileName}");
+                Logger.Debug($"Deletion completed successfully: {fileName}");
 
                 // Close dialog if no more files
                 if (_musicFiles.Count == 0)

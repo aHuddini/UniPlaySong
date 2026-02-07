@@ -49,7 +49,7 @@ namespace UniPlaySong.Controls
 
             _musicControls.Add(this);
 
-            Logger.Info("[MusicControl] Instance created");
+            Logger.Debug("[MusicControl] Instance created");
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -91,7 +91,7 @@ namespace UniPlaySong.Controls
 
             if (_settings.ThemeOverlayActive != mute)
             {
-                Logger.Info($"[MusicControl] Setting ThemeOverlayActive={mute} (was {_settings.ThemeOverlayActive})");
+                Logger.Debug($"[MusicControl] Setting ThemeOverlayActive={mute} (was {_settings.ThemeOverlayActive})");
                 _settings.ThemeOverlayActive = mute;
             }
         }
@@ -208,7 +208,7 @@ namespace UniPlaySong.Controls
                 _settings.PropertyChanged += OnSettingsChangedStatic;
             }
 
-            Logger.Info("[MusicControl] Static services updated");
+            Logger.Debug("[MusicControl] Static services updated");
         }
 
         private static void OnSettingsChangedStatic(object sender, PropertyChangedEventArgs e)

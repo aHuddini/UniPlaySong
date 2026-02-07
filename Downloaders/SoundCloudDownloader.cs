@@ -63,13 +63,11 @@ namespace UniPlaySong.Downloaders
                 // Check if it's a playlist/set (contains "/sets/")
                 if (album.Id.Contains("/sets/"))
                 {
-                    Logger.Info($"{LogPrefix}: Fetching playlist tracks from: {fullUrl}");
                     songs = GetPlaylistSongs(fullUrl, album.Name, cancellationToken).ToList();
                 }
                 else
                 {
                     // Single track - use yt-dlp to get metadata
-                    Logger.Info($"{LogPrefix}: Fetching single track metadata from: {fullUrl}");
                     var trackInfo = GetTrackMetadata(fullUrl, cancellationToken);
                     if (trackInfo != null)
                     {
@@ -86,12 +84,9 @@ namespace UniPlaySong.Downloaders
                         });
                     }
                 }
-
-                Logger.Info($"{LogPrefix}: Found {songs.Count} track(s) from SoundCloud");
             }
             catch (OperationCanceledException)
             {
-                Logger.Debug($"{LogPrefix}: Operation cancelled while fetching SoundCloud tracks");
                 throw;
             }
             catch (Exception ex)
@@ -277,8 +272,6 @@ namespace UniPlaySong.Downloaders
                             });
                         }
                     }
-
-                    Logger.Info($"{LogPrefix}: Found {songs.Count} tracks in playlist");
                 }
             }
             catch (Exception ex)
@@ -325,8 +318,6 @@ namespace UniPlaySong.Downloaders
                 var fullUrl = SoundCloudBaseUrl + song.Id;
                 var pathWithoutExt = Path.ChangeExtension(path, null);
 
-                Logger.Info($"{LogPrefix}: Downloading from {fullUrl} to {path}");
-
                 // Build yt-dlp arguments (similar to YouTube but without YouTube-specific options)
                 var quality = isPreview ? "5" : "0";
 
@@ -343,8 +334,6 @@ namespace UniPlaySong.Downloaders
                 var rateLimitOptions = " --sleep-requests 1 --sleep-interval 1 --max-sleep-interval 3";
 
                 var arguments = $"-x --audio-format mp3 --audio-quality {quality}{rateLimitOptions}{postProcessorArgs}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" \"{fullUrl}\"";
-
-                Logger.Debug($"{LogPrefix}: Running yt-dlp with args (excluding paths): -x --audio-format mp3 --audio-quality {quality} [rate-limit] [post-process]{previewFlags}");
 
                 var startInfo = new ProcessStartInfo
                 {
@@ -372,11 +361,6 @@ namespace UniPlaySong.Downloaders
                     var timeout = isPreview ? 60000 : 300000; // 1 min for preview, 5 min for full
                     process.WaitForExit(timeout);
 
-                    if (!string.IsNullOrEmpty(error) && !error.Contains("WARNING"))
-                    {
-                        Logger.Debug($"{LogPrefix}: yt-dlp stderr: {error}");
-                    }
-
                     if (process.ExitCode != 0)
                     {
                         Logger.Error($"{LogPrefix}: yt-dlp failed with exit code {process.ExitCode}");
@@ -398,7 +382,6 @@ namespace UniPlaySong.Downloaders
                                 File.Delete(path);
                             File.Move(expectedPath, path);
                         }
-                        Logger.Info($"{LogPrefix}: Successfully downloaded: {song.Name}");
                         return true;
                     }
 
@@ -409,7 +392,6 @@ namespace UniPlaySong.Downloaders
                         if (File.Exists(path))
                             File.Delete(path);
                         File.Move(downloadedFile, path);
-                        Logger.Info($"{LogPrefix}: Successfully downloaded (found as {Path.GetExtension(downloadedFile)}): {song.Name}");
                         return true;
                     }
 
@@ -419,7 +401,6 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Debug($"{LogPrefix}: Download cancelled for: {song.Name}");
                 throw;
             }
             catch (Exception ex)

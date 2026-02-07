@@ -109,7 +109,7 @@ namespace UniPlaySong.Services
             // Notify all subscribers that settings changed
             SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(oldSettings, newSettings, source));
             
-            _logger.Info($"SettingsService: Settings updated (source: {source})");
+            _logger.Debug($"SettingsService: Settings updated (source: {source})");
             _fileLogger?.Info($"SettingsService: Settings updated from {source}");
         }
 

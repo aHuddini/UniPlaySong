@@ -95,7 +95,7 @@ namespace UniPlaySong.Services.Controller
                 // Start periodic monitoring
                 _detectionTimer = new Timer(DetectionCallback, null, DETECTION_INTERVAL_MS, DETECTION_INTERVAL_MS);
                 
-                _logger?.Info("Controller detection monitoring started");
+                _logger?.Debug("Controller detection monitoring started");
             }
             catch (Exception ex)
             {
@@ -114,7 +114,7 @@ namespace UniPlaySong.Services.Controller
                 _isMonitoring = false;
                 _detectionTimer?.Dispose();
                 _detectionTimer = null;
-                _logger?.Info("Controller detection monitoring stopped");
+                _logger?.Debug("Controller detection monitoring stopped");
             }
             catch (Exception ex)
             {

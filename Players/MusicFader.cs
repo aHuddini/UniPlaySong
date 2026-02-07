@@ -237,15 +237,6 @@ namespace UniPlaySong.Players
                 _fadeStartTime = default;
                 
                 // Diagnostic: Log dispatcher availability
-                var app = Application.Current;
-                if (app == null)
-                {
-                    Logger.Warn("MusicFader.EnsureTimer: Application.Current is null");
-                }
-                else if (app.Dispatcher == null)
-                {
-                    Logger.Warn("MusicFader.EnsureTimer: Dispatcher is null");
-                }
                 _fadeTimer.Start();
             }
         }

@@ -166,7 +166,6 @@ namespace UniPlaySong.Services
             if (string.IsNullOrEmpty(ffmpegPath))
             {
                 Logger.Error("FFmpeg path not configured - use the overload that accepts ffmpegPath directly");
-                Logger.DebugIf(LogPrefix,"ApplyTrimAsync (no ffmpegPath) - GetFFmpegPath() returned null or empty");
                 return false;
             }
             return await ApplyTrimAsync(inputPath, trimWindow, suffix, ffmpegPath, token);
@@ -207,7 +206,6 @@ namespace UniPlaySong.Services
 
                 Logger.DebugIf(LogPrefix,$"Output path: {finalOutputPath}");
                 Logger.DebugIf(LogPrefix,$"Temp path: {tempPath}");
-                Logger.Info($"Precise trim: {fileName} [{trimWindow.StartTime:mm\\:ss\\.fff} - {trimWindow.EndTime:mm\\:ss\\.fff}]");
 
                 // Stop playback if this file is playing
                 _playbackService?.Stop();
@@ -246,7 +244,6 @@ namespace UniPlaySong.Services
                     Logger.DebugIf(LogPrefix,$"Moving temp to final: {finalOutputPath}");
                     File.Move(tempPath, finalOutputPath);
 
-                    Logger.Info($"Precise trim completed: {Path.GetFileName(finalOutputPath)}");
                     Logger.DebugIf(LogPrefix,"ApplyTrimAsync completed successfully");
                     return true;
                 }
@@ -267,7 +264,6 @@ namespace UniPlaySong.Services
                         {
                             Logger.DebugIf(LogPrefix,"Restoring original file from preserved backup");
                             File.Copy(preservedOriginalPath, inputPath, true);
-                            Logger.Info("Restored original file after failed trim");
                         }
                         catch (Exception restoreEx)
                         {
@@ -281,7 +277,6 @@ namespace UniPlaySong.Services
             catch (OperationCanceledException)
             {
                 Logger.DebugIf(LogPrefix,"Trim operation cancelled by user");
-                Logger.Info("Trim operation cancelled");
                 throw;
             }
             catch (Exception ex)

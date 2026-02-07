@@ -469,7 +469,7 @@ namespace UniPlaySong.Services
                 await Task.Delay(10, cancellationToken);
             }
 
-            Logger.Info($"DeletePlayniteSoundMusic: Deleted {result.FilesDeleted} files from {result.GamesProcessed} games");
+            Logger.Debug($"DeletePlayniteSoundMusic: Deleted {result.FilesDeleted} files from {result.GamesProcessed} games");
             return result;
         }
     }

@@ -179,11 +179,6 @@ namespace UniPlaySong.Services
                     DetectIssues(result);
 
                     result.HasIssues = result.Issues.HasAnyIssue;
-
-                    Logger.Debug($"Probe result for {Path.GetFileName(filePath)}: " +
-                        $"Format={result.Format}, Codec={result.Codec}, Bitrate={result.Bitrate}, " +
-                        $"SampleRate={result.SampleRate}, Duration={result.Duration:F2}s, " +
-                        $"Issues={result.Issues}");
                 }
             }
             catch (OperationCanceledException)
@@ -350,14 +345,12 @@ namespace UniPlaySong.Services
             }
 
             var fileName = Path.GetFileName(filePath);
-            Logger.Info($"Attempting to repair audio file: {fileName}");
 
             // Stop playback to prevent file locking
             try
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    Logger.Info("Stopping music playback before repair");
                     _playbackService.Stop();
                     await Task.Delay(200, cancellationToken);
                 }
@@ -382,8 +375,6 @@ namespace UniPlaySong.Services
                 // Re-encode the file with standard settings
                 // -y: overwrite output, -ar 48000: 48kHz sample rate (matches normalization), -ac 2: stereo
                 var args = $"-y -i \"{filePath}\" -ar 48000 -ac 2 {codecArgs} \"{tempPath}\"";
-
-                Logger.Info($"Repair command: {ffmpegPath} {args}");
 
                 var processInfo = new ProcessStartInfo
                 {
@@ -467,7 +458,6 @@ namespace UniPlaySong.Services
                         }
 
                         File.Move(filePath, preservedPath);
-                        Logger.Info($"Backed up original to: {preservedPath}");
                     }
                     catch (Exception ex)
                     {
@@ -480,7 +470,6 @@ namespace UniPlaySong.Services
                     try
                     {
                         File.Move(tempPath, filePath);
-                        Logger.Info($"Successfully repaired audio file: {fileName}");
                         return true;
                     }
                     catch (Exception ex)
@@ -493,7 +482,6 @@ namespace UniPlaySong.Services
                             try
                             {
                                 File.Move(preservedPath, filePath);
-                                Logger.Info("Restored original file after failed repair");
                             }
                             catch { }
                         }
@@ -505,7 +493,6 @@ namespace UniPlaySong.Services
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Repair cancelled");
                 throw;
             }
             catch (Exception ex)
@@ -561,11 +548,10 @@ namespace UniPlaySong.Services
 
             if (!probeResult.HasIssues)
             {
-                Logger.Debug($"No issues detected for {Path.GetFileName(filePath)}");
                 return true; // File is OK
             }
 
-            Logger.Info($"Issues detected for {Path.GetFileName(filePath)}: {probeResult.Issues}");
+            // Issues detected, repair needed
             return await RepairFileAsync(filePath, ffmpegPath, cancellationToken);
         }
     }

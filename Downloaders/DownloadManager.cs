@@ -85,7 +85,7 @@ namespace UniPlaySong.Downloaders
             if (source == Source.All)
             {
                 // Detailed logging goes to downloader.log
-                DLog.Info($"Search '{gameName}' (auto={auto})");
+                DLog.Debug($"Search '{gameName}' (auto={auto})");
 
                 var allAlbums = new List<Album>();
 
@@ -156,7 +156,7 @@ namespace UniPlaySong.Downloaders
                     allAlbums.AddRange(ytAlbums);
                 }
 
-                DLog.Info($"  → Total: {allAlbums.Count} albums");
+                DLog.Debug($"  → Total: {allAlbums.Count} albums");
                 return allAlbums;
             }
 
@@ -221,7 +221,7 @@ namespace UniPlaySong.Downloaders
             gameName = normalizedName;
             if (hint != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
             {
-                DLog.Info($"KHInsider: Using hint '{hint.KHInsiderAlbum}' for '{gameName}'");
+                DLog.Debug($"KHInsider: Using hint '{hint.KHInsiderAlbum}' for '{gameName}'");
                 var hintAlbum = CreateAlbumFromKHInsiderSlug(hint.KHInsiderAlbum, gameName);
                 if (hintAlbum != null)
                 {
@@ -314,7 +314,7 @@ namespace UniPlaySong.Downloaders
                 // If direct playlist ID is provided, use it (highest priority)
                 if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
                 {
-                    DLog.Info($"YouTube: Using hint playlist '{hint.YouTubePlaylistId}' for '{gameName}'");
+                    DLog.Debug($"YouTube: Using hint playlist '{hint.YouTubePlaylistId}' for '{gameName}'");
                     var playlistAlbum = CreateAlbumFromPlaylistId(hint.YouTubePlaylistId, gameName);
                     if (playlistAlbum != null)
                     {
@@ -459,7 +459,7 @@ namespace UniPlaySong.Downloaders
             var hintAlbum = albumsList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Info($"  → Hint: '{hintAlbum.Name}'");
+                DLog.Debug($"  → Hint: '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -467,7 +467,7 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumsList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Info($"  → HintSearch: '{hintSearchAlbum.Name}'");
+                DLog.Debug($"  → HintSearch: '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -520,7 +520,7 @@ namespace UniPlaySong.Downloaders
             var hintAlbum = albumList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Info($"BroaderPick: Hint '{hintAlbum.Name}'");
+                DLog.Debug($"BroaderPick: Hint '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -528,7 +528,7 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Info($"BroaderPick: HintSearch '{hintSearchAlbum.Name}'");
+                DLog.Debug($"BroaderPick: HintSearch '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -547,7 +547,7 @@ namespace UniPlaySong.Downloaders
 
             if (best != null)
             {
-                DLog.Info($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
+                DLog.Debug($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
                 return best.Album;
             }
 
@@ -566,7 +566,7 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null && matches.Score >= minScore)
             {
-                DLog.Info($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
@@ -584,7 +584,7 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null)
             {
-                DLog.Info($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
