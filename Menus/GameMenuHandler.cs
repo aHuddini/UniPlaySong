@@ -272,15 +272,7 @@ namespace UniPlaySong.Menus
                         args.Text = $"{progressTitle}\n\nDownloading: {song.Name} ({downloaded + 1}/{total})";
 
                         // Sanitize filename BEFORE combining with path
-                        var sanitizedName = song.Name;
-                        foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                        {
-                            sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                        }
-
-                        // Also remove any other problematic characters
-                        sanitizedName = sanitizedName.Replace("..", "_");
-                        sanitizedName = sanitizedName.Trim();
+                        var sanitizedName = StringHelper.CleanForPath(song.Name);
 
                         var fileName = $"{sanitizedName}.mp3";
                         var filePath = Path.Combine(musicDir, fileName);
@@ -1192,12 +1184,7 @@ namespace UniPlaySong.Menus
                     break;
 
                 // Sanitize filename
-                var sanitizedName = song.Name;
-                foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                {
-                    sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                }
-                sanitizedName = sanitizedName.Replace("..", "_").Trim();
+                var sanitizedName = StringHelper.CleanForPath(song.Name);
 
                 var fileName = $"{sanitizedName}.mp3";
                 var filePath = Path.Combine(musicDir, fileName);

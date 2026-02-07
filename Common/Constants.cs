@@ -39,12 +39,14 @@ namespace UniPlaySong.Common
         #endregion
 
         #region File Extensions
-        
+
+        public const string DefaultAudioExtension = ".mp3";
+
         public static readonly string[] SupportedAudioExtensions =
         {
             ".mp3", ".wav", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid"
         };
-        
+
         #endregion
         
         #region Directory Names

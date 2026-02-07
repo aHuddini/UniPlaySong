@@ -418,8 +418,8 @@ namespace UniPlaySong.ViewModels
 
                         var fileName = SanitizeFileName(bestSong.Name);
                         // Song.Id contains the URL/path, get extension from there
-                        var extension = !string.IsNullOrEmpty(bestSong.Id) ? Path.GetExtension(bestSong.Id) : ".mp3";
-                        if (string.IsNullOrEmpty(extension)) extension = ".mp3";
+                        var extension = !string.IsNullOrEmpty(bestSong.Id) ? Path.GetExtension(bestSong.Id) : Constants.DefaultAudioExtension;
+                        if (string.IsNullOrEmpty(extension)) extension = Constants.DefaultAudioExtension;
                         downloadPath = Path.Combine(musicDir, fileName + extension);
                     }
 
@@ -523,8 +523,8 @@ namespace UniPlaySong.ViewModels
                         Directory.CreateDirectory(tempPath);
 
                     // Song.Id contains the URL/path
-                    var songExt = !string.IsNullOrEmpty(bestSong.Id) ? Path.GetExtension(bestSong.Id) : ".mp3";
-                    if (string.IsNullOrEmpty(songExt)) songExt = ".mp3";
+                    var songExt = !string.IsNullOrEmpty(bestSong.Id) ? Path.GetExtension(bestSong.Id) : Constants.DefaultAudioExtension;
+                    if (string.IsNullOrEmpty(songExt)) songExt = Constants.DefaultAudioExtension;
                     var previewFile = Path.Combine(tempPath, $"preview_{album.Id?.GetHashCode() ?? 0}{songExt}");
 
                     // Download if not cached

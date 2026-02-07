@@ -574,7 +574,7 @@ namespace UniPlaySong
                     var safeFileName = Common.StringHelper.CleanForPath(bestSong.Name);
                     var extension = Path.GetExtension(bestSong.Id);
                     if (string.IsNullOrEmpty(extension))
-                        extension = ".mp3";
+                        extension = Constants.DefaultAudioExtension;
                     var downloadPath = Path.Combine(gameDir, safeFileName + extension);
 
                     // Download the song
@@ -2723,7 +2723,7 @@ namespace UniPlaySong
                     var safeFileName = Common.StringHelper.CleanForPath(bestSong.Name);
                     var extension = Path.GetExtension(bestSong.Id);
                     if (string.IsNullOrEmpty(extension))
-                        extension = ".mp3";
+                        extension = Constants.DefaultAudioExtension;
                     var downloadPath = Path.Combine(gameDir, safeFileName + extension);
 
                     // Download the song

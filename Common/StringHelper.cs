@@ -257,6 +257,7 @@ namespace UniPlaySong.Common
             {
                 cleaned = cleaned.Replace(c, '_');
             }
+            cleaned = cleaned.Replace("..", "_");
             return cleaned.Trim();
         }
 

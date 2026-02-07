@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using UniPlaySong.Common;
 using UniPlaySong.Downloaders;
 using UniPlaySong.Models;
 
@@ -252,7 +253,7 @@ namespace UniPlaySong.Services
                 var extension = Path.GetExtension(songToDownload.Id);
                 if (string.IsNullOrEmpty(extension) || extension == songToDownload.Id)
                 {
-                    extension = ".mp3";
+                    extension = Constants.DefaultAudioExtension;
                 }
                 var downloadPath = Path.Combine(musicDir, safeFileName + extension);
 

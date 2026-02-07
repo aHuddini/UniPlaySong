@@ -540,12 +540,7 @@ namespace UniPlaySong.ViewModels
                 var musicDir = _fileService.GetGameMusicDirectory(_game);
                 Directory.CreateDirectory(musicDir);
 
-                var sanitizedName = VideoTitle;
-                foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                {
-                    sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                }
-                sanitizedName = sanitizedName.Replace("..", "_").Trim();
+                var sanitizedName = StringHelper.CleanForPath(VideoTitle);
 
                 if (sanitizedName.Length > 100)
                 {

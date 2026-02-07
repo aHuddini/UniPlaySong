@@ -2148,7 +2148,7 @@ namespace UniPlaySong.Services
             var extension = System.IO.Path.GetExtension(songToDownload.Id);
             if (string.IsNullOrEmpty(extension) || extension == songToDownload.Id)
             {
-                extension = ".mp3";
+                extension = Constants.DefaultAudioExtension;
             }
             var downloadPath = System.IO.Path.Combine(musicDir, safeFileName + extension);
 
@@ -2488,7 +2488,7 @@ namespace UniPlaySong.Services
                                         var safeFileName = Common.StringHelper.CleanForPath(song.Name);
                                         var extension = Path.GetExtension(song.Id);
                                         if (string.IsNullOrEmpty(extension) || extension == song.Id)
-                                            extension = ".mp3";
+                                            extension = Constants.DefaultAudioExtension;
                                         var downloadPath = Path.Combine(musicDir, safeFileName + extension);
 
                                         var downloadSuccess = await System.Threading.Tasks.Task.Run(() =>

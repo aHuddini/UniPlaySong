@@ -1152,9 +1152,9 @@ namespace UniPlaySong.Downloaders
                     .ComputeHash(System.Text.Encoding.UTF8.GetBytes(song.Id ?? song.Name ?? Guid.NewGuid().ToString())))
                 .Replace("-", "");
 
-            var extension = Path.GetExtension(song.Id ?? ".mp3");
+            var extension = Path.GetExtension(song.Id ?? Constants.DefaultAudioExtension);
             if (string.IsNullOrEmpty(extension))
-                extension = ".mp3";
+                extension = Constants.DefaultAudioExtension;
 
             return Path.Combine(_tempPath, hash + extension);
         }
