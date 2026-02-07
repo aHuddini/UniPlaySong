@@ -918,17 +918,17 @@ namespace UniPlaySong
         /// </summary>
         private void OnWindowStateChanged(object sender, EventArgs e)
         {
-            if (_settings?.PauseOnMinimize != true) return;
-
             var windowState = Application.Current?.MainWindow?.WindowState;
             switch (windowState)
             {
                 case WindowState.Normal:
                 case WindowState.Maximized:
+                    // Always remove — if the source isn't present, HashSet.Remove is a no-op
                     _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
                     break;
                 case WindowState.Minimized:
-                    _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
+                    if (_settings?.PauseOnMinimize == true)
+                        _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
                     break;
             }
         }
@@ -939,12 +939,11 @@ namespace UniPlaySong
         /// </summary>
         private void OnWindowVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (_settings?.PauseWhenInSystemTray != true) return;
-
             var isVisible = (bool)e.NewValue;
             if (isVisible)
+                // Always remove — if the source isn't present, HashSet.Remove is a no-op
                 _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
-            else
+            else if (_settings?.PauseWhenInSystemTray == true)
                 _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
@@ -964,8 +963,8 @@ namespace UniPlaySong
         /// </summary>
         private void OnApplicationActivate(object sender, EventArgs e)
         {
-            if (_settings?.PauseOnFocusLoss == true)
-                _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
+            // Always remove — if the source isn't present, HashSet.Remove is a no-op
+            _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
         }
 
         /// <summary>
