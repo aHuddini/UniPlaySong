@@ -735,14 +735,9 @@ namespace UniPlaySong
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
-            {
-                _coordinator.HandleVideoStateChange(_settings.VideoIsPlaying);
-            }
-            else if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
-            {
-                _coordinator.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
-            }
+            // VideoIsPlaying and ThemeOverlayActive are handled by OnSettingsServicePropertyChanged
+            // (via SettingsService relay) — not here, to avoid double-firing HandleVideoStateChange
+            // and HandleThemeOverlayChange which causes inconsistent pause state.
         }
 
         /// <summary>
@@ -803,17 +798,20 @@ namespace UniPlaySong
                     _playbackService.SetVolume(e.NewSettings.MusicVolume / Constants.VolumeDivisor);
                 }
                 
-                // Update media monitor if pause on trailer setting changed
+                // Always update MediaElementsMonitor's settings reference on every settings change.
+                // Without this, the monitor writes VideoIsPlaying to a stale settings object
+                // after any plugin's settings are saved (Playnite creates a new settings instance).
+                MediaElementsMonitor.UpdateSettings(e.NewSettings);
+
+                // Attach media monitor if pause on trailer setting was just enabled
                 if (e.OldSettings?.PauseOnTrailer != e.NewSettings?.PauseOnTrailer)
                 {
                     if (e.NewSettings?.PauseOnTrailer == true)
                     {
                         MediaElementsMonitor.Attach(_api, e.NewSettings);
                     }
-                    // Note: MediaElementsMonitor doesn't have a Detach method - it stops automatically
-                    // when there are no media elements (timer stops when mediaElementPositions.Count == 0)
                 }
-                
+
                 // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
                 if (e.OldSettings != null && e.NewSettings != null)
                 {

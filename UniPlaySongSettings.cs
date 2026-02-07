@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -284,8 +285,10 @@ namespace UniPlaySong
         }
 
         /// <summary>
-        /// Tracks if a video is currently playing (set by MediaElementsMonitor)
+        /// Tracks if a video is currently playing (set by MediaElementsMonitor).
+        /// Runtime-only state — excluded from serialization so it always starts false.
         /// </summary>
+        [JsonIgnore]
         public bool VideoIsPlaying
         {
             get => videoIsPlaying;
@@ -296,7 +299,9 @@ namespace UniPlaySong
         /// Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings).
         /// This is separate from VideoIsPlaying to prevent MediaElementsMonitor from overriding
         /// theme pause requests. Music is paused if EITHER VideoIsPlaying OR ThemeOverlayActive is true.
+        /// Runtime-only state — excluded from serialization so it always starts false.
         /// </summary>
+        [JsonIgnore]
         public bool ThemeOverlayActive
         {
             get => themeOverlayActive;

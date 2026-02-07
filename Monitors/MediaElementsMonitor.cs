@@ -19,6 +19,7 @@ namespace UniPlaySong.Monitors
     {
         private static IPlayniteAPI playniteApi;
         private static UniPlaySongSettings settings;
+        private static bool _classHandlerRegistered;
 
         static private DispatcherTimer timer;
 
@@ -46,13 +47,35 @@ namespace UniPlaySong.Monitors
 
             Logger.Info($"[UniPlaySong] MediaElementsMonitor.Attach() called - VideoIsPlaying initial value: {settings.VideoIsPlaying}");
 
-            EventManager.RegisterClassHandler(typeof(MediaElement), MediaElement.MediaOpenedEvent, new RoutedEventHandler(MediaElement_Opened));
+            // RegisterClassHandler is permanent (no unregister API) — only call once
+            if (!_classHandlerRegistered)
+            {
+                EventManager.RegisterClassHandler(typeof(MediaElement), MediaElement.MediaOpenedEvent, new RoutedEventHandler(MediaElement_Opened));
+                _classHandlerRegistered = true;
+            }
 
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(100);
-            timer.Tick += Timer_Tick;
-            
-            Logger.Info($"[UniPlaySong] MediaElementsMonitor: Timer created (interval: 10ms), waiting for MediaElement_Opened to start");
+            // Reuse existing timer to prevent orphaned timers on repeated Attach() calls
+            if (timer == null)
+            {
+                timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(100);
+                timer.Tick += Timer_Tick;
+            }
+
+            Logger.Info($"[UniPlaySong] MediaElementsMonitor: Ready (interval: 100ms), waiting for MediaElement_Opened to start");
+        }
+
+        /// <summary>
+        /// Updates the settings reference to the current instance.
+        /// Called when Playnite reloads settings (e.g., after saving any plugin's settings).
+        /// Without this, the monitor writes VideoIsPlaying to a stale/dead settings object.
+        /// </summary>
+        static public void UpdateSettings(UniPlaySongSettings newSettings)
+        {
+            if (newSettings != null)
+            {
+                settings = newSettings;
+            }
         }
 
         public static List<MediaElement> GetAllMediaElements(DependencyObject parent)
