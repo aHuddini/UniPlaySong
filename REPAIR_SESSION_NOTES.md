@@ -11,7 +11,7 @@
 | Session 3 | Full rollback to `8486955`. Applied Issues 1, 10, 11 as clean fixes | `597e9c8` on `repairSessionFeb` |
 | Session 3 | Applied Issue 7 — stuck pause when disabling Pause-on-X settings | uncommitted |
 
-**Current HEAD:** `597e9c8` + Issue 7 fix (uncommitted)
+**Current HEAD:** `5bdac74` + Pause on Play feature (uncommitted)
 **Branch:** `repairSessionFeb` (based on `8486955`)
 
 ---
@@ -125,6 +125,94 @@ Both called `HandleVideoStateChange()` / `HandleThemeOverlayChange()`, causing d
 
 ---
 
+## v1.2.6 Changes
+
+### Pause on Play — Splash Screen Compatibility (#61)
+
+**Category:** New Feature — Pause-on-X Behavior
+
+**Request:** Users with the [Splash Screen](https://github.com/darklinkpower/PlayniteExtensionsCollection/wiki/Splash-Screen) plugin wanted music to pause immediately when clicking Play on a game, before the splash screen appears — not after the game process starts.
+
+**Challenge:** `OnGameStarting` plugin hooks fire sequentially. Splash Screen blocks in its `OnGameStarting` via `ActivateGlobalProgress`, so if Playnite calls it before UniPlaySong, our handler doesn't fire until after the splash finishes.
+
+**Solution:** Instead of `OnGameStarting`, subscribe to `_api.Database.Games.ItemUpdated` — a database-level event that fires when `Game.IsLaunching` changes, independent of plugin hook execution order.
+
+**Implementation:**
+- Added `PauseSource.GameStarting` enum value
+- Added `PauseOnGameStart` setting (default `false`, opt-in)
+- Added `OnGameItemUpdated` handler: pauses on `IsLaunching` transition, resumes on `IsRunning` → false transition
+- Added `OnGameStopped` override as fallback for resume
+- UI label: "Compatibility: Pause on Play (Splash Screen Mode)"
+
+**Key learning:** `OnGameStarting` plugin hooks are unsuitable for time-critical reactions when other plugins (like Splash Screen) block in the same hook via `ActivateGlobalProgress`. `Database.Games.ItemUpdated` fires at the data layer, before/independently of plugin hooks.
+
+**Files changed:**
+- `Models/PauseSource.cs` — `GameStarting` enum value
+- `UniPlaySongSettings.cs` — `PauseOnGameStart` backing field + property
+- `UniPlaySongSettingsView.xaml` — CheckBox + description
+- `UniPlaySong.cs` — `OnGameItemUpdated` handler, `ItemUpdated` subscription, `OnGameStopped` fallback, defaults reset
+
+### Now Playing Display — Duration Removed
+
+Duration/timestamp removed from the Now Playing display text. Was `Title - Artist | 3:45`, now `Title - Artist`. `FormatDuration` kept for future use.
+
+### NowPlayingPanel GPU Optimization (#55)
+
+Uses `Timeline.DesiredFrameRateProperty.OverrideMetadata(typeof(Timeline), 60)` to cap WPF's global render rate. The configurable FPS setting (15/30/60) was attempted but all approaches failed — `DesiredFrameRate` does not affect `CompositionTarget.Rendering`, `OverrideMetadata` can only be called once per AppDomain, and Stopwatch-based frame-skip performed poorly. Reverted to fixed 60fps cap.
+
+### Settings UI Reorganization
+
+Restructured the add-on settings tabs for better discoverability and logical grouping.
+
+**Tab changes:**
+- Renamed "Default Music" → "Playback", "Audio Normalization" → "Audio Editing", "Search Cache" → "Search"
+- Moved Volume, Fade In/Out, Preview Mode, Song Randomization from General tab into new Playback tab
+- Reordered tabs: General, Playback, Live Effects, Audio Editing, Downloads, Search, Migration, Cleanup
+- Downloads tab moved up (after Audio Editing) since it's more commonly used than Search/Migration
+
+**New features:**
+- "Open Log Folder" button in General → Troubleshooting section (opens extension folder containing UniPlaySong.log)
+- Removed "(Experimental)" label from "Spectrum Visualizer" (only the Advanced Customization expander retains the experimental label)
+- Polished tab titles/subtitles across Playback, Audio Editing, Downloads, Search tabs
+
+**Files changed:**
+- `UniPlaySongSettingsView.xaml` — tab renames, reordering, content moves, new button, label/subtitle updates
+- `UniPlaySongSettingsViewModel.cs` — `OpenLogFolderCommand`
+
+### Top Panel Media Controls — Styling Fix
+
+**Category:** Bug Fix
+
+**Symptom:** Play/pause and skip buttons in the desktop top panel looked visually mismatched compared to native Playnite icons — wrong size, bold weight distorting the symbol font, and inconsistent spacing across themes (Default vs Harmony).
+
+**Root Cause:** Icons used FontSize 18 with FontWeight.Bold and hardcoded negative margins. IcoFont is a symbol font where Bold distorts glyphs. Margins were theme-specific, so hardcoded values only worked for one theme.
+
+**Fix applied:**
+- FontSize set to 18pt, removed FontWeight.Bold, added VerticalAlignment/HorizontalAlignment Center
+- Theme-adaptive margin trimming: on Loaded, walks the visual tree to find the TopPanelItem container and symmetrically reduces the facing margins (play's right, skip's left) to 20% of the theme's value — groups the buttons without overriding other theme styling (MinWidth, Padding, Background)
+
+**Files changed:**
+- `DeskMediaControl/TopPanelMediaControlViewModel.cs` — icon styling, `AdjustTopPanelItemMargin()` method
+
+### Spectrum Visualizer — Color & Opacity Tuning
+
+**Category:** Improvement
+
+**Changes:**
+- **Opacity curve**: Changed from linear to `Math.Sqrt(current)` for better dynamic range — quiet bars are more transparent, loud bars reach near-full brightness
+- **Preset/style decoupling**: Removed `VizColorTheme` and `VizGradientEnabled` assignments from all viz presets. Presets now only control tuning parameters (gain, gravity, smoothing, etc.). Color theme and gradient toggle are independent user choices
+- **Classic white brush**: Alpha set to 200 (softened); all color themes use alpha=255 (full opacity with darkened RGB values)
+- **Color theme tuning**: All existing themes received darker bottom gradient stops for more depth/contrast from bar base to tip
+- **6 new color themes**: Synthwave (purple→pink), Ember (ember→amber), Abyss (navy→aqua), Solar (rust→gold), Terminal (dark→bright green), Frost (steel blue→frost white)
+
+**Files changed:**
+- `DeskMediaControl/SpectrumVisualizerControl.cs` — opacity formula, ThemeColors array (tuned + 6 new entries), BarBrush alpha
+- `UniPlaySongSettings.cs` — 6 new `VizColorTheme` enum values
+- `UniPlaySongSettingsView.xaml` — 6 new ComboBoxItem entries in color theme dropdown
+- `UniPlaySongSettingsView.xaml.cs` — removed color/gradient assignments from presets
+
+---
+
 ## Not Yet Applied
 
 ### Category B: Pause-on-X Behavior
@@ -183,3 +271,6 @@ These overlap-reduction approaches were tried in Sessions 1-2 and reverted. Docu
 | Any | Either | Muting EML video → UPS music plays; unmuting → UPS pauses correctly |
 | Any | Either | Restart Playnite → music plays (VideoIsPlaying not persisted) |
 | Any | Either | Save any plugin settings → music continues uninterrupted |
+| Any | Either | PauseOnGameStart enabled + Splash Screen: click Play → music fades before splash |
+| Any | Either | PauseOnGameStart enabled: close game → music resumes |
+| Any | Either | PauseOnGameStart disabled: click Play → music continues until game steals focus |
