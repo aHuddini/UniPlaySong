@@ -32,6 +32,7 @@ Built with the help of Claude Code and Cursor IDE
 ### Improvements
 - **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
 - **Desktop Media Controls** - Tighter button spacing for more compact top panel layout
+- **Code Quality** - Consolidated some duplicate code, eliminated magic strings, improved maintainability
 
 ### Previous Versions
 - **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes

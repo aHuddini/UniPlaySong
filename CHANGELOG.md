@@ -16,6 +16,10 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Improved
 - **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
 - **Desktop Media Controls** - Tighter button spacing for more compact top panel layout (24px closer)
+- **Code Quality** - Consolidated duplicate code and eliminated magic strings for improved maintainability
+  - Centralized default file extension (`.mp3`) to single constant
+  - Replaced manual file sanitization loops with unified utility method
+  - Reduced code duplication by ~40 lines across 9 files
 
 ## [1.2.4] - 2026-01-30
 
