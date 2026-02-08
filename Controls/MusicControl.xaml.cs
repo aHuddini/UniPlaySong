@@ -10,17 +10,7 @@ using Playnite.SDK.Controls;
 
 namespace UniPlaySong.Controls
 {
-    /// <summary>
-    /// Theme integration control for UniPlaySong.
-    /// Follows the PlayniteSound pattern for maximum compatibility.
-    ///
-    /// Allows themes to pause/resume music by setting the Tag property.
-    /// When Tag="True", sets ThemeOverlayActive=true which pauses music.
-    /// When Tag="False", sets ThemeOverlayActive=false which resumes music.
-    ///
-    /// Uses ThemeOverlayActive instead of VideoIsPlaying to prevent conflicts
-    /// with MediaElementsMonitor which also sets VideoIsPlaying.
-    /// </summary>
+    // Theme integration control: Tag="True" pauses music via ThemeOverlayActive
     public partial class MusicControl : PluginUserControl, INotifyPropertyChanged
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -48,8 +38,6 @@ namespace UniPlaySong.Controls
             Unloaded += OnUnloaded;
 
             _musicControls.Add(this);
-
-            Logger.Info("[MusicControl] Instance created");
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -59,24 +47,15 @@ namespace UniPlaySong.Controls
                 _musicControls.Add(this);
             }
             UpdateMute();
-            Logger.Debug($"[MusicControl] Loaded (total instances: {_musicControls.Count})");
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _musicControls.Remove(this);
             UpdateMute();
-            Logger.Debug($"[MusicControl] Unloaded (total instances: {_musicControls.Count})");
         }
 
-        /// <summary>
-        /// Updates ThemeOverlayActive based on all MusicControl Tag values.
-        /// If ANY control has Tag=True, ThemeOverlayActive=true (pause music).
-        /// Only resumes when ALL controls have Tag=False.
-        ///
-        /// Uses ThemeOverlayActive instead of VideoIsPlaying to prevent conflicts
-        /// with MediaElementsMonitor which also sets VideoIsPlaying.
-        /// </summary>
+        // If ANY control has Tag=True, ThemeOverlayActive=true (pause music)
         private static void UpdateMute()
         {
             // Check if any control has Tag=True (should mute/pause)
@@ -91,15 +70,11 @@ namespace UniPlaySong.Controls
 
             if (_settings.ThemeOverlayActive != mute)
             {
-                Logger.Info($"[MusicControl] Setting ThemeOverlayActive={mute} (was {_settings.ThemeOverlayActive})");
                 _settings.ThemeOverlayActive = mute;
             }
         }
 
-        /// <summary>
-        /// Converts Tag value to boolean, handling both bool and string types from XAML.
-        /// XAML DataTriggers often set Tag as string "True"/"False" rather than boolean.
-        /// </summary>
+        // Handles both bool and string "True"/"False" from XAML DataTriggers
         private static bool ConvertTagToBool(object tag)
         {
             if (tag == null)
@@ -126,7 +101,6 @@ namespace UniPlaySong.Controls
         {
             if (d is MusicControl)
             {
-                Logger.Debug($"[MusicControl] Tag changed: {e.OldValue} -> {e.NewValue}");
                 UpdateMute();
             }
         }
@@ -144,11 +118,7 @@ namespace UniPlaySong.Controls
 
         #region Bindable Properties (PlayniteSound compatible)
 
-        /// <summary>
-        /// Whether video/overlay is playing (music should be paused).
-        /// This mirrors the settings property for theme binding.
-        /// Note: Internally uses ThemeOverlayActive to avoid conflicts with MediaElementsMonitor.
-        /// </summary>
+        // Whether video/overlay is playing (mirrors ThemeOverlayActive for theme binding)
         public bool VideoIsPlaying
         {
             get => _settings?.ThemeOverlayActive ?? false;
@@ -161,10 +131,7 @@ namespace UniPlaySong.Controls
             }
         }
 
-        /// <summary>
-        /// Whether a theme overlay is active (music should be paused).
-        /// This is the actual property used internally.
-        /// </summary>
+        // Whether a theme overlay is active (music should be paused)
         public bool ThemeOverlayActive
         {
             get => _settings?.ThemeOverlayActive ?? false;
@@ -190,10 +157,7 @@ namespace UniPlaySong.Controls
 
         #region Static Initialization
 
-        /// <summary>
-        /// Updates the static settings reference.
-        /// Called when services are re-initialized.
-        /// </summary>
+        // Updates static settings reference when services are re-initialized
         public static void UpdateServices(UniPlaySongSettings settings)
         {
             if (_settings != null)
@@ -207,8 +171,6 @@ namespace UniPlaySong.Controls
             {
                 _settings.PropertyChanged += OnSettingsChangedStatic;
             }
-
-            Logger.Info("[MusicControl] Static services updated");
         }
 
         private static void OnSettingsChangedStatic(object sender, PropertyChangedEventArgs e)

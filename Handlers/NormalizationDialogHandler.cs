@@ -11,10 +11,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    /// <summary>
-    /// Handles audio normalization dialog operations.
-    /// Extracted from UniPlaySong.cs to reduce main plugin file size.
-    /// </summary>
+    // Handles audio normalization dialog operations (extracted from UniPlaySong.cs)
     public class NormalizationDialogHandler
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -39,9 +36,7 @@ namespace UniPlaySong.Handlers
             _settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         }
 
-        /// <summary>
-        /// Normalize all music files in the library
-        /// </summary>
+        // Normalize all music files in the library
         public void NormalizeAllMusicFiles()
         {
             try
@@ -103,9 +98,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Normalize music files for a single game (fullscreen menu)
-        /// </summary>
+        // Normalize music files for a single game (fullscreen menu)
         public void NormalizeSelectedGamesFullscreen(Game game)
         {
             if (game == null)
@@ -117,9 +110,7 @@ namespace UniPlaySong.Handlers
             NormalizeSelectedGames(new List<Game> { game }, showSimpleConfirmation: true);
         }
 
-        /// <summary>
-        /// Normalize music files for selected games
-        /// </summary>
+        // Normalize music files for selected games
         public void NormalizeSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             try
@@ -189,9 +180,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Normalize a single music file
-        /// </summary>
+        // Normalize a single music file
         public void NormalizeSingleFile(Game game, string filePath)
         {
             try
@@ -245,9 +234,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show normalization progress dialog and execute normalization
-        /// </summary>
+        // Show normalization progress dialog and execute normalization
         private void ShowNormalizationProgress(List<string> musicFiles, string title, bool showSimpleConfirmation = false)
         {
             try
@@ -359,9 +346,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Delete all files in the PreservedOriginals folder
-        /// </summary>
+        // Delete all files in the PreservedOriginals folder
         public void DeletePreservedOriginals()
         {
             try
@@ -392,7 +377,7 @@ namespace UniPlaySong.Handlers
                     Directory.Delete(preservedOriginalsDir, true);
                     Directory.CreateDirectory(preservedOriginalsDir); // Recreate empty directory
 
-                    Logger.Info($"Deleted {fileCount} files from PreservedOriginals folder");
+                    Logger.Debug($"Deleted {fileCount} files from PreservedOriginals folder");
                     _playniteApi.Dialogs.ShowMessage(
                         $"Successfully deleted {fileCount} preserved original file(s).\n\nDisk space has been freed.",
                         "Deletion Complete");
@@ -412,9 +397,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Restore original files from PreservedOriginals folder
-        /// </summary>
+        // Restore original files from PreservedOriginals folder
         public void RestoreNormalizedFiles()
         {
             try
@@ -449,9 +432,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show restoration progress dialog and execute restoration of original files
-        /// </summary>
+        // Show restoration progress dialog and execute restoration
         private void ShowRestoreProgress(List<string> musicFiles, string title)
         {
             try
@@ -538,16 +519,14 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Helper method to stop music playback before file processing
-        /// </summary>
+        // Stop music playback before file processing
         private void StopPlaybackForProcessing(string context)
         {
             try
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    Logger.Info($"Stopping music playback before {context}");
+                    Logger.Debug($"Stopping music playback before {context}");
                     _playbackService.Stop();
 
                     // Give a moment for files to be released

@@ -3,10 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// P/Invoke wrapper for XInput library (Xbox controller input)
-    /// Supports multiple XInput versions with automatic fallback
-    /// </summary>
+    // P/Invoke wrapper for XInput (Xbox controller) with version fallback
     public static class XInputWrapper
     {
         #region P/Invoke Declarations
@@ -66,13 +63,7 @@ namespace UniPlaySong.Common
 
         #region Public Methods
 
-        /// <summary>
-        /// Gets the current state of the specified controller
-        /// Automatically tries different XInput versions (1.4 → 1.3 → 9.1.0)
-        /// </summary>
-        /// <param name="dwUserIndex">Controller index (0-3)</param>
-        /// <param name="pState">State structure to fill</param>
-        /// <returns>0 if successful, -1 if no XInput available or error</returns>
+        // Gets controller state, trying XInput 1.4 -> 1.3 -> 9.1.0. Returns 0 on success.
         public static int XInputGetState(int dwUserIndex, ref XINPUT_STATE pState)
         {
             try

@@ -12,10 +12,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for SoundCloud (hints-only, no search).
-    /// Uses yt-dlp for both metadata extraction and downloads.
-    /// </summary>
+    // SoundCloud downloader (hints-only, uses yt-dlp)
     public class SoundCloudDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -37,19 +34,14 @@ namespace UniPlaySong.Downloaders
 
         public Source DownloadSource() => Source.SoundCloud;
 
-        /// <summary>
-        /// SoundCloud is hints-only, no search functionality
-        /// </summary>
+        // SoundCloud is hints-only, no search functionality
         public IEnumerable<Album> GetAlbumsForGame(string gameName, CancellationToken cancellationToken, bool auto = false)
         {
             // SoundCloud doesn't support search - only direct URLs from hints
             return Enumerable.Empty<Album>();
         }
 
-        /// <summary>
-        /// Gets songs from a SoundCloud track or playlist.
-        /// For single tracks, returns one song. For playlists, fetches all tracks.
-        /// </summary>
+        // Gets songs from a SoundCloud track or playlist
         public IEnumerable<Song> GetSongsFromAlbum(Album album, CancellationToken cancellationToken = default)
         {
             if (album == null || string.IsNullOrEmpty(album.Id))
@@ -63,13 +55,11 @@ namespace UniPlaySong.Downloaders
                 // Check if it's a playlist/set (contains "/sets/")
                 if (album.Id.Contains("/sets/"))
                 {
-                    Logger.Info($"{LogPrefix}: Fetching playlist tracks from: {fullUrl}");
                     songs = GetPlaylistSongs(fullUrl, album.Name, cancellationToken).ToList();
                 }
                 else
                 {
                     // Single track - use yt-dlp to get metadata
-                    Logger.Info($"{LogPrefix}: Fetching single track metadata from: {fullUrl}");
                     var trackInfo = GetTrackMetadata(fullUrl, cancellationToken);
                     if (trackInfo != null)
                     {
@@ -86,12 +76,9 @@ namespace UniPlaySong.Downloaders
                         });
                     }
                 }
-
-                Logger.Info($"{LogPrefix}: Found {songs.Count} track(s) from SoundCloud");
             }
             catch (OperationCanceledException)
             {
-                Logger.Debug($"{LogPrefix}: Operation cancelled while fetching SoundCloud tracks");
                 throw;
             }
             catch (Exception ex)
@@ -103,9 +90,7 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
-        /// <summary>
-        /// Gets metadata for a single SoundCloud track using yt-dlp
-        /// </summary>
+        // Gets metadata for a single SoundCloud track using yt-dlp
         private Song GetTrackMetadata(string trackUrl, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || !File.Exists(_ytDlpPath))
@@ -180,9 +165,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets all tracks from a SoundCloud playlist/set using yt-dlp
-        /// </summary>
+        // Gets all tracks from a SoundCloud playlist/set using yt-dlp
         private IEnumerable<Song> GetPlaylistSongs(string playlistUrl, string albumName, CancellationToken cancellationToken)
         {
             var songs = new List<Song>();
@@ -277,8 +260,6 @@ namespace UniPlaySong.Downloaders
                             });
                         }
                     }
-
-                    Logger.Info($"{LogPrefix}: Found {songs.Count} tracks in playlist");
                 }
             }
             catch (Exception ex)
@@ -289,9 +270,7 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
-        /// <summary>
-        /// Downloads a SoundCloud track to the specified path using yt-dlp
-        /// </summary>
+        // Downloads a SoundCloud track using yt-dlp
         public bool DownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview = false)
         {
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || string.IsNullOrWhiteSpace(_ffmpegPath))
@@ -325,8 +304,6 @@ namespace UniPlaySong.Downloaders
                 var fullUrl = SoundCloudBaseUrl + song.Id;
                 var pathWithoutExt = Path.ChangeExtension(path, null);
 
-                Logger.Info($"{LogPrefix}: Downloading from {fullUrl} to {path}");
-
                 // Build yt-dlp arguments (similar to YouTube but without YouTube-specific options)
                 var quality = isPreview ? "5" : "0";
 
@@ -343,8 +320,6 @@ namespace UniPlaySong.Downloaders
                 var rateLimitOptions = " --sleep-requests 1 --sleep-interval 1 --max-sleep-interval 3";
 
                 var arguments = $"-x --audio-format mp3 --audio-quality {quality}{rateLimitOptions}{postProcessorArgs}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" \"{fullUrl}\"";
-
-                Logger.Debug($"{LogPrefix}: Running yt-dlp with args (excluding paths): -x --audio-format mp3 --audio-quality {quality} [rate-limit] [post-process]{previewFlags}");
 
                 var startInfo = new ProcessStartInfo
                 {
@@ -372,11 +347,6 @@ namespace UniPlaySong.Downloaders
                     var timeout = isPreview ? 60000 : 300000; // 1 min for preview, 5 min for full
                     process.WaitForExit(timeout);
 
-                    if (!string.IsNullOrEmpty(error) && !error.Contains("WARNING"))
-                    {
-                        Logger.Debug($"{LogPrefix}: yt-dlp stderr: {error}");
-                    }
-
                     if (process.ExitCode != 0)
                     {
                         Logger.Error($"{LogPrefix}: yt-dlp failed with exit code {process.ExitCode}");
@@ -398,7 +368,6 @@ namespace UniPlaySong.Downloaders
                                 File.Delete(path);
                             File.Move(expectedPath, path);
                         }
-                        Logger.Info($"{LogPrefix}: Successfully downloaded: {song.Name}");
                         return true;
                     }
 
@@ -409,7 +378,6 @@ namespace UniPlaySong.Downloaders
                         if (File.Exists(path))
                             File.Delete(path);
                         File.Move(downloadedFile, path);
-                        Logger.Info($"{LogPrefix}: Successfully downloaded (found as {Path.GetExtension(downloadedFile)}): {song.Name}");
                         return true;
                     }
 
@@ -419,7 +387,6 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Debug($"{LogPrefix}: Download cancelled for: {song.Name}");
                 throw;
             }
             catch (Exception ex)
@@ -430,9 +397,6 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Extracts the URL path from a full SoundCloud URL
-        /// </summary>
         private static string ExtractUrlPath(string url)
         {
             if (string.IsNullOrEmpty(url))
@@ -459,9 +423,6 @@ namespace UniPlaySong.Downloaders
             return null;
         }
 
-        /// <summary>
-        /// Searches for a downloaded file with various audio extensions
-        /// </summary>
         private static string FindDownloadedFile(string pathWithoutExt)
         {
             var extensions = new[] { ".mp3", ".m4a", ".opus", ".webm", ".ogg", ".wav" };

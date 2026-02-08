@@ -37,7 +37,7 @@ namespace UniPlaySong.Services
             InitializeSDL();
             _musicFinishedCallback = OnMusicFinishedInternal;
             SDL2Mixer.Mix_HookMusicFinished(Marshal.GetFunctionPointerForDelegate(_musicFinishedCallback));
-            Logger.Info("Using SDL Mixer for playback");
+            // SDL2 mixer initialized for playback
         }
 
         private void InitializeSDL()
@@ -70,13 +70,6 @@ namespace UniPlaySong.Services
                 _volume = Math.Max(0.0, Math.Min(1.0, value));
                 int mixerVolume = (int)(_volume * 128);
                 SDL2Mixer.Mix_VolumeMusic(mixerVolume);
-                
-                // Verify the volume was actually set (only log if mismatch or at key points)
-                int actualMixerVolume = SDL2Mixer.Mix_VolumeMusic(-1);
-                if (actualMixerVolume != mixerVolume || _volume == 0 || _volume >= 0.99)
-                {
-                    Logger.Info($"SDL2MusicPlayer.Volume: Set {oldVolume:F3} -> {_volume:F3} (mixer: {mixerVolume}/128, actual: {actualMixerVolume}/128, IsActive: {IsActive})");
-                }
             }
         }
 

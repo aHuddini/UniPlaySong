@@ -8,44 +8,24 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Search hint for a specific game - provides alternative search terms or direct playlist URLs
-    /// </summary>
+    // Search hint for a game - alternative search terms or direct playlist URLs
     public class SearchHint
     {
-        /// <summary>
-        /// Alternative search terms to use instead of the game name
-        /// </summary>
         [JsonProperty("searchTerms")]
-        public List<string> SearchTerms { get; set; }
+        public List<string> SearchTerms { get; set; } // Alternative search terms instead of game name
 
-        /// <summary>
-        /// Direct YouTube playlist ID to use (bypasses search entirely)
-        /// </summary>
         [JsonProperty("youtubePlaylistId")]
-        public string YouTubePlaylistId { get; set; }
+        public string YouTubePlaylistId { get; set; } // Direct YouTube playlist ID (bypasses search)
 
-        /// <summary>
-        /// KHInsider album ID/URL to use directly
-        /// </summary>
         [JsonProperty("khinsiderAlbum")]
-        public string KHInsiderAlbum { get; set; }
+        public string KHInsiderAlbum { get; set; } // Direct KHInsider album ID/URL
 
-        /// <summary>
-        /// SoundCloud track or playlist URL path (e.g., "artist/track-name" or "artist/sets/playlist-name")
-        /// </summary>
         [JsonProperty("soundcloudUrl")]
-        public string SoundCloudUrl { get; set; }
+        public string SoundCloudUrl { get; set; } // SoundCloud URL path (e.g., "artist/track-name")
 
-        /// <summary>
-        /// Notes about why this hint was added (for documentation)
-        /// </summary>
         [JsonProperty("notes")]
         public string Notes { get; set; }
 
-        /// <summary>
-        /// Checks if this hint has any direct links (YouTubePlaylistId, KHInsiderAlbum, or SoundCloudUrl)
-        /// </summary>
         public bool HasDirectLinks()
         {
             return !string.IsNullOrWhiteSpace(YouTubePlaylistId) ||
@@ -54,9 +34,7 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Metadata about the downloaded hints file
-    /// </summary>
+    // Metadata about the downloaded hints file
     public class HintsMetadata
     {
         [JsonProperty("lastDownloadDate")]
@@ -69,13 +47,8 @@ namespace UniPlaySong.Services
         public string Source { get; set; }
     }
 
-    /// <summary>
-    /// Service for loading and providing search hints for problematic game names.
-    /// Priority order:
-    /// 1. Downloaded hints from GitHub (AutoSearchDatabase folder) - if exists
-    /// 2. Bundled hints (ships with plugin) - fallback
-    /// User hints are saved separately and merged on top.
-    /// </summary>
+    // Loads and provides search hints for problematic game names.
+    // Priority: 1. Downloaded from GitHub  2. Bundled (fallback)  3. User hints merged on top.
     public class SearchHintsService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -109,9 +82,6 @@ namespace UniPlaySong.Services
             LoadHints();
         }
 
-        /// <summary>
-        /// Ensures the AutoSearchDatabase folder exists
-        /// </summary>
         private void EnsureAutoSearchDatabaseFolder()
         {
             try
@@ -119,7 +89,6 @@ namespace UniPlaySong.Services
                 if (!Directory.Exists(_autoSearchDatabasePath))
                 {
                     Directory.CreateDirectory(_autoSearchDatabasePath);
-                    Logger.Info($"[SearchHints] Created AutoSearchDatabase folder: {_autoSearchDatabasePath}");
                 }
             }
             catch (Exception ex)
@@ -128,10 +97,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets search hint for a game if one exists.
-        /// If the hint from downloaded/primary source has no direct links, falls back to bundled hints.
-        /// </summary>
+        // Gets search hint for a game. Falls back to bundled hints if primary has no direct links.
         public SearchHint GetHint(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return null;
@@ -147,12 +113,10 @@ namespace UniPlaySong.Services
                 // Check if hint has direct links - if not, try bundled fallback
                 if (!hint.HasDirectLinks() && _bundledHints != null && _bundledHints.Count > 0)
                 {
-                    Logger.Info($"[SearchHints] Hint for '{gameName}' has no direct links, checking bundled hints for fallback");
                     var (bundledHint, _) = FindHintWithKey(gameName, _bundledHints);
 
                     if (bundledHint != null && bundledHint.HasDirectLinks())
                     {
-                        Logger.Info($"[SearchHints] Using bundled hint for '{gameName}' (has direct links)");
                         return bundledHint;
                     }
                 }
@@ -160,13 +124,10 @@ namespace UniPlaySong.Services
                 return hint;
             }
 
-            Logger.Info($"[SearchHints] No hint found for '{gameName}'");
             return null;
         }
 
-        /// <summary>
-        /// Finds a hint in the specified dictionary using various matching strategies
-        /// </summary>
+        // Finds a hint using exact, base name, normalized, and prefix matching strategies
         private (SearchHint hint, string matchedKey) FindHintWithKey(string gameName, Dictionary<string, SearchHint> hints)
         {
             if (hints == null || hints.Count == 0)
@@ -175,7 +136,6 @@ namespace UniPlaySong.Services
             // Try exact match first
             if (hints.TryGetValue(gameName, out var hint))
             {
-                Logger.Info($"[SearchHints] Exact match for '{gameName}'");
                 return (hint, gameName);
             }
 
@@ -183,7 +143,6 @@ namespace UniPlaySong.Services
             var baseName = StringHelper.ExtractBaseGameName(gameName);
             if (!string.IsNullOrWhiteSpace(baseName) && hints.TryGetValue(baseName, out hint))
             {
-                Logger.Info($"[SearchHints] Base name match for '{baseName}'");
                 return (hint, baseName);
             }
 
@@ -193,7 +152,6 @@ namespace UniPlaySong.Services
             {
                 if (StringHelper.NormalizeForComparison(kvp.Key) == normalized)
                 {
-                    Logger.Info($"[SearchHints] Normalized match: '{gameName}' → '{kvp.Key}'");
                     return (kvp.Value, kvp.Key);
                 }
             }
@@ -208,7 +166,6 @@ namespace UniPlaySong.Services
                     (normalized.Length == hintKeyNorm.Length ||
                      normalized[hintKeyNorm.Length] == ' '))
                 {
-                    Logger.Info($"[SearchHints] Prefix match: '{gameName}' starts with '{kvp.Key}'");
                     return (kvp.Value, kvp.Key);
                 }
             }
@@ -224,7 +181,6 @@ namespace UniPlaySong.Services
                         (baseNormalized.Length == hintKeyNorm.Length ||
                          baseNormalized[hintKeyNorm.Length] == ' '))
                     {
-                        Logger.Info($"[SearchHints] Base prefix match: '{baseName}' starts with '{kvp.Key}'");
                         return (kvp.Value, kvp.Key);
                     }
                 }
@@ -233,9 +189,6 @@ namespace UniPlaySong.Services
             return (null, null);
         }
 
-        /// <summary>
-        /// Adds or updates a search hint for a game
-        /// </summary>
         public void SetHint(string gameName, SearchHint hint)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return;
@@ -247,9 +200,6 @@ namespace UniPlaySong.Services
             SaveHints();
         }
 
-        /// <summary>
-        /// Adds a YouTube playlist hint for a game (convenience method)
-        /// </summary>
         public void AddYouTubePlaylistHint(string gameName, string playlistId, string notes = null)
         {
             var baseName = StringHelper.ExtractBaseGameName(gameName);
@@ -266,13 +216,8 @@ namespace UniPlaySong.Services
 
             _hints[key] = hint;
             SaveHints();
-
-            Logger.Info($"[SearchHints] Added YouTube playlist hint for '{key}': {playlistId}");
         }
 
-        /// <summary>
-        /// Adds search terms hint for a game (convenience method)
-        /// </summary>
         public void AddSearchTermsHint(string gameName, List<string> searchTerms, string notes = null)
         {
             var baseName = StringHelper.ExtractBaseGameName(gameName);
@@ -289,8 +234,6 @@ namespace UniPlaySong.Services
 
             _hints[key] = hint;
             SaveHints();
-
-            Logger.Info($"[SearchHints] Added search terms hint for '{key}': [{string.Join(", ", searchTerms)}]");
         }
 
         private void LoadHints()
@@ -305,7 +248,6 @@ namespace UniPlaySong.Services
             // If downloaded hints exist, use them as primary; otherwise use bundled
             if (File.Exists(_downloadedHintsPath))
             {
-                Logger.Info($"[SearchHints] Using downloaded hints from AutoSearchDatabase");
                 LoadHintsFromFile(_downloadedHintsPath, "downloaded", _hints);
             }
             else
@@ -324,7 +266,6 @@ namespace UniPlaySong.Services
             }
 
             _lastLoadTime = DateTime.Now;
-            Logger.Info($"[SearchHints] Loaded {_hints.Count} total hints ({_bundledHints.Count} bundled for fallback)");
         }
 
         private void LoadHintsFromFile(string path, string source, Dictionary<string, SearchHint> targetDictionary = null)
@@ -362,12 +303,6 @@ namespace UniPlaySong.Services
                         {
                             target[prop.Name] = hint;
                             count++;
-
-                            // Log hints that have direct links for debugging
-                            if (hint.HasDirectLinks())
-                            {
-                                Logger.Info($"[SearchHints] Loaded hint with direct links: '{prop.Name}' (YT={!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId)}, KH={!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum)}, SC={!string.IsNullOrWhiteSpace(hint.SoundCloudUrl)})");
-                            }
                         }
                     }
                     catch (Exception ex)
@@ -375,7 +310,6 @@ namespace UniPlaySong.Services
                         Logger.Warn($"[SearchHints] Failed to parse hint '{prop.Name}': {ex.Message}");
                     }
                 }
-                Logger.Info($"[SearchHints] Loaded {count} {source} hints from {path}");
             }
             catch (Exception ex)
             {
@@ -433,36 +367,19 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets the path to the user hints file (for user reference)
-        /// </summary>
         public string GetUserHintsFilePath() => _userHintsPath;
 
-        /// <summary>
-        /// Gets the path to the bundled hints file (for reference)
-        /// </summary>
         public string GetBundledHintsFilePath() => _bundledHintsPath;
 
-        /// <summary>
-        /// Gets the path to the AutoSearchDatabase folder
-        /// </summary>
         public string GetAutoSearchDatabasePath() => _autoSearchDatabasePath;
 
-        /// <summary>
-        /// Gets the path to the downloaded hints file
-        /// </summary>
         public string GetDownloadedHintsFilePath() => _downloadedHintsPath;
 
-        /// <summary>
-        /// Downloads the latest search_hints.json from GitHub
-        /// </summary>
-        /// <returns>True if download was successful</returns>
+        // Downloads latest search_hints.json from GitHub. Returns true on success.
         public bool DownloadHintsFromGitHub()
         {
             try
             {
-                Logger.Info($"[SearchHints] Downloading hints from GitHub: {GitHubHintsUrl}");
-
                 using (var client = new System.Net.WebClient())
                 {
                     // Add user agent to avoid GitHub blocking the request
@@ -510,8 +427,6 @@ namespace UniPlaySong.Services
                     var metadataJson = JsonConvert.SerializeObject(metadata, Formatting.Indented);
                     File.WriteAllText(_metadataPath, metadataJson);
 
-                    Logger.Info($"[SearchHints] Downloaded {entryCount} hints from GitHub");
-
                     // Reload hints to pick up new file
                     LoadHints();
 
@@ -530,10 +445,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets metadata about the downloaded hints file
-        /// </summary>
-        /// <returns>Metadata if available, null otherwise</returns>
         public HintsMetadata GetDownloadedHintsMetadata()
         {
             try
@@ -553,17 +464,11 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if downloaded hints exist
-        /// </summary>
         public bool HasDownloadedHints()
         {
             return File.Exists(_downloadedHintsPath);
         }
 
-        /// <summary>
-        /// Gets a status string for the downloaded hints
-        /// </summary>
         public string GetDownloadedHintsStatus()
         {
             var metadata = GetDownloadedHintsMetadata();
@@ -590,9 +495,7 @@ namespace UniPlaySong.Services
             return $"{metadata.EntryCount} entries, last updated {ageText}";
         }
 
-        /// <summary>
-        /// Deletes downloaded hints, reverting to bundled hints
-        /// </summary>
+        // Deletes downloaded hints, reverting to bundled hints
         public void DeleteDownloadedHints()
         {
             try
@@ -600,13 +503,11 @@ namespace UniPlaySong.Services
                 if (File.Exists(_downloadedHintsPath))
                 {
                     File.Delete(_downloadedHintsPath);
-                    Logger.Info("[SearchHints] Deleted downloaded hints file");
                 }
 
                 if (File.Exists(_metadataPath))
                 {
                     File.Delete(_metadataPath);
-                    Logger.Info("[SearchHints] Deleted hints metadata file");
                 }
 
                 // Reload hints (will fall back to bundled)
@@ -618,9 +519,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets the entry count from the bundled hints file
-        /// </summary>
         public int GetBundledHintsEntryCount()
         {
             return _bundledHints?.Count ?? 0;
@@ -640,8 +538,6 @@ namespace UniPlaySong.Services
 
             try
             {
-                Logger.Info("[SearchHints] Checking for hints updates from GitHub...");
-
                 using (var client = new System.Net.WebClient())
                 {
                     // Add user agent to avoid GitHub blocking the request
@@ -672,8 +568,6 @@ namespace UniPlaySong.Services
                             gitHubEntryCount++;
                         }
                     }
-
-                    Logger.Info($"[SearchHints] Update check: GitHub has {gitHubEntryCount} entries, current has {currentCount} entries");
 
                     // Consider it an update if GitHub has more entries
                     bool hasUpdate = gitHubEntryCount > currentCount;

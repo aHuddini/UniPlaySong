@@ -14,10 +14,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for Zophar.net (zophar.net/music)
-    /// Video game music archive with emulated formats and MP3s
-    /// </summary>
+    // Zophar.net downloader (VGM archive with emulated formats and MP3s)
     public class ZopharDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -56,8 +53,6 @@ namespace UniPlaySong.Downloaders
                 var encodedName = Uri.EscapeDataString(gameName).Replace("%20", "+");
                 var searchUrl = $"{ZopharBaseUrl}music/search?search={encodedName}";
 
-                Logger.Info($"[Zophar] Search: '{gameName}' → {searchUrl}");
-
                 var htmlDoc = _htmlWeb.LoadFromWebAsync(searchUrl, cancellationToken).GetAwaiter().GetResult();
 
                 if (htmlDoc == null)
@@ -72,7 +67,6 @@ namespace UniPlaySong.Downloaders
 
                 if (resultLinks == null || resultLinks.Count == 0)
                 {
-                    Logger.Info($"[Zophar] No results for: '{gameName}'");
                     return albums;
                 }
 
@@ -127,7 +121,6 @@ namespace UniPlaySong.Downloaders
                     };
 
                     albums.Add(album);
-                    Logger.DebugIf(LogPrefix, $"[Zophar] Parsed album: '{album.Name}' ({console})");
                 }
 
                 // Remove duplicates by ID
@@ -136,12 +129,10 @@ namespace UniPlaySong.Downloaders
                 // Filter out generic console entries (e.g., just "NES" or "SNES" without game name)
                 // These are platform pages, not actual game soundtracks
                 albums = albums.Where(a => !IsGenericConsolePage(a.Name, gameName)).ToList();
-
-                Logger.Info($"[Zophar] Result: '{gameName}' → {albums.Count} album(s)");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"[Zophar] Cancelled: '{gameName}'");
+                // Search cancelled
             }
             catch (Exception ex)
             {
@@ -169,7 +160,6 @@ namespace UniPlaySong.Downloaders
                 }
 
                 var albumUrl = $"{ZopharBaseUrl}{album.Id}";
-                Logger.Info($"[Zophar] Loading album: {albumUrl}");
 
                 var htmlDoc = _htmlWeb.LoadFromWebAsync(albumUrl, cancellationToken).GetAwaiter().GetResult();
 
@@ -262,12 +252,10 @@ namespace UniPlaySong.Downloaders
                         }
                     }
                 }
-
-                Logger.Info($"[Zophar] Found {songs.Count} songs in album '{album.Name}'");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"[Zophar] Album loading cancelled for: {album?.Name}");
+                // Album loading cancelled
             }
             catch (Exception ex)
             {
@@ -366,7 +354,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (Exception ex)
             {
-                Logger.DebugIf(LogPrefix, $"[Zophar] Error parsing track row: {ex.Message}");
+                // Error parsing track row - skip
                 return null;
             }
         }
@@ -430,7 +418,7 @@ namespace UniPlaySong.Downloaders
             }
             catch (Exception ex)
             {
-                Logger.DebugIf(LogPrefix, $"[Zophar] Error parsing JavaScript tracks: {ex.Message}");
+                // Error parsing JavaScript tracks - skip
             }
 
             return songs;
@@ -506,8 +494,6 @@ namespace UniPlaySong.Downloaders
                                   ZopharFileBaseUrl + downloadUrl.TrimStart('/');
                 }
 
-                Logger.Info($"[Zophar] Downloading: {downloadUrl}");
-
                 // Ensure directory exists
                 var directory = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(directory))
@@ -531,7 +517,6 @@ namespace UniPlaySong.Downloaders
                     var fileInfo = new FileInfo(path);
                     if (fileInfo.Length > 0)
                     {
-                        Logger.Info($"[Zophar] Downloaded: {song.Name} ({fileInfo.Length} bytes)");
                         return true;
                     }
                     else
@@ -549,7 +534,6 @@ namespace UniPlaySong.Downloaders
             }
             catch (OperationCanceledException)
             {
-                Logger.Info($"[Zophar] Download cancelled: {song?.Name}");
                 return false;
             }
             catch (HttpRequestException ex)

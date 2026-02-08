@@ -12,9 +12,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// Desktop top panel media controls ViewModel (play/pause, skip).
-    /// </summary>
+    // Desktop top panel media controls ViewModel (play/pause, skip).
     public class TopPanelMediaControlViewModel
     {
         private readonly Func<IMusicPlaybackService> _getPlaybackService;
@@ -26,9 +24,11 @@ namespace UniPlaySong.DeskMediaControl
         private TopPanelItem _playPauseItem;
         private TopPanelItem _skipItem;
         private TopPanelItem _nowPlayingItem;
+        private TopPanelItem _spectrumItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
         private NowPlayingPanel _nowPlayingPanel;
+        private SpectrumVisualizerControl _spectrumVisualizer;
         private SongMetadataService _metadataService;
 
         public TopPanelItem PlayPauseItem => _playPauseItem;
@@ -44,6 +44,12 @@ namespace UniPlaySong.DeskMediaControl
             {
                 yield return _playPauseItem;
                 yield return _skipItem;
+            }
+
+            // Spectrum visualizer (between controls and now playing)
+            if (settings?.ShowSpectrumVisualizer == true && _spectrumItem != null)
+            {
+                yield return _spectrumItem;
             }
 
             // Only include Now Playing panel if setting is enabled
@@ -67,6 +73,7 @@ namespace UniPlaySong.DeskMediaControl
             _handleError = handleError;
 
             InitializeTopPanelItems();
+            InitializeSpectrumVisualizer();
             InitializeNowPlayingPanel();
             SubscribeToEvents(_getPlaybackService());
         }
@@ -81,7 +88,8 @@ namespace UniPlaySong.DeskMediaControl
                 Text = MediaControlIcons.Play,
                 FontSize = 18,
                 FontFamily = icoFont,
-                FontWeight = FontWeights.Bold
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, -12, 0) // Reduce spacing to skip button
             };
 
             _playPauseItem = new TopPanelItem
@@ -99,7 +107,8 @@ namespace UniPlaySong.DeskMediaControl
                 FontSize = 18,
                 FontFamily = icoFont,
                 FontWeight = FontWeights.Bold,
-                Opacity = 0.3 // Start greyed out until 2+ songs available
+                Opacity = 0.3, // Start greyed out until 2+ songs available
+                Margin = new Thickness(-12, 0, 0, 0) // Reduce spacing from play/pause button
             };
 
             _skipItem = new TopPanelItem
@@ -109,6 +118,27 @@ namespace UniPlaySong.DeskMediaControl
                 Visible = true, // Always visible, but greyed out when disabled
                 Activated = OnSkipActivated
             };
+        }
+
+        private void InitializeSpectrumVisualizer()
+        {
+            try
+            {
+                _spectrumVisualizer = new SpectrumVisualizerControl();
+                _spectrumVisualizer.SetSettingsProvider(_getSettings);
+                _spectrumVisualizer.Margin = new Thickness(-8, 0, 0, 0); // Reduce spacing from skip button
+                _spectrumItem = new TopPanelItem
+                {
+                    Icon = _spectrumVisualizer,
+                    Title = "UniPlaySong: Spectrum Visualizer",
+                    Visible = true
+                };
+                _log?.Invoke("TopPanel: Spectrum visualizer initialized");
+            }
+            catch (System.Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error initializing spectrum visualizer: {ex.Message}");
+            }
         }
 
         private void InitializeNowPlayingPanel()
@@ -193,9 +223,7 @@ namespace UniPlaySong.DeskMediaControl
             playbackService.OnSongCountChanged += UpdateSkipVisibility;
         }
 
-        /// <summary>
-        /// Re-subscribe to events after playback service recreation (e.g., Live Effects toggle).
-        /// </summary>
+        // Re-subscribe to events after playback service recreation (e.g., Live Effects toggle).
         public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
         {
             SubscribeToEvents(newPlaybackService);
@@ -305,6 +333,7 @@ namespace UniPlaySong.DeskMediaControl
                     _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
 
                     UpdateSkipState(playbackService);
+                    _spectrumVisualizer?.SetActive(isPlaying);
                 }
                 catch (Exception ex)
                 {

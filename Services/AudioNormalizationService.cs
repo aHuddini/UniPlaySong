@@ -14,9 +14,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for normalizing audio files using FFmpeg loudnorm filter (two-pass)
-    /// </summary>
+    // Audio normalization using FFmpeg loudnorm filter (two-pass)
     public class AudioNormalizationService : INormalizationService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -36,12 +34,6 @@ namespace UniPlaySong.Services
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
-        /// <summary>
-        /// Checks if a file is already normalized (has the normalization suffix).
-        /// </summary>
-        /// <param name="filePath">The file path to check.</param>
-        /// <param name="suffix">The normalization suffix to look for.</param>
-        /// <returns>True if the file is already normalized; otherwise, false.</returns>
         private bool IsFileAlreadyNormalized(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
@@ -51,21 +43,13 @@ namespace UniPlaySong.Services
             return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Builds output filename by simply appending the normalization suffix.
-        /// Simple approach: always append suffix to current filename.
-        /// Examples:
-        /// - "song.mp3" -> "song-normalized.mp3"
-        /// - "song-trimmed.mp3" -> "song-trimmed-normalized.mp3"
-        /// </summary>
+        // Appends normalization suffix: "song.mp3" -> "song-normalized.mp3"
         private string BuildNormalizedFileName(string baseFileName, string normalizeSuffix)
         {
             return $"{baseFileName}{normalizeSuffix}";
         }
 
-        /// <summary>
-        /// Gets the duration of an audio file in seconds using FFmpeg
-        /// </summary>
+        // Gets audio duration in seconds using FFmpeg
         private async Task<double?> GetAudioDurationAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken)
         {
             try
@@ -121,7 +105,6 @@ namespace UniPlaySong.Services
                         var seconds = double.Parse(durationMatch.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture);
 
                         var totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                        Logger.Debug($"Detected audio duration: {totalSeconds:F2} seconds ({hours:D2}:{minutes:D2}:{seconds:F2})");
                         return totalSeconds;
                     }
                 }
@@ -134,9 +117,7 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        /// <summary>
-        /// Sanitizes filename by removing or replacing problematic characters for FFmpeg
-        /// </summary>
+        // Replace problematic characters for FFmpeg command-line parsing
         private string SanitizeFilenameForFFmpeg(string fileName)
         {
             // Characters that commonly cause issues with FFmpeg command-line parsing
@@ -157,40 +138,12 @@ namespace UniPlaySong.Services
             return sanitized;
         }
 
-        /// <summary>
-        /// Checks if a filename contains problematic characters for FFmpeg
-        /// </summary>
         private bool HasProblematicCharacters(string fileName)
         {
             var problematicChars = new[] { '[', ']', '(', ')', '{', '}', '\'', '"', '`', '&', '|', ';', '<', '>', '!', '$', '#', '%' };
             return problematicChars.Any(ch => fileName.Contains(ch));
         }
 
-        /// <summary>
-        /// Log normalization verification info (before/after loudness measurements)
-        /// </summary>
-        private void LogNormalizationVerification(string filePath, LoudnormMeasurements before, LoudnormMeasurements after, double targetLoudness)
-        {
-            try
-            {
-                Logger.Info($"=== Normalization Verification for: {Path.GetFileName(filePath)} ===");
-                Logger.Info($"Target Loudness: {targetLoudness:F1} LUFS");
-                Logger.Info($"Before Normalization:");
-                Logger.Info($"  - Integrated Loudness (I): {before.MeasuredI:F3} LUFS");
-                Logger.Info($"  - True Peak (TP): {before.MeasuredTP:F3} dBTP");
-                Logger.Info($"  - Loudness Range (LRA): {before.MeasuredLRA:F3} LU");
-                
-                // After normalization, we can't easily measure without re-running analysis
-                Logger.Info($"After Normalization (Target):");
-                Logger.Info($"  - Integrated Loudness (I): {targetLoudness:F1} LUFS (target)");
-                Logger.Info($"  - True Peak (TP): Should be within acceptable range");
-                Logger.Info($"=== Change: {Math.Abs(before.MeasuredI - targetLoudness):F3} LUFS difference ===");
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, "Error logging normalization verification");
-            }
-        }
 
         public async Task<bool> NormalizeFileAsync(
             string filePath,
@@ -204,18 +157,15 @@ namespace UniPlaySong.Services
             return await NormalizeFileInternalAsync(filePath, settings, progress, cancellationToken);
         }
 
-        /// <summary>
-        /// Stops music playback if currently playing. Used before normalization to prevent file locking.
-        /// </summary>
+        // Stop playback before normalization to prevent file locking
         private async Task StopPlaybackIfNeededAsync(CancellationToken cancellationToken)
         {
             try
             {
                 if (_playbackService != null && _playbackService.IsPlaying)
                 {
-                    Logger.Info("Stopping music playback before normalization");
                     _playbackService.Stop();
-                    await Task.Delay(200, cancellationToken);
+                    await Task.Delay(200, cancellationToken); // Brief delay to ensure file handle is released
                 }
             }
             catch (Exception ex)
@@ -224,9 +174,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Internal normalization method that doesn't stop playback (for use in parallel bulk operations).
-        /// </summary>
+        // Internal normalization (no playback stop) for parallel bulk operations
         private async Task<bool> NormalizeFileInternalAsync(
             string filePath,
             NormalizationSettings settings,
@@ -241,7 +189,6 @@ namespace UniPlaySong.Services
 
             if (settings.SkipAlreadyNormalized && IsFileAlreadyNormalized(filePath, settings.NormalizationSuffix))
             {
-                Logger.Info($"Skipping already-normalized file: {filePath}");
                 progress?.Report(new NormalizationProgress
                 {
                     CurrentFile = Path.GetFileName(filePath),
@@ -277,7 +224,6 @@ namespace UniPlaySong.Services
                     var sanitizedName = SanitizeFilenameForFFmpeg(fileNameWithoutExt);
                     var sanitizedPath = Path.Combine(directory, $"{sanitizedName}{extension}");
 
-                    Logger.Info($"Renaming file with problematic characters: '{fileName}' -> '{Path.GetFileName(sanitizedPath)}'");
                     progress?.Report(new NormalizationProgress
                     {
                         CurrentFile = fileName,
@@ -289,7 +235,6 @@ namespace UniPlaySong.Services
                         File.Move(filePath, sanitizedPath);
                         workingFilePath = sanitizedPath;
                         fileName = Path.GetFileName(sanitizedPath);
-                        Logger.Info($"File renamed successfully to: {fileName}");
                     }
                     catch (Exception ex)
                     {
@@ -339,8 +284,6 @@ namespace UniPlaySong.Services
                     return false;
                 }
 
-                Logger.Info($"Before normalization - File: {fileName}, Measured I: {beforeMeasurements.MeasuredI:F3} LUFS, Target: {settings.TargetLoudness:F1} LUFS");
-
                 // Second pass: Apply normalization
                 progress?.Report(new NormalizationProgress
                 {
@@ -349,12 +292,7 @@ namespace UniPlaySong.Services
                 });
 
                 var success = await ApplyNormalizationAsync(workingFilePath, settings, beforeMeasurements, cancellationToken);
-                
-                if (success)
-                {
-                    Logger.Info($"Normalization completed - File: {fileName}, Target achieved: {settings.TargetLoudness:F1} LUFS");
-                }
-                
+
                 progress?.Report(new NormalizationProgress
                 {
                     CurrentFile = fileName,
@@ -396,7 +334,6 @@ namespace UniPlaySong.Services
             // Determine parallelism: use processor count but cap at 3 for safety
             // FFmpeg is CPU-intensive, so too many parallel processes can degrade performance
             int maxParallelism = Math.Min(Environment.ProcessorCount, 3);
-            Logger.Info($"Starting parallel bulk normalization: {result.TotalFiles} files with {maxParallelism} parallel threads");
 
             // Thread-safe collections for tracking results
             var failedFiles = new ConcurrentBag<string>();
@@ -473,7 +410,7 @@ namespace UniPlaySong.Services
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Normalization cancelled by user");
+                // User cancelled the operation
             }
 
             // Copy results to return object
@@ -494,7 +431,6 @@ namespace UniPlaySong.Services
                 Status = $"Complete: {result.SuccessCount} succeeded, {result.FailureCount} failed"
             });
 
-            Logger.Info($"Parallel bulk normalization complete: {result.SuccessCount} succeeded, {result.FailureCount} failed");
             return result;
         }
 
@@ -550,13 +486,10 @@ namespace UniPlaySong.Services
                 return result;
             }
 
-            Logger.Info($"Starting restoration: {result.TotalFiles} normalized files");
-
             for (int i = 0; i < normalizedFiles.Count; i++)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    Logger.Info("Restore cancelled by user");
                     break;
                 }
 
@@ -619,7 +552,6 @@ namespace UniPlaySong.Services
                     {
                         File.Delete(normalizedFilePath);
                         File.Move(preservedOriginalPath, originalFilePath);
-                        Logger.Info($"Restored original file: {originalFilePath} (from preserved originals: {preservedOriginalPath})");
                         result.SuccessCount++;
                         progress?.Report(new NormalizationProgress
                         {
@@ -657,13 +589,10 @@ namespace UniPlaySong.Services
                 Status = $"Complete: {result.SuccessCount} restored, {result.FailureCount} failed"
             });
 
-            Logger.Info($"Restore complete: {result.SuccessCount} restored, {result.FailureCount} failed");
             return result;
         }
 
-        /// <summary>
-        /// First pass: Analyze audio to get loudness measurements
-        /// </summary>
+        // First pass: analyze audio to get loudness measurements
         private async Task<LoudnormMeasurements> AnalyzeAudioAsync(
             string filePath,
             NormalizationSettings settings,
@@ -730,16 +659,11 @@ namespace UniPlaySong.Services
                     }
 
                     // Parse JSON output from stderr (FFmpeg outputs loudnorm JSON to stderr)
-                    // Log the full output for debugging
-                    Logger.Debug($"FFmpeg analysis stderr output:\n{standardError}");
-                    Logger.Debug($"FFmpeg analysis stdout output:\n{standardOutput}");
-                    
                     return ParseLoudnormJson(standardError);
                 }
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Audio analysis cancelled");
                 throw;
             }
             catch (Exception ex)
@@ -749,12 +673,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Parses loudnorm JSON output from FFmpeg.
-        /// FFmpeg outputs JSON directly to stderr with root-level properties.
-        /// </summary>
-        /// <param name="jsonOutput">The JSON output string from FFmpeg stderr.</param>
-        /// <returns>Parsed loudness measurements, or null if parsing fails.</returns>
+        // Parse loudnorm JSON from FFmpeg stderr (root-level properties)
         private LoudnormMeasurements ParseLoudnormJson(string jsonOutput)
         {
             try
@@ -770,8 +689,6 @@ namespace UniPlaySong.Services
                 }
 
                 var jsonString = jsonOutput.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                Logger.Debug($"Extracted JSON string: {jsonString}");
-                
                 var json = JObject.Parse(jsonString);
 
                 // FFmpeg loudnorm JSON structure (root level, not nested under "input")
@@ -801,8 +718,6 @@ namespace UniPlaySong.Services
                         : 0
                 };
 
-                Logger.Info($"Parsed loudnorm measurements - I: {measurements.MeasuredI}, TP: {measurements.MeasuredTP}, LRA: {measurements.MeasuredLRA}, Thresh: {measurements.MeasuredThreshold}, Offset: {measurements.Offset}");
-                
                 return measurements;
             }
             catch (Exception ex)
@@ -812,10 +727,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Second pass: Applies normalization using measurements from first pass.
-        /// Creates normalized file and optionally preserves original.
-        /// </summary>
+        // Second pass: apply normalization using first-pass measurements
         private async Task<bool> ApplyNormalizationAsync(
             string filePath,
             NormalizationSettings settings,
@@ -882,8 +794,6 @@ namespace UniPlaySong.Services
 
                 // Use 48kHz sample rate (recommended for loudnorm filter)
                 var args = $"-i \"{filePath}\" -af \"{loudnormFilter}\" -ar 48000 -c:a {settings.AudioCodec} -y \"{tempPath}\"";
-                
-                Logger.Info($"Normalization command: {settings.FFmpegPath} {args}");
 
                 var processInfo = new ProcessStartInfo
                 {
@@ -938,8 +848,6 @@ namespace UniPlaySong.Services
                         return false;
                     }
                     
-                    Logger.Debug($"Normalization process completed successfully. Output: {standardOutput}");
-
                     if (!File.Exists(tempPath) || new FileInfo(tempPath).Length == 0)
                     {
                         Logger.Error($"Normalized file is missing or empty: {tempPath}");
@@ -953,8 +861,7 @@ namespace UniPlaySong.Services
                         {
                             // Space saver mode: Replace original file directly
                             File.Delete(filePath);
-                            File.Move(tempPath, finalOutputPath); // Move normalized file to original location
-                            Logger.Info($"Successfully normalized file (replaced original): {finalOutputPath}");
+                            File.Move(tempPath, finalOutputPath);
                         }
                         else
                         {
@@ -965,15 +872,12 @@ namespace UniPlaySong.Services
                                 File.Delete(finalOutputPath);
                             }
                             File.Move(tempPath, finalOutputPath);
-                            Logger.Info($"Successfully created normalized file: {finalOutputPath}");
-                            
                             // Now move original file to preserved originals folder
                             if (File.Exists(preservedOriginalPath))
                             {
                                 File.Delete(preservedOriginalPath);
                             }
                             File.Move(filePath, preservedOriginalPath);
-                            Logger.Info($"Moved original file to preserved originals: {preservedOriginalPath}");
                         }
                         return true;
                     }
@@ -988,7 +892,6 @@ namespace UniPlaySong.Services
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Normalization cancelled");
                 throw;
             }
             catch (Exception ex)

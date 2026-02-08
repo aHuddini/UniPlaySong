@@ -19,6 +19,7 @@ namespace UniPlaySong.Monitors
     {
         private static IPlayniteAPI playniteApi;
         private static UniPlaySongSettings settings;
+        private static bool _classHandlerRegistered;
 
         static private DispatcherTimer timer;
 
@@ -44,15 +45,33 @@ namespace UniPlaySong.Monitors
             playniteApi = api;
             MediaElementsMonitor.settings = settings;
 
-            Logger.Info($"[UniPlaySong] MediaElementsMonitor.Attach() called - VideoIsPlaying initial value: {settings.VideoIsPlaying}");
+            // RegisterClassHandler is permanent (no unregister API) — only call once
+            if (!_classHandlerRegistered)
+            {
+                EventManager.RegisterClassHandler(typeof(MediaElement), MediaElement.MediaOpenedEvent, new RoutedEventHandler(MediaElement_Opened));
+                _classHandlerRegistered = true;
+            }
 
-            EventManager.RegisterClassHandler(typeof(MediaElement), MediaElement.MediaOpenedEvent, new RoutedEventHandler(MediaElement_Opened));
+            // Reuse existing timer to prevent orphaned timers on repeated Attach() calls
+            if (timer == null)
+            {
+                timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(100);
+                timer.Tick += Timer_Tick;
+            }
+        }
 
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(100);
-            timer.Tick += Timer_Tick;
-            
-            Logger.Info($"[UniPlaySong] MediaElementsMonitor: Timer created (interval: 10ms), waiting for MediaElement_Opened to start");
+        /// <summary>
+        /// Updates the settings reference to the current instance.
+        /// Called when Playnite reloads settings (e.g., after saving any plugin's settings).
+        /// Without this, the monitor writes VideoIsPlaying to a stale/dead settings object.
+        /// </summary>
+        static public void UpdateSettings(UniPlaySongSettings newSettings)
+        {
+            if (newSettings != null)
+            {
+                settings = newSettings;
+            }
         }
 
         public static List<MediaElement> GetAllMediaElements(DependencyObject parent)
@@ -123,16 +142,6 @@ namespace UniPlaySong.Monitors
 
             if (settings.VideoIsPlaying != someIsPlaying)
             {
-                Logger.Info($"[UniPlaySong] MediaElementsMonitor: VideoIsPlaying changing from {settings.VideoIsPlaying} to {someIsPlaying} (MediaElements count: {mediaElements.Count}, Playing count: {playing.Count})");
-                
-                if (someIsPlaying)
-                {
-                    foreach (var p in playing)
-                    {
-                        Logger.Info($"[UniPlaySong] Blocking Element: Source='{p.Source}', Duration='{p.NaturalDuration}', Pos='{p.Position}'");
-                    }
-                }
-                
                 settings.VideoIsPlaying = someIsPlaying;
             }
 
@@ -144,20 +153,12 @@ namespace UniPlaySong.Monitors
             if (mediaElementPositions.Count == 0)
             {
                 timer.Stop();
-                if (settings.VideoIsPlaying)
-                {
-                    Logger.Info($"[UniPlaySong] MediaElementsMonitor: All media elements removed, setting VideoIsPlaying to false");
-                }
                 settings.VideoIsPlaying = false;
             }
         }
 
         static private void MediaElement_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is MediaElement mediaElement)
-            {
-                Logger.Info($"[UniPlaySong] MediaElementsMonitor: MediaElement opened - Source: {mediaElement.Source?.ToString() ?? "null"}, HasAudio: {mediaElement.HasAudio}, IsVisible: {mediaElement.IsVisible}, NaturalDuration: {mediaElement.NaturalDuration}, Current VideoIsPlaying: {settings.VideoIsPlaying}");
-            }
             Timer_Tick(sender, e);
             // Always start timer when a MediaElement is detected (matches PlayniteSound pattern)
             timer.Start();

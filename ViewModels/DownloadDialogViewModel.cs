@@ -760,7 +760,7 @@ namespace UniPlaySong.ViewModels
             {
                 // Default to .mp3 for previews (most common format)
                 // The actual file extension will be determined during download
-                extension = ".mp3";
+                extension = Constants.DefaultAudioExtension;
             }
 
             return System.IO.Path.Combine(tempDir, hash + extension);

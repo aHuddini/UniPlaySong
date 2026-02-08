@@ -13,9 +13,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Client for interacting with YouTube's internal API
-    /// </summary>
+    // Client for YouTube's internal API (search + playlist retrieval)
     public class YouTubeClient
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -55,9 +53,7 @@ namespace UniPlaySong.Downloaders
             _errorHandler = errorHandler;
         }
 
-        /// <summary>
-        /// Searches YouTube for playlists matching the query
-        /// </summary>
+        // Searches YouTube for playlists matching the query
         public List<YouTubeItem> Search(string searchQuery, int maxResults = 20, CancellationToken cancellationToken = default)
         {
             var results = new List<YouTubeItem>();
@@ -99,9 +95,7 @@ namespace UniPlaySong.Downloaders
             return results;
         }
 
-        /// <summary>
-        /// Gets all videos from a YouTube playlist
-        /// </summary>
+        // Gets all videos from a YouTube playlist
         public List<YouTubeItem> GetPlaylist(string playlistId, CancellationToken cancellationToken = default)
         {
             var results = new List<YouTubeItem>();
@@ -404,9 +398,7 @@ namespace UniPlaySong.Downloaders
         }
     }
 
-    /// <summary>
-    /// Represents a YouTube item (playlist or video)
-    /// </summary>
+    // Represents a YouTube playlist or video item
     public class YouTubeItem
     {
         public string Id { get; set; }
@@ -416,14 +408,7 @@ namespace UniPlaySong.Downloaders
         public int Index { get; set; }
         public uint Count { get; set; }
 
-        /// <summary>
-        /// YouTube channel ID (for playlists)
-        /// </summary>
         public string ChannelId { get; set; }
-
-        /// <summary>
-        /// YouTube channel name (for playlists)
-        /// </summary>
         public string ChannelName { get; set; }
     }
 }

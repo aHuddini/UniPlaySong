@@ -18,9 +18,7 @@ using UniPlaySong.Views;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for showing download dialogs
-    /// </summary>
+    // Service for showing download dialogs
     public class DownloadDialogService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -1110,10 +1108,7 @@ namespace UniPlaySong.Services
             return selectedSong;
         }
 
-        /// <summary>
-        /// Shows album selection dialog for default music downloads
-        /// Unlike regular album selection, this doesn't auto-search - user types game name in search box
-        /// </summary>
+        // Album selection for default music (no auto-search - user types game name)
         private Album ShowAlbumSelectionDialogForDefaultMusic(Source source)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -1225,10 +1220,7 @@ namespace UniPlaySong.Services
             return selectedAlbum;
         }
 
-        /// <summary>
-        /// Shows a dialog to download audio from a specific YouTube URL
-        /// </summary>
-        /// <param name="game">The game to download music for</param>
+        // Download audio from a specific YouTube URL for a game
         public void ShowDownloadFromUrlDialog(Game game)
         {
             if (game == null)
@@ -1351,9 +1343,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Normalize an individual song (desktop mode)
-        /// </summary>
+        // Normalize an individual song (desktop mode)
         public void ShowNormalizeIndividualSongProgress(Game game, string selectedFile)
         {
             if (game == null || string.IsNullOrEmpty(selectedFile))
@@ -1392,9 +1382,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Silence-trim an individual song (desktop mode)
-        /// </summary>
+        // Silence-trim an individual song (desktop mode)
         public void ShowTrimIndividualSongProgress(Game game, string selectedFile)
         {
             if (game == null || string.IsNullOrEmpty(selectedFile))
@@ -1433,10 +1421,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Automatically normalizes downloaded files if auto-normalize setting is enabled.
-        /// Called after successful downloads. Public so controller dialog can also use it.
-        /// </summary>
+        // Auto-normalize downloaded files if setting is enabled (public for controller dialog)
         public void AutoNormalizeDownloadedFiles(List<string> downloadedFiles)
         {
             if (downloadedFiles == null || downloadedFiles.Count == 0)
@@ -1544,14 +1529,7 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// </summary>
-        /// <param name="games">Games to download music for</param>
-        /// <param name="source">Download source</param>
-        /// <param name="overwrite">Whether to overwrite existing music</param>
-        /// <param name="maxConcurrentDownloads">Maximum concurrent downloads</param>
-        /// <returns>List of downloaded file paths for auto-normalization</returns>
+        // Batch download with parallel execution, returns downloaded file paths
         public List<string> ShowBatchDownloadDialog(
             List<Game> games,
             Source source,
@@ -1562,10 +1540,7 @@ namespace UniPlaySong.Services
             return result?.DownloadedFiles ?? new List<string>();
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// Returns full results including failed games for retry prompting
-        /// </summary>
+        // Batch download returning full results including failed games for retry
         public BatchDownloadResult ShowBatchDownloadDialogWithResults(
             List<Game> games,
             Source source,
@@ -1575,16 +1550,7 @@ namespace UniPlaySong.Services
             return ShowBatchDownloadDialogWithResults(games, source, overwrite, maxConcurrentDownloads, null);
         }
 
-        /// <summary>
-        /// Shows the batch download progress dialog and performs parallel downloads
-        /// Returns full results including failed games for retry prompting
-        /// Optionally resumes playback for the current game when its download completes
-        /// </summary>
-        /// <param name="games">Games to download music for</param>
-        /// <param name="source">Download source</param>
-        /// <param name="overwrite">Whether to overwrite existing music</param>
-        /// <param name="maxConcurrentDownloads">Max concurrent downloads</param>
-        /// <param name="currentGame">Currently selected game - playback resumes when this game's download completes</param>
+        // Batch download with optional playback resume for currentGame when its download completes
         public BatchDownloadResult ShowBatchDownloadDialogWithResults(
             List<Game> games,
             Source source,
@@ -1610,7 +1576,7 @@ namespace UniPlaySong.Services
             bool isPlayingDownloadedMusic = false;
             Game lastPlayedGame = null; // Track last played to avoid immediate repeats
 
-            Logger.Info($"[BatchDownloadDialog] Starting for {games.Count} games, source: {source}, concurrent: {maxConcurrentDownloads}, currentGame: {currentGame?.Name ?? "none"}");
+            // Starting batch download
 
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
@@ -1651,12 +1617,10 @@ namespace UniPlaySong.Services
                     {
                         if (_playbackService.IsPaused)
                         {
-                            Logger.Info("[BatchDownloadDialog] Resuming music playback");
                             _playbackService.Resume();
                         }
                         else
                         {
-                            Logger.Info("[BatchDownloadDialog] Pausing music playback");
                             _playbackService.Pause();
                         }
                     }
@@ -1671,7 +1635,6 @@ namespace UniPlaySong.Services
                 // Handle window closing - capture results if not already done
                 window.Closing += (s, e) =>
                 {
-                    Logger.Info($"[BatchDownloadDialog] Window closing, allResults populated: {allResults != null}");
                 };
 
                 // Helper to play a random game from the downloaded queue
@@ -1694,7 +1657,6 @@ namespace UniPlaySong.Services
 
                     if (gameToPlay != null)
                     {
-                        Logger.Info($"[BatchDownloadDialog] Playing: '{gameToPlay.Name}' (queue: {downloadedGamesForPlayback.Count})");
                         isPlayingDownloadedMusic = true;
                         // Must dispatch to UI thread - OnSongEnded fires from media player thread
                         System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
@@ -1746,7 +1708,6 @@ namespace UniPlaySong.Services
                                 if (currentGame != null && !playbackResumedForCurrentGame &&
                                     game != null && game.Id == currentGame.Id)
                                 {
-                                    Logger.Info($"[BatchDownloadDialog] Current game '{gameName}' downloaded - playing");
                                     playbackResumedForCurrentGame = true;
                                     isPlayingDownloadedMusic = true;
                                     _playbackService?.PlayGameMusic(currentGame, _settingsService?.Current, forceReload: true);
@@ -1754,7 +1715,6 @@ namespace UniPlaySong.Services
                                 // Otherwise start random queue if not already playing
                                 else if (!isPlayingDownloadedMusic)
                                 {
-                                    Logger.Info($"[BatchDownloadDialog] First download '{gameName}' - starting music queue");
                                     playRandomDownloadedGame();
                                 }
                             }));
@@ -1774,11 +1734,8 @@ namespace UniPlaySong.Services
                         var failCount = results.Count(r => !r.Success && !r.WasSkipped);
                         var skipCount = results.Count(r => r.WasSkipped);
 
-                        Logger.Info($"[BatchDownloadDialog] Download complete: {successCount} succeeded, {failCount} failed, {skipCount} skipped");
-
                         // Don't auto-close - let user review results and close manually
                         // The UI will show "Close" button and "Review Downloads" button when complete
-                        Logger.Info("[BatchDownloadDialog] Downloads complete - waiting for user to close dialog");
 
                         // Force final UI update to ensure Close/Review buttons appear immediately
                         System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
@@ -1791,7 +1748,6 @@ namespace UniPlaySong.Services
                     }
                     catch (OperationCanceledException)
                     {
-                        Logger.Info("[BatchDownloadDialog] Cancelled by user");
                         resultsReady.Set();
                     }
                     catch (Exception ex)
@@ -1822,15 +1778,11 @@ namespace UniPlaySong.Services
             }
 
             // Process results after dialog closes
-            Logger.Info($"[BatchDownloadDialog] Processing results after dialog close, allResults={allResults?.Count ?? -1}");
-
             if (allResults != null)
             {
                 batchResult.SuccessCount = allResults.Count(r => r.Success);
                 batchResult.FailedCount = allResults.Count(r => !r.Success && !r.WasSkipped);
                 batchResult.SkippedCount = allResults.Count(r => r.WasSkipped);
-
-                Logger.Info($"[BatchDownloadDialog] Results breakdown: success={batchResult.SuccessCount}, failed={batchResult.FailedCount}, skipped={batchResult.SkippedCount}");
 
                 foreach (var result in allResults)
                 {
@@ -1841,11 +1793,8 @@ namespace UniPlaySong.Services
                     else if (!result.Success && !result.WasSkipped)
                     {
                         batchResult.FailedGames.Add(result);
-                        Logger.Info($"[BatchDownloadDialog] Adding failed game: '{result.Game?.Name}' - {result.ErrorMessage}");
                     }
                 }
-
-                Logger.Info($"[BatchDownloadDialog] Final: {batchResult.DownloadedFiles.Count} files, {batchResult.FailedGames.Count} failed games");
             }
             else
             {
@@ -1859,32 +1808,21 @@ namespace UniPlaySong.Services
                 var musicDir = _fileService.GetGameMusicDirectory(currentGame);
                 if (Directory.Exists(musicDir) && Directory.GetFiles(musicDir, "*.mp3").Length > 0)
                 {
-                    Logger.Info($"[BatchDownloadDialog] Batch complete - resuming playback for current game '{currentGame.Name}'");
                     var settings = _settingsService?.Current;
                     _playbackService?.PlayGameMusic(currentGame, settings, forceReload: true);
-                }
-                else
-                {
-                    Logger.Info($"[BatchDownloadDialog] Batch complete - current game '{currentGame.Name}' still has no music");
                 }
             }
 
             return batchResult;
         }
 
-        /// <summary>
-        /// Prompts user for retry options after batch download and handles retries
-        /// </summary>
-        /// <param name="failedGames">List of failed game download results</param>
-        /// <returns>List of additionally downloaded file paths from retries</returns>
+        // Prompt user for retry options after batch download failures
         public List<string> PromptAndRetryFailedDownloads(List<GameDownloadResult> failedGames)
         {
             var additionalDownloads = new List<string>();
 
             if (failedGames == null || failedGames.Count == 0)
                 return additionalDownloads;
-
-            Logger.Info($"[RetryPrompt] {failedGames.Count} failed downloads to retry");
 
             // Build message
             var message = $"{failedGames.Count} game(s) failed to find music:\n\n";
@@ -1914,40 +1852,31 @@ namespace UniPlaySong.Services
 
             if (selection == null || selection.Title == "Skip")
             {
-                Logger.Info("[RetryPrompt] User chose to skip retries");
                 return additionalDownloads;
             }
 
             if (selection.Title == "Auto-retry with broader search")
             {
-                Logger.Info("[RetryPrompt] User chose auto-retry with broader search");
                 additionalDownloads = AutoRetryWithBroaderSearch(failedGames);
             }
             else if (selection.Title == "Manual search for each game")
             {
-                Logger.Info("[RetryPrompt] User chose manual search");
                 additionalDownloads = ManualRetryForFailedGames(failedGames);
             }
 
             return additionalDownloads;
         }
 
-        /// <summary>
-        /// Auto-retry failed downloads with broader/less restrictive search
-        /// Uses the same Material Design batch download dialog for consistency
-        /// </summary>
+        // Auto-retry failed downloads with broader search parameters
         private List<string> AutoRetryWithBroaderSearch(List<GameDownloadResult> failedGames)
         {
             var downloadedFiles = new List<string>();
-
-            Logger.Info($"[BroaderRetry] Starting broader search retry for {failedGames.Count} games");
 
             // Extract Game objects from failed results
             var gamesToRetry = failedGames.Select(f => f.Game).Where(g => g != null).ToList();
 
             if (gamesToRetry.Count == 0)
             {
-                Logger.Info("[BroaderRetry] No valid games to retry");
                 return downloadedFiles;
             }
 
@@ -1958,8 +1887,6 @@ namespace UniPlaySong.Services
             {
                 downloadedFiles.AddRange(batchResult.DownloadedFiles);
             }
-
-            Logger.Info($"[BroaderRetry] Complete: {downloadedFiles.Count} additional downloads");
 
             if (downloadedFiles.Count > 0)
             {
@@ -1978,9 +1905,7 @@ namespace UniPlaySong.Services
             return downloadedFiles;
         }
 
-        /// <summary>
-        /// Shows batch download dialog with broader/looser matching for retry operations
-        /// </summary>
+        // Batch download dialog with broader matching for retry operations
         private BatchDownloadResult ShowBatchDownloadDialogWithBroaderSearch(List<Game> games)
         {
             var batchResult = new BatchDownloadResult();
@@ -1989,8 +1914,6 @@ namespace UniPlaySong.Services
             {
                 return batchResult;
             }
-
-            Logger.Info($"[BroaderRetryDialog] Starting broader search for {games.Count} games");
 
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
@@ -2128,8 +2051,6 @@ namespace UniPlaySong.Services
                         var successCount = results.Count(r => r.Success);
                         var failCount = results.Count(r => !r.Success && !r.WasSkipped);
 
-                        Logger.Info($"[BroaderRetryDialog] Complete: {successCount} succeeded, {failCount} failed");
-
                         // Close dialog
                         System.Windows.Application.Current?.Dispatcher?.Invoke(new Action(() =>
                         {
@@ -2140,7 +2061,6 @@ namespace UniPlaySong.Services
                     }
                     catch (OperationCanceledException)
                     {
-                        Logger.Info("[BroaderRetryDialog] Cancelled by user");
                         allResults = results;
                         resultsReady.Set();
                     }
@@ -2186,9 +2106,7 @@ namespace UniPlaySong.Services
             return batchResult;
         }
 
-        /// <summary>
-        /// Internal method to retry a single game with broader search parameters
-        /// </summary>
+        // Retry a single game with broader search parameters
         private string RetryWithBroaderSearchInternal(Game game, CancellationToken cancellationToken)
         {
             // Get albums with cache bypass to ensure fresh results
@@ -2197,7 +2115,6 @@ namespace UniPlaySong.Services
 
             if (albumsList.Count == 0)
             {
-                Logger.Info($"[BroaderRetry] No albums found for '{game.Name}' even with fresh search");
                 return null;
             }
 
@@ -2205,11 +2122,8 @@ namespace UniPlaySong.Services
             var bestAlbum = _downloadManager.BestAlbumPickBroader(albumsList, game);
             if (bestAlbum == null)
             {
-                Logger.Info($"[BroaderRetry] No suitable album even with broader matching for '{game.Name}'");
                 return null;
             }
-
-            Logger.Info($"[BroaderRetry] Found album '{bestAlbum.Name}' for '{game.Name}'");
 
             // Get songs
             var songs = _downloadManager.GetSongsFromAlbum(bestAlbum, cancellationToken);
@@ -2217,7 +2131,6 @@ namespace UniPlaySong.Services
 
             if (songsList.Count == 0)
             {
-                Logger.Info($"[BroaderRetry] Album '{bestAlbum.Name}' has no songs");
                 return null;
             }
 
@@ -2235,7 +2148,7 @@ namespace UniPlaySong.Services
             var extension = System.IO.Path.GetExtension(songToDownload.Id);
             if (string.IsNullOrEmpty(extension) || extension == songToDownload.Id)
             {
-                extension = ".mp3";
+                extension = Constants.DefaultAudioExtension;
             }
             var downloadPath = System.IO.Path.Combine(musicDir, safeFileName + extension);
 
@@ -2244,17 +2157,13 @@ namespace UniPlaySong.Services
             return success && System.IO.File.Exists(downloadPath) ? downloadPath : null;
         }
 
-        /// <summary>
-        /// Manual retry - show batch manual download dialog for all failed games
-        /// Uses the new BatchManualDownloadDialog for a unified experience
-        /// </summary>
+        // Manual retry using BatchManualDownloadDialog for all failed games
         private List<string> ManualRetryForFailedGames(List<GameDownloadResult> failedGames)
         {
             var downloadedFiles = new List<string>();
 
             if (failedGames == null || failedGames.Count == 0)
             {
-                Logger.Info("[ManualRetry] No failed games to retry");
                 return downloadedFiles;
             }
 
@@ -2263,11 +2172,8 @@ namespace UniPlaySong.Services
 
             if (gamesToRetry.Count == 0)
             {
-                Logger.Info("[ManualRetry] No valid games to retry");
                 return downloadedFiles;
             }
-
-            Logger.Info($"[ManualRetry] Opening batch manual download dialog for {gamesToRetry.Count} games");
 
             // Use the new batch manual download dialog
             var anySuccess = ShowBatchManualDownloadDialog(gamesToRetry);
@@ -2293,18 +2199,10 @@ namespace UniPlaySong.Services
                 }
             }
 
-            Logger.Info($"[ManualRetry] Complete - {downloadedFiles.Count} files downloaded");
-
             return downloadedFiles;
         }
 
-        /// <summary>
-        /// Shows the batch manual download dialog for multiple failed games.
-        /// This provides a unified UI where users can search and download music for all failed games
-        /// from a single dialog instead of opening individual dialogs for each game.
-        /// </summary>
-        /// <param name="failedGames">List of games that failed auto-download</param>
-        /// <returns>True if any downloads were successful</returns>
+        // Unified UI for searching and downloading music for all failed games in one dialog
         public bool ShowBatchManualDownloadDialog(List<Game> failedGames)
         {
             if (failedGames == null || failedGames.Count == 0)
@@ -2312,8 +2210,6 @@ namespace UniPlaySong.Services
                 Logger.DebugIf(LogPrefix, "ShowBatchManualDownloadDialog called with no games");
                 return false;
             }
-
-            Logger.Info($"[BatchManualDownload] Opening dialog for {failedGames.Count} failed games");
 
             // Pre-load Material Design assemblies before XAML parsing
             PreloadMaterialDesignAssemblies();
@@ -2363,7 +2259,6 @@ namespace UniPlaySong.Services
             };
 
             var dialogOutcome = window.ShowDialog();
-            Logger.Info($"[BatchManualDownload] Dialog closed - Success: {viewModel.SuccessCount}, Failed: {viewModel.FailedCount}");
 
             return dialogOutcome == true;
         }
@@ -2383,8 +2278,6 @@ namespace UniPlaySong.Services
 
             // Also include skipped games (already have music) - try to find album info from cache or fresh search
             var skippedResults = allResults.Where(r => r.WasSkipped && r.Game != null && r.SkipReason == "Already has music").ToList();
-
-            Logger.Info($"[AutoAddMoreSongs] Found {successfulResults.Count} successful downloads and {skippedResults.Count} skipped games");
 
             // Run the entire process in the background
             System.Threading.Tasks.Task.Run(async () =>
@@ -2418,7 +2311,6 @@ namespace UniPlaySong.Services
 
                     if (songToPlay != null && _playbackService != null)
                     {
-                        Logger.Info($"[AutoAddMoreSongs] Playing newly downloaded: {Path.GetFileName(songToPlay)}");
                         System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             _playbackService.LoadAndPlayFile(songToPlay);
@@ -2465,7 +2357,6 @@ namespace UniPlaySong.Services
                                     if (bestAlbum != null)
                                     {
                                         sourceName = "KHInsider";
-                                        Logger.Info($"[AutoAddMoreSongs] Cache hit (KHInsider) for '{result.Game.Name}': {bestAlbum.Name}");
                                     }
                                 }
 
@@ -2475,7 +2366,6 @@ namespace UniPlaySong.Services
                                     if (bestAlbum != null)
                                     {
                                         sourceName = "YouTube";
-                                        Logger.Info($"[AutoAddMoreSongs] Cache hit (YouTube) for '{result.Game.Name}': {bestAlbum.Name}");
                                     }
                                 }
                             }
@@ -2495,7 +2385,6 @@ namespace UniPlaySong.Services
                                         if (bestAlbum != null)
                                         {
                                             sourceName = bestAlbum.Source.ToString();
-                                            Logger.Info($"[AutoAddMoreSongs] Fresh search found album for '{result.Game.Name}': {bestAlbum.Name}");
                                         }
                                     }
                                 }
@@ -2556,7 +2445,6 @@ namespace UniPlaySong.Services
                                 Name = albumName,
                                 Source = source
                             };
-                            Logger.Info($"[AutoAddMoreSongs] Using album ID directly for '{result.Game.Name}': {albumId}");
                         }
                         else
                         {
@@ -2600,7 +2488,7 @@ namespace UniPlaySong.Services
                                         var safeFileName = Common.StringHelper.CleanForPath(song.Name);
                                         var extension = Path.GetExtension(song.Id);
                                         if (string.IsNullOrEmpty(extension) || extension == song.Id)
-                                            extension = ".mp3";
+                                            extension = Constants.DefaultAudioExtension;
                                         var downloadPath = Path.Combine(musicDir, safeFileName + extension);
 
                                         var downloadSuccess = await System.Threading.Tasks.Task.Run(() =>
@@ -2611,7 +2499,6 @@ namespace UniPlaySong.Services
                                             songsAdded++;
                                             Interlocked.Increment(ref totalAdded);
                                             existingSongs.Add(safeFileName);
-                                            Logger.Info($"[AutoAddMoreSongs] Added '{song.Name}' for '{result.Game.Name}'");
 
                                             bool shouldStartPlayback = false;
                                             lock (downloadedSongsLock)
@@ -2708,7 +2595,6 @@ namespace UniPlaySong.Services
 
                         if (allTasks.Count == 0)
                         {
-                            Logger.Info("[AutoAddMoreSongs] No games to process");
                             progressDialog.Dispatcher.BeginInvoke(new Action(() =>
                             {
                                 _playniteApi.Dialogs.ShowMessage(
@@ -2718,11 +2604,8 @@ namespace UniPlaySong.Services
                             return;
                         }
 
-                        Logger.Info($"[AutoAddMoreSongs] Starting parallel processing for {allTasks.Count} games (downloads begin immediately as albums are found)");
                         await System.Threading.Tasks.Task.WhenAll(allTasks);
                     }
-
-                    Logger.Info($"[AutoAddMoreSongs] Complete: {totalAdded} songs added to {gamesProcessed} games, {gamesFailed} failed");
 
                     progressDialog.Dispatcher.BeginInvoke(new Action(() =>
                     {
@@ -2740,9 +2623,7 @@ namespace UniPlaySong.Services
             });
         }
 
-        /// <summary>
-        /// Check if two song names match (accounting for cleaned filenames)
-        /// </summary>
+        // Check if two song names match (accounting for cleaned filenames)
         private bool SongNameMatches(string existingFileName, string newSongName)
         {
             if (string.IsNullOrEmpty(existingFileName) || string.IsNullOrEmpty(newSongName))
@@ -2754,9 +2635,7 @@ namespace UniPlaySong.Services
                    cleanedNew.IndexOf(existingFileName, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Get Source enum from display name
-        /// </summary>
+        // Get Source enum from display name
         private Source GetSourceFromName(string sourceName)
         {
             if (string.IsNullOrEmpty(sourceName))
@@ -2783,8 +2662,6 @@ namespace UniPlaySong.Services
                 Logger.Warn("[HandleRedownloadRequest] Item or Game is null");
                 return;
             }
-
-            Logger.Info($"[HandleRedownloadRequest] Opening album search for: {item.GameName}");
 
             // Create a single-game batch manual download dialog
             // This gives us the big preview buttons and one-click album download behavior
@@ -2879,13 +2756,8 @@ namespace UniPlaySong.Services
                     {
                         // Update the progress dialog item
                         progressDialog.UpdateItemAfterRedownload(item, Path.GetFileNameWithoutExtension(audioFiles.First()), "Manual");
-                        Logger.Info($"[HandleRedownloadRequest] Successfully re-downloaded for: {item.GameName}");
                     }
                 }
-            }
-            else
-            {
-                Logger.Info($"[HandleRedownloadRequest] Re-download cancelled or failed for: {item.GameName}");
             }
         }
     }

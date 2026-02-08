@@ -9,10 +9,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for managing game music status tags.
-    /// Adds/removes tags to games based on whether they have music downloaded.
-    /// </summary>
+    // Manages game music status tags (adds/removes based on whether music is downloaded)
     public class GameMusicTagService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -29,9 +26,6 @@ namespace UniPlaySong.Services
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
         }
 
-        /// <summary>
-        /// Gets or creates a tag by name and returns its ID.
-        /// </summary>
         private Guid GetOrCreateTag(string tagName)
         {
             // Check if tag already exists
@@ -44,13 +38,9 @@ namespace UniPlaySong.Services
             // Create new tag
             var newTag = new Tag(tagName);
             _playniteApi.Database.Tags.Add(newTag);
-            Logger.Info($"Created new tag: {tagName} with ID: {newTag.Id}");
             return newTag.Id;
         }
 
-        /// <summary>
-        /// Gets the cached "Has Music" tag ID, creating the tag if needed.
-        /// </summary>
         private Guid GetHasMusicTagId()
         {
             if (!_hasMusicTagId.HasValue)
@@ -60,9 +50,6 @@ namespace UniPlaySong.Services
             return _hasMusicTagId.Value;
         }
 
-        /// <summary>
-        /// Gets the cached "No Music" tag ID, creating the tag if needed.
-        /// </summary>
         private Guid GetNoMusicTagId()
         {
             if (!_noMusicTagId.HasValue)
@@ -121,7 +108,6 @@ namespace UniPlaySong.Services
 
                 // Save changes
                 _playniteApi.Database.Games.Update(game);
-                Logger.Debug($"Updated tag for '{game.Name}': {(hasMusic ? "Has Music" : "No Music")}");
                 return true;
             }
             catch (Exception ex)
@@ -148,8 +134,6 @@ namespace UniPlaySong.Services
                 var allGames = _playniteApi.Database.Games.ToList();
                 result.TotalGames = allGames.Count;
 
-                Logger.Info($"Starting music tag scan for {result.TotalGames} games");
-
                 // Ensure tags exist before scanning
                 GetHasMusicTagId();
                 GetNoMusicTagId();
@@ -162,7 +146,6 @@ namespace UniPlaySong.Services
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            Logger.Info("Tag scan cancelled by user");
                             break;
                         }
 
@@ -196,11 +179,9 @@ namespace UniPlaySong.Services
                 }, cancellationToken);
 
                 result.IsComplete = !cancellationToken.IsCancellationRequested;
-                Logger.Info($"Tag scan complete: {result.GamesWithMusic} with music, {result.GamesWithoutMusic} without music, {result.GamesModified} modified");
             }
             catch (OperationCanceledException)
             {
-                Logger.Info("Tag scan was cancelled");
                 result.IsComplete = false;
             }
             catch (Exception ex)
@@ -212,10 +193,6 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>
-        /// Updates tags for a specific list of games (e.g., after download).
-        /// </summary>
-        /// <param name="games">Games to update</param>
         public void UpdateTagsForGames(IEnumerable<Game> games)
         {
             if (games == null) return;
@@ -230,11 +207,6 @@ namespace UniPlaySong.Services
                         updated++;
                     }
                 }
-
-                if (updated > 0)
-                {
-                    Logger.Info($"Updated music tags for {updated} game(s)");
-                }
             }
             catch (Exception ex)
             {
@@ -242,10 +214,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Removes all UniPlaySong tags from all games.
-        /// Useful for cleanup or reset.
-        /// </summary>
+        // Removes all UniPlaySong music tags from all games (for cleanup/reset)
         public void RemoveAllMusicTags()
         {
             try
@@ -293,8 +262,6 @@ namespace UniPlaySong.Services
                 // Clear cached IDs
                 _hasMusicTagId = null;
                 _noMusicTagId = null;
-
-                Logger.Info($"Removed music tags from {removed} game(s)");
             }
             catch (Exception ex)
             {
@@ -303,9 +270,7 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Progress information for tag scanning
-    /// </summary>
+    // Progress information for tag scanning
     public class TagScanProgress
     {
         public string CurrentGame { get; set; }
@@ -314,9 +279,7 @@ namespace UniPlaySong.Services
         public bool HasMusic { get; set; }
     }
 
-    /// <summary>
-    /// Result of a tag scan operation
-    /// </summary>
+    // Result of a tag scan operation
     public class TagScanResult
     {
         public int TotalGames { get; set; }

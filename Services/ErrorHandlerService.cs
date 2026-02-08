@@ -124,7 +124,7 @@ namespace UniPlaySong.Services
         public void LogInfo(string message, bool fileOnly = false)
         {
             if (!fileOnly)
-                _logger.Info(message);
+                _logger.Debug(message);
             _fileLogger?.Info(message);
         }
 

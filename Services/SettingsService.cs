@@ -8,11 +8,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Centralized settings management service
-    /// Provides single source of truth and automatic propagation
-    /// Makes adding new settings easier - services automatically get updates via events
-    /// </summary>
+    // Centralized settings management: single source of truth with automatic propagation via events
     public class SettingsService
     {
         private readonly IPlayniteAPI _api;
@@ -21,23 +17,13 @@ namespace UniPlaySong.Services
         private readonly UniPlaySong _plugin;
         private UniPlaySongSettings _currentSettings;
 
-        /// <summary>
-        /// Fired when settings are updated (new settings object)
-        /// Services should subscribe to this for automatic updates
-        /// </summary>
+        // Fired when settings are updated. Services subscribe for automatic updates.
         public event EventHandler<SettingsChangedEventArgs> SettingsChanged;
 
-        /// <summary>
-        /// Fired when a specific setting property changes
-        /// Useful for reacting to individual property changes
-        /// </summary>
+        // Fired when a specific setting property changes
         public event EventHandler<PropertyChangedEventArgs> SettingPropertyChanged;
 
-        /// <summary>
-        /// Current settings (always up-to-date)
-        /// Use this to access settings instead of passing as parameters
-        /// </summary>
-        public UniPlaySongSettings Current => _currentSettings;
+        public UniPlaySongSettings Current => _currentSettings; // Always up-to-date; use instead of passing settings as params
 
         public SettingsService(IPlayniteAPI api, ILogger logger, FileLogger fileLogger, UniPlaySong plugin)
         {
@@ -50,9 +36,6 @@ namespace UniPlaySong.Services
             LoadSettings();
         }
 
-        /// <summary>
-        /// Loads settings from disk and updates all subscribers
-        /// </summary>
         public void LoadSettings()
         {
             try
@@ -109,13 +92,10 @@ namespace UniPlaySong.Services
             // Notify all subscribers that settings changed
             SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(oldSettings, newSettings, source));
             
-            _logger.Info($"SettingsService: Settings updated (source: {source})");
+            _logger.Debug($"SettingsService: Settings updated (source: {source})");
             _fileLogger?.Info($"SettingsService: Settings updated from {source}");
         }
 
-        /// <summary>
-        /// Validates settings and returns list of errors
-        /// </summary>
         public List<string> ValidateSettings(UniPlaySongSettings settings)
         {
             var errors = new List<string>();
@@ -240,9 +220,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Handles property changes from settings object
-        /// </summary>
         private void OnSettingPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             // Validate native music file when UseNativeMusicAsDefault is enabled
@@ -259,9 +236,7 @@ namespace UniPlaySong.Services
         }
     }
 
-    /// <summary>
-    /// Event args for settings changed event
-    /// </summary>
+    // Event args for settings changed event
     public class SettingsChangedEventArgs : EventArgs
     {
         public UniPlaySongSettings OldSettings { get; }

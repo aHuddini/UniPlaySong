@@ -4,26 +4,24 @@ using System.Windows.Data;
 
 namespace UniPlaySong
 {
-    // Inverts boolean values for UI element binding
-    public class InverseBooleanConverter : IValueConverter
+    public class VizPresetConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool boolValue)
+            if (value is VizPreset preset)
             {
-                return !boolValue;
+                return (int)preset;
             }
-            return true; // Default to enabled if value is not a boolean
+            return 0;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool boolValue)
+            if (value is int index)
             {
-                return !boolValue;
+                return (VizPreset)index;
             }
-            return false;
+            return VizPreset.Custom;
         }
     }
 }
-

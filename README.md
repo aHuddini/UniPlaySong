@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,24 +20,27 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.4
+## What's New - v1.2.5
 
 ### New Features
-- **Auto-Delete Music on Game Removal** - Music files are now automatically cleaned up when games are removed from Playnite ([#59](https://github.com/aHuddini/UniPlaySong/issues/59))
-- **Clean Up Orphaned Music** - New cleanup tool: Manually remove music folders for games no longer in your library
+- **Audio-Reactive Spectrum Visualizer (Desktop Mode)** - Real-time frequency spectrum visualization
+  - 6 gradient color themes (Classic, Neon, Sunset, Ocean, Fire, Ice)
+  - Best viewed in Harmony and Vanilla desktop themes
+  - 5 tuning presets plus advanced customization controls
+  - Toggle gradient/solid rendering
+- **Style Presets** - 15+ one-click audio effect combinations (Huddini Styles, clean, character presets)
 
 ### Improvements
-- **Playnite SDK** updated to version 6.15.0
+- **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
+- **Desktop Media Controls** - Tighter button spacing for more compact top panel layout
+- **Code Quality** - Consolidated some duplicate code, eliminated magic strings, improved maintainability
 
 ### Bug Fixes
-- **Fullscreen Background Music Volume** - Playnite's fullscreen volume slider now properly controls UniPlaySong's playback volume in real-time ([#62](https://github.com/aHuddini/UniPlaySong/issues/62))
-- **Now Playing GPU Usage** - Fixed top panel Now Playing animation causing permanent GPU usage; suspends when app is unfocused ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-- **Audio Stuttering During Video Playback** - Fixed music repeatedly pausing/resuming during trailer/ScreenshotVisualizer playback ([#58](https://github.com/aHuddini/UniPlaySong/issues/58), [#60](https://github.com/aHuddini/UniPlaySong/pull/60)) - Credit: @rovri
-- **Media Controls Work After Live Effects Toggle** - Fixed media control buttons and music becoming unresponsive after toggling live effects ([#56](https://github.com/aHuddini/UniPlaySong/issues/56))
-- **Manual Pause Not Respected on Game Switch** - Pressing pause then switching games no longer auto-resumes playback; song loads silently until play is pressed
+- **Settings Integration with EML Plugin** - Fixed music/video audio issues when saving non-UPS Playnite settings
+- **Pause-on-X Settings** - Fixed playback issues when disabling/enabling pause settings
 
 ### Previous Versions
-- **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes
+- **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes
 ---
 
 ## 🎬 Demo
@@ -50,6 +53,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Auto-Download** - Automatic music search and downloads for existing libraries and new games from YouTube, KHInsider, and Zophar's Domain
 - **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
 - **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
+- **Audio-Reactive Visualizer** - Real-time frequency spectrum visualizer with 6 gradient color themes and tuning presets (Desktop mode - best in Harmony/Vanilla themes)
 - **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
 - **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations
 - **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes

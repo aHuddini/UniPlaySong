@@ -20,6 +20,7 @@ namespace UniPlaySong.Services
         private AudioFileReader _audioFile;
         private WaveOutEvent _outputDevice;
         private EffectsChain _effectsChain;
+        private VisualizationDataProvider _visualizationProvider;
         private VolumeSampleProvider _volumeProvider;
         private readonly SettingsService _settingsService;
         private bool _isDisposed;
@@ -68,11 +69,14 @@ namespace UniPlaySong.Services
             {
                 Close();
 
-                Logger.Debug($"[{LogPrefix}] Loading: {System.IO.Path.GetFileName(filePath)}");
+                // Loading music file
 
                 _audioFile = new AudioFileReader(filePath);
                 _effectsChain = new EffectsChain(_audioFile, _settingsService);
-                _volumeProvider = new VolumeSampleProvider(_effectsChain);
+                int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
+                _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
+                VisualizationDataProvider.Current = _visualizationProvider;
+                _volumeProvider = new VolumeSampleProvider(_visualizationProvider);
 
                 _outputDevice = new WaveOutEvent();
                 _outputDevice.PlaybackStopped += OnPlaybackStopped;
@@ -81,7 +85,7 @@ namespace UniPlaySong.Services
                 Source = filePath;
                 IsLoaded = true;
 
-                Logger.Debug($"[{LogPrefix}] Loaded successfully: {_audioFile.TotalTime:mm\\:ss}, {_audioFile.WaveFormat.SampleRate}Hz, {_audioFile.WaveFormat.Channels}ch");
+                // Loaded successfully
             }
             catch (Exception ex)
             {
@@ -99,7 +103,6 @@ namespace UniPlaySong.Services
                 // This is necessary for looping - NAudio doesn't auto-reset position on Play()
                 if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
                 {
-                    Logger.Debug($"[{LogPrefix}] Audio at end, seeking to beginning for loop");
                     _audioFile.CurrentTime = TimeSpan.Zero;
                 }
                 _outputDevice?.Play();
@@ -185,6 +188,10 @@ namespace UniPlaySong.Services
                 }
 
                 _effectsChain = null;
+                if (VisualizationDataProvider.Current == _visualizationProvider)
+                    VisualizationDataProvider.Current = null;
+                _visualizationProvider?.Dispose();
+                _visualizationProvider = null;
                 _volumeProvider = null;
 
                 if (_audioFile != null)
@@ -212,7 +219,6 @@ namespace UniPlaySong.Services
             else if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
             {
                 // Song reached the end (with small tolerance for timing)
-                Logger.Debug($"[{LogPrefix}] Media ended");
                 MediaEnded?.Invoke(this, EventArgs.Empty);
             }
         }

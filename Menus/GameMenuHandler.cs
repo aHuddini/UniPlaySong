@@ -78,9 +78,8 @@ namespace UniPlaySong.Menus
                 _errorHandler.Try(
                     () =>
                     {
-                        _logger.Info($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                        System.Diagnostics.Debug.WriteLine($"UniPlaySong: DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                        
+                        _logger.Debug($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
+
                         if (_downloadManager == null)
                         {
                             _playniteApi.Dialogs.ShowMessage("Download manager not initialized. Please check extension settings.");
@@ -96,12 +95,12 @@ namespace UniPlaySong.Menus
                             sourceNullable = _dialogService.ShowSourceSelectionDialog();
                             if (sourceNullable == null)
                             {
-                                _logger.Info("User cancelled source selection");
+                                _logger.Debug("User cancelled source selection");
                                 return; // User cancelled
                             }
 
                             var source = sourceNullable.Value; // Convert nullable to non-nullable
-                            _logger.Info($"User selected source: {source}");
+                            _logger.Debug($"User selected source: {source}");
 
                             // Step 2: Select album (with loop to allow going back from song selection)
                             Album album = null;
@@ -114,7 +113,7 @@ namespace UniPlaySong.Menus
                                 // Check if user pressed Back button (return to source selection)
                                 if (Album.IsBackSignal(album))
                                 {
-                                    _logger.Info("User pressed back in album selection - returning to source selection");
+                                    _logger.Debug("User pressed back in album selection - returning to source selection");
                                     backToSourceFromAlbum = true;
                                     break; // Break inner loop to re-select source
                                 }
@@ -122,11 +121,11 @@ namespace UniPlaySong.Menus
                                 // Check if user cancelled (exit entirely)
                                 if (album == null)
                                 {
-                                    _logger.Info("User cancelled album selection");
+                                    _logger.Debug("User cancelled album selection");
                                     return; // Exit function entirely
                                 }
 
-                                _logger.Info($"User selected album: {album.Name} (ID: {album.Id})");
+                                _logger.Debug($"User selected album: {album.Name} (ID: {album.Id})");
 
                                 // Step 3: Select songs and download (handled inline in dialog)
                                 var songs = _dialogService.ShowSongSelectionDialog(game, album);
@@ -134,7 +133,7 @@ namespace UniPlaySong.Menus
                                 // If songs is null, user pressed Back - loop to re-select album
                                 if (songs == null)
                                 {
-                                    _logger.Info("User pressed back in song selection - returning to album selection");
+                                    _logger.Debug("User pressed back in song selection - returning to album selection");
                                     continue; // Continue inner loop to re-select album
                                 }
 
@@ -160,9 +159,8 @@ namespace UniPlaySong.Menus
                 // Fallback to original error handling
                 try
                 {
-                    _logger.Info($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                    System.Diagnostics.Debug.WriteLine($"UniPlaySong: DownloadMusicForGame called for game: {game?.Name ?? "null"}");
-                    
+                    _logger.Debug($"DownloadMusicForGame called for game: {game?.Name ?? "null"}");
+
                     if (_downloadManager == null)
                     {
                         _playniteApi.Dialogs.ShowMessage("Download manager not initialized. Please check extension settings.");
@@ -178,12 +176,12 @@ namespace UniPlaySong.Menus
                         sourceNullable = _dialogService.ShowSourceSelectionDialog();
                         if (sourceNullable == null)
                         {
-                            _logger.Info("User cancelled source selection");
+                            _logger.Debug("User cancelled source selection");
                             return; // User cancelled
                         }
 
                         var source = sourceNullable.Value; // Convert nullable to non-nullable
-                        _logger.Info($"User selected source: {source}");
+                        _logger.Debug($"User selected source: {source}");
 
                         // Step 2: Select album (with loop to allow going back from song selection)
                         Album album = null;
@@ -196,7 +194,7 @@ namespace UniPlaySong.Menus
                             // Check if user pressed Back button (return to source selection)
                             if (Album.IsBackSignal(album))
                             {
-                                _logger.Info("User pressed back in album selection - returning to source selection");
+                                _logger.Debug("User pressed back in album selection - returning to source selection");
                                 backToSourceFromAlbum = true;
                                 break; // Break inner loop to re-select source
                             }
@@ -204,11 +202,11 @@ namespace UniPlaySong.Menus
                             // Check if user cancelled (exit entirely)
                             if (album == null)
                             {
-                                _logger.Info("User cancelled album selection");
+                                _logger.Debug("User cancelled album selection");
                                 return; // Exit function entirely
                             }
 
-                            _logger.Info($"User selected album: {album.Name} (ID: {album.Id})");
+                            _logger.Debug($"User selected album: {album.Name} (ID: {album.Id})");
 
                             // Step 3: Select songs and download (handled inline in dialog)
                             var songs = _dialogService.ShowSongSelectionDialog(game, album);
@@ -216,7 +214,7 @@ namespace UniPlaySong.Menus
                             // If songs is null, user pressed Back - loop to re-select album
                             if (songs == null)
                             {
-                                _logger.Info("User pressed back in song selection - returning to album selection");
+                                _logger.Debug("User pressed back in song selection - returning to album selection");
                                 continue; // Continue inner loop to re-select album
                             }
 
@@ -274,15 +272,7 @@ namespace UniPlaySong.Menus
                         args.Text = $"{progressTitle}\n\nDownloading: {song.Name} ({downloaded + 1}/{total})";
 
                         // Sanitize filename BEFORE combining with path
-                        var sanitizedName = song.Name;
-                        foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                        {
-                            sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                        }
-
-                        // Also remove any other problematic characters
-                        sanitizedName = sanitizedName.Replace("..", "_");
-                        sanitizedName = sanitizedName.Trim();
+                        var sanitizedName = StringHelper.CleanForPath(song.Name);
 
                         var fileName = $"{sanitizedName}.mp3";
                         var filePath = Path.Combine(musicDir, fileName);
@@ -298,7 +288,7 @@ namespace UniPlaySong.Menus
                                 downloaded++;
                                 downloadedFilePaths.Add(filePath);
                                 var fileInfo = new FileInfo(filePath);
-                                _logger.Info($"Successfully downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
+                                _logger.Debug($"Successfully downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
                             }
                             else
                             {
@@ -362,7 +352,7 @@ namespace UniPlaySong.Menus
                 _errorHandler.Try(
                     () =>
                     {
-                        _logger.Info($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
+                        _logger.Debug($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
                         var musicDir = _fileService?.GetGameMusicDirectory(game);
                         if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                         {
@@ -384,7 +374,7 @@ namespace UniPlaySong.Menus
                 // Fallback to original error handling
                 try
                 {
-                    _logger.Info($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
+                    _logger.Debug($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
                     var musicDir = _fileService?.GetGameMusicDirectory(game);
                     if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                     {
@@ -412,7 +402,7 @@ namespace UniPlaySong.Menus
                 _errorHandler.Try(
                     () =>
                     {
-                        _logger.Info($"SetPrimarySong called for game: {game?.Name ?? "null"}");
+                        _logger.Debug($"SetPrimarySong called for game: {game?.Name ?? "null"}");
 
                         // Get the game's music directory first
                         var musicDir = _fileService.GetGameMusicDirectory(game);
@@ -459,7 +449,7 @@ namespace UniPlaySong.Menus
                 // Fallback to original error handling
                 try
                 {
-                    _logger.Info($"SetPrimarySong called for game: {game?.Name ?? "null"}");
+                    _logger.Debug($"SetPrimarySong called for game: {game?.Name ?? "null"}");
 
                     // Get the game's music directory first
                     var musicDir = _fileService.GetGameMusicDirectory(game);
@@ -512,7 +502,7 @@ namespace UniPlaySong.Menus
                 _errorHandler.Try(
                     () =>
                     {
-                        _logger.Info($"ClearPrimarySong called for game: {game?.Name ?? "null"}");
+                        _logger.Debug($"ClearPrimarySong called for game: {game?.Name ?? "null"}");
                         
                         var musicDir = _fileService?.GetGameMusicDirectory(game);
                         if (!string.IsNullOrEmpty(musicDir))
@@ -530,7 +520,7 @@ namespace UniPlaySong.Menus
                 // Fallback to original error handling
                 try
                 {
-                    _logger.Info($"ClearPrimarySong called for game: {game?.Name ?? "null"}");
+                    _logger.Debug($"ClearPrimarySong called for game: {game?.Name ?? "null"}");
                     
                     var musicDir = _fileService?.GetGameMusicDirectory(game);
                     if (!string.IsNullOrEmpty(musicDir))
@@ -576,7 +566,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteShowNormalizeIndividualSong(Game game)
         {
-            _logger.Info($"ShowNormalizeIndividualSong called for game: {game?.Name ?? "null"}");
+            _logger.Debug($"ShowNormalizeIndividualSong called for game: {game?.Name ?? "null"}");
 
             var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
             if (songs.Count == 0)
@@ -641,7 +631,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteShowTrimIndividualSong(Game game)
         {
-            _logger.Info($"ShowTrimIndividualSong called for game: {game?.Name ?? "null"}");
+            _logger.Debug($"ShowTrimIndividualSong called for game: {game?.Name ?? "null"}");
 
             var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
             if (songs.Count == 0)
@@ -707,7 +697,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteDownloadFromUrl(Game game)
         {
-            _logger.Info($"DownloadFromUrl called for game: {game?.Name ?? "null"}");
+            _logger.Debug($"DownloadFromUrl called for game: {game?.Name ?? "null"}");
 
             if (game == null)
             {
@@ -758,7 +748,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteDownloadMusicForGames(List<Game> games, Source source)
         {
-            _logger.Info($"DownloadMusicForGames called for {games.Count} game(s), source: {source}");
+            _logger.Debug($"DownloadMusicForGames called for {games.Count} game(s), source: {source}");
 
             if (_downloadManager == null)
             {
@@ -801,13 +791,13 @@ namespace UniPlaySong.Menus
                 "Overwrite Files",
                 System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes;
 
-            _logger.Info($"Batch options: albumSelect={albumSelect}, songSelect={songSelect}, overwrite={overwrite}");
+            _logger.Debug($"Batch options: albumSelect={albumSelect}, songSelect={songSelect}, overwrite={overwrite}");
 
             // Stop playback before downloading if we're overwriting files
             // This prevents file lock errors when the currently playing song is being replaced
             if (overwrite)
             {
-                _logger.Info("Stopping playback before overwrite download to prevent file locks");
+                _logger.Debug("Stopping playback before overwrite download to prevent file locks");
                 _playbackService?.Stop();
             }
 
@@ -816,7 +806,7 @@ namespace UniPlaySong.Menus
             // If full auto mode (no manual selection), use parallel batch download with progress dialog
             if (!albumSelect && !songSelect)
             {
-                _logger.Info("Using parallel batch download (full auto mode)");
+                _logger.Debug("Using parallel batch download (full auto mode)");
 
                 // Get concurrent downloads setting
                 var settings = _getSettings?.Invoke();
@@ -834,7 +824,7 @@ namespace UniPlaySong.Menus
                     // Prompt for retry if there were failures
                     if (batchResult.FailedGames.Count > 0)
                     {
-                        _logger.Info($"Batch download: {batchResult.FailedGames.Count} games failed, prompting for retry");
+                        _logger.Debug($"Batch download: {batchResult.FailedGames.Count} games failed, prompting for retry");
                         var retryDownloads = _dialogService?.PromptAndRetryFailedDownloads(batchResult.FailedGames);
                         if (retryDownloads != null && retryDownloads.Count > 0)
                         {
@@ -846,7 +836,7 @@ namespace UniPlaySong.Menus
             else
             {
                 // Manual selection mode - use sequential download with global progress
-                _logger.Info("Using sequential batch download (manual selection mode)");
+                _logger.Debug("Using sequential batch download (manual selection mode)");
 
                 var progressTitle = $"UniPlaySong - Downloading Music";
                 var progressOptions = new GlobalProgressOptions(progressTitle, true)
@@ -876,7 +866,7 @@ namespace UniPlaySong.Menus
                 }
             }
 
-            _logger.Info("Batch download complete");
+            _logger.Debug("Batch download complete");
         }
 
         private void StartBatchDownload(
@@ -904,7 +894,7 @@ namespace UniPlaySong.Menus
             {
                 if (args.CancelToken.IsCancellationRequested)
                 {
-                    _logger.Info("Batch download cancelled by user");
+                    _logger.Debug("Batch download cancelled by user");
                     break;
                 }
 
@@ -912,13 +902,13 @@ namespace UniPlaySong.Menus
                 args.CurrentProgressValue = ++gameIdx;
                 args.Text = $"{progressTitle} ({gameIdx}/{games.Count})\n\n{game.Name}";
 
-                _logger.Info($"Processing game {gameIdx}/{games.Count}: {game.Name}");
+                _logger.Debug($"Processing game {gameIdx}/{games.Count}: {game.Name}");
 
                 // Check if game already has music (skip if not overwriting)
                 var musicDir = _fileService.GetGameMusicDirectory(game);
                 if (!overwrite && Directory.Exists(musicDir) && Directory.GetFiles(musicDir, "*.mp3").Length > 0)
                 {
-                    _logger.Info($"Skipping '{game.Name}' - already has music files");
+                    _logger.Debug($"Skipping '{game.Name}' - already has music files");
                     skipCount++;
                     continue;
                 }
@@ -952,13 +942,13 @@ namespace UniPlaySong.Menus
                 catch (BatchDownloadSkipException)
                 {
                     // User chose to skip this game
-                    _logger.Info($"User skipped game: {game.Name}");
+                    _logger.Debug($"User skipped game: {game.Name}");
                     skipCount++;
                 }
                 catch (BatchDownloadCancelException)
                 {
                     // User cancelled entire operation
-                    _logger.Info("User cancelled batch download");
+                    _logger.Debug("User cancelled batch download");
                     break;
                 }
                 catch (Exception ex)
@@ -1025,7 +1015,7 @@ namespace UniPlaySong.Menus
         {
             // Prepare game name for searching (strips suffixes, normalizes)
             var searchGameName = StringHelper.PrepareForSearch(game.Name);
-            _logger.Info($"Searching for '{game.Name}' using search term: '{searchGameName}'");
+            _logger.Debug($"Searching for '{game.Name}' using search term: '{searchGameName}'");
 
             // Step 1: Get/Select album
             Album album = null;
@@ -1043,7 +1033,7 @@ namespace UniPlaySong.Menus
                     // Check if user pressed Back button (return to source selection)
                     if (Album.IsBackSignal(album))
                     {
-                        _logger.Info($"User pressed back in album selection for '{game.Name}' - showing source selection");
+                        _logger.Debug($"User pressed back in album selection for '{game.Name}' - showing source selection");
 
                         // Show source selection dialog on UI thread with custom button labels
                         var newSource = System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
@@ -1078,12 +1068,12 @@ namespace UniPlaySong.Menus
                         if (newSource == null)
                         {
                             // User cancelled or chose to skip - skip this game
-                            _logger.Info($"User cancelled/skipped source selection for '{game.Name}'");
+                            _logger.Debug($"User cancelled/skipped source selection for '{game.Name}'");
                             return false;
                         }
 
                         currentSource = newSource.Value;
-                        _logger.Info($"User selected new source: {currentSource} for '{game.Name}'");
+                        _logger.Debug($"User selected new source: {currentSource} for '{game.Name}'");
                         continue; // Loop back to show album selection with new source
                     }
 
@@ -1099,7 +1089,7 @@ namespace UniPlaySong.Menus
                 // Use Source.All for automatic fallback (KHInsider -> YouTube)
                 var effectiveSource = currentSource == Source.KHInsider ? Source.All : currentSource;
 
-                _logger.Info($"Getting albums for '{game.Name}' with source: {effectiveSource}");
+                _logger.Debug($"Getting albums for '{game.Name}' with source: {effectiveSource}");
                 var albums = _downloadManager.GetAlbumsForGame(searchGameName, effectiveSource, args.CancelToken, auto: true)?.ToList();
 
                 if (albums == null || albums.Count == 0)
@@ -1109,7 +1099,7 @@ namespace UniPlaySong.Menus
                     return false;
                 }
 
-                _logger.Info($"Found {albums.Count} album(s) for '{game.Name}'");
+                _logger.Debug($"Found {albums.Count} album(s) for '{game.Name}'");
                 album = _downloadManager.BestAlbumPick(albums, game);
 
                 if (album != null)
@@ -1117,7 +1107,7 @@ namespace UniPlaySong.Menus
                     // Show which source we're using
                     var sourceIcon = album.Source == Source.KHInsider ? "🎮" :
                                     album.Source == Source.YouTube ? "📺" : "🎵";
-                    _logger.Info($"Auto-selected album from {album.Source}: '{album.Name}' for game: {game.Name}");
+                    _logger.Debug($"Auto-selected album from {album.Source}: '{album.Name}' for game: {game.Name}");
                     args.Text = $"{progressTitle}\n\n{game.Name}\n{sourceIcon} {album.Source}: {album.Name}";
                 }
             }
@@ -1154,13 +1144,13 @@ namespace UniPlaySong.Menus
                     return false;
                 }
 
-                _logger.Info($"Found {allSongs.Count} song(s) in album '{album.Name}'");
+                _logger.Debug($"Found {allSongs.Count} song(s) in album '{album.Name}'");
                 
                 // Use prepared search name for better song matching
                 songs = _downloadManager.BestSongPick(allSongs, searchGameName, maxSongs: 1);
                 if (songs.Count > 0)
                 {
-                    _logger.Info($"Auto-selected song: '{songs[0].Name}' for game: {game.Name}");
+                    _logger.Debug($"Auto-selected song: '{songs[0].Name}' for game: {game.Name}");
                     args.Text = $"{progressTitle}\n\n{game.Name}\n{sourceIcon} Downloading: {songs[0].Name}";
                 }
             }
@@ -1194,12 +1184,7 @@ namespace UniPlaySong.Menus
                     break;
 
                 // Sanitize filename
-                var sanitizedName = song.Name;
-                foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                {
-                    sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                }
-                sanitizedName = sanitizedName.Replace("..", "_").Trim();
+                var sanitizedName = StringHelper.CleanForPath(song.Name);
 
                 var fileName = $"{sanitizedName}.mp3";
                 var filePath = Path.Combine(musicDir, fileName);
@@ -1207,7 +1192,7 @@ namespace UniPlaySong.Menus
                 // Skip if file exists and not overwriting
                 if (!overwrite && File.Exists(filePath))
                 {
-                    _logger.Info($"Skipping existing file: {filePath}");
+                    _logger.Debug($"Skipping existing file: {filePath}");
                     continue;
                 }
 
@@ -1219,7 +1204,7 @@ namespace UniPlaySong.Menus
                     downloaded++;
                     downloadedFilePaths?.Add(filePath);
                     var fileInfo = new FileInfo(filePath);
-                    _logger.Info($"Downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
+                    _logger.Debug($"Downloaded: {song.Name} to {filePath} ({fileInfo.Length} bytes)");
                 }
                 else
                 {
@@ -1254,7 +1239,7 @@ namespace UniPlaySong.Menus
                 Resolved = false
             });
 
-            _logger.Info($"Tracked failed download for '{game.Name}': {reason}");
+            _logger.Debug($"Tracked failed download for '{game.Name}': {reason}");
         }
 
         /// <summary>
@@ -1322,7 +1307,7 @@ namespace UniPlaySong.Menus
 
             foreach (var failedDownload in unresolved)
             {
-                _logger.Info($"Retrying failed download for: {failedDownload.Game.Name}");
+                _logger.Debug($"Retrying failed download for: {failedDownload.Game.Name}");
 
                 // Use unified search (both KHInsider and YouTube)
                 try
@@ -1331,7 +1316,7 @@ namespace UniPlaySong.Menus
                     var album = _dialogService.ShowUnifiedAlbumSelectionDialog(failedDownload.Game);
                     if (album == null)
                     {
-                        _logger.Info($"User cancelled album selection for: {failedDownload.Game.Name}");
+                        _logger.Debug($"User cancelled album selection for: {failedDownload.Game.Name}");
                         continue; // Skip to next game
                     }
 
@@ -1343,7 +1328,7 @@ namespace UniPlaySong.Menus
                     retried++;
                     succeeded++;
 
-                    _logger.Info($"Successfully retried download for: {failedDownload.Game.Name}");
+                    _logger.Debug($"Successfully retried download for: {failedDownload.Game.Name}");
                 }
                 catch (Exception ex)
                 {
@@ -1371,7 +1356,7 @@ namespace UniPlaySong.Menus
         public void ClearFailedDownloads()
         {
             _failedDownloads.Clear();
-            _logger.Info("Cleared all tracked failed downloads");
+            _logger.Debug("Cleared all tracked failed downloads");
         }
 
         #endregion
@@ -1408,7 +1393,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteShowRepairAudioFile(Game game)
         {
-            _logger.Info($"ShowRepairAudioFile called for game: {game?.Name ?? "null"}");
+            _logger.Debug($"ShowRepairAudioFile called for game: {game?.Name ?? "null"}");
 
             if (_repairService == null)
             {
@@ -1471,7 +1456,7 @@ namespace UniPlaySong.Menus
         private void RepairAudioFileWithProgress(Game game, string filePath, string ffmpegPath)
         {
             var fileName = Path.GetFileName(filePath);
-            _logger.Info($"Starting audio repair for: {fileName}");
+            _logger.Debug($"Starting audio repair for: {fileName}");
 
             // First, probe the file to show what issues were detected
             var progressTitle = "UniPlaySong - Repairing Audio";
@@ -1526,7 +1511,7 @@ namespace UniPlaySong.Menus
                     "The repaired file should now play correctly.",
                     "UniPlaySong - Repair Complete");
 
-                _logger.Info($"Audio repair completed successfully for: {fileName}");
+                _logger.Debug($"Audio repair completed successfully for: {fileName}");
             }
             else
             {
@@ -1569,7 +1554,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteRepairAllAudioFiles(Game game)
         {
-            _logger.Info($"RepairAllAudioFiles called for game: {game?.Name ?? "null"}");
+            _logger.Debug($"RepairAllAudioFiles called for game: {game?.Name ?? "null"}");
 
             if (_repairService == null)
             {
@@ -1623,7 +1608,7 @@ namespace UniPlaySong.Menus
                 {
                     if (args.CancelToken.IsCancellationRequested)
                     {
-                        _logger.Info("Audio repair scan cancelled by user");
+                        _logger.Debug("Audio repair scan cancelled by user");
                         break;
                     }
 
@@ -1646,7 +1631,7 @@ namespace UniPlaySong.Menus
 
                         // File has issues - repair it
                         args.Text = $"Repairing: {fileName}";
-                        _logger.Info($"Repairing file with issues ({probeResult.Issues}): {fileName}");
+                        _logger.Debug($"Repairing file with issues ({probeResult.Issues}): {fileName}");
 
                         var repairTask = _repairService.RepairFileAsync(song, settings.FFmpegPath);
                         repairTask.Wait();
@@ -1654,7 +1639,7 @@ namespace UniPlaySong.Menus
                         if (repairTask.Result)
                         {
                             repaired++;
-                            _logger.Info($"Successfully repaired: {fileName}");
+                            _logger.Debug($"Successfully repaired: {fileName}");
                         }
                         else
                         {
@@ -1683,7 +1668,7 @@ namespace UniPlaySong.Menus
             }
 
             _playniteApi.Dialogs.ShowMessage(summary, "UniPlaySong - Repair Complete");
-            _logger.Info($"Audio repair scan complete - Scanned: {scanned}, Repaired: {repaired}, Failed: {failed}, Skipped: {skipped}");
+            _logger.Debug($"Audio repair scan complete - Scanned: {scanned}, Repaired: {repaired}, Failed: {failed}, Skipped: {skipped}");
         }
 
         #endregion
@@ -1719,7 +1704,7 @@ namespace UniPlaySong.Menus
 
         private void ExecuteDeleteAllMusicForGames(List<Game> games)
         {
-            _logger.Info($"DeleteAllMusicForGames called for {games.Count} game(s)");
+            _logger.Debug($"DeleteAllMusicForGames called for {games.Count} game(s)");
 
             if (games == null || games.Count == 0)
             {
@@ -1745,7 +1730,7 @@ namespace UniPlaySong.Menus
 
             if (confirmResult != MessageBoxResult.Yes)
             {
-                _logger.Info("User cancelled bulk delete");
+                _logger.Debug("User cancelled bulk delete");
                 return;
             }
 
@@ -1755,7 +1740,7 @@ namespace UniPlaySong.Menus
                 var currentGame = _playbackService.CurrentGame;
                 if (currentGame != null && gamesWithMusic.Any(g => g.Id == currentGame.Id))
                 {
-                    _logger.Info($"Stopping playback for '{currentGame.Name}' before deleting music");
+                    _logger.Debug($"Stopping playback for '{currentGame.Name}' before deleting music");
                     _playbackService.Stop();
                 }
             }
@@ -1771,7 +1756,7 @@ namespace UniPlaySong.Menus
                 {
                     totalDeleted += deleted;
                     gamesDeleted++;
-                    _logger.Info($"Deleted {deleted} music file(s) for '{game.Name}'");
+                    _logger.Debug($"Deleted {deleted} music file(s) for '{game.Name}'");
                 }
             }
 
@@ -1781,7 +1766,7 @@ namespace UniPlaySong.Menus
                 "UniPlaySong - Delete Complete"
             );
 
-            _logger.Info($"Bulk delete complete - {totalDeleted} files deleted from {gamesDeleted} games");
+            _logger.Debug($"Bulk delete complete - {totalDeleted} files deleted from {gamesDeleted} games");
         }
 
         #endregion

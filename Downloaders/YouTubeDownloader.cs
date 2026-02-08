@@ -12,10 +12,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Downloader implementation for YouTube
-    /// Note: Requires yt-dlp and ffmpeg to be installed and configured
-    /// </summary>
+    // YouTube downloader (requires yt-dlp and ffmpeg)
     public class YouTubeDownloader : IDownloader
     {
         private static readonly ILogger Logger = LogManager.GetLogger();

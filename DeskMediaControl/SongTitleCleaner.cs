@@ -4,10 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// Utility class for cleaning song titles from filenames.
-    /// Removes common suffixes, replaces separators with spaces, etc.
-    /// </summary>
+    // Utility for cleaning song titles from filenames (removes suffixes, replaces separators, etc.)
     public static class SongTitleCleaner
     {
         // Compiled regex for collapsing multiple whitespace characters

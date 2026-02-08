@@ -540,12 +540,7 @@ namespace UniPlaySong.ViewModels
                 var musicDir = _fileService.GetGameMusicDirectory(_game);
                 Directory.CreateDirectory(musicDir);
 
-                var sanitizedName = VideoTitle;
-                foreach (var invalidChar in Path.GetInvalidFileNameChars())
-                {
-                    sanitizedName = sanitizedName.Replace(invalidChar, '_');
-                }
-                sanitizedName = sanitizedName.Replace("..", "_").Trim();
+                var sanitizedName = StringHelper.CleanForPath(VideoTitle);
 
                 if (sanitizedName.Length > 100)
                 {
@@ -597,7 +592,7 @@ namespace UniPlaySong.ViewModels
                 {
                     var fileInfo = new FileInfo(filePath);
                     ProgressText = $"Download complete! ({fileInfo.Length / 1024.0 / 1024.0:F2} MB)";
-                    Logger.Info($"Successfully downloaded audio from URL to: {filePath}");
+                    Logger.Debug($"Successfully downloaded audio from URL to: {filePath}");
 
                     // Force reload music so the new song can play immediately
                     try

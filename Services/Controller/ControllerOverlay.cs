@@ -93,7 +93,7 @@ namespace UniPlaySong.Services.Controller
                 UpdateControllerMode(_detectionService.IsControllerMode);
 
                 _isAttached = true;
-                _logger?.Info($"Controller overlay attached to {targetControl.Name ?? targetControl.GetType().Name}");
+                _logger?.Debug($"Controller overlay attached to {targetControl.Name ?? targetControl.GetType().Name}");
             }
             catch (Exception ex)
             {
@@ -142,7 +142,7 @@ namespace UniPlaySong.Services.Controller
                 _oskVisible = false;
                 
                 _isAttached = false;
-                _logger?.Info("Controller overlay detached");
+                _logger?.Debug("Controller overlay detached");
             }
             catch (Exception ex)
             {
@@ -159,7 +159,7 @@ namespace UniPlaySong.Services.Controller
                 
                 UpdateControllerMode(enabled);
                 
-                _logger?.Info($"Controller mode forced to: {enabled}");
+                _logger?.Debug($"Controller mode forced to: {enabled}");
             }
             catch (Exception ex)
             {
@@ -180,7 +180,7 @@ namespace UniPlaySong.Services.Controller
                     UpdateControllerMode(_detectionService.IsControllerMode);
                 }
                 
-                _logger?.Info("Automatic controller detection restored");
+                _logger?.Debug("Automatic controller detection restored");
             }
             catch (Exception ex)
             {
@@ -247,7 +247,7 @@ namespace UniPlaySong.Services.Controller
                 // Notify subscribers
                 ControllerModeChanged?.Invoke(this, enableControllerMode);
                 
-                _logger?.Info($"Controller mode updated to: {enableControllerMode}");
+                _logger?.Debug($"Controller mode updated to: {enableControllerMode}");
             }
             catch (Exception ex)
             {

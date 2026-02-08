@@ -8,10 +8,7 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Helper class for creating dialogs and toast notifications.
-    /// NOTE: Consider extracting color/UI constants to a separate UIConstants.cs file in the future.
-    /// </summary>
+    // Helper for creating dialogs and toast notifications
     public static class DialogHelper
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -321,10 +318,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Gets the current DPI scale factor for the primary screen.
-        /// Returns 1.0 for 96 DPI (100%), 1.5 for 144 DPI (150%), 2.0 for 192 DPI (200%), etc.
-        /// </summary>
+        // Gets DPI scale factor for primary screen (1.0 = 96 DPI, 1.5 = 144 DPI, etc.)
         public static double GetDpiScaleFactor()
         {
             try

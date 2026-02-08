@@ -2,9 +2,7 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// Extension methods for ILogger to provide conditional debug logging
-    /// </summary>
+    // Conditional debug logging extensions for ILogger
     public static class LoggerExtensions
     {
         /// <summary>

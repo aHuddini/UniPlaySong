@@ -2,73 +2,39 @@ using Playnite.SDK.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Coordinates music playback decisions, state management, and skip logic
-    /// Centralizes all "should play" logic to prevent timing issues and complexity
-    /// </summary>
+    // Coordinates music playback decisions, state management, and skip logic
     public interface IMusicPlaybackCoordinator
     {
-        /// <summary>
-        /// Central gatekeeper - determines if music should play for a given game
-        /// All music playback decisions go through this method
-        /// </summary>
+        // Central gatekeeper — all music playback decisions go through this
         bool ShouldPlayMusic(Game game);
         
-        /// <summary>
-        /// Handles game selection event - coordinates skip logic and playback
-        /// </summary>
+        // Handles game selection event — coordinates skip logic and playback
         void HandleGameSelected(Game game, bool isFullscreen);
         
-        /// <summary>
-        /// Handles login screen dismissal (controller/keyboard input)
-        /// </summary>
+        // Handles login screen dismissal (controller/keyboard input)
         void HandleLoginDismiss();
         
-        /// <summary>
-        /// Handles view changes (user left login screen)
-        /// </summary>
+        // Handles view changes (user left login screen)
         void HandleViewChange();
         
-        /// <summary>
-        /// Handles video state changes from MediaElementsMonitor (pause/resume music when video plays)
-        /// </summary>
+        // Handles video state changes from MediaElementsMonitor (pause/resume music when video plays)
         void HandleVideoStateChange(bool isPlaying);
 
-        /// <summary>
-        /// Handles theme overlay state changes from MusicControl (pause/resume music when theme overlay is active)
-        /// This is separate from HandleVideoStateChange to prevent conflicts.
-        /// </summary>
+        // Handles theme overlay state changes (pause/resume music; separate from video to prevent conflicts)
         void HandleThemeOverlayChange(bool isActive);
 
-        /// <summary>
-        /// Gets whether this is the first game selection
-        /// </summary>
         bool IsFirstSelect();
         
-        /// <summary>
-        /// Gets whether login skip is currently active
-        /// </summary>
         bool IsLoginSkipActive();
         
-        /// <summary>
-        /// Resets the first select flag (for testing or manual reset)
-        /// </summary>
         void ResetFirstSelect();
         
-        /// <summary>
-        /// Sets login skip active state (for testing or manual control)
-        /// </summary>
         void SetLoginSkipActive(bool active);
         
-        /// <summary>
-        /// Resets skip state when switching modes (for SkipFirstSelectionAfterModeSwitch)
-        /// Should be called when switching to fullscreen mode
-        /// </summary>
+        // Resets skip state when switching to fullscreen mode
         void ResetSkipStateForModeSwitch();
 
-        /// <summary>
-        /// Updates the settings reference (called when settings are saved)
-        /// </summary>
+        // Updates the settings reference (called when settings are saved)
         void UpdateSettings(UniPlaySongSettings newSettings);
     }
 }

@@ -91,8 +91,6 @@ namespace UniPlaySong.Views
                 _playbackService = playbackService;
                 _mode = mode;
 
-                Logger.DebugIf(LogPrefix, $"Initialized file picker for game: {game?.Name}, mode: {mode}");
-
                 // Update UI based on mode
                 UpdateUIForMode();
 
@@ -342,7 +340,6 @@ namespace UniPlaySong.Views
                 await Task.Delay(150);
                 await CheckButtonPresses(_controllerMonitoringCancellation.Token);
             });
-            Logger.DebugIf(LogPrefix, "Started controller monitoring for file picker");
         }
 
         /// <summary>
@@ -354,7 +351,6 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            Logger.DebugIf(LogPrefix, "Stopped controller monitoring for file picker");
         }
 
         /// <summary>
@@ -394,7 +390,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    Logger.DebugIf(LogPrefix, ex, "Error in controller monitoring");
+                    // Error in controller monitoring - continue polling
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -584,9 +580,8 @@ namespace UniPlaySong.Views
                 _previewPlayer.Volume = 0.7;
                 _previewPlayer.Open(new Uri(filePath));
                 _previewPlayer.Play();
-                
+
                 UpdateInputFeedback($"🔊 Playing preview: {fileName} - X/Y to stop (Game music paused)");
-                Logger.DebugIf(LogPrefix, $"Started preview for: {fileName}");
             }
             catch (Exception ex)
             {
@@ -630,7 +625,6 @@ namespace UniPlaySong.Views
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    Logger.DebugIf(LogPrefix, "Paused game music for preview");
                 }
                 else
                 {
@@ -655,7 +649,6 @@ namespace UniPlaySong.Views
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    Logger.DebugIf(LogPrefix, "Resumed game music after preview");
                 }
             }
             catch (Exception ex)
@@ -784,8 +777,7 @@ namespace UniPlaySong.Views
                 _playniteApi?.Dialogs?.ShowMessage(
                     $"Primary song set to:\n{fileName}",
                     "UniPlaySong");
-                
-                Logger.Info($"Set primary song for {_currentGame?.Name}: {fileName}");
+
                 CloseDialog(true);
             }
             catch (Exception ex)
@@ -808,7 +800,6 @@ namespace UniPlaySong.Views
                     "Primary song removed. The game will use randomized selection.",
                     "UniPlaySong");
 
-                Logger.Info($"Removed primary song for {_currentGame?.Name}");
                 CloseDialog(true);
             }
             catch (Exception ex)
@@ -826,7 +817,6 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting normalization for individual song: {fileName}");
 
                 // Close dialog first, then trigger normalization
                 CloseDialog(true);
@@ -862,7 +852,6 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting trim for individual song: {fileName}");
 
                 // Close dialog first, then trigger trim
                 CloseDialog(true);
@@ -898,7 +887,6 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting repair for individual song: {fileName}");
 
                 // Close dialog first, then trigger repair
                 CloseDialog(true);
@@ -955,7 +943,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        Logger.DebugIf(LogPrefix, focusEx, "Error returning focus to main window");
+                        // Error returning focus to main window - ignore
                     }
                     
                     window.DialogResult = success;

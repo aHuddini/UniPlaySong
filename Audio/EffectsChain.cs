@@ -5,11 +5,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Audio
 {
-    /// <summary>
-    /// Audio effects chain implementing ISampleProvider.
-    /// Applies high-pass, low-pass, reverb (libSoX/Audacity algorithm), and makeup gain.
-    /// Reads effect parameters directly from SettingsService for real-time changes.
-    /// </summary>
+    // Audio effects chain: high-pass, low-pass, reverb (libSoX), and makeup gain
     public class EffectsChain : ISampleProvider
     {
         private readonly ISampleProvider _source;
@@ -95,6 +91,25 @@ namespace UniPlaySong.Audio
         private OnePoleFilter _toneHpL, _toneHpR;
         private OnePoleFilter _toneLpL, _toneLpR;
 
+        // Slow effect (resampling) state
+        private float[] _resampleBuffer;
+        private double _resamplePosition;
+
+        // Chorus state
+        private float[] _chorusDelayBufferL;
+        private float[] _chorusDelayBufferR;
+        private int _chorusWriteIndex;
+        private double _chorusLfoPhase;
+        private int _chorusMaxDelaySamples;
+
+        // Tremolo state
+        private double _tremoloLfoPhase;
+
+        // Bitcrusher state
+        private float _lastCrushedL;
+        private float _lastCrushedR;
+        private int _crushCounter;
+
         // Cache last settings to detect changes
         private int _lastHighPassCutoff;
         private int _lastLowPassCutoff;
@@ -105,10 +120,7 @@ namespace UniPlaySong.Audio
 
         public WaveFormat WaveFormat => _source.WaveFormat;
 
-        /// <summary>
-        /// Resets all effect buffers to clear any residual audio.
-        /// Call this when switching songs to prevent reverb tail bleed.
-        /// </summary>
+        // Resets all effect buffers (call when switching songs to prevent reverb tail bleed)
         public void Reset()
         {
             // Clear pre-delay buffers
@@ -145,6 +157,23 @@ namespace UniPlaySong.Audio
             // Reinitialize tone filters to clear state
             InitializeToneFilters(_sampleRate, 0, 100);
 
+            // Reset slow effect state
+            _resamplePosition = 0.0;
+
+            // Reset chorus state
+            if (_chorusDelayBufferL != null)
+                Array.Clear(_chorusDelayBufferL, 0, _chorusDelayBufferL.Length);
+            if (_chorusDelayBufferR != null)
+                Array.Clear(_chorusDelayBufferR, 0, _chorusDelayBufferR.Length);
+            _chorusWriteIndex = 0;
+            _chorusLfoPhase = 0.0;
+
+            // Reset tremolo and bitcrusher state
+            _tremoloLfoPhase = 0.0;
+            _lastCrushedL = 0;
+            _lastCrushedR = 0;
+            _crushCounter = 0;
+
             // Reinitialize pre-reverb filters to clear state
             var settings = _settingsService.Current;
             _highPassL = BiQuadFilter.HighPassFilter(_sampleRate, settings.HighPassCutoff, 1f);
@@ -174,6 +203,11 @@ namespace UniPlaySong.Audio
             InitializeToneFilters(_sampleRate, settings.ReverbToneLow, settings.ReverbToneHigh);
             _lastToneLow = settings.ReverbToneLow;
             _lastToneHigh = settings.ReverbToneHigh;
+
+            // Initialize chorus delay buffers (~30ms max delay)
+            _chorusMaxDelaySamples = (int)(_sampleRate * 0.03);
+            _chorusDelayBufferL = new float[_chorusMaxDelaySamples];
+            _chorusDelayBufferR = new float[_chorusMaxDelaySamples];
         }
 
         private void InitializeFilters(int sampleRate)
@@ -266,9 +300,7 @@ namespace UniPlaySong.Audio
             return 440.0 * Math.Pow(2, (midiNote - 69) / 12.0);
         }
 
-        /// <summary>
-        /// Process input through pre-delay buffer, returns delayed sample
-        /// </summary>
+        // Process input through pre-delay buffer, returns delayed sample
         private float ProcessPreDelay(float input, float[] buffer, int preDelaySize)
         {
             // Read from buffer (delayed output)
@@ -283,12 +315,66 @@ namespace UniPlaySong.Audio
 
         public int Read(float[] buffer, int offset, int count)
         {
-            int samplesRead = _source.Read(buffer, offset, count);
+            var settings = _settingsService.Current;
+            bool slowActive = settings.SlowEnabled && settings.SlowAmount > 0;
+
+            int samplesRead;
+
+            if (slowActive)
+            {
+                // Speed: SlowAmount 0-50 maps to 1.0x-0.5x
+                double speed = 1.0 - (settings.SlowAmount / 100.0);
+
+                // Calculate source samples needed (fewer than output) + margin for interpolation
+                int sourceSamplesNeeded = (int)(count * speed) + _channels + 2;
+
+                // Ensure resample buffer is large enough
+                if (_resampleBuffer == null || _resampleBuffer.Length < sourceSamplesNeeded)
+                    _resampleBuffer = new float[sourceSamplesNeeded + 64];
+
+                int sourceRead = _source.Read(_resampleBuffer, 0, sourceSamplesNeeded);
+                if (sourceRead == 0)
+                    return 0;
+
+                // Linear interpolation resampling (frame-based for stereo correctness)
+                int outputFrames = count / _channels;
+                int sourceFrames = sourceRead / _channels;
+                int outputSampleIndex = 0;
+
+                for (int frame = 0; frame < outputFrames; frame++)
+                {
+                    int srcFrame = (int)_resamplePosition;
+                    double frac = _resamplePosition - srcFrame;
+
+                    if (srcFrame + 1 >= sourceFrames)
+                        break;
+
+                    for (int ch = 0; ch < _channels; ch++)
+                    {
+                        float s0 = _resampleBuffer[srcFrame * _channels + ch];
+                        float s1 = _resampleBuffer[(srcFrame + 1) * _channels + ch];
+                        buffer[offset + outputSampleIndex] = (float)(s0 + (s1 - s0) * frac);
+                        outputSampleIndex++;
+                    }
+
+                    _resamplePosition += speed;
+                }
+
+                // Carry over fractional position for next call
+                int framesConsumed = (int)_resamplePosition;
+                _resamplePosition -= framesConsumed;
+
+                samplesRead = outputSampleIndex;
+            }
+            else
+            {
+                samplesRead = _source.Read(buffer, offset, count);
+                // Reset resample position when slow is disabled
+                _resamplePosition = 0.0;
+            }
 
             if (samplesRead == 0)
                 return 0;
-
-            var settings = _settingsService.Current;
 
             // Update filters if cutoff frequencies changed
             if (_lastHighPassCutoff != settings.HighPassCutoff ||
@@ -312,7 +398,10 @@ namespace UniPlaySong.Audio
             }
 
             // Check if any effects are enabled
-            bool anyEffectEnabled = settings.HighPassEnabled || settings.LowPassEnabled || settings.ReverbEnabled;
+            bool anyEffectEnabled = settings.HighPassEnabled || settings.LowPassEnabled
+                                    || settings.ReverbEnabled || slowActive
+                                    || settings.StereoWidenerEnabled || settings.ChorusEnabled
+                                    || settings.BitcrusherEnabled || settings.TremoloEnabled;
             bool hasMakeupGain = settings.MakeupGainEnabled && settings.MakeupGain != 0;
 
             if (!anyEffectEnabled && !hasMakeupGain)
@@ -336,7 +425,7 @@ namespace UniPlaySong.Audio
         private void ProcessStereo(float[] buffer, int offset, int count, UniPlaySongSettings settings)
         {
             // Calculate libSoX/Audacity reverb parameters (only used if reverb is enabled)
-            float feedback = 0, hfDamping = 0, wetGain = 0, dryGain = 0, stereoWidth = 0;
+            float feedback = 0, hfDamping = 0, wetGain = 0, dryGain = 0, stereoWidth = 0, reverbMix = 1f;
             if (settings.ReverbEnabled)
             {
                 // Audacity uses Reverberance (not RoomSize) for feedback/tail length
@@ -361,6 +450,7 @@ namespace UniPlaySong.Audio
                 wetGain = DbToLinear(settings.ReverbWetGain) * wetMultiplier;
                 dryGain = DbToLinear(settings.ReverbDryGain);
                 stereoWidth = settings.ReverbStereoWidth / 100f;
+                reverbMix = settings.ReverbMix / 100f;
 
                 // Update tone filters if ToneLow/ToneHigh changed
                 UpdateToneFiltersIfNeeded(settings);
@@ -383,12 +473,12 @@ namespace UniPlaySong.Audio
                         // High-Pass → Low-Pass → Reverb (default/recommended)
                         ApplyHighPassStereo(ref left, ref right, settings);
                         ApplyLowPassStereo(ref left, ref right, settings);
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         break;
 
                     case EffectChainPreset.ReverbFirst:
                         // Reverb → High-Pass → Low-Pass
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         ApplyHighPassStereo(ref left, ref right, settings);
                         ApplyLowPassStereo(ref left, ref right, settings);
                         break;
@@ -397,26 +487,26 @@ namespace UniPlaySong.Audio
                         // Low-Pass → High-Pass → Reverb
                         ApplyLowPassStereo(ref left, ref right, settings);
                         ApplyHighPassStereo(ref left, ref right, settings);
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         break;
 
                     case EffectChainPreset.LowPassThenReverb:
                         // Low-Pass → Reverb → High-Pass
                         ApplyLowPassStereo(ref left, ref right, settings);
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         ApplyHighPassStereo(ref left, ref right, settings);
                         break;
 
                     case EffectChainPreset.HighPassThenReverb:
                         // High-Pass → Reverb → Low-Pass
                         ApplyHighPassStereo(ref left, ref right, settings);
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         ApplyLowPassStereo(ref left, ref right, settings);
                         break;
 
                     case EffectChainPreset.ReverbThenLowPass:
                         // Reverb → Low-Pass → High-Pass
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         ApplyLowPassStereo(ref left, ref right, settings);
                         ApplyHighPassStereo(ref left, ref right, settings);
                         break;
@@ -425,9 +515,15 @@ namespace UniPlaySong.Audio
                         // Fallback to standard
                         ApplyHighPassStereo(ref left, ref right, settings);
                         ApplyLowPassStereo(ref left, ref right, settings);
-                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth);
+                        ApplyReverbStereo(ref left, ref right, settings, feedback, hfDamping, wetGain, dryGain, stereoWidth, reverbMix);
                         break;
                 }
+
+                // Post-chain effects (fixed order: widener → chorus → bitcrusher → tremolo)
+                ApplyStereoWidener(ref left, ref right, settings);
+                ApplyChorus(ref left, ref right, settings);
+                ApplyBitcrusher(ref left, ref right, settings);
+                ApplyTremolo(ref left, ref right, settings);
 
                 // Makeup gain (always applied after effect chain if enabled)
                 if (settings.MakeupGainEnabled)
@@ -449,7 +545,7 @@ namespace UniPlaySong.Audio
         private void ProcessMono(float[] buffer, int offset, int count, UniPlaySongSettings settings)
         {
             // Calculate libSoX/Audacity reverb parameters (only used if reverb is enabled)
-            float feedback = 0, hfDamping = 0, wetGain = 0, dryGain = 0;
+            float feedback = 0, hfDamping = 0, wetGain = 0, dryGain = 0, reverbMix = 1f;
             if (settings.ReverbEnabled)
             {
                 // Audacity uses Reverberance (not RoomSize) for feedback/tail length
@@ -472,6 +568,7 @@ namespace UniPlaySong.Audio
                     : DefaultWetGainMultiplier;
                 wetGain = DbToLinear(settings.ReverbWetGain) * wetMultiplier;
                 dryGain = DbToLinear(settings.ReverbDryGain);
+                reverbMix = settings.ReverbMix / 100f;
 
                 // Update tone filters if ToneLow/ToneHigh changed
                 UpdateToneFiltersIfNeeded(settings);
@@ -492,11 +589,11 @@ namespace UniPlaySong.Audio
                     case EffectChainPreset.Standard:
                         ApplyHighPassMono(ref sample, settings);
                         ApplyLowPassMono(ref sample, settings);
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         break;
 
                     case EffectChainPreset.ReverbFirst:
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         ApplyHighPassMono(ref sample, settings);
                         ApplyLowPassMono(ref sample, settings);
                         break;
@@ -504,23 +601,23 @@ namespace UniPlaySong.Audio
                     case EffectChainPreset.LowPassFirst:
                         ApplyLowPassMono(ref sample, settings);
                         ApplyHighPassMono(ref sample, settings);
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         break;
 
                     case EffectChainPreset.LowPassThenReverb:
                         ApplyLowPassMono(ref sample, settings);
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         ApplyHighPassMono(ref sample, settings);
                         break;
 
                     case EffectChainPreset.HighPassThenReverb:
                         ApplyHighPassMono(ref sample, settings);
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         ApplyLowPassMono(ref sample, settings);
                         break;
 
                     case EffectChainPreset.ReverbThenLowPass:
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         ApplyLowPassMono(ref sample, settings);
                         ApplyHighPassMono(ref sample, settings);
                         break;
@@ -528,9 +625,15 @@ namespace UniPlaySong.Audio
                     default:
                         ApplyHighPassMono(ref sample, settings);
                         ApplyLowPassMono(ref sample, settings);
-                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain);
+                        ApplyReverbMono(ref sample, settings, feedback, hfDamping, wetGain, dryGain, reverbMix);
                         break;
                 }
+
+                // Post-chain effects (widener is stereo-only, others apply to mono)
+                ApplyStereoWidenerMono(ref sample, settings);
+                ApplyChorusMono(ref sample, settings);
+                ApplyBitcrusherMono(ref sample, settings);
+                ApplyTremoloMono(ref sample, settings);
 
                 // Makeup gain (always applied after effect chain if enabled)
                 if (settings.MakeupGainEnabled)
@@ -564,7 +667,7 @@ namespace UniPlaySong.Audio
         }
 
         private void ApplyReverbStereo(ref float left, ref float right, UniPlaySongSettings settings,
-            float feedback, float hfDamping, float wetGain, float dryGain, float stereoWidth)
+            float feedback, float hfDamping, float wetGain, float dryGain, float stereoWidth, float reverbMix)
         {
             if (settings.ReverbEnabled)
             {
@@ -606,9 +709,11 @@ namespace UniPlaySong.Audio
                     wetR = mono + (wetR - mono) * stereoWidth;
                 }
 
-                // Mix wet and dry
-                left = dryL * dryGain + wetL * wetGain;
-                right = dryR * dryGain + wetR * wetGain;
+                // Mix wet and dry, then apply mix crossfade
+                float reverbedL = dryL * dryGain + wetL * wetGain;
+                float reverbedR = dryR * dryGain + wetR * wetGain;
+                left = dryL * (1f - reverbMix) + reverbedL * reverbMix;
+                right = dryR * (1f - reverbMix) + reverbedR * reverbMix;
             }
         }
 
@@ -629,7 +734,7 @@ namespace UniPlaySong.Audio
         }
 
         private void ApplyReverbMono(ref float sample, UniPlaySongSettings settings,
-            float feedback, float hfDamping, float wetGain, float dryGain)
+            float feedback, float hfDamping, float wetGain, float dryGain, float reverbMix)
         {
             if (settings.ReverbEnabled)
             {
@@ -649,13 +754,170 @@ namespace UniPlaySong.Audio
                 wet = _toneHpL.Process(wet);
                 wet = _toneLpL.Process(wet);
 
-                sample = dry * dryGain + wet * wetGain;
+                float reverbed = dry * dryGain + wet * wetGain;
+                sample = dry * (1f - reverbMix) + reverbed * reverbMix;
             }
         }
 
-        /// <summary>
-        /// Process a single sample through the reverb algorithm (libSoX style).
-        /// </summary>
+        // ===== Post-chain effects =====
+
+        private void ApplyStereoWidener(ref float left, ref float right, UniPlaySongSettings settings)
+        {
+            if (!settings.StereoWidenerEnabled) return;
+
+            float mid = (left + right) * 0.5f;
+            float side = (left - right) * 0.5f;
+            // 0=mono(0x side), 50=normal(1x side), 100=max(2x side)
+            float widthFactor = settings.StereoWidenerWidth / 50f;
+            side *= widthFactor;
+            left = mid + side;
+            right = mid - side;
+        }
+
+        private void ApplyStereoWidenerMono(ref float sample, UniPlaySongSettings settings)
+        {
+            // Stereo widener has no effect on mono — intentional no-op
+        }
+
+        private void ApplyChorus(ref float left, ref float right, UniPlaySongSettings settings)
+        {
+            if (!settings.ChorusEnabled) return;
+
+            // Write current samples into delay buffer
+            _chorusDelayBufferL[_chorusWriteIndex] = left;
+            _chorusDelayBufferR[_chorusWriteIndex] = right;
+
+            // LFO modulates delay time (10-25ms range)
+            double lfoRate = settings.ChorusRate / 10.0; // tenths of Hz → Hz
+            double depthFactor = settings.ChorusDepth / 100.0;
+            double minDelay = _sampleRate * 0.010; // 10ms
+            double maxDelay = _sampleRate * 0.025; // 25ms
+            double delayRange = (maxDelay - minDelay) * depthFactor;
+
+            // L channel LFO
+            double lfoL = 0.5 + 0.5 * Math.Sin(2.0 * Math.PI * _chorusLfoPhase);
+            double delaySamplesL = minDelay + delayRange * lfoL;
+
+            // R channel LFO (offset by 0.25 phase for stereo motion)
+            double lfoR = 0.5 + 0.5 * Math.Sin(2.0 * Math.PI * (_chorusLfoPhase + 0.25));
+            double delaySamplesR = minDelay + delayRange * lfoR;
+
+            // Read from delay buffer with linear interpolation (L)
+            int idxL = (int)delaySamplesL;
+            double fracL = delaySamplesL - idxL;
+            int readL0 = (_chorusWriteIndex - idxL + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            int readL1 = (_chorusWriteIndex - idxL - 1 + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            float wetL = (float)(_chorusDelayBufferL[readL0] * (1.0 - fracL) + _chorusDelayBufferL[readL1] * fracL);
+
+            // Read from delay buffer with linear interpolation (R)
+            int idxR = (int)delaySamplesR;
+            double fracR = delaySamplesR - idxR;
+            int readR0 = (_chorusWriteIndex - idxR + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            int readR1 = (_chorusWriteIndex - idxR - 1 + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            float wetR = (float)(_chorusDelayBufferR[readR0] * (1.0 - fracR) + _chorusDelayBufferR[readR1] * fracR);
+
+            // Advance write index
+            _chorusWriteIndex = (_chorusWriteIndex + 1) % _chorusMaxDelaySamples;
+
+            // Advance LFO phase
+            _chorusLfoPhase += lfoRate / _sampleRate;
+            if (_chorusLfoPhase >= 1.0) _chorusLfoPhase -= 1.0;
+
+            // Mix wet/dry
+            float mix = settings.ChorusMix / 100f;
+            left = left * (1f - mix) + wetL * mix;
+            right = right * (1f - mix) + wetR * mix;
+        }
+
+        private void ApplyChorusMono(ref float sample, UniPlaySongSettings settings)
+        {
+            if (!settings.ChorusEnabled) return;
+
+            _chorusDelayBufferL[_chorusWriteIndex] = sample;
+
+            double lfoRate = settings.ChorusRate / 10.0;
+            double depthFactor = settings.ChorusDepth / 100.0;
+            double minDelay = _sampleRate * 0.010;
+            double maxDelay = _sampleRate * 0.025;
+            double delayRange = (maxDelay - minDelay) * depthFactor;
+
+            double lfo = 0.5 + 0.5 * Math.Sin(2.0 * Math.PI * _chorusLfoPhase);
+            double delaySamples = minDelay + delayRange * lfo;
+
+            int idx = (int)delaySamples;
+            double frac = delaySamples - idx;
+            int read0 = (_chorusWriteIndex - idx + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            int read1 = (_chorusWriteIndex - idx - 1 + _chorusMaxDelaySamples) % _chorusMaxDelaySamples;
+            float wet = (float)(_chorusDelayBufferL[read0] * (1.0 - frac) + _chorusDelayBufferL[read1] * frac);
+
+            _chorusWriteIndex = (_chorusWriteIndex + 1) % _chorusMaxDelaySamples;
+            _chorusLfoPhase += lfoRate / _sampleRate;
+            if (_chorusLfoPhase >= 1.0) _chorusLfoPhase -= 1.0;
+
+            float mix = settings.ChorusMix / 100f;
+            sample = sample * (1f - mix) + wet * mix;
+        }
+
+        private void ApplyBitcrusher(ref float left, ref float right, UniPlaySongSettings settings)
+        {
+            if (!settings.BitcrusherEnabled) return;
+
+            _crushCounter++;
+            if (_crushCounter >= settings.BitcrusherDownsample)
+            {
+                _crushCounter = 0;
+                float steps = (float)Math.Pow(2, settings.BitcrusherBitDepth - 1);
+                _lastCrushedL = (float)Math.Round(left * steps) / steps;
+                _lastCrushedR = (float)Math.Round(right * steps) / steps;
+            }
+            left = _lastCrushedL;
+            right = _lastCrushedR;
+        }
+
+        private void ApplyBitcrusherMono(ref float sample, UniPlaySongSettings settings)
+        {
+            if (!settings.BitcrusherEnabled) return;
+
+            _crushCounter++;
+            if (_crushCounter >= settings.BitcrusherDownsample)
+            {
+                _crushCounter = 0;
+                float steps = (float)Math.Pow(2, settings.BitcrusherBitDepth - 1);
+                _lastCrushedL = (float)Math.Round(sample * steps) / steps;
+            }
+            sample = _lastCrushedL;
+        }
+
+        private void ApplyTremolo(ref float left, ref float right, UniPlaySongSettings settings)
+        {
+            if (!settings.TremoloEnabled) return;
+
+            double lfoRate = settings.TremoloRate / 10.0; // tenths of Hz → Hz
+            float lfo = (float)(0.5 + 0.5 * Math.Sin(2.0 * Math.PI * _tremoloLfoPhase));
+            float depth = settings.TremoloDepth / 100f;
+            float gain = 1f - depth * (1f - lfo);
+            left *= gain;
+            right *= gain;
+
+            _tremoloLfoPhase += lfoRate / _sampleRate;
+            if (_tremoloLfoPhase >= 1.0) _tremoloLfoPhase -= 1.0;
+        }
+
+        private void ApplyTremoloMono(ref float sample, UniPlaySongSettings settings)
+        {
+            if (!settings.TremoloEnabled) return;
+
+            double lfoRate = settings.TremoloRate / 10.0;
+            float lfo = (float)(0.5 + 0.5 * Math.Sin(2.0 * Math.PI * _tremoloLfoPhase));
+            float depth = settings.TremoloDepth / 100f;
+            float gain = 1f - depth * (1f - lfo);
+            sample *= gain;
+
+            _tremoloLfoPhase += lfoRate / _sampleRate;
+            if (_tremoloLfoPhase >= 1.0) _tremoloLfoPhase -= 1.0;
+        }
+
+        // Process a single sample through the reverb algorithm (libSoX style)
         private static float ProcessReverbChannel(
             float input,
             float[][] combBuffers, int[] combIndex, int[] combSize, float[] combStore,
@@ -705,17 +967,12 @@ namespace UniPlaySong.Audio
             _lastLowPassCutoff = settings.LowPassCutoff;
         }
 
-        /// <summary>
-        /// Convert dB to linear gain
-        /// </summary>
-        private static float DbToLinear(int db)
+        private static float DbToLinear(int db) // dB to linear gain
         {
             return (float)Math.Pow(10, db / 20.0);
         }
 
-        /// <summary>
-        /// Soft-knee limiter to prevent harsh clipping.
-        /// </summary>
+        // Soft-knee limiter to prevent harsh clipping
         private static float SoftKneeLimiter(float sample)
         {
             float absValue = Math.Abs(sample);
@@ -738,9 +995,7 @@ namespace UniPlaySong.Audio
             return sign * compressed;
         }
 
-        /// <summary>
-        /// Simple one-pole filter for post-reverb tone control (from libSoX).
-        /// </summary>
+        // Simple one-pole filter for post-reverb tone control (from libSoX)
         private class OnePoleFilter
         {
             private double _b0, _b1, _a1;

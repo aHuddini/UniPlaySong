@@ -10,9 +10,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for audio amplification (volume adjustment) using NAudio for analysis and FFmpeg for processing
-    /// </summary>
+    // Audio amplification service using NAudio for analysis and FFmpeg for processing
     public class AudioAmplifyService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -34,9 +32,7 @@ namespace UniPlaySong.Services
             _backupBasePath = backupBasePath;
         }
 
-        /// <summary>
-        /// Generate waveform data for display, including peak amplitude info
-        /// </summary>
+        // Generate waveform data for display, including peak amplitude info
         public async Task<AmplifyWaveformData> GenerateWaveformAsync(string audioFilePath, CancellationToken token = default)
         {
             Logger.DebugIf(LogPrefix,$"GenerateWaveformAsync started for: {Path.GetFileName(audioFilePath)}");
@@ -133,9 +129,7 @@ namespace UniPlaySong.Services
             }, token);
         }
 
-        /// <summary>
-        /// Calculate headroom - how much gain can be applied before clipping
-        /// </summary>
+        // Headroom = distance from peak to 0dBFS
         public float CalculateHeadroomDb(float peakDb)
         {
             // Headroom is the distance from peak to 0dBFS
@@ -143,18 +137,13 @@ namespace UniPlaySong.Services
             return -peakDb;
         }
 
-        /// <summary>
-        /// Check if applying the given gain would cause clipping
-        /// </summary>
         public bool WouldClip(float peakDb, float gainDb)
         {
             // If peak + gain > 0dBFS, we'd clip
             return (peakDb + gainDb) > 0f;
         }
 
-        /// <summary>
-        /// Apply volume adjustment using FFmpeg
-        /// </summary>
+        // Apply volume adjustment using FFmpeg
         public async Task<bool> ApplyAmplifyAsync(
             string inputPath,
             float gainDb,
@@ -173,8 +162,7 @@ namespace UniPlaySong.Services
 
                 if (Math.Abs(gainDb) < 0.1f)
                 {
-                    Logger.Info("Gain too small, skipping amplification");
-                    return true; // No change needed
+                    return true; // Gain too small, no change needed
                 }
 
                 var directory = Path.GetDirectoryName(inputPath);
@@ -188,7 +176,6 @@ namespace UniPlaySong.Services
 
                 Logger.DebugIf(LogPrefix,$"Output path: {finalOutputPath}");
                 Logger.DebugIf(LogPrefix,$"Temp path: {tempPath}");
-                Logger.Info($"Amplify: {fileName} by {gainDb:+0.0;-0.0;0}dB");
 
                 // Stop playback if this file is playing
                 _playbackService?.Stop();
@@ -232,7 +219,6 @@ namespace UniPlaySong.Services
                     Logger.DebugIf(LogPrefix,$"Moving temp to final: {finalOutputPath}");
                     File.Move(tempPath, finalOutputPath);
 
-                    Logger.Info($"Amplify completed: {Path.GetFileName(finalOutputPath)} (original moved to PreservedOriginals)");
                     return true;
                 }
                 else
@@ -251,7 +237,6 @@ namespace UniPlaySong.Services
                         try
                         {
                             File.Copy(preservedOriginalPath, inputPath, true);
-                            Logger.Info("Restored original file after failed amplify");
                         }
                         catch (Exception restoreEx)
                         {
@@ -274,9 +259,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Preserve original file to PreservedOriginals folder
-        /// </summary>
+        // Preserve original file to PreservedOriginals folder
         private async Task<string> PreserveOriginalAsync(string inputPath, string directory, string fileName, string extension)
         {
             Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync - preserving: {fileName}{extension}");
@@ -320,9 +303,6 @@ namespace UniPlaySong.Services
             });
         }
 
-        /// <summary>
-        /// Get codec arguments based on file extension
-        /// </summary>
         private string GetCodecArgs(string extension)
         {
             var ext = extension.ToLowerInvariant();
@@ -344,9 +324,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Run FFmpeg with given arguments
-        /// </summary>
         private async Task<bool> RunFFmpegAsync(string ffmpegPath, string args, CancellationToken token)
         {
             Logger.DebugIf(LogPrefix,$"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
@@ -411,75 +388,27 @@ namespace UniPlaySong.Services
             }, token);
         }
 
-        /// <summary>
-        /// Validate FFmpeg is available
-        /// </summary>
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
     }
 
-    /// <summary>
-    /// Waveform data with amplitude analysis for amplification
-    /// </summary>
+    // Waveform data with amplitude analysis for amplification
     public class AmplifyWaveformData
     {
-        /// <summary>
-        /// Normalized samples (0 to 1) for display
-        /// </summary>
-        public float[] Samples { get; set; }
-
-        /// <summary>
-        /// Total duration of the audio file
-        /// </summary>
+        public float[] Samples { get; set; } // Normalized 0-1 for display
         public TimeSpan Duration { get; set; }
-
-        /// <summary>
-        /// Sample rate of source audio
-        /// </summary>
         public int SampleRate { get; set; }
-
-        /// <summary>
-        /// Number of channels (1=mono, 2=stereo)
-        /// </summary>
-        public int Channels { get; set; }
-
-        /// <summary>
-        /// Source file path
-        /// </summary>
+        public int Channels { get; set; } // 1=mono, 2=stereo
         public string FilePath { get; set; }
-
-        /// <summary>
-        /// Raw peak amplitude (0.0 to 1.0 where 1.0 = 0dBFS)
-        /// </summary>
-        public float PeakAmplitude { get; set; }
-
-        /// <summary>
-        /// Peak level in dB (0dB = full scale, negative values are below full scale)
-        /// </summary>
-        public float PeakDb { get; set; }
-
-        /// <summary>
-        /// Whether the waveform data is valid and ready for display
-        /// </summary>
+        public float PeakAmplitude { get; set; } // Raw peak (0.0-1.0, 1.0 = 0dBFS)
+        public float PeakDb { get; set; } // Peak in dB (0dB = full scale)
         public bool IsValid => Samples != null && Samples.Length > 0 && Duration.TotalSeconds > 0;
-
-        /// <summary>
-        /// Get headroom in dB (how much gain can be applied before clipping)
-        /// </summary>
-        public float HeadroomDb => -PeakDb;
-
-        /// <summary>
-        /// Check if a specific gain would cause clipping
-        /// </summary>
+        public float HeadroomDb => -PeakDb; // How much gain before clipping
         public bool WouldClip(float gainDb) => (PeakDb + gainDb) > 0f;
 
-        /// <summary>
-        /// Get scaled samples for display with a given gain adjustment
-        /// Returns samples scaled by the gain factor, capped at 1.0
-        /// Also returns which samples would clip
-        /// </summary>
+        // Scale samples by gain factor (capped at 1.0) and flag clipping
         public (float[] scaledSamples, bool[] clipping) GetScaledSamples(float gainDb)
         {
             if (Samples == null || Samples.Length == 0)

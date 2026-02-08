@@ -1,54 +1,17 @@
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Represents different sources that can pause music playback.
-    /// Allows multiple independent systems to pause music without conflicts.
-    /// </summary>
+    // Represents different sources that can pause music playback.
+    // Allows multiple independent systems to pause music without conflicts.
     public enum PauseSource
     {
-        /// <summary>
-        /// Video playback is active (game trailers, cutscenes)
-        /// </summary>
-        Video,
-
-        /// <summary>
-        /// User manually paused playback
-        /// </summary>
-        Manual,
-
-        /// <summary>
-        /// Settings are being changed (e.g., volume adjustment)
-        /// </summary>
-        Settings,
-
-        /// <summary>
-        /// View mode is changing (desktop to fullscreen or vice versa)
-        /// </summary>
-        ViewChange,
-
-        /// <summary>
-        /// Default music position is being preserved when switching to game music
-        /// </summary>
-        DefaultMusicPreservation,
-
-        /// <summary>
-        /// Theme overlay is active (set by MusicControl from theme Tag bindings)
-        /// </summary>
-        ThemeOverlay,
-
-        /// <summary>
-        /// Playnite window lost focus to another application (PauseOnFocusLoss setting)
-        /// </summary>
-        FocusLoss,
-
-        /// <summary>
-        /// Playnite window is minimized (PauseOnMinimize setting)
-        /// </summary>
-        Minimized,
-
-        /// <summary>
-        /// Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
-        /// </summary>
-        SystemTray
+        Video,                      // Video playback is active (game trailers, cutscenes)
+        Manual,                     // User manually paused playback
+        Settings,                   // Settings are being changed (e.g., volume adjustment)
+        ViewChange,                 // View mode is changing (desktop to fullscreen or vice versa)
+        DefaultMusicPreservation,   // Default music position is being preserved when switching to game music
+        ThemeOverlay,               // Theme overlay is active (set by MusicControl from theme Tag bindings)
+        FocusLoss,                  // Playnite window lost focus to another application (PauseOnFocusLoss setting)
+        Minimized,                  // Playnite window is minimized (PauseOnMinimize setting)
+        SystemTray                  // Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
     }
 }

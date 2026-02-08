@@ -29,11 +29,9 @@ namespace UniPlaySong.Monitors
             
             // Register handler for all window loaded events
             EventManager.RegisterClassHandler(
-                typeof(Window), 
-                Window.LoadedEvent, 
+                typeof(Window),
+                Window.LoadedEvent,
                 new RoutedEventHandler(Window_Loaded));
-            
-            Logger.Info("WindowMonitor attached - ready for universal theme support");
         }
 
         /// <summary>
@@ -72,8 +70,6 @@ namespace UniPlaySong.Monitors
 
                             musicControlPlaceholder.Focusable = false;
                             musicControlPlaceholder.Content = control;
-                            
-                            Logger.Debug("Attached music control to window");
                         }
                     },
                     context: "attaching music control to window",
@@ -106,8 +102,6 @@ namespace UniPlaySong.Monitors
 
                         musicControlPlaceholder.Focusable = false;
                         musicControlPlaceholder.Content = control;
-                        
-                        Logger.Debug("Attached music control to window");
                     }
                 }
                 catch (Exception ex)

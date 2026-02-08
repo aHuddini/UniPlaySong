@@ -4,19 +4,10 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Interface for music download sources (KHInsider, YouTube, etc.)
-    /// </summary>
+    // Interface for music download sources (KHInsider, YouTube, etc.)
     public interface IDownloader
     {
-        /// <summary>
-        /// Gets the base URL for this download source
-        /// </summary>
         string BaseUrl();
-
-        /// <summary>
-        /// Gets the source type this downloader represents
-        /// </summary>
         Source DownloadSource();
 
         /// <summary>

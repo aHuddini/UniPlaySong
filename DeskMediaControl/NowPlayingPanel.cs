@@ -7,12 +7,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.DeskMediaControl
 {
-    /// <summary>
-    /// A custom panel that displays "Now Playing" song info with scrolling text
-    /// and subtle fade edges for long text. Designed for the Desktop top panel bar.
-    /// Uses CompositionTarget.Rendering for smooth, frame-based animation.
-    /// Only subscribes to the render loop when animation is active to avoid GPU waste.
-    /// </summary>
+    // "Now Playing" panel with scrolling text and fade edges for the Desktop top panel bar.
+    // Uses CompositionTarget.Rendering for frame-based animation; only hooks when active to avoid GPU waste.
     public class NowPlayingPanel : Grid
     {
         private readonly TextBlock _songText;
@@ -174,9 +170,7 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        /// <summary>
-        /// Returns true if anything needs the render loop running.
-        /// </summary>
+        // Returns true if anything needs the render loop running
         private bool NeedsRendering()
         {
             if (!_isAppFocused) return false;

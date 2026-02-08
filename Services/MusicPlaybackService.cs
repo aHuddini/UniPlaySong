@@ -11,9 +11,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// High-level service for managing music playback for games
-    /// </summary>
+    // High-level service for managing music playback for games
     public class MusicPlaybackService : IMusicPlaybackService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -24,44 +22,23 @@ namespace UniPlaySong.Services
         private readonly ErrorHandlerService _errorHandler;
         private readonly Dictionary<string, bool> _primarySongPlayed = new Dictionary<string, bool>();
         
-        /// <summary>
-        /// Event fired when music stops (for native music restoration)
-        /// </summary>
-        public event Action<UniPlaySongSettings> OnMusicStopped;
+        public event Action<UniPlaySongSettings> OnMusicStopped; // Fired when music stops (for native music restoration)
 
-        /// <summary>
-        /// Event fired when music starts (for native music suppression)
-        /// </summary>
-        public event Action<UniPlaySongSettings> OnMusicStarted;
+        public event Action<UniPlaySongSettings> OnMusicStarted; // Fired when music starts (for native music suppression)
 
-        /// <summary>
-        /// Event fired when a song reaches its natural end (before looping/randomizing).
-        /// Used by batch download to queue next random game's music.
-        /// </summary>
+        // Fired when a song reaches its natural end (before looping/randomizing).
+        // Used by batch download to queue next random game's music.
         public event Action OnSongEnded;
 
-        /// <summary>
-        /// Event fired when playback state changes (play/pause/resume).
-        /// Used by UI controls (like top panel) to update their state.
-        /// </summary>
+        // Fired when playback state changes (play/pause/resume). Used by UI controls to update state.
         public event Action OnPlaybackStateChanged;
 
-        /// <summary>
-        /// Event fired when the current game or song count changes.
-        /// Used by UI controls to update skip button visibility.
-        /// </summary>
+        // Fired when current game or song count changes. Used by UI for skip button visibility.
         public event Action OnSongCountChanged;
 
-        /// <summary>
-        /// Event fired when the current song changes (new song starts playing).
-        /// Used by UI controls to update song info display.
-        /// </summary>
-        public event Action<string> OnSongChanged;
+        public event Action<string> OnSongChanged; // Fired when current song changes (for UI song info display)
 
-        /// <summary>
-        /// When true, suppresses the default loop/restart behavior in OnMediaEnded.
-        /// Set by external handlers (like batch download) that want to take over playback.
-        /// </summary>
+        // When true, suppresses loop/restart in OnMediaEnded. Set by batch download to take over playback.
         public bool SuppressAutoLoop { get; set; }
 
         private int _currentGameSongCount = 0;
@@ -97,9 +74,7 @@ namespace UniPlaySong.Services
         private string _previousSongPath;
         private Game _currentGame;
 
-        /// <summary>
-        /// Gets or sets the current song path, firing OnSongChanged when changed.
-        /// </summary>
+        // Gets/sets current song path, fires OnSongChanged when changed
         private string _currentSongPath
         {
             get => _currentSongPathBacking;
@@ -116,14 +91,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets the file path of the currently playing song.
-        /// </summary>
         public string CurrentSongPath => _currentSongPath;
 
-        /// <summary>
-        /// Gets the current game being played.
-        /// </summary>
         public Game CurrentGame => _currentGame;
 
         // Multi-source pause tracking (replaces simple bool _isPaused)
@@ -256,7 +225,7 @@ namespace UniPlaySong.Services
 
                 if (clearedCount > 0)
                 {
-                    _fileLogger?.Info($"Cleared {clearedCount} pause sources (preserved {preservedSources.Count}: {string.Join(", ", preservedSources)})");
+                    _fileLogger?.Debug($"Cleared {clearedCount} pause sources (preserved {preservedSources.Count}: {string.Join(", ", preservedSources)})");
                 }
 
                 // Only resume if no pause sources remain (including preserved ones)
@@ -268,10 +237,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray).
-        /// Used to prevent playback from starting when Playnite is minimized/in tray/unfocused.
-        /// </summary>
+        // Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray)
         private bool HasWindowStatePauseSources()
         {
             return _activePauseSources.Contains(PauseSource.FocusLoss) ||
@@ -279,10 +245,7 @@ namespace UniPlaySong.Services
                    _activePauseSources.Contains(PauseSource.SystemTray);
         }
 
-        /// <summary>
-        /// Called when application initialization is complete (after CheckInitialWindowState).
-        /// Processes any deferred playback request if window state allows.
-        /// </summary>
+        // Called after CheckInitialWindowState. Processes any deferred playback request.
         public void MarkInitializationComplete()
         {
             _initializationComplete = true;
@@ -307,10 +270,7 @@ namespace UniPlaySong.Services
 
         #endregion
 
-        /// <summary>
-        /// Checks if a given path is the default music (either native or custom)
-        /// UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time
-        /// </summary>
+        // Checks if path is default music (native or custom). The two options are mutually exclusive.
         private bool IsDefaultMusicPath(string path, UniPlaySongSettings settings)
         {
             if (string.IsNullOrWhiteSpace(path) || settings == null || !settings.EnableDefaultMusic)
@@ -331,14 +291,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Pauses default music when switching to game music (PNS-style pattern).
-        /// Saves position BEFORE pausing so it can be restored later.
-        /// </summary>
-        /// <remarks>
-        /// CRITICAL: Position must be saved before pausing/closing.
-        /// This is only called when we want to pause (not when switching to game music).
-        /// </remarks>
+        // Pauses default music when switching to game music (PNS-style pattern).
+        // CRITICAL: Saves position BEFORE pausing so it can be restored later.
         private void PauseDefaultMusic(UniPlaySongSettings settings)
         {
             if (_isPlayingDefaultMusic &&
@@ -352,13 +306,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Resumes default music when switching back from game music (PNS-style pattern).
-        /// Resumes from saved position if same file is paused, otherwise loads and plays from saved position.
-        /// </summary>
-        /// <remarks>
-        /// Note: defaultMusicPath can be either native or custom, so we check by path equality.
-        /// </remarks>
+        // Resumes default music from saved position when switching back from game music (PNS-style pattern).
+        // defaultMusicPath can be either native or custom, checked by path equality.
         private void ResumeDefaultMusic(string defaultMusicPath, UniPlaySongSettings settings)
         {
             if (!_isPlayingDefaultMusic &&
@@ -486,7 +435,7 @@ namespace UniPlaySong.Services
                     }
                 }
                 
-                _fileLogger?.Info($"PlayGameMusic: {game.Name} (ID: {gameId}) - Found {songs.Count} songs, CurrentGameId: {_currentGameId ?? "null"}, CurrentSongPath: {_currentSongPath ?? "null"}");
+                _fileLogger?.Debug($"PlayGameMusic: {game.Name} (ID: {gameId}) - Found {songs.Count} songs, CurrentGameId: {_currentGameId ?? "null"}, CurrentSongPath: {_currentSongPath ?? "null"}");
 
                 if (songs.Count == 0)
                 {
@@ -533,7 +482,7 @@ namespace UniPlaySong.Services
                 _currentGameSongCount = newSongCount;
                 if (songCountChanged || isNewGame || forceReload)
                 {
-                    _fileLogger?.Info($"Song count updated: {newSongCount} songs (changed: {songCountChanged}, newGame: {isNewGame}, forceReload: {forceReload})");
+                    _fileLogger?.Debug($"Song count updated: {newSongCount} songs (changed: {songCountChanged}, newGame: {isNewGame}, forceReload: {forceReload})");
                     OnSongCountChanged?.Invoke();
                 }
                 
@@ -542,12 +491,12 @@ namespace UniPlaySong.Services
                 bool isCurrentDefaultMusic = IsDefaultMusicPath(_currentSongPath, settings);
                 if (isNewGame && !isCurrentDefaultMusic)
                 {
-                    _fileLogger?.Info($"New game detected (previous: {previousGameId ?? "null"}, current: {gameId}), clearing current song path (was: {_currentSongPath ?? "null"})");
+                    _fileLogger?.Debug($"New game detected (previous: {previousGameId ?? "null"}, current: {gameId}), clearing current song path (was: {_currentSongPath ?? "null"})");
                     _currentSongPath = null;
                 }
                 else if (isNewGame && isCurrentDefaultMusic)
                 {
-                    _fileLogger?.Info($"New game detected but current song is default music - preserving to continue playback: {Path.GetFileName(_currentSongPath)}");
+                    _fileLogger?.Debug($"New game detected but current song is default music - preserving to continue playback: {Path.GetFileName(_currentSongPath)}");
                 }
                 
                 // Update settings for game music (important when switching from default music to game music)
@@ -556,7 +505,7 @@ namespace UniPlaySong.Services
                     _fadeInDuration = settings.FadeInDuration;
                     _fadeOutDuration = settings.FadeOutDuration;
                     _targetVolume = settings.MusicVolume / Constants.VolumeDivisor;
-                    _fileLogger?.Info($"PlayGameMusic: Updated settings (TargetVolume: {_targetVolume}, FadeInDuration: {_fadeInDuration}, FadeOutDuration: {_fadeOutDuration})");
+                    _fileLogger?.Debug($"PlayGameMusic: Updated settings (TargetVolume: {_targetVolume}, FadeInDuration: {_fadeInDuration}, FadeOutDuration: {_fadeOutDuration})");
                 }
 
                 string songToPlay = SelectSongToPlay(game, songs, isNewGame);
@@ -574,8 +523,7 @@ namespace UniPlaySong.Services
                 
                 if (isDefaultMusic)
                 {
-                    _fileLogger?.Info($"Playing default music (single-player): {Path.GetFileName(songToPlay)}");
-                    _fileLogger?.Info($"  CurrentSongPath: {_currentSongPath ?? "null"}, IsPlayingDefaultMusic: {_isPlayingDefaultMusic}, IsLoaded: {_musicPlayer?.IsLoaded}, IsActive: {IsPlaying}, Source: {_musicPlayer?.Source ?? "null"}");
+                    _fileLogger?.Debug($"Playing default music: {Path.GetFileName(songToPlay)} (CurrentSongPath: {_currentSongPath ?? "null"}, IsPlayingDefaultMusic: {_isPlayingDefaultMusic}, IsLoaded: {_musicPlayer?.IsLoaded}, IsActive: {IsPlaying})");
                     
                     // Check if default music is already playing - if so, continue (preserve position).
                     // Handles switching between games with no music (both use default music).
@@ -586,7 +534,7 @@ namespace UniPlaySong.Services
                         string.Equals(_musicPlayer.Source, songToPlay, StringComparison.OrdinalIgnoreCase) &&
                         IsPlaying)
                     {
-                        _fileLogger?.Info($"Default music already playing - continuing playback (position preserved): {Path.GetFileName(songToPlay)}");
+                        _fileLogger?.Debug($"Default music already playing - continuing: {Path.GetFileName(songToPlay)}");
                         return;
                     }
                     
@@ -598,7 +546,7 @@ namespace UniPlaySong.Services
                         _musicPlayer?.IsLoaded == true &&
                         string.Equals(_musicPlayer.Source, songToPlay, StringComparison.OrdinalIgnoreCase))
                     {
-                        _fileLogger?.Info($"Default music is paused - resuming from saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
+                        _fileLogger?.Debug($"Default music is paused - resuming from position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                         RemovePauseSource(PauseSource.DefaultMusicPreservation);
                         _isPlayingDefaultMusic = true;
                         return;
@@ -611,7 +559,7 @@ namespace UniPlaySong.Services
                         // Use case-insensitive path comparison to handle path variations (native music file paths)
                         if (!string.Equals(_currentSongPath, songToPlay, StringComparison.OrdinalIgnoreCase))
                         {
-                            _fileLogger?.Info($"Switching from game music to default music with fade-out: {Path.GetFileName(songToPlay)}");
+                            _fileLogger?.Debug($"Switching from game music to default music: {Path.GetFileName(songToPlay)}");
                             
                             _fader.Switch(
                                 stopAction: () =>
@@ -637,13 +585,13 @@ namespace UniPlaySong.Services
 
                                     if (_isPaused)
                                     {
-                                        _fileLogger?.Info($"Loaded default music (manual pause active, not playing): {Path.GetFileName(songToPlay)}");
+                                        _fileLogger?.Debug($"Loaded default music (manual pause active): {Path.GetFileName(songToPlay)}");
                                         OnMusicStarted?.Invoke(settings);
                                         return;
                                     }
 
                                     _musicPlayer.Play(_defaultMusicPausedOnTime);
-                                    _fileLogger?.Info($"Playing default music (switched from game music) at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
+                                    _fileLogger?.Debug($"Playing default music at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                                     OnMusicStarted?.Invoke(settings);
                                 }
                             );
@@ -660,7 +608,7 @@ namespace UniPlaySong.Services
                 // Use case-insensitive path comparison to handle path variations (native music file paths).
                 if (!forceReload && !isNewGame && string.Equals(_currentSongPath, songToPlay, StringComparison.OrdinalIgnoreCase) && IsPlaying)
                 {
-                    _fileLogger?.Info($"Same song playing for same game, skipping: {Path.GetFileName(songToPlay)}");
+                    _fileLogger?.Debug($"Same song playing for same game, skipping: {Path.GetFileName(songToPlay)}");
                     return;
                 }
 
@@ -669,7 +617,7 @@ namespace UniPlaySong.Services
                 
                 if (isNewGame)
                 {
-                    _fileLogger?.Info($"New game detected (previous: {previousGameId ?? "null"}, current: {gameId}), switching to: {Path.GetFileName(songToPlay)}");
+                    _fileLogger?.Debug($"New game detected (previous: {previousGameId ?? "null"}, current: {gameId}), switching to: {Path.GetFileName(songToPlay)}");
                 }
 
                 var newSongPath = songToPlay;
@@ -683,11 +631,11 @@ namespace UniPlaySong.Services
                     if (wasDefaultMusic && !isDefaultMusic)
                     {
                         _defaultMusicPausedOnTime = _musicPlayer.CurrentTime ?? default;
-                        _fileLogger?.Info($"Switching from default music to game music with fade-out. Saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
+                        _fileLogger?.Debug($"Switching from default to game music. Saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                         _isPlayingDefaultMusic = false;
                     }
 
-                    _fileLogger?.Info($"Switching to: {Path.GetFileName(newSongPath)}");
+                    _fileLogger?.Debug($"Switching to: {Path.GetFileName(newSongPath)}");
 
                     // Fire song changed early so UI can update immediately (before fade completes)
                     OnSongChanged?.Invoke(newSongPath);
@@ -714,21 +662,21 @@ namespace UniPlaySong.Services
                             if (_isPaused)
                             {
                                 // Manual pause is active — load song for metadata/Now Playing but don't play
-                                _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                                _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
                                 OnMusicStarted?.Invoke(settings);
                                 return;
                             }
 
                             _musicPlayer.Play();
                             MarkSongStart();
-                            _fileLogger?.Info($"Playing (switched): {Path.GetFileName(newSongPath)}");
+                            _fileLogger?.Debug($"Playing (switched): {Path.GetFileName(newSongPath)}");
                             OnMusicStarted?.Invoke(settings);
                         }
                     );
                 }
                 else if (_isPaused && wasDefaultMusic)
                 {
-                    _fileLogger?.Info($"Switching from paused default music to game music: {Path.GetFileName(newSongPath)}");
+                    _fileLogger?.Debug($"Switching from paused default to game music: {Path.GetFileName(newSongPath)}");
 
                     _musicPlayer?.Close();
                     _currentSongPath = null;
@@ -740,7 +688,7 @@ namespace UniPlaySong.Services
 
                     if (_isPaused)
                     {
-                        _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                        _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
                         OnMusicStarted?.Invoke(settings);
                     }
                     else
@@ -748,13 +696,13 @@ namespace UniPlaySong.Services
                         _musicPlayer.Play();
                         MarkSongStart();
                         _fader.FadeIn();
-                        _fileLogger?.Info($"Playing game music (from paused default): {Path.GetFileName(newSongPath)}");
+                        _fileLogger?.Debug($"Playing game music (from paused default): {Path.GetFileName(newSongPath)}");
                         OnMusicStarted?.Invoke(settings);
                     }
                 }
                 else
                 {
-                    _fileLogger?.Info($"Initial playback with fade-in: {Path.GetFileName(newSongPath)}");
+                    _fileLogger?.Debug($"Initial playback with fade-in: {Path.GetFileName(newSongPath)}");
 
                     _currentSongPath = null;
 
@@ -765,7 +713,7 @@ namespace UniPlaySong.Services
 
                     if (_isPaused)
                     {
-                        _fileLogger?.Info($"Loaded (manual pause active, not playing): {Path.GetFileName(newSongPath)}");
+                        _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
                         OnMusicStarted?.Invoke(settings);
                     }
                     else
@@ -773,12 +721,10 @@ namespace UniPlaySong.Services
                         _musicPlayer.Play();
                         MarkSongStart();
                         _fader.FadeIn();
-                        _fileLogger?.Info($"Playing (initial with fade-in): {Path.GetFileName(newSongPath)}, starting at volume 0");
+                        _fileLogger?.Debug($"Playing (initial): {Path.GetFileName(newSongPath)}");
                         OnMusicStarted?.Invoke(settings);
                     }
                 }
-
-                Logger.Info($"Playing music for '{game.Name}': {Path.GetFileName(songToPlay)}");
             }
             catch (Exception ex)
             {
@@ -1021,35 +967,23 @@ namespace UniPlaySong.Services
                 // Clamp volume to valid range
                 volume = Math.Max(0.0, Math.Min(1.0, volume));
 
-                Logger.Info($"[PlayPreview] START: {Path.GetFileName(filePath)} at volume {volume:F2}");
+                Logger.Debug($"[PlayPreview] {Path.GetFileName(filePath)} at volume {volume:F2}");
 
-                // CRITICAL: Cancel any ongoing fade operation first
-                // This prevents the fader from overriding our volume setting
+                // Cancel any ongoing fade operation first
                 _fader.CancelFade();
-                Logger.Info($"[PlayPreview] Fader cancelled");
 
                 // Stop current playback completely (no fading)
                 _musicPlayer.Stop();
                 _musicPlayer.Close();
-                Logger.Info($"[PlayPreview] Player stopped and closed");
 
-                // Load the file
+                // Load and play immediately (no fading)
                 _musicPlayer.Load(filePath);
-                Logger.Info($"[PlayPreview] File loaded");
-
-                // Set volume directly on the player (same SDL2 backend, same volume scale)
                 _musicPlayer.Volume = volume;
-                Logger.Info($"[PlayPreview] Volume set to {volume:F2}, player reports {_musicPlayer.Volume:F2}");
-
-                // Play immediately (no fading)
                 _musicPlayer.Play();
-                Logger.Info($"[PlayPreview] Play called, volume now {_musicPlayer.Volume:F2}");
 
                 // Update internal state to match what we just set
                 _targetVolume = volume;
                 ClearAllPauseSources();
-
-                Logger.Info($"[PlayPreview] COMPLETE: targetVolume={_targetVolume:F2}");
             }
             catch (Exception ex)
             {
@@ -1123,7 +1057,7 @@ namespace UniPlaySong.Services
                     while (selected == _previousSongPath && songs.Count > 1 && attempts < 10);
 
                     _previousSongPath = selected;
-                    _fileLogger?.Info($"Randomized song selection: {Path.GetFileName(selected)} (RandomizeOnEverySelect)");
+                    _fileLogger?.Debug($"Randomized song selection: {Path.GetFileName(selected)}");
                     return selected;
                 }
             }
@@ -1133,10 +1067,7 @@ namespace UniPlaySong.Services
             return firstSong;
         }
 
-        /// <summary>
-        /// Marks the start time for preview mode tracking.
-        /// Starts preview timer if preview mode is enabled for game music.
-        /// </summary>
+        // Marks song start time and starts preview timer if preview mode is enabled for game music
         private void MarkSongStart()
         {
             _songStartTime = DateTime.Now;
@@ -1146,28 +1077,20 @@ namespace UniPlaySong.Services
                 !IsDefaultMusicPath(_currentSongPath, _currentSettings))
             {
                 _previewTimer.Start();
-                _fileLogger?.Info($"Preview timer started for: {Path.GetFileName(_currentSongPath)} (duration: {_currentSettings.PreviewDuration}s)");
+                _fileLogger?.Debug($"Preview timer started: {Path.GetFileName(_currentSongPath)} ({_currentSettings.PreviewDuration}s)");
             }
         }
 
-        /// <summary>
-        /// Stops the preview timer.
-        /// </summary>
         private void StopPreviewTimer()
         {
             if (_previewTimer.IsEnabled)
             {
                 _previewTimer.Stop();
-                _fileLogger?.Info("Preview timer stopped");
+                _fileLogger?.Debug("Preview timer stopped");
             }
         }
 
-        /// <summary>
-        /// Timer tick handler for preview mode.
-        /// Checks if preview duration has been reached and handles song transition.
-        /// If RandomizeOnMusicEnd is enabled, switches to a different random song.
-        /// Otherwise, restarts the same song from the beginning.
-        /// </summary>
+        // Preview timer tick: checks if preview duration reached, then either randomizes or restarts song
         private void OnPreviewTimerTick(object sender, EventArgs e)
         {
             try
@@ -1195,16 +1118,16 @@ namespace UniPlaySong.Services
                             }
                             while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
 
-                            _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), randomizing to: {Path.GetFileName(nextSong)}");
+                            _fileLogger?.Debug($"Preview: randomizing to {Path.GetFileName(nextSong)}");
                         }
                         else
                         {
-                            _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), only one song available, restarting: {Path.GetFileName(nextSong)}");
+                            _fileLogger?.Debug($"Preview: restarting (single song): {Path.GetFileName(nextSong)}");
                         }
                     }
                     else
                     {
-                        _fileLogger?.Info($"Preview duration reached ({_currentSettings.PreviewDuration}s), restarting with fade: {Path.GetFileName(nextSong)}");
+                        _fileLogger?.Debug($"Preview: restarting with fade: {Path.GetFileName(nextSong)}");
                     }
 
                     var songToPlay = nextSong;
@@ -1229,7 +1152,7 @@ namespace UniPlaySong.Services
 
                             MarkSongStart();
 
-                            _fileLogger?.Info($"Preview mode: Now playing with fade: {Path.GetFileName(songToPlay)}");
+                            _fileLogger?.Debug($"Preview: now playing {Path.GetFileName(songToPlay)}");
                         }
                     );
                 }
@@ -1244,9 +1167,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if preview mode should apply and if the song should restart
-        /// </summary>
+        // Checks if preview mode is active and song has exceeded preview duration
         private bool ShouldRestartForPreview()
         {
             // Preview mode only applies to game music (not default music)
@@ -1273,11 +1194,8 @@ namespace UniPlaySong.Services
             return elapsed >= previewDuration;
         }
 
-        /// <summary>
-        /// Handles media ended events from the music player.
-        /// Handles randomization on song end, preview mode restart, and normal looping.
-        /// Note: Threading is handled at the player level (NAudioMusicPlayer/SDL2MusicPlayer).
-        /// </summary>
+        // Handles media ended: randomization on song end, preview restart, or normal looping.
+        // Threading is handled at the player level (NAudioMusicPlayer/SDL2MusicPlayer).
         private void OnMediaEnded(object sender, EventArgs e)
         {
             if (sender == _musicPlayer && !string.IsNullOrWhiteSpace(_currentSongPath) && File.Exists(_currentSongPath))

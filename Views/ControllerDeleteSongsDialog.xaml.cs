@@ -89,8 +89,6 @@ namespace UniPlaySong.Views
                 _fileService = fileService;
                 _playbackService = playbackService;
 
-                Logger.DebugIf(LogPrefix, $"Initialized delete songs dialog for game: {game?.Name}");
-
                 // Load music files
                 LoadMusicFiles();
             }
@@ -230,7 +228,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    Logger.DebugIf(LogPrefix, ex, $"Error getting file size for {filePath}");
+                    // Error getting file size - continue without it
                 }
 
                 listItem.Content = stackPanel;
@@ -323,7 +321,6 @@ namespace UniPlaySong.Views
                 await Task.Delay(150);
                 await CheckButtonPresses(_controllerMonitoringCancellation.Token);
             });
-            Logger.DebugIf(LogPrefix, "Started controller monitoring for delete songs dialog");
         }
 
         /// <summary>
@@ -335,7 +332,6 @@ namespace UniPlaySong.Views
 
             _isMonitoring = false;
             _controllerMonitoringCancellation?.Cancel();
-            Logger.DebugIf(LogPrefix, "Stopped controller monitoring for delete songs dialog");
         }
 
         /// <summary>
@@ -375,7 +371,7 @@ namespace UniPlaySong.Views
                 }
                 catch (Exception ex)
                 {
-                    Logger.DebugIf(LogPrefix, ex, "Error in controller monitoring");
+                    // Error in controller monitoring - continue polling
                     await Task.Delay(100, cancellationToken);
                 }
             }
@@ -398,7 +394,6 @@ namespace UniPlaySong.Views
                 // This prevents the button press that closed the modal from being detected as a new press
                 if (DateTime.Now < _modalCooldownUntil)
                 {
-                    Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
                     return;
                 }
 
@@ -591,9 +586,8 @@ namespace UniPlaySong.Views
                 _previewPlayer.Volume = 0.7;
                 _previewPlayer.Open(new Uri(filePath));
                 _previewPlayer.Play();
-                
+
                 UpdateInputFeedback($"🔊 Playing preview: {fileName} - X/Y to stop (Game music paused)");
-                Logger.DebugIf(LogPrefix, $"Started preview for: {fileName}");
             }
             catch (Exception ex)
             {
@@ -637,7 +631,6 @@ namespace UniPlaySong.Views
                 {
                     _wasGameMusicPlaying = true;
                     _playbackService.Pause();
-                    Logger.DebugIf(LogPrefix, "Paused game music for preview");
                 }
                 else
                 {
@@ -662,7 +655,6 @@ namespace UniPlaySong.Views
                 {
                     _playbackService.Resume();
                     _wasGameMusicPlaying = false;
-                    Logger.DebugIf(LogPrefix, "Resumed game music after preview");
                 }
             }
             catch (Exception ex)
@@ -809,15 +801,11 @@ namespace UniPlaySong.Views
 
                 message += "\n\nThis action cannot be undone!";
 
-                Logger.DebugIf(LogPrefix, $"Showing confirmation dialog for: {fileName}");
-
                 // Show controller-friendly confirmation dialog (larger text for TV/fullscreen)
                 var confirmed = DialogHelper.ShowControllerConfirmation(
                     _playniteApi,
                     message,
                     "Confirm Song Deletion");
-
-                Logger.DebugIf(LogPrefix, $"Confirmation result: {confirmed}");
 
                 // After dialog closes, refresh controller state to prevent detecting
                 // the A button that was used to open this dialog as a new press
@@ -868,17 +856,16 @@ namespace UniPlaySong.Views
                         {
                             // A button released, wait a tiny bit more for debounce
                             System.Threading.Thread.Sleep(100);
-                            Logger.DebugIf(LogPrefix, "A button released, safe to close dialog");
                             return;
                         }
                     }
                     System.Threading.Thread.Sleep(16); // ~60Hz polling
                 }
-                Logger.DebugIf(LogPrefix, $"WaitForButtonReleaseBeforeClose: timeout reached after {timeoutMs}ms");
+                // Timeout reached - continue anyway
             }
             catch (Exception ex)
             {
-                Logger.DebugIf(LogPrefix, ex, "Error in WaitForButtonReleaseBeforeClose");
+                // Error checking button state - continue anyway
             }
         }
 
@@ -894,18 +881,15 @@ namespace UniPlaySong.Views
                 if (XInputWrapper.XInputGetState(0, ref state) == 0)
                 {
                     _lastButtonState = state.Gamepad.wButtons;
-                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={_lastButtonState}");
                 }
 
                 // Set cooldown to block any input processing for ModalCooldownMs
                 // This is the key defense against race conditions
                 _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
             }
             catch (Exception ex)
             {
-                Logger.DebugIf(LogPrefix, ex, "Error refreshing controller state");
-                // Still set cooldown even on error
+                // Error refreshing controller state - still set cooldown
                 _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
             }
         }
@@ -927,8 +911,6 @@ namespace UniPlaySong.Views
         {
             try
             {
-                Logger.DebugIf(LogPrefix, $"Stopping all music playback before deleting: {fileName}");
-                
                 // Stop any preview that might be playing
                 StopCurrentPreview();
                 
@@ -938,8 +920,7 @@ namespace UniPlaySong.Views
                     if (_playbackService.IsPlaying)
                     {
                         _playbackService.Stop();
-                        Logger.DebugIf(LogPrefix, "Stopped game music playback for file deletion");
-                        
+
                         // Give a moment for the file to be released
                         System.Threading.Thread.Sleep(100);
                     }
@@ -966,8 +947,7 @@ namespace UniPlaySong.Views
             try
             {
                 var fileName = Path.GetFileName(filePath);
-                Logger.Info($"Starting deletion of file: {filePath}");
-                
+
                 // Verify file still exists before attempting deletion
                 if (!File.Exists(filePath))
                 {
@@ -980,34 +960,29 @@ namespace UniPlaySong.Views
                 if (_currentlyPreviewing == filePath)
                 {
                     StopCurrentPreview();
-                    Logger.DebugIf(LogPrefix, "Stopped preview for file being deleted");
                 }
 
                 // Clear primary song if this is the primary
                 if (isPrimarySong)
                 {
                     _fileService?.RemovePrimarySong(_currentGame);
-                    Logger.Info($"Cleared primary song before deletion: {fileName}");
                 }
 
                 // Wait a moment to ensure file handles are released
                 System.Threading.Thread.Sleep(200);
-                
+
                 // Delete the file
-                Logger.DebugIf(LogPrefix, $"Attempting to delete file: {filePath}");
                 File.Delete(filePath);
-                Logger.Info($"File deleted successfully: {filePath}");
-                
+
                 // Verify deletion was successful
                 if (File.Exists(filePath))
                 {
                     throw new IOException("File still exists after deletion attempt");
                 }
-                
+
                 // Remove from our list
                 _musicFiles.Remove(filePath);
-                Logger.DebugIf(LogPrefix, $"Removed from music files list: {fileName}");
-                
+
                 // Update UI
                 PopulateFilesList();
                 
@@ -1022,8 +997,6 @@ namespace UniPlaySong.Views
                 // Use auto-closing toast popup instead of modal dialog
                 // This avoids the XInput double-press issues entirely and works in fullscreen
                 DialogHelper.ShowSuccessToast(_playniteApi, successMessage, "Song Deleted");
-
-                Logger.Info($"Deletion completed successfully: {fileName}");
 
                 // Close dialog if no more files
                 if (_musicFiles.Count == 0)
@@ -1062,7 +1035,6 @@ namespace UniPlaySong.Views
             {
                 // Always reset deletion state
                 ResetDeletionState();
-                Logger.DebugIf(LogPrefix, "Deletion process completed, state reset");
             }
         }
 
@@ -1095,7 +1067,7 @@ namespace UniPlaySong.Views
                     }
                     catch (Exception focusEx)
                     {
-                        Logger.DebugIf(LogPrefix, focusEx, "Error returning focus to main window");
+                        // Error returning focus to main window - ignore
                     }
                     
                     window.DialogResult = success;

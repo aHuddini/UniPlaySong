@@ -5,14 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace UniPlaySong.Common
 {
-    /// <summary>
-    /// String utility functions for cleaning and processing game/music names
-    /// </summary>
+    // String utility functions for cleaning and processing game/music names
     public static class StringHelper
     {
-        /// <summary>
-        /// Case-insensitive Contains check (for .NET Framework compatibility)
-        /// </summary>
+        // Case-insensitive Contains check (for .NET Framework compatibility)
         public static bool ContainsIgnoreCase(this string source, string value)
         {
             if (source == null || value == null)
@@ -20,9 +16,7 @@ namespace UniPlaySong.Common
             return source.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
         }
         
-        /// <summary>
-        /// Normalizes a string for comparison purposes (removes special chars, extra spaces, lowercases)
-        /// </summary>
+        // Normalizes a string for comparison (removes special chars, extra spaces, lowercases)
         public static string NormalizeForComparison(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -36,9 +30,7 @@ namespace UniPlaySong.Common
             return normalized.Trim().ToLowerInvariant();
         }
         
-        /// <summary>
-        /// Strips common suffixes from game names (e.g., "(2020)", "- Definitive Edition")
-        /// </summary>
+        // Strips common suffixes from game names (e.g., "(2020)", "- Definitive Edition")
         public static string StripGameNameSuffixes(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -127,9 +119,7 @@ namespace UniPlaySong.Common
             return result.Trim();
         }
         
-        /// <summary>
-        /// Prepares a game name for searching (strips suffixes, normalizes, handles special cases)
-        /// </summary>
+        // Prepares a game name for searching (strips suffixes, normalizes, handles special cases)
         public static string PrepareForSearch(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName))
@@ -158,11 +148,8 @@ namespace UniPlaySong.Common
             return result.Trim();
         }
 
-        /// <summary>
-        /// Comprehensive search query normalization for both KHInsider and YouTube.
-        /// Removes trademark symbols, normalizes Unicode, strips suffixes, and cleans formatting.
-        /// This is the main entry point for all search query normalization.
-        /// </summary>
+        // Comprehensive search query normalization (trademarks, Unicode, suffixes, formatting).
+        // Main entry point for all search query normalization (KHInsider and YouTube).
         public static string NormalizeSearchQuery(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -202,10 +189,7 @@ namespace UniPlaySong.Common
             return result.Trim();
         }
 
-        /// <summary>
-        /// Generates multiple search query variations for fallback searching.
-        /// Returns queries in order of specificity (most specific first).
-        /// </summary>
+        // Generates multiple search query variations for fallback searching (most specific first)
         public static List<string> GenerateSearchQueries(string gameName, string suffix = "OST")
         {
             var queries = new List<string>();
@@ -242,9 +226,7 @@ namespace UniPlaySong.Common
             return queries.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        /// <summary>
-        /// Strips HTML tags and special characters from a string
-        /// </summary>
+        // Strips HTML tags and special characters from a string
         public static string StripHtml(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -263,9 +245,7 @@ namespace UniPlaySong.Common
             return stripped.Trim();
         }
 
-        /// <summary>
-        /// Cleans a string for use in file paths (removes invalid characters)
-        /// </summary>
+        // Cleans a string for use in file paths (removes invalid characters)
         public static string CleanForPath(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -277,15 +257,11 @@ namespace UniPlaySong.Common
             {
                 cleaned = cleaned.Replace(c, '_');
             }
+            cleaned = cleaned.Replace("..", "_");
             return cleaned.Trim();
         }
 
-        /// <summary>
-        /// Extracts the base/core game name for broad searching.
-        /// "The Elder Scrolls IV: Oblivion - Game of the Year Edition" -> "Elder Scrolls 4 Oblivion"
-        /// "Mafia III: Definitive Edition" -> "Mafia 3"
-        /// "Tomb Raider: Anniversary" -> "Tomb Raider Anniversary"
-        /// </summary>
+        // Extracts base/core game name for broad searching (strips editions, "The", converts Roman numerals)
         public static string ExtractBaseGameName(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName))
@@ -313,10 +289,7 @@ namespace UniPlaySong.Common
             return result.Trim();
         }
 
-        /// <summary>
-        /// Converts Roman numerals in a string to Arabic numerals.
-        /// "Mafia III" -> "Mafia 3", "Final Fantasy VII" -> "Final Fantasy 7"
-        /// </summary>
+        // Converts Roman numerals to Arabic ("Mafia III" -> "Mafia 3")
         public static string ConvertRomanNumeralsToArabic(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -344,9 +317,7 @@ namespace UniPlaySong.Common
             return result;
         }
 
-        /// <summary>
-        /// Parses a time span from a string (e.g., "3:45" -> TimeSpan)
-        /// </summary>
+        // Parses a time span from a string (e.g., "3:45" -> TimeSpan)
         public static TimeSpan? ParseTimeSpan(string input)
         {
             if (string.IsNullOrWhiteSpace(input))

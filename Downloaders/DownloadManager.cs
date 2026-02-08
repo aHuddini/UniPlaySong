@@ -14,9 +14,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Downloaders
 {
-    /// <summary>
-    /// Manages music downloads from various sources
-    /// </summary>
+    // Manages music downloads from various sources
     public class DownloadManager : IDownloadManager
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -85,7 +83,7 @@ namespace UniPlaySong.Downloaders
             if (source == Source.All)
             {
                 // Detailed logging goes to downloader.log
-                DLog.Info($"Search '{gameName}' (auto={auto})");
+                DLog.Debug($"Search '{gameName}' (auto={auto})");
 
                 var allAlbums = new List<Album>();
 
@@ -156,7 +154,7 @@ namespace UniPlaySong.Downloaders
                     allAlbums.AddRange(ytAlbums);
                 }
 
-                DLog.Info($"  → Total: {allAlbums.Count} albums");
+                DLog.Debug($"  → Total: {allAlbums.Count} albums");
                 return allAlbums;
             }
 
@@ -200,10 +198,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets KHInsider albums using multiple search strategies to improve match rate.
-        /// KHInsider album titles often differ slightly from game names (e.g., colons removed).
-        /// </summary>
+        // Gets KHInsider albums using multiple search strategies (exact, cleaned, simplified)
         private List<Album> GetKHInsiderAlbumsWithStrategies(string gameName, CancellationToken cancellationToken, bool auto)
         {
             var khAlbums = new List<Album>();
@@ -221,7 +216,7 @@ namespace UniPlaySong.Downloaders
             gameName = normalizedName;
             if (hint != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
             {
-                DLog.Info($"KHInsider: Using hint '{hint.KHInsiderAlbum}' for '{gameName}'");
+                DLog.Debug($"KHInsider: Using hint '{hint.KHInsiderAlbum}' for '{gameName}'");
                 var hintAlbum = CreateAlbumFromKHInsiderSlug(hint.KHInsiderAlbum, gameName);
                 if (hintAlbum != null)
                 {
@@ -290,9 +285,7 @@ namespace UniPlaySong.Downloaders
             return khAlbums;
         }
 
-        /// <summary>
-        /// Gets YouTube albums with caching and search hints support.
-        /// </summary>
+        // Gets YouTube albums with caching and search hints support
         private List<Album> GetYouTubeAlbumsWithCache(string gameName, CancellationToken cancellationToken, bool auto, bool skipCache = false)
         {
             var seenIds = new HashSet<string>();
@@ -314,7 +307,7 @@ namespace UniPlaySong.Downloaders
                 // If direct playlist ID is provided, use it (highest priority)
                 if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
                 {
-                    DLog.Info($"YouTube: Using hint playlist '{hint.YouTubePlaylistId}' for '{gameName}'");
+                    DLog.Debug($"YouTube: Using hint playlist '{hint.YouTubePlaylistId}' for '{gameName}'");
                     var playlistAlbum = CreateAlbumFromPlaylistId(hint.YouTubePlaylistId, gameName);
                     if (playlistAlbum != null)
                     {
@@ -459,7 +452,7 @@ namespace UniPlaySong.Downloaders
             var hintAlbum = albumsList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Info($"  → Hint: '{hintAlbum.Name}'");
+                DLog.Debug($"  → Hint: '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -467,7 +460,7 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumsList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Info($"  → HintSearch: '{hintSearchAlbum.Name}'");
+                DLog.Debug($"  → HintSearch: '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -508,9 +501,7 @@ namespace UniPlaySong.Downloaders
             return null;
         }
 
-        /// <summary>
-        /// Broader matching for retry operations. Still enforces series number matching.
-        /// </summary>
+        // Broader matching for retry operations (still enforces series number matching)
         public Album BestAlbumPickBroader(IEnumerable<Album> albums, Game game)
         {
             var albumList = albums?.ToList();
@@ -520,7 +511,7 @@ namespace UniPlaySong.Downloaders
             var hintAlbum = albumList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Info($"BroaderPick: Hint '{hintAlbum.Name}'");
+                DLog.Debug($"BroaderPick: Hint '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -528,7 +519,7 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Info($"BroaderPick: HintSearch '{hintSearchAlbum.Name}'");
+                DLog.Debug($"BroaderPick: HintSearch '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -547,7 +538,7 @@ namespace UniPlaySong.Downloaders
 
             if (best != null)
             {
-                DLog.Info($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
+                DLog.Debug($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
                 return best.Album;
             }
 
@@ -566,7 +557,7 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null && matches.Score >= minScore)
             {
-                DLog.Info($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
@@ -584,7 +575,7 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null)
             {
-                DLog.Info($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
+                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
@@ -727,10 +718,7 @@ namespace UniPlaySong.Downloaders
             return result;
         }
 
-        /// <summary>
-        /// Picks the best songs with detailed rejection reason if no songs are valid.
-        /// </summary>
-        /// <returns>Tuple of (songs, rejectionReason) where rejectionReason is null if songs were found</returns>
+        // Picks best songs with rejection reason if none are valid
         public (List<Song> songs, string rejectionReason) BestSongPickWithReason(IEnumerable<Song> songs, string gameName, int maxSongs = 1)
         {
             var songsList = songs?.ToList() ?? new List<Song>();
@@ -1048,10 +1036,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Gets hint-based albums for a game (from search_hints.json).
-        /// Returns albums created from YouTubePlaylistId, KHInsiderAlbum, and SoundCloudUrl hints.
-        /// </summary>
+        // Gets hint-based albums from search_hints.json (YouTube, KHInsider, SoundCloud)
         public List<Album> GetHintAlbums(string gameName)
         {
             var hintAlbums = new List<Album>();
@@ -1141,9 +1126,7 @@ namespace UniPlaySong.Downloaders
             }
         }
 
-        /// <summary>
-        /// Normalizes a string for matching (lowercase, remove special chars, collapse spaces)
-        /// </summary>
+        // Normalizes for matching: lowercase, remove special chars, collapse spaces
         private string NormalizeForMatching(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -1169,9 +1152,9 @@ namespace UniPlaySong.Downloaders
                     .ComputeHash(System.Text.Encoding.UTF8.GetBytes(song.Id ?? song.Name ?? Guid.NewGuid().ToString())))
                 .Replace("-", "");
 
-            var extension = Path.GetExtension(song.Id ?? ".mp3");
+            var extension = Path.GetExtension(song.Id ?? Constants.DefaultAudioExtension);
             if (string.IsNullOrEmpty(extension))
-                extension = ".mp3";
+                extension = Constants.DefaultAudioExtension;
 
             return Path.Combine(_tempPath, hash + extension);
         }
