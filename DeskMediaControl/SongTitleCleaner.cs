@@ -181,16 +181,6 @@ namespace UniPlaySong.DeskMediaControl
                 result = $"{title} - {artist}";
             }
 
-            // Add duration if available (with pipe separator)
-            if (duration.HasValue)
-            {
-                string durationStr = FormatDuration(duration.Value);
-                if (!string.IsNullOrEmpty(durationStr))
-                {
-                    result = $"{result} | {durationStr}";
-                }
-            }
-
             return result;
         }
     }

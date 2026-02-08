@@ -16,7 +16,7 @@ namespace UniPlaySong.Services
         public bool HasArtist => !string.IsNullOrWhiteSpace(Artist);
         public bool HasDuration => Duration.TotalSeconds > 0;
 
-        // Formatted display text: "Title - Artist | 3:45" or "Title | 3:45" or just "Title"
+        // Formatted display text: "Title - Artist" or just "Title"
         public string DisplayText => DeskMediaControl.SongTitleCleaner.FormatDisplayText(Title, Artist, Duration);
 
         // Duration formatted as m:ss or h:mm:ss
