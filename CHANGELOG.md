@@ -2,7 +2,18 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.2.5] - 2026-07-02
+## [1.2.6] - Unreleased
+
+### Added
+- TBD
+
+### Improved
+- TBD
+
+### Fixed
+- TBD
+
+## [1.2.5] - 2026-02-07
 
 ### Added
 - **Audio-Reactive Spectrum Visualizer (Desktop Mode)** - New real-time frequency spectrum visualizer that reacts to your game music
