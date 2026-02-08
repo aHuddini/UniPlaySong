@@ -717,11 +717,16 @@ namespace UniPlaySong
             return _coordinator.ShouldPlayMusic(game);
         }
 
-        // Extracts dominant colors from a game's artwork for the Dynamic visualizer theme.
-        // Checks cache first; runs extraction on a background thread if not cached.
+        // Extracts dominant colors from a game's artwork for the Dynamic visualizer themes.
+        // V1 (Game Art): v6 simple histogram, user-configurable slider params.
+        // Alt Algo: v7 advanced algorithm (center-weighted + bucket merging + diversity bonus).
+        // Vibrant Vibes: v7 + vivid mode with hardcoded aggressive params.
         private void UpdateDynamicVisualizerColors(Game game)
         {
-            if (_settings?.VizColorTheme != (int)VizColorTheme.Dynamic || game == null)
+            bool isV1 = _settings?.VizColorTheme == (int)VizColorTheme.Dynamic;
+            bool isAlt = _settings?.VizColorTheme == (int)VizColorTheme.DynamicAlt;
+            bool isV2 = _settings?.VizColorTheme == (int)VizColorTheme.DynamicVivid;
+            if ((!isV1 && !isAlt && !isV2) || game == null)
                 return;
 
             // Resolve image path — prefer background, fall back to cover
@@ -744,13 +749,41 @@ namespace UniPlaySong
 
             var gameId = game.Id.ToString();
             var pathHash = imagePath.GetHashCode().ToString();
-            int mbb = _settings.DynMinBrightnessBottom;
-            int mbt = _settings.DynMinBrightnessTop;
-            int msb = _settings.DynMinSatBottom;
-            int mst = _settings.DynMinSatTop;
+
+            // V1: v6 algo, user slider params. Alt: v7 algo, user slider params. Vivid: v7 + hardcoded vivid params.
+            int mbb, mbt, msb, mst;
+            bool useAdvancedAlgo;
+            bool vividMode;
+            if (isV2)
+            {
+                mbb = 200; mbt = 180; msb = 70; mst = 75;
+                useAdvancedAlgo = true;
+                vividMode = true;
+            }
+            else if (isAlt)
+            {
+                mbb = _settings.DynMinBrightnessBottom;
+                mbt = _settings.DynMinBrightnessTop;
+                msb = _settings.DynMinSatBottom;
+                mst = _settings.DynMinSatTop;
+                useAdvancedAlgo = true;
+                vividMode = false;
+            }
+            else
+            {
+                mbb = _settings.DynMinBrightnessBottom;
+                mbt = _settings.DynMinBrightnessTop;
+                msb = _settings.DynMinSatBottom;
+                mst = _settings.DynMinSatTop;
+                useAdvancedAlgo = false;
+                vividMode = false;
+            }
+
+            // Algo variant for cache differentiation: 0=v6 simple, 1=v7 advanced, 2=v7+vivid
+            int algoVariant = vividMode ? 2 : (useAdvancedAlgo ? 1 : 0);
 
             // Check cache first — instant if already extracted with same params
-            if (_dynamicColorCache.TryGetColors(gameId, pathHash, mbb, mbt, msb, mst, out var cachedBottom, out var cachedTop))
+            if (_dynamicColorCache.TryGetColors(gameId, pathHash, mbb, mbt, msb, mst, algoVariant, out var cachedBottom, out var cachedTop))
             {
                 _settings.DynamicColorBottom = cachedBottom;
                 _settings.DynamicColorTop = cachedTop;
@@ -763,8 +796,8 @@ namespace UniPlaySong
                 try
                 {
                     var (bottom, top) = GameColorExtractor.ExtractDominantColors(
-                        imagePath, mbb, mbt, msb / 100f, mst / 100f);
-                    _dynamicColorCache.SetColors(gameId, pathHash, mbb, mbt, msb, mst, bottom, top);
+                        imagePath, mbb, mbt, msb / 100f, mst / 100f, useAdvancedAlgo, vividMode);
+                    _dynamicColorCache.SetColors(gameId, pathHash, mbb, mbt, msb, mst, algoVariant, bottom, top);
                     _dynamicColorCache.Save();
 
                     Application.Current?.Dispatcher?.Invoke(() =>

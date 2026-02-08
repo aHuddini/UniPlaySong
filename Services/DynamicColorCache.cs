@@ -12,7 +12,7 @@ namespace UniPlaySong.Services
     {
         private const string CacheFileName = "dynamic_colors.json";
         // Bump this when the extraction algorithm changes to invalidate stale entries
-        private const int AlgorithmVersion = 7;
+        private const int AlgorithmVersion = 8;
         private readonly string _cacheFilePath;
         private readonly object _lock = new object();
         private Dictionary<string, CachedGameColors> _cache;
@@ -24,7 +24,7 @@ namespace UniPlaySong.Services
         }
 
         public bool TryGetColors(string gameId, string imagePathHash,
-            int minBriBottom, int minBriTop, int minSatBottom, int minSatTop,
+            int minBriBottom, int minBriTop, int minSatBottom, int minSatTop, int algoVariant,
             out Color bottom, out Color top)
         {
             lock (_lock)
@@ -32,6 +32,7 @@ namespace UniPlaySong.Services
                 if (_cache.TryGetValue(gameId, out var entry)
                     && entry.PathHash == imagePathHash
                     && entry.Version == AlgorithmVersion
+                    && entry.Algo == algoVariant
                     && entry.MBB == minBriBottom && entry.MBT == minBriTop
                     && entry.MSB == minSatBottom && entry.MST == minSatTop)
                 {
@@ -46,7 +47,7 @@ namespace UniPlaySong.Services
         }
 
         public void SetColors(string gameId, string imagePathHash,
-            int minBriBottom, int minBriTop, int minSatBottom, int minSatTop,
+            int minBriBottom, int minBriTop, int minSatBottom, int minSatTop, int algoVariant,
             Color bottom, Color top)
         {
             lock (_lock)
@@ -54,6 +55,7 @@ namespace UniPlaySong.Services
                 _cache[gameId] = new CachedGameColors
                 {
                     Version = AlgorithmVersion,
+                    Algo = algoVariant,
                     PathHash = imagePathHash,
                     BR = bottom.R, BG = bottom.G, BB = bottom.B,
                     TR = top.R, TG = top.G, TB = top.B,
@@ -117,11 +119,13 @@ namespace UniPlaySong.Services
         }
     }
 
-    // Compact cache entry — color data + path hash + tuning params for invalidation
+    // Compact cache entry — color data + path hash + algo variant + tuning params for invalidation
     public class CachedGameColors
     {
         [JsonProperty("v")]
         public int Version { get; set; }
+        [JsonProperty("a")]
+        public int Algo { get; set; }      // 0=v6 simple, 1=v7 advanced, 2=v7+vivid
         [JsonProperty("ph")]
         public string PathHash { get; set; }
         [JsonProperty("br")]

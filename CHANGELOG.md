@@ -27,7 +27,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Decoupled color themes from visualizer presets — presets now only control tuning parameters
   - Improved opacity curve (sqrt) for better dynamic range between quiet and loud bars
   - Tuned all color theme gradients with darker bottom stops for more depth and contrast
-  - 6 new color themes: Synthwave, Ember, Abyss, Solar, Terminal, Frost
+  - Replaced Terminal (duplicate of Matrix) with Vapor (mint → lavender)
+  - 12 new color themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
+  - Dynamic theme split into two presets:
+    - **Dynamic (Game Art V1)**: Natural tones from game artwork with user-configurable brightness/saturation sliders
+    - **Dynamic (Vibrant Vibes)**: Vivid mode with aggressive color separation for creative, contrasting gradients
 
 ## [1.2.5] - 2026-02-07
 

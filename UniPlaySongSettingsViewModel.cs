@@ -432,8 +432,8 @@ namespace UniPlaySong
 
         public ICommand ResetDynamicTuningCommand => new Common.RelayCommand<object>((a) =>
         {
-            Settings.DynMinBrightnessBottom = 100;
-            Settings.DynMinBrightnessTop = 140;
+            Settings.DynMinBrightnessBottom = 200;
+            Settings.DynMinBrightnessTop = 150;
             Settings.DynMinSatBottom = 30;
             Settings.DynMinSatTop = 35;
         });

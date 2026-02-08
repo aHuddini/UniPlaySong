@@ -112,7 +112,7 @@ namespace UniPlaySong
     /// </summary>
     public enum VizColorTheme
     {
-        Dynamic = 0,    // Sampled from current game's background image
+        Dynamic = 0,    // Game Art V1: sampled from game artwork, natural tones
         Classic,        // White (original look — solid frozen brush)
         Neon,           // Cyan → Magenta gradient
         Fire,           // Orange → Red gradient
@@ -124,8 +124,16 @@ namespace UniPlaySong
         Ember,          // Dark ember → Bright amber gradient
         Abyss,          // Deep navy → Aqua gradient
         Solar,          // Warm rust → Golden yellow gradient
-        Terminal,       // Dark green → Terminal green gradient
-        Frost           // Steel blue → Frost white gradient
+        Vapor,          // Mint green → Lavender (replaced Terminal)
+        Frost,          // Steel blue → Frost white gradient
+        DynamicVivid,   // Vibrant Vibes: aggressive color separation, vivid creative gradients
+        Aurora,         // Teal → Lime green
+        Coral,          // Deep coral → Peach gold
+        Plasma,         // Electric indigo → Hot magenta-red
+        Toxic,          // Acid yellow-green → Deep purple
+        Cherry,         // Dark cherry → Rose pink
+        Midnight,       // Dark indigo → Bright cyan
+        DynamicAlt      // Alt Algo: v7 center-weighted + bucket merging + diversity bonus
     }
 
     public enum VizPreset
@@ -162,7 +170,7 @@ namespace UniPlaySong
         private bool pauseOnGameStart = false;
         private bool showNowPlayingInTopPanel = false;
         private bool showDesktopMediaControls = false;
-        private bool showSpectrumVisualizer = false;
+        private bool showSpectrumVisualizer = true;
         private bool autoDeleteMusicOnGameRemoval = true;
 
         public bool EnableMusic
@@ -1576,38 +1584,46 @@ namespace UniPlaySong
             set { vizColorThemeMigrated = value; OnPropertyChanged(); }
         }
 
+        // One-time migration: enable visualizer with Punchy + Dynamic V1 for all users (v1.2.6)
+        public bool VizPunchyDefaultsMigrated
+        {
+            get => vizPunchyDefaultsMigrated;
+            set { vizPunchyDefaultsMigrated = value; OnPropertyChanged(); }
+        }
+
         public VizPreset SelectedVizPreset
         {
             get => selectedVizPreset;
             set { selectedVizPreset = value; OnPropertyChanged(); }
         }
 
-        // Spectrum Visualizer Tuning
-        private int vizOpacityMin = 30;          // 0-100 (%) — idle bar opacity
+        // Spectrum Visualizer Tuning (defaults match Punchy preset)
+        private int vizOpacityMin = 20;          // 0-100 (%) — idle bar opacity
         private int vizBarGainBoost = 0;         // -50 to +100 (%) — global gain offset
-        private int vizPeakHoldMs = 80;          // 0-300 ms — how long bars hold at peak
-        private int vizGravity = 120;            // 10-200 — base gravity (tenths, 120 = 12.0)
-        private int vizBassGravityBias = 50;     // 0-100 — bass/treble gravity spread (0=uniform, 100=max contrast)
+        private int vizPeakHoldMs = 40;          // 0-300 ms — how long bars hold at peak
+        private int vizGravity = 160;            // 10-200 — base gravity (tenths, 160 = 16.0)
+        private int vizBassGravityBias = 70;     // 0-100 — bass/treble gravity spread (0=uniform, 100=max contrast)
         private int vizFftSize = 1024;           // 512, 1024, or 2048 — FFT window size (requires restart)
-        private int vizBassGain = 100;           // 0-200 (%) — scales gain for bass bars (0-5)
-        private int vizTrebleGain = 100;         // 0-200 (%) — scales gain for treble bars (6-11)
-        private int vizBleedAmount = 100;        // 0-200 (%) — scales frequency bleed between bars
-        private int vizCompression = 50;         // 0-100 (%) — soft-knee compression strength
-        private int vizSmoothRise = 85;          // 0-100 (%) — UI smoothing rise speed (higher = snappier attack)
-        private int vizSmoothFall = 15;          // 0-100 (%) — UI smoothing fall speed (lower = smoother decay)
-        private int vizFftRiseLow = 88;          // 0-95 — FFT rise alpha for bass bins (mapped to 0.00-0.95)
-        private int vizFftRiseHigh = 93;         // 0-95 — FFT rise alpha for treble bins
-        private int vizFftFallLow = 50;          // 0-95 — FFT fall alpha for bass bins
-        private int vizFftFallHigh = 65;         // 0-95 — FFT fall alpha for treble bins
+        private int vizBassGain = 110;           // 0-200 (%) — scales gain for bass bars (0-5)
+        private int vizTrebleGain = 90;          // 0-200 (%) — scales gain for treble bars (6-11)
+        private int vizBleedAmount = 60;         // 0-200 (%) — scales frequency bleed between bars
+        private int vizCompression = 35;         // 0-100 (%) — soft-knee compression strength
+        private int vizSmoothRise = 95;          // 0-100 (%) — UI smoothing rise speed (higher = snappier attack)
+        private int vizSmoothFall = 30;          // 0-100 (%) — UI smoothing fall speed (lower = smoother decay)
+        private int vizFftRiseLow = 92;          // 0-95 — FFT rise alpha for bass bins (mapped to 0.00-0.95)
+        private int vizFftRiseHigh = 95;         // 0-95 — FFT rise alpha for treble bins
+        private int vizFftFallLow = 55;          // 0-95 — FFT fall alpha for bass bins
+        private int vizFftFallHigh = 70;         // 0-95 — FFT fall alpha for treble bins
         private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
-        private VizPreset selectedVizPreset = VizPreset.Custom; // Current visualizer preset
+        private VizPreset selectedVizPreset = VizPreset.Punchy; // Current visualizer preset
         private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color
-        private int dynMinBrightnessBottom = 100;    // 0-255 — min brightness floor for bottom (gradient base) color
-        private int dynMinBrightnessTop = 140;       // 0-255 — min brightness floor for top (gradient tip) color
+        private int dynMinBrightnessBottom = 200;    // 0-255 — min brightness floor for bottom (gradient base) color
+        private int dynMinBrightnessTop = 150;       // 0-255 — min brightness floor for top (gradient tip) color
         private int dynMinSatBottom = 30;            // 0-100 (%) — min saturation for bottom color
         private int dynMinSatTop = 35;               // 0-100 (%) — min saturation for top color
         private bool vizColorThemeMigrated = false;  // One-time migration flag for enum reorder (v1.2.6)
+        private bool vizPunchyDefaultsMigrated = false; // One-time migration: enable visualizer + Punchy defaults (v1.2.6)
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;

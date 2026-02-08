@@ -118,3 +118,6 @@ Internal reference for the Dynamic visualizer color theme. Documents the quantiz
 - **Top color diversity bonus**: +0.15 score bonus for clusters with Euclidean RGB distance >= 40 from bottom color. Prevents same-color gradients when one dominant color overwhelms both selections.
 - Histogram arrays changed from `int`/`long` to `float`/`double` to support fractional center weights.
 - **Issue addressed:** "Odd images" where edge noise or quantization boundary effects produced questionable color sampling.
+- **Two Dynamic presets** added:
+  - **Dynamic V1 (Game Art V1)**: Natural tones with user-configurable sliders. New defaults: brightness 200/150, saturation 30%/35%.
+  - **Dynamic V2 (Game Art V2)**: Vivid mode with hardcoded aggressive params (brightness 200/180, saturation 70%/75%). Scoring prioritizes saturation (0.5) and color distance (0.2) over frequency (0.1). Diversity bonus +0.35 at distance >= 25. If final colors still within Euclidean distance 50, top hue is shifted 120° via HSV rotation to guarantee visible gradient contrast.
