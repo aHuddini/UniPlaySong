@@ -25,7 +25,11 @@ Built with the help of Claude Code and Cursor IDE
 ### New Features
 - **Pause on Play (Splash Screen Compatibility)** - Music pauses immediately when clicking Play on a game, before the splash screen appears. Music resumes when the game closes. ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
 
+### Bug Fixes
+- **Top Panel Media Controls** - Fixed button styling (font size, bold, margins) to match native Playnite icons and adapt to different desktop themes
+
 ### Improvements
+- **Settings Reorganization** - Restructured settings into clearer tabs (Playback, Audio Editing, Search) with better grouping and an "Open Log Folder" button
 - **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
 - **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 
@@ -94,12 +98,12 @@ Download or update directly from the Playnite add-on database, or browse Generic
 3. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
-- **General**: Music playback, volume, fade effects, preview duration, desktop controls
-- **Live Effects**: Real-time reverb presets and custom controls
-- **Default Music**: Fallback music settings, native Playnite music integration
-- **Audio Normalization**: EBU R128 volume leveling and silence trimming
-- **Search Cache**: Cache management and auto-update hints database
-- **Downloads**: Tool paths, auto-download options, search sources
+- **General**: Music behavior, pause settings, desktop controls, tags, troubleshooting
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music
+- **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
+- **Audio Editing**: EBU R128 volume normalization and silence trimming
+- **Downloads**: Tool paths, auto-download options, bulk download
+- **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
 

@@ -82,14 +82,14 @@ namespace UniPlaySong.DeskMediaControl
         {
             var icoFont = ResourceProvider.GetResource("FontIcoFont") as FontFamily;
 
-            // Play/Pause button
+            // Play/Pause button — 18pt, no bold, theme-adaptive margins
             _playPauseIcon = new TextBlock
             {
                 Text = MediaControlIcons.Play,
                 FontSize = 18,
                 FontFamily = icoFont,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, -12, 0) // Reduce spacing to skip button
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
             };
 
             _playPauseItem = new TopPanelItem
@@ -100,24 +100,62 @@ namespace UniPlaySong.DeskMediaControl
                 Activated = OnPlayPauseActivated
             };
 
-            // Skip/Next button
+            // Skip/Next button — greyed out until 2+ songs available
             _skipIcon = new TextBlock
             {
                 Text = MediaControlIcons.Next,
                 FontSize = 18,
                 FontFamily = icoFont,
-                FontWeight = FontWeights.Bold,
-                Opacity = 0.3, // Start greyed out until 2+ songs available
-                Margin = new Thickness(-12, 0, 0, 0) // Reduce spacing from play/pause button
+                Opacity = 0.3,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
             };
 
             _skipItem = new TopPanelItem
             {
                 Icon = _skipIcon,
                 Title = "UniPlaySong: Skip to Next Song (No additional songs)",
-                Visible = true, // Always visible, but greyed out when disabled
+                Visible = true,
                 Activated = OnSkipActivated
             };
+
+            // Reduce the gap between play/pause and skip so they look grouped.
+            // Trims play/pause's right margin and skip's left margin symmetrically,
+            // leaving all other theme styling (MinWidth, Padding, Background) intact.
+            _playPauseIcon.Loaded += (s, ev) => AdjustTopPanelItemMargin(_playPauseIcon, trimRight: true);
+            _skipIcon.Loaded += (s, ev) => AdjustTopPanelItemMargin(_skipIcon, trimLeft: true);
+        }
+
+        // Finds the TopPanelItem container for an icon and trims one side of its margin
+        // to group adjacent buttons closer together.
+        private void AdjustTopPanelItemMargin(FrameworkElement icon, bool trimLeft = false, bool trimRight = false)
+        {
+            try
+            {
+                DependencyObject current = icon;
+                for (int i = 0; i < 10; i++)
+                {
+                    current = VisualTreeHelper.GetParent(current);
+                    if (current == null) break;
+
+                    var fe = current as FrameworkElement;
+                    if (fe != null && fe.GetType().Name == "TopPanelItem")
+                    {
+                        var m = fe.Margin;
+                        double left = trimLeft ? Math.Max(1, Math.Round(m.Left * 0.2)) : m.Left;
+                        double right = trimRight ? Math.Max(1, Math.Round(m.Right * 0.2)) : m.Right;
+                        fe.Margin = new Thickness(left, m.Top, right, m.Bottom);
+                        break;
+                    }
+
+                    if (current.GetType().Name == "StackPanel")
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error adjusting margin: {ex.Message}");
+            }
         }
 
         private void InitializeSpectrumVisualizer()
@@ -126,7 +164,6 @@ namespace UniPlaySong.DeskMediaControl
             {
                 _spectrumVisualizer = new SpectrumVisualizerControl();
                 _spectrumVisualizer.SetSettingsProvider(_getSettings);
-                _spectrumVisualizer.Margin = new Thickness(-8, 0, 0, 0); // Reduce spacing from skip button
                 _spectrumItem = new TopPanelItem
                 {
                     Icon = _spectrumVisualizer,

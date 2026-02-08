@@ -10,7 +10,17 @@ All notable changes to UniPlaySong will be documented in this file.
   - Works independently of plugin load order by using database-level game state detection
   - Enable in settings: "Compatibility: Pause on Play (Splash Screen Mode)"
 
+### Fixed
+- **Top Panel Media Controls** - Fixed button styling to match native Playnite icons and adapt to different desktop themes
+  - Corrected font size and removed bold weight that distorted IcoFont symbols
+  - Theme-adaptive margin trimming groups play/pause and skip buttons closer together across all themes
+
 ### Improved
+- **Settings Reorganization** - Restructured add-on settings for better discoverability
+  - New "Playback" tab with volume, fade effects, preview mode, and song randomization
+  - Renamed tabs: "Audio Normalization" → "Audio Editing", "Search Cache" → "Search"
+  - Added "Open Log Folder" button in Troubleshooting section
+  - Spectrum Visualizer no longer labeled as "Experimental"
 - **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
 - **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 
