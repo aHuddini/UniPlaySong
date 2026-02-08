@@ -111,6 +111,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+        private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
         // Fullscreen volume integration - respects Playnite's Background Music Volume slider
@@ -239,6 +240,7 @@ namespace UniPlaySong
         {
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
+            UpdateDynamicVisualizerColors(game);
         }
 
         // Handles game state changes at the database level.
@@ -696,6 +698,8 @@ namespace UniPlaySong
             StopNativeMusicSuppression();
             UnsubscribeFromFullscreenVolumeChanges();
 
+            _dynamicColorCache?.Save();
+
             _fileLogger?.Debug("Application stopped");
         }
 
@@ -711,6 +715,72 @@ namespace UniPlaySong
         {
             var game = SelectedGames?.FirstOrDefault();
             return _coordinator.ShouldPlayMusic(game);
+        }
+
+        // Extracts dominant colors from a game's artwork for the Dynamic visualizer theme.
+        // Checks cache first; runs extraction on a background thread if not cached.
+        private void UpdateDynamicVisualizerColors(Game game)
+        {
+            if (_settings?.VizColorTheme != (int)VizColorTheme.Dynamic || game == null)
+                return;
+
+            // Resolve image path — prefer background, fall back to cover
+            var imageId = game.BackgroundImage ?? game.CoverImage;
+            if (string.IsNullOrEmpty(imageId))
+                return;
+
+            string imagePath;
+            try
+            {
+                imagePath = _api.Database.GetFullFilePath(imageId);
+            }
+            catch
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return;
+
+            var gameId = game.Id.ToString();
+            var pathHash = imagePath.GetHashCode().ToString();
+            int mbb = _settings.DynMinBrightnessBottom;
+            int mbt = _settings.DynMinBrightnessTop;
+            int msb = _settings.DynMinSatBottom;
+            int mst = _settings.DynMinSatTop;
+
+            // Check cache first — instant if already extracted with same params
+            if (_dynamicColorCache.TryGetColors(gameId, pathHash, mbb, mbt, msb, mst, out var cachedBottom, out var cachedTop))
+            {
+                _settings.DynamicColorBottom = cachedBottom;
+                _settings.DynamicColorTop = cachedTop;
+                return;
+            }
+
+            // Extract on background thread to avoid blocking game selection
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    var (bottom, top) = GameColorExtractor.ExtractDominantColors(
+                        imagePath, mbb, mbt, msb / 100f, mst / 100f);
+                    _dynamicColorCache.SetColors(gameId, pathHash, mbb, mbt, msb, mst, bottom, top);
+                    _dynamicColorCache.Save();
+
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        if (_settings != null)
+                        {
+                            _settings.DynamicColorBottom = bottom;
+                            _settings.DynamicColorTop = top;
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"Dynamic color extraction failed for {game.Name}: {ex.Message}");
+                }
+            });
         }
 
         #endregion
@@ -1094,6 +1164,9 @@ namespace UniPlaySong
                 enabled: _settings?.EnableSearchCache ?? true,
                 cacheDurationDays: _settings?.SearchCacheDurationDays ?? 7);
             _fileLogger?.Debug("SearchCacheService initialized");
+
+            // Initialize dynamic color cache for spectrum visualizer
+            _dynamicColorCache = new DynamicColorCache(extensionDataPath);
 
             // Initialize search hints service (allows user overrides for problematic game searches)
             var pluginInstallPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -2846,6 +2919,8 @@ namespace UniPlaySong
         /// Gets the search cache service.
         /// </summary>
         public SearchCacheService GetSearchCacheService() => _cacheService;
+
+        public DynamicColorCache GetDynamicColorCache() => _dynamicColorCache;
 
         /// <summary>
         /// Gets the search hints service.

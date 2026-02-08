@@ -1127,6 +1127,7 @@
                         <TextBlock Text="Color Theme: " VerticalAlignment="Center" Width="120"/>
                         <ComboBox SelectedIndex="{Binding Settings.VizColorTheme, Converter={StaticResource VizColorThemeConverter}}"
                                   Width="200">
+                            <ComboBoxItem Content="Dynamic (Game Art)"/>
                             <ComboBoxItem Content="Classic (White)"/>
                             <ComboBoxItem Content="Neon (Cyan → Magenta)"/>
                             <ComboBoxItem Content="Fire (Orange → Red)"/>
@@ -1134,13 +1135,125 @@
                             <ComboBoxItem Content="Sunset (Yellow → Pink)"/>
                             <ComboBoxItem Content="Matrix (Green)"/>
                             <ComboBoxItem Content="Ice (White → Blue)"/>
+                            <ComboBoxItem Content="Synthwave (Purple → Pink)"/>
+                            <ComboBoxItem Content="Ember (Ember → Amber)"/>
+                            <ComboBoxItem Content="Abyss (Navy → Aqua)"/>
+                            <ComboBoxItem Content="Solar (Rust → Gold)"/>
+                            <ComboBoxItem Content="Terminal (Green)"/>
+                            <ComboBoxItem Content="Frost (Steel → White)"/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text="Bar color theme. Gradient colors shift from bottom to top of each bar. Classic uses the original white style."
+                    <TextBlock Text="Bar color theme. Gradient colors shift from bottom to top of each bar. Classic uses the original white style. Dynamic samples colors from the selected game's artwork."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <Button Content="Reset Dynamic Colors Cache"
+                            Width="200"
+                            Margin="0,0,0,5"
+                            HorizontalAlignment="Left"
+                            Command="{Binding ResetDynamicColorCacheCommand}"/>
+                    <TextBlock Text="Clears cached color data so all games re-sample from their artwork."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Dynamic Color Tuning (Experimental) -->
+                    <TextBlock Text="Dynamic Color Tuning (Experimental)"
+                               FontWeight="SemiBold"
+                               Margin="0,10,0,0"
+                               IsEnabled="{Binding Settings.ShowSpectrumVisualizer}"/>
+                    <TextBlock Text="Fine-tune how colors are extracted from game artwork. Most users won't need to change these."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Min Brightness (Base): " VerticalAlignment="Center" Width="170"/>
+                        <TextBlock Text="{Binding Settings.DynMinBrightnessBottom}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="30" Maximum="220"
+                                Value="{Binding Settings.DynMinBrightnessBottom}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="30"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Minimum brightness for the gradient base color. Higher = brighter bars from dark artwork. Default: 100"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Min Brightness (Tip): " VerticalAlignment="Center" Width="170"/>
+                        <TextBlock Text="{Binding Settings.DynMinBrightnessTop}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <Slider Minimum="30" Maximum="220"
+                                Value="{Binding Settings.DynMinBrightnessTop}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="20"
+                                TickFrequency="30"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Minimum brightness for the gradient tip color. Higher = more vivid peaks. Default: 140"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Min Saturation (Base): " VerticalAlignment="Center" Width="170"/>
+                        <TextBlock Text="{Binding Settings.DynMinSatBottom}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="80"
+                                Value="{Binding Settings.DynMinSatBottom}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Minimum color saturation for the gradient base. Higher = more vivid, less washed out. Default: 30%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <TextBlock Text="Min Saturation (Tip): " VerticalAlignment="Center" Width="170"/>
+                        <TextBlock Text="{Binding Settings.DynMinSatTop}"
+                                   VerticalAlignment="Center"
+                                   Width="30"/>
+                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="80"
+                                Value="{Binding Settings.DynMinSatTop}"
+                                Width="180"
+                                SmallChange="5"
+                                LargeChange="10"
+                                TickFrequency="10"
+                                TickPlacement="BottomRight"/>
+                    </StackPanel>
+                    <TextBlock Text="Minimum color saturation for the gradient tip. Higher = more vivid peaks. Default: 35%"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <Button Content="Reset to Defaults"
+                            Width="140"
+                            Margin="0,5,0,10"
+                            HorizontalAlignment="Left"
+                            Command="{Binding ResetDynamicTuningCommand}"/>
 
                     <!-- Advanced Customization (collapsed by default) -->
                     <Expander Header="Advanced Customization (Experimental)"

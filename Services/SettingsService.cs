@@ -43,6 +43,7 @@ namespace UniPlaySong.Services
                 var newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
                 if (newSettings != null)
                 {
+                    MigrateVizColorTheme(newSettings);
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
                 else
@@ -218,6 +219,22 @@ namespace UniPlaySong.Services
                 
                 return false;
             }
+        }
+
+        // One-time migration: VizColorTheme enum reordered in v1.2.6 (Dynamic moved from 13 to 0).
+        // Remaps existing users' saved int so their theme choice is preserved.
+        private void MigrateVizColorTheme(UniPlaySongSettings settings)
+        {
+            if (settings.VizColorThemeMigrated)
+                return;
+
+            int old = settings.VizColorTheme;
+            // Old: Classic=0..Frost=12, Dynamic=13 → New: Dynamic=0, Classic=1..Frost=13
+            settings.VizColorTheme = old == 13 ? 0 : old + 1;
+            settings.VizColorThemeMigrated = true;
+
+            try { _plugin.SavePluginSettings(settings); }
+            catch { /* non-critical — will re-migrate next launch */ }
         }
 
         private void OnSettingPropertyChanged(object sender, PropertyChangedEventArgs e)

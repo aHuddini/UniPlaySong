@@ -23,6 +23,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - Spectrum Visualizer no longer labeled as "Experimental"
 - **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
 - **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Spectrum Visualizer** - Improved color themes and opacity behavior
+  - Decoupled color themes from visualizer presets — presets now only control tuning parameters
+  - Improved opacity curve (sqrt) for better dynamic range between quiet and loud bars
+  - Tuned all color theme gradients with darker bottom stops for more depth and contrast
+  - 6 new color themes: Synthwave, Ember, Abyss, Solar, Terminal, Frost
 
 ## [1.2.5] - 2026-02-07
 

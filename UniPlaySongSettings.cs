@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
+using System.Windows.Media;
 using UniPlaySong.Common;
 
 namespace UniPlaySong
@@ -111,13 +112,20 @@ namespace UniPlaySong
     /// </summary>
     public enum VizColorTheme
     {
-        Classic = 0,    // White (current look — solid frozen brush)
+        Dynamic = 0,    // Sampled from current game's background image
+        Classic,        // White (original look — solid frozen brush)
         Neon,           // Cyan → Magenta gradient
         Fire,           // Orange → Red gradient
         Ocean,          // Teal → Blue gradient
         Sunset,         // Yellow → Pink gradient
         Matrix,         // Dark green → Bright green gradient
-        Ice             // White → Light blue gradient
+        Ice,            // White → Light blue gradient
+        Synthwave,      // Deep purple → Hot pink gradient
+        Ember,          // Dark ember → Bright amber gradient
+        Abyss,          // Deep navy → Aqua gradient
+        Solar,          // Warm rust → Golden yellow gradient
+        Terminal,       // Dark green → Terminal green gradient
+        Frost           // Steel blue → Frost white gradient
     }
 
     public enum VizPreset
@@ -1518,6 +1526,56 @@ namespace UniPlaySong
             set { vizGradientEnabled = value; OnPropertyChanged(); }
         }
 
+        // Dynamic theme colors — extracted from game background image at runtime.
+        // Defaults to Classic white; updated by GameColorExtractor on game selection.
+        [JsonIgnore]
+        public Color DynamicColorBottom
+        {
+            get => _dynamicColorBottom;
+            set { _dynamicColorBottom = value; OnPropertyChanged(); }
+        }
+        private Color _dynamicColorBottom = Color.FromArgb(200, 255, 255, 255);
+
+        [JsonIgnore]
+        public Color DynamicColorTop
+        {
+            get => _dynamicColorTop;
+            set { _dynamicColorTop = value; OnPropertyChanged(); }
+        }
+        private Color _dynamicColorTop = Color.FromArgb(200, 255, 255, 255);
+
+        // Dynamic color extraction tuning — user-configurable via sliders
+        public int DynMinBrightnessBottom
+        {
+            get => dynMinBrightnessBottom;
+            set { dynMinBrightnessBottom = value; OnPropertyChanged(); }
+        }
+
+        public int DynMinBrightnessTop
+        {
+            get => dynMinBrightnessTop;
+            set { dynMinBrightnessTop = value; OnPropertyChanged(); }
+        }
+
+        public int DynMinSatBottom
+        {
+            get => dynMinSatBottom;
+            set { dynMinSatBottom = value; OnPropertyChanged(); }
+        }
+
+        public int DynMinSatTop
+        {
+            get => dynMinSatTop;
+            set { dynMinSatTop = value; OnPropertyChanged(); }
+        }
+
+        // One-time migration flag for VizColorTheme enum reorder (Dynamic moved to index 0)
+        public bool VizColorThemeMigrated
+        {
+            get => vizColorThemeMigrated;
+            set { vizColorThemeMigrated = value; OnPropertyChanged(); }
+        }
+
         public VizPreset SelectedVizPreset
         {
             get => selectedVizPreset;
@@ -1543,8 +1601,13 @@ namespace UniPlaySong
         private int vizFftFallHigh = 65;         // 0-95 — FFT fall alpha for treble bins
         private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
         private VizPreset selectedVizPreset = VizPreset.Custom; // Current visualizer preset
-        private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Classic white)
+        private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color
+        private int dynMinBrightnessBottom = 100;    // 0-255 — min brightness floor for bottom (gradient base) color
+        private int dynMinBrightnessTop = 140;       // 0-255 — min brightness floor for top (gradient tip) color
+        private int dynMinSatBottom = 30;            // 0-100 (%) — min saturation for bottom color
+        private int dynMinSatTop = 35;               // 0-100 (%) — min saturation for top color
+        private bool vizColorThemeMigrated = false;  // One-time migration flag for enum reorder (v1.2.6)
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;

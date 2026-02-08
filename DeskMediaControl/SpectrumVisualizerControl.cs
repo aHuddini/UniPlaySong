@@ -137,27 +137,39 @@ namespace UniPlaySong.DeskMediaControl
             0.55f, // Bar 11: treble — slowest drop
         };
 
-        // Bar color — Classic white brush (default, preserved as static frozen brush)
+        // Bar color — Classic white brush (default, preserved as static frozen brush).
+        // Alpha=200: softened peak brightness; per-bar Opacity handles dynamic range.
         private static readonly SolidColorBrush BarBrush =
             new SolidColorBrush(Color.FromArgb(200, 255, 255, 255));
 
         // Color theme definitions: (bottom gradient stop, top gradient stop)
-        // Index matches VizColorTheme enum values.
-        // Alpha is 255 (fully opaque) — per-bar Opacity handles transparency.
+        // Index matches VizColorTheme enum values. Index 0 = Dynamic (unused placeholder — Dynamic reads from settings).
+        // Classic: alpha=200 (softened white). Color themes: alpha=255 (full opacity, colors already darkened).
         private static readonly (Color Bottom, Color Top)[] ThemeColors =
         {
-            (Color.FromArgb(200, 255, 255, 255), Color.FromArgb(255, 255, 255, 255)),  // Classic: white (matches BarBrush)
-            (Color.FromArgb(255,   0, 220, 255), Color.FromArgb(255, 255,   0, 255)),  // Neon: cyan→magenta
-            (Color.FromArgb(255, 255, 120,   0), Color.FromArgb(255, 255,  20,  20)),  // Fire: orange→red
-            (Color.FromArgb(255,   0, 200, 200), Color.FromArgb(255,  20,  60, 240)),  // Ocean: teal→blue
-            (Color.FromArgb(255, 255, 200,   0), Color.FromArgb(255, 255,  50, 100)),  // Sunset: yellow→pink
-            (Color.FromArgb(255,   0, 160,   0), Color.FromArgb(255,   0, 255,  60)),  // Matrix: dark→bright green
-            (Color.FromArgb(255, 220, 240, 255), Color.FromArgb(255, 100, 180, 255)),  // Ice: pale white→light blue
+            (Color.FromArgb(200, 255, 255, 255), Color.FromArgb(200, 255, 255, 255)),  // [0] Dynamic: placeholder (never read — handled before array lookup)
+            (Color.FromArgb(200, 255, 255, 255), Color.FromArgb(200, 255, 255, 255)),  // [1] Classic: white
+            (Color.FromArgb(255,   0, 140, 170), Color.FromArgb(255, 220,  40, 220)),  // [2] Neon: dark cyan→magenta
+            (Color.FromArgb(255, 170,  90,  10), Color.FromArgb(255, 220,  30,  15)),  // [3] Fire: dark orange→red
+            (Color.FromArgb(255,   0, 140, 150), Color.FromArgb(255,  45, 100, 220)),  // [4] Ocean: dark teal→blue
+            (Color.FromArgb(255, 170, 140,  20), Color.FromArgb(255, 220,  65, 100)),  // [5] Sunset: dark yellow→warm pink
+            (Color.FromArgb(255,  10, 140,  10), Color.FromArgb(255,  65, 220,  80)),  // [6] Matrix: dark green→bright green
+            (Color.FromArgb(255,  90, 140, 180), Color.FromArgb(255,  60, 170, 220)),  // [7] Ice: dark blue→ice blue
+            (Color.FromArgb(255,  50,   0, 120), Color.FromArgb(255, 255,  40, 180)),  // [8] Synthwave: deep purple→hot pink
+            (Color.FromArgb(255, 140,  30,   0), Color.FromArgb(255, 255, 160,  20)),  // [9] Ember: dark ember→bright amber
+            (Color.FromArgb(255,   0,  40, 120), Color.FromArgb(255,   0, 200, 220)),  // [10] Abyss: deep navy→aqua
+            (Color.FromArgb(255, 180,  50,  20), Color.FromArgb(255, 255, 200,  40)),  // [11] Solar: warm rust→golden yellow
+            (Color.FromArgb(255,   0,  80,   0), Color.FromArgb(255,  50, 255,  70)),  // [12] Terminal: dark green→terminal green
+            (Color.FromArgb(255,  40,  80, 140), Color.FromArgb(255, 180, 230, 255)),  // [13] Frost: steel blue→frost white
         };
 
         // Cached theme state for dirty checking (avoid brush recreation every frame)
         private int _lastThemeIndex = -1;
         private bool _lastGradientEnabled = true;
+
+        // Dynamic theme dirty checking — colors change per game, not per theme index
+        private Color _lastDynamicBottom;
+        private Color _lastDynamicTop;
 
         public SpectrumVisualizerControl()
         {
@@ -221,14 +233,34 @@ namespace UniPlaySong.DeskMediaControl
             int themeIndex = settings?.VizColorTheme ?? 0;
             bool gradientEnabled = settings?.VizGradientEnabled ?? true;
 
+            // Dynamic theme: dirty-check on actual color values (they change per game, not per theme index)
+            bool isDynamic = themeIndex == (int)VizColorTheme.Dynamic;
+            if (isDynamic)
+            {
+                var dynBottom = settings.DynamicColorBottom;
+                var dynTop = settings.DynamicColorTop;
+                bool colorsChanged = dynBottom != _lastDynamicBottom || dynTop != _lastDynamicTop;
+
+                if (themeIndex == _lastThemeIndex && gradientEnabled == _lastGradientEnabled && !colorsChanged)
+                    return;
+
+                _lastThemeIndex = themeIndex;
+                _lastGradientEnabled = gradientEnabled;
+                _lastDynamicBottom = dynBottom;
+                _lastDynamicTop = dynTop;
+
+                ApplyBrush(dynBottom, dynTop, gradientEnabled);
+                return;
+            }
+
             if (themeIndex == _lastThemeIndex && gradientEnabled == _lastGradientEnabled)
                 return;
 
             _lastThemeIndex = themeIndex;
             _lastGradientEnabled = gradientEnabled;
 
-            // Classic theme (0) — always use the original static frozen brush
-            if (themeIndex == 0)
+            // Classic theme — always use the original static frozen brush
+            if (themeIndex == (int)VizColorTheme.Classic)
             {
                 for (int i = 0; i < BarCount; i++)
                     _bars[i].Fill = BarBrush;
@@ -240,18 +272,20 @@ namespace UniPlaySong.DeskMediaControl
                 themeIndex = 0;
 
             var (bottom, top) = ThemeColors[themeIndex];
+            ApplyBrush(bottom, top, gradientEnabled);
+        }
 
+        private void ApplyBrush(Color bottom, Color top, bool gradientEnabled)
+        {
             Brush brush;
             if (gradientEnabled)
             {
-                // Gradient: bottom of bar → top of bar
                 var gradient = new LinearGradientBrush(bottom, top, new Point(0, 1), new Point(0, 0));
                 gradient.Freeze();
                 brush = gradient;
             }
             else
             {
-                // Solid color using the theme's bottom (primary) color
                 var solid = new SolidColorBrush(bottom);
                 solid.Freeze();
                 brush = solid;
@@ -483,7 +517,8 @@ namespace UniPlaySong.DeskMediaControl
 
                 // Dirty checking — only update GPU properties if pixel change > 0.5px
                 float scaleY = current > MinBarScale ? current : MinBarScale;
-                float opacity = opacityMin + (1f - opacityMin) * current;
+                // Sqrt curve for brightness modulation — brighter bars at lower amplitudes.
+                float opacity = opacityMin + (1f - opacityMin) * (float)Math.Sqrt(current);
 
                 float scaleDelta = scaleY - _lastScaleY[i];
                 if (scaleDelta < 0) scaleDelta = -scaleDelta;

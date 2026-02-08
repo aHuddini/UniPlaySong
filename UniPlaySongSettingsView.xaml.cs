@@ -147,6 +147,8 @@ namespace UniPlaySong
         {
             switch (preset)
             {
+                // Presets only set tuning parameters (gain, gravity, smoothing, etc.)
+                // Color theme and gradient are independent — user can combine any preset with any color.
                 case VizPreset.Default:
                     s.VizOpacityMin = 30;
                     s.VizBarGainBoost = 0;
@@ -165,12 +167,9 @@ namespace UniPlaySong
                     s.VizFftFallLow = 50;
                     s.VizFftFallHigh = 65;
                     s.VizFftTimerMode = false;
-                    s.VizColorTheme = (int)VizColorTheme.Classic;
-                    s.VizGradientEnabled = true;
                     break;
 
                 case VizPreset.Smooth:
-                    // Gentle, flowing bars — smoothness comes from UI EMA + low gravity, not FFT throttling
                     s.VizOpacityMin = 40;
                     s.VizBarGainBoost = -20;
                     s.VizPeakHoldMs = 120;
@@ -187,12 +186,9 @@ namespace UniPlaySong
                     s.VizFftRiseHigh = 92;
                     s.VizFftFallLow = 45;
                     s.VizFftFallHigh = 60;
-                    s.VizColorTheme = (int)VizColorTheme.Ice;
-                    s.VizGradientEnabled = true;
                     break;
 
                 case VizPreset.Punchy:
-                    // Snappy beats, fast attack — good for hip-hop/EDM
                     s.VizOpacityMin = 20;
                     s.VizBarGainBoost = 0;
                     s.VizPeakHoldMs = 40;
@@ -209,12 +205,9 @@ namespace UniPlaySong
                     s.VizFftRiseHigh = 95;
                     s.VizFftFallLow = 55;
                     s.VizFftFallHigh = 70;
-                    s.VizColorTheme = (int)VizColorTheme.Fire;
-                    s.VizGradientEnabled = true;
                     break;
 
                 case VizPreset.Cinematic:
-                    // Wide, slow-moving — the "slow" feel comes from UI smoothing + low gravity
                     s.VizOpacityMin = 45;
                     s.VizBarGainBoost = -15;
                     s.VizPeakHoldMs = 150;
@@ -231,12 +224,9 @@ namespace UniPlaySong
                     s.VizFftRiseHigh = 90;
                     s.VizFftFallLow = 45;
                     s.VizFftFallHigh = 58;
-                    s.VizColorTheme = (int)VizColorTheme.Ocean;
-                    s.VizGradientEnabled = true;
                     break;
 
                 case VizPreset.Minimal:
-                    // Subtle, understated — low gain + high compression tame the output
                     s.VizOpacityMin = 50;
                     s.VizBarGainBoost = -30;
                     s.VizPeakHoldMs = 60;
@@ -253,12 +243,9 @@ namespace UniPlaySong
                     s.VizFftRiseHigh = 90;
                     s.VizFftFallLow = 45;
                     s.VizFftFallHigh = 58;
-                    s.VizColorTheme = (int)VizColorTheme.Classic;
-                    s.VizGradientEnabled = true;
                     break;
 
                 case VizPreset.Reactive:
-                    // Maximum responsiveness — everything cranked
                     s.VizOpacityMin = 15;
                     s.VizBarGainBoost = 10;
                     s.VizPeakHoldMs = 20;
@@ -275,8 +262,6 @@ namespace UniPlaySong
                     s.VizFftRiseHigh = 95;
                     s.VizFftFallLow = 60;
                     s.VizFftFallHigh = 75;
-                    s.VizColorTheme = (int)VizColorTheme.Neon;
-                    s.VizGradientEnabled = true;
                     break;
             }
         }

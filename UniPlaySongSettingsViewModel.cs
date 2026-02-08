@@ -420,6 +420,24 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand ResetDynamicColorCacheCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var cache = plugin.GetDynamicColorCache();
+            if (cache != null)
+            {
+                cache.Clear();
+                PlayniteApi.Dialogs.ShowMessage("Dynamic color cache cleared. Colors will re-sample from game artwork on next selection.", "UniPlaySong");
+            }
+        });
+
+        public ICommand ResetDynamicTuningCommand => new Common.RelayCommand<object>((a) =>
+        {
+            Settings.DynMinBrightnessBottom = 100;
+            Settings.DynMinBrightnessTop = 140;
+            Settings.DynMinSatBottom = 30;
+            Settings.DynMinSatTop = 35;
+        });
+
         public ICommand ClearSearchCache => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();
