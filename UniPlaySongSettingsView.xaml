@@ -95,7 +95,7 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <CheckBox Content="Pause music when a game is launched"
+                    <CheckBox Content="Compatibility: Pause on Play (Splash Screen Mode)"
                               IsChecked="{Binding Settings.PauseOnGameStart}"
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."

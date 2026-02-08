@@ -23,13 +23,11 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.2.6
 
 ### New Features
-- TBD
+- **Pause on Play (Splash Screen Compatibility)** - Music pauses immediately when clicking Play on a game, before the splash screen appears. Music resumes when the game closes. ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
 
 ### Improvements
-- TBD
-
-### Bug Fixes
-- TBD
+- **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
+- **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 
 ### Previous Versions
 - **v1.2.5**: Spectrum visualizer, style presets, logging cleanup, EML plugin fixes

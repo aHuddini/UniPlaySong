@@ -5,13 +5,14 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.2.6] - Unreleased
 
 ### Added
-- TBD
+- **Pause on Play (Splash Screen Compatibility)** - New setting to pause music immediately when clicking Play on a game ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
+  - Music fades out before the splash screen appears and resumes when the game closes
+  - Works independently of plugin load order by using database-level game state detection
+  - Enable in settings: "Compatibility: Pause on Play (Splash Screen Mode)"
 
 ### Improved
-- TBD
-
-### Fixed
-- TBD
+- **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
+- **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 
 ## [1.2.5] - 2026-02-07
 
