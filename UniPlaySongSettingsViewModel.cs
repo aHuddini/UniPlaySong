@@ -394,6 +394,32 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand OpenLogFolderCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var playniteExtensions = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        Constants.PlayniteFolderName,
+                        Constants.PlayniteExtensionsFolderName);
+
+                    var extensionFolders = Directory.GetDirectories(playniteExtensions, Constants.ExtensionFolderName + "*");
+                    if (extensionFolders.Length > 0)
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", extensionFolders[0]);
+                    }
+                    else
+                    {
+                        PlayniteApi.Dialogs.ShowMessage("Could not find the UniPlaySong extension folder.", "UniPlaySong");
+                    }
+                },
+                context: "opening log folder",
+                showUserMessage: true
+            );
+        });
+
         public ICommand ClearSearchCache => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

@@ -137,30 +137,100 @@
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
-                    <Separator Margin="0,10"/>
+                    <Separator Margin="0,15"/>
+
+                    <!-- Music Status Tags -->
+                    <TextBlock Text="Music Status Tags" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Tag games based on music availability for easy filtering in Playnite" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Auto-tag games on library update"
+                              IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <Button Content="Scan &amp; Tag All Games"
+                                Width="160"
+                                Margin="0,0,10,0"
+                                Command="{Binding ScanAndTagAllGamesCommand}"/>
+                        <Button Content="Remove All Tags"
+                                Width="140"
+                                Command="{Binding RemoveAllMusicTagsCommand}"/>
+                    </StackPanel>
+                    <TextBlock Text="Manually scan your entire library and update music status tags. 'Remove All Tags' clears all UniPlaySong tags from your games."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Troubleshooting -->
+                    <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Debug Logging"
+                              IsChecked="{Binding Settings.EnableDebugLogging}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Use this when troubleshooting issues. Disable for normal use to reduce log file size."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Button Content="Open Log Folder"
+                            Width="160"
+                            Margin="0,5,0,0"
+                            HorizontalAlignment="Left"
+                            Command="{Binding OpenLogFolderCommand}"/>
+                    <TextBlock Text="Opens the folder containing UniPlaySong.log for troubleshooting."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Playback Tab -->
+        <TabItem Header="Playback">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Playback Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
 
                     <!-- Volume -->
+                    <TextBlock Text="Music Volume" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Music Volume: " VerticalAlignment="Center" Width="120"/>
-                        <Slider Minimum="0" Maximum="100" 
-                                Value="{Binding Settings.MusicVolume}" 
+                        <Slider Minimum="0" Maximum="100"
+                                Value="{Binding Settings.MusicVolume}"
                                 Width="200" Margin="0,0,10,0"/>
-                        <TextBlock Text="{Binding Settings.MusicVolume}" 
-                                   VerticalAlignment="Center" 
+                        <TextBlock Text="{Binding Settings.MusicVolume}"
+                                   VerticalAlignment="Center"
                                    Width="30"/>
                     </StackPanel>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Fade Effects -->
+                    <TextBlock Text="Fade Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Control how music transitions in and out" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
                     <!-- Fade In Duration -->
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Fade-In Duration: " VerticalAlignment="Center" Width="120"/>
-                        <TextBlock Text="{Binding Settings.FadeInDuration, StringFormat='{}{0:F2}'}" 
-                                   VerticalAlignment="Center" 
+                        <TextBlock Text="{Binding Settings.FadeInDuration, StringFormat='{}{0:F2}'}"
+                                   VerticalAlignment="Center"
                                    Width="35"
                                    Margin="0,0,3,0"/>
                         <TextBlock Text="s" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0.05" Maximum="10" 
-                                Value="{Binding Settings.FadeInDuration}" 
-                                Width="180" 
+                        <Slider Minimum="0.05" Maximum="10"
+                                Value="{Binding Settings.FadeInDuration}"
+                                Width="180"
                                 SmallChange="0.05"
                                 LargeChange="0.5"
                                 TickFrequency="0.5"
@@ -168,23 +238,23 @@
                                 AutoToolTipPlacement="TopLeft"
                                 AutoToolTipPrecision="2"/>
                     </StackPanel>
-                    <TextBlock Text="How long music fades in when starting or resuming (longer = smoother)" 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="How long music fades in when starting or resuming (longer = smoother)"
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
 
                     <!-- Fade Out Duration -->
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Fade-Out Duration: " VerticalAlignment="Center" Width="120"/>
-                        <TextBlock Text="{Binding Settings.FadeOutDuration, StringFormat='{}{0:F2}'}" 
-                                   VerticalAlignment="Center" 
+                        <TextBlock Text="{Binding Settings.FadeOutDuration, StringFormat='{}{0:F2}'}"
+                                   VerticalAlignment="Center"
                                    Width="35"
                                    Margin="0,0,3,0"/>
                         <TextBlock Text="s" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0.05" Maximum="10" 
-                                Value="{Binding Settings.FadeOutDuration}" 
-                                Width="180" 
+                        <Slider Minimum="0.05" Maximum="10"
+                                Value="{Binding Settings.FadeOutDuration}"
+                                Width="180"
                                 SmallChange="0.05"
                                 LargeChange="0.5"
                                 TickFrequency="0.5"
@@ -236,8 +306,10 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <Separator Margin="0,15"/>
+
                     <!-- Song Randomization -->
-                    <TextBlock Text="Song Randomization" FontSize="13" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                    <TextBlock Text="Song Randomization" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <TextBlock Text="Control when songs are randomized during playback" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Randomize song upon selection"
@@ -260,47 +332,58 @@
 
                     <Separator Margin="0,15"/>
 
-                    <!-- Music Status Tags -->
-                    <TextBlock Text="Music Status Tags" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Tag games based on music availability for easy filtering in Playnite" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+                    <!-- Default Music -->
+                    <TextBlock Text="Default Music" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Play fallback music when no game music is found" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
-                    <CheckBox Content="Auto-tag games on library update"
-                              IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
+                    <CheckBox Content="Enable Default Music"
+                              IsChecked="{Binding Settings.EnableDefaultMusic}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."
+                    <TextBlock Text="When enabled, plays default music when a selected game has no music files"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
-                        <Button Content="Scan &amp; Tag All Games"
-                                Width="160"
-                                Margin="0,0,10,0"
-                                Command="{Binding ScanAndTagAllGamesCommand}"/>
-                        <Button Content="Remove All Tags"
-                                Width="140"
-                                Command="{Binding RemoveAllMusicTagsCommand}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="Default Music File: " VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Settings.DefaultMusicPath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="True"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Margin="0,0,5,0"
+                                Command="{Binding BrowseForDefaultMusicFile}"/>
+                        <Button Content="Download..."
+                                Width="90"
+                                Command="{Binding DownloadDefaultMusic}"/>
                     </StackPanel>
-                    <TextBlock Text="Manually scan your entire library and update music status tags. 'Remove All Tags' clears all UniPlaySong tags from your games."
+                    <TextBlock Text="Select a music file (MP3, WAV, FLAC, etc.) to play when no game music is available"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
+                               Margin="20,0,0,5"/>
 
-                    <Separator Margin="0,15"/>
-
-                    <!-- Troubleshooting -->
-                    <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Enable Debug Logging"
-                              IsChecked="{Binding Settings.EnableDebugLogging}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Use this when troubleshooting issues. Disable for normal use to reduce log file size."
+                    <CheckBox Content="Suppress Playnite Background Music"
+                              IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
+                              IsEnabled="{Binding Settings.IsSuppressNativeMusicEnabled}"
+                              Margin="0,10"/>
+                    <TextBlock Text="When enabled, suppresses Playnite's native background music in fullscreen mode. When unchecked, native music will play when no game music and no default music is available. This option is disabled when 'Use Native Music as Default' is enabled."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Use Playnite Native &quot;Default&quot; Theme Music"
+                              IsChecked="{Binding Settings.UseNativeMusicAsDefault}"
+                              IsEnabled="{Binding Settings.IsUseNativeMusicAsDefaultEnabled}"
+                              Margin="0,10"/>
+                    <TextBlock Text="When enabled (and Default Music is enabled), uses Playnite's vanilla default theme background music instead of a custom default music file. This prevents the use of custom default music and relies on Playnite's built-in default theme music for consistency. Native music will not be suppressed in this case. This option is disabled when 'Suppress Native Music' is enabled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -999,8 +1082,8 @@
 
                     <Separator Margin="0,10"/>
 
-                    <!-- Spectrum Visualizer (Experimental) -->
-                    <TextBlock Text="Spectrum Visualizer (Experimental)" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <!-- Spectrum Visualizer -->
+                    <TextBlock Text="Spectrum Visualizer" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="Real-time 8-bar frequency spectrum visualizer for the Desktop top panel. Tune the animation behavior to your preference."
                                FontSize="11"
                                Foreground="Gray"
@@ -1458,76 +1541,17 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- Default Music Tab -->
-        <TabItem Header="Default Music">
+        <!-- Audio Editing Tab -->
+        <TabItem Header="Audio Editing">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Default Music Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
-                    <TextBlock Text="Play fallback music when no game music is found" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
-                    
-                    <CheckBox Content="Enable Default Music" 
-                              IsChecked="{Binding Settings.EnableDefaultMusic}" 
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, plays default music when a selected game has no music files" 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Default Music File: " VerticalAlignment="Center" Width="120"/>
-                        <TextBox Text="{Binding Settings.DefaultMusicPath}" 
-                                 Width="300" 
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="True"/>
-                        <Button Content="Browse..." 
-                                Width="80"
-                                Margin="0,0,5,0"
-                                Command="{Binding BrowseForDefaultMusicFile}"/>
-                        <Button Content="Download..." 
-                                Width="90"
-                                Command="{Binding DownloadDefaultMusic}"/>
-                    </StackPanel>
-                    <TextBlock Text="Select a music file (MP3, WAV, FLAC, etc.) to play when no game music is available" 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
-                    
-                    <CheckBox Content="Suppress Playnite Background Music" 
-                              IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}" 
-                              IsEnabled="{Binding Settings.IsSuppressNativeMusicEnabled}"
-                              Margin="0,10"/>
-                    <TextBlock Text="When enabled, suppresses Playnite's native background music in fullscreen mode. When unchecked, native music will play when no game music and no default music is available. This option is disabled when 'Use Native Music as Default' is enabled." 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    
-                    <CheckBox Content="Use Playnite Native &quot;Default&quot; Theme Music" 
-                              IsChecked="{Binding Settings.UseNativeMusicAsDefault}"
-                              IsEnabled="{Binding Settings.IsUseNativeMusicAsDefaultEnabled}"
-                              Margin="0,10"/>
-                    <TextBlock Text="When enabled (and Default Music is enabled), uses Playnite's vanilla default theme background music instead of a custom default music file. This prevents the use of custom default music and relies on Playnite's built-in default theme music for consistency. Native music will not be suppressed in this case. This option is disabled when 'Suppress Native Music' is enabled." 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Audio Normalization Tab -->
-        <TabItem Header="Audio Normalization">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <TextBlock Text="Audio Normalization" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
-                    <TextBlock Text="Bulk normalize audio files to consistent volume levels (EBU R128 standard). Normalization is performed on-demand using the action buttons below - it is NOT applied in real-time during playback." 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Normalize volume levels and trim audio files. Operations are performed on-demand — not in real-time during playback."
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="0,0,0,10"/>
-                    
+
                     <TextBlock Text="Normalization requires processing each file twice (analysis + application), which can be CPU-intensive for large libraries. Use bulk operations below to normalize files when needed."
                                FontSize="11"
                                Foreground="Gray"
@@ -1738,41 +1762,117 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- Search Cache Tab -->
-        <TabItem Header="Search Cache">
+        <!-- Downloads Tab -->
+        <TabItem Header="Downloads">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Search Cache Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
-                    <TextBlock Text="Cache search results to speed up bulk downloads (50% faster on repeat runs)" 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               Margin="0,0,0,20"/>
-                    
-                    <CheckBox Content="Enable Search Result Caching" 
-                              IsChecked="{Binding Settings.EnableSearchCache}" 
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, caches search results from KHInsider and YouTube to avoid redundant searches. Cached results expire after the specified duration." 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="Download Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Configure download tools and auto-download behavior" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Settings.YtDlpPath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="False"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Command="{Binding BrowseForYtDlpFile}"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,10"/>
+
+                    <CheckBox Content="Use cookies from browser (Firefox)"
+                              IsChecked="{Binding Settings.UseFirefoxCookies}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, uses Firefox cookies for YouTube downloads. This helps bypass bot detection and improves download reliability. Make sure Firefox is installed and you're logged into YouTube in Firefox."
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Post-Download Processing" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <CheckBox Content="Automatically normalize downloaded music"
+                              IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Audio Editing tab. Requires FFmpeg."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Auto-Download on Library Update" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <CheckBox Content="Automatically download music for new games"
+                              IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <TextBlock Text="Bulk Download" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Download Music for All Games"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding DownloadMusicForAllGamesCommand}"/>
+                        <TextBlock Text="Download music for all games that don't have any yet."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock Text="Use this to populate music for your existing game library. Shows progress and can be cancelled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Search Tab -->
+        <TabItem Header="Search">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Search Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
+
+                    <CheckBox Content="Enable Search Result Caching"
+                              IsChecked="{Binding Settings.EnableSearchCache}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, caches search results from KHInsider and YouTube to avoid redundant searches. Cached results expire after the specified duration."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.EnableSearchCache}">
                         <TextBlock Text="Cache Duration (days): " VerticalAlignment="Center" Width="150"/>
-                        <TextBox Text="{Binding Settings.SearchCacheDurationDays}" 
-                                 Width="60" 
+                        <TextBox Text="{Binding Settings.SearchCacheDurationDays}"
+                                 Width="60"
                                  Margin="0,0,10,0"/>
-                        <TextBlock Text="(1-30 days)" 
-                                   VerticalAlignment="Center" 
-                                   FontSize="11" 
+                        <TextBlock Text="(1-30 days)"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
                                    Foreground="Gray"/>
                     </StackPanel>
-                    <TextBlock Text="How long to keep cached search results before they expire. Longer duration = fewer searches but may miss new uploads." 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="How long to keep cached search results before they expire. Longer duration = fewer searches but may miss new uploads."
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    
+
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <Button Content="Clear Search Cache"
                                 Width="150"
@@ -1838,85 +1938,6 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,0"/>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Downloads Tab -->
-        <TabItem Header="Downloads">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <TextBlock Text="YouTube Download Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
-                    <TextBlock Text="Required for downloading music from YouTube" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
-                    
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
-                        <TextBox Text="{Binding Settings.YtDlpPath}" 
-                                 Width="300" 
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="False"/>
-                        <Button Content="Browse..." 
-                                Width="80"
-                                Command="{Binding BrowseForYtDlpFile}"/>
-                    </StackPanel>
-
-                    <Separator Margin="0,10"/>
-                    
-                    <CheckBox Content="Use cookies from browser (Firefox)"
-                              IsChecked="{Binding Settings.UseFirefoxCookies}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, uses Firefox cookies for YouTube downloads. This helps bypass bot detection and improves download reliability. Make sure Firefox is installed and you're logged into YouTube in Firefox."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <Separator Margin="0,15"/>
-
-                    <TextBlock Text="Post-Download Processing" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                    <CheckBox Content="Automatically normalize downloaded music"
-                              IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Audio Normalization tab. Requires FFmpeg."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <Separator Margin="0,15"/>
-
-                    <TextBlock Text="Auto-Download on Library Update" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                    <CheckBox Content="Automatically download music for new games"
-                              IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <Separator Margin="0,15"/>
-
-                    <TextBlock Text="Bulk Download" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Content="Download Music for All Games"
-                                Width="220"
-                                Margin="0,0,10,0"
-                                Command="{Binding DownloadMusicForAllGamesCommand}"/>
-                        <TextBlock Text="Download music for all games that don't have any yet."
-                                   VerticalAlignment="Center"
-                                   FontSize="11"
-                                   Foreground="Gray"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <TextBlock Text="Use this to populate music for your existing game library. Shows progress and can be cancelled."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
