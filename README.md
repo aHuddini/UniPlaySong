@@ -41,7 +41,6 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Previous Versions
 - **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes
-- **v1.2.3**: Bulk delete music, safer restart handling, window state pause fixes
 ---
 
 ## 🎬 Demo
