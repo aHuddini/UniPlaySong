@@ -1,20 +1,132 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.2.6
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-08
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.6/UniPlaySong-1_2_6-Feb08_2026.pext'
+    Changelog:
+      - '[Desktop] Pause on Play (Splash Screen Compatibility): Music pauses immediately when clicking Play on a game, before the splash screen appears; resumes when the game closes. Works independently of plugin load order by using database-level game state detection'
+      - '[Desktop] Spectrum Visualizer Overhaul: Now enabled by default with Punchy preset and game-art adaptive colors. 22 total color themes (includes 12 new static gradients and 3 Dynamic themes). User-configurable brightness/saturation sliders for Dynamic themes'
+      - '[Desktop] New Static Themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight'
+      - '[Improvement] Settings Reorganization: Restructured into clearer tabs (Playback, Audio Editing, Search) with "Open Log Folder" button'
+      - '[Improvement] Now Playing Display: Cleaner display showing only song title and artist; reduced GPU usage by capping ticker animation at 60fps'
+      - '[Desktop] Spectrum Visualizer Tuning: Decoupled color themes from presets; improved opacity curve for better dynamic range'
+      - '[Fix] Top Panel Media Controls: Fixed button styling (font size, bold weight, margins) to match native Playnite icons across desktop themes'
   - Version: 1.2.5
-    RequiredApiVersion: 6.11.0
+    RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-07
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.5/UniPlaySong-1_2_5-Feb07_2026.pext'
     Changelog:
-      - 'Audio-Reactive Spectrum Visualizer (Desktop Mode): Real-time frequency spectrum visualization with 6 gradient themes and 5 tuning presets'
-      - 'Logging Cleanup: Removed 234 debug logs (89% reduction) for cleaner operation'
-      - 'Desktop Media Controls: Tighter button spacing (24px closer) for more compact layout'
-      - 'Code Quality: Consolidated duplicate code, eliminated magic strings, improved maintainability'
+      - '[Desktop] NEW Audio-Reactive Spectrum Visualizer: Real-time frequency spectrum visualization with 6 gradient themes and 5 bar tuning presets'
+      - 'Live Effects Style Presets: 15+ one-click audio effect combinations including Huddini Styles (Rehearsal, Bright Room, Retro Radio). Customizable'
+      - 'Live Effects: New effect "Slowed" introduced.'
+      - 'Logging Cleanup: Removed 234 debug logs (89% reduction) for cleaner plugin operation'
+      - '[Desktop] Media Controls: Tighter button spacing for more compact layout'
+      - '[Fix] Settings Integration with other plugin: Fixed music and video audio playing simultaneously after opening/closing settings, breaking compatibility with other plugins like EML'
+      - '[Fix] Pause-on-X Settings: Fixed issues when enabling/disabling "Pause on..." settings'
+      - '[Dev] Code Quality: Consolidated duplicate code, eliminated magic strings, improved maintainability'
+  - Version: 1.2.4
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-01-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.4/UniPlaySong-1_2_4-Jan31_2026.pext'
+    Changelog:
+      - '[Desktop] Auto-Delete Music on Game Removal: Music files automatically cleaned up when games are removed from Playnite.'
+      - '[Desktop] Manual Pause Song Button: Pause is now Respected while switching games & during Playnite Desktop Focus/Not Focus.'
+      - '[Add-on Option] Clean Up Orphaned Music: New cleanup tool removes music folders for games no longer in your library.'
+      - '[Fullscreen] Background Music Volume Fix: Playnite Fullscreen Background volume slider now properly controls UniPlaySong playback volume.'
+      - '[Desktop] Fixed GPU Permanent Usage Issue: Now Playing animation no longer causes permanent GPU usage. Now Playing scroll animation paused when Playnite is unfocused to save memory.'
+      - '[Desktop] Credit @rovri - Fixed Audio Stuttering/Playback issue: Music no longer repeatedly pauses/resumes during video playback, particularly with ScreenshotVisualizer plugin.'
+      - '[Desktop] Fixed Media Control Bug when Live Effects are Enabled/Disabled: Play/pause, Now Playing, and skip buttons work correctly after toggling Live Effects.'
+  - Version: 1.2.3
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.3/UniPlaySong-1_2_3-Jan18_2026.pext'
+    Changelog:
+      - '[Desktop] Bulk Delete Music: Multi-select games and delete music for all selected games at once.'
+      - 'Safer Playnite Restart: Certain Add-on settings now use Playnite built-in restart mechanism to properly exit the app and change effects.'
+      - '[Desktop] Fixed Window State Pause: Pause on focus loss, minimize, and system tray settings now work correctly at Playnite startup along with the use of Desktop Play/Pause media controls.'
+  - Version: 1.2.2
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-17
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.2/UniPlaySong-1_2_2-Jan17_2026.pext'
+    Changelog:
+      - 'Ko-Fi Support: With the plugin more matured, added Ko-Fi link on Github for users that want to support my time on this plugin and overall development endeavors. Huge shoutouts to the Playnite crew for providing ideas, reporting bugs, and testing!'
+      - '[Auto Download] Upgraded the Auto Download GUI with a new Review Mode function: Review/correct downloads, and auto-add 1-3 random songs from matched albums. Users assume all risks of throttling/cookie bans if they abuse the auto-add songs feature.'
+      - '[Auto Download] Added Pause/Resume button in the download queue for users that do not want to hear new music during a download task.'
+      - '[Search Hint Database] SoundCloud Support: New soundcloudUrl field in search_hint.json to allow for direct SoundCloud downloads (tracks and playlists). Link contributions welcome'
+      - '[Search Hint Database] Added new download search hint for Starcom: Unknown Space'
+      - '[Search Hint Database] Reordered source hint priority for downloads: KHInsider → SoundCloud → YouTube'
+      - '[Search Cache] Optimized search cache to reduce caching of unlimited album results and stripping useless metadata fields. Significant reduction in cache file size. Users will have old search caches deleted on upgrade.'
+      - '[Add-On Options] Auto-Check for Hints Updates: Optional startup add-on setting users can enable to compare bundled hints database with GitHub for new search entries.'
+  - Version: 1.2.1
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-17
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.1/UniPlaySong-1_2_1-Jan17_2026.pext'
+    Changelog:
+      - '[Desktop Mode] Now Playing Display: Shows current song title and duration with scrolling text animation in top panel.'
+      - 'New Add-on Settings: Show Now Playing and Show Media Controls toggles in Settings → General (requires restart when enabling/disabling).'
+      - 'YouTube Search Reliability: Addressed Github Issue #48 regarding special unicode characters causing search issues.'
+      - 'YouTube Search Reliability: Improved Youtube auto-download success rate with updated client version and dual-format parser handling.'
+      - 'Dedicated Download Logging: New downloader.log file to separate download actions from the rest of the extension to help debug searches better.'
+  - Version: 1.2.0
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-15
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.0/UniPlaySong-1_2_0-Jan15_2026.pext'
+    Changelog:
+      - '[Desktop Mode] Top Panel Media Controls: UniPlaySong now has Play/Pause and Skip buttons available on Playnite top panel bar.'
+      - 'Easily pause game preview music when in Desktop mode. Skip button greys out when only one song available in a game music directory.'
+  - Version: 1.1.9
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-13
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.9/UniPlaySong-1_1_9-Jan13_2026.pext'
+    Changelog:
+      - '[Dev Update] Theme Integration & PluginControl Support: UPS_MusicControl allows theme developers to pause/resume music via XAML bindings and Tag properties.'
+      - 'See docs/THEME_INTEGRATION_GUIDE.md on GitHub for guidance and examples'
+  - Version: 1.1.8
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-12
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.8/UniPlaySong-1_1_8-Jan12_2026.pext'
+    Changelog:
+      - 'Added Toast Notifications: Modern notification system for controller-mode operations with acrylic blur effects and customizable appearance'
+      - 'Controller Dialog Improvements: Fixed problematic confirmation dialogs in fullscreen/controller mode with improved focus management'
+      - 'Critical Fixes: Settings persistence bugs resolved and NAudio default music crash fixed when live effects are enabled with looped playback'
+  - Version: 1.1.7
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-10
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.7/UniPlaySong-1_1_7-Jan10_2026.pext'
+    Changelog:
+      - 'Critical fix: Download UI Performance bux fixed. Fixed UI freezing during batch downloads with 100+ games through optimized progress tracking and throttled updates'
+      - 'Music Playback Preview During Downloads: Auto-Download operations plays downloaded music randomly while users wait for operations to complete. Also fixed shuffle behavior and improved queue management during bulk download operations'
+  - Version: 1.1.6
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-10
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.6/UniPlaySong-1_1_6-Jan10_2026.pext'
+    Changelog:
+      - 'Download Search Hints in Desktop and Fullscreen mode: UPS Hints now appear prominently in manual search results. This result is a manually curated entry loaded from the Hints Database (User submissions welcome)'
+      - 'Auto-Download Prioritizes Hints: Search hints are checked first during auto-download before other sources for games that continually fail to download music.'
+      - 'Enhanced Playback: Music playback now resumes more reliably during and after batch download operations'
+      - 'Search Hints Database Manager: New settings section for downloading updated search_hints.json file from UniPlaySong Github repo. New search hint updates allows for more reliable auto-downloads'
+      - 'Manual Search Summary: Comprehensive summary popup after manual retry operations with detailed statistics'
+  - Version: 1.1.5
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-01-10
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.5/UniPlaySong-1_1_5-Jan10_2026.pext'
+    Changelog:
+      - 'Added New Cleanup Tool: Delete Long Songs button to automatically scan and remove songs longer than 10 minutes'
+      - 'Added Migration Cleanup: Import from PlayniteSound & Delete button for clean two-step migration with automatic cleanup'
+      - 'Fixed Batch Download Navigation Bug: Back button now properly returns to source selection'
+      - 'Revamped Auto-Download Feature with dedicated GUI window, revamped search logic, improved performance and download feedback'
+      - 'Added Zophar.net as a new download source'
+      - 'Created a game search resolution backend to deal with failed game songs download. EXPERIMENTAL with small number of games addressed.'
   - Version: 1.1.4
     RequiredApiVersion: 6.11.0
-    ReleaseDate: 2026-01-04
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.4/UniPlaySong-1_1_4-Jan04_2026.pext'
+    ReleaseDate: 2026-01-08
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.1.4/UniPlaySong-1_1_4-Jan08_2026.pext'
     Changelog:
-      - 'Version 1.1.4 - Bug fixes and improvements'
+      - 'Added Real-Time Live Effects: Reverb, Low/High Pass Filters'
+      - 'Added Audio Amplify Editor Tool to allow users to manually adjust audio volume of music'
+      - 'Added Smart Auto-Tagging System with [UPS] music status tags'
+      - 'Enhanced Repair Tools for music folders and files'
   - Version: 1.1.3
     RequiredApiVersion: 6.11.0
     ReleaseDate: 2026-01-03
@@ -84,16 +196,6 @@ Packages:
       - 'Added Firefox Cookies Support for improved YouTube download reliability'
       - 'Added JavaScript Runtime Support (Deno) for yt-dlp 2025.11.12+'
       - 'Improved UI labels and progress tracking'
-  - Version: 1.0.7
-    RequiredApiVersion: 6.11.0
-    ReleaseDate: 2025-12-17
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.0.7/UniPlaySong-1_0_7-Dec25.pext'
-    Changelog:
-      - 'Added silence trimming feature - automatically remove leading silence from audio files'
-      - 'Enhanced fade effects for seamless music preview transitions'
-      - 'Smart file naming that preserves operation order (normalize → trim or trim → normalize)'
-      - 'Configurable silence detection threshold and duration'
-      - 'Option to skip already-trimmed files'
   - Version: 1.0.6
     RequiredApiVersion: 6.11.0
     ReleaseDate: 2025-12-16

@@ -2,7 +2,7 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.2.6] - Unreleased
+## [1.2.6] - 2026-02-08
 
 ### Added
 - **Pause on Play (Splash Screen Compatibility)** - New setting to pause music immediately when clicking Play on a game ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
@@ -23,15 +23,16 @@ All notable changes to UniPlaySong will be documented in this file.
   - Spectrum Visualizer no longer labeled as "Experimental"
 - **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
 - **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-- **Spectrum Visualizer** - Improved color themes and opacity behavior
-  - Decoupled color themes from visualizer presets — presets now only control tuning parameters
-  - Improved opacity curve (sqrt) for better dynamic range between quiet and loud bars
-  - Tuned all color theme gradients with darker bottom stops for more depth and contrast
+- **Spectrum Visualizer** - Major overhaul with new defaults and 22 color themes
+  - Now enabled by default with Punchy preset and Dynamic (Game Art) colors
+  - 12 new static color themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
+  - 3 Dynamic themes that sample colors from game artwork:
+    - **Dynamic (Game Art V1)**: Natural tones with user-configurable brightness/saturation sliders
+    - **Dynamic (Alt Algo)**: Advanced extraction with center-weighted sampling and color diversity bonus
+    - **Dynamic (Vibrant Vibes)**: Vivid mode with aggressive color separation for creative gradients
+  - Decoupled color themes from visualizer presets — presets only control tuning parameters
+  - Improved opacity curve (sqrt) for better dynamic range
   - Replaced Terminal (duplicate of Matrix) with Vapor (mint → lavender)
-  - 12 new color themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
-  - Dynamic theme split into two presets:
-    - **Dynamic (Game Art V1)**: Natural tones from game artwork with user-configurable brightness/saturation sliders
-    - **Dynamic (Vibrant Vibes)**: Vivid mode with aggressive color separation for creative, contrasting gradients
 
 ## [1.2.5] - 2026-02-07
 

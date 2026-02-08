@@ -23,15 +23,17 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.2.6
 
 ### New Features
-- **Pause on Play (Splash Screen Compatibility)** - Music pauses immediately when clicking Play on a game, before the splash screen appears. Music resumes when the game closes. ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
+- **Pause on Play (Splash Screen Compatibility)** - Music pauses before the splash screen and resumes when the game closes ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
+- **Spectrum Visualizer Overhaul** - Now enabled by default with Punchy preset and game-art–adaptive colors
+  - 22 color themes including 3 Dynamic themes that extract colors from each game's artwork
+  - 12 new static gradient themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
 
 ### Bug Fixes
-- **Top Panel Media Controls** - Fixed button styling (font size, bold, margins) to match native Playnite icons and adapt to different desktop themes
+- **Top Panel Media Controls** - Fixed button styling to match native Playnite icons across desktop themes
 
 ### Improvements
-- **Settings Reorganization** - Restructured settings into clearer tabs (Playback, Audio Editing, Search) with better grouping and an "Open Log Folder" button
-- **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
-- **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
+- **Settings Reorganization** - Restructured into clearer tabs (Playback, Audio Editing, Search) with "Open Log Folder" button
+- **Now Playing** - Cleaner display (title + artist only), reduced GPU usage on high-refresh monitors ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
 
 ### Previous Versions
 - **v1.2.5**: Spectrum visualizer, style presets, logging cleanup, EML plugin fixes
@@ -48,7 +50,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Auto-Download** - Automatic music search and downloads for existing libraries and new games from YouTube, KHInsider, and Zophar's Domain
 - **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
 - **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
-- **Audio-Reactive Visualizer** - Real-time frequency spectrum visualizer with 6 gradient color themes and tuning presets (Desktop mode - best in Harmony/Vanilla themes)
+- **Audio-Reactive Visualizer** - Real-time spectrum visualizer with 22 color themes including Dynamic game-art colors, tuning presets, and per-bar gradient rendering (Desktop mode)
 - **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
 - **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations
 - **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes
