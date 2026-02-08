@@ -12,6 +12,7 @@ namespace UniPlaySong.Models
         ThemeOverlay,               // Theme overlay is active (set by MusicControl from theme Tag bindings)
         FocusLoss,                  // Playnite window lost focus to another application (PauseOnFocusLoss setting)
         Minimized,                  // Playnite window is minimized (PauseOnMinimize setting)
-        SystemTray                  // Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
+        SystemTray,                 // Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
+        GameStarting                // Game is launching — pause until game closes (PauseOnGameStart setting)
     }
 }

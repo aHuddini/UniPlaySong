@@ -241,6 +241,34 @@ namespace UniPlaySong
             _coordinator.HandleGameSelected(game, IsFullscreen);
         }
 
+        // Handles game state changes at the database level.
+        // Uses ItemUpdated instead of OnGameStarting to avoid plugin execution order issues
+        // (e.g. Splash Screen blocks in OnGameStarting, delaying other plugins' hooks).
+        private void OnGameItemUpdated(object sender, ItemUpdatedEventArgs<Game> args)
+        {
+            foreach (var update in args.UpdatedItems)
+            {
+                if (update.NewData.IsLaunching && !update.OldData.IsLaunching)
+                {
+                    if (_settings?.PauseOnGameStart == true)
+                        _playbackService?.AddPauseSource(Models.PauseSource.GameStarting);
+                    return;
+                }
+
+                if (!update.NewData.IsRunning && update.OldData.IsRunning)
+                {
+                    _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+                    return;
+                }
+            }
+        }
+
+        // Fallback: ensures GameStarting pause source is removed even if ItemUpdated misses it
+        public override void OnGameStopped(OnGameStoppedEventArgs args)
+        {
+            _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+        }
+
         /// <summary>
         /// Handles application startup events from Playnite.
         /// Initializes skip state, login detection, and native music suppression.
@@ -284,6 +312,9 @@ namespace UniPlaySong
 
             // Subscribe to game collection changes for auto-cleanup of music on game removal
             _api.Database.Games.ItemCollectionChanged += OnGamesCollectionChanged;
+
+            // Subscribe to game state changes for PauseOnGameStart feature
+            _api.Database.Games.ItemUpdated += OnGameItemUpdated;
 
             // Subscribe to application focus/minimize events for PauseOnDeactivate feature
             Application.Current.Deactivated += OnApplicationDeactivate;
@@ -3245,6 +3276,7 @@ namespace UniPlaySong
                 currentSettings.PauseOnFocusLoss = defaultSettings.PauseOnFocusLoss;
                 currentSettings.PauseOnMinimize = defaultSettings.PauseOnMinimize;
                 currentSettings.PauseWhenInSystemTray = defaultSettings.PauseWhenInSystemTray;
+                currentSettings.PauseOnGameStart = defaultSettings.PauseOnGameStart;
 
                 // Default music settings
                 currentSettings.EnableDefaultMusic = defaultSettings.EnableDefaultMusic;

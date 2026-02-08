@@ -95,6 +95,15 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <CheckBox Content="Pause music when a game is launched"
+                              IsChecked="{Binding Settings.PauseOnGameStart}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <CheckBox Content="Show Now Playing (Desktop mode)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Command="{Binding SetRestartRequired}"

@@ -151,6 +151,7 @@ namespace UniPlaySong
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
         private bool pauseWhenInSystemTray = true;
+        private bool pauseOnGameStart = false;
         private bool showNowPlayingInTopPanel = false;
         private bool showDesktopMediaControls = false;
         private bool showSpectrumVisualizer = false;
@@ -368,6 +369,13 @@ namespace UniPlaySong
         {
             get => pauseWhenInSystemTray;
             set { pauseWhenInSystemTray = value; OnPropertyChanged(); }
+        }
+
+        // Pause music when a game is launched. Music resumes when the game closes.
+        public bool PauseOnGameStart
+        {
+            get => pauseOnGameStart;
+            set { pauseOnGameStart = value; OnPropertyChanged(); }
         }
 
         /// <summary>
