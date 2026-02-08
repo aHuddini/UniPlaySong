@@ -28,11 +28,16 @@ Built with the help of Claude Code and Cursor IDE
   - Best viewed in Harmony and Vanilla desktop themes
   - 5 tuning presets plus advanced customization controls
   - Toggle gradient/solid rendering
+- **Style Presets** - 15+ one-click audio effect combinations (Huddini Styles, clean, character presets)
 
 ### Improvements
 - **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
 - **Desktop Media Controls** - Tighter button spacing for more compact top panel layout
 - **Code Quality** - Consolidated some duplicate code, eliminated magic strings, improved maintainability
+
+### Bug Fixes
+- **Settings Integration with EML Plugin** - Fixed music/video audio issues when saving non-UPS Playnite settings
+- **Pause-on-X Settings** - Fixed playback issues when disabling/enabling pause settings
 
 ### Previous Versions
 - **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes

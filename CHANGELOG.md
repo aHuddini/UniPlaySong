@@ -12,6 +12,11 @@ All notable changes to UniPlaySong will be documented in this file.
   - 5 tuning presets (Default, Dynamic, Smooth, Energetic, Minimal) plus Custom mode
   - Advanced tuning controls: FFT size, smoothing, rise/fall speeds, frequency-dependent behavior
   - Creates vibrant visual feedback that responds to music energy and frequency in real-time
+- **Style Presets** - 15+ one-click audio effect combinations for different listening moods
+  - Huddini Styles: Rehearsal, Bright Room, Retro Radio, Lo-Bit, Slowed Dream, Cave Lake, Honey Room (signature creative effects)
+  - Clean presets: Clean Boost, Warm FM Radio, Bright Airy, Concert Live (no slow effect)
+  - Character presets: Telephone, Muffled Next Room, Lo-Fi Chill, Slowed Reverb (unique audio textures)
+  - Combines reverb, filters, stereo width, bitcrushing, and slow effects into cohesive sonic profiles
 
 ### Improved
 - **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
@@ -20,6 +25,15 @@ All notable changes to UniPlaySong will be documented in this file.
   - Centralized default file extension (`.mp3`) to single constant
   - Replaced manual file sanitization loops with unified utility method
   - Reduced code duplication by ~40 lines across 9 files
+
+### Fixed
+- **Settings Integration with other Plugins** - Fixed music and video audio playing simultaneously after opening/closing settings
+  - MediaElementsMonitor now properly updates settings reference when settings are saved
+  - Runtime state properties (`VideoIsPlaying`, `ThemeOverlayActive`) no longer persisted to disk, preventing startup playback issues
+  - Eliminated double-fire property change handlers that caused inconsistent pause states
+- **Pause-on-X Settings Behavior** - Fixed stuck pause when disabling "Pause on Minimize/Focus Loss/System Tray" settings while their pause source is active
+  - Pause source removal now unconditional on window state changes
+  - Music properly resumes when re-enabling window after disabling pause setting
 
 ## [1.2.4] - 2026-01-30
 

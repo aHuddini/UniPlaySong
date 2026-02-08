@@ -1,5 +1,14 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.2.5
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-02-07
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.5/UniPlaySong-1_2_5-Feb07_2026.pext'
+    Changelog:
+      - 'Audio-Reactive Spectrum Visualizer (Desktop Mode): Real-time frequency spectrum visualization with 6 gradient themes and 5 tuning presets'
+      - 'Logging Cleanup: Removed 234 debug logs (89% reduction) for cleaner operation'
+      - 'Desktop Media Controls: Tighter button spacing (24px closer) for more compact layout'
+      - 'Code Quality: Consolidated duplicate code, eliminated magic strings, improved maintainability'
   - Version: 1.1.4
     RequiredApiVersion: 6.11.0
     ReleaseDate: 2026-01-04
