@@ -47,8 +47,10 @@ namespace UniPlaySong.DeskMediaControl
             }
 
             // Spectrum visualizer (between controls and now playing)
-            if (settings?.ShowSpectrumVisualizer == true && _spectrumItem != null)
+            // Always yield — Visible toggles at runtime via UpdateIcons()
+            if (_spectrumItem != null)
             {
+                _spectrumItem.Visible = settings?.ShowSpectrumVisualizer == true;
                 yield return _spectrumItem;
             }
 
@@ -370,7 +372,12 @@ namespace UniPlaySong.DeskMediaControl
                     _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
 
                     UpdateSkipState(playbackService);
-                    _spectrumVisualizer?.SetActive(isPlaying);
+
+                    var settings = _getSettings?.Invoke();
+                    bool vizEnabled = settings?.ShowSpectrumVisualizer == true;
+                    if (_spectrumItem != null)
+                        _spectrumItem.Visible = vizEnabled;
+                    _spectrumVisualizer?.SetActive(isPlaying && vizEnabled);
                 }
                 catch (Exception ex)
                 {

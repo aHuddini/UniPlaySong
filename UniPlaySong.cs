@@ -960,11 +960,12 @@ namespace UniPlaySong
                         e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
                 }
 
-                // Check if LiveEffectsEnabled changed - need to switch music players
+                // Check if player backend needs switching (Live Effects or Visualizer require NAudio)
                 bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
-                if (liveEffectsChanged)
+                bool vizToggled = e.OldSettings.ShowSpectrumVisualizer != e.NewSettings.ShowSpectrumVisualizer;
+                if (liveEffectsChanged || vizToggled)
                 {
-                    _fileLogger?.Debug($"LiveEffectsEnabled changed from {e.OldSettings.LiveEffectsEnabled} to {e.NewSettings.LiveEffectsEnabled} - recreating music player");
+                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
                 }
             }
@@ -1291,8 +1292,9 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
+            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false);
 
-            if (useLiveEffects)
+            if (needsNAudio)
             {
                 try
                 {

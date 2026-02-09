@@ -1092,14 +1092,12 @@
 
                     <CheckBox Content="Show Spectrum Visualizer in Top Panel"
                               IsChecked="{Binding Settings.ShowSpectrumVisualizer}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
-                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Displays a real-time frequency spectrum visualizer in the Desktop top panel bar alongside media controls.</Run>
-                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
-                    </TextBlock>
+                    <TextBlock Text="Displays a real-time frequency spectrum visualizer in the Desktop top panel bar alongside media controls."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
 
                     <!-- Visualizer Preset -->
                     <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
