@@ -2,6 +2,14 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.7] - 2026-02-08
+
+### Fixed (Critical)
+- **Spectrum Visualizer Not Responding** - Visualizer bars were completely static for all users without Live Effects enabled. The SDL2 player (default when Live Effects are off) had no visualization data tap, so the visualizer received no audio data ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
+  - NAudio pipeline is now used whenever the visualizer is enabled, regardless of Live Effects setting
+  - Visualizer toggle no longer greyed out when Live Effects are off
+  - Toggling the visualizer on/off no longer requires a Playnite restart — takes effect immediately
+
 ## [1.2.6] - 2026-02-08
 
 ### Added

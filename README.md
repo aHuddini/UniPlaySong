@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.6-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,24 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.6
+## What's New - v1.2.7
 
-### New Features
-- **Pause on Play (Splash Screen Compatibility)** - Music pauses before the splash screen and resumes when the game closes ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
-- **Spectrum Visualizer Overhaul** - Now enabled by default with Punchy preset and game-art–adaptive colors
-  - 22 color themes including 3 Dynamic themes that extract colors from each game's artwork
-  - 12 new static gradient themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
+### Critical Bug Fix
+- **Spectrum Visualizer Not Responding** - Visualizer bars were completely static for all users without Live Effects enabled — affecting most users since Live Effects defaults to off ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
+  - Visualizer now works independently of Live Effects setting
+  - Visualizer toggle is no longer greyed out when Live Effects are off
+  - Toggling the visualizer on/off takes effect immediately (no restart needed)
 
-### Bug Fixes
-- **Top Panel Media Controls** - Fixed button styling to match native Playnite icons across desktop themes
-
-### Improvements
-- **Settings Reorganization** - Restructured into clearer tabs (Playback, Audio Editing, Search) with "Open Log Folder" button
-- **Now Playing** - Cleaner display (title + artist only), reduced GPU usage on high-refresh monitors ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-
-### Previous Versions
-- **v1.2.5**: Spectrum visualizer, style presets, logging cleanup, EML plugin fixes
-- **v1.2.4**: Auto-delete music on game removal, fullscreen volume control, audio stuttering fixes
+### Previous Version
+- **v1.2.6**: Spectrum visualizer overhaul (22 themes, Dynamic game-art colors), Pause on Play, settings reorganization
 ---
 
 ## 🎬 Demo
