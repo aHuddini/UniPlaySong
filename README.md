@@ -23,8 +23,8 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.2.8
 
 ### Bug Fix
-- **Native Music Conflict** - Fixed Playnite's vanilla background music playing simultaneously with UniPlaySong when certain Default Music settings were active, causing audio overlap with fullscreen themes like ANIKI Remake
-  - "Suppress Playnite Native Background Music" is now an independent toggle under General Settings
+- **Native Music Conflict** - Fixed Playnite's vanilla background music playing simultaneously with UniPlaySong when certain Default Music settings were active, causing unintentional audio overlaps with fullscreen themes like ANIKI Remake
+  - "Suppress Playnite Native Background Music" is now an independent toggle under General Settings.
 
 ### Previous Version
 - **v1.2.7**: Critical fix — Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
