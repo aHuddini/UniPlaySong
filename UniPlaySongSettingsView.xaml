@@ -23,15 +23,30 @@
                 <StackPanel Margin="20">
                     <TextBlock Text="General Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
                     
-                    <CheckBox Content="Enable Music" 
-                              IsChecked="{Binding Settings.EnableMusic}" 
+                    <CheckBox Content="Enable Music"
+                              IsChecked="{Binding Settings.EnableMusic}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will automatically play when selecting games (console-like preview experience)" 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="When enabled, music will automatically play when selecting games (console-like preview experience)"
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    
+
+                    <CheckBox Content="Suppress Playnite Native Background Music"
+                              IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode, ensuring only UniPlaySong audio is heard."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,2"/>
+                    <TextBlock Text="WARNING: Disabling this option will allow Playnite's vanilla theme music to play simultaneously alongside UniPlaySong music, causing annoying audio issues. This WILL negatively impact themes like ANIKI Remake and other fullscreen themes that include their own music. It is strongly recommended to keep this option enabled to ensure proper plugin functionality."
+                               FontSize="11"
+                               Foreground="#FFD44040"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Play Music State: " VerticalAlignment="Center" Width="150"/>
                         <ComboBox SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}" 
@@ -365,21 +380,11 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
 
-                    <CheckBox Content="Suppress Playnite Background Music"
-                              IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
-                              IsEnabled="{Binding Settings.IsSuppressNativeMusicEnabled}"
-                              Margin="0,10"/>
-                    <TextBlock Text="When enabled, suppresses Playnite's native background music in fullscreen mode. When unchecked, native music will play when no game music and no default music is available. This option is disabled when 'Use Native Music as Default' is enabled."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
                     <CheckBox Content="Use Playnite Native &quot;Default&quot; Theme Music"
                               IsChecked="{Binding Settings.UseNativeMusicAsDefault}"
                               IsEnabled="{Binding Settings.IsUseNativeMusicAsDefaultEnabled}"
                               Margin="0,10"/>
-                    <TextBlock Text="When enabled (and Default Music is enabled), uses Playnite's vanilla default theme background music instead of a custom default music file. This prevents the use of custom default music and relies on Playnite's built-in default theme music for consistency. Native music will not be suppressed in this case. This option is disabled when 'Suppress Native Music' is enabled."
+                    <TextBlock Text="When enabled (and Default Music is enabled), uses Playnite's vanilla default theme background music instead of a custom default music file."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

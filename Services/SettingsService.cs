@@ -45,6 +45,7 @@ namespace UniPlaySong.Services
                 {
                     MigrateVizColorTheme(newSettings);
                     MigrateVizPunchyDefaults(newSettings);
+                    MigrateSuppressNativeMusic(newSettings);
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
                 else
@@ -267,6 +268,20 @@ namespace UniPlaySong.Services
             // Old: Classic=0..Frost=12, Dynamic=13 → New: Dynamic=0, Classic=1..Frost=13
             settings.VizColorTheme = old == 13 ? 0 : old + 1;
             settings.VizColorThemeMigrated = true;
+
+            try { _plugin.SavePluginSettings(settings); }
+            catch { /* non-critical — will re-migrate next launch */ }
+        }
+
+        // One-time migration: force SuppressPlayniteBackgroundMusic ON for all existing users (v1.2.7).
+        // Previously coupled with UseNativeMusicAsDefault — now independent. Force ON to prevent audio conflicts.
+        private void MigrateSuppressNativeMusic(UniPlaySongSettings settings)
+        {
+            if (settings.SuppressNativeMusicMigrated)
+                return;
+
+            settings.SuppressPlayniteBackgroundMusic = true;
+            settings.SuppressNativeMusicMigrated = true;
 
             try { _plugin.SavePluginSettings(settings); }
             catch { /* non-critical — will re-migrate next launch */ }

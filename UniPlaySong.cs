@@ -1656,24 +1656,14 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Suppresses Playnite's native background music by stopping playback and preventing reload.
-        /// Uses reflection to access Playnite's internal BackgroundMusic property and SDL2_mixer to stop playback.
-        /// </summary>
-        /// <remarks>
-        /// Triggers when:
-        /// 1. SuppressPlayniteBackgroundMusic is explicitly enabled, OR
-        /// 2. UseNativeMusicAsDefault is enabled (we play the same file ourselves)
-        /// </remarks>
+        // Suppresses Playnite's native background music by stopping playback and preventing reload.
+        // Uses reflection to access Playnite's internal BackgroundMusic property and SDL2_mixer to stop playback.
         private void SuppressNativeMusic()
         {
             if (!IsFullscreen)
                 return;
             
-            bool shouldSuppress = _settings?.SuppressPlayniteBackgroundMusic == true ||
-                                 (_settings?.EnableDefaultMusic == true && _settings?.UseNativeMusicAsDefault == true);
-            
-            if (!shouldSuppress)
+            if (_settings?.SuppressPlayniteBackgroundMusic != true)
                 return;
 
             try

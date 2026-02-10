@@ -465,49 +465,27 @@ namespace UniPlaySong
             set { defaultMusicPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Suppress Playnite's native background music in fullscreen mode
-        /// When unchecked (false), native music will play when no game music and no default music is available
-        /// Mutually exclusive with UseNativeMusicAsDefault
-        /// </summary>
+        // Suppresses Playnite's native background music in fullscreen mode to prevent audio conflicts.
+        // Independent of Default Music settings — strongly recommended to keep enabled.
         public bool SuppressPlayniteBackgroundMusic
         {
             get => suppressPlayniteBackgroundMusic;
-            set 
-            { 
+            set
+            {
                 suppressPlayniteBackgroundMusic = value;
                 OnPropertyChanged();
-                // If suppression is enabled, disable "use native as default" (mutually exclusive)
-                if (value && useNativeMusicAsDefault)
-                {
-                    useNativeMusicAsDefault = false;
-                    OnPropertyChanged(nameof(UseNativeMusicAsDefault));
-                }
-                OnPropertyChanged(nameof(IsUseNativeMusicAsDefaultEnabled));
             }
         }
 
-        /// <summary>
-        /// Use Playnite's native "Default" theme music instead of custom default music file
-        /// Only applies when EnableDefaultMusic is true
-        /// When enabled: Uses Playnite's vanilla default theme background music, prevents use of custom default music
-        /// When disabled: Custom DefaultMusicPath file is used (native music is suppressed)
-        /// Mutually exclusive with SuppressPlayniteBackgroundMusic
-        /// </summary>
+        // Use Playnite's native "Default" theme music as fallback when no game music is found.
+        // Only applies when EnableDefaultMusic is true.
         public bool UseNativeMusicAsDefault
         {
             get => useNativeMusicAsDefault;
-            set 
-            { 
+            set
+            {
                 useNativeMusicAsDefault = value;
                 OnPropertyChanged();
-                // If using native as default, disable suppression (mutually exclusive)
-                if (value && suppressPlayniteBackgroundMusic)
-                {
-                    suppressPlayniteBackgroundMusic = false;
-                    OnPropertyChanged(nameof(SuppressPlayniteBackgroundMusic));
-                }
-                OnPropertyChanged(nameof(IsSuppressNativeMusicEnabled));
             }
         }
 
@@ -521,18 +499,9 @@ namespace UniPlaySong
             set { backupCustomMusicPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Determines if "Suppress Native Music" checkbox should be enabled
-        /// Disabled when "Use Native Music as Default" is enabled (mutually exclusive)
-        /// </summary>
-        public bool IsSuppressNativeMusicEnabled => !useNativeMusicAsDefault;
-
-        /// <summary>
-        /// Determines if "Use Playnite Native 'Default' Theme Music" checkbox should be enabled
-        /// Disabled when "Suppress Native Music" is enabled (mutually exclusive)
-        /// Also requires EnableDefaultMusic to be true
-        /// </summary>
-        public bool IsUseNativeMusicAsDefaultEnabled => enableDefaultMusic && !suppressPlayniteBackgroundMusic;
+        // Determines if "Use Playnite Native 'Default' Theme Music" checkbox should be enabled.
+        // Requires EnableDefaultMusic to be true.
+        public bool IsUseNativeMusicAsDefaultEnabled => enableDefaultMusic;
 
         // Search Cache Settings
         private bool enableSearchCache = true;
@@ -1591,6 +1560,13 @@ namespace UniPlaySong
             set { vizPunchyDefaultsMigrated = value; OnPropertyChanged(); }
         }
 
+        // One-time migration: force SuppressPlayniteBackgroundMusic ON and decouple from UseNativeMusicAsDefault (v1.2.7)
+        public bool SuppressNativeMusicMigrated
+        {
+            get => suppressNativeMusicMigrated;
+            set { suppressNativeMusicMigrated = value; OnPropertyChanged(); }
+        }
+
         public VizPreset SelectedVizPreset
         {
             get => selectedVizPreset;
@@ -1624,6 +1600,7 @@ namespace UniPlaySong
         private int dynMinSatTop = 35;               // 0-100 (%) — min saturation for top color
         private bool vizColorThemeMigrated = false;  // One-time migration flag for enum reorder (v1.2.6)
         private bool vizPunchyDefaultsMigrated = false; // One-time migration: enable visualizer + Punchy defaults (v1.2.6)
+        private bool suppressNativeMusicMigrated = false; // One-time migration: force SuppressPlayniteBackgroundMusic ON (v1.2.7)
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;
