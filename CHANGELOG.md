@@ -2,6 +2,17 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.8] - 2026-02-09
+
+### Fixed
+- **Native Music Conflict** - Playnite's vanilla background music could play simultaneously with UniPlaySong when "Use Native Music as Default" was enabled, causing audio overlap with themes like ANIKI Remake
+  - "Suppress Playnite Native Background Music" is now independent of Default Music settings
+  - Moved to General Settings under "Enable Music" with a clear warning when disabled
+  - Existing users are migrated to have suppression enabled
+
+### Removed
+- Removed one-time migration code for visualizer defaults and color theme reorder (v1.2.6 migrations — all users migrated)
+
 ## [1.2.7] - 2026-02-08
 
 ### Fixed (Critical)

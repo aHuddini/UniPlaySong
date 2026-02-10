@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.7-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,16 +20,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.7
+## What's New - v1.2.8
 
-### Critical Bug Fix
-- **Spectrum Visualizer Not Responding** - Visualizer bars were completely static for all users without Live Effects enabled — affecting most users since Live Effects defaults to off ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
-  - Visualizer now works independently of Live Effects setting
-  - Visualizer toggle is no longer greyed out when Live Effects are off
-  - Toggling the visualizer on/off takes effect immediately (no restart needed)
+### Bug Fix
+- **Native Music Conflict** - Fixed Playnite's vanilla background music playing simultaneously with UniPlaySong when certain Default Music settings were active, causing audio overlap with fullscreen themes like ANIKI Remake
+  - "Suppress Playnite Native Background Music" is now an independent toggle under General Settings
 
 ### Previous Version
-- **v1.2.6**: Spectrum visualizer overhaul (22 themes, Dynamic game-art colors), Pause on Play, settings reorganization
+- **v1.2.7**: Critical fix — Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
 ---
 
 ## 🎬 Demo

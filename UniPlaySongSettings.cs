@@ -1546,20 +1546,6 @@ namespace UniPlaySong
             set { dynMinSatTop = value; OnPropertyChanged(); }
         }
 
-        // One-time migration flag for VizColorTheme enum reorder (Dynamic moved to index 0)
-        public bool VizColorThemeMigrated
-        {
-            get => vizColorThemeMigrated;
-            set { vizColorThemeMigrated = value; OnPropertyChanged(); }
-        }
-
-        // One-time migration: enable visualizer with Punchy + Dynamic V1 for all users (v1.2.6)
-        public bool VizPunchyDefaultsMigrated
-        {
-            get => vizPunchyDefaultsMigrated;
-            set { vizPunchyDefaultsMigrated = value; OnPropertyChanged(); }
-        }
-
         // One-time migration: force SuppressPlayniteBackgroundMusic ON and decouple from UseNativeMusicAsDefault (v1.2.7)
         public bool SuppressNativeMusicMigrated
         {
@@ -1598,8 +1584,6 @@ namespace UniPlaySong
         private int dynMinBrightnessTop = 150;       // 0-255 — min brightness floor for top (gradient tip) color
         private int dynMinSatBottom = 30;            // 0-100 (%) — min saturation for bottom color
         private int dynMinSatTop = 35;               // 0-100 (%) — min saturation for top color
-        private bool vizColorThemeMigrated = false;  // One-time migration flag for enum reorder (v1.2.6)
-        private bool vizPunchyDefaultsMigrated = false; // One-time migration: enable visualizer + Punchy defaults (v1.2.6)
         private bool suppressNativeMusicMigrated = false; // One-time migration: force SuppressPlayniteBackgroundMusic ON (v1.2.7)
 
         // ===== Toast Notification Settings =====

@@ -43,8 +43,6 @@ namespace UniPlaySong.Services
                 var newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
                 if (newSettings != null)
                 {
-                    MigrateVizColorTheme(newSettings);
-                    MigrateVizPunchyDefaults(newSettings);
                     MigrateSuppressNativeMusic(newSettings);
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
@@ -221,56 +219,6 @@ namespace UniPlaySong.Services
                 
                 return false;
             }
-        }
-
-        // One-time migration: enable visualizer with Punchy preset + Dynamic V1 for all users upgrading to v1.2.6.
-        private void MigrateVizPunchyDefaults(UniPlaySongSettings settings)
-        {
-            if (settings.VizPunchyDefaultsMigrated)
-                return;
-
-            settings.ShowSpectrumVisualizer = true;
-            settings.VizColorTheme = (int)VizColorTheme.Dynamic;
-            settings.SelectedVizPreset = VizPreset.Punchy;
-
-            // Apply Punchy tuning values
-            settings.VizOpacityMin = 20;
-            settings.VizBarGainBoost = 0;
-            settings.VizPeakHoldMs = 40;
-            settings.VizGravity = 160;
-            settings.VizBassGravityBias = 70;
-            settings.VizFftSize = 1024;
-            settings.VizBassGain = 110;
-            settings.VizTrebleGain = 90;
-            settings.VizBleedAmount = 60;
-            settings.VizCompression = 35;
-            settings.VizSmoothRise = 95;
-            settings.VizSmoothFall = 30;
-            settings.VizFftRiseLow = 92;
-            settings.VizFftRiseHigh = 95;
-            settings.VizFftFallLow = 55;
-            settings.VizFftFallHigh = 70;
-
-            settings.VizPunchyDefaultsMigrated = true;
-
-            try { _plugin.SavePluginSettings(settings); }
-            catch { /* non-critical — will re-migrate next launch */ }
-        }
-
-        // One-time migration: VizColorTheme enum reordered in v1.2.6 (Dynamic moved from 13 to 0).
-        // Remaps existing users' saved int so their theme choice is preserved.
-        private void MigrateVizColorTheme(UniPlaySongSettings settings)
-        {
-            if (settings.VizColorThemeMigrated)
-                return;
-
-            int old = settings.VizColorTheme;
-            // Old: Classic=0..Frost=12, Dynamic=13 → New: Dynamic=0, Classic=1..Frost=13
-            settings.VizColorTheme = old == 13 ? 0 : old + 1;
-            settings.VizColorThemeMigrated = true;
-
-            try { _plugin.SavePluginSettings(settings); }
-            catch { /* non-critical — will re-migrate next launch */ }
         }
 
         // One-time migration: force SuppressPlayniteBackgroundMusic ON for all existing users (v1.2.7).
