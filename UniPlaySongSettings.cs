@@ -659,9 +659,10 @@ namespace UniPlaySong
             set { preciseTrimSuffix = value ?? "-ptrimmed"; OnPropertyChanged(); }
         }
 
-        // Song Randomization Settings
+        // Song Playback Behavior
         private bool randomizeOnEverySelect = false;
         private bool randomizeOnMusicEnd = true;
+        private bool stopAfterSongEnds = false;
 
         /// <summary>
         /// Randomize song selection when selecting a different game
@@ -681,6 +682,13 @@ namespace UniPlaySong
         {
             get => randomizeOnMusicEnd;
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
+        }
+
+        // Stop playback after current song finishes instead of looping or randomizing
+        public bool StopAfterSongEnds
+        {
+            get => stopAfterSongEnds;
+            set { stopAfterSongEnds = value; OnPropertyChanged(); }
         }
 
         // Auto-Download on Library Update Settings

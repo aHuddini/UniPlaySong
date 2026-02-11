@@ -343,6 +343,15 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Stop after song ends (no loop)"
+                              IsChecked="{Binding Settings.StopAfterSongEnds}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music stops after the current song finishes instead of looping or advancing to the next song. Applies to both regular playback and preview mode."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
                     <Separator Margin="0,15"/>

@@ -1099,6 +1099,15 @@ namespace UniPlaySong.Services
                 {
                     _previewTimer.Stop();
 
+                    // Stop after preview ends instead of restarting
+                    if (_currentSettings?.StopAfterSongEnds == true)
+                    {
+                        _fileLogger?.Info($"Preview ended (StopAfterSongEnds): {Path.GetFileName(_currentSongPath)}");
+                        FadeOutAndStop();
+                        OnMusicStopped?.Invoke(_currentSettings);
+                        return;
+                    }
+
                     // Check if we should randomize to a different song
                     string nextSong = _currentSongPath;
                     bool shouldRandomize = _currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null;
@@ -1208,6 +1217,16 @@ namespace UniPlaySong.Services
                     // If SuppressAutoLoop is set, an external handler manages playback
                     if (SuppressAutoLoop)
                     {
+                        return;
+                    }
+
+                    // Stop after song ends: fade out and stop instead of looping/randomizing
+                    if (_currentSettings?.StopAfterSongEnds == true)
+                    {
+                        _fileLogger?.Info($"Song ended (StopAfterSongEnds): {Path.GetFileName(_currentSongPath)}");
+                        StopPreviewTimer();
+                        FadeOutAndStop();
+                        OnMusicStopped?.Invoke(_currentSettings);
                         return;
                     }
 
