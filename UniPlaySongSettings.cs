@@ -1554,13 +1554,6 @@ namespace UniPlaySong
             set { dynMinSatTop = value; OnPropertyChanged(); }
         }
 
-        // One-time migration: force SuppressPlayniteBackgroundMusic ON and decouple from UseNativeMusicAsDefault (v1.2.7)
-        public bool SuppressNativeMusicMigrated
-        {
-            get => suppressNativeMusicMigrated;
-            set { suppressNativeMusicMigrated = value; OnPropertyChanged(); }
-        }
-
         public VizPreset SelectedVizPreset
         {
             get => selectedVizPreset;
@@ -1592,7 +1585,7 @@ namespace UniPlaySong
         private int dynMinBrightnessTop = 150;       // 0-255 — min brightness floor for top (gradient tip) color
         private int dynMinSatBottom = 30;            // 0-100 (%) — min saturation for bottom color
         private int dynMinSatTop = 35;               // 0-100 (%) — min saturation for top color
-        private bool suppressNativeMusicMigrated = false; // One-time migration: force SuppressPlayniteBackgroundMusic ON (v1.2.7)
+
 
         // ===== Toast Notification Settings =====
         private bool enableToastAcrylicBlur = true;

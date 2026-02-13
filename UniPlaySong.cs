@@ -304,6 +304,10 @@ namespace UniPlaySong
                 InitializeFullscreenSettingsRef();
                 SubscribeToFullscreenVolumeChanges();
                 _playbackService?.SetVolumeMultiplier(_playniteFullscreenVolume);
+
+                // Pause FFT processing — desktop visualizer is not visible in fullscreen.
+                // The provider is created per-song, so also gate at creation time (see NAudioMusicPlayer).
+                PauseFftProcessing(true);
             }
 
             // Subscribe to game collection changes for auto-cleanup of music on game removal
@@ -1564,6 +1568,16 @@ namespace UniPlaySong
                 _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
                 _playbackService?.SetVolumeMultiplier(IsFullscreen ? _playniteFullscreenVolume : 1.0);
             }
+        }
+
+        // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected.
+        // Uses GlobalPaused so new providers (created per song) auto-inherit the state.
+        // In fullscreen mode the desktop visualizer is not visible, so FFT is wasted CPU.
+        // When fullscreen visualizer support is added, remove or make this mode-aware.
+        private void PauseFftProcessing(bool pause)
+        {
+            Audio.VisualizationDataProvider.GlobalPaused = pause;
+            _fileLogger?.Debug($"FFT processing {(pause ? "paused" : "resumed")}");
         }
 
         // Suppresses Playnite's native background music by stopping playback and preventing reload.

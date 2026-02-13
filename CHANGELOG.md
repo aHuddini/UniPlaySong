@@ -2,6 +2,24 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.9] - 2026-02-13
+
+### Added
+- **Stop After Song Ends** - New toggle to play songs once without looping ([#67](https://github.com/aHuddini/UniPlaySong/issues/67))
+  - When enabled, music stops after the current song finishes instead of looping or advancing
+  - Works in both regular and preview mode
+
+### Fixed
+- **Fullscreen Performance** - Eliminated native music suppression polling timer that caused UI lag with themes like ANIKI Remake
+  - Removed 50ms polling timer (ran 300 times over 15 seconds on the UI thread doing expensive reflection)
+  - Suppression now fires once at startup, matching the PlayniteSounds approach
+
+### Backend
+- **Visualizer FFT** - Spectrum FFT processing is now paused in fullscreen mode via `VisualizationDataProvider.GlobalPaused` (desktop visualizer is not visible in fullscreen; groundwork for future fullscreen visualizer support)
+
+### Removed
+- Removed one-time migration code for suppress native music setting (v1.2.8 migration — all users migrated)
+
 ## [1.2.8] - 2026-02-09
 
 ### Fixed

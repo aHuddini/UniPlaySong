@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.8-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,13 +20,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.8
+## What's New - v1.2.9
 
-### Bug Fix
-- **Native Music Conflict** - Fixed Playnite's vanilla background music playing simultaneously with UniPlaySong when certain Default Music settings were active, causing unintentional audio overlaps with fullscreen themes like ANIKI Remake
-  - "Suppress Playnite Native Background Music" is now an independent toggle under General Settings.
+### New Feature
+- **Stop After Song Ends** - Option to play songs once without looping ([#67](https://github.com/aHuddini/UniPlaySong/issues/67))
 
-### Previous Version
+### Performance Fix
+- **Fullscreen Performance** - Eliminated native music suppression polling timer that caused UI lag with themes like ANIKI Remake
+
+### Backend
+- **Visualizer FFT** - Spectrum processing paused in fullscreen (desktop visualizer not visible; groundwork for future fullscreen visualizer)
+
+### Previous Versions
+- **v1.2.8**: Native music conflict fix — suppress toggle decoupled from Default Music settings
 - **v1.2.7**: Critical fix — Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
 ---
 

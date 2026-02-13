@@ -43,7 +43,6 @@ namespace UniPlaySong.Services
                 var newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
                 if (newSettings != null)
                 {
-                    MigrateSuppressNativeMusic(newSettings);
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
                 else
@@ -219,20 +218,6 @@ namespace UniPlaySong.Services
                 
                 return false;
             }
-        }
-
-        // One-time migration: force SuppressPlayniteBackgroundMusic ON for all existing users (v1.2.7).
-        // Previously coupled with UseNativeMusicAsDefault — now independent. Force ON to prevent audio conflicts.
-        private void MigrateSuppressNativeMusic(UniPlaySongSettings settings)
-        {
-            if (settings.SuppressNativeMusicMigrated)
-                return;
-
-            settings.SuppressPlayniteBackgroundMusic = true;
-            settings.SuppressNativeMusicMigrated = true;
-
-            try { _plugin.SavePluginSettings(settings); }
-            catch { /* non-critical — will re-migrate next launch */ }
         }
 
         private void OnSettingPropertyChanged(object sender, PropertyChangedEventArgs e)

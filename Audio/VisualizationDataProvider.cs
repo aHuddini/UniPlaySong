@@ -54,6 +54,16 @@ namespace UniPlaySong.Audio
         private volatile bool _disposed;
         private readonly ManualResetEventSlim _newSamplesSignal = new ManualResetEventSlim(false);
 
+        // Fullscreen FFT gate: when paused, the FFT thread still wakes on audio signals
+        // but skips the expensive computation (FFT + smoothing + buffer swap).
+        // Audio passthrough (Read()) is unaffected — only the spectrum analysis is skipped.
+        //
+        // Currently used to save CPU in fullscreen mode where the desktop visualizer is not visible.
+        // When fullscreen visualizer support is implemented, this gate should be made
+        // mode-aware (e.g., pause only if no fullscreen visualizer is subscribed).
+        private volatile bool _paused;
+        public bool Paused { get => _paused; set => _paused = value; }
+
         public WaveFormat WaveFormat => _source.WaveFormat;
 
         public int FftSize => _fftSize; // UI reads this to configure matching bin ranges
@@ -216,6 +226,7 @@ namespace UniPlaySong.Audio
                 }
 
                 if (_disposed) break;
+                if (_paused) continue; // Fullscreen: skip FFT, audio passthrough unaffected
 
                 // Snapshot write position to avoid reading a moving target
                 int wp = _writePos;
@@ -267,10 +278,30 @@ namespace UniPlaySong.Audio
         }
 
         private static volatile VisualizationDataProvider _current;
+
+        // Static pause flag: applied automatically to each new provider via the Current setter.
+        // This ensures newly created providers (one per song) inherit the pause state
+        // without requiring the caller to know about the FFT lifecycle.
+        private static volatile bool _globalPaused;
+        public static bool GlobalPaused
+        {
+            get => _globalPaused;
+            set
+            {
+                _globalPaused = value;
+                var current = _current;
+                if (current != null) current.Paused = value;
+            }
+        }
+
         public static VisualizationDataProvider Current
         {
             get => _current;
-            set => _current = value;
+            set
+            {
+                _current = value;
+                if (value != null) value.Paused = _globalPaused;
+            }
         }
     }
 }
