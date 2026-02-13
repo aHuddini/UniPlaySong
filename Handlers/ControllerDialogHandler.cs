@@ -191,13 +191,13 @@ namespace UniPlaySong.Handlers
                                     }));
                                 }
                             }
-                            catch (Exception delayEx)
+                            catch (Exception)
                             {
                                 // Ignore focus restoration errors
                             }
                         });
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // Ignore window closed handler errors
                     }

@@ -126,7 +126,7 @@ namespace UniPlaySong.Monitors
                 {
                     // Position has changed, update the dictionary
                     mediaElementPositions[mediaElementReference] = mediaElement.Position;
-                    
+
                     bool isPlaying = mediaElement.HasAudio && !mediaElement.IsMuted && mediaElement.Volume > 0;
                     if (isPlaying)
                     {

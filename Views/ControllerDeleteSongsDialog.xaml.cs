@@ -226,7 +226,7 @@ namespace UniPlaySong.Views
                     };
                     stackPanel.Children.Add(sizeText);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Error getting file size - continue without it
                 }
@@ -369,7 +369,7 @@ namespace UniPlaySong.Views
                 {
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Error in controller monitoring - continue polling
                     await Task.Delay(100, cancellationToken);
@@ -863,7 +863,7 @@ namespace UniPlaySong.Views
                 }
                 // Timeout reached - continue anyway
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Error checking button state - continue anyway
             }
@@ -887,7 +887,7 @@ namespace UniPlaySong.Views
                 // This is the key defense against race conditions
                 _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Error refreshing controller state - still set cooldown
                 _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
@@ -1065,7 +1065,7 @@ namespace UniPlaySong.Views
                             mainWindow.Topmost = false;
                         }
                     }
-                    catch (Exception focusEx)
+                    catch (Exception)
                     {
                         // Error returning focus to main window - ignore
                     }

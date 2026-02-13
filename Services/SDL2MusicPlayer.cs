@@ -37,7 +37,6 @@ namespace UniPlaySong.Services
             InitializeSDL();
             _musicFinishedCallback = OnMusicFinishedInternal;
             SDL2Mixer.Mix_HookMusicFinished(Marshal.GetFunctionPointerForDelegate(_musicFinishedCallback));
-            // SDL2 mixer initialized for playback
         }
 
         private void InitializeSDL()

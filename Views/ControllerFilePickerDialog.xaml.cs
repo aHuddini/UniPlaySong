@@ -388,7 +388,7 @@ namespace UniPlaySong.Views
                 {
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Error in controller monitoring - continue polling
                     await Task.Delay(100, cancellationToken);
@@ -941,7 +941,7 @@ namespace UniPlaySong.Views
                             mainWindow.Topmost = false;
                         }
                     }
-                    catch (Exception focusEx)
+                    catch (Exception)
                     {
                         // Error returning focus to main window - ignore
                     }

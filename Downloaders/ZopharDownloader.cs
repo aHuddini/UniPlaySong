@@ -352,7 +352,7 @@ namespace UniPlaySong.Downloaders
                     Source = Source.Zophar
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Error parsing track row - skip
                 return null;
@@ -416,7 +416,7 @@ namespace UniPlaySong.Downloaders
                         break;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Error parsing JavaScript tracks - skip
             }

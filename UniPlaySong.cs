@@ -176,6 +176,7 @@ namespace UniPlaySong
             }
 
             InitializeServices();
+
             InitializeMenuHandlers();
 
             // Register custom elements for theme integration
@@ -190,7 +191,7 @@ namespace UniPlaySong
             Controls.MusicControl.UpdateServices(_settings);
 
             WindowMonitor.Attach(_playbackService, _errorHandler);
-            
+
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
@@ -203,12 +204,13 @@ namespace UniPlaySong
                 // Sync toast settings to DialogHelper at startup
                 DialogHelper.SyncToastSettings(_settings);
             }
-            
+
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
             SubscribeToMainModel();
-            
-            // Always suppress native music early in fullscreen mode to avoid SDL2_mixer volume conflicts
-            // Catches native music that starts before OnApplicationStarted
+
+            // Suppress native music early in fullscreen — matches PlayniteSounds pattern.
+            // Must happen in constructor because Playnite's background music starts playing
+            // before OnApplicationStarted fires, causing audible bleed.
             if (IsFullscreen)
             {
                 try
@@ -282,24 +284,21 @@ namespace UniPlaySong
                 _fileLogger?.Warn("OnApplicationStarted: Settings are null, reloading...");
                 _settingsService?.LoadSettings();
             }
-            
+
             if (IsFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
                 _coordinator.ResetSkipStateForModeSwitch();
             }
-            
+
             if (_settings?.ThemeCompatibleSilentSkip == true && IsFullscreen)
             {
                 AttachLoginInputHandler();
             }
-            
-            // In fullscreen mode: always suppress native music to avoid SDL2_mixer volume conflicts,
-            // and integrate with Playnite's BackgroundVolume slider
+
+            // In fullscreen mode: integrate with Playnite's BackgroundVolume slider.
+            // Native music suppression already handled in constructor (PNS pattern: single call).
             if (IsFullscreen)
             {
-                _fileLogger?.Debug("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
-                SuppressNativeMusic();
-
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
                 InitializeFullscreenSettingsRef();
                 SubscribeToFullscreenVolumeChanges();
@@ -338,6 +337,7 @@ namespace UniPlaySong
             {
                 CheckForHintsUpdatesAsync();
             }
+
         }
 
         /// <summary>
@@ -1240,16 +1240,19 @@ namespace UniPlaySong
             _amplifyService = new Services.AudioAmplifyService(_errorHandler, _playbackService, basePath);
             _fileLogger?.Debug("AudioAmplifyService initialized");
 
-            // Initialize Desktop top panel media control (play/pause button)
-            // Pass a getter function so it always uses the current playback service (handles Live Effects toggle)
-            _topPanelMediaControl = new TopPanelMediaControlViewModel(
-                () => _playbackService,
-                () => _settings,
-                () => SelectedGames?.FirstOrDefault(),
-                msg => _fileLogger?.Debug(msg),
-                (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
-            );
-            _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
+            // Desktop-only: TopPanel media controls (play/pause, skip, spectrum visualizer, now playing)
+            // Skip in fullscreen — no top panel exists, and this creates WPF elements + NAudio subscriptions
+            if (IsDesktop)
+            {
+                _topPanelMediaControl = new TopPanelMediaControlViewModel(
+                    () => _playbackService,
+                    () => _settings,
+                    () => SelectedGames?.FirstOrDefault(),
+                    msg => _fileLogger?.Debug(msg),
+                    (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
+                );
+                _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
+            }
         }
 
         private void InitializeMenuHandlers()
@@ -1350,14 +1353,9 @@ namespace UniPlaySong
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
 
-                // Re-attach event handlers - always suppress native music in fullscreen
-                _playbackService.OnMusicStarted += (settings) =>
-                {
-                    if (!IsFullscreen)
-                        return;
-
-                    SuppressNativeMusic();
-                };
+                // No OnMusicStarted suppress handler needed — constructor already set BackgroundMusic
+                // to IntPtr.Zero which persists. Live Effects toggle only happens in Desktop mode;
+                // switching to Fullscreen restarts Playnite, triggering a fresh constructor call.
 
                 if (_settings != null)
                 {
@@ -1622,12 +1620,13 @@ namespace UniPlaySong
                     // Set to Zero to prevent Playnite from reloading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
 
-                    _fileLogger?.Debug("SuppressNativeMusic: Successfully stopped native background music");
+                    _fileLogger?.Debug("SuppressNativeMusic: Stopped native music");
                 }
                 else
                 {
                     // Music not loaded yet - set to Zero to prevent loading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
+                    _fileLogger?.Debug("SuppressNativeMusic: Set to Zero (no music loaded)");
                 }
             }
             catch (Exception ex)

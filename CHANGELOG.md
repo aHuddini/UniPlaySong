@@ -2,6 +2,12 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.10] - 2026-02-13
+
+### Fixed (Critical)
+- **Fullscreen Performance** - Fixed remaining lag on themes like ANIKI Remake. Desktop-only visualizer components (spectrum visualizer, now playing panel, song metadata service) were being initialized in fullscreen mode where they're never displayed. These are now properly skipped in fullscreen.
+- **Native Music Suppression** - Reduced suppression to a single call at startup (matching PlayniteSounds pattern), removing redundant suppress calls from `OnApplicationStarted` and `RecreateMusicPlayerForLiveEffects`.
+
 ## [1.2.9] - 2026-02-13
 
 ### Added
@@ -10,9 +16,7 @@ All notable changes to UniPlaySong will be documented in this file.
   - Works in both regular and preview mode
 
 ### Fixed
-- **Fullscreen Performance** - Eliminated native music suppression polling timer that caused UI lag with themes like ANIKI Remake
-  - Removed 50ms polling timer (ran 300 times over 15 seconds on the UI thread doing expensive reflection)
-  - Suppression now fires once at startup, matching the PlayniteSounds approach
+- **Fullscreen Performance** - Eliminated native music suppression polling timer that caused UI lag with themes like ANIKI Remake. Suppression now fires once at startup, matching the PlayniteSounds approach.
 
 ### Backend
 - **Visualizer FFT** - Spectrum FFT processing is now paused in fullscreen mode via `VisualizationDataProvider.GlobalPaused` (desktop visualizer is not visible in fullscreen; groundwork for future fullscreen visualizer support)
