@@ -41,11 +41,6 @@ namespace UniPlaySong
         private CancellationTokenSource _controllerLoginMonitoringCancellation;
         private bool _isControllerLoginMonitoring = false;
         
-        // Native music suppression monitoring
-        private System.Windows.Threading.DispatcherTimer _nativeMusicSuppressionTimer;
-        private bool _isNativeMusicSuppressionActive = false;
-        private bool _hasLoggedSuppression = false;
-        
         // Assembly resolution handler for Material Design and other dependencies
         static UniPlaySong()
         {
@@ -304,7 +299,6 @@ namespace UniPlaySong
             {
                 _fileLogger?.Debug("OnApplicationStarted: Fullscreen mode - suppressing native music and integrating BackgroundVolume");
                 SuppressNativeMusic();
-                StartNativeMusicSuppression();
 
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
                 InitializeFullscreenSettingsRef();
@@ -695,7 +689,6 @@ namespace UniPlaySong
             }
 
             StopControllerLoginMonitoring();
-            StopNativeMusicSuppression();
             UnsubscribeFromFullscreenVolumeChanges();
 
             _dynamicColorCache?.Save();
@@ -1161,14 +1154,6 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
-            // Always suppress native music in fullscreen when our music starts (avoids SDL2_mixer volume conflicts)
-            _playbackService.OnMusicStarted += (settings) =>
-            {
-                if (!IsFullscreen)
-                    return;
-
-                SuppressNativeMusic();
-            };
 
             if (_settings != null)
             {
@@ -1581,88 +1566,13 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Starts continuous native music suppression monitoring for initial fullscreen startup.
-        /// Polls every 50ms for 15 seconds to catch native music that starts at different times.
-        /// </summary>
-        private void StartNativeMusicSuppression()
-        {
-            if (_isNativeMusicSuppressionActive)
-                return;
-
-            try
-            {
-                _isNativeMusicSuppressionActive = true;
-                _hasLoggedSuppression = false;
-                
-                _nativeMusicSuppressionTimer = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromMilliseconds(50)
-                };
-                
-                _nativeMusicSuppressionTimer.Tick += (s, e) =>
-                {
-                    try
-                    {
-                        SuppressNativeMusic();
-                    }
-                    catch (Exception ex)
-                    {
-                        _fileLogger?.Debug($"Error in native music suppression timer: {ex.Message}");
-                    }
-                };
-                
-                _nativeMusicSuppressionTimer.Start();
-                _fileLogger?.Debug("Started native music suppression monitoring (15 second window)");
-                
-                // Stop after 15 seconds to catch delayed audio initialization and theme transitions
-                Task.Delay(15000).ContinueWith(_ =>
-                {
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                    {
-                        StopNativeMusicSuppression();
-                    }));
-                });
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Error($"Error starting native music suppression: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Stops continuous native music suppression monitoring.
-        /// </summary>
-        private void StopNativeMusicSuppression()
-        {
-            if (!_isNativeMusicSuppressionActive)
-                return;
-
-            try
-            {
-                _isNativeMusicSuppressionActive = false;
-                
-                if (_nativeMusicSuppressionTimer != null)
-                {
-                    _nativeMusicSuppressionTimer.Stop();
-                    _nativeMusicSuppressionTimer = null;
-                }
-                
-                _fileLogger?.Debug("Stopped native music suppression monitoring");
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Error($"Error stopping native music suppression: {ex.Message}");
-            }
-        }
-
         // Suppresses Playnite's native background music by stopping playback and preventing reload.
         // Uses reflection to access Playnite's internal BackgroundMusic property and SDL2_mixer to stop playback.
         private void SuppressNativeMusic()
         {
             if (!IsFullscreen)
                 return;
-            
+
             if (_settings?.SuppressPlayniteBackgroundMusic != true)
                 return;
 
@@ -1671,38 +1581,34 @@ namespace UniPlaySong
                 var mainModel = GetMainModel();
                 if (mainModel?.App == null)
                     return;
-                    
+
                 var appType = mainModel.App.GetType();
-                
+
                 // Walk up inheritance chain to find FullscreenApplication
                 while (appType != null && appType.Name != "FullscreenApplication")
                 {
                     appType = appType.BaseType;
                 }
-                
+
                 if (appType == null)
                     return;
-                    
-                var backgroundMusicProperty = appType.GetProperty("BackgroundMusic", 
+
+                var backgroundMusicProperty = appType.GetProperty("BackgroundMusic",
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                
+
                 if (backgroundMusicProperty == null)
                     return;
-                    
+
                 IntPtr currentMusic = (IntPtr)(backgroundMusicProperty.GetValue(null) ?? IntPtr.Zero);
-                
+
                 if (currentMusic != IntPtr.Zero)
                 {
                     SDL2MixerWrapper.Mix_HaltMusic();
                     SDL2MixerWrapper.Mix_FreeMusic(currentMusic);
                     // Set to Zero to prevent Playnite from reloading
                     backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
-                    
-                    if (!_hasLoggedSuppression)
-                    {
-                        _fileLogger?.Debug("SuppressNativeMusic: Successfully stopped native background music");
-                        _hasLoggedSuppression = true;
-                    }
+
+                    _fileLogger?.Debug("SuppressNativeMusic: Successfully stopped native background music");
                 }
                 else
                 {
