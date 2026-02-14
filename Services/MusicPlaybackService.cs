@@ -16,11 +16,17 @@ namespace UniPlaySong.Services
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
+        // Static Random instance to avoid allocations and duplicate sequences
+        private static readonly Random _random = new Random();
+
         private readonly IMusicPlayer _musicPlayer;
         private readonly GameMusicFileService _fileService;
         private readonly FileLogger _fileLogger;
         private readonly ErrorHandlerService _errorHandler;
         private readonly Dictionary<string, bool> _primarySongPlayed = new Dictionary<string, bool>();
+
+        // Cached native music path to avoid repeated method calls in IsDefaultMusicPath()
+        private readonly string _nativeMusicPath;
         
         public event Action<UniPlaySongSettings> OnMusicStopped; // Fired when music stops (for native music restoration)
 
@@ -110,6 +116,9 @@ namespace UniPlaySong.Services
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _fileLogger = fileLogger;
             _errorHandler = errorHandler;
+
+            // Cache native music path once at service initialization
+            _nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
 
             _fader = new MusicFader(
                 _musicPlayer,
@@ -280,9 +289,9 @@ namespace UniPlaySong.Services
 
             if (settings.UseNativeMusicAsDefault == true)
             {
-                var nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
-                return !string.IsNullOrWhiteSpace(nativeMusicPath) &&
-                       string.Equals(path, nativeMusicPath, StringComparison.OrdinalIgnoreCase);
+                // Use cached native music path instead of calling helper method
+                return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
+                       string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
             }
             else
             {
@@ -864,12 +873,11 @@ namespace UniPlaySong.Services
             }
 
             // Select random song, avoiding current song
-            var random = new Random();
             string nextSong;
             int attempts = 0;
             do
             {
-                nextSong = songs[random.Next(songs.Count)];
+                nextSong = songs[_random.Next(songs.Count)];
                 attempts++;
             }
             while (nextSong == _currentSongPath && attempts < 10);
@@ -1046,12 +1054,11 @@ namespace UniPlaySong.Services
                 if (shouldRandomize)
                 {
                     // Select random song, avoiding immediate repeat (max 10 attempts to prevent infinite loops)
-                    var random = new Random();
                     string selected;
                     int attempts = 0;
                     do
                     {
-                        selected = songs[random.Next(songs.Count)];
+                        selected = songs[_random.Next(songs.Count)];
                         attempts++;
                     }
                     while (selected == _previousSongPath && songs.Count > 1 && attempts < 10);
@@ -1118,11 +1125,10 @@ namespace UniPlaySong.Services
                         if (songs.Count > 1)
                         {
                             // Select random song (avoiding immediate repeat, max 10 attempts)
-                            var random = new Random();
                             int attempts = 0;
                             do
                             {
-                                nextSong = songs[random.Next(songs.Count)];
+                                nextSong = songs[_random.Next(songs.Count)];
                                 attempts++;
                             }
                             while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
@@ -1241,12 +1247,11 @@ namespace UniPlaySong.Services
                             if (songs.Count > 1)
                             {
                                 // Select random song (avoiding immediate repeat, max 10 attempts)
-                                var random = new Random();
                                 string nextSong;
                                 int attempts = 0;
                                 do
                                 {
-                                    nextSong = songs[random.Next(songs.Count)];
+                                    nextSong = songs[_random.Next(songs.Count)];
                                     attempts++;
                                 }
                                 while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);

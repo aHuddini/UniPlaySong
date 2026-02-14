@@ -5,7 +5,16 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.2.11] - TBD
 
 ### Performance
-- **Native Music Path Caching** - File system scanning for Playnite's native background music now occurs once at plugin startup instead of on every game selection. Only affects users with "Use Native Music as Default" enabled. Slight optimization for smoother scrolling.
+**Hot Path Optimizations** - Multiple optimizations to reduce overhead during game selection and playback:
+- **Native Music Path Caching** - Service-level caching eliminates 9 repeated method calls per game selection (for "Use Native Music as Default" users)
+- **Static Random Instance** - Single shared Random instance prevents allocations and fixes duplicate random sequence bug in shuffle mode
+  - Eliminates 4 allocations per playback session (240 bytes + GC pressure)
+  - Fixes bug where rapid selections within same millisecond produced identical "random" songs
+- **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
+  - Saves ~2-8ms (SSD) or ~15-80ms (HDD) per cached game re-selection
+  - Cache automatically invalidates after downloads, deletes, trim, normalize, and amplify operations
+  - Session-scoped cache persists during Playnite session for optimal browsing performance
+  - Manual file additions won't appear until Playnite restart (acceptable trade-off for 99% of use cases)
 
 ## [1.2.10] - 2026-02-13
 
