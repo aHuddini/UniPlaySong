@@ -2,6 +2,11 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+## [1.2.11] - TBD
+
+### Performance
+- **Native Music Path Caching** - File system scanning for Playnite's native background music now occurs once at plugin startup instead of on every game selection. Only affects users with "Use Native Music as Default" enabled. Slight optimization for smoother scrolling.
+
 ## [1.2.10] - 2026-02-13
 
 ### Fixed (Critical)

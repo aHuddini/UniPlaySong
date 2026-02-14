@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.10-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2.11-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,13 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.10
+## What's New - v1.2.11
 
-### Critical Fix
-- **Fullscreen Performance** - Fixed remaining lag on themes like ANIKI Remake. Desktop visualizer components were being initialized in fullscreen mode unnecessarily. Now properly skipped in fullscreen.
-- **Native Music Suppression** - Reduced to a single startup call (matching PlayniteSounds pattern). Removed redundant suppress calls.
+### Performance
+- **Native Music Path Caching** - File scanning for native background music moved to plugin startup instead of game selection (for "Use Native Music as Default" users).
 
 ### Previous Versions
+- **v1.2.10**: Fullscreen performance fix (desktop visualizer init gate) + suppress call reduction
 - **v1.2.9**: Stop After Song Ends + fullscreen performance fix (suppression timer removed)
 - **v1.2.8**: Native music conflict fix — suppress toggle decoupled from Default Music settings
 - **v1.2.7**: Critical fix — Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
