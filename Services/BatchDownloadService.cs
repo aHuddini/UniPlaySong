@@ -264,6 +264,9 @@ namespace UniPlaySong.Services
                 {
                     result.Success = true;
                     result.SongPath = downloadPath;
+
+                    // Invalidate song cache since we added a new file
+                    _fileService.InvalidateCacheForGame(game);
                 }
                 else
                 {

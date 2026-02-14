@@ -430,6 +430,9 @@ namespace UniPlaySong.ViewModels
                     {
                         if (success)
                         {
+                            // Invalidate cache since we downloaded a new file
+                            _fileService?.InvalidateCacheForGame(SelectedGameItem.Game);
+
                             SelectedGameItem.Status = BatchDownloadStatus.Completed;
                             SelectedGameItem.StatusMessage = $"Downloaded: {bestSong.Name}";
                             SuccessCount++;

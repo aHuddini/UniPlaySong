@@ -594,6 +594,9 @@ namespace UniPlaySong.ViewModels
                     ProgressText = $"Download complete! ({fileInfo.Length / 1024.0 / 1024.0:F2} MB)";
                     Logger.Debug($"Successfully downloaded audio from URL to: {filePath}");
 
+                    // Invalidate song cache since we added a new file
+                    _fileService.InvalidateCacheForGame(_game);
+
                     // Force reload music so the new song can play immediately
                     try
                     {

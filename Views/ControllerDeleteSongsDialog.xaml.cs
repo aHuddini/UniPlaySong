@@ -983,6 +983,9 @@ namespace UniPlaySong.Views
                 // Remove from our list
                 _musicFiles.Remove(filePath);
 
+                // Invalidate song cache since we deleted a file
+                _fileService?.InvalidateCacheForGame(_currentGame);
+
                 // Update UI
                 PopulateFilesList();
                 

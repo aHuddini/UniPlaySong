@@ -977,7 +977,11 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
-                    var fileName = Path.GetFileName(_selectedFilePath);
+                    var fileName = System.IO.Path.GetFileName(_selectedFilePath);
+
+                    // Invalidate cache since we created a new trimmed file
+                    var directory = System.IO.Path.GetDirectoryName(_selectedFilePath);
+                    _fileService?.InvalidateCacheForDirectory(directory);
 
                     // Use auto-closing toast popup instead of modal dialog
                     DialogHelper.ShowSuccessToast(

@@ -296,6 +296,16 @@ namespace UniPlaySong.Handlers
                             progress,
                             progressDialog.CancellationToken);
 
+                        // Invalidate cache for all affected directories since we modified files
+                        if (result.SuccessCount > 0 && _fileService != null)
+                        {
+                            var directories = musicFiles.Select(f => Path.GetDirectoryName(f)).Distinct();
+                            foreach (var dir in directories)
+                            {
+                                _fileService.InvalidateCacheForDirectory(dir);
+                            }
+                        }
+
                         // Show completion message
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {

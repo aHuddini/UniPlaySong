@@ -19,6 +19,9 @@ namespace UniPlaySong.Services
         private readonly ErrorHandlerService _errorHandler;
         private static readonly string[] SupportedExtensions = Constants.SupportedAudioExtensions;
 
+        // Song list cache to avoid repeated directory scans
+        private readonly Dictionary<string, List<string>> _songCache = new Dictionary<string, List<string>>();
+
         public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null)
         {
             _baseMusicPath = baseMusicPath ?? throw new ArgumentNullException(nameof(baseMusicPath));
@@ -45,17 +48,23 @@ namespace UniPlaySong.Services
                 return new List<string>();
             }
 
+            // Check cache first
+            if (_songCache.TryGetValue(directory, out var cached))
+            {
+                return new List<string>(cached); // Return copy to prevent external modification
+            }
+
+            // Cache miss - scan directory
+            List<string> files;
             if (_errorHandler != null)
             {
-                return _errorHandler.Try(
+                files = _errorHandler.Try(
                     () =>
                     {
-                        var files = Directory.GetFiles(directory)
+                        return Directory.GetFiles(directory)
                             .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
                             .OrderBy(f => f)
                             .ToList();
-
-                        return files;
                     },
                     defaultValue: new List<string>(),
                     context: $"getting songs for game '{game?.Name}'"
@@ -65,12 +74,10 @@ namespace UniPlaySong.Services
             {
                 try
                 {
-                    var files = Directory.GetFiles(directory)
+                    files = Directory.GetFiles(directory)
                         .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
                         .OrderBy(f => f)
                         .ToList();
-
-                    return files;
                 }
                 catch (Exception ex)
                 {
@@ -78,6 +85,10 @@ namespace UniPlaySong.Services
                     return new List<string>();
                 }
             }
+
+            // Cache the result
+            _songCache[directory] = files;
+            return new List<string>(files);
         }
 
         /// <summary>
@@ -138,6 +149,29 @@ namespace UniPlaySong.Services
                 Directory.CreateDirectory(directory);
             }
             return directory;
+        }
+
+        /// <summary>
+        /// Invalidates the song cache for a specific game
+        /// </summary>
+        public void InvalidateCacheForGame(Game game)
+        {
+            var directory = GetGameMusicDirectory(game);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                _songCache.Remove(directory);
+            }
+        }
+
+        /// <summary>
+        /// Invalidates the song cache for a specific directory
+        /// </summary>
+        public void InvalidateCacheForDirectory(string directory)
+        {
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                _songCache.Remove(directory);
+            }
         }
 
         /// <summary>
@@ -223,6 +257,9 @@ namespace UniPlaySong.Services
                     Logger.Error(ex, $"Error deleting music for game '{game?.Name}': {ex.Message}");
                 }
             }
+
+            // Invalidate cache since we deleted files
+            InvalidateCacheForGame(game);
 
             return deletedCount;
         }

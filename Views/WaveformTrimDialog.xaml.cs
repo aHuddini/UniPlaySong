@@ -556,6 +556,10 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
+                    // Invalidate cache since we created a new trimmed file
+                    var directory = System.IO.Path.GetDirectoryName(filePath);
+                    _fileService?.InvalidateCacheForDirectory(directory);
+
                     Logger.DebugIf(LogPrefix,"Trim applied successfully");
                     _playniteApi.Dialogs.ShowMessage(
                         $"Successfully trimmed '{fileName}'.\n\n" +

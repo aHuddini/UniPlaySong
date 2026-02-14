@@ -614,6 +614,9 @@ namespace UniPlaySong
                     {
                         _fileLogger?.Debug($"AutoDownload: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
 
+                        // Invalidate song cache since we added a new file
+                        _fileService.InvalidateCacheForGame(game);
+
                         // Auto-normalize if enabled
                         if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)
                         {
@@ -2779,6 +2782,9 @@ namespace UniPlaySong
                     if (success)
                     {
                         _fileLogger?.Debug($"AutoDownloadSync: Successfully downloaded '{bestSong.Name}' for '{game.Name}'");
+
+                        // Invalidate song cache since we added a new file
+                        _fileService.InvalidateCacheForGame(game);
 
                         // Auto-normalize if enabled
                         if (_settings?.AutoNormalizeAfterDownload == true && _normalizationService != null)

@@ -1069,6 +1069,10 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
+                    // Invalidate cache since we created a new amplified file
+                    var directory = System.IO.Path.GetDirectoryName(_selectedFilePath);
+                    _fileService?.InvalidateCacheForDirectory(directory);
+
                     // Use auto-closing toast popup instead of modal dialog
                     DialogHelper.ShowSuccessToast(
                         _playniteApi,

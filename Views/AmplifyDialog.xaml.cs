@@ -581,8 +581,12 @@ namespace UniPlaySong.Views
 
                 if (success)
                 {
+                    // Invalidate cache since we created a new amplified file
+                    var directory = System.IO.Path.GetDirectoryName(filePath);
+                    _fileService?.InvalidateCacheForDirectory(directory);
+
                     _playniteApi.Dialogs.ShowMessage(
-                        $"Successfully created '{Path.GetFileNameWithoutExtension(fileName)}{suffix}{Path.GetExtension(fileName)}'.\n\n" +
+                        $"Successfully created '{System.IO.Path.GetFileNameWithoutExtension(fileName)}{suffix}{System.IO.Path.GetExtension(fileName)}'.\n\n" +
                         $"Gain applied: {_currentGainDb:+0.0;-0.0;0}dB\n\n" +
                         $"Original file moved to PreservedOriginals folder.",
                         "Amplify Complete");
