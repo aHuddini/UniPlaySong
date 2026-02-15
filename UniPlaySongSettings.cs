@@ -136,6 +136,13 @@ namespace UniPlaySong
         DynamicAlt      // Alt Algo: v7 center-weighted + bucket merging + diversity bonus
     }
 
+    public enum DefaultMusicSource
+    {
+        CustomFile,     // User-selected music file
+        NativeTheme,    // Playnite's built-in theme music
+        BundledPreset   // Bundled ambient tracks shipped with the plugin
+    }
+
     public enum VizPreset
     {
         Custom = 0,
@@ -169,6 +176,7 @@ namespace UniPlaySong
         private bool pauseWhenInSystemTray = true;
         private bool pauseOnGameStart = false;
         private bool showNowPlayingInTopPanel = false;
+        private bool hideNowPlayingForDefaultMusic = false;
         private bool showDesktopMediaControls = false;
         private bool showSpectrumVisualizer = true;
         private bool autoDeleteMusicOnGameRemoval = true;
@@ -418,6 +426,14 @@ namespace UniPlaySong
             set { showNowPlayingInTopPanel = value; OnPropertyChanged(); }
         }
 
+        // When enabled, hides the Now Playing panel when the selected game has no downloaded music
+        // (i.e. when default/fallback music is playing instead of game-specific music)
+        public bool HideNowPlayingForDefaultMusic
+        {
+            get => hideNowPlayingForDefaultMusic;
+            set { hideNowPlayingForDefaultMusic = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Show media control buttons (play/pause and skip) in the Desktop top panel bar.
         /// When disabled, only the Now Playing text is shown (if enabled).
@@ -448,11 +464,15 @@ namespace UniPlaySong
         }
 
         // Default Music Support
-        private bool enableDefaultMusic = false;
+        private bool enableDefaultMusic = true;
         private string defaultMusicPath = string.Empty;
         private string backupCustomMusicPath = string.Empty; // Backup of custom path when using native as default
         private bool suppressPlayniteBackgroundMusic = true;
         private bool useNativeMusicAsDefault = false;
+        private bool musicOnlyForInstalledGames = false;
+        private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+        private string selectedBundledPreset = string.Empty; // Filename of selected bundled preset
+        private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
 
         /// <summary>
         /// Enable default music fallback when no game music is found
@@ -503,6 +523,42 @@ namespace UniPlaySong
             }
         }
 
+        // When enabled, game-specific music only plays for installed games.
+        // Uninstalled games fall through to default music (or silence if default music is off).
+        public bool MusicOnlyForInstalledGames
+        {
+            get => musicOnlyForInstalledGames;
+            set
+            {
+                musicOnlyForInstalledGames = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // Which default music source to use: CustomFile, NativeTheme, or BundledPreset
+        public DefaultMusicSource DefaultMusicSourceOption
+        {
+            get => defaultMusicSourceOption;
+            set
+            {
+                defaultMusicSourceOption = value;
+                OnPropertyChanged();
+                // Keep UseNativeMusicAsDefault in sync for backward compatibility
+                useNativeMusicAsDefault = (value == DefaultMusicSource.NativeTheme);
+            }
+        }
+
+        // Filename of the selected bundled preset (e.g. "tunetank-dark-space-ambient-348870.mp3")
+        public string SelectedBundledPreset
+        {
+            get => selectedBundledPreset;
+            set
+            {
+                selectedBundledPreset = value ?? string.Empty;
+                OnPropertyChanged();
+            }
+        }
+
         /// <summary>
         /// Backup of custom default music path when UseNativeMusicAsDefault is enabled
         /// Used to restore the custom path when UseNativeMusicAsDefault is disabled
@@ -511,6 +567,13 @@ namespace UniPlaySong
         {
             get => backupCustomMusicPath;
             set { backupCustomMusicPath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // One-time migration flag: existing users get DefaultMusicSourceOption set from their old boolean settings
+        public bool BundledPresetMigrated
+        {
+            get => bundledPresetMigrated;
+            set { bundledPresetMigrated = value; OnPropertyChanged(); }
         }
 
         // Determines if "Use Playnite Native 'Default' Theme Music" checkbox should be enabled.

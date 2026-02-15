@@ -72,7 +72,8 @@ namespace UniPlaySong.Services
             }
 
             // Don't show song info for default/fallback music - keep ticker blank
-            if (_playbackService.IsPlayingDefaultMusic)
+            // Exception: bundled presets are real songs with proper metadata, so show them
+            if (_playbackService.IsPlayingDefaultMusic && !_playbackService.IsPlayingBundledPreset)
             {
                 ClearCurrentSongInfo();
                 return;

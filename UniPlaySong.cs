@@ -146,6 +146,9 @@ namespace UniPlaySong
 
                 // Initialize dedicated downloader logger
                 Downloaders.DownloaderLogger.Initialize(extensionPath);
+
+                // Initialize bundled preset service
+                Services.BundledPresetService.Initialize(extensionPath);
             }
             catch
             {
@@ -156,6 +159,9 @@ namespace UniPlaySong
 
             _settingsService = new SettingsService(_api, Logger, _fileLogger, this);
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
+
+            // Run one-time migrations BEFORE ViewModel init so it loads migrated values from disk
+            MigrateBundledPresetSettings();
 
             // Initialize settings ViewModel once - cached for GetSettings/GetSettingsView
             // Following PlayniteSound pattern: cache in constructor, not in GetSettings
@@ -258,6 +264,17 @@ namespace UniPlaySong
                 {
                     _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
                     return;
+                }
+
+                // Re-evaluate music when a game's install state changes (for MusicOnlyForInstalledGames)
+                if (update.NewData.IsInstalled != update.OldData.IsInstalled &&
+                    _settings?.MusicOnlyForInstalledGames == true)
+                {
+                    var currentGame = SelectedGames?.FirstOrDefault();
+                    if (currentGame != null && currentGame.Id == update.NewData.Id)
+                    {
+                        _coordinator.HandleGameSelected(currentGame, IsFullscreen);
+                    }
                 }
             }
         }
@@ -979,6 +996,27 @@ namespace UniPlaySong
             {
                 e.NewSettings.PropertyChanged += OnSettingsChanged;
             }
+        }
+
+        // One-time migration: converts old boolean default music settings to the new enum-based DefaultMusicSourceOption.
+        // Existing users who had UseNativeMusicAsDefault=true → NativeTheme, else with a custom path → CustomFile, else → BundledPreset.
+        // New installs already default to BundledPreset and this is a no-op.
+        private void MigrateBundledPresetSettings()
+        {
+            if (_settings == null || _settings.BundledPresetMigrated) return;
+
+            // All existing users migrate to bundled presets
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+
+            // Auto-select first bundled preset if none selected
+            if (string.IsNullOrEmpty(_settings.SelectedBundledPreset))
+            {
+                _settings.SelectedBundledPreset = Services.BundledPresetService.GetDefaultPresetFilename();
+            }
+
+            _settings.BundledPresetMigrated = true;
+            SavePluginSettings(_settings);
+            _fileLogger?.Debug($"BundledPreset migration: source={_settings.DefaultMusicSourceOption}, preset={_settings.SelectedBundledPreset}");
         }
 
         /// <summary>

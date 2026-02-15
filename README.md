@@ -22,26 +22,22 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.2.11
 
-### Performance Optimizations
-**Hot Path Optimizations** - Multiple optimizations to reduce overhead during game selection:
-- **Native Music Path Caching** - Eliminates 9 repeated method calls per game selection (for "Use Native Music as Default" users)
-- **Static Random Instance** - Prevents allocations and fixes duplicate random sequences in shuffle mode
-- **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
-  - **Performance gain**: ~2-8ms (SSD) or ~15-80ms (HDD) per cached re-selection
-  - **Smart invalidation**: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
-  - **Session-scoped**: Cache resets when Playnite restarts
-  - **Opt-in toggle**: General Settings → Performance (disabled by default — enable if you notice lag when switching games)
+### New
+- **Bundled Default Music Presets** - Three ambient tracks ship with the plugin, selectable via dropdown in Settings → Playback. No custom file path needed for new installs
+- **Play On Installed Games Only** - Only play game-specific music for installed games. Re-evaluates when install state changes. Settings → Playback
+- **Hide Now Playing for Default Music** - Collapse the Now Playing panel when no game-specific music is playing. Settings → General
 
-**UI Thread Optimizations** - Converted blocking delays to async operations:
-- Rate limiting delays during batch downloads
-- File release delays before audio processing
-- Eliminates UI freezes during file operations
+### Performance & Fixes
+- **Song List Caching** - Directory scans cached in-memory with smart invalidation. Opt-in toggle in General Settings → Performance
+- **Parallel File Deletions** - Bulk delete operations now run in parallel
+- **Async UI Operations** - Eliminated UI freezes during batch downloads and audio processing
+- **Shuffle Fix** - Fixed duplicate song sequences when rapidly switching games
 
 ### Previous Versions
-- **v1.2.10**: Fullscreen performance fix (desktop visualizer init gate) + suppress call reduction
-- **v1.2.9**: Stop After Song Ends + fullscreen performance fix (suppression timer removed)
+- **v1.2.10**: Fullscreen performance fix (desktop visualizer init skipped in fullscreen)
+- **v1.2.9**: Stop After Song Ends toggle + fullscreen suppression timer fix
 - **v1.2.8**: Native music conflict fix — suppress toggle decoupled from Default Music settings
-- **v1.2.7**: Critical fix — Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
+- **v1.2.7**: Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
 ---
 
 ## 🎬 Demo

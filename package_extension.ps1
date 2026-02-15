@@ -132,6 +132,16 @@ if (Test-Path $autoSearchDbDir) {
     Write-Host "  WARNING: AutoSearchDatabase folder not found (bundled hints missing)" -ForegroundColor Yellow
 }
 
+# Copy DefaultMusic folder (bundled ambient presets)
+$defaultMusicDir = Join-Path $scriptDir "DefaultMusic"
+if (Test-Path $defaultMusicDir) {
+    $destDefaultMusic = Join-Path $packageDir "DefaultMusic"
+    Copy-Item $defaultMusicDir -Destination $destDefaultMusic -Recurse -Force
+    Write-Host "  Copied folder: DefaultMusic" -ForegroundColor Gray
+} else {
+    Write-Host "  WARNING: DefaultMusic folder not found (bundled presets missing)" -ForegroundColor Yellow
+}
+
 # Copy main DLL
 Copy-Item $dllPath -Destination $packageDir -Force
 Write-Host "  Copied: UniPlaySong.dll" -ForegroundColor Gray

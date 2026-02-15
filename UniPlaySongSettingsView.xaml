@@ -15,6 +15,7 @@
         <local:HexToColorConverter x:Key="HexToColorConverter"/>
         <local:VizPresetConverter x:Key="VizPresetConverter"/>
         <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
+        <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -128,6 +129,16 @@
                         <Run Foreground="Gray">Displays the current song title, artist, and duration.</Run>
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
+
+                    <CheckBox Content="Hide Now Playing for default music"
+                              IsChecked="{Binding Settings.HideNowPlayingForDefaultMusic}"
+                              IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                              Margin="20,5,0,0"/>
+                    <TextBlock Text="When enabled, the Now Playing panel is hidden when a game has no downloaded music and default/fallback music is playing"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
 
                     <!-- Current Song Display (non-serialized, display-only) -->
                     <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
@@ -388,31 +399,74 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Default Music File: " VerticalAlignment="Center" Width="120"/>
+                    <!-- Default Music Source: Bundled Preset -->
+                    <RadioButton Content="Use bundled preset"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledPreset}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                        <TextBlock Text="Preset: " VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding BundledPresets}"
+                                  SelectedValue="{Binding Settings.SelectedBundledPreset}"
+                                  SelectedValuePath="File"
+                                  DisplayMemberPath="DisplayName"
+                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                  Width="350"
+                                  Margin="5,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Ships with the plugin — ambient tracks licensed under Pixabay Content License"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,3,0,10"/>
+
+                    <!-- Default Music Source: Custom File -->
+                    <RadioButton Content="Use custom music file"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
                         <TextBox Text="{Binding Settings.DefaultMusicPath}"
-                                 Width="300"
+                                 Width="330"
                                  Margin="0,0,10,0"
-                                 IsReadOnly="True"/>
+                                 IsReadOnly="True"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"/>
                         <Button Content="Browse..."
                                 Width="80"
                                 Margin="0,0,5,0"
+                                IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                 Command="{Binding BrowseForDefaultMusicFile}"/>
                         <Button Content="Download..."
                                 Width="90"
+                                IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                 Command="{Binding DownloadDefaultMusic}"/>
                     </StackPanel>
                     <TextBlock Text="Select a music file (MP3, WAV, FLAC, etc.) to play when no game music is available"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                               Margin="20,3,0,10"/>
 
-                    <CheckBox Content="Use Playnite Native &quot;Default&quot; Theme Music"
-                              IsChecked="{Binding Settings.UseNativeMusicAsDefault}"
-                              IsEnabled="{Binding Settings.IsUseNativeMusicAsDefaultEnabled}"
-                              Margin="0,10"/>
-                    <TextBlock Text="When enabled (and Default Music is enabled), uses Playnite's vanilla default theme background music instead of a custom default music file."
+                    <!-- Default Music Source: Native Theme -->
+                    <RadioButton Content="Use Playnite native theme music"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NativeTheme}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <TextBlock Text="Uses Playnite's vanilla default theme background music"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <CheckBox Content="Play Music Only for Installed Games"
+                              IsChecked="{Binding Settings.MusicOnlyForInstalledGames}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, game-specific music only plays for games installed on your machine. Uninstalled games will use default music instead (or be silent if default music is off)."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

@@ -109,6 +109,9 @@ namespace UniPlaySong
 
         public IPlayniteAPI PlayniteApi => plugin.PlayniteApi;
 
+        // Bundled presets list for the ComboBox in settings UI
+        public List<Services.BundledPresetInfo> BundledPresets => Services.BundledPresetService.GetPresets();
+
         /// <summary>
         /// Creates a new settings object with updated property value
         /// This ensures property change notifications are properly triggered
@@ -137,6 +140,10 @@ namespace UniPlaySong
                 BackupCustomMusicPath = settings.BackupCustomMusicPath,
                 SuppressPlayniteBackgroundMusic = settings.SuppressPlayniteBackgroundMusic,
                 UseNativeMusicAsDefault = settings.UseNativeMusicAsDefault,
+                DefaultMusicSourceOption = settings.DefaultMusicSourceOption,
+                SelectedBundledPreset = settings.SelectedBundledPreset,
+                BundledPresetMigrated = settings.BundledPresetMigrated,
+                MusicOnlyForInstalledGames = settings.MusicOnlyForInstalledGames,
                 NormalizationTargetLoudness = settings.NormalizationTargetLoudness,
                 NormalizationTruePeak = settings.NormalizationTruePeak,
                 NormalizationLoudnessRange = settings.NormalizationLoudnessRange,
@@ -191,10 +198,24 @@ namespace UniPlaySong
             errorHandler?.Try(
                 () =>
                 {
-                    var filePath = PlayniteApi.Dialogs.SelectFile("Audio Files|*.mp3;*.wav;*.flac;*.wma;*.aif;*.m4a;*.aac;*.mid");
-                    if (!string.IsNullOrWhiteSpace(filePath))
+                    var dialog = new Microsoft.Win32.OpenFileDialog
                     {
-                        Settings = CreateSettingsWithUpdate(s => s.DefaultMusicPath = filePath);
+                        Filter = "Audio Files|*.mp3;*.wav;*.flac;*.wma;*.aif;*.m4a;*.aac;*.mid"
+                    };
+
+                    // Open to the default music folder if it exists
+                    var defaultMusicDir = Path.Combine(
+                        PlayniteApi.Paths.ExtensionsDataPath,
+                        Constants.ExtensionFolderName,
+                        Constants.DefaultMusicFolderName);
+                    if (Directory.Exists(defaultMusicDir))
+                    {
+                        dialog.InitialDirectory = defaultMusicDir;
+                    }
+
+                    if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.DefaultMusicPath = dialog.FileName);
                     }
                 },
                 context: "selecting default music file",
@@ -514,8 +535,8 @@ namespace UniPlaySong
                     if (string.IsNullOrEmpty(currentPath))
                         return "(No song playing)";
 
-                    // If playing default music, don't show song info
-                    if (playbackService.IsPlayingDefaultMusic)
+                    // If playing default music (not a bundled preset), don't show song info
+                    if (playbackService.IsPlayingDefaultMusic && !playbackService.IsPlayingBundledPreset)
                         return "(Default music)";
 
                     if (!System.IO.File.Exists(currentPath))

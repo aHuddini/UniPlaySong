@@ -4,28 +4,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.2.11] - TBD
 
-### Performance
-**Hot Path Optimizations** - Multiple optimizations to reduce overhead during game selection and playback:
-- **Native Music Path Caching** - Service-level caching eliminates 9 repeated method calls per game selection (for "Use Native Music as Default" users)
-- **Static Random Instance** - Single shared Random instance prevents allocations and fixes duplicate random sequence bug in shuffle mode
-  - Eliminates 4 allocations per playback session (240 bytes + GC pressure)
-  - Fixes bug where rapid selections within same millisecond produced identical "random" songs
-- **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
-  - Saves ~2-8ms (SSD) or ~15-80ms (HDD) per cached game re-selection
-  - Smart cache invalidation: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
-  - Session-scoped: cache resets when Playnite restarts
-  - **Opt-in toggle** in General Settings → Performance (disabled by default — enable if you notice lag when switching games)
+### Added
+- **Bundled Default Music Presets** - Three ambient tracks now ship with the plugin, selectable via dropdown in Settings → Playback. New installs default to a bundled preset instead of requiring a custom file path. Existing users are migrated automatically based on their current default music settings
+- **Installed Games Only** - New playback setting to only play game-specific music for installed games. Uninstalled games fall back to default music (or silence if default music is off). Disabled by default — enable in Settings → Playback. Reactively re-evaluates music when a game's install state changes in Playnite
+- **Hide Now Playing for Default Music** - New sub-option under "Show Now Playing" that collapses the Now Playing panel when no game-specific music is playing (default music active). Settings → General
 
-**UI Thread Optimizations** - Converted blocking delays to async operations (7 instances):
-- Rate limiting delays during batch downloads (3 locations)
-- File release delays before audio processing (4 locations: trim, normalize, delete)
-- Eliminates UI freezes during file operations
+### Performance
+- **Song List Caching** - Directory scans cached in-memory with smart invalidation after file operations (downloads, edits, deletes). Opt-in toggle in General Settings → Performance
+- **Native Music Path Caching** - Cached native music file path at startup instead of scanning per game selection
+- **Parallel File Deletions** - Bulk delete operations (Delete All Music, Delete Long Songs) now run in parallel
+- **Async UI Operations** - Converted blocking delays to async across batch downloads and audio processing dialogs
 
 ### Fixed
-- **Song Cache Invalidation** - Fixed bug where downloaded music wasn't immediately visible in operations like trim/normalize
-  - Download Music dialog, Download From URL, and controller download now properly invalidate cache
-  - Audio repair operations (single file and bulk repair) now invalidate cache
-  - Settings-based long song deletion now invalidates cache
+- **Shuffle Duplicate Sequences** - Fixed identical "random" songs when rapidly switching games in shuffle mode
+- **Song Cache Invalidation** - Downloaded/repaired music now appears immediately without needing to re-select the game
 
 ## [1.2.10] - 2026-02-13
 

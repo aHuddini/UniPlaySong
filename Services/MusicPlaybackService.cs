@@ -116,6 +116,8 @@ namespace UniPlaySong.Services
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
         public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
+        public bool IsPlayingBundledPreset => _isPlayingDefaultMusic &&
+            _currentSettings?.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset;
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
         {
@@ -294,16 +296,21 @@ namespace UniPlaySong.Services
                 return false;
             }
 
-            if (settings.UseNativeMusicAsDefault == true)
+            switch (settings.DefaultMusicSourceOption)
             {
-                // Use cached native music path instead of calling helper method
-                return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
-                       string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                return !string.IsNullOrWhiteSpace(settings.DefaultMusicPath) &&
-                       string.Equals(path, settings.DefaultMusicPath, StringComparison.OrdinalIgnoreCase);
+                case DefaultMusicSource.NativeTheme:
+                    return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
+                           string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
+
+                case DefaultMusicSource.BundledPreset:
+                    var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
+                    return presetPath != null &&
+                           string.Equals(path, presetPath, StringComparison.OrdinalIgnoreCase);
+
+                case DefaultMusicSource.CustomFile:
+                default:
+                    return !string.IsNullOrWhiteSpace(settings.DefaultMusicPath) &&
+                           string.Equals(path, settings.DefaultMusicPath, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -418,36 +425,56 @@ namespace UniPlaySong.Services
             {
                 var gameId = game.Id.ToString();
                 var songs = _fileService.GetAvailableSongs(game);
-                
-                // PNS PATTERN: Add default music to songs list if no game music found.
-                // UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time.
-                // DefaultMusicPath is NEVER modified - it remains separate and untouched.
+
+                // Skip game-specific music for uninstalled games — fall through to default music
+                if (songs.Count > 0 && settings?.MusicOnlyForInstalledGames == true && game.IsInstalled != true)
+                {
+                    _fileLogger?.Info($"PlayGameMusic: {game.Name} is not installed, skipping game music (MusicOnlyForInstalledGames enabled)");
+                    songs.Clear();
+                }
+
+                // Default music fallback when no game music found.
+                // Three sources: BundledPreset, NativeTheme, or CustomFile (driven by DefaultMusicSourceOption).
+                // UseNativeMusicAsDefault kept in sync for backward compatibility.
                 if (songs.Count == 0 && settings?.EnableDefaultMusic == true)
                 {
-                    if (settings.UseNativeMusicAsDefault == true)
+                    switch (settings.DefaultMusicSourceOption)
                     {
-                        // Using native music as default - get path directly from Playnite theme.
-                        // DO NOT use DefaultMusicPath - it remains untouched for custom music.
-                        var nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
-                        if (!string.IsNullOrWhiteSpace(nativeMusicPath) && File.Exists(nativeMusicPath))
-                        {
-                            _fileLogger?.Info($"No game music found for {game.Name}, using native Playnite music as default: {Path.GetFileName(nativeMusicPath)}");
-                            songs.Add(nativeMusicPath);
-                        }
-                        else
-                        {
-                            _fileLogger?.Warn($"UseNativeMusicAsDefault is enabled but native music file not found at expected location.");
-                        }
-                    }
-                    else
-                    {
-                        // Using custom default music file - use DefaultMusicPath (unchanged)
-                        if (!string.IsNullOrWhiteSpace(settings.DefaultMusicPath) &&
-                            File.Exists(settings.DefaultMusicPath))
-                        {
-                            _fileLogger?.Info($"No game music found for {game.Name}, adding custom default music to songs list: {Path.GetFileName(settings.DefaultMusicPath)}");
-                            songs.Add(settings.DefaultMusicPath);
-                        }
+                        case DefaultMusicSource.NativeTheme:
+                            var nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
+                            if (!string.IsNullOrWhiteSpace(nativeMusicPath) && File.Exists(nativeMusicPath))
+                            {
+                                _fileLogger?.Info($"No game music for {game.Name}, using native theme music: {Path.GetFileName(nativeMusicPath)}");
+                                songs.Add(nativeMusicPath);
+                            }
+                            else
+                            {
+                                _fileLogger?.Warn($"NativeTheme selected but native music file not found.");
+                            }
+                            break;
+
+                        case DefaultMusicSource.BundledPreset:
+                            var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
+                            if (presetPath != null)
+                            {
+                                _fileLogger?.Info($"No game music for {game.Name}, using bundled preset: {Path.GetFileName(presetPath)}");
+                                songs.Add(presetPath);
+                            }
+                            else
+                            {
+                                _fileLogger?.Warn($"BundledPreset selected but preset file not found: {settings.SelectedBundledPreset}");
+                            }
+                            break;
+
+                        case DefaultMusicSource.CustomFile:
+                        default:
+                            if (!string.IsNullOrWhiteSpace(settings.DefaultMusicPath) &&
+                                File.Exists(settings.DefaultMusicPath))
+                            {
+                                _fileLogger?.Info($"No game music for {game.Name}, using custom default: {Path.GetFileName(settings.DefaultMusicPath)}");
+                                songs.Add(settings.DefaultMusicPath);
+                            }
+                            break;
                     }
                 }
                 

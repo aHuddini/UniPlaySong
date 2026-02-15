@@ -259,6 +259,7 @@ namespace UniPlaySong.DeskMediaControl
             playbackService.OnMusicStarted += _ => UpdateIcons();
             playbackService.OnMusicStopped += _ => UpdateIcons();
             playbackService.OnPlaybackStateChanged += UpdateIcons;
+            playbackService.OnSongChanged += _ => UpdateIcons();
             playbackService.OnSongCountChanged += UpdateSkipVisibility;
         }
 
@@ -378,6 +379,14 @@ namespace UniPlaySong.DeskMediaControl
                     if (_spectrumItem != null)
                         _spectrumItem.Visible = vizEnabled;
                     _spectrumVisualizer?.SetActive(isPlaying && vizEnabled);
+
+                    // Hide Now Playing panel when default music is playing (no game-specific music)
+                    if (_nowPlayingItem != null && settings?.ShowNowPlayingInTopPanel == true)
+                    {
+                        bool hideForDefault = settings.HideNowPlayingForDefaultMusic &&
+                                              playbackService?.IsPlayingDefaultMusic == true;
+                        _nowPlayingItem.Visible = !hideForDefault;
+                    }
                 }
                 catch (Exception ex)
                 {

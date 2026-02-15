@@ -1,5 +1,49 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.2.11
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-15
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.11/UniPlaySong-1_2_11-Feb15_2026.pext'
+    Changelog:
+      - '[New Feature] Bundled Default Music Presets: Three ambient tracks ship with the plugin. Select a preset via dropdown in Settings → Playback — no custom file path needed. Existing users migrated automatically.'
+      - '[New Setting] Installed Games Only: Play game-specific music only for installed games. Uninstalled games fall back to default music. Reactively re-evaluates when game install state changes.'
+      - '[New Setting] Hide Now Playing for Default Music: Collapse the Now Playing panel when no game-specific music is playing. Settings → General.'
+      - '[Performance] Song List Caching: Directory scans cached in-memory with smart invalidation after file operations. Opt-in toggle in General Settings.'
+      - '[Performance] Native Music Path Caching: Cached at startup instead of scanning per game selection.'
+      - '[Performance] Parallel File Deletions: Bulk delete operations (Delete All Music, Delete Long Songs) now run in parallel.'
+      - '[Performance] Async UI Operations: Eliminated UI freezes during batch downloads and audio processing.'
+      - '[Fix] Shuffle: Fixed duplicate song sequences when rapidly switching games in shuffle mode.'
+      - '[Fix] Song Cache: Downloaded/repaired music now appears immediately without re-selecting the game.'
+  - Version: 1.2.10
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-13
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.10/UniPlaySong-1_2_10-Feb13_2026.pext'
+    Changelog:
+      - '[Critical Fix, Performance] Fullscreen Performance: Fixed notable lag on themes like ANIKI REMAKE. Desktop visualizer components were being initialized and running in fullscreen mode unnecessarily. Now properly skipped in fullscreen.'
+      - '[Performance] Fullscreen: Background Native Music Suppression Reduced to a single startup call. Removed redundant checks.'
+  - Version: 1.2.9
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-13
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.9/UniPlaySong-1_2_9-Feb13_2026.pext'
+    Changelog:
+      - '[New Setting] Stop After Song Ends: Optional toggle to play songs ONCE without looping; works in regular and preview mode.'
+      - '[Performance] Fullscreen Fix: Music suppression caused some lag for themes like ANIKI REMAKE. Optimize Suppress Playnite Background Music by removing unnecessary polling timers.'
+      - '[Backend, Performance] Desktop Visualizer: FFT processing is paused in Fullscreen mode to reduce additional CPU usage.'
+  - Version: 1.2.8
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-09
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.8/UniPlaySong-1_2_8-Feb09_2026.pext'
+    Changelog:
+      - '[Fix] Background Music Conflict: Tackling a setting confusion for users. Prevent Playnite vanilla background music from playing simultaneously with UniPlaySong when certain default music settings are active. Moved Suppress Playnite Native Background Music toggle under General settings.'
+  - Version: 1.2.7
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-09
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.7/UniPlaySong-1_2_7-Feb09_2026.pext'
+    Changelog:
+      - '[Critical Fix] Spectrum Visualizer: Fixed visualizer not working when Live Effects were disabled but visualizer was still on; visualizer now works independently of Live Effects.'
+      - '[Enhancement] Spectrum Visualizer: Toggling the visualizer on/off now takes effect immediately (no restart needed).'
+      - '[Critical Fix] Spectrum Visualizer: Visualizer toggle is no longer greyed out when Live Effects are off.'
+      - '[Critical Fix] Spectrum Visualizer: Actual visualizer button disappears when visualizer is turned off by a user.'
   - Version: 1.2.6
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-08

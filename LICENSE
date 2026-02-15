@@ -24,7 +24,7 @@ SOFTWARE.
 
 Third-Party Licenses & Acknowledgments:
 
-*Last updated: January 17, 2026 - v1.2.2 codebase*
+*Last updated: February 15, 2026 - v1.2.11 codebase*
 
 All third-party libraries and components are used "as-is" without modifications to their original source code.
 
@@ -52,4 +52,14 @@ Audacity's factory presets for compatibility purposes. No actual Audacity code
 or GPL-licensed software is included or redistributed - only parameter values
 and presets are used to shape reverb algorithms. Audacity is licensed under
 GPL v2/v3 (https://www.audacityteam.org/).
+
+Bundled Default Music (Pixabay Content License):
+The following ambient tracks are bundled in the DefaultMusic folder under the
+Pixabay Content License (https://pixabay.com/service/license-summary/):
+- "Dark Space Ambient" by Tunetank
+  https://pixabay.com/music/mystery-dark-space-ambient-348870/
+- "Dark Ambient Soundscape Music" by Tunetank
+  https://pixabay.com/music/mystery-dark-ambient-soundscape-music-409350/
+- "Ambient Background 2" by DELOSound (Roman Dolmatov)
+  https://pixabay.com/music/ambient-ambient-background-2-421085/
 
