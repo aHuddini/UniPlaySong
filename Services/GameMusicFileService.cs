@@ -62,7 +62,7 @@ namespace UniPlaySong.Services
                     () =>
                     {
                         return Directory.GetFiles(directory)
-                            .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                            .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                             .OrderBy(f => f)
                             .ToList();
                     },
@@ -75,7 +75,7 @@ namespace UniPlaySong.Services
                 try
                 {
                     files = Directory.GetFiles(directory)
-                        .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                         .OrderBy(f => f)
                         .ToList();
                 }
@@ -203,7 +203,7 @@ namespace UniPlaySong.Services
                     () =>
                     {
                         var files = Directory.GetFiles(directory)
-                            .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                            .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                             .ToList();
 
                         foreach (var file in files)
@@ -233,7 +233,7 @@ namespace UniPlaySong.Services
                 try
                 {
                     var files = Directory.GetFiles(directory)
-                        .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                         .ToList();
 
                     foreach (var file in files)

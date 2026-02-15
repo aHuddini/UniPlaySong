@@ -80,6 +80,9 @@ namespace UniPlaySong.Services
         private string _previousSongPath;
         private Game _currentGame;
 
+        // Cached result of IsDefaultMusicPath(_currentSongPath) - updated automatically when _currentSongPath changes
+        private bool _isCurrentSongDefaultMusic = false;
+
         // Gets/sets current song path, fires OnSongChanged when changed
         private string _currentSongPath
         {
@@ -89,6 +92,10 @@ namespace UniPlaySong.Services
                 if (_currentSongPathBacking != value)
                 {
                     _currentSongPathBacking = value;
+
+                    // Update cached default music check whenever path changes
+                    _isCurrentSongDefaultMusic = IsDefaultMusicPath(value, _currentSettings);
+
                     if (!string.IsNullOrEmpty(value))
                     {
                         OnSongChanged?.Invoke(value);
@@ -305,7 +312,7 @@ namespace UniPlaySong.Services
         private void PauseDefaultMusic(UniPlaySongSettings settings)
         {
             if (_isPlayingDefaultMusic &&
-                IsDefaultMusicPath(_currentSongPath, settings) &&
+                _isCurrentSongDefaultMusic &&
                 _musicPlayer?.IsLoaded == true)
             {
                 _defaultMusicPausedOnTime = _musicPlayer.CurrentTime ?? default;
@@ -497,13 +504,12 @@ namespace UniPlaySong.Services
                 
                 // If switching to new game, clear current song path to force new song selection.
                 // EXCEPTION: Don't clear if current song is default music - preserve it when switching between games with no music.
-                bool isCurrentDefaultMusic = IsDefaultMusicPath(_currentSongPath, settings);
-                if (isNewGame && !isCurrentDefaultMusic)
+                if (isNewGame && !_isCurrentSongDefaultMusic)
                 {
                     _fileLogger?.Debug($"New game detected (previous: {previousGameId ?? "null"}, current: {gameId}), clearing current song path (was: {_currentSongPath ?? "null"})");
                     _currentSongPath = null;
                 }
-                else if (isNewGame && isCurrentDefaultMusic)
+                else if (isNewGame && _isCurrentSongDefaultMusic)
                 {
                     _fileLogger?.Debug($"New game detected but current song is default music - preserving to continue playback: {Path.GetFileName(_currentSongPath)}");
                 }
@@ -622,7 +628,7 @@ namespace UniPlaySong.Services
                 }
 
                 // PNS PATTERN: If switching from default music to game music, save position BEFORE fading out.
-                bool wasDefaultMusic = _isPlayingDefaultMusic && IsDefaultMusicPath(_currentSongPath, settings);
+                bool wasDefaultMusic = _isPlayingDefaultMusic && _isCurrentSongDefaultMusic;
                 
                 if (isNewGame)
                 {
@@ -1081,7 +1087,7 @@ namespace UniPlaySong.Services
 
             if (_currentSettings?.EnablePreviewMode == true &&
                 !_isPlayingDefaultMusic &&
-                !IsDefaultMusicPath(_currentSongPath, _currentSettings))
+                !_isCurrentSongDefaultMusic)
             {
                 _previewTimer.Start();
                 _fileLogger?.Debug($"Preview timer started: {Path.GetFileName(_currentSongPath)} ({_currentSettings.PreviewDuration}s)");
@@ -1186,7 +1192,7 @@ namespace UniPlaySong.Services
         private bool ShouldRestartForPreview()
         {
             // Preview mode only applies to game music (not default music)
-            if (_isPlayingDefaultMusic || IsDefaultMusicPath(_currentSongPath, _currentSettings))
+            if (_isPlayingDefaultMusic || _isCurrentSongDefaultMusic)
             {
                 return false;
             }
@@ -1240,8 +1246,7 @@ namespace UniPlaySong.Services
                     if (_currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null)
                     {
                         // Only randomize for game music (not default music)
-                        bool isDefaultMusic = IsDefaultMusicPath(_currentSongPath, _currentSettings);
-                        if (!isDefaultMusic)
+                        if (!_isCurrentSongDefaultMusic)
                         {
                             var songs = _fileService.GetAvailableSongs(_currentGame);
                             if (songs.Count > 1)
