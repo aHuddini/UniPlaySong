@@ -168,7 +168,6 @@ Restructured the add-on settings tabs for better discoverability and logical gro
 - Renamed "Default Music" → "Playback", "Audio Normalization" → "Audio Editing", "Search Cache" → "Search"
 - Moved Volume, Fade In/Out, Preview Mode, Song Randomization from General tab into new Playback tab
 - Reordered tabs: General, Playback, Live Effects, Audio Editing, Downloads, Search, Migration, Cleanup
-- Downloads tab moved up (after Audio Editing) since it's more commonly used than Search/Migration
 
 **New features:**
 - "Open Log Folder" button in General → Troubleshooting section (opens extension folder containing UniPlaySong.log)

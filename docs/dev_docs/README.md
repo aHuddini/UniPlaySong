@@ -41,6 +41,13 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - Cache invalidation coverage (17 call sites)
   - Bug fixes and performance measurements
 
+### Roadmaps
+
+- **[CONTROLLER_SDK_MIGRATION_ROADMAP.md](CONTROLLER_SDK_MIGRATION_ROADMAP.md)** - Future refactor: XInput polling → SDK 6.15 events
+  - Migrate 5 controller dialogs from XInput P/Invoke to SDK event-driven API
+  - Adds PS4/PS5/Switch controller support via SDL2
+  - 5-phase migration plan with button mapping reference
+
 ### Additional Resources
 
 - **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Build and packaging instructions

@@ -17,9 +17,9 @@ Comprehensive 5-phase analysis of the UniPlaySong codebase identified **87 optim
 | **Phase 1** | Hot Path Analysis | 7 issues | 2 HIGH, 3 MEDIUM, 2 LOW |
 | **Phase 2** | UI Thread Blocking | 46 issues | ~~14~~ ~~13~~ 11 CRITICAL, 18 HIGH, 14 MEDIUM, 1 LOW |
 | **Phase 3** | Memory & Resource Mgmt | 13 issues | ~~3~~ 0 CRITICAL, ~~4~~ 0 HIGH, ~~6~~ 13 MEDIUM/LOW (6 NOT A BUG, 1 LOW, 6 remaining) |
-| **Phase 4** | Architectural Refactoring | 13 issues | 6 HIGH, 4 MEDIUM, 3 LOW |
-| **Phase 5** | Settings & Configuration | 8 issues | 0 CRITICAL, 5 MEDIUM, 3 LOW |
-| **TOTAL** | | **87 issues** | **~~17~~ ~~16~~ ~~14~~ ~~12~~ 11 CRITICAL, ~~24~~ 20 HIGH, ~~46~~ ~~51~~ 56 MEDIUM/LOW** |
+| **Phase 4** | Architectural Refactoring | 13 issues | ~~6~~ 1 HIGH, ~~4~~ 3 MEDIUM, ~~3~~ 1 LOW, 1 SKIP (1 wrong) |
+| **Phase 5** | Settings & Configuration | 8 issues | ~~5 MEDIUM, 3 LOW~~ → 1 MEDIUM, 2 LOW, 4 SKIP (2 harmful fixes) |
+| **TOTAL** | | **87 issues** | **~~17~~ 11 CRITICAL, ~~24~~ 15 HIGH, rest MEDIUM/LOW/SKIP** |
 
 ### Completed Optimizations (v1.2.11)
 
@@ -555,318 +555,102 @@ public void Dispose()
 
 **Goal:** Reduce code duplication, improve testability, and ease maintenance.
 
-### HIGH Priority (6 issues)
+### Corrected Analysis (2026-02-14)
 
-#### 4.1 FFmpeg Validation Duplication (12+ instances)
-**Files:** 4 handler classes
-**Impact:** 40+ duplicate lines per handler
-**Effort:** 30 minutes
-
-**Current Pattern (repeated 12x):**
-```csharp
-if (string.IsNullOrWhiteSpace(settings.FFmpegPath))
-{
-    _playniteApi.Dialogs.ShowErrorMessage(
-        "FFmpeg path is not configured...",
-        "FFmpeg Not Configured");
-    return;
-}
-
-if (!_service.ValidateFFmpegAvailable(settings.FFmpegPath))
-{
-    _playniteApi.Dialogs.ShowErrorMessage(
-        $"FFmpeg not found at: {settings.FFmpegPath}...",
-        "FFmpeg Not Available");
-    return;
-}
-```
-
-**Suggested:**
-```csharp
-// Common/FFmpegValidator.cs
-public static class FFmpegValidator
-{
-    public static bool ValidateAndShowError(
-        IPlayniteAPI api,
-        UniPlaySongSettings settings,
-        IFFmpegService service)
-    {
-        if (string.IsNullOrWhiteSpace(settings.FFmpegPath))
-        {
-            api.Dialogs.ShowErrorMessage(
-                "FFmpeg path is not configured...",
-                "FFmpeg Not Configured");
-            return false;
-        }
-
-        if (!service.ValidateFFmpegAvailable(settings.FFmpegPath))
-        {
-            api.Dialogs.ShowErrorMessage(
-                $"FFmpeg not found at: {settings.FFmpegPath}...",
-                "FFmpeg Not Available");
-            return false;
-        }
-
-        return true;
-    }
-}
-
-// Usage (1 line):
-if (!FFmpegValidator.ValidateAndShowError(_api, settings, _service)) return;
-```
-
-**Impact:** Eliminates ~160 lines of duplication
-**Priority:** HIGH
+Original analysis claimed 6 HIGH priority items. After code verification, most were overstated.
 
 ---
 
-#### 4.2 Dialog Show Pattern Duplication (8 instances)
-**Files:** `Handlers/AmplifyDialogHandler.cs`, `Handlers/WaveformTrimDialogHandler.cs`
-**Impact:** Identical validation flow in desktop/controller variants
-**Effort:** 30 minutes
+#### 4.1 FFmpeg Validation Duplication — MEDIUM (not HIGH)
+**Files:** 5 handler classes, 5 audio services
+**Priority:** ~~HIGH~~ **MEDIUM**
 
-**Suggested:**
-```csharp
-// Handlers/BaseDialogHandler.cs
-public abstract class BaseDialogHandler<TDialog> where TDialog : Window, new()
-{
-    protected bool ShowDialog(
-        Game game,
-        bool isController,
-        Action<TDialog> initialize)
-    {
-        // Shared validation
-        if (game == null) { ShowMessage(...); return false; }
-
-        var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
-        if (songs.Count == 0) { ShowMessage(...); return false; }
-
-        if (!FFmpegValidator.ValidateAndShowError(...)) return false;
-
-        _playbackService?.Stop();
-
-        // Create and show dialog
-        var dialog = new TDialog();
-        var window = isController
-            ? DialogHelper.CreateFixedDialog(dialog, ...)
-            : DialogHelper.CreateStandardDialog(dialog, ...);
-
-        initialize(dialog);
-
-        DialogHelper.AddFocusReturnHandler(window, ...);
-        window.ShowDialog();
-        return true;
-    }
-}
-
-// Usage:
-public class AmplifyDialogHandler : BaseDialogHandler<AmplifyDialog>
-{
-    public void ShowAmplifyDialog(Game game)
-    {
-        ShowDialog(game, isController: false, dialog =>
-        {
-            dialog.Initialize(game, _settings, ...);
-        });
-    }
-}
-```
-
-**Impact:** Eliminates pattern duplication across 4 dialog pairs
-**Priority:** HIGH
+**Analysis (2026-02-14):**
+- Claimed "12+ instances, 4 handler classes" — actual: **28 instances across 18+ call sites**
+- The validation IS repeated, but across **different service types** (amplify, trim, normalize, waveform-trim, repair)
+- Each handler calls a different service's `ValidateFFmpegAvailable()` method
+- A centralized helper could reduce ~20-30 lines per handler, but impact is moderate
+- **Worth doing but not HIGH priority** — saves ~80-100 lines total
 
 ---
 
-#### 4.3 Desktop/Controller Dialog Implementation Divergence
-**Files:** 4 dialog pairs (8 files total)
-**Impact:** Bug fixes must be applied twice, features implemented twice
-**Effort:** 90+ minutes (high value)
+#### ~~4.2 Dialog Show Pattern Duplication~~ — LOW (overstated)
+**Priority:** ~~HIGH~~ **LOW**
 
-**Problem:**
-- `AmplifyDialog.xaml.cs` (desktop) - 531 lines of business logic
-- `ControllerAmplifyDialog.xaml.cs` (controller) - 500+ lines of DUPLICATE logic
-- Only difference: mouse input vs XInput, UI layout
-
-**Suggested:**
-```csharp
-// ViewModels/AmplifyDialogViewModel.cs
-public class AmplifyDialogViewModel : ObservableObject
-{
-    // Shared business logic
-    public ObservableCollection<string> FilesList { get; }
-    public float CurrentGain { get; set; }
-    public WaveformData Waveform { get; private set; }
-
-    public async Task ApplyGainAsync() { /* shared */ }
-    public async Task PreviewGainAsync() { /* shared */ }
-    public void AdjustGain(float delta) { /* shared */ }
-}
-
-// Views/AmplifyDialog.xaml.cs (desktop - 50 lines)
-public partial class AmplifyDialog : Window
-{
-    private AmplifyDialogViewModel _viewModel;
-
-    private void WaveformCanvas_MouseDown(object sender, MouseEventArgs e)
-    {
-        var clickPosition = e.GetPosition(WaveformCanvas);
-        var gainDelta = CalculateGainFromClick(clickPosition);
-        _viewModel.AdjustGain(gainDelta);
-    }
-}
-
-// Views/ControllerAmplifyDialog.xaml.cs (controller - 50 lines)
-public partial class ControllerAmplifyDialog : Window
-{
-    private AmplifyDialogViewModel _viewModel;
-
-    private void HandleControllerInput()
-    {
-        var state = GamePad.GetState(PlayerIndex.One);
-        var gainDelta = state.ThumbSticks.Left.Y * 0.5f;
-        _viewModel.AdjustGain(gainDelta);
-    }
-}
-```
-
-**Impact:**
-- Reduces 1000+ lines to ~600 lines (40% reduction)
-- Bug fixes applied once
-- New features implemented once
-
-**Priority:** HIGH
+**Analysis (2026-02-14):**
+- Claimed "8 instances" — actual: **4 call sites** (2 per handler, not 8)
+- Each follows a 5-6 line boilerplate pattern (CreateDialog → Initialize → ShowDialog)
+- Extracting to a base class would save only ~20 lines total
+- **Low ROI — not worth the abstraction overhead**
 
 ---
 
-#### 4.4 DialogHelper "God Class" (1,327 lines)
+#### 4.3 Desktop/Controller Dialog Divergence — MEDIUM (misleading)
+**Priority:** ~~HIGH~~ **MEDIUM**
+
+**Analysis (2026-02-14):**
+- Claimed "531 vs 500+ lines of DUPLICATE logic" — actual: 634 vs 1,174 lines
+- The 540-line gap is **NOT duplication** — it's the entire XInput controller subsystem:
+  - D-pad debouncing (~80 lines), button state polling (~150 lines), controller input processing (~200 lines), step-by-step UI flow (~150 lines)
+- Some shared logic exists (waveform loading, gain calculation) that COULD be extracted to ViewModels
+- But controller code cannot be shared — it's XInput-specific by nature
+- **40% code reduction claim is wrong** — extracting shared logic would save ~100-150 lines, not 400+
+
+---
+
+#### 4.4 DialogHelper Size — MEDIUM (accurate but not urgent)
 **File:** `Common/DialogHelper.cs`
-**Impact:** Violates Single Responsibility Principle
-**Effort:** 60-90 minutes
+**Priority:** ~~HIGH~~ **MEDIUM**
 
-**Current Responsibilities:**
-1. Dialog creation (CreateDialog, CreateStandardDialog, CreateFixedDialog)
-2. Focus management (ReturnFocusToMainWindow, AddFocusReturnHandler)
-3. Toast notifications (ShowAutoCloseToast, ShowSuccessToast)
-4. Controller input (ShowControllerMessage, ShowControllerConfirmation)
-5. Windows effects (EnableWindowBlur, SetRoundedWindowRegion)
-6. Color utilities (HexToRgb, ParseHexColor)
-7. Settings sync (SyncToastSettings)
-8. DPI scaling (GetDpiScaleFactor, ScaleForDpi)
-
-**Suggested Split:**
-```
-Common/
-├── DialogHelper.cs (300 lines) - Dialog creation & focus only
-├── ToastHelper.cs (400 lines) - Toast notifications
-├── ControllerDialogHelper.cs (200 lines) - XInput handling
-├── WindowEffectHelper.cs (200 lines) - Blur & acrylic effects
-├── ColorHelper.cs (50 lines) - Color conversion
-└── DpiHelper.cs (50 lines) - DPI scaling
-```
-
-**Impact:** Better separation of concerns, easier testing
-**Priority:** HIGH
+**Analysis (2026-02-14):**
+- Line count confirmed: **1,327 lines**
+- 8 responsibility areas confirmed (dialogs, toasts, controller, blur, color, DPI, focus, settings sync)
+- However: each responsibility is **discrete and self-contained** — no cross-method tangling
+- "God class" characterization is fair by line count, but the code is well-organized internally
+- Splitting would improve navigability but has **zero performance impact**
+- **Reasonable future refactor, not urgent**
 
 ---
 
-#### 4.5 Business Logic in Dialog Code-Behind
-**Files:** `Views/AmplifyDialog.xaml.cs` (130 lines), `Views/ControllerAmplifyDialog.xaml.cs` (100+ lines)
-**Impact:** Cannot unit test without WPF runtime
-**Effort:** 45-60 minutes per dialog
+#### ~~4.5 Business Logic in Dialog Code-Behind~~ — SKIP (wrong)
+**Priority:** ~~HIGH~~ **SKIP**
 
-**Current:**
-- Waveform rendering logic in code-behind (lines 165-188)
-- Gain calculations in code-behind (lines 190-232)
-- Clipping detection in code-behind (lines 264-325)
-
-**Suggested:**
-- Extract to `ViewModels/AmplifyDialogViewModel`
-- Dialog becomes thin XAML binding layer
-- ViewModel testable without WPF
-
-**Priority:** HIGH
+**Analysis (2026-02-14):**
+- Claimed "130 lines of business logic" — actual file is 634 lines
+- The code-behind contains **presentation-layer logic**: waveform rendering, gain display, mouse interaction, clipping visualization
+- All actual business logic (FFmpeg execution, file I/O, audio processing) is properly delegated to services
+- This is **appropriate for WPF code-behind** — rendering and interaction ARE the view's responsibility
+- Extracting to a ViewModel would add indirection without benefit (ViewModels shouldn't manage Canvas rendering)
+- **No action needed — current separation is correct**
 
 ---
 
-#### 4.6 Async Progress Dialog Pattern Duplication
-**Files:** `Handlers/TrimDialogHandler.cs`, `Handlers/NormalizationDialogHandler.cs`
-**Impact:** ~110 duplicate lines per handler
-**Effort:** 25-35 minutes
+#### 4.6 Async Progress Dialog Pattern Duplication — HIGH (confirmed)
+**Files:** `Handlers/TrimDialogHandler.cs` (414 lines), `Handlers/NormalizationDialogHandler.cs` (563 lines)
+**Priority:** ~~MEDIUM~~ **HIGH**
 
-**Suggested:**
-```csharp
-// Common/AsyncProgressDialogHelper.cs
-public static async Task ShowAndExecuteAsync<TSettings, TResult>(
-    string operationName,
-    ProgressDialog dialog,
-    List<string> files,
-    TSettings settings,
-    Func<List<string>, TSettings, IProgress<ProgressInfo>, CancellationToken, Task<TResult>> operation,
-    Action<List<string>, TResult> onCacheInvalidation,
-    IPlayniteAPI api)
-{
-    var window = DialogHelper.CreateStandardDialog(dialog, ...);
-
-    Task.Run(async () =>
-    {
-        try
-        {
-            var progress = new Progress<ProgressInfo>(p =>
-            {
-                Application.Current?.Dispatcher?.BeginInvoke(() =>
-                {
-                    dialog.ReportProgress(p);
-                });
-            });
-
-            var result = await operation(files, settings, progress, dialog.CancellationToken);
-
-            // Invalidate cache
-            onCacheInvalidation(files, result);
-
-            // Show completion
-            Application.Current?.Dispatcher?.BeginInvoke(() =>
-            {
-                window.Close();
-                ShowCompletionMessage(result);
-            });
-        }
-        catch (OperationCanceledException) { /* ... */ }
-        catch (Exception ex) { /* ... */ }
-    });
-
-    window.ShowDialog();
-}
-
-// Usage (5 lines):
-await AsyncProgressDialogHelper.ShowAndExecuteAsync(
-    "Trim",
-    progressDialog,
-    musicFiles,
-    trimSettings,
-    _trimService.TrimBulkAsync,
-    (files, result) => InvalidateCache(files),
-    _playniteApi);
-```
-
-**Impact:** Eliminates ~220 lines of duplication
-**Priority:** MEDIUM
+**Analysis (2026-02-14):**
+- Claimed "~110 duplicate lines per handler" — **confirmed accurate**
+- 6 async operation methods across 2 handlers (3 per handler: BulkAll, BulkSelected, Single)
+- Each follows identical pattern: CreateDialog → Task.Run → progress callback → cache invalidation → completion message
+- Only differences: variable names, service types, UI messages
+- A generic helper could eliminate ~200+ lines of boilerplate
+- **Highest ROI refactoring item in Phase 4**
 
 ---
 
-### Summary - Phase 4
+### Summary - Phase 4 (Corrected 2026-02-14)
 
-| Issue | Files | Impact | Effort | Priority |
-|-------|-------|--------|--------|----------|
-| FFmpeg validation duplication | 4 handlers | 160 lines eliminated | 30 min | **HIGH** |
-| Dialog show pattern duplication | 2 handlers | Pattern consolidation | 30 min | **HIGH** |
-| Desktop/Controller divergence | 4 dialog pairs | 40% code reduction | 90 min | **HIGH** |
-| DialogHelper God class | 1 file | Better SRP | 60-90 min | **HIGH** |
-| Business logic in code-behind | 2 dialogs | Testability | 45-60 min | **HIGH** |
-| Async progress pattern | 2 handlers | 220 lines eliminated | 25-35 min | MEDIUM |
+| Issue | Original | Corrected | Status |
+|-------|----------|-----------|--------|
+| 4.1 FFmpeg validation | HIGH (12+ instances) | **MEDIUM** — 18+ call sites, real but moderate savings | Refactor when touching handlers |
+| ~~4.2~~ Dialog show pattern | HIGH (8 instances) | **LOW** — only 4 call sites, saves ~20 lines | Skip |
+| 4.3 Desktop/Controller divergence | HIGH (40% reduction) | **MEDIUM** — gap is controller code, not duplication | Extract shared logic opportunistically |
+| 4.4 DialogHelper size | HIGH (God class) | **MEDIUM** — 1,327 lines confirmed, but well-organized | Split when natural |
+| ~~4.5~~ Business logic in code-behind | HIGH (needs ViewModel) | **SKIP** — presentation logic is appropriate for WPF code-behind | No action needed |
+| 4.6 Async progress duplication | MEDIUM (110 lines) | **HIGH** — confirmed, ~200+ lines of identical boilerplate | Best ROI item |
 
-**Total Effort:** 4-6 hours
-**Expected Impact:** 15-20% code reduction, better maintainability, improved testability
+**Corrected Total:** 1 HIGH, 3 MEDIUM, 1 LOW, 1 SKIP (was: 5 HIGH, 1 MEDIUM)
 
 ---
 
@@ -874,217 +658,113 @@ await AsyncProgressDialogHelper.ShowAndExecuteAsync(
 
 **Goal:** Improve settings performance and organization.
 
-### MEDIUM Priority (5 issues)
+### Corrected Analysis (2026-02-14)
 
-#### 5.1 Duplicate Settings Save in Library Update
-**File:** `UniPlaySong.cs` lines 446, 453
-**Impact:** Unnecessary disk I/O (5-50ms wasted)
-**Effort:** 15 minutes
+Original analysis claimed 5 MEDIUM and 2 LOW issues. After code verification, most were wrong or already mitigated.
 
-**Current:**
-```csharp
-_settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
-SavePluginSettings(_settings);  // Line 446
+---
 
-// ... some processing ...
+#### ~~5.1 Duplicate Settings Save in Library Update~~ — SKIP (wrong)
+**Priority:** ~~MEDIUM~~ **SKIP**
 
-SavePluginSettings(_settings);  // Line 453 - DUPLICATE!
-```
+**Analysis (2026-02-14):**
+- Claimed "two consecutive SavePluginSettings at lines 446, 453" — they're in **mutually exclusive if/else branches**
+- Only ONE executes per `OnLibraryUpdated` event — this is correct control flow, not a duplicate
+- **No action needed**
 
-**Fix:**
-```csharp
-// Only save once after all processing
-_settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
-// ... processing ...
-SavePluginSettings(_settings);  // Save once at end
-```
+---
 
+#### 5.2 Native Music File I/O on Property Change — LOW (already mitigated)
+**Priority:** ~~MEDIUM~~ **LOW**
+
+**Analysis (2026-02-14):**
+- Claimed "UI blocking 50-500ms on settings toggle"
+- **Phase 1 already mitigated this**: `PlayniteThemeHelper.FindBackgroundMusicFile()` is now cached via static constructor (zero I/O on subsequent calls)
+- Remaining I/O is a single `File.Exists()` check (~1-5ms on SSD) — unavoidable and not noticeable
+- The suggested 5-minute TTL caching is unnecessary given Phase 1's static cache
+- **No further action needed**
+
+---
+
+#### 5.3 No Batch Notifications on Preset Apply — MEDIUM (confirmed)
 **Priority:** MEDIUM
 
----
-
-#### 5.2 Native Music File I/O on Property Change
-**File:** `SettingsService.cs` lines 157-221
-**Impact:** UI blocking (50-500ms) on settings toggle
-**Effort:** 2-3 hours
-
-**Current:**
-```csharp
-if (e.PropertyName == nameof(UniPlaySongSettings.UseNativeMusicAsDefault))
-{
-    if (_currentSettings.UseNativeMusicAsDefault == true)
-    {
-        ValidateNativeMusicFile(_currentSettings, showErrors: false);
-        // ⬆️ Synchronous file I/O blocks UI!
-    }
-}
-```
-
-**Suggested:**
-```csharp
-private string _cachedNativeMusicPath;
-private DateTime _nativeMusicPathCachedAt;
-private const int CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-private string GetCachedNativeMusicPath()
-{
-    if (!string.IsNullOrEmpty(_cachedNativeMusicPath) &&
-        DateTime.Now - _nativeMusicPathCachedAt < TimeSpan.FromMilliseconds(CACHE_TTL_MS))
-    {
-        return _cachedNativeMusicPath;
-    }
-
-    _cachedNativeMusicPath = PlayniteThemeHelper.FindBackgroundMusicFile(_api);
-    _nativeMusicPathCachedAt = DateTime.Now;
-    return _cachedNativeMusicPath;
-}
-
-// Async validation
-private async Task ValidateNativeMusicFileAsync(...)
-{
-    var path = await Task.Run(() => GetCachedNativeMusicPath());
-    // ... validation
-}
-```
-
-**Priority:** MEDIUM
+**Analysis (2026-02-14):**
+- Claimed "20-30 PropertyChanged events" — **confirmed accurate**
+- `ApplyStylePreset`: fires ~24 PropertyChanged events per preset application
+- `ApplyReverbPreset`: fires ~9-11 events
+- WPF batches rendering per frame (~16.67ms at 60Hz), so visual flicker depends on machine speed
+- Could be fixed with a suppression flag (e.g., `_applyingPreset` bool that skips per-property notifications, then fires a single `PropertyChanged("*")` at the end)
+- **Worth doing for smoother UX**, but presets are applied rarely
 
 ---
 
-#### 5.3 No Batch Notifications on Preset Apply
-**File:** `UniPlaySongSettings.cs` lines 1731-2629
-**Impact:** 20-30 PropertyChanged events cause UI flicker
-**Effort:** 3-4 hours
+#### ~~5.4 Cascading PropertyChanged~~ — SKIP (plan's fix would BREAK UI)
+**Priority:** ~~LOW~~ **SKIP — DO NOT IMPLEMENT**
 
-**Current:**
-```csharp
-public void ApplyReverbPreset(ReverbPreset preset)
-{
-    switch (preset)
-    {
-        case ReverbPreset.Acoustic:
-            ReverbRoomSize = 80;        // PropertyChanged
-            ReverbPreDelay = 16;        // PropertyChanged
-            ReverbReverberance = 75;    // PropertyChanged
-            // ... 6 more property changes
-            // = 9 PropertyChanged events!
-    }
-}
-```
-
-**Suggested:**
-```csharp
-public void ApplyReverbPreset(ReverbPreset preset)
-{
-    using (var batch = DeferPropertyChanged())
-    {
-        switch (preset)
-        {
-            case ReverbPreset.Acoustic:
-                ReverbRoomSize = 80;
-                ReverbPreDelay = 16;
-                // ... all changes batched
-        }
-    } // Single PropertyChanged("*") fired here
-}
-```
-
-**Priority:** MEDIUM (high UX impact)
+**Analysis (2026-02-14):**
+- Plan claimed `OnPropertyChanged(nameof(IsThemeCompatibleSilentSkipEnabled))` is "redundant"
+- **THIS IS WRONG.** WPF does NOT automatically track computed property dependencies
+- `IsThemeCompatibleSilentSkipEnabled` has no backing field — it returns `!skipFirstSelectionAfterModeSwitch`
+- Without the explicit notification, UI controls bound to this property **will not update**
+- The same pattern exists correctly in the `ThemeCompatibleSilentSkip` setter
+- **Removing these notifications would break the settings UI**
 
 ---
 
-#### 5.4 Cascading PropertyChanged for Computed Properties
-**File:** `UniPlaySongSettings.cs` lines 200-206, 454
-**Impact:** Redundant UI binding updates
-**Effort:** 30 minutes
+#### ~~5.5 Duplicate Settings Load~~ — SKIP (plan's fix would BREAK cancel)
+**Priority:** ~~LOW~~ **SKIP — DO NOT IMPLEMENT**
 
-**Current:**
-```csharp
-public bool SkipFirstSelectionAfterModeSwitch
-{
-    set
-    {
-        skipFirstSelectionAfterModeSwitch = value;
-        OnPropertyChanged();
-        OnPropertyChanged(nameof(IsThemeCompatibleSilentSkipEnabled)); // ❌ Redundant
-    }
-}
+**Analysis (2026-02-14):**
+- Two `LoadPluginSettings` calls exist but in **different methods serving different purposes**:
+  1. Constructor (line 24): Initializes ViewModel with saved settings
+  2. `CancelEdit()`: Reloads saved settings to **discard user changes** (cancel/revert mechanism)
+- This is **required by Playnite's ISettings interface** — `BeginEdit`/`EndEdit`/`CancelEdit` pattern
+- Removing the CancelEdit load would break the settings cancel button
+- **No action needed**
 
-// IsThemeCompatibleSilentSkipEnabled is computed:
-public bool IsThemeCompatibleSilentSkipEnabled => !skipFirstSelectionAfterModeSwitch;
-```
+---
 
-**Fix:**
-```csharp
-// Remove explicit notification for computed property
-public bool SkipFirstSelectionAfterModeSwitch
-{
-    set
-    {
-        skipFirstSelectionAfterModeSwitch = value;
-        OnPropertyChanged();
-        // Computed property auto-updates via backing field change
-    }
-}
-```
-
+#### 5.6 Settings Property Bloat (100+ properties) — LOW (accurate but impractical)
 **Priority:** LOW
 
----
-
-#### 5.5 Duplicate Settings Load
-**File:** `UniPlaySongSettingsViewModel.cs` line 24
-**Impact:** Redundant JSON deserialization (10-20ms)
-**Effort:** 30 minutes
-
-**Current:**
-```csharp
-// UniPlaySong.cs line 157 - Load #1
-_settingsService = new SettingsService(...);
-
-// SettingsViewModel.cs line 24 - Load #2
-var savedSettings = plugin.LoadPluginSettings<UniPlaySongSettings>();
-```
-
-**Fix:**
-```csharp
-// ViewModel should use existing service:
-public UniPlaySongSettingsViewModel(UniPlaySong plugin)
-{
-    this.plugin = plugin;
-    var settingsService = plugin.GetSettingsService();
-    settings = settingsService.Current;  // Reuse already-loaded settings
-}
-```
-
-**Priority:** LOW
+**Analysis (2026-02-14):**
+- ~100 properties confirmed (playback, download, audio effects, visualization, UI, search)
+- Refactoring to sub-classes would:
+  - Break existing user settings JSON files (backward compatibility)
+  - Require migration code for every existing user
+  - Conflict with Playnite's flat `LoadPluginSettings<T>()` serialization
+- Properties are already organized into logical groups with comments
+- **Not worth the migration risk** — document structure instead
 
 ---
 
-### LOW Priority (3 issues)
+#### ~~5.7 Settings with Hidden Side-Effects~~ — SKIP (not problematic)
+**Priority:** ~~LOW~~ **SKIP**
 
-#### 5.6 Settings Property Bloat (100+ properties)
-**Impact:** Maintenance burden, no performance impact
-**Effort:** 4-6 hours
-
-**Suggested:** Refactor into sub-classes:
-- `PlaybackSettings`
-- `VisualizerSettings`
-- `LiveEffectsSettings`
-- `DefaultMusicSettings`
-- `SearchSettings`
-- `AudioProcessingSettings`
-
-**Priority:** LOW (maintenance improvement)
+**Analysis (2026-02-14):**
+- The "side-effect" is intentional **mutual exclusion**: setting `SkipFirstSelectionAfterModeSwitch = true` auto-disables `ThemeCompatibleSilentSkip` (these features conflict)
+- This is documented in code comments and is **good UX design** — better than showing an error
+- Changes are immediately visible in the settings UI
+- **No action needed**
 
 ---
 
-#### 5.7 Settings with Hidden Side-Effects
-**File:** `UniPlaySongSettings.cs` lines 196-209
-**Impact:** UX confusion (properties mysteriously change)
-**Effort:** 1-2 hours documentation
+### Summary - Phase 5 (Corrected 2026-02-14)
 
-**Priority:** LOW (UX clarity)
+| Issue | Original | Corrected | Status |
+|-------|----------|-----------|--------|
+| ~~5.1~~ Duplicate settings save | MEDIUM | **SKIP** — if/else branches, not duplicate | No action needed |
+| 5.2 Native music I/O | MEDIUM | **LOW** — Phase 1 caching already mitigated | No action needed |
+| 5.3 Batch notifications | MEDIUM | **MEDIUM** — confirmed, ~24 events per preset | Batch with suppression flag |
+| ~~5.4~~ Cascading PropertyChanged | LOW | **SKIP — DO NOT IMPLEMENT** — would break WPF UI binding | Current code is correct |
+| ~~5.5~~ Duplicate settings load | LOW | **SKIP — DO NOT IMPLEMENT** — required for cancel/revert | Current code is correct |
+| 5.6 Property bloat | LOW | **LOW** — accurate but impractical to refactor | Document structure |
+| ~~5.7~~ Hidden side-effects | LOW | **SKIP** — intentional conflict resolution, good UX | No action needed |
+
+**Corrected Total:** 0 HIGH, 1 MEDIUM, 2 LOW, 4 SKIP/DO NOT IMPLEMENT (was: 0 HIGH, 3 MEDIUM, 2 LOW)
+
+**WARNING:** Items 5.4 and 5.5 had suggested fixes that would **break functionality**. Do not implement.
 
 ---
 
@@ -1105,58 +785,53 @@ public UniPlaySongSettingsViewModel(UniPlaySong plugin)
 
 ## Implementation Roadmap
 
-### Milestone 1: Quick Wins (v1.2.12) - 2-4 hours
+### Milestone 1: Quick Wins (v1.2.11) ✅ COMPLETE
 **Goal:** Low-hanging fruit for immediate performance gains
 
 - ✅ Phase 1.1: Static Random instance
 - ✅ Phase 1.2: Cache native music path in service
 - ✅ Phase 1.3: Lowercase extensions HashSet
-- ✅ Phase 5.1: Remove duplicate settings save
-- ✅ Phase 5.4: Remove cascading PropertyChanged
-- ✅ Phase 4.1: FFmpeg validator service
+- ✅ Phase 1.5: Song list caching (with opt-in toggle)
 
-**Expected Impact:** 10-25ms faster game selection, cleaner code
+**Achieved:** 10-80ms faster game selection (SSD-HDD range)
 
 ---
 
-### Milestone 2: Critical Stability (v1.2.13) - 4-8 hours
-**Goal:** Eliminate resource leaks and UI freezes
+### Milestone 2: UI Thread & Parallel I/O (v1.2.11) ✅ MOSTLY COMPLETE
+**Goal:** Eliminate UI freezes during operations
 
-- ⬜ Phase 2.1: Replace Thread.Sleep() (10 locations)
-- ⬜ Phase 2.4: Fix async void handlers (10 locations)
-- ~~⬜ Phase 3.1: Fix VisualizationDataProvider disposal~~ — LOW (GC handles it)
-- ~~⬜ Phase 3.2: Fix MusicFader timer leaks~~ — NOT A BUG (already disposed)
-- ~~⬜ Phase 3.3: Fix DownloadDialogService event leak~~ — NOT A BUG (already unsubscribed)
-- ~~⬜ Phase 3.4: ControllerDetectionService timer~~ — LOW-MEDIUM (commented-out cleanup)
-- ~~⬜ Phase 3.5: MediaElementsMonitor timer~~ — NOT A BUG (self-stopping)
-- ~~⬜ Phase 3.6: MusicPlaybackCoordinator timer~~ — NOT A BUG (one-shot, self-disposing)
-- ~~⬜ Phase 3.7: HttpClient disposal~~ — NOT A BUG (singleton, properly disposed)
+- ✅ Phase 2.1: Thread.Sleep → Task.Delay (7/10 — 3 deferred to SDK controller events)
+- ✅ Phase 2.6: Parallel file deletions (DeleteAllMusic, DeleteLongSongs)
+- ~~Phase 2.2: FileLogger async~~ — SKIP (disabled by default, LOW impact)
+- ~~Phase 2.3: WebClient → HttpClient~~ — SKIP (tiny JSON, network dominates)
+- ~~Phase 2.4: Async void~~ — ALREADY MITIGATED (all have try-catch)
+- ~~Phase 2.7: ConfigureAwait(false)~~ — CANCELLED (risk > benefit)
+- ~~Phase 3.1-3.7~~ — 6/7 NOT A BUG, 1 LOW (commented-out cleanup)
 
-**Expected Impact:** Prevents crashes, eliminates UI freezes, long-session stability
+**Achieved:** UI stays responsive during rate limiting, file releases, and bulk deletes
 
 ---
 
-### Milestone 3: High-Impact UX (v1.3.0) - 6-12 hours
-**Goal:** Major user experience improvements
+### Remaining Work (future versions)
+**Items verified as actually worth doing:**
 
-- ⬜ Phase 2.2: FileLogger async queue
-- ⬜ Phase 2.3: WebClient → HttpClient async
-- ⬜ Phase 5.3: Batch notifications for presets
-- ⬜ Phase 4.3: Shared Desktop/Controller ViewModels
+**HIGH:**
+- ⬜ Phase 4.6: Async progress dialog pattern deduplication (~200+ lines savings)
 
-**Expected Impact:** Instant preset application, no UI blocking, 40% code reduction
+**MEDIUM:**
+- ⬜ Phase 5.3: Batch PropertyChanged on preset apply (~24 events → 1)
+- ⬜ Phase 4.1: FFmpeg validation helper (moderate cleanup)
+- ⬜ Phase 4.3: Extract shared logic from desktop/controller dialogs (~100-150 lines)
+- ⬜ Phase 4.4: Split DialogHelper into focused files (1,327 → ~4-5 files)
 
----
+**LOW:**
+- ⬜ Phase 3.4: Uncomment CleanupControllerSupport() in DownloadDialogView
+- ⬜ Phase 5.6: Document settings property organization
 
-### Milestone 4: Architectural Cleanup (v1.3.1+) - 8-16 hours
-**Goal:** Technical debt reduction and maintainability
-
-- ⬜ Phase 4.2: Base dialog handler pattern
-- ⬜ Phase 4.4: Split DialogHelper God class
-- ⬜ Phase 4.5: Extract ViewModels from code-behind
-- ⬜ Phase 5.6: Settings sub-class organization
-
-**Expected Impact:** 15-20% total code reduction, better testability, easier maintenance
+**DO NOT IMPLEMENT (plan's fix was wrong/harmful):**
+- ~~Phase 5.4: Remove cascading PropertyChanged~~ — would break WPF computed property binding
+- ~~Phase 5.5: Remove CancelEdit settings load~~ — would break settings cancel/revert
+- ~~Phase 4.5: Extract ViewModels from code-behind~~ — code-behind is appropriate for WPF rendering logic
 
 ---
 
@@ -1164,40 +839,34 @@ public UniPlaySongSettingsViewModel(UniPlaySong plugin)
 
 ### Performance Targets
 
-| Metric | Current | Target | Milestone |
-|--------|---------|--------|-----------|
-| Game selection latency (cached) | 2-8ms | <2ms | M1 |
-| Settings preset application | 100-500ms | <50ms | M3 |
-| File operation UI freeze | 200-2000ms | 0ms | M2 |
-| Memory leak rate | ~5MB/hour | 0MB/hour | M2 |
+| Metric | Before v1.2.11 | After v1.2.11 | Status |
+|--------|----------------|---------------|--------|
+| Game selection latency (cached) | 2-80ms | <2ms (cache hit) | ✅ Achieved (Phase 1) |
+| Thread.Sleep UI freeze | 50-2000ms | 0ms (async) | ✅ 7/10 done |
+| Bulk file delete | 200-2000ms sequential | Parallel | ✅ Achieved (Phase 2.6) |
+| Settings preset flicker | ~24 PropertyChanged events | 1 event (batched) | ⬜ Remaining (5.3) |
 
-### Code Quality Targets
+### Code Quality Targets (Corrected)
 
-| Metric | Current | Target | Milestone |
-|--------|---------|--------|-----------|
-| Lines of code | ~35,000 | ~29,000 | M4 |
-| Code duplication | ~15% | <5% | M4 |
-| Unit test coverage | 0% | 30%+ | M4 |
-| Critical bugs | 17 | 0 | M2 |
+| Metric | Status | Notes |
+|--------|--------|-------|
+| Memory leak rate | **No leaks found** | Phase 3 verified: 6/7 items NOT A BUG |
+| Critical bugs (original: 17) | **11 actual** | 6 were not bugs after code verification |
+| Code duplication | ~200 lines addressable | 4.6 async progress pattern is main target |
 
 ---
 
-## Risk Assessment
-
-### High Risk
-- **Phase 2.2 (FileLogger)**: Core logging infrastructure, extensive testing needed
-- **Phase 4.3 (Shared ViewModels)**: Large refactor, potential for regressions
-- **Phase 5.3 (Batch notifications)**: Changes core data binding, UI testing critical
+## Risk Assessment (Corrected 2026-02-14)
 
 ### Medium Risk
-- **Phase 2.1 (Thread.Sleep)**: Async conversion requires careful error handling
-- **Phase 3.x (Resource leaks)**: Disposal patterns must be thorough
+- **Phase 4.6 (Async progress helper)**: Touches multiple handlers, needs careful testing
+- **Phase 5.3 (Batch notifications)**: Changes PropertyChanged behavior, UI testing critical
 - **Phase 4.4 (DialogHelper split)**: Many dependencies, wide impact
 
 ### Low Risk
-- **Phase 1.x (Hot path)**: Localized changes, easy to test
 - **Phase 4.1 (FFmpeg validator)**: Simple extraction, low impact
-- **Phase 5.1 (Duplicate save)**: Single-line fix
+- **Phase 4.3 (Shared dialog logic)**: Extract incrementally, test per-dialog
+- **Phase 3.4 (Uncomment cleanup)**: Single line uncomment, investigate why disabled first
 
 ---
 
@@ -1242,9 +911,18 @@ public UniPlaySongSettingsViewModel(UniPlaySong plugin)
 
 ### Already Completed (v1.2.11)
 - ✅ Native music path caching (static constructor pattern)
-- ✅ Song list caching (session-scoped with 14 invalidation sites)
-- ✅ Version bump to 1.2.11
+- ✅ Static Random instance (eliminates 4 allocations per session)
+- ✅ Lowercase extensions HashSet (O(1) lookup)
+- ✅ Song list caching (session-scoped with 17 invalidation sites, opt-in toggle)
+- ✅ Thread.Sleep → Task.Delay (7/10 instances)
+- ✅ Parallel file deletions (DeleteAllMusic, DeleteLongSongs)
 - ✅ Documentation updated (MEMORY.md, README.md, CHANGELOG.md)
+
+### Analysis Reliability Note
+The original 87-item analysis was generated without verifying claims against actual code.
+After systematic code verification (Phases 2-5), **~25 items were found to be wrong, not a bug,
+already mitigated, or had suggested fixes that would break functionality.**
+Remaining items in this document have been verified against the actual codebase.
 
 ### Dependencies
 - .NET 4.6.2 framework limitations (no Span<T>, no ValueTask)
