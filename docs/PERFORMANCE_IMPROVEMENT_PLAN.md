@@ -16,10 +16,10 @@ Comprehensive 5-phase analysis of the UniPlaySong codebase identified **87 optim
 |-------|------------|--------------|----------------------|
 | **Phase 1** | Hot Path Analysis | 7 issues | 2 HIGH, 3 MEDIUM, 2 LOW |
 | **Phase 2** | UI Thread Blocking | 46 issues | ~~14~~ ~~13~~ 11 CRITICAL, 18 HIGH, 14 MEDIUM, 1 LOW |
-| **Phase 3** | Memory & Resource Mgmt | 13 issues | 3 CRITICAL, 4 HIGH, 6 MEDIUM/LOW |
+| **Phase 3** | Memory & Resource Mgmt | 13 issues | ~~3~~ 0 CRITICAL, ~~4~~ 0 HIGH, ~~6~~ 13 MEDIUM/LOW (6 NOT A BUG, 1 LOW, 6 remaining) |
 | **Phase 4** | Architectural Refactoring | 13 issues | 6 HIGH, 4 MEDIUM, 3 LOW |
 | **Phase 5** | Settings & Configuration | 8 issues | 0 CRITICAL, 5 MEDIUM, 3 LOW |
-| **TOTAL** | | **87 issues** | **~~17~~ ~~16~~ 14 CRITICAL, 24 HIGH, ~~46~~ 49 MEDIUM/LOW** |
+| **TOTAL** | | **87 issues** | **~~17~~ ~~16~~ ~~14~~ ~~12~~ 11 CRITICAL, ~~24~~ 20 HIGH, ~~46~~ ~~51~~ 56 MEDIUM/LOW** |
 
 ### Completed Optimizations (v1.2.11)
 
@@ -403,142 +403,151 @@ await Task.WhenAll(deleteTasks);  // Parallel, non-blocking
 
 **Goal:** Prevent resource leaks and memory exhaustion over long sessions.
 
-### CRITICAL Issues (3 total)
+### ~~CRITICAL~~ Issues (~~3~~ 1 CRITICAL, 1 LOW, 1 NOT A BUG)
 
 #### 3.1 VisualizationDataProvider ManualResetEventSlim Leak
 **File:** `Audio/VisualizationDataProvider.cs` lines 274-278
-**Priority:** CRITICAL
-**Impact:** Kernel handle leak (event handle not released)
-**Effort:** 1 hour
+**Priority:** ~~CRITICAL~~ **LOW** (CORRECTED)
+**Impact:** ~~Kernel handle leak~~ One kernel handle per session, cleaned up by GC finalizer
+**Effort:** 5 minutes (one-line fix)
+
+**ANALYSIS CORRECTION (2026-02-14):**
+- The field is `_newSamplesSignal` (not `_dataAvailableEvent` as originally stated)
+- `VisualizationDataProvider` is effectively a singleton (`_current` static field) — created once when NAudio player is active
+- It is NOT created/destroyed repeatedly during a session
+- The `ManualResetEventSlim` handle will be cleaned up by the GC finalizer when the object is collected
+- **Impact: One leaked handle per session** — not accumulating, not causing real-world problems
 
 **Current:**
 ```csharp
 public void Dispose()
 {
     _disposed = true;
-    _dataAvailableEvent?.Set();
-    // MISSING: _dataAvailableEvent?.Dispose();
+    _newSamplesSignal.Set(); // wake thread so it can exit
+    // MISSING: _newSamplesSignal.Dispose();
 }
 ```
 
-**Fix:**
+**Fix (optional, for correctness):**
 ```csharp
 public void Dispose()
 {
-    if (_disposed) return;
     _disposed = true;
-
-    _dataAvailableEvent?.Set();
-    _dataAvailableEvent?.Dispose();  // ✅ Release kernel handle
-    _dataAvailableEvent = null;
+    _newSamplesSignal.Set();
+    _newSamplesSignal.Dispose();
 }
 ```
 
 ---
 
-#### 3.2 MusicFader Timer Disposal Incomplete
+#### 3.2 MusicFader Timer Disposal — NOT A BUG
 **File:** `Players/MusicFader.cs` lines 53, 376-393
-**Priority:** CRITICAL
-**Impact:** Timer continues firing after disposal, callback leak
-**Effort:** 1 hour
+**Priority:** ~~CRITICAL~~ **NOT A BUG** (CORRECTED)
+**Impact:** None — already properly implemented
 
-**Current:**
-```csharp
-private DispatcherTimer _fadeTimer;
+**ANALYSIS CORRECTION (2026-02-14):**
+The original analysis was **incorrect** on multiple points:
+- The timer is `System.Timers.Timer` (NOT `DispatcherTimer` as claimed)
+- The timer is created once in the constructor with `AutoReset = false` — it is NOT recreated on each fade
+- Subsequent fades call `_fadeTimer.Start()` on the same instance
+- Dispose already does Stop + Close + Dispose + null:
 
-public void Dispose()
-{
-    _fadeTimer?.Stop();
-    // MISSING: _fadeTimer = null;
-}
-
-// Later in code:
-_fadeTimer = new DispatcherTimer();  // Leaks previous timer!
-```
-
-**Fix:**
 ```csharp
 public void Dispose()
 {
-    if (_fadeTimer != null)
+    try
     {
-        _fadeTimer.Stop();
-        _fadeTimer.Tick -= OnFadeTick;  // Unsubscribe
+        _fadeTimer?.Stop();
+        _fadeTimer?.Close();
+        _fadeTimer?.Dispose();
         _fadeTimer = null;
     }
-}
-
-private void StartFade(...)
-{
-    Dispose();  // Cleanup existing timer first
-    _fadeTimer = new DispatcherTimer();
-    _fadeTimer.Tick += OnFadeTick;
-    _fadeTimer.Start();
+    catch (Exception ex) { ... }
 }
 ```
+
+**No action needed.**
 
 ---
 
-#### 3.3 DownloadDialogService Event Handler Leak
-**File:** `Services/DownloadDialogService.cs` lines 1680, 1768-1769
-**Priority:** CRITICAL
-**Impact:** Event handler keeps dialog alive after close
-**Effort:** 1 hour
+#### ~~3.3 DownloadDialogService Event Handler Leak~~ — NOT A BUG
+**File:** `Services/DownloadDialogService.cs`
+**Priority:** ~~CRITICAL~~ **NOT A BUG**
 
-**Current:**
-```csharp
-_musicPlayer.OnSongEnded += HandleSongEnded;
-// Dialog closes but handler never unsubscribed!
-```
-
-**Fix:**
-```csharp
-private void CleanupDialog()
-{
-    if (_musicPlayer != null)
-    {
-        _musicPlayer.OnSongEnded -= HandleSongEnded;
-    }
-    _musicPlayer = null;
-}
-
-// Call in dialog close handler
-```
+**Analysis (2026-02-14):**
+- The plan claimed `OnSongEnded` handlers are never unsubscribed after dialog close. This is **wrong**.
+- Two subscription patterns exist, and **both properly unsubscribe**:
+  1. **Batch download dialog** (line 1689): Subscribes, then unsubscribes at line 1777 after `window.ShowDialog()` returns (blocking call — always runs)
+  2. **Auto-add songs dialog** (line 2338): Subscribes, then unsubscribes at line 2629 inside a `finally` block (guarantees cleanup)
+- The plan's example code doesn't match actual code. **No action needed.**
 
 ---
 
 ### HIGH Priority (4 issues)
 
-#### 3.4 ControllerDetectionService Timer Never Disposed
-**File:** `Services/ControllerDetectionService.cs`
-**Impact:** Permanent 500ms polling even when controller unused
-**Effort:** 30 minutes
+#### 3.4 ControllerDetectionService Timer — LOW-MEDIUM (commented-out cleanup)
+**File:** `Services/Controller/ControllerDetectionService.cs`, `Views/DownloadDialogView.xaml.cs`
+**Priority:** ~~HIGH~~ **LOW-MEDIUM**
 
-#### 3.5 MediaElementsMonitor Timer Leak
+**Analysis (2026-02-14):**
+- The plan claimed "Permanent 500ms polling even when controller unused" — actual interval is **2000ms** (not 500ms)
+- `ControllerDetectionService` has proper `Dispose()` → `StopMonitoring()` → timer disposed and nulled
+- `ControllerOverlay.Dispose()` calls `_detectionService?.Dispose()` correctly
+- `DownloadDialogView.CleanupControllerSupport()` calls `_controllerOverlay.Dispose()` correctly
+- **Issue:** At `DownloadDialogView.xaml.cs:51`, the cleanup call is **commented out**: `// CleanupControllerSupport();`
+- Timer keeps polling XInput every 2s until GC collects unreferenced objects
+- **Actual impact:** LOW — lightweight XInput check (microseconds), only when download dialog opened, GC cleans up
+- **Fix:** Uncomment `CleanupControllerSupport()` — but was "temporarily disabled" for a reason worth investigating
+
+#### ~~3.5 MediaElementsMonitor Timer Leak~~ — NOT A BUG
 **File:** `Monitors/MediaElementsMonitor.cs`
-**Impact:** Permanent 100ms polling (10Hz) never stops
-**Effort:** 30 minutes
+**Priority:** ~~HIGH~~ **NOT A BUG**
 
-#### 3.6 MusicPlaybackCoordinator Timer Leak
+**Analysis (2026-02-14):**
+- The plan claimed "Permanent 100ms polling (10Hz) never stops." This is **wrong**.
+- The timer is **self-stopping**: when `mediaElementPositions.Count == 0` (no tracked media elements), it calls `timer.Stop()` (line 155)
+- Timer only starts when `MediaElement_Opened` fires (a video element appears)
+- Timer created once with `if (timer == null)` guard — prevents orphaned timers on repeated `Attach()` calls
+- **Lifecycle:** Video opens → timer starts → polls at 100ms → video ends → dictionary empties → timer stops
+- **No action needed.**
+
+#### ~~3.6 MusicPlaybackCoordinator Timer Leak~~ — NOT A BUG
 **File:** `Services/MusicPlaybackCoordinator.cs`
-**Impact:** Timer continues after login dismiss
-**Effort:** 30 minutes
+**Priority:** ~~HIGH~~ **NOT A BUG**
 
-#### 3.7 HttpClient Not Disposed
-**File:** `UniPlaySong.cs` constructor
-**Impact:** Socket exhaustion on repeated plugin reload
-**Effort:** 15 minutes
+**Analysis (2026-02-14):**
+- The plan claimed "Timer continues after login dismiss." This is **wrong**.
+- `HandleLoginDismiss()` creates a **one-shot** `System.Timers.Timer(150)` with `AutoReset = false`
+- The elapsed handler calls `timer.Dispose()` immediately after executing — self-disposes
+- No persistent timer field exists in this class — no ongoing polling
+- **No action needed.**
+
+#### ~~3.7 HttpClient Not Disposed~~ — NOT A BUG
+**File:** `UniPlaySong.cs`
+**Priority:** ~~HIGH~~ **NOT A BUG**
+
+**Analysis (2026-02-14):**
+- The plan claimed "Socket exhaustion on repeated plugin reload." This is **wrong**.
+- `_httpClient = new HttpClient()` created once in constructor (line 137)
+- `_httpClient?.Dispose()` called in plugin cleanup (line 678)
+- Single instance for plugin lifetime, properly disposed on shutdown
+- This is the [recommended HttpClient pattern](https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines) — reuse a single instance
+- **No action needed.**
 
 ---
 
 ### Summary - Phase 3
 
-| Category | Count | Total Effort | Impact |
-|----------|-------|--------------|--------|
-| CRITICAL | 3 | 3 hours | Prevents handle/memory leaks |
-| HIGH | 4 | 2 hours | Prevents timer/socket leaks |
-| MEDIUM/LOW | 6 | 1.5 hours | Cleanup improvements |
-| **TOTAL** | **13** | **6.5 hours** | **Long-session stability** |
+| Category | Count | Status | Impact |
+|----------|-------|--------|--------|
+| ~~CRITICAL~~ 3.1 ManualResetEventSlim | 1 handle | **LOW** — GC finalizer cleans up | One handle per session, not accumulating |
+| ~~CRITICAL~~ 3.2 MusicFader timer | 1 timer | **NOT A BUG** — already properly disposed | No action needed |
+| ~~CRITICAL~~ 3.3 Event handler leak | 1 | **NOT A BUG** — both handlers properly unsubscribed | No action needed |
+| ~~HIGH~~ 3.4 Controller timer | 1 timer | **LOW-MEDIUM** — commented-out cleanup, GC cleans up | Uncomment cleanup call |
+| ~~HIGH~~ 3.5 MediaElementsMonitor timer | 1 timer | **NOT A BUG** — self-stopping when no media elements | No action needed |
+| ~~HIGH~~ 3.6 MusicPlaybackCoordinator timer | 1 timer | **NOT A BUG** — one-shot fire-and-dispose pattern | No action needed |
+| ~~HIGH~~ 3.7 HttpClient | 1 client | **NOT A BUG** — singleton, properly disposed on unload | No action needed |
+| MEDIUM/LOW | 6 | **TODO** | Cleanup improvements |
 
 ---
 
@@ -1115,10 +1124,13 @@ public UniPlaySongSettingsViewModel(UniPlaySong plugin)
 
 - ⬜ Phase 2.1: Replace Thread.Sleep() (10 locations)
 - ⬜ Phase 2.4: Fix async void handlers (10 locations)
-- ⬜ Phase 3.1: Fix VisualizationDataProvider disposal
-- ⬜ Phase 3.2: Fix MusicFader timer leaks
-- ⬜ Phase 3.3: Fix DownloadDialogService event leak
-- ⬜ Phase 3.4-3.7: Fix remaining timer/resource leaks
+- ~~⬜ Phase 3.1: Fix VisualizationDataProvider disposal~~ — LOW (GC handles it)
+- ~~⬜ Phase 3.2: Fix MusicFader timer leaks~~ — NOT A BUG (already disposed)
+- ~~⬜ Phase 3.3: Fix DownloadDialogService event leak~~ — NOT A BUG (already unsubscribed)
+- ~~⬜ Phase 3.4: ControllerDetectionService timer~~ — LOW-MEDIUM (commented-out cleanup)
+- ~~⬜ Phase 3.5: MediaElementsMonitor timer~~ — NOT A BUG (self-stopping)
+- ~~⬜ Phase 3.6: MusicPlaybackCoordinator timer~~ — NOT A BUG (one-shot, self-disposing)
+- ~~⬜ Phase 3.7: HttpClient disposal~~ — NOT A BUG (singleton, properly disposed)
 
 **Expected Impact:** Prevents crashes, eliminates UI freezes, long-session stability
 
