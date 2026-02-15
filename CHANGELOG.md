@@ -13,8 +13,8 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
   - Saves ~2-8ms (SSD) or ~15-80ms (HDD) per cached game re-selection
   - Smart cache invalidation: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
-  - Session-scoped cache persists during Playnite session for optimal browsing performance
-  - Manual file additions won't appear until Playnite restart (acceptable trade-off for 99% of use cases)
+  - Session-scoped: cache resets when Playnite restarts
+  - **Opt-in toggle** in General Settings → Performance (disabled by default — enable if you notice lag when switching games)
 
 **UI Thread Optimizations** - Converted blocking delays to async operations (7 instances):
 - Rate limiting delays during batch downloads (3 locations)

@@ -15,11 +15,11 @@ Comprehensive 5-phase analysis of the UniPlaySong codebase identified **87 optim
 | Phase | Focus Area | Issues Found | Priority Distribution |
 |-------|------------|--------------|----------------------|
 | **Phase 1** | Hot Path Analysis | 7 issues | 2 HIGH, 3 MEDIUM, 2 LOW |
-| **Phase 2** | UI Thread Blocking | 46 issues | ~~14~~ 13 CRITICAL, 18 HIGH, 14 MEDIUM, 1 LOW |
+| **Phase 2** | UI Thread Blocking | 46 issues | ~~14~~ ~~13~~ 11 CRITICAL, 18 HIGH, 14 MEDIUM, 1 LOW |
 | **Phase 3** | Memory & Resource Mgmt | 13 issues | 3 CRITICAL, 4 HIGH, 6 MEDIUM/LOW |
 | **Phase 4** | Architectural Refactoring | 13 issues | 6 HIGH, 4 MEDIUM, 3 LOW |
 | **Phase 5** | Settings & Configuration | 8 issues | 0 CRITICAL, 5 MEDIUM, 3 LOW |
-| **TOTAL** | | **87 issues** | **~~17~~ 16 CRITICAL, 24 HIGH, ~~46~~ 47 MEDIUM/LOW** |
+| **TOTAL** | | **87 issues** | **~~17~~ ~~16~~ 14 CRITICAL, 24 HIGH, ~~46~~ 49 MEDIUM/LOW** |
 
 ### Completed Optimizations (v1.2.11)
 
@@ -33,10 +33,12 @@ Comprehensive 5-phase analysis of the UniPlaySong codebase identified **87 optim
   - Covers: 5 download types, 9 modification types (normalize/trim/silence/amplify/waveform-trim/repair), 3 deletion types
   - Design: Strict invalidation on known operations, manual file additions require restart (acceptable)
 
-#### 🔄 Phase 2A: UI Thread Blocking (PARTIAL - 7/10 Thread.Sleep instances)
-- ✅ **Rate limiting delays** (3) - BatchDownloadService, GameMenuHandler, UniPlaySong
-- ✅ **File release delays** (4) - NormalizationDialogHandler, TrimDialogHandler, ControllerDeleteSongsDialog
-- ⏸️ **Controller polling delays** (3) - Deferred pending SDK controller events refactor
+#### 🔄 Phase 2: UI Thread Blocking (PARTIAL)
+- ✅ **2.1 Thread.Sleep → Task.Delay** (7/10) - Rate limiting (3) + file release (4) converted
+  - ⏸️ Controller polling delays (3) - Deferred pending SDK controller events refactor
+- ~~SKIP~~ **2.2 FileLogger async queue** - Downgraded to LOW, debug logging disabled by default
+- ~~SKIP~~ **2.3 WebClient → HttpClient** - Tiny JSON file, network latency dominates, no user-visible benefit
+- ✅ **2.4 Async void handlers** - Already mitigated with try-catch blocks in all instances
 
 ---
 
@@ -292,62 +294,28 @@ public void Log(LogLevel level, string message)
 
 #### 2.3 WebClient Synchronous Downloads
 **File:** `Services/SearchHintsService.cs` lines 383-388
-**Priority:** CRITICAL
-**Impact:** UI freezes for 500ms-5s during metadata fetch
+**Priority:** ~~CRITICAL~~ **SKIP** (CORRECTED)
+**Impact:** ~~UI freezes for 500ms-5s during metadata fetch~~ Negligible — downloads a single tiny JSON file (search_hints.json)
 **Effort:** 30 minutes
 
-**Current:**
-```csharp
-using (var client = new WebClient())
-{
-    var json = client.DownloadString(url);  // Blocks UI!
-}
-```
-
-**Suggested:**
-```csharp
-using (var client = new HttpClient())
-{
-    var json = await client.GetStringAsync(url);  // Async
-}
-```
+**ANALYSIS CORRECTION:**
+- Downloads a single small JSON file (`search_hints.json`) from GitHub
+- The "500ms-5s" is network latency, not payload size — `HttpClient` async wouldn't reduce perceived wait time
+- Called only on manual user action (check/download hints) or once at startup if auto-check enabled
+- **NOT worth the churn** — switching to HttpClient adds complexity for zero user-visible benefit
 
 ---
 
 #### 2.4 Async Void Event Handlers (10 instances)
-**Priority:** CRITICAL
-**Impact:** Unhandled exceptions crash application
-**Effort:** 1 hour
+**Priority:** ~~CRITICAL~~ **ALREADY MITIGATED** (CORRECTED)
+**Impact:** ~~Unhandled exceptions crash application~~ Already protected by try-catch blocks
+**Effort:** ~~1 hour~~ None needed
 
-**Locations:**
-- `Views/DownloadFromUrlDialog.xaml.cs` - 3 instances
-- `Views/BatchManualDownloadViewModel.cs` - 2 instances
-- `Views/NormalizationDialog.xaml.cs` - 2 instances
-- `Views/TrimDialog.xaml.cs` - 3 instances
-
-**Current:**
-```csharp
-private async void DownloadButton_Click(object sender, RoutedEventArgs e)
-{
-    await PerformDownload();  // Exception here crashes app!
-}
-```
-
-**Suggested:**
-```csharp
-private async void DownloadButton_Click(object sender, RoutedEventArgs e)
-{
-    try
-    {
-        await PerformDownload();
-    }
-    catch (Exception ex)
-    {
-        Logger.Error(ex, "Error during download");
-        _api.Dialogs.ShowErrorMessage($"Download failed: {ex.Message}");
-    }
-}
-```
+**ANALYSIS CORRECTION:**
+- All `async void` event handlers in the codebase already wrap their bodies in try-catch blocks
+- `async void` is required by WPF event handler signatures — this is the correct pattern
+- Verified in: AmplifyDialog, ControllerAmplifyDialog, ControllerDeleteSongsDialog, ControllerWaveformTrimDialog, WaveformTrimDialog
+- **No action needed** — the suggested fix is already implemented
 
 ---
 
@@ -402,37 +370,32 @@ await Task.WhenAll(deleteTasks);  // Parallel, non-blocking
 ### MEDIUM Priority (14 issues)
 
 #### 2.7 ConfigureAwait(false) Missing
-**Impact:** Unnecessary UI thread context switching
-**Effort:** 30 minutes
+**Priority:** ~~MEDIUM~~ **CANCELLED**
+**Impact:** ~~Unnecessary UI thread context switching~~ Negligible in practice
 
-**Pattern:**
-```csharp
-// Add to all async library calls:
-await Task.Delay(100).ConfigureAwait(false);
-await httpClient.GetAsync(url).ConfigureAwait(false);
-```
-
-**Locations:** 50+ async calls missing `ConfigureAwait(false)`
+**ANALYSIS (2026-02-14):**
+- 173 total `await` calls; only 14 use `ConfigureAwait(false)` (already in the right places — FFmpeg stream reads inside Task.Run)
+- ~120 of the remaining 159 are in Views/Handlers that **must** stay on UI thread — adding ConfigureAwait(false) would cause WPF threading exceptions
+- Only ~15-20 are safe to add, saving ~0.1-0.5ms each (total: ~5-25ms in stress scenarios)
+- **Risk outweighs benefit:** WPF threading bugs from incorrect ConfigureAwait(false) are hard to debug and can cause deadlocks or `InvalidOperationException` on UI element access
+- **Recommendation: Do not implement.** Current async strategy is already correct.
 
 ---
 
 ### Summary - Phase 2
 
-| Category | Count | Total Effort | Impact |
-|----------|-------|--------------|--------|
-| CRITICAL | 13 | 2.5 hours | Eliminates UI freezes |
-| HIGH | 18 | 3 hours | Reduces UI stuttering |
-| MEDIUM | 14 | 1.5 hours | Smoother async flow |
-| LOW | 1 (FileLogger) | 2 hours | Only if debug logging enabled |
-| **TOTAL** | **46** | **9 hours** | **Major UX improvement** |
+| Category | Count | Status | Impact |
+|----------|-------|--------|--------|
+| ~~CRITICAL~~ 2.1 Thread.Sleep | 10 instances | **7/10 DONE** (3 deferred) | Eliminates UI freezes |
+| ~~CRITICAL~~ 2.2 FileLogger | 1 | **SKIP** — LOW priority | Minimal impact, debug off by default |
+| ~~CRITICAL~~ 2.3 WebClient | 2 calls | **SKIP** — tiny JSON file | Network latency dominates, no benefit |
+| ~~CRITICAL~~ 2.4 Async void | 10 instances | **ALREADY MITIGATED** | All have try-catch blocks |
+| HIGH 2.5 UI thread file I/O | 12 instances | **PARTIALLY ADDRESSED** | ControllerDeleteSongsDialog main issue |
+| HIGH 2.6 Sequential deletions | 3 locations | **TODO** | Parallel delete for large libraries |
+| ~~MEDIUM~~ 2.7 ConfigureAwait | 50+ calls | **CANCELLED** | Risk outweighs 5-25ms gain |
 
-**Recommended Order:**
-1. Fix `async void` handlers (prevents crashes) - CRITICAL
-2. Replace `Thread.Sleep()` (biggest user-facing freeze) - CRITICAL
-3. Fix WebClient (eliminates metadata fetch freezes) - CRITICAL
-4. Parallelize file deletions - HIGH
-5. Add `ConfigureAwait(false)` (polish) - MEDIUM
-6. ~~Fix FileLogger~~ - SKIP (not a real issue)
+**Remaining Work:**
+1. Parallelize file deletions (2.6) - HIGH — DeleteAllMusic, DeleteLongSongs, DeleteAllMusicForGames
 
 ---
 

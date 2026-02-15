@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
@@ -198,7 +200,7 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>
-        /// Deletes all music files for a game
+        /// Deletes all music files for a game using parallel I/O
         /// </summary>
         /// <returns>Number of files deleted</returns>
         public int DeleteAllMusic(Game game)
@@ -209,8 +211,6 @@ namespace UniPlaySong.Services
                 return 0;
             }
 
-            var deletedCount = 0;
-
             if (_errorHandler != null)
             {
                 return _errorHandler.Try(
@@ -220,23 +220,12 @@ namespace UniPlaySong.Services
                             .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                             .ToList();
 
-                        foreach (var file in files)
-                        {
-                            try
-                            {
-                                File.Delete(file);
-                                deletedCount++;
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Warn($"Failed to delete '{file}': {ex.Message}");
-                            }
-                        }
+                        var deleted = DeleteFilesParallel(files);
 
-                        // Also clear primary song metadata
                         PrimarySongManager.ClearPrimarySong(directory, _errorHandler);
+                        InvalidateCacheForGame(game);
 
-                        return deletedCount;
+                        return deleted;
                     },
                     defaultValue: 0,
                     context: $"deleting all music for game '{game?.Name}'"
@@ -250,32 +239,40 @@ namespace UniPlaySong.Services
                         .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                         .ToList();
 
-                    foreach (var file in files)
-                    {
-                        try
-                        {
-                            File.Delete(file);
-                            deletedCount++;
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Warn($"Failed to delete '{file}': {ex.Message}");
-                        }
-                    }
+                    var deleted = DeleteFilesParallel(files);
 
-                    // Also clear primary song metadata
                     PrimarySongManager.ClearPrimarySong(directory, null);
+                    InvalidateCacheForGame(game);
+
+                    return deleted;
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex, $"Error deleting music for game '{game?.Name}': {ex.Message}");
+                    return 0;
                 }
             }
+        }
 
-            // Invalidate cache since we deleted files
-            InvalidateCacheForGame(game);
+        // Deletes files in parallel and returns the count of successfully deleted files
+        private int DeleteFilesParallel(List<string> files)
+        {
+            if (files == null || files.Count == 0) return 0;
 
-            return deletedCount;
+            int deleted = 0;
+            Parallel.ForEach(files, file =>
+            {
+                try
+                {
+                    File.Delete(file);
+                    Interlocked.Increment(ref deleted);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Failed to delete '{file}': {ex.Message}");
+                }
+            });
+            return deleted;
         }
     }
 }

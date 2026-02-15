@@ -29,7 +29,8 @@ Built with the help of Claude Code and Cursor IDE
 - **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
   - **Performance gain**: ~2-8ms (SSD) or ~15-80ms (HDD) per cached re-selection
   - **Smart invalidation**: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
-  - **Session-scoped**: Cache persists during Playnite session for optimal browsing performance
+  - **Session-scoped**: Cache resets when Playnite restarts
+  - **Opt-in toggle**: General Settings → Performance (disabled by default — enable if you notice lag when switching games)
 
 **UI Thread Optimizations** - Converted blocking delays to async operations:
 - Rate limiting delays during batch downloads

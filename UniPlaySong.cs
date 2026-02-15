@@ -3235,31 +3235,35 @@ namespace UniPlaySong
                     progressArgs.ProgressMaxValue = longSongs.Count;
                 }
 
+                // Delete files in parallel for performance
                 int processed = 0;
-                foreach (var (filePath, duration, fileSize, gameFolder) in longSongs)
+                System.Threading.Tasks.Parallel.ForEach(longSongs, (song, state) =>
                 {
                     if (progressArgs?.CancelToken.IsCancellationRequested == true)
-                        break;
-
-                    processed++;
-                    if (progressArgs != null)
                     {
-                        progressArgs.CurrentProgressValue = processed;
-                        progressArgs.Text = $"Deleting ({processed}/{longSongs.Count}): {Path.GetFileName(filePath)}";
+                        state.Break();
+                        return;
                     }
 
                     try
                     {
-                        File.Delete(filePath);
-                        deletedFiles++;
-                        freedBytes += fileSize;
-                        _fileLogger?.Debug($"DeleteLongSongs: Deleted '{Path.GetFileName(filePath)}' ({duration:hh\\:mm\\:ss}, {fileSize / 1024.0 / 1024.0:F1} MB)");
+                        File.Delete(song.filePath);
+                        System.Threading.Interlocked.Increment(ref deletedFiles);
+                        System.Threading.Interlocked.Add(ref freedBytes, song.fileSize);
+                        _fileLogger?.Debug($"DeleteLongSongs: Deleted '{Path.GetFileName(song.filePath)}' ({song.duration:hh\\:mm\\:ss}, {song.fileSize / 1024.0 / 1024.0:F1} MB)");
                     }
                     catch (Exception ex)
                     {
-                        _fileLogger?.Warn($"DeleteLongSongs: Failed to delete '{filePath}' - {ex.Message}");
+                        _fileLogger?.Warn($"DeleteLongSongs: Failed to delete '{song.filePath}' - {ex.Message}");
                     }
-                }
+
+                    var current = System.Threading.Interlocked.Increment(ref processed);
+                    if (progressArgs != null)
+                    {
+                        progressArgs.CurrentProgressValue = current;
+                        progressArgs.Text = $"Deleting ({current}/{longSongs.Count})...";
+                    }
+                });
 
                 _fileLogger?.Debug($"DeleteLongSongs: Deleted {deletedFiles} files, freed {freedBytes / 1024.0 / 1024.0:F1} MB");
 
