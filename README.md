@@ -35,9 +35,6 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Previous Versions
 - **v1.2.10**: Fullscreen performance fix (desktop visualizer init skipped in fullscreen)
-- **v1.2.9**: Stop After Song Ends toggle + fullscreen suppression timer fix
-- **v1.2.8**: Native music conflict fix — suppress toggle decoupled from Default Music settings
-- **v1.2.7**: Spectrum visualizer working without Live Effects ([#66](https://github.com/aHuddini/UniPlaySong/issues/66))
 ---
 
 ## 🎬 Demo
