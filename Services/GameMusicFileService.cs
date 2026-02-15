@@ -17,15 +17,17 @@ namespace UniPlaySong.Services
         private static readonly ILogger Logger = LogManager.GetLogger();
         private readonly string _baseMusicPath;
         private readonly ErrorHandlerService _errorHandler;
+        private readonly Func<UniPlaySongSettings> _settingsProvider;
         private static readonly string[] SupportedExtensions = Constants.SupportedAudioExtensions;
 
         // Song list cache to avoid repeated directory scans
         private readonly Dictionary<string, List<string>> _songCache = new Dictionary<string, List<string>>();
 
-        public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null)
+        public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null, Func<UniPlaySongSettings> settingsProvider = null)
         {
             _baseMusicPath = baseMusicPath ?? throw new ArgumentNullException(nameof(baseMusicPath));
             _errorHandler = errorHandler;
+            _settingsProvider = settingsProvider;
             Directory.CreateDirectory(_baseMusicPath);
         }
 
@@ -48,13 +50,22 @@ namespace UniPlaySong.Services
                 return new List<string>();
             }
 
-            // Check cache first
-            if (_songCache.TryGetValue(directory, out var cached))
+            // Check if caching is enabled (default: false/disabled if settings not available)
+            bool cacheEnabled = _settingsProvider?.Invoke()?.EnableSongListCache ?? false;
+
+            // Clear cache when user disables the setting
+            if (!cacheEnabled && _songCache.Count > 0)
+            {
+                _songCache.Clear();
+            }
+
+            // Check cache first (if enabled)
+            if (cacheEnabled && _songCache.TryGetValue(directory, out var cached))
             {
                 return new List<string>(cached); // Return copy to prevent external modification
             }
 
-            // Cache miss - scan directory
+            // Cache miss or caching disabled - scan directory
             List<string> files;
             if (_errorHandler != null)
             {
@@ -86,8 +97,11 @@ namespace UniPlaySong.Services
                 }
             }
 
-            // Cache the result
-            _songCache[directory] = files;
+            // Cache the result (only if caching is enabled)
+            if (cacheEnabled)
+            {
+                _songCache[directory] = files;
+            }
             return new List<string>(files);
         }
 

@@ -667,6 +667,12 @@ namespace UniPlaySong.Services
             // For song selection, confirm triggers inline download instead of closing
             viewModel.OnDownloadComplete = (success) =>
             {
+                // Invalidate cache when download completes so new files are detected
+                if (success && game != null)
+                {
+                    _fileService?.InvalidateCacheForGame(game);
+                }
+
                 // After successful download, trigger music refresh so music plays immediately
                 // This addresses the issue where music doesn't play after download completes
                 // BUT: Don't interrupt preview playback - let the user finish previewing
@@ -1319,6 +1325,9 @@ namespace UniPlaySong.Services
             {
                 if (success)
                 {
+                    // Invalidate cache so new files are detected
+                    _fileService?.InvalidateCacheForGame(game);
+
                     viewModel.Cleanup();
                     window.DialogResult = true;
                     window.Close();

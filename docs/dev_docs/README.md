@@ -27,11 +27,19 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
    - Debugging tips
    - Constants reference
 
-4. **[CODE_COMMENTS_REFACTORING.md](CODE_COMMENTS_REFACTORING.md)** - Code comment cleanup plan
-   - Refactoring strategy
-   - Comment style guide
-   - File-by-file plan
-   - Quality checklist
+4. **[DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md)** - Dynamic color theme implementation
+   - Color extraction algorithm (v5)
+   - Brightness and saturation tuning
+   - Caching strategy
+   - Performance optimizations
+
+### Version-Specific Documentation
+
+- **[v1.2.11_TECHNICAL_NOTES.md](v1.2.11_TECHNICAL_NOTES.md)** - v1.2.11 implementation notes
+  - Hot path optimizations (native music caching, static Random, song list caching)
+  - UI thread optimizations (Thread.Sleep → Task.Delay conversions)
+  - Cache invalidation coverage (17 call sites)
+  - Bug fixes and performance measurements
 
 ### Additional Resources
 
@@ -135,6 +143,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2025-01-15  
-**Documentation Version**: 1.0
+**Last Updated**: 2026-02-14
+**Documentation Version**: 1.1
 

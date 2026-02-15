@@ -289,7 +289,7 @@ namespace UniPlaySong.Services
         }
 
         /// <summary>Downloads music for multiple games sequentially</summary>
-        public List<GameDownloadResult> DownloadMusicSequential(
+        public async Task<List<GameDownloadResult>> DownloadMusicSequentialAsync(
             List<Game> games,
             Source source,
             bool overwrite,
@@ -351,7 +351,7 @@ namespace UniPlaySong.Services
                 // Rate limiting delay
                 if (delayBetweenGamesMs > 0 && !cancellationToken.IsCancellationRequested)
                 {
-                    Thread.Sleep(delayBetweenGamesMs);
+                    await Task.Delay(delayBetweenGamesMs, cancellationToken);
                 }
             }
 

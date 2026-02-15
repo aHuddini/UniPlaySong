@@ -184,6 +184,25 @@
 
                     <Separator Margin="0,15"/>
 
+                    <!-- Performance -->
+                    <TextBlock Text="Performance" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Song List Cache (Opt-in)"
+                              IsChecked="{Binding Settings.EnableSongListCache}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). This cache aims to mitigate any performance issues caused by repeated directory scans when scrolling between games. Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. When cache is enabled, note that manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
+                               FontSize="11"
+                               Foreground="#FFB74D"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- Troubleshooting -->
                     <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 

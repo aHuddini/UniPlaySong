@@ -12,9 +12,20 @@ All notable changes to UniPlaySong will be documented in this file.
   - Fixes bug where rapid selections within same millisecond produced identical "random" songs
 - **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
   - Saves ~2-8ms (SSD) or ~15-80ms (HDD) per cached game re-selection
-  - Cache automatically invalidates after downloads, deletes, trim, normalize, and amplify operations
+  - Smart cache invalidation: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
   - Session-scoped cache persists during Playnite session for optimal browsing performance
   - Manual file additions won't appear until Playnite restart (acceptable trade-off for 99% of use cases)
+
+**UI Thread Optimizations** - Converted blocking delays to async operations (7 instances):
+- Rate limiting delays during batch downloads (3 locations)
+- File release delays before audio processing (4 locations: trim, normalize, delete)
+- Eliminates UI freezes during file operations
+
+### Fixed
+- **Song Cache Invalidation** - Fixed bug where downloaded music wasn't immediately visible in operations like trim/normalize
+  - Download Music dialog, Download From URL, and controller download now properly invalidate cache
+  - Audio repair operations (single file and bulk repair) now invalidate cache
+  - Settings-based long song deletion now invalidates cache
 
 ## [1.2.10] - 2026-02-13
 

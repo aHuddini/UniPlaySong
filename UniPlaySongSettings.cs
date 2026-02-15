@@ -346,6 +346,20 @@ namespace UniPlaySong
             set { previewDuration = Math.Max(Constants.MinPreviewDuration, Math.Min(Constants.MaxPreviewDuration, value)); OnPropertyChanged(); }
         }
 
+        // Song List Cache Settings (opt-in performance feature)
+        private bool enableSongListCache = false;
+
+        /// <summary>
+        /// Enable song list caching to optimize game selection performance.
+        /// When enabled, directory scans are cached in-memory for the current Playnite session.
+        /// Cache is automatically reset when Playnite restarts.
+        /// </summary>
+        public bool EnableSongListCache
+        {
+            get => enableSongListCache;
+            set { enableSongListCache = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Enable verbose debug logging to file.
         /// When disabled, only errors and important events are logged.

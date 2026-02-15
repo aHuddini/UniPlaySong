@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -846,7 +847,7 @@ namespace UniPlaySong.Menus
 
                 _playniteApi.Dialogs.ActivateGlobalProgress((args) =>
                 {
-                    StartBatchDownload(args, games, source, albumSelect, songSelect, overwrite, progressTitle, batchDownloadedFilePaths);
+                    StartBatchDownloadAsync(args, games, source, albumSelect, songSelect, overwrite, progressTitle, batchDownloadedFilePaths).Wait();
                 }, progressOptions);
             }
 
@@ -869,7 +870,7 @@ namespace UniPlaySong.Menus
             _logger.Debug("Batch download complete");
         }
 
-        private void StartBatchDownload(
+        private async Task StartBatchDownloadAsync(
             GlobalProgressActionArgs args,
             List<Game> games,
             Source source,
@@ -936,7 +937,7 @@ namespace UniPlaySong.Menus
                     // Only delay if there are more games to process
                     if (gameIdx < games.Count && !args.CancelToken.IsCancellationRequested)
                     {
-                        System.Threading.Thread.Sleep(1000); // 1 second delay between games
+                        await Task.Delay(1000, args.CancelToken); // 1 second delay between games
                     }
                 }
                 catch (BatchDownloadSkipException)
@@ -1500,6 +1501,9 @@ namespace UniPlaySong.Menus
 
             if (repairSuccess)
             {
+                // Invalidate cache since we modified/replaced the file
+                _fileService?.InvalidateCacheForGame(game);
+
                 var issuesSummary = probeResult.HasIssues
                     ? $"Issues detected: {probeResult.Issues}\n\n"
                     : "No obvious issues detected, but file was re-encoded.\n\n";
@@ -1654,6 +1658,12 @@ namespace UniPlaySong.Menus
                     }
                 }
             }, progressOptions);
+
+            // Invalidate cache if we repaired any files
+            if (repaired > 0)
+            {
+                _fileService?.InvalidateCacheForGame(game);
+            }
 
             // Show summary
             var summary = $"Scan & Repair Complete\n\n" +

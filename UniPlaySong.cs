@@ -1155,7 +1155,7 @@ namespace UniPlaySong
             // Initialize error handler service (for centralized error handling)
             _errorHandler = new ErrorHandlerService(Logger, _fileLogger, _api);
 
-            _fileService = new GameMusicFileService(gamesPath, _errorHandler);
+            _fileService = new GameMusicFileService(gamesPath, _errorHandler, () => _settings);
 
             // Create the appropriate music player based on LiveEffectsEnabled setting
             _currentMusicPlayer = CreateMusicPlayer();
@@ -2624,7 +2624,7 @@ namespace UniPlaySong
         /// Performs bulk download with progress reporting.
         /// Called from ActivateGlobalProgress for non-blocking UI updates.
         /// </summary>
-        private void BulkDownloadMusicWithProgress(List<Game> games, GlobalProgressActionArgs progressArgs)
+        private async Task BulkDownloadMusicWithProgressAsync(List<Game> games, GlobalProgressActionArgs progressArgs)
         {
             var successCount = 0;
             var skipCount = 0;
@@ -2672,7 +2672,7 @@ namespace UniPlaySong
                     // Rate limiting: wait between downloads to avoid throttling
                     if (i < totalGames - 1 && !progressArgs.CancelToken.IsCancellationRequested)
                     {
-                        Thread.Sleep(2000);
+                        await Task.Delay(2000, progressArgs.CancelToken);
                     }
                 }
                 catch (OperationCanceledException)
@@ -3262,6 +3262,19 @@ namespace UniPlaySong
                 }
 
                 _fileLogger?.Debug($"DeleteLongSongs: Deleted {deletedFiles} files, freed {freedBytes / 1024.0 / 1024.0:F1} MB");
+
+                // Invalidate cache for all affected directories since we deleted files
+                if (deletedFiles > 0 && _fileService != null)
+                {
+                    var deletedDirectories = longSongs
+                        .Select(s => System.IO.Path.GetDirectoryName(s.filePath))
+                        .Distinct();
+                    foreach (var dir in deletedDirectories)
+                    {
+                        _fileService.InvalidateCacheForDirectory(dir);
+                    }
+                }
+
                 return (deletedFiles, freedBytes, true);
             }
             catch (Exception ex)

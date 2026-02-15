@@ -42,7 +42,7 @@ namespace UniPlaySong.Handlers
         /// <summary>
         /// Trim leading silence from all music files in the library
         /// </summary>
-        public void TrimAllMusicFiles()
+        public async void TrimAllMusicFiles()
         {
             try
             {
@@ -77,7 +77,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before trimming to prevent file locking
-                StopPlaybackForProcessing("bulk trim");
+                await StopPlaybackForProcessingAsync("bulk trim");
 
                 // Get all music files from all games
                 var allMusicFiles = new List<string>();
@@ -120,7 +120,7 @@ namespace UniPlaySong.Handlers
         /// <summary>
         /// Trim leading silence from music files for selected games
         /// </summary>
-        public void TrimSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
+        public async void TrimSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             try
             {
@@ -161,7 +161,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before trimming to prevent file locking
-                StopPlaybackForProcessing("trimming selected games");
+                await StopPlaybackForProcessingAsync("trimming selected games");
 
                 // Get all music files from selected games
                 var allMusicFiles = new List<string>();
@@ -192,7 +192,7 @@ namespace UniPlaySong.Handlers
         /// <summary>
         /// Trim a single music file
         /// </summary>
-        public void TrimSingleFile(Game game, string filePath)
+        public async void TrimSingleFile(Game game, string filePath)
         {
             try
             {
@@ -233,7 +233,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before trimming to prevent file locking
-                StopPlaybackForProcessing("single file trim");
+                await StopPlaybackForProcessingAsync("single file trim");
 
                 var fileName = System.IO.Path.GetFileName(filePath);
                 ShowTrimProgress(new List<string> { filePath }, $"Trimming: {fileName}", showSimpleConfirmation: true);
@@ -391,7 +391,7 @@ namespace UniPlaySong.Handlers
         /// <summary>
         /// Helper method to stop music playback before file processing
         /// </summary>
-        private void StopPlaybackForProcessing(string context)
+        private async Task StopPlaybackForProcessingAsync(string context)
         {
             try
             {
@@ -401,7 +401,7 @@ namespace UniPlaySong.Handlers
                     _playbackService.Stop();
 
                     // Give a moment for files to be released
-                    System.Threading.Thread.Sleep(300);
+                    await Task.Delay(300);
                 }
             }
             catch (Exception ex)

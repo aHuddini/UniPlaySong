@@ -28,8 +28,13 @@ Built with the help of Claude Code and Cursor IDE
 - **Static Random Instance** - Prevents allocations and fixes duplicate random sequences in shuffle mode
 - **Song List Caching** - Directory scans cached in-memory, eliminating repeated file I/O when scrolling between games
   - **Performance gain**: ~2-8ms (SSD) or ~15-80ms (HDD) per cached re-selection
-  - **Smart invalidation**: Cache automatically refreshes after downloads, deletes, and audio processing
+  - **Smart invalidation**: 17 call sites covering all file operations (downloads, trim, normalize, amplify, repair, deletes)
   - **Session-scoped**: Cache persists during Playnite session for optimal browsing performance
+
+**UI Thread Optimizations** - Converted blocking delays to async operations:
+- Rate limiting delays during batch downloads
+- File release delays before audio processing
+- Eliminates UI freezes during file operations
 
 ### Previous Versions
 - **v1.2.10**: Fullscreen performance fix (desktop visualizer init gate) + suppress call reduction

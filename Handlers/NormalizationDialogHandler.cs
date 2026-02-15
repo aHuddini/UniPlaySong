@@ -37,7 +37,7 @@ namespace UniPlaySong.Handlers
         }
 
         // Normalize all music files in the library
-        public void NormalizeAllMusicFiles()
+        public async void NormalizeAllMusicFiles()
         {
             try
             {
@@ -72,7 +72,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before normalization to prevent file locking
-                StopPlaybackForProcessing("bulk normalization");
+                await StopPlaybackForProcessingAsync("bulk normalization");
 
                 // Get all music files from all games
                 var allMusicFiles = new List<string>();
@@ -111,7 +111,7 @@ namespace UniPlaySong.Handlers
         }
 
         // Normalize music files for selected games
-        public void NormalizeSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
+        public async void NormalizeSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             try
             {
@@ -152,7 +152,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before normalization to prevent file locking
-                StopPlaybackForProcessing("normalizing selected games");
+                await StopPlaybackForProcessingAsync("normalizing selected games");
 
                 // Get all music files from selected games
                 var allMusicFiles = new List<string>();
@@ -181,7 +181,7 @@ namespace UniPlaySong.Handlers
         }
 
         // Normalize a single music file
-        public void NormalizeSingleFile(Game game, string filePath)
+        public async void NormalizeSingleFile(Game game, string filePath)
         {
             try
             {
@@ -222,7 +222,7 @@ namespace UniPlaySong.Handlers
                 }
 
                 // Stop music playback before normalization to prevent file locking
-                StopPlaybackForProcessing("single file normalization");
+                await StopPlaybackForProcessingAsync("single file normalization");
 
                 var fileName = System.IO.Path.GetFileName(filePath);
                 ShowNormalizationProgress(new List<string> { filePath }, $"Normalizing: {fileName}", showSimpleConfirmation: true);
@@ -540,7 +540,7 @@ namespace UniPlaySong.Handlers
         }
 
         // Stop music playback before file processing
-        private void StopPlaybackForProcessing(string context)
+        private async Task StopPlaybackForProcessingAsync(string context)
         {
             try
             {
@@ -550,7 +550,7 @@ namespace UniPlaySong.Handlers
                     _playbackService.Stop();
 
                     // Give a moment for files to be released
-                    System.Threading.Thread.Sleep(300);
+                    await Task.Delay(300);
                 }
             }
             catch (Exception ex)

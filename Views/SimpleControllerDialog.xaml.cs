@@ -1286,6 +1286,9 @@ namespace UniPlaySong.Views
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
                                     Logger.DebugIf(LogPrefix, $"Successfully downloaded: {selectedSong.Name} to {filePath}");
 
+                                    // Invalidate cache so new file is detected
+                                    _fileService?.InvalidateCacheForGame(_currentGame);
+
                                     // Use auto-closing toast popup instead of modal dialog
                                     // This avoids the XInput double-press issues entirely and works in fullscreen
                                     DialogHelper.ShowSuccessToast(

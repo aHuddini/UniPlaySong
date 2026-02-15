@@ -787,7 +787,7 @@ namespace UniPlaySong.Views
                 }
 
                 // Stop any music that might be using this file
-                StopAllMusicPlayback(fileName);
+                await StopAllMusicPlaybackAsync(fileName);
 
                 // Build confirmation message
                 var message = $"Are you sure you want to delete this song?\n\n" +
@@ -820,7 +820,7 @@ namespace UniPlaySong.Views
                 if (confirmed)
                 {
                     UpdateInputFeedback("🗑️ Deleting file...");
-                    DeleteSongFile(filePath, isPrimarySong);
+                    await DeleteSongFileAsync(filePath, isPrimarySong);
                 }
                 else
                 {
@@ -907,7 +907,7 @@ namespace UniPlaySong.Views
         /// <summary>
         /// Stop all music playback to free up the file for deletion
         /// </summary>
-        private void StopAllMusicPlayback(string fileName)
+        private async Task StopAllMusicPlaybackAsync(string fileName)
         {
             try
             {
@@ -922,7 +922,7 @@ namespace UniPlaySong.Views
                         _playbackService.Stop();
 
                         // Give a moment for the file to be released
-                        System.Threading.Thread.Sleep(100);
+                        await Task.Delay(100);
                     }
                 }
                 
@@ -942,7 +942,7 @@ namespace UniPlaySong.Views
         /// <summary>
         /// Delete the song file
         /// </summary>
-        private void DeleteSongFile(string filePath, bool isPrimarySong)
+        private async Task DeleteSongFileAsync(string filePath, bool isPrimarySong)
         {
             try
             {
@@ -969,7 +969,7 @@ namespace UniPlaySong.Views
                 }
 
                 // Wait a moment to ensure file handles are released
-                System.Threading.Thread.Sleep(200);
+                await Task.Delay(200);
 
                 // Delete the file
                 File.Delete(filePath);

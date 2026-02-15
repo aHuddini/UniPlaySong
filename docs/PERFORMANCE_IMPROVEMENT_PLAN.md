@@ -15,28 +15,40 @@ Comprehensive 5-phase analysis of the UniPlaySong codebase identified **87 optim
 | Phase | Focus Area | Issues Found | Priority Distribution |
 |-------|------------|--------------|----------------------|
 | **Phase 1** | Hot Path Analysis | 7 issues | 2 HIGH, 3 MEDIUM, 2 LOW |
-| **Phase 2** | UI Thread Blocking | 46 issues | 14 CRITICAL, 18 HIGH, 14 MEDIUM |
+| **Phase 2** | UI Thread Blocking | 46 issues | ~~14~~ 13 CRITICAL, 18 HIGH, 14 MEDIUM, 1 LOW |
 | **Phase 3** | Memory & Resource Mgmt | 13 issues | 3 CRITICAL, 4 HIGH, 6 MEDIUM/LOW |
 | **Phase 4** | Architectural Refactoring | 13 issues | 6 HIGH, 4 MEDIUM, 3 LOW |
 | **Phase 5** | Settings & Configuration | 8 issues | 0 CRITICAL, 5 MEDIUM, 3 LOW |
-| **TOTAL** | | **87 issues** | **17 CRITICAL, 24 HIGH, 46 MEDIUM/LOW** |
+| **TOTAL** | | **87 issues** | **~~17~~ 16 CRITICAL, 24 HIGH, ~~46~~ 47 MEDIUM/LOW** |
 
 ### Completed Optimizations (v1.2.11)
 
-- ✅ **Native music path caching** - Static constructor pattern eliminates 6+ file scans per game selection
-- ✅ **Song list caching** - Session-scoped cache eliminates repeated `Directory.GetFiles()` calls
+#### ✅ Phase 1: Hot Path Analysis (COMPLETE)
+- ✅ **1.1 Native music path caching** - Static constructor + service-level caching eliminates 6+ calls per game selection
+- ✅ **1.2 Static Random instance** - Shared instance eliminates 4 allocations + fixes duplicate sequence bug
+- ✅ **1.3 Lowercase extensions HashSet** - O(1) hash lookup replaces O(n) array scan, pre-computed lowercase
+- ✅ **1.5 Song list caching** - Session-scoped cache eliminates repeated `Directory.GetFiles()` calls
   - Performance: ~2-8ms (SSD) or ~15-80ms (HDD) per cached re-selection
-  - 14 invalidation call sites ensure cache consistency
+  - **17 invalidation call sites** ensure cache consistency across ALL UPS operations
+  - Covers: 5 download types, 9 modification types (normalize/trim/silence/amplify/waveform-trim/repair), 3 deletion types
+  - Design: Strict invalidation on known operations, manual file additions require restart (acceptable)
+
+#### 🔄 Phase 2A: UI Thread Blocking (PARTIAL - 7/10 Thread.Sleep instances)
+- ✅ **Rate limiting delays** (3) - BatchDownloadService, GameMenuHandler, UniPlaySong
+- ✅ **File release delays** (4) - NormalizationDialogHandler, TrimDialogHandler, ControllerDeleteSongsDialog
+- ⏸️ **Controller polling delays** (3) - Deferred pending SDK controller events refactor
 
 ---
 
-## Phase 1: Hot Path Analysis
+## Phase 1: Hot Path Analysis ✅ COMPLETE
 
 **Goal:** Optimize code executed on every game selection for immediate user-facing performance gains.
 
-### HIGH Priority
+**Status:** All optimizations implemented and tested in v1.2.11
 
-#### 1.1 Cache Native Music Path in Service Field
+### ✅ HIGH Priority (COMPLETE)
+
+#### 1.1 Cache Native Music Path in Service Field ✅ IMPLEMENTED
 **File:** `Services/MusicPlaybackService.cs` (lines 274-292)
 
 **Issue:**
@@ -79,7 +91,7 @@ private bool IsDefaultMusicPath(string path)
 
 ---
 
-#### 1.2 Static Random Instance
+#### 1.2 Static Random Instance ✅ IMPLEMENTED
 **Files:** `Services/MusicPlaybackService.cs` (lines 867, 1049, 1121, 1244)
 
 **Issue:**
@@ -107,9 +119,9 @@ var randomIndex = _random.Next(availableSongs.Count);
 
 ---
 
-### MEDIUM Priority
+### ✅ MEDIUM Priority (COMPLETE)
 
-#### 1.3 Lowercase Extensions HashSet
+#### 1.3 Lowercase Extensions HashSet ✅ IMPLEMENTED
 **File:** `Services/GameMusicFileService.cs` (lines 65, 78)
 
 **Issue:**
@@ -199,7 +211,9 @@ private string SelectSongForGame(Game game)
 
 **Goal:** Eliminate UI freezes and improve responsiveness during heavy operations.
 
-### CRITICAL Issues (14 total)
+**UPDATE 2026-02-14:** FileLogger (2.2) downgraded from CRITICAL → LOW after real-world analysis. Debug logging disabled by default means minimal impact. See corrected counts below.
+
+### CRITICAL Issues (~~14~~ 13 total)
 
 #### 2.1 Thread.Sleep() Blocking UI Thread (10 instances)
 **Priority:** CRITICAL
@@ -227,19 +241,26 @@ await Task.Delay(2000);  // ✅ Frees UI thread
 
 #### 2.2 FileLogger Synchronous File I/O
 **File:** `Common/FileLogger.cs` line 113
-**Priority:** CRITICAL
-**Impact:** Every log call blocks thread until disk write completes
+**Priority:** ~~CRITICAL~~ **LOW** (CORRECTED)
+**Impact:** ~~Every log call blocks thread~~ Minimal - debug logging disabled by default, only 4-6 Info/Warn calls per game selection
 **Effort:** 2 hours
+
+**ANALYSIS CORRECTION:**
+- Debug logging is **disabled by default** (`enableDebugLogging = false`)
+- When disabled, only Info/Warn/Error messages write (4-6 per game selection)
+- `_fileLogger?.Debug()` calls short-circuit when debug logging is off
+- Modern SSDs: ~0.1-2ms per write, not noticeable for infrequent calls
+- **NOT a real bottleneck** for 99% of users
 
 **Current:**
 ```csharp
 lock (_lock)
 {
-    File.AppendAllText(_logFilePath, formattedMessage);  // Blocks!
+    File.AppendAllText(_logFilePath, formattedMessage);  // Blocks (but infrequent)
 }
 ```
 
-**Suggested:**
+**Suggested (LOW PRIORITY):**
 ```csharp
 private BlockingCollection<string> _logQueue = new BlockingCollection<string>();
 private Task _logWriterTask;
@@ -264,6 +285,8 @@ public void Log(LogLevel level, string message)
     _logQueue.Add(formatted);  // Non-blocking enqueue
 }
 ```
+
+**Recommendation:** Skip this unless user enables debug logging on slow drives.
 
 ---
 
@@ -397,18 +420,19 @@ await httpClient.GetAsync(url).ConfigureAwait(false);
 
 | Category | Count | Total Effort | Impact |
 |----------|-------|--------------|--------|
-| CRITICAL | 14 | 4.5 hours | Eliminates UI freezes |
+| CRITICAL | 13 | 2.5 hours | Eliminates UI freezes |
 | HIGH | 18 | 3 hours | Reduces UI stuttering |
 | MEDIUM | 14 | 1.5 hours | Smoother async flow |
+| LOW | 1 (FileLogger) | 2 hours | Only if debug logging enabled |
 | **TOTAL** | **46** | **9 hours** | **Major UX improvement** |
 
 **Recommended Order:**
-1. Fix `async void` handlers (prevents crashes)
-2. Replace `Thread.Sleep()` (biggest user-facing freeze)
-3. Fix FileLogger (improves all operations)
-4. Fix WebClient (eliminates metadata fetch freezes)
-5. Parallelize file deletions
-6. Add `ConfigureAwait(false)` (polish)
+1. Fix `async void` handlers (prevents crashes) - CRITICAL
+2. Replace `Thread.Sleep()` (biggest user-facing freeze) - CRITICAL
+3. Fix WebClient (eliminates metadata fetch freezes) - CRITICAL
+4. Parallelize file deletions - HIGH
+5. Add `ConfigureAwait(false)` (polish) - MEDIUM
+6. ~~Fix FileLogger~~ - SKIP (not a real issue)
 
 ---
 
