@@ -2,30 +2,38 @@ AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.3.0
     RequiredApiVersion: 6.15.0
-    ReleaseDate: TBD
-    PackageUrl: TBD
+    ReleaseDate: 2026-02-16
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.0/UniPlaySong-1_3_0-Feb16_2026.pext'
     Changelog:
-      - '[New Feature] Completion Fanfare: Play a celebration jingle when marking a game as Completed. Ships with 11 retro videogame jingle presets (Sonic, Streets of Rage, Mortal Kombat, etc.) or use a custom sound file. Jingles respect Live Effects when enabled.'
-      - '[New Feature] Song Count Badge: Context menu header shows song count for single-game selection (e.g. UniPlaySong (3 songs)) with an info line showing count and folder size.'
-      - '[New Feature] Default Music Indicator: Optional [Default] prefix in the Now Playing ticker when fallback music is playing. Toggle in Settings → General.'
-      - '[New Feature] Experimental Settings Tab: New tab for features under active development with download notification sound and celebration toast settings.'
-      - '[Experimental] Download Complete Sound: Plays a basic notification sound when music downloads finish. Briefly pauses and resumes music.'
-      - '[Experimental] Celebration Toast: Visual gold-glow toast popup when a game is marked completed, complementing the fanfare sound.'
-      - '[Enhancement] Jingle Live Effects: Celebration jingles play through a dedicated NAudio player with the same effects chain as regular music. Main music pauses during the jingle and resumes automatically. Toggleable per-user.'
+      - '[New Feature] Completion Fanfare: Play a celebration jingle when marking a game as Completed. 11 retro game jingle presets (Sonic, Streets of Rage, Mortal Kombat, and more) or use a custom sound file. Play in standard mode or live effects mode.'
+      - '[New Feature, Desktop/Fullscreen] Song Count Badge: Right-click context menu header shows song count (e.g., "UniPlaySong (3 songs)") with folder size info line.'
+      - '[New Setting] Default Music Indicator: Optional [Default] prefix in Now Playing ticker when fallback music is playing.'
+      - '[New Add-On Menu] Experimental Settings Tab: New tab for features under active development.'
+      - '[Experimental] Song Progress Indicator: Thin progress bar in Desktop top panel showing playback position. Four configurable positions: after skip, after visualizer, after now playing, or embedded below now playing text.'
+      - '[Experimental] Enhanced Library Statistics: Card grid layout with games/songs/size/avg metrics, format distribution, and top 5 games by song count.'
+      - '[Experimental] Auto-Pause on System Lock: Music pauses when you lock your PC (Win+L) and resumes on unlock.'
+      - '[Experimental] Download Complete Sound: Notification sound when music downloads finish.'
+      - '[Experimental] Celebration Toast: Gold-glow toast popup complementing the completion fanfare.'
+      - '[Fix] Play/Pause Icon Flicker: Play button no longer briefly shows paused state when songs change (using randomize on end, skip to next).'
+      - '[Fix] Skip While Paused: Pressing skip while paused now correctly resumes playback and updates the play button state.'
+      - '[Fix] Skip Delay When Paused: Skipping while paused no longer triggers an unnecessary fade-out on silence.'
+      - '[Fix] Now Playing Text Delay: Song title, visualizer, and progress bar now update more reliably on skip.'
+      - '[Performance] Song Progress Bar: Uses 1-second timer instead of 60fps render loop for efficient updates.'
+      - '[Performance] Skip Crossfade: Uses preloading for smoother song-to-song transitions for games with multiple songs.'
   - Version: 1.2.11
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-15
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.2.11/UniPlaySong-1_2_11-Feb15_2026.pext'
     Changelog:
-      - '[New Feature] Bundled Default Music Presets: Three ambient tracks ship with the plugin. Select a preset via dropdown in Settings → Playback — no custom file path needed. Existing users migrated automatically.'
-      - '[New Setting] Installed Games Only: Play game-specific music only for installed games. Uninstalled games fall back to default music. Reactively re-evaluates when game install state changes.'
-      - '[New Setting] Hide Now Playing for Default Music: Collapse the Now Playing panel when no game-specific music is playing. Settings → General.'
+      - '[New Feature] Bundled Default Music Presets: Choose three ambient, royalty-free tracks bundled with the plugin. Used to replace Playnite vanilla background music. Select a preset via dropdown in the Playback Add-On Settings. Existing users migrated automatically.'
+      - '[New Option] Play On Installed Games Only: Play game-specific music only for installed games. Non-installed games fall back to default music. Seamless playback when games install/uninstall by the user.'
+      - '[New Option] Hide Now Playing for Default Music: Collapse the Now Playing panel when no game-specific music is playing. Located in Settings → General.'
       - '[Performance] Song List Caching: Directory scans cached in-memory with smart invalidation after file operations. Opt-in toggle in General Settings.'
       - '[Performance] Native Music Path Caching: Cached at startup instead of scanning per game selection.'
-      - '[Performance] Parallel File Deletions: Bulk delete operations (Delete All Music, Delete Long Songs) now run in parallel.'
-      - '[Performance] Async UI Operations: Eliminated UI freezes during batch downloads and audio processing.'
-      - '[Fix] Shuffle: Fixed duplicate song sequences when rapidly switching games in shuffle mode.'
-      - '[Fix] Song Cache: Downloaded/repaired music now appears immediately without re-selecting the game.'
+      - '[Performance] Parallel File Deletions: Bulk delete operations (Delete All Music, Delete Long Songs) now run in parallel; faster cleanup.'
+      - '[Performance] Async UI Operations: Eliminated UI freezes during batch downloads and audio processing operations.'
+      - '[Fix] Shuffle: Fixed a duplicate song sequence bug when rapidly switching games in shuffle mode.'
+      - '[Fix] Song Cache: Downloaded/repaired music now appears immediately without re-selecting a game.'
   - Version: 1.2.10
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-13

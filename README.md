@@ -34,7 +34,6 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Previous Versions
 - **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI
-- **v1.2.10**: Fullscreen performance fix (desktop visualizer init skipped in fullscreen)
 ---
 
 ## 🎬 Demo
