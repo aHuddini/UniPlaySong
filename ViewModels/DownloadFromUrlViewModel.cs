@@ -594,6 +594,38 @@ namespace UniPlaySong.ViewModels
                     ProgressText = $"Download complete! ({fileInfo.Length / 1024.0 / 1024.0:F2} MB)";
                     Logger.Debug($"Successfully downloaded audio from URL to: {filePath}");
 
+                    // Play notification sound in sync with the status text
+                    if (_settingsService?.Current?.PlaySoundOnDownloadComplete == true)
+                    {
+                        bool previewWasPlaying = _previewPlayer != null && _previewPlayer.IsActive;
+                        bool musicWasPlaying = _playbackService != null && _playbackService.IsPlaying;
+
+                        if (previewWasPlaying)
+                            try { _previewPlayer.Pause(); } catch { }
+                        if (musicWasPlaying)
+                            try { _playbackService.PauseImmediate(); } catch { }
+
+                        System.Media.SystemSounds.Asterisk.Play();
+
+                        // Fire-and-forget: resume audio after notification sound
+#pragma warning disable CS4014
+                        Task.Delay(1200).ContinueWith(_ =>
+                        {
+                            try
+                            {
+                                System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                {
+                                    if (previewWasPlaying && _previewPlayer != null)
+                                        try { _previewPlayer.Resume(); } catch { }
+                                    if (musicWasPlaying && _playbackService != null)
+                                        try { _playbackService.ResumeImmediate(); } catch { }
+                                }));
+                            }
+                            catch { }
+                        });
+#pragma warning restore CS4014
+                    }
+
                     // Invalidate song cache since we added a new file
                     _fileService.InvalidateCacheForGame(_game);
 

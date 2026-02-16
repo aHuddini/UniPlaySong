@@ -16,6 +16,7 @@ namespace UniPlaySong
     {
         private readonly UniPlaySong plugin;
         private UniPlaySongSettings settings;
+        private MediaPlayer _jinglePreviewPlayer;
 
         public UniPlaySongSettingsViewModel(UniPlaySong plugin)
         {
@@ -112,6 +113,9 @@ namespace UniPlaySong
         // Bundled presets list for the ComboBox in settings UI
         public List<Services.BundledPresetInfo> BundledPresets => Services.BundledPresetService.GetPresets();
 
+        // Bundled jingles list for the celebration sound ComboBox
+        public List<Services.BundledJingleInfo> CelebrationJingles => Services.BundledJingleService.GetJingles();
+
         /// <summary>
         /// Creates a new settings object with updated property value
         /// This ensures property change notifications are properly triggered
@@ -150,7 +154,15 @@ namespace UniPlaySong
                 NormalizationCodec = settings.NormalizationCodec,
                 NormalizationSuffix = settings.NormalizationSuffix,
                 SkipAlreadyNormalized = settings.SkipAlreadyNormalized,
-                DoNotPreserveOriginals = settings.DoNotPreserveOriginals
+                DoNotPreserveOriginals = settings.DoNotPreserveOriginals,
+                EnableCompletionCelebration = settings.EnableCompletionCelebration,
+                CelebrationSoundType = settings.CelebrationSoundType,
+                SelectedCelebrationJingle = settings.SelectedCelebrationJingle,
+                CelebrationSoundPath = settings.CelebrationSoundPath,
+                PlaySoundOnDownloadComplete = settings.PlaySoundOnDownloadComplete,
+                ShowCelebrationToast = settings.ShowCelebrationToast,
+                ApplyLiveEffectsToJingles = settings.ApplyLiveEffectsToJingles,
+                ShowDefaultMusicIndicator = settings.ShowDefaultMusicIndicator
             };
 
             updateAction(newSettings);
@@ -457,6 +469,65 @@ namespace UniPlaySong
             Settings.DynMinBrightnessTop = 150;
             Settings.DynMinSatBottom = 30;
             Settings.DynMinSatTop = 35;
+        });
+
+        public ICommand BrowseCelebrationSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.ogg;*.flac|WAV Files (recommended)|*.wav|All Files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                Settings.CelebrationSoundPath = dialog.FileName;
+                Settings.CelebrationSoundType = CelebrationSoundType.CustomFile;
+            }
+        });
+
+        public ICommand PreviewCelebrationSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                string fileToPlay = null;
+
+                if (Settings.CelebrationSoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                    return;
+                }
+                else if (Settings.CelebrationSoundType == CelebrationSoundType.BundledJingle)
+                {
+                    fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedCelebrationJingle);
+                }
+                else if (Settings.CelebrationSoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(Settings.CelebrationSoundPath)
+                        && File.Exists(Settings.CelebrationSoundPath))
+                        fileToPlay = Settings.CelebrationSoundPath;
+                }
+
+                if (!string.IsNullOrEmpty(fileToPlay))
+                {
+                    // Stop any previous jingle preview
+                    _jinglePreviewPlayer?.Stop();
+                    _jinglePreviewPlayer?.Close();
+
+                    // Use dedicated MediaPlayer for one-shot playback (doesn't hijack main music player)
+                    _jinglePreviewPlayer = new MediaPlayer();
+                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
+                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
+                    _jinglePreviewPlayer.Play();
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
         });
 
         public ICommand ClearSearchCache => new Common.RelayCommand<object>((a) =>
@@ -1815,7 +1886,10 @@ namespace UniPlaySong
 
         public void CancelEdit()
         {
-            // Called when user cancels editing
+            _jinglePreviewPlayer?.Stop();
+            _jinglePreviewPlayer?.Close();
+            _jinglePreviewPlayer = null;
+
             var savedSettings = plugin.LoadPluginSettings<UniPlaySongSettings>();
             if (savedSettings != null)
             {
@@ -1826,7 +1900,10 @@ namespace UniPlaySong
 
         public void EndEdit()
         {
-            // Called when user finishes editing
+            _jinglePreviewPlayer?.Stop();
+            _jinglePreviewPlayer?.Close();
+            _jinglePreviewPlayer = null;
+
             var errorHandler = plugin.GetErrorHandlerService();
             
             errorHandler?.Try(

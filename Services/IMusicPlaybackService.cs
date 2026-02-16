@@ -13,6 +13,8 @@ namespace UniPlaySong.Services
         void Stop();
         void Pause();
         void Resume();
+        void PauseImmediate(); // Instant pause (no fade), for notification sounds
+        void ResumeImmediate(); // Instant resume (no fade), for notification sounds
 
         void AddPauseSource(PauseSource source); // pauses if first source
         void RemovePauseSource(PauseSource source); // resumes if all sources cleared

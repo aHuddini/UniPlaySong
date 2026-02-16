@@ -653,6 +653,9 @@ namespace UniPlaySong.Services
                 );
             };
 
+            // Set notification sound preference from settings
+            viewModel.PlaySoundOnComplete = _settingsService?.Current?.PlaySoundOnDownloadComplete ?? false;
+
             // Enable back button for song selection (allows going back to album selection)
             viewModel.ShowBackButton = true;
             viewModel.BackCommand = new Common.RelayCommand(() =>
@@ -674,7 +677,6 @@ namespace UniPlaySong.Services
                 }
 
                 // After successful download, trigger music refresh so music plays immediately
-                // This addresses the issue where music doesn't play after download completes
                 // BUT: Don't interrupt preview playback - let the user finish previewing
                 if (success && game != null && _playbackService != null && !viewModel.IsPreviewPlaying)
                 {
@@ -682,7 +684,6 @@ namespace UniPlaySong.Services
                         () =>
                         {
                             Logger.DebugIf(LogPrefix,$"Download complete - triggering music refresh for game: {game.Name}");
-                            // Get current settings to pass to PlayGameMusic
                             var settings = _settingsService?.Current;
                             _playbackService.PlayGameMusic(game, settings, forceReload: true);
                         },
@@ -1320,7 +1321,7 @@ namespace UniPlaySong.Services
                 window.Close();
             });
 
-            // Handle download complete
+            // Handle download complete (sound is played by ViewModel when status text appears)
             viewModel.OnDownloadComplete = (success) =>
             {
                 if (success)

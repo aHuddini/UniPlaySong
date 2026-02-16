@@ -1287,6 +1287,245 @@ namespace UniPlaySong.Common
             ShowAutoCloseToast(playniteApi, message, title, isError: true, durationMs: actualDuration);
         }
 
+        // Gold celebration colors
+        private static readonly Color CelebrationGoldBorder = Color.FromRgb(255, 193, 7);   // #FFC107 - Material Amber
+        private static readonly Color CelebrationGoldAccent = Color.FromRgb(255, 215, 64);   // #FFD740
+        private static readonly Color CelebrationGoldGlow = Color.FromArgb(60, 255, 193, 7); // Semi-transparent gold
+
+        // Shows a celebration toast with gold accent and smooth radial glow pulse animation.
+        // Positioned at top-center of screen. Uses WPF Storyboard for 60fps composition-thread animation.
+        public static void ShowCelebrationToast(IPlayniteAPI playniteApi, string gameName)
+        {
+            if (playniteApi == null) return;
+
+            try
+            {
+                var app = Application.Current;
+                if (app == null) return;
+
+                app.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        Window toastWindow = null;
+                        System.Windows.Threading.DispatcherTimer closeTimer = null;
+
+                        // Content grid with gold accent bar
+                        var contentGrid = new System.Windows.Controls.Grid();
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(4) });
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                        var accentBar = new System.Windows.Shapes.Rectangle
+                        {
+                            Fill = new SolidColorBrush(CelebrationGoldBorder),
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            Margin = new Thickness(0.5, 0.5, 0, 0.5)
+                        };
+                        System.Windows.Controls.Grid.SetColumn(accentBar, 0);
+                        contentGrid.Children.Add(accentBar);
+
+                        // Text content with glow overlay behind it
+                        var textContainer = new System.Windows.Controls.Grid();
+                        System.Windows.Controls.Grid.SetColumn(textContainer, 1);
+                        contentGrid.Children.Add(textContainer);
+
+                        // Radial glow overlay (pulsing gold glow behind the text)
+                        var glowBrush = new RadialGradientBrush
+                        {
+                            Center = new Point(0.5, 0.5),
+                            GradientOrigin = new Point(0.5, 0.5),
+                            RadiusX = 0.8,
+                            RadiusY = 1.2,
+                            GradientStops = new GradientStopCollection
+                            {
+                                new GradientStop(Color.FromArgb(50, 255, 215, 64), 0.0),
+                                new GradientStop(Color.FromArgb(25, 255, 193, 7), 0.5),
+                                new GradientStop(Color.FromArgb(0, 255, 193, 7), 1.0)
+                            }
+                        };
+                        var glowRect = new System.Windows.Shapes.Rectangle
+                        {
+                            Fill = glowBrush,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            Opacity = 0.0
+                        };
+                        textContainer.Children.Add(glowRect);
+
+                        // Text grid
+                        var textGrid = new System.Windows.Controls.Grid();
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                        textContainer.Children.Add(textGrid);
+
+                        var titleBlock = new System.Windows.Controls.TextBlock
+                        {
+                            Text = "\u2B50 GAME COMPLETED \u2B50",
+                            FontSize = 24,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = new SolidColorBrush(CelebrationGoldAccent),
+                            Margin = new Thickness(16, 16, 20, 6),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            TextAlignment = System.Windows.TextAlignment.Center
+                        };
+                        System.Windows.Controls.Grid.SetRow(titleBlock, 0);
+                        textGrid.Children.Add(titleBlock);
+
+                        var messageBlock = new System.Windows.Controls.TextBlock
+                        {
+                            FontSize = 18,
+                            TextWrapping = TextWrapping.Wrap,
+                            Foreground = new SolidColorBrush(ToastTextColor),
+                            Margin = new Thickness(16, 4, 20, 16),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            TextAlignment = System.Windows.TextAlignment.Center,
+                            LineHeight = 28,
+                            LineStackingStrategy = System.Windows.LineStackingStrategy.BlockLineHeight
+                        };
+                        messageBlock.Inlines.Add(new System.Windows.Documents.Run("Congratulations on clearing "));
+                        messageBlock.Inlines.Add(new System.Windows.Documents.Run(gameName + "!")
+                        {
+                            FontWeight = FontWeights.Bold
+                        });
+                        System.Windows.Controls.Grid.SetRow(messageBlock, 1);
+                        textGrid.Children.Add(messageBlock);
+
+                        // Outer border with gold tint
+                        var outerBorder = new Border
+                        {
+                            BorderBrush = new SolidColorBrush(CelebrationGoldBorder),
+                            BorderThickness = new Thickness(Math.Max(ToastBorderThickness, 1)),
+                            CornerRadius = new CornerRadius(ToastCornerRadius),
+                            Background = new SolidColorBrush(Color.FromArgb(1, 45, 45, 45)),
+                            Padding = new Thickness(0),
+                            Child = contentGrid
+                        };
+
+                        var clipWrapper = new System.Windows.Controls.Grid { ClipToBounds = true };
+                        clipWrapper.Children.Add(outerBorder);
+
+                        toastWindow = new Window
+                        {
+                            Title = "Game Completed",
+                            Width = ToastWidth,
+                            SizeToContent = SizeToContent.Height,
+                            MinHeight = ToastMinHeight,
+                            MaxHeight = ToastMaxHeight,
+                            WindowStyle = WindowStyle.None,
+                            AllowsTransparency = true,
+                            Background = Brushes.Transparent,
+                            ResizeMode = ResizeMode.NoResize,
+                            Content = clipWrapper,
+                            Topmost = true,
+                            ShowInTaskbar = false,
+                            ShowActivated = false,
+                            Focusable = false
+                        };
+
+                        clipWrapper.Loaded += (wrapperSender, wrapperArgs) =>
+                        {
+                            try
+                            {
+                                var wrapper = wrapperSender as System.Windows.Controls.Grid;
+                                if (wrapper != null && wrapper.ActualWidth > 0 && wrapper.ActualHeight > 0)
+                                {
+                                    wrapper.Clip = new RectangleGeometry(
+                                        new Rect(0, 0, wrapper.ActualWidth, wrapper.ActualHeight),
+                                        ToastCornerRadius, ToastCornerRadius);
+                                }
+                            }
+                            catch { }
+                        };
+
+                        toastWindow.SourceInitialized += (s, e) =>
+                        {
+                            try { if (EnableToastAcrylicBlur) EnableWindowBlur(toastWindow); }
+                            catch { }
+                        };
+
+                        // Position at top-center of screen
+                        toastWindow.Loaded += (s, e) =>
+                        {
+                            try
+                            {
+                                toastWindow.Left = (SystemParameters.PrimaryScreenWidth - toastWindow.ActualWidth) / 2;
+                                toastWindow.Top = ToastEdgeMargin;
+                            }
+                            catch
+                            {
+                                toastWindow.Left = (SystemParameters.PrimaryScreenWidth - ToastWidth) / 2;
+                                toastWindow.Top = ToastEdgeMargin;
+                            }
+                        };
+
+                        // Smooth glow pulse using WPF Storyboard (runs on composition thread at 60fps)
+                        var pulseAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                        {
+                            From = 0.0,
+                            To = 0.8,
+                            Duration = new Duration(TimeSpan.FromSeconds(0.8)),
+                            AutoReverse = true,
+                            RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+                            EasingFunction = new System.Windows.Media.Animation.SineEase
+                            {
+                                EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut
+                            }
+                        };
+
+                        // Auto-close after 6 seconds
+                        var celebrationDuration = Math.Max(ToastDurationMs, 6000);
+                        closeTimer = new System.Windows.Threading.DispatcherTimer
+                        {
+                            Interval = TimeSpan.FromMilliseconds(celebrationDuration)
+                        };
+                        closeTimer.Tick += (s, e) =>
+                        {
+                            closeTimer.Stop();
+                            try { toastWindow?.Close(); }
+                            catch { }
+                        };
+
+                        toastWindow.MouseDown += (s, e) =>
+                        {
+                            closeTimer?.Stop();
+                            try { toastWindow?.Close(); }
+                            catch { }
+                        };
+
+                        // Release all resources when the window closes (animation, timer, visual tree)
+                        toastWindow.Closed += (s, e) =>
+                        {
+                            try
+                            {
+                                closeTimer?.Stop();
+                                closeTimer = null;
+                                glowRect.BeginAnimation(System.Windows.UIElement.OpacityProperty, null);
+                                clipWrapper.Children.Clear();
+                                contentGrid.Children.Clear();
+                                textContainer.Children.Clear();
+                                textGrid.Children.Clear();
+                                toastWindow.Content = null;
+                            }
+                            catch { }
+                        };
+
+                        closeTimer.Start();
+                        glowRect.BeginAnimation(System.Windows.UIElement.OpacityProperty, pulseAnimation);
+                        toastWindow.Show();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug(ex, "Error showing celebration toast");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Error dispatching celebration toast");
+            }
+        }
+
         /// Waits for controller A/B buttons to be released + grace period (prevents button leak to parent dialog).
         private static void WaitForButtonRelease(int timeoutMs = 1000, int gracePeriodMs = 150)
         {

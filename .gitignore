@@ -14,4 +14,10 @@ docs/release_notes/
 docs/dev_docs/roadmaps/
 .claude/
 
+# Bundled jingle audio files (not distributed in repo due to licensing)
+Jingles/*.mp3
+Jingles/*.wav
+Jingles/*.ogg
+Jingles/*.flac
+
 nul

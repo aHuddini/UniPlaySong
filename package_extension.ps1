@@ -142,6 +142,16 @@ if (Test-Path $defaultMusicDir) {
     Write-Host "  WARNING: DefaultMusic folder not found (bundled presets missing)" -ForegroundColor Yellow
 }
 
+# Copy Jingles folder (bundled celebration jingles)
+$jinglesDir = Join-Path $scriptDir "Jingles"
+if (Test-Path $jinglesDir) {
+    $destJingles = Join-Path $packageDir "Jingles"
+    Copy-Item $jinglesDir -Destination $destJingles -Recurse -Force
+    Write-Host "  Copied folder: Jingles" -ForegroundColor Gray
+} else {
+    Write-Host "  WARNING: Jingles folder not found (bundled jingles missing)" -ForegroundColor Yellow
+}
+
 # Copy main DLL
 Copy-Item $dllPath -Destination $packageDir -Force
 Write-Host "  Copied: UniPlaySong.dll" -ForegroundColor Gray

@@ -200,7 +200,7 @@ namespace UniPlaySong.DeskMediaControl
                 var playbackService = _getPlaybackService?.Invoke();
                 if (playbackService != null)
                 {
-                    _metadataService = new SongMetadataService(playbackService, null);
+                    _metadataService = new SongMetadataService(playbackService, null, _getSettings);
                     _metadataService.OnSongInfoChanged += OnSongInfoChanged;
 
                     // If there's already a song playing, update immediately

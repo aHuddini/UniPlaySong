@@ -870,6 +870,29 @@ namespace UniPlaySong.Services
             }
         }
 
+        public void PauseImmediate()
+        {
+            if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+            {
+                _fader?.CancelFade();
+                _musicPlayer.Pause();
+                _activePauseSources.Add(PauseSource.Manual);
+            }
+        }
+
+        public void ResumeImmediate()
+        {
+            if (_musicPlayer?.IsLoaded == true)
+            {
+                _activePauseSources.Remove(PauseSource.Manual);
+                if (!_isPaused)
+                {
+                    _musicPlayer.Resume();
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                }
+            }
+        }
+
         public List<string> GetAvailableSongs(Game game)
         {
             return _fileService?.GetAvailableSongs(game) ?? new List<string>();

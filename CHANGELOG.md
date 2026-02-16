@@ -2,11 +2,41 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.3] - TBD
+## [1.3.0] - TBD
 
 ### Added
+- **Song Count Badge in Menu** - Right-click context menu header now shows song count for single-game selection (e.g., "UniPlaySong (3 songs)")
+  - Info line at the top of the submenu displays song count and total folder size (e.g., `[ 3 songs | 12.4 MB ]`)
+  - Multi-game selection retains the plain "UniPlaySong" header
+- **Default Music Indicator** - Optional `[Default]` prefix in the Now Playing ticker when default/fallback music is playing
+  - Shows `[Default]` alone for non-bundled default music, `[Default] Song Title - Artist` for bundled presets
+  - Toggle in Settings → General (disabled by default, requires "Show Now Playing" to be enabled)
+- **Completion Celebration** - Play a sound when a game's completion status changes to "Completed"
+  - Three sound source options: System beep, Jingle preset (ships with plugin), or Custom audio file
+  - Jingle presets selectable via dropdown with preview
+  - Custom file supports .wav (overlay, plays alongside music) and .mp3/.ogg/.flac (interrupts briefly)
+  - Enabled by default with Streets of Rage - Level Clear jingle preset
+  - Toggle in Settings → General → Gamification
+- **Download Complete Notification** (Experimental) - Plays a notification sound when music downloads finish
+  - Briefly pauses current music (game or preview) so the notification is audible
+  - Music resumes automatically after 1.2 seconds
+  - Toggle in Settings → Experimental
+- **Experimental Settings Tab** - New settings tab for features under active development
+  - Amber warning banner indicates experimental nature and potential for glitches
+- **Celebration Toast Notification** (Experimental) - Visual gold-glow toast popup when a game is marked completed, complementing the jingle sound
+  - Pulsing radial gradient glow animation with gold accent theme
+  - Shows "Game Completed!" with the game's name, auto-dismisses after 6 seconds
+  - Toggle in Settings → Experimental (enabled by default)
+- **Jingle Preset Infrastructure** - `Jingles/` folder with JSON manifest for shipping celebration audio presets alongside the plugin
+
+### Improved
+- **Instant Pause/Resume** - New `PauseImmediate()` / `ResumeImmediate()` methods bypass the volume fader for instant music control during notification sounds
+- **Celebration Jingle NAudio Integration** - Jingle presets and custom celebration sounds now play through a dedicated NAudio player matching the current backend, so live effects (reverb, filters, stereo width, etc.) are applied to jingles when Live Effects mode is enabled
+  - Main music pauses during the jingle and resumes automatically when it finishes
+  - Spectrum visualizer state is preserved across jingle playback
 
 ### Fixed
+- **Celebration Jingle Loop Bug** - Jingles no longer occasionally loop forever when marking games completed. Previously used the main music player which has loop-on-end behavior; now uses a dedicated one-shot player
 
 ## [1.2.11] - 2026-02-15
 

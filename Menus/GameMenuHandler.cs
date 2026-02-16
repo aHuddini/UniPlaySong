@@ -33,9 +33,12 @@ namespace UniPlaySong.Menus
         private readonly AudioRepairService _repairService;
         private readonly Func<UniPlaySongSettings> _getSettings;
 
-        /// <summary>
-        /// Logs a debug message only if debug logging is enabled in settings.
-        /// </summary>
+        private void PlayDownloadCompleteSound()
+        {
+            if (_getSettings?.Invoke()?.PlaySoundOnDownloadComplete == true)
+                Common.NotificationSoundHelper.PlayDownloadComplete(_playbackService);
+        }
+
         private void LogDebug(string message)
         {
             if (FileLogger.IsDebugLoggingEnabled)
@@ -343,6 +346,8 @@ namespace UniPlaySong.Menus
                 {
                     LogDebug($"Error during auto-normalize after bulk download: {ex.Message}");
                 }
+
+                PlayDownloadCompleteSound();
             }
         }
 
@@ -866,6 +871,9 @@ namespace UniPlaySong.Menus
                     LogDebug($"Error during auto-normalize after batch download: {ex.Message}");
                 }
             }
+
+            if (batchDownloadedFilePaths.Count > 0)
+                PlayDownloadCompleteSound();
 
             _logger.Debug("Batch download complete");
         }

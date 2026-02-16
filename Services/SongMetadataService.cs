@@ -16,6 +16,7 @@ namespace UniPlaySong.Services
     public class SongMetadataService
     {
         private readonly FileLogger _fileLogger;
+        private readonly Func<UniPlaySongSettings> _getSettings;
         private IMusicPlaybackService _playbackService;
 
         // LRU-style cache for metadata (keyed by file path)
@@ -32,10 +33,11 @@ namespace UniPlaySong.Services
         /// </summary>
         public event Action<SongInfo> OnSongInfoChanged;
 
-        public SongMetadataService(IMusicPlaybackService playbackService, FileLogger fileLogger = null)
+        public SongMetadataService(IMusicPlaybackService playbackService, FileLogger fileLogger = null, Func<UniPlaySongSettings> getSettings = null)
         {
             _playbackService = playbackService ?? throw new ArgumentNullException(nameof(playbackService));
             _fileLogger = fileLogger;
+            _getSettings = getSettings;
 
             // Subscribe to song changes
             _playbackService.OnSongChanged += OnSongChangedAsync;
@@ -71,11 +73,22 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // Don't show song info for default/fallback music - keep ticker blank
-            // Exception: bundled presets are real songs with proper metadata, so show them
+            // Default music handling: show "[Default]" indicator if enabled, otherwise keep blank
+            // Exception: bundled presets always show metadata (with optional prefix)
             if (_playbackService.IsPlayingDefaultMusic && !_playbackService.IsPlayingBundledPreset)
             {
-                ClearCurrentSongInfo();
+                bool showIndicator = _getSettings?.Invoke()?.ShowDefaultMusicIndicator ?? false;
+                if (showIndicator)
+                {
+                    _currentFilePath = filePath;
+                    var defaultInfo = new SongInfo(filePath, "[Default]", null, TimeSpan.Zero);
+                    _currentSongInfo = defaultInfo;
+                    OnSongInfoChanged?.Invoke(defaultInfo);
+                }
+                else
+                {
+                    ClearCurrentSongInfo();
+                }
                 return;
             }
 
@@ -87,16 +100,25 @@ namespace UniPlaySong.Services
 
             _currentFilePath = filePath;
 
+            // Check if we should prefix with "[Default]" for bundled presets
+            bool addDefaultPrefix = _playbackService.IsPlayingDefaultMusic
+                && _playbackService.IsPlayingBundledPreset
+                && (_getSettings?.Invoke()?.ShowDefaultMusicIndicator ?? false);
+
             // Check cache first (fast path - no blocking)
             if (_metadataCache.TryGetValue(filePath, out var cachedInfo))
             {
-                _currentSongInfo = cachedInfo;
-                OnSongInfoChanged?.Invoke(cachedInfo);
+                var emitted = addDefaultPrefix
+                    ? new SongInfo(cachedInfo.FilePath, $"[Default] {cachedInfo.Title}", cachedInfo.Artist, cachedInfo.Duration)
+                    : cachedInfo;
+                _currentSongInfo = emitted;
+                OnSongInfoChanged?.Invoke(emitted);
                 return;
             }
 
             // Show filename immediately while loading full metadata
             SongTitleCleaner.ParseFilename(filePath, out string quickTitle, out string quickArtist);
+            if (addDefaultPrefix) quickTitle = $"[Default] {quickTitle}";
             var quickInfo = new SongInfo(filePath, quickTitle, quickArtist, TimeSpan.Zero);
             _currentSongInfo = quickInfo;
             OnSongInfoChanged?.Invoke(quickInfo);
@@ -111,14 +133,18 @@ namespace UniPlaySong.Services
                     // Only update if this is still the current song
                     if (string.Equals(_currentFilePath, filePath, StringComparison.OrdinalIgnoreCase))
                     {
-                        _currentSongInfo = fullInfo;
-
-                        // Cache the result
+                        // Cache the original (un-prefixed) metadata
                         AddToCache(filePath, fullInfo);
+
+                        // Add "[Default]" prefix for bundled presets when indicator is enabled
+                        var emitted = addDefaultPrefix
+                            ? new SongInfo(fullInfo.FilePath, $"[Default] {fullInfo.Title}", fullInfo.Artist, fullInfo.Duration)
+                            : fullInfo;
+                        _currentSongInfo = emitted;
 
                         // Update UI on dispatcher thread
                         System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                            new Action(() => OnSongInfoChanged?.Invoke(fullInfo)));
+                            new Action(() => OnSongInfoChanged?.Invoke(emitted)));
                     }
                 }
                 catch (Exception ex)

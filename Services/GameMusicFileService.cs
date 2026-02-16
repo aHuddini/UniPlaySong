@@ -107,6 +107,25 @@ namespace UniPlaySong.Services
             return new List<string>(files);
         }
 
+        // Returns total size in bytes of supported audio files in the game's music directory
+        public long GetMusicFolderSize(Game game)
+        {
+            var directory = GetGameMusicDirectory(game);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                return 0;
+
+            try
+            {
+                return Directory.GetFiles(directory)
+                    .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
+                    .Sum(f => new FileInfo(f).Length);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Gets the primary song for a game
         /// </summary>

@@ -143,6 +143,13 @@ namespace UniPlaySong
         BundledPreset   // Bundled ambient tracks shipped with the plugin
     }
 
+    public enum CelebrationSoundType
+    {
+        SystemBeep,     // Windows system sound
+        BundledJingle,  // Jingle preset shipped with the plugin
+        CustomFile      // User-selected audio file (.wav recommended)
+    }
+
     public enum VizPreset
     {
         Custom = 0,
@@ -177,9 +184,21 @@ namespace UniPlaySong
         private bool pauseOnGameStart = false;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
+        private bool showDefaultMusicIndicator = false;
         private bool showDesktopMediaControls = false;
         private bool showSpectrumVisualizer = true;
         private bool autoDeleteMusicOnGameRemoval = true;
+
+        // Gamification
+        private bool enableCompletionCelebration = true;
+        private CelebrationSoundType celebrationSoundType = CelebrationSoundType.BundledJingle;
+        private string selectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+        private string celebrationSoundPath = string.Empty;
+        private bool showCelebrationToast = true;
+        private bool applyLiveEffectsToJingles = true;
+
+        // Download notifications
+        private bool playSoundOnDownloadComplete = false;
 
         public bool EnableMusic
         {
@@ -434,6 +453,13 @@ namespace UniPlaySong
             set { hideNowPlayingForDefaultMusic = value; OnPropertyChanged(); }
         }
 
+        // When enabled, shows "[Default]" prefix in Now Playing when default/fallback music is playing
+        public bool ShowDefaultMusicIndicator
+        {
+            get => showDefaultMusicIndicator;
+            set { showDefaultMusicIndicator = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Show media control buttons (play/pause and skip) in the Desktop top panel bar.
         /// When disabled, only the Now Playing text is shown (if enabled).
@@ -461,6 +487,54 @@ namespace UniPlaySong
         {
             get => autoDeleteMusicOnGameRemoval;
             set { autoDeleteMusicOnGameRemoval = value; OnPropertyChanged(); }
+        }
+
+        // Play a sound when a game's completion status changes to "Completed"
+        public bool EnableCompletionCelebration
+        {
+            get => enableCompletionCelebration;
+            set { enableCompletionCelebration = value; OnPropertyChanged(); }
+        }
+
+        public CelebrationSoundType CelebrationSoundType
+        {
+            get => celebrationSoundType;
+            set { celebrationSoundType = value; OnPropertyChanged(); }
+        }
+
+        // Filename of selected bundled jingle (from Jingles folder)
+        public string SelectedCelebrationJingle
+        {
+            get => selectedCelebrationJingle;
+            set { selectedCelebrationJingle = value; OnPropertyChanged(); }
+        }
+
+        // Path to custom celebration sound file (.wav recommended for overlay playback)
+        public string CelebrationSoundPath
+        {
+            get => celebrationSoundPath;
+            set { celebrationSoundPath = value; OnPropertyChanged(); }
+        }
+
+        public bool ShowCelebrationToast
+        {
+            get => showCelebrationToast;
+            set { showCelebrationToast = value; OnPropertyChanged(); }
+        }
+
+        // When enabled and Live Effects are active, jingles play through NAudio with effects (reverb, filters, etc.)
+        // When disabled, jingles play through a plain player without effects
+        public bool ApplyLiveEffectsToJingles
+        {
+            get => applyLiveEffectsToJingles;
+            set { applyLiveEffectsToJingles = value; OnPropertyChanged(); }
+        }
+
+        // Play a system sound when any download completes successfully
+        public bool PlaySoundOnDownloadComplete
+        {
+            get => playSoundOnDownloadComplete;
+            set { playSoundOnDownloadComplete = value; OnPropertyChanged(); }
         }
 
         // Default Music Support

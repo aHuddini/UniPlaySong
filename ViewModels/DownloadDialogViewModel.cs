@@ -217,6 +217,9 @@ namespace UniPlaySong.ViewModels
 
         // Action to call with list of downloaded file paths (for post-processing like auto-normalize)
         public Action<List<string>> OnFilesDownloaded { get; set; }
+
+        // Whether to play a notification sound when downloads finish (set by dialog service from settings)
+        public bool PlaySoundOnComplete { get; set; }
         
         private bool _showBackButton = false;
         public bool ShowBackButton
@@ -998,6 +1001,37 @@ namespace UniPlaySong.ViewModels
                             else
                             {
                                 ProgressText = $"Download failed for all {total} song(s)";
+                            }
+
+                            // Play notification sound in sync with the status text appearing
+                            if (downloaded > 0 && PlaySoundOnComplete)
+                            {
+                                // Pause all audio so the notification is clearly heard
+                                bool previewWasPlaying = _previewPlayer != null && _previewPlayer.IsActive;
+                                bool musicWasPlaying = _playbackService != null && _playbackService.IsPlaying;
+
+                                if (previewWasPlaying)
+                                    try { _previewPlayer.Pause(); } catch { }
+                                if (musicWasPlaying)
+                                    try { _playbackService.PauseImmediate(); } catch { }
+
+                                System.Media.SystemSounds.Asterisk.Play();
+
+                                // Resume after the sound is heard
+                                System.Threading.Tasks.Task.Delay(1200).ContinueWith(_ =>
+                                {
+                                    try
+                                    {
+                                        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                        {
+                                            if (previewWasPlaying && _previewPlayer != null)
+                                                try { _previewPlayer.Resume(); } catch { }
+                                            if (musicWasPlaying && _playbackService != null)
+                                                try { _playbackService.ResumeImmediate(); } catch { }
+                                        }));
+                                    }
+                                    catch { }
+                                });
                             }
 
                             // Hide progress after a delay, then invoke callbacks on UI thread

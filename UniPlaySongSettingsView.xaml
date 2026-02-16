@@ -140,6 +140,16 @@
                                TextWrapping="Wrap"
                                Margin="40,0,0,10"/>
 
+                    <CheckBox Content="Show [Default] indicator in Now Playing"
+                              IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
+                              IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                              Margin="20,0,0,0"/>
+                    <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing instead of game-specific music"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
                     <!-- Current Song Display (non-serialized, display-only) -->
                     <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
                         <TextBlock Text="Current Song: "
@@ -471,6 +481,70 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Gamification -->
+                    <TextBlock Text="Gamification" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Celebrate your gaming milestones" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Play Fanfare on Completed Games"
+                              IsChecked="{Binding Settings.EnableCompletionCelebration}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Play a celebration sound when you mark a game as 'Completed' in Playnite"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.EnableCompletionCelebration}">
+                        <RadioButton Content="System beep"
+                                     IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SystemBeep}"
+                                     GroupName="CelebrationSound"
+                                     Margin="0,3"/>
+                        <RadioButton Content="Jingle Preset"
+                                     IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                     GroupName="CelebrationSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <ComboBox ItemsSource="{Binding CelebrationJingles}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="File"
+                                      SelectedValue="{Binding Settings.SelectedCelebrationJingle}"
+                                      Width="300"
+                                      Margin="0,0,8,0"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewCelebrationSoundCommand}"
+                                    Padding="10,4"/>
+                        </StackPanel>
+                        <RadioButton Content="Custom sound file (.wav recommended)"
+                                     IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                     GroupName="CelebrationSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                            <TextBox Text="{Binding Settings.CelebrationSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="350"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                            <Button Content="Browse..."
+                                    Command="{Binding BrowseCelebrationSoundCommand}"
+                                    Padding="10,4"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewCelebrationSoundCommand}"
+                                    Padding="10,4"
+                                    Margin="5,0,0,0"/>
+                        </StackPanel>
+
+                        <CheckBox Content="Apply live effects to jingles"
+                                  IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
+                                  Margin="0,10,0,3"/>
+                        <TextBlock Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects regardless of Live Effects setting."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,5"/>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -2722,6 +2796,44 @@
                                 Foreground="White"
                                 FontWeight="Bold"/>
                     </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Experimental Tab -->
+        <TabItem Header="Experimental">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Experimental Features" FontSize="18" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <Border Background="#3A2A00" BorderBrush="#CC8800" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,5,0,20">
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#FFCC66">
+                            <Run FontWeight="SemiBold">Warning:</Run>
+                            <Run Text=" These features are experimental and under active development. They may not work correctly, cause minor audio glitches, or behave unexpectedly. They may be changed or removed in future versions. Enable at your own discretion."/>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- Download Notification Sound -->
+                    <TextBlock Text="Download Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <CheckBox Content="Play sound when downloads complete"
+                              IsChecked="{Binding Settings.PlaySoundOnDownloadComplete}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Briefly pauses music and plays a system notification sound when any music download finishes (single game, batch, auto-download, Download From URL)."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Visual Celebration Toast -->
+                    <TextBlock Text="Completion Celebration" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <CheckBox Content="Show celebration toast notification"
+                              IsChecked="{Binding Settings.ShowCelebrationToast}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

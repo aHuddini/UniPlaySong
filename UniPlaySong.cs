@@ -106,6 +106,8 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+        private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
+        private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
@@ -147,8 +149,9 @@ namespace UniPlaySong
                 // Initialize dedicated downloader logger
                 Downloaders.DownloaderLogger.Initialize(extensionPath);
 
-                // Initialize bundled preset service
+                // Initialize bundled preset and jingle services
                 Services.BundledPresetService.Initialize(extensionPath);
+                Services.BundledJingleService.Initialize(extensionPath);
             }
             catch
             {
@@ -274,6 +277,23 @@ namespace UniPlaySong
                     if (currentGame != null && currentGame.Id == update.NewData.Id)
                     {
                         _coordinator.HandleGameSelected(currentGame, IsFullscreen);
+                    }
+                }
+
+                // Completion celebration: play sound when game marked as "Completed"
+                if (_settings?.EnableCompletionCelebration == true &&
+                    update.NewData.CompletionStatusId != update.OldData.CompletionStatusId)
+                {
+                    var newStatus = _api.Database.CompletionStatuses?.FirstOrDefault(
+                        s => s.Id == update.NewData.CompletionStatusId);
+                    if (newStatus != null && newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        PlayCelebrationSound();
+
+                        if (_settings.ShowCelebrationToast)
+                        {
+                            Common.DialogHelper.ShowCelebrationToast(_api, update.NewData.Name);
+                        }
                     }
                 }
             }
@@ -544,6 +564,9 @@ namespace UniPlaySong
 
             _fileLogger?.Debug($"AutoDownloadMusicForGamesAsync: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
 
+            if (successCount > 0)
+                PlayDownloadCompleteSound();
+
             // Show notification with results
             if (successCount > 0 || failCount > 0)
             {
@@ -691,6 +714,7 @@ namespace UniPlaySong
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             _playbackService?.Stop();
+            CleanupJinglePlayer();
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
 
@@ -2168,12 +2192,21 @@ namespace UniPlaySong
             if (args.Games.Count == 0)
                 return Enumerable.Empty<GameMenuItem>();
 
-            const string menuSection = Constants.MenuSectionName;
             var items = new List<GameMenuItem>();
             var games = args.Games.ToList();
 
             // Debug: Log how many games Playnite is passing to us
             _fileLogger?.Debug($"[Menu] GetGameMenuItems called with {games.Count} game(s)");
+
+            // For single game: get songs early so we can show count in menu header
+            List<string> songs = null;
+            if (games.Count == 1)
+                songs = _fileService?.GetAvailableSongs(games[0]) ?? new List<string>();
+
+            // Dynamic menu header: "UniPlaySong (3 songs)" for single game with music
+            string menuSection = (songs != null && songs.Count > 0)
+                ? $"{Constants.MenuSectionName} ({songs.Count} {(songs.Count == 1 ? "song" : "songs")})"
+                : Constants.MenuSectionName;
 
             // Multi-game selection: Show bulk operations
             if (games.Count > 1)
@@ -2232,7 +2265,22 @@ namespace UniPlaySong
 
             // Single game selection
             var game = games[0];
-            var songs = _fileService?.GetAvailableSongs(game) ?? new List<string>();
+
+            // Info line: show folder size when game has music
+            if (songs.Count > 0)
+            {
+                long folderBytes = _fileService.GetMusicFolderSize(game);
+                items.Add(new GameMenuItem
+                {
+                    Description = $"[ {songs.Count} {(songs.Count == 1 ? "song" : "songs")} | {FormatFileSize(folderBytes)} ]",
+                    MenuSection = menuSection
+                });
+                items.Add(new GameMenuItem
+                {
+                    Description = "-",
+                    MenuSection = menuSection
+                });
+            }
 
             if (IsFullscreen)
             {
@@ -2729,6 +2777,9 @@ namespace UniPlaySong
             progressArgs.CurrentProgressValue = totalGames;
 
             _fileLogger?.Debug($"BulkDownload: Completed - Success: {successCount}, Skipped: {skipCount}, Failed: {failCount}");
+
+            if (successCount > 0)
+                PlayDownloadCompleteSound();
 
             // Show completion notification
             var wasCancelled = progressArgs.CancelToken.IsCancellationRequested;
@@ -3581,5 +3632,114 @@ namespace UniPlaySong
         }
 
         #endregion
+
+        private void PlayDownloadCompleteSound()
+        {
+            if (_settings?.PlaySoundOnDownloadComplete == true)
+                Common.NotificationSoundHelper.PlayDownloadComplete(_playbackService);
+        }
+
+        private void PlayCelebrationSound()
+        {
+            try
+            {
+                if (_settings.CelebrationSoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                }
+                else if (_settings.CelebrationSoundType == CelebrationSoundType.BundledJingle)
+                {
+                    var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedCelebrationJingle);
+                    if (!string.IsNullOrEmpty(path))
+                        PlayCelebrationFile(path);
+                }
+                else if (_settings.CelebrationSoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(_settings.CelebrationSoundPath)
+                        && File.Exists(_settings.CelebrationSoundPath))
+                        PlayCelebrationFile(_settings.CelebrationSoundPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"Celebration sound failed: {ex.Message}");
+            }
+        }
+
+        private void PlayCelebrationFile(string filePath)
+        {
+            // Stop any previous jingle that might still be playing
+            CleanupJinglePlayer();
+
+            // Pause the main music (no fade, preserves position)
+            _playbackService?.PauseImmediate();
+
+            try
+            {
+                bool useLiveEffects = _isUsingLiveEffectsPlayer
+                    && (_settings?.ApplyLiveEffectsToJingles ?? true);
+
+                if (useLiveEffects)
+                {
+                    // NAudio player: routes jingle through the effects chain (reverb, filters, etc.)
+                    _savedVizProvider = VisualizationDataProvider.Current;
+                    bool savedFlag = _isUsingLiveEffectsPlayer;
+                    _jinglePlayer = CreateMusicPlayer();
+                    _isUsingLiveEffectsPlayer = savedFlag;
+                }
+                else
+                {
+                    // Standard player: plain playback without effects
+                    _jinglePlayer = new Services.SDL2MusicPlayer(_errorHandler);
+                }
+
+                _jinglePlayer.MediaEnded += OnJingleEnded;
+                _jinglePlayer.Load(filePath);
+                _jinglePlayer.Volume = _settings.MusicVolume / 100.0;
+                _jinglePlayer.Play();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"Jingle playback failed: {ex.Message}");
+                CleanupJinglePlayer();
+                _playbackService?.ResumeImmediate();
+            }
+        }
+
+        private void OnJingleEnded(object sender, EventArgs e)
+        {
+            CleanupJinglePlayer();
+            _playbackService?.ResumeImmediate();
+        }
+
+        private void CleanupJinglePlayer()
+        {
+            if (_jinglePlayer != null)
+            {
+                _jinglePlayer.MediaEnded -= OnJingleEnded;
+                _jinglePlayer.Stop();
+                _jinglePlayer.Close();
+                (_jinglePlayer as IDisposable)?.Dispose();
+                _jinglePlayer = null;
+
+                // Restore the main player's visualization provider
+                if (_savedVizProvider != null)
+                {
+                    VisualizationDataProvider.Current = _savedVizProvider;
+                    _savedVizProvider = null;
+                }
+            }
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes >= 1_073_741_824)
+                return $"{bytes / 1_073_741_824.0:F1} GB";
+            if (bytes >= 1_048_576)
+                return $"{bytes / 1_048_576.0:F1} MB";
+            if (bytes >= 1024)
+                return $"{bytes / 1024.0:F1} KB";
+            return $"{bytes} B";
+        }
     }
 }

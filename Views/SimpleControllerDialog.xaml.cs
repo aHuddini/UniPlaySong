@@ -1286,6 +1286,17 @@ namespace UniPlaySong.Views
                                     UpdateInputFeedback($"✅ Download completed: {selectedSong.Name}");
                                     Logger.DebugIf(LogPrefix, $"Successfully downloaded: {selectedSong.Name} to {filePath}");
 
+                                    // Play notification sound if enabled
+                                    try
+                                    {
+                                        if (Application.Current?.Properties["UniPlaySongPlugin"] is UniPlaySong plugin
+                                            && plugin.GetSettingsService()?.Current?.PlaySoundOnDownloadComplete == true)
+                                        {
+                                            Common.NotificationSoundHelper.PlayDownloadComplete(_playbackService);
+                                        }
+                                    }
+                                    catch { }
+
                                     // Invalidate cache so new file is detected
                                     _fileService?.InvalidateCacheForGame(_currentGame);
 
