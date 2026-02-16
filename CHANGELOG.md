@@ -5,38 +5,51 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.0] - TBD
 
 ### Added
+- **Completion Fanfare** - Play a celebration jingle when marking a game as "Completed"
+  - Ships with 11 retro jingle presets (Sonic, Streets of Rage, Mortal Kombat, and more)
+  - Three sound source options: System beep, Jingle preset, or Custom audio file
+  - Jingle presets selectable via dropdown with preview button
+  - Enabled by default with Streets of Rage - Level Clear preset
+  - Toggle in Settings → Playback → Gamification
+- **Jingle Live Effects** - Celebration jingles play through a dedicated NAudio player, so live effects (reverb, filters, stereo width, etc.) are applied when Live Effects mode is enabled
+  - Main music pauses during the jingle and resumes automatically when it finishes
+  - Toggleable via "Apply live effects to jingles" in Gamification settings
 - **Song Count Badge in Menu** - Right-click context menu header now shows song count for single-game selection (e.g., "UniPlaySong (3 songs)")
   - Info line at the top of the submenu displays song count and total folder size (e.g., `[ 3 songs | 12.4 MB ]`)
   - Multi-game selection retains the plain "UniPlaySong" header
 - **Default Music Indicator** - Optional `[Default]` prefix in the Now Playing ticker when default/fallback music is playing
   - Shows `[Default]` alone for non-bundled default music, `[Default] Song Title - Artist` for bundled presets
   - Toggle in Settings → General (disabled by default, requires "Show Now Playing" to be enabled)
-- **Completion Celebration** - Play a sound when a game's completion status changes to "Completed"
-  - Three sound source options: System beep, Jingle preset (ships with plugin), or Custom audio file
-  - Jingle presets selectable via dropdown with preview
-  - Custom file supports .wav (overlay, plays alongside music) and .mp3/.ogg/.flac (interrupts briefly)
-  - Enabled by default with Streets of Rage - Level Clear jingle preset
-  - Toggle in Settings → General → Gamification
-- **Download Complete Notification** (Experimental) - Plays a notification sound when music downloads finish
-  - Briefly pauses current music (game or preview) so the notification is audible
-  - Music resumes automatically after 1.2 seconds
-  - Toggle in Settings → Experimental
 - **Experimental Settings Tab** - New settings tab for features under active development
-  - Amber warning banner indicates experimental nature and potential for glitches
-- **Celebration Toast Notification** (Experimental) - Visual gold-glow toast popup when a game is marked completed, complementing the jingle sound
-  - Pulsing radial gradient glow animation with gold accent theme
-  - Shows "Game Completed!" with the game's name, auto-dismisses after 6 seconds
-  - Toggle in Settings → Experimental (enabled by default)
-- **Jingle Preset Infrastructure** - `Jingles/` folder with JSON manifest for shipping celebration audio presets alongside the plugin
-
-### Improved
-- **Instant Pause/Resume** - New `PauseImmediate()` / `ResumeImmediate()` methods bypass the volume fader for instant music control during notification sounds
-- **Celebration Jingle NAudio Integration** - Jingle presets and custom celebration sounds now play through a dedicated NAudio player matching the current backend, so live effects (reverb, filters, stereo width, etc.) are applied to jingles when Live Effects mode is enabled
-  - Main music pauses during the jingle and resumes automatically when it finishes
-  - Spectrum visualizer state is preserved across jingle playback
+- **Download Complete Notification** (Experimental) - Plays a notification sound when music downloads finish
+  - Briefly pauses current music so the notification is audible, then resumes automatically
+  - Toggle in Settings → Experimental
+- **Celebration Toast Notification** (Experimental) - Visual gold-glow toast popup when a game is marked completed, complementing the fanfare sound
+  - Smooth pulsing glow animation with gold accent theme
+  - Auto-dismisses after 6 seconds, click to dismiss early
+  - Toggle in Settings → Experimental
+- **Auto-Pause on System Lock** (Experimental) - Music pauses when you lock your PC (Win+L) and resumes on unlock
+  - Uses `SystemEvents.SessionSwitch` with `PauseSource.SystemLock` in the multi-source pause system
+  - Toggle in Settings → Experimental (disabled by default)
+- **Song Progress Indicator** (Experimental) - Thin progress bar in the Desktop top panel showing playback position
+  - Four configurable positions: After skip button, After visualizer, After now playing, or embedded below now playing text
+  - Uses a lightweight 1-second timer instead of per-frame rendering
+  - Toggle and position selector in Settings → Experimental (requires Playnite restart for position changes)
+- **Enhanced Library Statistics** (Experimental) - Upgraded the library stats panel in Experimental settings from a single line to a structured card grid layout
+  - Primary metrics: games with music (with percentage), total songs, total storage, average songs per game
+  - Format distribution breakdown showing all audio formats
+  - Top 5 games ranked by song count
 
 ### Fixed
-- **Celebration Jingle Loop Bug** - Jingles no longer occasionally loop forever when marking games completed. Previously used the main music player which has loop-on-end behavior; now uses a dedicated one-shot player
+- **Play/Pause Icon Flicker on Song Transition** - Play button briefly showed "paused" state when songs changed (randomize on end, skip to next). Root cause: `OnSongChanged` fired before the new song started playing, so `IsPlaying` was false during the event
+- **Skip While Paused** - Pressing skip while music was paused left the play button in paused state even though the new song was playing. `PauseSource.Manual` was preserved by `ClearAllPauseSources()` by design; skip now explicitly removes it
+- **Skip Delay When Paused** - Skipping while paused triggered a full fade-out on silence, causing a noticeable delay before the next song loaded. Now loads immediately when already paused
+- **Now Playing Text Delay on Skip** - Song title, visualizer, and progress bar didn't update until after the crossfade completed. Now fires `OnSongChanged` immediately on skip (matching game-selection behavior) so UI updates are instant
+- **Skip Crossfade Improved** - Skip now uses `Switch()` (with preloading) instead of `FadeOutAndStop()` for smoother transitions when playing
+
+### Performance
+- **Song Progress Bar** - Uses `DispatcherTimer` at 1-second intervals instead of `CompositionTarget.Rendering` (60fps). A 50px bar on a 3-minute song moves ~0.28px/sec, making per-frame updates wasteful
+- **NowPlayingPanel Render Loop** - Embedded progress bar no longer keeps the 60fps render loop alive when text scrolling/fading has finished. Uses its own 1-second timer, piggybacking on the render loop only when it's already running for animations
 
 ## [1.2.11] - 2026-02-15
 

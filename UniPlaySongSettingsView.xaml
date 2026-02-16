@@ -16,6 +16,7 @@
         <local:VizPresetConverter x:Key="VizPresetConverter"/>
         <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+        <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -2804,6 +2805,53 @@
         <TabItem Header="Experimental">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
+                    <!-- Music Library Stats -->
+                    <TextBlock Text="Music Library" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <!-- Primary Stats Row -->
+                    <UniformGrid Columns="4" Margin="0,0,0,10">
+                        <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StatsGamesWithMusic}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                <TextBlock Text="Games with Music" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StatsTotalSongs}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Total Songs" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StatsTotalSize}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Total Size" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StatsAvgSongsPerGame}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Avg / Game" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- Format Distribution -->
+                    <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Format Distribution" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding StatsFormatBreakdown}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Top Games by Song Count -->
+                    <Border Background="#1A2636" BorderBrush="#2A4A6A" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Top Games by Song Count" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding StatsTopGames}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <TextBlock Text="Experimental Features" FontSize="18" FontWeight="Bold" Margin="0,0,0,5"/>
                     <Border Background="#3A2A00" BorderBrush="#CC8800" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,5,0,20">
                         <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#FFCC66">
@@ -2829,6 +2877,40 @@
                               IsChecked="{Binding Settings.ShowCelebrationToast}"
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Song Progress Indicator -->
+                    <TextBlock Text="Song Progress Indicator" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <CheckBox Content="Show song progress bar (Desktop mode)"
+                              IsChecked="{Binding Settings.ShowProgressBar}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                              Margin="0,5,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.ShowProgressBar}">
+                        <TextBlock Text="Position:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <ComboBox SelectedIndex="{Binding Settings.ProgressBarPosition, Converter={StaticResource ProgressBarPositionConverter}}"
+                                  Margin="8,0,0,0" Width="170">
+                            <ComboBoxItem Content="After skip button"/>
+                            <ComboBoxItem Content="After visualizer"/>
+                            <ComboBoxItem Content="After now playing"/>
+                            <ComboBoxItem Content="Below now playing"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                        <Run Foreground="Gray">Thin bar showing song playback position.</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
+
+                    <!-- Auto-Pause on System Lock -->
+                    <TextBlock Text="Auto-Pause on System Lock" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <CheckBox Content="Pause music when Windows is locked"
+                              IsChecked="{Binding Settings.PauseOnSystemLock}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

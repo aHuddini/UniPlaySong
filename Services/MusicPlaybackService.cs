@@ -115,6 +115,7 @@ namespace UniPlaySong.Services
         public bool IsPlaying => _musicPlayer?.IsActive ?? false;
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
+        public TimeSpan? CurrentTime => _musicPlayer?.CurrentTime;
         public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
         public bool IsPlayingBundledPreset => _isPlayingDefaultMusic &&
             _currentSettings?.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset;
@@ -941,17 +942,46 @@ namespace UniPlaySong.Services
             _fileLogger?.Info($"SkipToNextSong: Skipping from '{Path.GetFileName(_currentSongPath)}' to '{Path.GetFileName(nextSong)}'");
 
             _previousSongPath = _currentSongPath;
-            _currentSongPath = nextSong;
 
-            // Load and play the new song with crossfade
-            _fader?.FadeOutAndStop(() =>
+            // Skipping is an explicit user action — clear manual pause so the new song plays
+            bool wasPaused = _isPaused;
+            RemovePauseSource(Models.PauseSource.Manual);
+
+            if (wasPaused)
             {
+                // Already silent — skip the fade and load immediately
                 _musicPlayer?.Load(nextSong);
                 _musicPlayer?.Play();
                 _fader?.FadeIn();
                 MarkSongStart();
+                _currentSongPath = nextSong;
                 OnPlaybackStateChanged?.Invoke();
-            });
+            }
+            else
+            {
+                // Fire song changed early so UI (Now Playing text, visualizer) updates immediately
+                OnSongChanged?.Invoke(nextSong);
+
+                // Playing — use Switch() for smooth crossfade with preloading
+                _fader?.Switch(
+                    stopAction: () =>
+                    {
+                        _musicPlayer?.Close();
+                    },
+                    preloadAction: () =>
+                    {
+                        _musicPlayer?.PreLoad(nextSong);
+                    },
+                    playAction: () =>
+                    {
+                        _musicPlayer?.Load(nextSong);
+                        _musicPlayer?.Play();
+                        MarkSongStart();
+                        _currentSongPathBacking = nextSong; // Set backing field directly (OnSongChanged already fired)
+                        OnPlaybackStateChanged?.Invoke();
+                    }
+                );
+            }
         }
 
         public void SetVolume(double volume)
@@ -1312,8 +1342,8 @@ namespace UniPlaySong.Services
                                 while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
 
                                 _previousSongPath = _currentSongPath;
-                                _currentSongPath = nextSong;
                                 LoadAndPlayFile(nextSong);
+                                _currentSongPath = nextSong; // Set after LoadAndPlayFile so IsPlaying is true when OnSongChanged fires
                                 _fileLogger?.Info($"Randomized to next song on end: {Path.GetFileName(nextSong)} (RandomizeOnMusicEnd)");
                                 return;
                             }

@@ -1832,6 +1832,130 @@ namespace UniPlaySong
 
         #endregion
 
+        // Library stats — structured properties for card grid layout
+        private string _statsGamesWithMusic = "...";
+        public string StatsGamesWithMusic { get => _statsGamesWithMusic; set { _statsGamesWithMusic = value; OnPropertyChanged(); } }
+
+        private string _statsTotalSongs = "...";
+        public string StatsTotalSongs { get => _statsTotalSongs; set { _statsTotalSongs = value; OnPropertyChanged(); } }
+
+        private string _statsTotalSize = "...";
+        public string StatsTotalSize { get => _statsTotalSize; set { _statsTotalSize = value; OnPropertyChanged(); } }
+
+        private string _statsAvgSongsPerGame = "...";
+        public string StatsAvgSongsPerGame { get => _statsAvgSongsPerGame; set { _statsAvgSongsPerGame = value; OnPropertyChanged(); } }
+
+        private string _statsFormatBreakdown = "";
+        public string StatsFormatBreakdown { get => _statsFormatBreakdown; set { _statsFormatBreakdown = value; OnPropertyChanged(); } }
+
+        private string _statsTopGames = "";
+        public string StatsTopGames { get => _statsTopGames; set { _statsTopGames = value; OnPropertyChanged(); } }
+
+        private void ScanLibraryStats()
+        {
+            try
+            {
+                var gamesPath = Path.Combine(
+                    PlayniteApi.Paths.ConfigurationPath,
+                    Constants.ExtraMetadataFolderName,
+                    Constants.ExtensionFolderName,
+                    Constants.GamesFolderName);
+
+                if (!Directory.Exists(gamesPath))
+                {
+                    StatsGamesWithMusic = "0";
+                    StatsTotalSongs = "0";
+                    StatsTotalSize = "0 MB";
+                    StatsAvgSongsPerGame = "0";
+                    StatsFormatBreakdown = "No music library found";
+                    StatsTopGames = "";
+                    return;
+                }
+
+                int gamesWithMusic = 0;
+                int totalSongs = 0;
+                long totalBytes = 0;
+                var formatCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var gameSongCounts = new Dictionary<string, int>(); // dirName (GUID) → song count
+
+                foreach (var gameDir in Directory.GetDirectories(gamesPath))
+                {
+                    var files = Directory.GetFiles(gameDir)
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
+                        .ToList();
+
+                    if (files.Count == 0) continue;
+
+                    gamesWithMusic++;
+                    totalSongs += files.Count;
+                    gameSongCounts[Path.GetFileName(gameDir)] = files.Count;
+
+                    foreach (var file in files)
+                    {
+                        try
+                        {
+                            totalBytes += new FileInfo(file).Length;
+                            var ext = Path.GetExtension(file).ToUpperInvariant().TrimStart('.');
+                            if (formatCounts.ContainsKey(ext))
+                                formatCounts[ext]++;
+                            else
+                                formatCounts[ext] = 1;
+                        }
+                        catch { }
+                    }
+                }
+
+                int totalGames = PlayniteApi.Database.Games?.Count ?? 0;
+                double pct = totalGames > 0 ? 100.0 * gamesWithMusic / totalGames : 0;
+
+                // Primary metrics
+                StatsGamesWithMusic = $"{gamesWithMusic} / {totalGames} ({pct:F0}%)";
+                StatsTotalSongs = totalSongs.ToString("N0");
+
+                if (totalBytes >= 1073741824)
+                    StatsTotalSize = $"{totalBytes / 1073741824.0:F1} GB";
+                else
+                    StatsTotalSize = $"{totalBytes / 1048576.0:F1} MB";
+
+                double avgSongs = gamesWithMusic > 0 ? (double)totalSongs / gamesWithMusic : 0;
+                StatsAvgSongsPerGame = $"~{avgSongs:F1}";
+
+                // Format distribution (all formats)
+                var allFormats = formatCounts
+                    .OrderByDescending(kv => kv.Value)
+                    .Select(kv => $"{kv.Key}: {kv.Value}");
+                StatsFormatBreakdown = string.Join("   |   ", allFormats);
+
+                // Top 5 games by song count (resolve GUID to game name)
+                var topGameEntries = gameSongCounts
+                    .OrderByDescending(kv => kv.Value)
+                    .Take(5)
+                    .Select(kv =>
+                    {
+                        string name = kv.Key;
+                        if (Guid.TryParse(kv.Key, out Guid gameId))
+                        {
+                            var game = PlayniteApi.Database.Games?.FirstOrDefault(g => g.Id == gameId);
+                            if (game != null) name = game.Name;
+                        }
+                        // Truncate long names
+                        if (name.Length > 30) name = name.Substring(0, 27) + "...";
+                        return $"{name} ({kv.Value})";
+                    });
+                StatsTopGames = string.Join("   |   ", topGameEntries);
+            }
+            catch (Exception ex)
+            {
+                StatsGamesWithMusic = "Error";
+                StatsTotalSongs = "Error";
+                StatsTotalSize = "Error";
+                StatsAvgSongsPerGame = "Error";
+                StatsFormatBreakdown = "Error scanning library";
+                StatsTopGames = "";
+                LogManager.GetLogger().Error(ex, "Error scanning library stats");
+            }
+        }
+
         private void UpdateCacheStats()
         {
             try
@@ -1879,6 +2003,7 @@ namespace UniPlaySong
         public void BeginEdit()
         {
             // Called when settings view is opened
+            ScanLibraryStats();
             UpdateCacheStats();
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();

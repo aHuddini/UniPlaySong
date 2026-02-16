@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using UniPlaySong.Services;
 
 namespace UniPlaySong.DeskMediaControl
@@ -52,6 +53,15 @@ namespace UniPlaySong.DeskMediaControl
         // Rendering subscription state
         private bool _isRenderingSubscribed = false;
         private bool _isAppFocused = true;
+
+        // Embedded progress bar (BelowNowPlaying mode)
+        private Rectangle _embeddedProgressTrack;
+        private Rectangle _embeddedProgressFill;
+        private bool _embeddedProgressEnabled = false;
+        private Func<IMusicPlaybackService> _getPlaybackService;
+        private TimeSpan _embeddedDuration = TimeSpan.Zero;
+        private double _lastEmbeddedFillWidth = -1;
+        private DispatcherTimer _embeddedProgressTimer;
 
         public NowPlayingPanel()
         {
@@ -247,6 +257,9 @@ namespace UniPlaySong.DeskMediaControl
                 }
             }
 
+            // Piggyback: update embedded progress while render loop is already active
+            UpdateEmbeddedProgress();
+
             // Unsubscribe when there's nothing left to animate
             if (!NeedsAnimation())
                 UnsubscribeRendering();
@@ -368,6 +381,97 @@ namespace UniPlaySong.DeskMediaControl
         public void Clear()
         {
             UpdateSongInfo(SongInfo.Empty);
+        }
+
+        // Enables the embedded progress bar below the scrolling text.
+        // Called once during initialization when ProgressBarPosition is BelowNowPlaying.
+        // Uses a 1-second DispatcherTimer — decoupled from the 60fps scroll/fade render loop.
+        public void EnableEmbeddedProgressBar(Func<IMusicPlaybackService> getPlaybackService)
+        {
+            _getPlaybackService = getPlaybackService;
+            _embeddedProgressEnabled = true;
+
+            // Add a second row for the progress bar
+            RowDefinitions.Add(new RowDefinition { Height = new GridLength(18) }); // text row
+            RowDefinitions.Add(new RowDefinition { Height = new GridLength(3) });  // bar row
+
+            Grid.SetRow(_scrollCanvas, 0);
+            Grid.SetRow(_rightFade, 0);
+
+            _embeddedProgressTrack = new Rectangle
+            {
+                Width = PanelMaxWidth,
+                Height = 3,
+                Fill = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)),
+                RadiusX = 1.5,
+                RadiusY = 1.5
+            };
+            Grid.SetRow(_embeddedProgressTrack, 1);
+            Children.Add(_embeddedProgressTrack);
+
+            _embeddedProgressFill = new Rectangle
+            {
+                Width = 0,
+                Height = 3,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Fill = new SolidColorBrush(Color.FromArgb(153, 255, 255, 255)),
+                RadiusX = 1.5,
+                RadiusY = 1.5
+            };
+            Grid.SetRow(_embeddedProgressFill, 1);
+            Children.Add(_embeddedProgressFill);
+
+            _embeddedProgressTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _embeddedProgressTimer.Tick += (s, e) => UpdateEmbeddedProgress();
+            _embeddedProgressTimer.Start();
+        }
+
+        // Updates embedded progress bar position (called from 1-second DispatcherTimer)
+        private void UpdateEmbeddedProgress()
+        {
+            if (!_embeddedProgressEnabled || _getPlaybackService == null) return;
+
+            var playbackService = _getPlaybackService.Invoke();
+            var currentTime = playbackService?.CurrentTime;
+
+            if (!currentTime.HasValue || _embeddedDuration.TotalSeconds <= 0)
+            {
+                if (_lastEmbeddedFillWidth != 0)
+                {
+                    _embeddedProgressFill.Width = 0;
+                    _lastEmbeddedFillWidth = 0;
+                }
+                return;
+            }
+
+            double progress = Math.Min(1.0, Math.Max(0.0,
+                currentTime.Value.TotalSeconds / _embeddedDuration.TotalSeconds));
+            double fillWidth = Math.Round(progress * PanelMaxWidth, 1);
+
+            if (Math.Abs(fillWidth - _lastEmbeddedFillWidth) >= 0.2)
+            {
+                _embeddedProgressFill.Width = fillWidth;
+                _lastEmbeddedFillWidth = fillWidth;
+            }
+        }
+
+        // Resets the embedded progress bar to zero (called on song change to avoid stale position)
+        public void ResetEmbeddedProgress()
+        {
+            if (!_embeddedProgressEnabled || _embeddedProgressFill == null) return;
+            _embeddedProgressFill.Width = 0;
+            _lastEmbeddedFillWidth = 0;
+            _embeddedDuration = TimeSpan.Zero; // Zero duration stops updates until SetEmbeddedDuration is called with new song
+        }
+
+        // Sets the song duration for embedded progress tracking (called on song change)
+        public void SetEmbeddedDuration(TimeSpan duration)
+        {
+            _embeddedDuration = duration;
+            _lastEmbeddedFillWidth = -1;
         }
     }
 }

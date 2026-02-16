@@ -355,6 +355,7 @@ namespace UniPlaySong
             // Subscribe to application focus/minimize events for PauseOnDeactivate feature
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
+            Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
@@ -721,9 +722,10 @@ namespace UniPlaySong
             // Unsubscribe from game collection changes
             _api.Database.Games.ItemCollectionChanged -= OnGamesCollectionChanged;
 
-            // Unsubscribe from focus/minimize events
+            // Unsubscribe from focus/minimize/lock events
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
+            Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
@@ -1143,6 +1145,26 @@ namespace UniPlaySong
         {
             // Always remove — if the source isn't present, HashSet.Remove is a no-op
             _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
+        }
+
+        // Handles Windows session lock/unlock (Win+L).
+        // SessionSwitch fires on a non-UI thread, so Dispatcher.Invoke is required.
+        private void OnSessionSwitch(object sender, Microsoft.Win32.SessionSwitchEventArgs e)
+        {
+            if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionLock)
+            {
+                if (_settings?.PauseOnSystemLock == true)
+                {
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                        _playbackService?.AddPauseSource(Models.PauseSource.SystemLock));
+                }
+            }
+            else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
+            {
+                // Always remove — HashSet.Remove is a no-op if not present
+                Application.Current?.Dispatcher?.Invoke(() =>
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock));
+            }
         }
 
         /// <summary>
@@ -3408,6 +3430,7 @@ namespace UniPlaySong
                 currentSettings.PauseOnMinimize = defaultSettings.PauseOnMinimize;
                 currentSettings.PauseWhenInSystemTray = defaultSettings.PauseWhenInSystemTray;
                 currentSettings.PauseOnGameStart = defaultSettings.PauseOnGameStart;
+                currentSettings.PauseOnSystemLock = defaultSettings.PauseOnSystemLock;
 
                 // Default music settings
                 currentSettings.EnableDefaultMusic = defaultSettings.EnableDefaultMusic;

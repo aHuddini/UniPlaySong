@@ -150,6 +150,14 @@ namespace UniPlaySong
         CustomFile      // User-selected audio file (.wav recommended)
     }
 
+    public enum ProgressBarPosition
+    {
+        AfterSkipButton,    // Between skip button and visualizer
+        AfterVisualizer,    // Between visualizer and now playing
+        AfterNowPlaying,    // Rightmost position in top panel
+        BelowNowPlaying     // Embedded inside now playing panel (below scrolling text)
+    }
+
     public enum VizPreset
     {
         Custom = 0,
@@ -182,9 +190,12 @@ namespace UniPlaySong
         private bool pauseOnMinimize = true;
         private bool pauseWhenInSystemTray = true;
         private bool pauseOnGameStart = false;
+        private bool pauseOnSystemLock = false;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
+        private bool showProgressBar = false;
+        private ProgressBarPosition progressBarPosition = ProgressBarPosition.AfterSkipButton;
         private bool showDesktopMediaControls = false;
         private bool showSpectrumVisualizer = true;
         private bool autoDeleteMusicOnGameRemoval = true;
@@ -435,6 +446,13 @@ namespace UniPlaySong
             set { pauseOnGameStart = value; OnPropertyChanged(); }
         }
 
+        // Pause music when Windows session is locked (Win+L). Music resumes on unlock.
+        public bool PauseOnSystemLock
+        {
+            get => pauseOnSystemLock;
+            set { pauseOnSystemLock = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Show "Now Playing" song info in the Desktop top panel bar.
         /// Displays song title, artist (if available), and duration next to the play/pause buttons.
@@ -458,6 +476,20 @@ namespace UniPlaySong
         {
             get => showDefaultMusicIndicator;
             set { showDefaultMusicIndicator = value; OnPropertyChanged(); }
+        }
+
+        // Show a thin progress bar indicating playback position in the Desktop top panel
+        public bool ShowProgressBar
+        {
+            get => showProgressBar;
+            set { showProgressBar = value; OnPropertyChanged(); }
+        }
+
+        // Where to place the progress bar in the top panel
+        public ProgressBarPosition ProgressBarPosition
+        {
+            get => progressBarPosition;
+            set { progressBarPosition = value; OnPropertyChanged(); }
         }
 
         /// <summary>

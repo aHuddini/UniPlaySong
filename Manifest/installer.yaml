@@ -5,7 +5,13 @@ Packages:
     ReleaseDate: TBD
     PackageUrl: TBD
     Changelog:
-      - 'TBD'
+      - '[New Feature] Completion Fanfare: Play a celebration jingle when marking a game as Completed. Ships with 11 retro videogame jingle presets (Sonic, Streets of Rage, Mortal Kombat, etc.) or use a custom sound file. Jingles respect Live Effects when enabled.'
+      - '[New Feature] Song Count Badge: Context menu header shows song count for single-game selection (e.g. UniPlaySong (3 songs)) with an info line showing count and folder size.'
+      - '[New Feature] Default Music Indicator: Optional [Default] prefix in the Now Playing ticker when fallback music is playing. Toggle in Settings → General.'
+      - '[New Feature] Experimental Settings Tab: New tab for features under active development with download notification sound and celebration toast settings.'
+      - '[Experimental] Download Complete Sound: Plays a basic notification sound when music downloads finish. Briefly pauses and resumes music.'
+      - '[Experimental] Celebration Toast: Visual gold-glow toast popup when a game is marked completed, complementing the fanfare sound.'
+      - '[Enhancement] Jingle Live Effects: Celebration jingles play through a dedicated NAudio player with the same effects chain as regular music. Main music pauses during the jingle and resumes automatically. Toggleable per-user.'
   - Version: 1.2.11
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-15

@@ -13,6 +13,7 @@ namespace UniPlaySong.Models
         FocusLoss,                  // Playnite window lost focus to another application (PauseOnFocusLoss setting)
         Minimized,                  // Playnite window is minimized (PauseOnMinimize setting)
         SystemTray,                 // Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
-        GameStarting                // Game is launching — pause until game closes (PauseOnGameStart setting)
+        GameStarting,               // Game is launching — pause until game closes (PauseOnGameStart setting)
+        SystemLock                  // Windows session is locked (Win+L) (PauseOnSystemLock setting)
     }
 }

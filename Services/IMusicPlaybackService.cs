@@ -50,6 +50,8 @@ namespace UniPlaySong.Services
         Game CurrentGame { get; }
         event System.Action<string> OnSongChanged;
 
+        System.TimeSpan? CurrentTime { get; } // Current playback position (for progress indicator)
+
         bool IsPlayingDefaultMusic { get; } // true if playing default/fallback music
         bool IsPlayingBundledPreset { get; } // true if the current default music is a bundled preset (show metadata)
 

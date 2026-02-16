@@ -25,10 +25,12 @@ namespace UniPlaySong.DeskMediaControl
         private TopPanelItem _skipItem;
         private TopPanelItem _nowPlayingItem;
         private TopPanelItem _spectrumItem;
+        private TopPanelItem _progressItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
         private NowPlayingPanel _nowPlayingPanel;
         private SpectrumVisualizerControl _spectrumVisualizer;
+        private SongProgressBar _progressBar;
         private SongMetadataService _metadataService;
 
         public TopPanelItem PlayPauseItem => _playPauseItem;
@@ -38,27 +40,32 @@ namespace UniPlaySong.DeskMediaControl
         public IEnumerable<TopPanelItem> GetTopPanelItems()
         {
             var settings = _getSettings?.Invoke();
+            var progressPosition = settings?.ProgressBarPosition ?? ProgressBarPosition.AfterSkipButton;
 
-            // Only include play/pause and skip buttons if media controls setting is enabled
             if (settings?.ShowDesktopMediaControls != false)
             {
                 yield return _playPauseItem;
                 yield return _skipItem;
             }
 
-            // Spectrum visualizer (between controls and now playing)
-            // Always yield — Visible toggles at runtime via UpdateIcons()
+            // Progress bar — position depends on setting (BelowNowPlaying is embedded, not a separate item)
+            if (_progressItem != null && progressPosition == ProgressBarPosition.AfterSkipButton)
+                yield return _progressItem;
+
             if (_spectrumItem != null)
             {
                 _spectrumItem.Visible = settings?.ShowSpectrumVisualizer == true;
                 yield return _spectrumItem;
             }
 
-            // Only include Now Playing panel if setting is enabled
+            if (_progressItem != null && progressPosition == ProgressBarPosition.AfterVisualizer)
+                yield return _progressItem;
+
             if (settings?.ShowNowPlayingInTopPanel == true && _nowPlayingItem != null)
-            {
                 yield return _nowPlayingItem;
-            }
+
+            if (_progressItem != null && progressPosition == ProgressBarPosition.AfterNowPlaying)
+                yield return _progressItem;
         }
 
         public TopPanelMediaControlViewModel(
@@ -76,6 +83,7 @@ namespace UniPlaySong.DeskMediaControl
 
             InitializeTopPanelItems();
             InitializeSpectrumVisualizer();
+            InitializeProgressBar();
             InitializeNowPlayingPanel();
             SubscribeToEvents(_getPlaybackService());
         }
@@ -180,14 +188,45 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
+        private void InitializeProgressBar()
+        {
+            try
+            {
+                var settings = _getSettings?.Invoke();
+                if (settings?.ShowProgressBar != true) return;
+
+                // BelowNowPlaying mode: embedded in NowPlayingPanel, not a separate TopPanelItem
+                if (settings.ProgressBarPosition == ProgressBarPosition.BelowNowPlaying) return;
+
+                _progressBar = new SongProgressBar(_getPlaybackService);
+                _progressItem = new TopPanelItem
+                {
+                    Icon = _progressBar,
+                    Title = "UniPlaySong: Song Progress",
+                    Visible = true
+                };
+                _log?.Invoke("TopPanel: Progress bar initialized");
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error initializing progress bar: {ex.Message}");
+            }
+        }
+
         private void InitializeNowPlayingPanel()
         {
             try
             {
-                // Create the Now Playing panel
                 _nowPlayingPanel = new NowPlayingPanel();
 
-                // Create the TopPanelItem for the Now Playing display
+                // Enable embedded progress bar if BelowNowPlaying mode
+                var progressSettings = _getSettings?.Invoke();
+                if (progressSettings?.ShowProgressBar == true &&
+                    progressSettings.ProgressBarPosition == ProgressBarPosition.BelowNowPlaying)
+                {
+                    _nowPlayingPanel.EnableEmbeddedProgressBar(_getPlaybackService);
+                }
+
                 _nowPlayingItem = new TopPanelItem
                 {
                     Icon = _nowPlayingPanel,
@@ -250,6 +289,15 @@ namespace UniPlaySong.DeskMediaControl
         private void OnSongInfoChanged(SongInfo songInfo)
         {
             _nowPlayingPanel?.UpdateSongInfo(songInfo);
+
+            // Reset progress bar on song change so it doesn't show stale position during crossfade
+            _progressBar?.Reset();
+            _nowPlayingPanel?.ResetEmbeddedProgress();
+
+            // Feed duration to progress bar (standalone or embedded)
+            var duration = songInfo?.Duration ?? TimeSpan.Zero;
+            _progressBar?.SetDuration(duration);
+            _nowPlayingPanel?.SetEmbeddedDuration(duration);
         }
 
         private void SubscribeToEvents(IMusicPlaybackService playbackService)
@@ -379,6 +427,11 @@ namespace UniPlaySong.DeskMediaControl
                     if (_spectrumItem != null)
                         _spectrumItem.Visible = vizEnabled;
                     _spectrumVisualizer?.SetActive(isPlaying && vizEnabled);
+
+                    // Progress bar active state
+                    _progressBar?.SetActive(isPlaying);
+                    if (_progressItem != null)
+                        _progressItem.Visible = settings?.ShowProgressBar == true;
 
                     // Hide Now Playing panel when default music is playing (no game-specific music)
                     if (_nowPlayingItem != null && settings?.ShowNowPlayingInTopPanel == true)

@@ -13,6 +13,7 @@ drafts/
 docs/release_notes/
 docs/dev_docs/roadmaps/
 .claude/
+CLAUDE.md
 
 # Bundled jingle audio files (not distributed in repo due to licensing)
 Jingles/*.mp3

@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.3.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,9 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3
+## What's New - v1.3.0
 
-In development.
+- **Completion Fanfare** - Play a celebration jingle when marking a game as "Completed". Ships with 11 retro jingle presets (Sonic, Streets of Rage, Mortal Kombat, and more), or use your own custom sound file. Jingles pause your music, play through the NAudio effects chain (if Live Effects are enabled), then resume where you left off
+- **Song Count Badge** - Context menu header shows song count and folder size at a glance (e.g., "UniPlaySong (3 songs)" with a "3 songs | 12.4 MB" info line)
+- **Default Music Indicator** - Optional `[Default]` prefix in the Now Playing ticker when fallback music is playing
+- **Download Complete Sound** (Experimental) - Notification sound when music downloads finish
+- **Celebration Toast** (Experimental) - Gold-glow toast popup complementing the completion fanfare
+- **Auto-Pause on System Lock** (Experimental) - Music pauses when you lock your PC (Win+L), resumes on unlock
+- **Song Progress Indicator** (Experimental) - Thin progress bar showing playback position with 4 configurable placements
+- **Enhanced Library Statistics** (Experimental) - Card grid layout with format breakdown and top games by song count
+- **Bug Fixes** - Play/pause icon no longer flickers on song transitions; skip while paused now works correctly; faster skip crossfades with preloading
 
 ### Previous Versions
 - **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI
@@ -90,13 +98,14 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Settings Tabs
 - **General**: Music behavior, pause settings, desktop controls, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music, completion fanfare
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
 - **Downloads**: Tool paths, auto-download options, bulk download
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
+- **Experimental**: Download notification sound, celebration toast notification
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA
