@@ -2,7 +2,13 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.2.11] - TBD
+## [1.3] - TBD
+
+### Added
+
+### Fixed
+
+## [1.2.11] - 2026-02-15
 
 ### Added
 - **Bundled Default Music Presets** - Three ambient tracks now ship with the plugin, selectable via dropdown in Settings → Playback. New installs default to a bundled preset instead of requiring a custom file path. Existing users are migrated automatically based on their current default music settings

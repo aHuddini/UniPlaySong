@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.2.11-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,20 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.2.11
+## What's New - v1.3
 
-### New
-- **Bundled Default Music Presets** - Three ambient tracks ship with the plugin, selectable via dropdown in Settings → Playback. No custom file path needed for new installs
-- **Play On Installed Games Only** - Only play game-specific music for installed games. Re-evaluates when install state changes. Settings → Playback
-- **Hide Now Playing for Default Music** - Collapse the Now Playing panel when no game-specific music is playing. Settings → General
-
-### Performance & Fixes
-- **Song List Caching** - Directory scans cached in-memory with smart invalidation. Opt-in toggle in General Settings → Performance
-- **Parallel File Deletions** - Bulk delete operations now run in parallel
-- **Async UI Operations** - Eliminated UI freezes during batch downloads and audio processing
-- **Shuffle Fix** - Fixed duplicate song sequences when rapidly switching games
+In development.
 
 ### Previous Versions
+- **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI
 - **v1.2.10**: Fullscreen performance fix (desktop visualizer init skipped in fullscreen)
 ---
 
