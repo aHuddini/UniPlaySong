@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
 using UniPlaySong.Common;
@@ -17,6 +19,7 @@ namespace UniPlaySong
         private readonly UniPlaySong plugin;
         private UniPlaySongSettings settings;
         private MediaPlayer _jinglePreviewPlayer;
+        private CancellationTokenSource _audioScanCts;
 
         public UniPlaySongSettingsViewModel(UniPlaySong plugin)
         {
@@ -1851,6 +1854,24 @@ namespace UniPlaySong
         private string _statsTopGames = "";
         public string StatsTopGames { get => _statsTopGames; set { _statsTopGames = value; OnPropertyChanged(); } }
 
+        // Audio-level stats — populated by background TagLib# scan
+        private const string AudioScanPlaceholder = "Scanning...[Please Wait]";
+
+        private string _statsTotalPlaytime = AudioScanPlaceholder;
+        public string StatsTotalPlaytime { get => _statsTotalPlaytime; set { _statsTotalPlaytime = value; OnPropertyChanged(); } }
+
+        private string _statsAvgSongLength = AudioScanPlaceholder;
+        public string StatsAvgSongLength { get => _statsAvgSongLength; set { _statsAvgSongLength = value; OnPropertyChanged(); } }
+
+        private string _statsId3Coverage = AudioScanPlaceholder;
+        public string StatsId3Coverage { get => _statsId3Coverage; set { _statsId3Coverage = value; OnPropertyChanged(); } }
+
+        private string _statsReducibleSpace = AudioScanPlaceholder;
+        public string StatsReducibleSpace { get => _statsReducibleSpace; set { _statsReducibleSpace = value; OnPropertyChanged(); } }
+
+        private string _statsBitrateDistribution = AudioScanPlaceholder;
+        public string StatsBitrateDistribution { get => _statsBitrateDistribution; set { _statsBitrateDistribution = value; OnPropertyChanged(); } }
+
         private void ScanLibraryStats()
         {
             try
@@ -1869,6 +1890,11 @@ namespace UniPlaySong
                     StatsAvgSongsPerGame = "0";
                     StatsFormatBreakdown = "No music library found";
                     StatsTopGames = "";
+                    StatsTotalPlaytime = "0";
+                    StatsAvgSongLength = "0";
+                    StatsId3Coverage = "N/A";
+                    StatsReducibleSpace = "N/A";
+                    StatsBitrateDistribution = "No music library found";
                     return;
                 }
 
@@ -1877,6 +1903,7 @@ namespace UniPlaySong
                 long totalBytes = 0;
                 var formatCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 var gameSongCounts = new Dictionary<string, int>(); // dirName (GUID) → song count
+                var allFilePaths = new List<string>();
 
                 foreach (var gameDir in Directory.GetDirectories(gamesPath))
                 {
@@ -1894,6 +1921,7 @@ namespace UniPlaySong
                     {
                         try
                         {
+                            allFilePaths.Add(file);
                             totalBytes += new FileInfo(file).Length;
                             var ext = Path.GetExtension(file).ToUpperInvariant().TrimStart('.');
                             if (formatCounts.ContainsKey(ext))
@@ -1943,6 +1971,9 @@ namespace UniPlaySong
                         return $"{name} ({kv.Value})";
                     });
                 StatsTopGames = string.Join("   |   ", topGameEntries);
+
+                // Phase 2: Background TagLib# scan for audio-level metrics
+                ScanAudioMetricsBackground(allFilePaths);
             }
             catch (Exception ex)
             {
@@ -1952,8 +1983,185 @@ namespace UniPlaySong
                 StatsAvgSongsPerGame = "Error";
                 StatsFormatBreakdown = "Error scanning library";
                 StatsTopGames = "";
+                StatsTotalPlaytime = "Error";
+                StatsAvgSongLength = "Error";
+                StatsId3Coverage = "Error";
+                StatsReducibleSpace = "Error";
+                StatsBitrateDistribution = "Error scanning library";
                 LogManager.GetLogger().Error(ex, "Error scanning library stats");
             }
+        }
+
+        // Phase 2: Background TagLib# scan for audio-level metrics (bitrate, duration, ID3 tags)
+        private void ScanAudioMetricsBackground(List<string> filePaths)
+        {
+            _audioScanCts?.Cancel();
+            _audioScanCts = new CancellationTokenSource();
+            var ct = _audioScanCts.Token;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    var totalDuration = TimeSpan.Zero;
+                    int filesWithId3 = 0;
+                    int totalFiles = filePaths.Count;
+                    long reducibleBytes = 0;
+                    int reducibleCount = 0;
+
+                    var bitrateCounts = new Dictionary<int, int>(); // exact kbps → count
+
+                    foreach (var path in filePaths)
+                    {
+                        if (ct.IsCancellationRequested) return;
+
+                        try
+                        {
+                            using (var file = TagLib.File.Create(path))
+                            {
+                                var duration = file.Properties?.Duration ?? TimeSpan.Zero;
+                                totalDuration += duration;
+
+                                int bitrate = file.Properties?.AudioBitrate ?? 0;
+
+                                if (bitrate > 0)
+                                {
+                                    if (bitrateCounts.ContainsKey(bitrate))
+                                        bitrateCounts[bitrate]++;
+                                    else
+                                        bitrateCounts[bitrate] = 1;
+                                }
+
+                                // ID3 tag presence — has at least title or artist
+                                bool hasTitle = !string.IsNullOrWhiteSpace(file.Tag?.Title);
+                                bool hasArtist = file.Tag?.Performers != null
+                                                 && file.Tag.Performers.Length > 0
+                                                 && !string.IsNullOrWhiteSpace(file.Tag.Performers[0]);
+                                if (hasTitle || hasArtist)
+                                    filesWithId3++;
+
+                                // Reducible space: files above 128kbps
+                                if (bitrate > 128 && duration.TotalSeconds > 0)
+                                {
+                                    long actualSize = new FileInfo(path).Length;
+                                    long estimatedAt128 = (long)(128000.0 * duration.TotalSeconds / 8.0);
+                                    long savings = actualSize - estimatedAt128;
+                                    if (savings > 0)
+                                    {
+                                        reducibleBytes += savings;
+                                        reducibleCount++;
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Corrupt or unreadable file — skip
+                        }
+                    }
+
+                    if (ct.IsCancellationRequested) return;
+
+                    // Format results
+                    string playtime = FormatLargePlaytime(totalDuration);
+                    string avgLength = totalFiles > 0
+                        ? DeskMediaControl.SongTitleCleaner.FormatDuration(
+                              TimeSpan.FromSeconds(totalDuration.TotalSeconds / totalFiles))
+                        : "0:00";
+                    string id3Coverage = totalFiles > 0
+                        ? $"{filesWithId3} / {totalFiles} ({100.0 * filesWithId3 / totalFiles:F0}%)"
+                        : "N/A";
+                    string reducible = reducibleCount > 0
+                        ? $"{reducibleCount} songs above 128 kbps  |  ~{FormatBytes(reducibleBytes)} recoverable if downsampled to 128 kbps"
+                        : "All songs are 128 kbps or below";
+                    string bitrateDist = FormatBitrateBuckets(bitrateCounts);
+
+                    // Marshal to UI thread
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        StatsTotalPlaytime = playtime;
+                        StatsAvgSongLength = avgLength;
+                        StatsId3Coverage = id3Coverage;
+                        StatsReducibleSpace = reducible;
+                        StatsBitrateDistribution = bitrateDist;
+                    }));
+                }
+                catch
+                {
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        StatsTotalPlaytime = "Scan failed";
+                        StatsAvgSongLength = "Scan failed";
+                        StatsId3Coverage = "Scan failed";
+                        StatsReducibleSpace = "Scan failed";
+                        StatsBitrateDistribution = "Scan failed";
+                    }));
+                }
+            });
+        }
+
+        private static string FormatLargePlaytime(TimeSpan duration)
+        {
+            if (duration.TotalMinutes < 1) return "< 1m";
+
+            int days = (int)duration.TotalDays;
+            int hours = duration.Hours;
+            int minutes = duration.Minutes;
+
+            if (days > 0)
+                return $"{days}d {hours}h {minutes}m";
+            if (hours > 0)
+                return $"{hours}h {minutes}m";
+            return $"{minutes}m";
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes >= 1073741824)
+                return $"{bytes / 1073741824.0:F1} GB";
+            return $"{bytes / 1048576.0:F0} MB";
+        }
+
+        private static readonly HashSet<int> StandardBitrates = new HashSet<int> { 320, 256, 192, 160, 128, 96, 64, 32 };
+
+        private static string FormatBitrateBuckets(Dictionary<int, int> bitrateCounts)
+        {
+            if (bitrateCounts.Count == 0)
+                return "No bitrate data available";
+
+            // Standard bitrates shown individually, non-standard rolled into two groups
+            var parts = new List<string>();
+            int otherAbove128 = 0;
+            int otherBelow128 = 0;
+
+            foreach (var kv in bitrateCounts)
+            {
+                if (StandardBitrates.Contains(kv.Key))
+                    continue; // handled below in sorted order
+                if (kv.Key > 128)
+                    otherAbove128 += kv.Value;
+                else
+                    otherBelow128 += kv.Value;
+            }
+
+            // Standard bitrates descending, then "Other" groups last separated by |
+            foreach (int br in new[] { 320, 256, 192, 160, 128, 96, 64, 32 })
+            {
+                int count;
+                if (bitrateCounts.TryGetValue(br, out count) && count > 0)
+                    parts.Add($"{br} kbps: {count}");
+            }
+
+            var otherParts = new List<string>();
+            if (otherAbove128 > 0)
+                otherParts.Add($"Other (>128 kbps): {otherAbove128}");
+            if (otherBelow128 > 0)
+                otherParts.Add($"Other (<128 kbps): {otherBelow128}");
+
+            if (otherParts.Count > 0)
+                return string.Join("   |   ", parts) + "   |   " + string.Join("   |   ", otherParts);
+
+            return string.Join("   |   ", parts);
         }
 
         private void UpdateCacheStats()
@@ -2011,6 +2219,7 @@ namespace UniPlaySong
 
         public void CancelEdit()
         {
+            _audioScanCts?.Cancel();
             _jinglePreviewPlayer?.Stop();
             _jinglePreviewPlayer?.Close();
             _jinglePreviewPlayer = null;
@@ -2025,6 +2234,7 @@ namespace UniPlaySong
 
         public void EndEdit()
         {
+            _audioScanCts?.Cancel();
             _jinglePreviewPlayer?.Stop();
             _jinglePreviewPlayer?.Close();
             _jinglePreviewPlayer = null;
