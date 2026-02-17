@@ -475,11 +475,11 @@ namespace UniPlaySong
             set { pauseOnExternalAudio = value; OnPropertyChanged(); }
         }
 
-        // How many seconds external audio must persist before pausing, and silence before resuming (1-10).
+        // How many seconds external audio must persist before pausing, and silence before resuming (0-10). 0 = instant (no debounce).
         public int ExternalAudioDebounceSeconds
         {
             get => externalAudioDebounceSeconds;
-            set { externalAudioDebounceSeconds = Math.Max(1, Math.Min(10, value)); OnPropertyChanged(); }
+            set { externalAudioDebounceSeconds = Math.Max(0, Math.Min(10, value)); OnPropertyChanged(); }
         }
 
         /// <summary>

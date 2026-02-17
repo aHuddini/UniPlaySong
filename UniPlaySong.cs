@@ -121,7 +121,8 @@ namespace UniPlaySong
         private int _externalAudioDebounceCount;
         private int _externalAudioSilenceCount;
         private const double ExternalAudioPollIntervalMs = 1500.0;
-        private int ExternalAudioDebounceThreshold => Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
+        private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
+            ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
 
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;

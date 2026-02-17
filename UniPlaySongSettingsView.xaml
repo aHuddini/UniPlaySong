@@ -2989,17 +2989,44 @@
                     <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                                 IsEnabled="{Binding Settings.PauseOnExternalAudio}">
                         <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
-                        <Slider Minimum="1" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
                                 Value="{Binding Settings.ExternalAudioDebounceSeconds}"
                                 Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"
-                                   VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                            <Setter Property="Text" Value="Instant"/>
+                                            <Setter Property="Foreground" Value="Orange"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
-                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Lower values are more responsive but may flicker with brief sounds."
+                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x26A0; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
                 </StackPanel>
             </ScrollViewer>
