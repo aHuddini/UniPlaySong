@@ -13,6 +13,12 @@ All notable changes to UniPlaySong will be documented in this file.
   - App exclusion list — comma-separated process names to ignore (OBS excluded by default)
   - Known limitation: Screen recorders/streaming apps that capture desktop audio may cause false detections
   - New `AddPauseSourceImmediate`/`RemovePauseSourceImmediate` methods in MusicPlaybackService for fade-free pause/resume with proper source tracking
+- **Auto-Pause on Idle / AFK** (Experimental) - Pauses music after no keyboard/mouse input for a configurable duration
+  - Win32 `GetLastInputInfo()` P/Invoke with 10-second polling timer
+  - Configurable timeout slider (1–60 minutes, default 15 min)
+  - Music resumes automatically when any keyboard or mouse input is detected
+  - Known limitation: Does not detect gamepad input
+  - Preserved across game switches (user is still AFK regardless of which game is selected)
 
 ### Improved
 - **Enhanced Library Statistics** (Experimental) - Expanded the stats panel with background audio-level metrics powered by TagLib#

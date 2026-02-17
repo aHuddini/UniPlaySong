@@ -1241,7 +1241,8 @@ public enum PauseSource
     SystemTray,               // Playnite hidden in system tray (PauseWhenInSystemTray setting)
     GameStarting,             // Game is launching (PauseOnGameStart setting)
     SystemLock,               // Windows session locked via Win+L (PauseOnSystemLock setting)
-    ExternalAudio             // Another app is producing audio (PauseOnExternalAudio setting)
+    ExternalAudio,            // Another app is producing audio (PauseOnExternalAudio setting)
+    Idle                      // No keyboard/mouse input for configured duration (PauseOnIdle setting)
 }
 
 // Active sources tracking
@@ -1251,7 +1252,7 @@ private bool _isPaused => _activePauseSources.Count > 0;
 
 **Source categories**:
 - **Transient sources** (`Video`, `Settings`, `ViewChange`, `DefaultMusicPreservation`, `ThemeOverlay`) — cleared automatically by `ClearAllPauseSources()` during game music transitions.
-- **Preserved sources** (`Manual`, `FocusLoss`, `Minimized`, `SystemTray`, `ExternalAudio`) — survive `ClearAllPauseSources()` and must be cleared by their own handlers (user press play, window events, poll timer, etc.).
+- **Preserved sources** (`Manual`, `FocusLoss`, `Minimized`, `SystemTray`, `ExternalAudio`, `Idle`) — survive `ClearAllPauseSources()` and must be cleared by their own handlers (user press play, window events, poll timer, etc.).
 
 **Key methods**:
 
@@ -1261,7 +1262,7 @@ private bool _isPaused => _activePauseSources.Count > 0;
 | `RemovePauseSource(source)` | Removes source from set; if all sources cleared and player is actively playing, calls `_fader.Resume()`. If player is loaded but not active (song loaded during manual pause), starts playback with `Play()` + `FadeIn()`. |
 | `AddPauseSourceImmediate(source)` | Like `AddPauseSource`, but cancels any active fade and pauses the player directly (no fade-out). Used by external audio detection when instant mode is enabled. |
 | `RemovePauseSourceImmediate(source)` | Like `RemovePauseSource`, but resumes at full volume instantly (no fade-in). Handles all three resume paths: active player, loaded-but-inactive, and deferred game. |
-| `ClearAllPauseSources()` | Clears all **transient** sources. Preserves `Manual`, `FocusLoss`, `Minimized`, `SystemTray`, and `ExternalAudio`. Only calls `_fader.Resume()` if zero sources remain after clearing. |
+| `ClearAllPauseSources()` | Clears all **transient** sources. Preserves `Manual`, `FocusLoss`, `Minimized`, `SystemTray`, `ExternalAudio`, and `Idle`. Only calls `_fader.Resume()` if zero sources remain after clearing. |
 
 **Manual pause and game switching**: When the user manually pauses and then switches games, `PlayGameMusic()` loads the new song (updating `CurrentSongPath` and firing `OnSongChanged` for Now Playing), but checks `_isPaused` after `ClearAllPauseSources()`. Since `Manual` is preserved, `_isPaused` remains true and `Play()`/`FadeIn()` are skipped. The song is loaded but silent. When the user presses play, `RemovePauseSource(Manual)` detects the loaded-but-not-active state and starts playback with fade-in.
 
@@ -1293,6 +1294,23 @@ Polls Windows audio sessions via NAudio `CoreAudioApi` to detect when other appl
 - `ExternalAudioDebounceSeconds` (int, default 0) — 0-10 seconds, 0 = instant debounce
 - `ExternalAudioInstantPause` (bool, default false) — bypass fade transitions
 - `ExternalAudioExcludedApps` (string, default "obs64, obs32") — comma-separated process names
+
+### Idle / AFK Detection
+
+Polls keyboard/mouse inactivity via Win32 `GetLastInputInfo()` P/Invoke to pause music when the user walks away. Implementation in `UniPlaySong.OnIdlePollTick()`.
+
+**Detection flow** (per poll tick, every 10 seconds):
+1. `GetLastInputInfo()` → returns `LASTINPUTINFO.dwTime` (tick count of last input event)
+2. `(uint)Environment.TickCount - dwTime` → milliseconds since last input (unsigned arithmetic handles 24.8-day wrap)
+3. Compare against `IdleTimeoutMinutes * 60 * 1000` threshold
+4. If idle exceeded: `AddPauseSource(Idle)` with faded transition
+5. If input detected after idle: `RemovePauseSource(Idle)` with faded resume
+
+**Settings** (Experimental → Idle Detection):
+- `PauseOnIdle` (bool, default false) — master toggle
+- `IdleTimeoutMinutes` (int, default 15) — 1-60 minutes
+
+**Known limitation**: `GetLastInputInfo` only tracks keyboard and mouse input. Gamepad input is not detected. `XInputWrapper` exists in the codebase for potential future enhancement.
 
 ### Integration Points
 

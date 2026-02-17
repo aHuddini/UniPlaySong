@@ -3054,6 +3054,29 @@
                                Margin="20,0,0,10"
                                IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
 
+                    <!-- Idle Detection -->
+                    <TextBlock Text="Idle Detection" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+
+                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
+                              IsChecked="{Binding Settings.PauseOnIdle}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnIdle}">
+                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="60"
+                                Value="{Binding Settings.IdleTimeoutMinutes}"
+                                Width="200"
+                                TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
+                    </StackPanel>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

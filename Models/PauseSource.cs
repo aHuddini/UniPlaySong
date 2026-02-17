@@ -15,6 +15,7 @@ namespace UniPlaySong.Models
         SystemTray,                 // Playnite is hidden in the system tray (PauseWhenInSystemTray setting)
         GameStarting,               // Game is launching — pause until game closes (PauseOnGameStart setting)
         SystemLock,                 // Windows session is locked (Win+L) (PauseOnSystemLock setting)
-        ExternalAudio               // Another application is producing audio (PauseOnExternalAudio setting)
+        ExternalAudio,              // Another application is producing audio (PauseOnExternalAudio setting)
+        Idle                        // No keyboard/mouse input for configured duration (PauseOnIdle setting)
     }
 }

@@ -206,6 +206,8 @@ namespace UniPlaySong
         private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32";
+        private bool pauseOnIdle = false;
+        private int idleTimeoutMinutes = 15;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -496,6 +498,20 @@ namespace UniPlaySong
         {
             get => externalAudioExcludedApps;
             set { externalAudioExcludedApps = value ?? ""; OnPropertyChanged(); }
+        }
+
+        // Pause music after no keyboard/mouse input for the configured duration.
+        public bool PauseOnIdle
+        {
+            get => pauseOnIdle;
+            set { pauseOnIdle = value; OnPropertyChanged(); }
+        }
+
+        // Minutes of inactivity before music pauses (1-60). Only used when PauseOnIdle is enabled.
+        public int IdleTimeoutMinutes
+        {
+            get => idleTimeoutMinutes;
+            set { idleTimeoutMinutes = Math.Max(1, Math.Min(60, value)); OnPropertyChanged(); }
         }
 
         /// <summary>

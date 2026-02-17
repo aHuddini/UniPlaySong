@@ -23,6 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.3.1
 
 - **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another app (Spotify, YouTube, Discord, etc.) starts playing audio. Resumes when external audio stops. Defaults to instant detection with faded transitions. Configurable debounce (0-10s), optional instant pause mode (no fade), and app exclusion list for screen recorders like OBS. Uses NAudio CoreAudioApi for Windows audio session detection.
+- **Auto-Pause on Idle / AFK** (Experimental) - Pauses music after no keyboard/mouse input for a configurable duration (1-60 min, default 15). Resumes when any input is detected. Covers the gap when users walk away without locking their PC. Does not detect gamepad input.
 - **Enhanced Library Statistics** (Experimental) - Audio-level metrics powered by background TagLib# scan: average song length, total playtime, ID3 tag coverage, bitrate distribution (exact counts per standard kbps), and reducible track size with estimated space savings. Reorganized card layout with improved labels.
 
 ### Previous Versions

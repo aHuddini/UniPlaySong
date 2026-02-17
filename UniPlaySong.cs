@@ -128,6 +128,20 @@ namespace UniPlaySong
         private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
             ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
 
+        // Idle/AFK detection (polls keyboard/mouse activity to pause after inactivity)
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        private System.Windows.Threading.DispatcherTimer _idlePollTimer;
+        private bool _idleDetected;
+
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
 
@@ -374,6 +388,11 @@ namespace UniPlaySong
             _externalAudioPollTimer.Interval = TimeSpan.FromMilliseconds(1500);
             _externalAudioPollTimer.Tick += OnExternalAudioPollTick;
             _externalAudioPollTimer.Start();
+            _idlePollTimer = new System.Windows.Threading.DispatcherTimer(
+                System.Windows.Threading.DispatcherPriority.Background);
+            _idlePollTimer.Interval = TimeSpan.FromSeconds(10);
+            _idlePollTimer.Tick += OnIdlePollTick;
+            _idlePollTimer.Start();
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
@@ -746,6 +765,8 @@ namespace UniPlaySong
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer = null;
+            _idlePollTimer?.Stop();
+            _idlePollTimer = null;
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
@@ -1304,6 +1325,54 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 _fileLogger?.Debug($"External audio poll error: {ex.Message}");
+            }
+        }
+
+        // Polls keyboard/mouse inactivity to pause music after a configurable idle timeout.
+        // Uses Win32 GetLastInputInfo — does not detect gamepad input.
+        private void OnIdlePollTick(object sender, EventArgs e)
+        {
+            if (_settings?.PauseOnIdle != true)
+            {
+                if (_idleDetected)
+                {
+                    _idleDetected = false;
+                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                }
+                return;
+            }
+
+            try
+            {
+                var info = new LASTINPUTINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(LASTINPUTINFO)) };
+                if (!GetLastInputInfo(ref info))
+                    return;
+
+                uint idleMs = (uint)Environment.TickCount - info.dwTime;
+                uint thresholdMs = (uint)(_settings.IdleTimeoutMinutes * 60 * 1000);
+
+                if (idleMs >= thresholdMs)
+                {
+                    if (!_idleDetected)
+                    {
+                        _idleDetected = true;
+                        _fileLogger?.Debug($"Idle detected ({_settings.IdleTimeoutMinutes}min), pausing");
+                        _playbackService?.AddPauseSource(Models.PauseSource.Idle);
+                    }
+                }
+                else
+                {
+                    if (_idleDetected)
+                    {
+                        _idleDetected = false;
+                        _fileLogger?.Debug("Input detected, resuming from idle");
+                        _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"Idle poll error: {ex.Message}");
             }
         }
 
