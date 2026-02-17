@@ -1238,7 +1238,10 @@ public enum PauseSource
     ThemeOverlay,             // Theme MusicControl Tag=True
     FocusLoss,                // Playnite window lost focus (PauseOnFocusLoss setting)
     Minimized,                // Playnite window minimized (PauseOnMinimize setting)
-    SystemTray                // Playnite hidden in system tray (PauseWhenInSystemTray setting)
+    SystemTray,               // Playnite hidden in system tray (PauseWhenInSystemTray setting)
+    GameStarting,             // Game is launching (PauseOnGameStart setting)
+    SystemLock,               // Windows session locked via Win+L (PauseOnSystemLock setting)
+    ExternalAudio             // Another app is producing audio (PauseOnExternalAudio setting)
 }
 
 // Active sources tracking
@@ -1248,7 +1251,7 @@ private bool _isPaused => _activePauseSources.Count > 0;
 
 **Source categories**:
 - **Transient sources** (`Video`, `Settings`, `ViewChange`, `DefaultMusicPreservation`, `ThemeOverlay`) — cleared automatically by `ClearAllPauseSources()` during game music transitions.
-- **Preserved sources** (`Manual`, `FocusLoss`, `Minimized`, `SystemTray`) — survive `ClearAllPauseSources()` and must be cleared by their own handlers (user press play, window events, etc.).
+- **Preserved sources** (`Manual`, `FocusLoss`, `Minimized`, `SystemTray`, `ExternalAudio`) — survive `ClearAllPauseSources()` and must be cleared by their own handlers (user press play, window events, poll timer, etc.).
 
 **Key methods**:
 
@@ -1256,9 +1259,40 @@ private bool _isPaused => _activePauseSources.Count > 0;
 |--------|----------|
 | `AddPauseSource(source)` | Adds source to set; calls `_fader.Pause()` if this is the first source (transitions from playing to paused). |
 | `RemovePauseSource(source)` | Removes source from set; if all sources cleared and player is actively playing, calls `_fader.Resume()`. If player is loaded but not active (song loaded during manual pause), starts playback with `Play()` + `FadeIn()`. |
-| `ClearAllPauseSources()` | Clears all **transient** sources. Preserves `Manual`, `FocusLoss`, `Minimized`, and `SystemTray`. Only calls `_fader.Resume()` if zero sources remain after clearing. |
+| `AddPauseSourceImmediate(source)` | Like `AddPauseSource`, but cancels any active fade and pauses the player directly (no fade-out). Used by external audio detection when instant mode is enabled. |
+| `RemovePauseSourceImmediate(source)` | Like `RemovePauseSource`, but resumes at full volume instantly (no fade-in). Handles all three resume paths: active player, loaded-but-inactive, and deferred game. |
+| `ClearAllPauseSources()` | Clears all **transient** sources. Preserves `Manual`, `FocusLoss`, `Minimized`, `SystemTray`, and `ExternalAudio`. Only calls `_fader.Resume()` if zero sources remain after clearing. |
 
 **Manual pause and game switching**: When the user manually pauses and then switches games, `PlayGameMusic()` loads the new song (updating `CurrentSongPath` and firing `OnSongChanged` for Now Playing), but checks `_isPaused` after `ClearAllPauseSources()`. Since `Manual` is preserved, `_isPaused` remains true and `Play()`/`FadeIn()` are skipped. The song is loaded but silent. When the user presses play, `RemovePauseSource(Manual)` detects the loaded-but-not-active state and starts playback with fade-in.
+
+### External Audio Detection
+
+Polls Windows audio sessions via NAudio `CoreAudioApi` to detect when other applications produce audio. Implementation in `UniPlaySong.OnExternalAudioPollTick()`.
+
+**Detection flow** (per poll tick):
+1. `MMDeviceEnumerator.GetDefaultAudioEndpoint(Render, Multimedia)` → default output device
+2. `device.AudioSessionManager.Sessions` → enumerate all active sessions
+3. Skip: own PID (Playnite), PID 0, `IsSystemSoundsSession`, excluded app process names
+4. Check `AudioMeterInformation.MasterPeakValue > threshold` — if any session is producing audio, `audioFound = true`
+5. Debounce via consecutive-poll counters before pausing or resuming
+
+**Two operating modes** (controlled by `IsExternalAudioInstantMode` — true when debounce=0 or instant pause toggle is on):
+
+| Parameter | Normal Mode | Instant Mode |
+|-----------|-------------|--------------|
+| Poll interval | 1000ms | 500ms |
+| Peak threshold | 0.01 | 0.005 |
+| Pause/resume | `AddPauseSource` (faded) | `AddPauseSourceImmediate` (instant) |
+
+**Instant pause tracking**: `_externalAudioPausedInstantly` field records which mode was used for the current pause. Resume always uses the matching method, preventing fader state desync if the user toggles the setting mid-pause.
+
+**App exclusion list**: Comma-separated process names in `ExternalAudioExcludedApps` setting, parsed into a `HashSet<string>` (case-insensitive). Cache rebuilt only when the setting string changes. Process names resolved via `Process.GetProcessById()` inside the session loop. OBS (`obs64, obs32`) excluded by default — screen recorders mirror system audio through their own sessions, causing feedback loops.
+
+**Settings** (Experimental → Audio Awareness):
+- `PauseOnExternalAudio` (bool, default false) — master toggle
+- `ExternalAudioDebounceSeconds` (int, default 0) — 0-10 seconds, 0 = instant debounce
+- `ExternalAudioInstantPause` (bool, default false) — bypass fade transitions
+- `ExternalAudioExcludedApps` (string, default "obs64, obs32") — comma-separated process names
 
 ### Integration Points
 

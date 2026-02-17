@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.3.1] - TBD
 
+### Added
+- **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another application produces audio
+  - Detects any app playing audio through Windows via NAudio CoreAudioApi session enumeration
+  - Configurable debounce slider (0–10 seconds, default 0 "Instant") — controls how long external audio must persist before pausing. Default is instant (reacts on first detection poll)
+  - Instant pause toggle — bypasses fade transitions for immediate pause/resume (off by default, faded transitions used)
+  - Adaptive polling: 500ms in instant mode, 1000ms in normal mode. Lower peak threshold (0.005) in instant mode for higher sensitivity
+  - App exclusion list — comma-separated process names to ignore (OBS excluded by default)
+  - Known limitation: Screen recorders/streaming apps that capture desktop audio may cause false detections
+  - New `AddPauseSourceImmediate`/`RemovePauseSourceImmediate` methods in MusicPlaybackService for fade-free pause/resume with proper source tracking
+
 ### Improved
 - **Enhanced Library Statistics** (Experimental) - Expanded the stats panel with background audio-level metrics powered by TagLib#
   - New audio metrics row: Average Song Length, Total Playtime, Songs With ID3 Tags (auto-populated via background scan)

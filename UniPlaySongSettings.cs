@@ -203,7 +203,7 @@ namespace UniPlaySong
         private bool pauseOnGameStart = false;
         private bool pauseOnSystemLock = false;
         private bool pauseOnExternalAudio = false;
-        private int externalAudioDebounceSeconds = 3;
+        private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32";
         private bool showNowPlayingInTopPanel = false;

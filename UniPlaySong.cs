@@ -123,7 +123,8 @@ namespace UniPlaySong
         private bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
         private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
         private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
-        private double ExternalAudioPollIntervalMs => _settings?.ExternalAudioInstantPause == true ? 1000.0 : 1500.0;
+        private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
+        private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
         private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
             ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
 
@@ -1258,7 +1259,8 @@ namespace UniPlaySong
                             catch { } // Process may have exited between enumeration and lookup
                         }
 
-                        if (session.AudioMeterInformation.MasterPeakValue > 0.01f)
+                        float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
+                        if (session.AudioMeterInformation.MasterPeakValue > peakThreshold)
                         {
                             audioFound = true;
                             break;
