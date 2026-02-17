@@ -150,6 +150,17 @@ namespace UniPlaySong
         CustomFile      // User-selected audio file (.wav recommended)
     }
 
+    public enum CelebrationToastTheme
+    {
+        Gold = 0,        // Default — amber/gold (#FFC107)
+        RoyalPurple,     // Purple/violet
+        Emerald,         // Green
+        Ruby,            // Red
+        IceBlue,         // Blue/cyan
+        Sunset,          // Orange/warm
+        Platinum         // Silver/white
+    }
+
     public enum ProgressBarPosition
     {
         AfterSkipButton,    // Between skip button and visualizer
@@ -191,6 +202,8 @@ namespace UniPlaySong
         private bool pauseWhenInSystemTray = true;
         private bool pauseOnGameStart = false;
         private bool pauseOnSystemLock = false;
+        private bool pauseOnExternalAudio = false;
+        private int externalAudioDebounceSeconds = 3;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -206,6 +219,8 @@ namespace UniPlaySong
         private string selectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
         private string celebrationSoundPath = string.Empty;
         private bool showCelebrationToast = true;
+        private int celebrationToastDurationSeconds = 6;
+        private CelebrationToastTheme celebrationToastTheme = CelebrationToastTheme.Gold;
         private bool applyLiveEffectsToJingles = true;
 
         // Download notifications
@@ -453,6 +468,20 @@ namespace UniPlaySong
             set { pauseOnSystemLock = value; OnPropertyChanged(); }
         }
 
+        // Pause music when another application starts playing audio. Resumes when external audio stops.
+        public bool PauseOnExternalAudio
+        {
+            get => pauseOnExternalAudio;
+            set { pauseOnExternalAudio = value; OnPropertyChanged(); }
+        }
+
+        // How many seconds external audio must persist before pausing, and silence before resuming (1-10).
+        public int ExternalAudioDebounceSeconds
+        {
+            get => externalAudioDebounceSeconds;
+            set { externalAudioDebounceSeconds = Math.Max(1, Math.Min(10, value)); OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Show "Now Playing" song info in the Desktop top panel bar.
         /// Displays song title, artist (if available), and duration next to the play/pause buttons.
@@ -552,6 +581,18 @@ namespace UniPlaySong
         {
             get => showCelebrationToast;
             set { showCelebrationToast = value; OnPropertyChanged(); }
+        }
+
+        public int CelebrationToastDurationSeconds
+        {
+            get => celebrationToastDurationSeconds;
+            set { celebrationToastDurationSeconds = Math.Max(3, Math.Min(15, value)); OnPropertyChanged(); }
+        }
+
+        public CelebrationToastTheme CelebrationToastTheme
+        {
+            get => celebrationToastTheme;
+            set { celebrationToastTheme = value; OnPropertyChanged(); }
         }
 
         // When enabled and Live Effects are active, jingles play through NAudio with effects (reverb, filters, etc.)

@@ -232,6 +232,8 @@ namespace UniPlaySong.Services
                     preservedSources.Add(PauseSource.SystemTray);
                 if (_activePauseSources.Contains(PauseSource.Manual))
                     preservedSources.Add(PauseSource.Manual);
+                if (_activePauseSources.Contains(PauseSource.ExternalAudio))
+                    preservedSources.Add(PauseSource.ExternalAudio);
 
                 var clearedCount = _activePauseSources.Count - preservedSources.Count;
                 _activePauseSources.Clear();

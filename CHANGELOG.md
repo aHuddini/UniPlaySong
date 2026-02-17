@@ -2,7 +2,18 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.3.0] - TBD
+## [1.3.1] - TBD
+
+### Improved
+- **Enhanced Library Statistics** (Experimental) - Expanded the stats panel with background audio-level metrics powered by TagLib#
+  - New audio metrics row: Average Song Length, Total Playtime, Songs With ID3 Tags (auto-populated via background scan)
+  - Song Bitrate Distribution card showing exact counts per standard bitrate (320/256/192/160/128/96/64/32 kbps) with non-standard VBR values grouped as "Other"
+  - Reducible Track Size card with teal accent showing count of songs above 128 kbps and estimated space recoverable if downsampled
+  - Reorganized card layout: Total Songs → Total Size → Games with Music → Avg Songs/Game → Avg Song Length → Total Playtime → ID3 Tags → Top Games → Format Distribution → Bitrate Distribution → Reducible Track Size
+  - Improved card labels for clarity (e.g., "Games in Library with Music", "Total Size of Songs", "Average #Songs / Game")
+  - "Scanning...[Please Wait]" placeholder shown during background audio scan
+
+## [1.3.0] - 2026-02-16
 
 ### Added
 - **Completion Fanfare** - Play a celebration jingle when marking a game as "Completed"

@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.3.1
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-02-16
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.1/UniPlaySong-1_3_1-Feb16_2026.pext'
+    Changelog:
+      - '[Experimental, Improved] Enhanced Library Statistics: Background audio scan now provides average song length, total playtime, ID3 tag coverage, exact bitrate distribution (per standard kbps with VBR grouping), and reducible track size estimate.'
+      - '[Experimental] Reorganized stats layout with improved card labels and teal-accented Reducible Track Size card.'
   - Version: 1.3.0
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-16

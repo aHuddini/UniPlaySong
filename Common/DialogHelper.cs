@@ -131,6 +131,9 @@ namespace UniPlaySong.Common
 
             ToastBlurTintColor = ParseHexColor(settings.ToastBlurTintColor, ToastBlurTintColor);
             ToastBorderColorValue = ParseHexColor(settings.ToastBorderColor, ToastBorderColorValue);
+
+            CelebrationToastDurationMs = settings.CelebrationToastDurationSeconds * 1000;
+            CelebrationTheme = settings.CelebrationToastTheme;
         }
 
         // ============================================================================
@@ -1287,12 +1290,92 @@ namespace UniPlaySong.Common
             ShowAutoCloseToast(playniteApi, message, title, isError: true, durationMs: actualDuration);
         }
 
-        // Gold celebration colors
-        private static readonly Color CelebrationGoldBorder = Color.FromRgb(255, 193, 7);   // #FFC107 - Material Amber
-        private static readonly Color CelebrationGoldAccent = Color.FromRgb(255, 215, 64);   // #FFD740
-        private static readonly Color CelebrationGoldGlow = Color.FromArgb(60, 255, 193, 7); // Semi-transparent gold
+        // Celebration toast theme settings (synced via SyncToastSettings)
+        public static int CelebrationToastDurationMs = 6000;
+        public static CelebrationToastTheme CelebrationTheme = CelebrationToastTheme.Gold;
 
-        // Shows a celebration toast with gold accent and smooth radial glow pulse animation.
+        private struct CelebrationColors
+        {
+            public Color Border;
+            public Color Accent;
+            public Color GlowGradientInner;
+            public Color GlowGradientMiddle;
+            public Color GlowGradientOuter;
+        }
+
+        private static CelebrationColors GetCelebrationColors(CelebrationToastTheme theme)
+        {
+            switch (theme)
+            {
+                case CelebrationToastTheme.Gold:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(255, 193, 7),
+                        Accent = Color.FromRgb(255, 215, 64),
+                        GlowGradientInner = Color.FromArgb(50, 255, 215, 64),
+                        GlowGradientMiddle = Color.FromArgb(25, 255, 193, 7),
+                        GlowGradientOuter = Color.FromArgb(0, 255, 193, 7)
+                    };
+                case CelebrationToastTheme.RoyalPurple:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(156, 39, 176),
+                        Accent = Color.FromRgb(186, 104, 200),
+                        GlowGradientInner = Color.FromArgb(50, 186, 104, 200),
+                        GlowGradientMiddle = Color.FromArgb(25, 156, 39, 176),
+                        GlowGradientOuter = Color.FromArgb(0, 156, 39, 176)
+                    };
+                case CelebrationToastTheme.Emerald:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(76, 175, 80),
+                        Accent = Color.FromRgb(129, 199, 132),
+                        GlowGradientInner = Color.FromArgb(50, 129, 199, 132),
+                        GlowGradientMiddle = Color.FromArgb(25, 76, 175, 80),
+                        GlowGradientOuter = Color.FromArgb(0, 76, 175, 80)
+                    };
+                case CelebrationToastTheme.Ruby:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(229, 57, 53),
+                        Accent = Color.FromRgb(239, 108, 108),
+                        GlowGradientInner = Color.FromArgb(50, 239, 108, 108),
+                        GlowGradientMiddle = Color.FromArgb(25, 229, 57, 53),
+                        GlowGradientOuter = Color.FromArgb(0, 229, 57, 53)
+                    };
+                case CelebrationToastTheme.IceBlue:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(41, 182, 246),
+                        Accent = Color.FromRgb(129, 212, 250),
+                        GlowGradientInner = Color.FromArgb(50, 129, 212, 250),
+                        GlowGradientMiddle = Color.FromArgb(25, 41, 182, 246),
+                        GlowGradientOuter = Color.FromArgb(0, 41, 182, 246)
+                    };
+                case CelebrationToastTheme.Sunset:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(255, 112, 67),
+                        Accent = Color.FromRgb(255, 171, 145),
+                        GlowGradientInner = Color.FromArgb(50, 255, 171, 145),
+                        GlowGradientMiddle = Color.FromArgb(25, 255, 112, 67),
+                        GlowGradientOuter = Color.FromArgb(0, 255, 112, 67)
+                    };
+                case CelebrationToastTheme.Platinum:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(189, 189, 189),
+                        Accent = Color.FromRgb(224, 224, 224),
+                        GlowGradientInner = Color.FromArgb(50, 224, 224, 224),
+                        GlowGradientMiddle = Color.FromArgb(25, 189, 189, 189),
+                        GlowGradientOuter = Color.FromArgb(0, 189, 189, 189)
+                    };
+                default:
+                    goto case CelebrationToastTheme.Gold;
+            }
+        }
+
+        // Shows a celebration toast with themed accent and smooth radial glow pulse animation.
         // Positioned at top-center of screen. Uses WPF Storyboard for 60fps composition-thread animation.
         public static void ShowCelebrationToast(IPlayniteAPI playniteApi, string gameName)
         {
@@ -1309,15 +1392,16 @@ namespace UniPlaySong.Common
                     {
                         Window toastWindow = null;
                         System.Windows.Threading.DispatcherTimer closeTimer = null;
+                        var colors = GetCelebrationColors(CelebrationTheme);
 
-                        // Content grid with gold accent bar
+                        // Content grid with themed accent bar
                         var contentGrid = new System.Windows.Controls.Grid();
                         contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(4) });
                         contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
                         var accentBar = new System.Windows.Shapes.Rectangle
                         {
-                            Fill = new SolidColorBrush(CelebrationGoldBorder),
+                            Fill = new SolidColorBrush(colors.Border),
                             HorizontalAlignment = HorizontalAlignment.Stretch,
                             VerticalAlignment = VerticalAlignment.Stretch,
                             Margin = new Thickness(0.5, 0.5, 0, 0.5)
@@ -1339,9 +1423,9 @@ namespace UniPlaySong.Common
                             RadiusY = 1.2,
                             GradientStops = new GradientStopCollection
                             {
-                                new GradientStop(Color.FromArgb(50, 255, 215, 64), 0.0),
-                                new GradientStop(Color.FromArgb(25, 255, 193, 7), 0.5),
-                                new GradientStop(Color.FromArgb(0, 255, 193, 7), 1.0)
+                                new GradientStop(colors.GlowGradientInner, 0.0),
+                                new GradientStop(colors.GlowGradientMiddle, 0.5),
+                                new GradientStop(colors.GlowGradientOuter, 1.0)
                             }
                         };
                         var glowRect = new System.Windows.Shapes.Rectangle
@@ -1364,7 +1448,7 @@ namespace UniPlaySong.Common
                             Text = "\u2B50 GAME COMPLETED \u2B50",
                             FontSize = 24,
                             FontWeight = FontWeights.Bold,
-                            Foreground = new SolidColorBrush(CelebrationGoldAccent),
+                            Foreground = new SolidColorBrush(colors.Accent),
                             Margin = new Thickness(16, 16, 20, 6),
                             HorizontalAlignment = HorizontalAlignment.Center,
                             TextAlignment = System.Windows.TextAlignment.Center
@@ -1394,7 +1478,7 @@ namespace UniPlaySong.Common
                         // Outer border with gold tint
                         var outerBorder = new Border
                         {
-                            BorderBrush = new SolidColorBrush(CelebrationGoldBorder),
+                            BorderBrush = new SolidColorBrush(colors.Border),
                             BorderThickness = new Thickness(Math.Max(ToastBorderThickness, 1)),
                             CornerRadius = new CornerRadius(ToastCornerRadius),
                             Background = new SolidColorBrush(Color.FromArgb(1, 45, 45, 45)),
@@ -1473,8 +1557,8 @@ namespace UniPlaySong.Common
                             }
                         };
 
-                        // Auto-close after 6 seconds
-                        var celebrationDuration = Math.Max(ToastDurationMs, 6000);
+                        // Auto-close after configured duration
+                        var celebrationDuration = CelebrationToastDurationMs;
                         closeTimer = new System.Windows.Threading.DispatcherTimer
                         {
                             Interval = TimeSpan.FromMilliseconds(celebrationDuration)

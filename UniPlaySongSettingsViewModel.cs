@@ -164,6 +164,8 @@ namespace UniPlaySong
                 CelebrationSoundPath = settings.CelebrationSoundPath,
                 PlaySoundOnDownloadComplete = settings.PlaySoundOnDownloadComplete,
                 ShowCelebrationToast = settings.ShowCelebrationToast,
+                CelebrationToastDurationSeconds = settings.CelebrationToastDurationSeconds,
+                CelebrationToastTheme = settings.CelebrationToastTheme,
                 ApplyLiveEffectsToJingles = settings.ApplyLiveEffectsToJingles,
                 ShowDefaultMusicIndicator = settings.ShowDefaultMusicIndicator
             };

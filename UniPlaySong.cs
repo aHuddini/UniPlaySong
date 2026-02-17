@@ -115,6 +115,14 @@ namespace UniPlaySong
         private double _playniteFullscreenVolume = 1.0;
         private dynamic _fullscreenSettingsObj;
 
+        // External audio detection (polls Windows audio sessions to pause when other apps play audio)
+        private System.Windows.Threading.DispatcherTimer _externalAudioPollTimer;
+        private bool _externalAudioDetected;
+        private int _externalAudioDebounceCount;
+        private int _externalAudioSilenceCount;
+        private const double ExternalAudioPollIntervalMs = 1500.0;
+        private int ExternalAudioDebounceThreshold => Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
+
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
 
@@ -356,6 +364,11 @@ namespace UniPlaySong
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
+            _externalAudioPollTimer = new System.Windows.Threading.DispatcherTimer(
+                System.Windows.Threading.DispatcherPriority.Background);
+            _externalAudioPollTimer.Interval = TimeSpan.FromMilliseconds(1500);
+            _externalAudioPollTimer.Tick += OnExternalAudioPollTick;
+            _externalAudioPollTimer.Start();
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
@@ -726,6 +739,8 @@ namespace UniPlaySong
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
+            _externalAudioPollTimer?.Stop();
+            _externalAudioPollTimer = null;
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
@@ -1164,6 +1179,84 @@ namespace UniPlaySong
                 // Always remove — HashSet.Remove is a no-op if not present
                 Application.Current?.Dispatcher?.Invoke(() =>
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock));
+            }
+        }
+
+        // Polls Windows audio sessions to detect external audio playback.
+        // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).
+        private void OnExternalAudioPollTick(object sender, EventArgs e)
+        {
+            if (_settings?.PauseOnExternalAudio != true)
+            {
+                if (_externalAudioDetected)
+                {
+                    _externalAudioDetected = false;
+                    _externalAudioDebounceCount = 0;
+                    _externalAudioSilenceCount = 0;
+                    _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                }
+                return;
+            }
+
+            try
+            {
+                bool audioFound = false;
+                int selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+
+                using (var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                {
+                    var device = enumerator.GetDefaultAudioEndpoint(
+                        NAudio.CoreAudioApi.DataFlow.Render,
+                        NAudio.CoreAudioApi.Role.Multimedia);
+                    var sessions = device.AudioSessionManager.Sessions;
+
+                    for (int i = 0; i < sessions.Count; i++)
+                    {
+                        var session = sessions[i];
+                        uint sessionPid = session.GetProcessID;
+
+                        if (sessionPid == selfPid || sessionPid == 0)
+                            continue;
+
+                        if (session.IsSystemSoundsSession)
+                            continue;
+
+                        if (session.AudioMeterInformation.MasterPeakValue > 0.01f)
+                        {
+                            audioFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (audioFound)
+                {
+                    _externalAudioSilenceCount = 0;
+                    _externalAudioDebounceCount++;
+
+                    if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
+                    {
+                        _externalAudioDetected = true;
+                        _fileLogger?.Debug("External audio detected, pausing");
+                        _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
+                    }
+                }
+                else
+                {
+                    _externalAudioDebounceCount = 0;
+                    _externalAudioSilenceCount++;
+
+                    if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioDebounceThreshold)
+                    {
+                        _externalAudioDetected = false;
+                        _fileLogger?.Debug("External audio stopped, resuming");
+                        _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"External audio poll error: {ex.Message}");
             }
         }
 

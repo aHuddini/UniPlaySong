@@ -17,6 +17,7 @@
         <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
         <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
+        <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -116,6 +117,15 @@
                               IsChecked="{Binding Settings.PauseOnGameStart}"
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Windows is locked"
+                              IsChecked="{Binding Settings.PauseOnSystemLock}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -2919,6 +2929,29 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                        <TextBlock Text="Duration:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.CelebrationToastDurationSeconds}"
+                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Settings.CelebrationToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                                   VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                        <TextBlock Text="Color theme:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <ComboBox SelectedIndex="{Binding Settings.CelebrationToastTheme, Converter={StaticResource CelebrationThemeConverter}}"
+                                  Margin="8,0,0,0" Width="170">
+                            <ComboBoxItem Content="Gold (Default)"/>
+                            <ComboBoxItem Content="Royal Purple"/>
+                            <ComboBoxItem Content="Emerald"/>
+                            <ComboBoxItem Content="Ruby"/>
+                            <ComboBoxItem Content="Ice Blue"/>
+                            <ComboBoxItem Content="Sunset"/>
+                            <ComboBoxItem Content="Platinum"/>
+                        </ComboBox>
+                    </StackPanel>
 
                     <!-- Song Progress Indicator -->
                     <TextBlock Text="Song Progress Indicator" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
@@ -2943,12 +2976,26 @@
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
-                    <!-- Auto-Pause on System Lock -->
-                    <TextBlock Text="Auto-Pause on System Lock" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
-                    <CheckBox Content="Pause music when Windows is locked"
-                              IsChecked="{Binding Settings.PauseOnSystemLock}"
+                    <!-- Audio Awareness -->
+                    <TextBlock Text="Audio Awareness" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                    <CheckBox Content="Pause music when another app plays audio"
+                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
                               Margin="0,5,0,5"/>
-                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
+                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <Slider Minimum="1" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
+                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"
+                                   VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Lower values are more responsive but may flicker with brief sounds."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
