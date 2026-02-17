@@ -213,6 +213,60 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Adds a pause source and pauses playback instantly (no fade).
+        // Cancels any in-progress fade to avoid state conflicts.
+        public void AddPauseSourceImmediate(PauseSource source)
+        {
+            bool wasPlaying = !_isPaused;
+            _activePauseSources.Add(source);
+
+            if (wasPlaying && _isPaused)
+            {
+                _fileLogger?.Debug($"Pause (instant): {source}");
+                _fader?.CancelFade();
+                if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+                    _musicPlayer.Pause();
+                OnPlaybackStateChanged?.Invoke();
+            }
+        }
+
+        // Removes a pause source and resumes playback instantly (no fade) if all sources cleared.
+        public void RemovePauseSourceImmediate(PauseSource source)
+        {
+            bool wasPaused = _isPaused;
+            _activePauseSources.Remove(source);
+
+            if (wasPaused && !_isPaused)
+            {
+                if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+                {
+                    _fileLogger?.Debug($"Resume (instant): {source} removed (no pause sources remaining)");
+                    _musicPlayer.Resume();
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_musicPlayer?.IsLoaded == true && !_musicPlayer.IsActive)
+                {
+                    _fileLogger?.Debug($"Resume (instant): {source} removed, starting loaded song");
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                    _musicPlayer.Play();
+                    MarkSongStart();
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_deferredGame != null && _initializationComplete)
+                {
+                    var game = _deferredGame;
+                    var settings = _deferredSettings;
+                    var forceReload = _deferredForceReload;
+                    _deferredGame = null;
+                    _deferredSettings = null;
+                    _deferredForceReload = false;
+                    _fileLogger?.Debug($"Triggering deferred playback for {game.Name} (pause sources cleared, instant)");
+                    PlayGameMusic(game, settings, forceReload);
+                }
+            }
+        }
+
         /// <summary>
         /// Clears all pause sources EXCEPT window-state sources (FocusLoss, Minimized, SystemTray).
         /// Window-state sources should only be cleared by the window event handlers.

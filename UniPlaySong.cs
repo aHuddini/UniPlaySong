@@ -120,7 +120,10 @@ namespace UniPlaySong
         private bool _externalAudioDetected;
         private int _externalAudioDebounceCount;
         private int _externalAudioSilenceCount;
-        private const double ExternalAudioPollIntervalMs = 1500.0;
+        private bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
+        private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
+        private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
+        private double ExternalAudioPollIntervalMs => _settings?.ExternalAudioInstantPause == true ? 1000.0 : 1500.0;
         private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
             ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
 
@@ -1187,6 +1190,11 @@ namespace UniPlaySong
         // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).
         private void OnExternalAudioPollTick(object sender, EventArgs e)
         {
+            // Adjust poll rate dynamically (1.0s in instant mode, 1.5s otherwise)
+            var targetInterval = TimeSpan.FromMilliseconds(ExternalAudioPollIntervalMs);
+            if (_externalAudioPollTimer.Interval != targetInterval)
+                _externalAudioPollTimer.Interval = targetInterval;
+
             if (_settings?.PauseOnExternalAudio != true)
             {
                 if (_externalAudioDetected)
@@ -1194,13 +1202,29 @@ namespace UniPlaySong
                     _externalAudioDetected = false;
                     _externalAudioDebounceCount = 0;
                     _externalAudioSilenceCount = 0;
-                    _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                    if (_externalAudioPausedInstantly)
+                        _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                    else
+                        _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                    _externalAudioPausedInstantly = false;
                 }
                 return;
             }
 
             try
             {
+                // Rebuild excluded apps cache if setting changed
+                var excludedRaw = _settings?.ExternalAudioExcludedApps ?? "";
+                if (excludedRaw != _externalAudioExcludedAppsRaw)
+                {
+                    _externalAudioExcludedAppsRaw = excludedRaw;
+                    _externalAudioExcludedPids = new HashSet<string>(
+                        excludedRaw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s => s.Trim().ToLowerInvariant())
+                            .Where(s => s.Length > 0),
+                        StringComparer.OrdinalIgnoreCase);
+                }
+
                 bool audioFound = false;
                 int selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
 
@@ -1222,6 +1246,18 @@ namespace UniPlaySong
                         if (session.IsSystemSoundsSession)
                             continue;
 
+                        // Check exclusion list by process name
+                        if (_externalAudioExcludedPids.Count > 0)
+                        {
+                            try
+                            {
+                                var proc = System.Diagnostics.Process.GetProcessById((int)sessionPid);
+                                if (_externalAudioExcludedPids.Contains(proc.ProcessName.ToLowerInvariant()))
+                                    continue;
+                            }
+                            catch { } // Process may have exited between enumeration and lookup
+                        }
+
                         if (session.AudioMeterInformation.MasterPeakValue > 0.01f)
                         {
                             audioFound = true;
@@ -1238,8 +1274,12 @@ namespace UniPlaySong
                     if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
                     {
                         _externalAudioDetected = true;
-                        _fileLogger?.Debug("External audio detected, pausing");
-                        _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
+                        _externalAudioPausedInstantly = _settings?.ExternalAudioInstantPause == true;
+                        _fileLogger?.Debug($"External audio detected, pausing{(_externalAudioPausedInstantly ? " (instant)" : "")}");
+                        if (_externalAudioPausedInstantly)
+                            _playbackService?.AddPauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                        else
+                            _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
                     }
                 }
                 else
@@ -1250,8 +1290,12 @@ namespace UniPlaySong
                     if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioDebounceThreshold)
                     {
                         _externalAudioDetected = false;
-                        _fileLogger?.Debug("External audio stopped, resuming");
-                        _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                        _fileLogger?.Debug($"External audio stopped, resuming{(_externalAudioPausedInstantly ? " (instant)" : "")}");
+                        if (_externalAudioPausedInstantly)
+                            _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                        else
+                            _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                        _externalAudioPausedInstantly = false;
                     }
                 }
             }

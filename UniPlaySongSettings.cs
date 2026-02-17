@@ -204,6 +204,8 @@ namespace UniPlaySong
         private bool pauseOnSystemLock = false;
         private bool pauseOnExternalAudio = false;
         private int externalAudioDebounceSeconds = 3;
+        private bool externalAudioInstantPause = false;
+        private string externalAudioExcludedApps = "obs64, obs32";
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -480,6 +482,20 @@ namespace UniPlaySong
         {
             get => externalAudioDebounceSeconds;
             set { externalAudioDebounceSeconds = Math.Max(0, Math.Min(10, value)); OnPropertyChanged(); }
+        }
+
+        // When enabled, external audio pauses/resumes music instantly (no fade).
+        public bool ExternalAudioInstantPause
+        {
+            get => externalAudioInstantPause;
+            set { externalAudioInstantPause = value; OnPropertyChanged(); }
+        }
+
+        // Comma-separated list of process names to ignore during external audio detection (e.g. "obs64,obs32").
+        public string ExternalAudioExcludedApps
+        {
+            get => externalAudioExcludedApps;
+            set { externalAudioExcludedApps = value ?? ""; OnPropertyChanged(); }
         }
 
         /// <summary>

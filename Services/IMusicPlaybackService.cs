@@ -18,6 +18,8 @@ namespace UniPlaySong.Services
 
         void AddPauseSource(PauseSource source); // pauses if first source
         void RemovePauseSource(PauseSource source); // resumes if all sources cleared
+        void AddPauseSourceImmediate(PauseSource source);    // Instant pause (no fade), tracks source
+        void RemovePauseSourceImmediate(PauseSource source);  // Instant resume (no fade), tracks source
 
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);
