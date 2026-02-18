@@ -166,6 +166,18 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Atomically replaces one pause source with another without triggering resume/pause.
+        // Used for FocusLoss → Manual conversion to avoid audible blip.
+        public void ConvertPauseSource(PauseSource from, PauseSource to)
+        {
+            if (_activePauseSources.Contains(from))
+            {
+                _activePauseSources.Remove(from);
+                _activePauseSources.Add(to);
+                _fileLogger?.Debug($"Convert: {from} → {to}");
+            }
+        }
+
         /// <summary>
         /// Removes a pause source and resumes playback if all pause sources are cleared.
         /// Only resumes when no other pause sources remain active.

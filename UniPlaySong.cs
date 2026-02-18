@@ -142,6 +142,28 @@ namespace UniPlaySong
         private System.Windows.Threading.DispatcherTimer _idlePollTimer;
         private bool _idleDetected;
 
+        // Task switcher detection — checks foreground window class to distinguish alt-tab overlay from real focus loss
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+        // Known task switcher window class names across Windows versions
+        private static readonly HashSet<string> _taskSwitcherClassNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "MultitaskingViewFrame",           // Windows 10 alt-tab
+            "TaskSwitcherWnd",                 // Legacy alt-tab
+            "TaskSwitcherOverlayWnd",          // Legacy alt-tab overlay
+            "Windows.UI.Core.CoreWindow",      // UWP shell windows (Win10 alt-tab in some builds)
+            "XamlExplorerHostIslandWindow",    // Windows 11 Task View (Win+Tab)
+            "ForegroundStaging",               // Transitional foreground window during alt-tab
+        };
+
+        private System.Windows.Threading.DispatcherTimer _focusVerifyTimer;
+        private IntPtr _mainWindowHandle;
+        private readonly System.Text.StringBuilder _classNameBuffer = new System.Text.StringBuilder(256);
+
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
 
@@ -383,6 +405,9 @@ namespace UniPlaySong
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
+            if (Application.Current.MainWindow != null)
+                _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
+
             _externalAudioPollTimer = new System.Windows.Threading.DispatcherTimer(
                 System.Windows.Threading.DispatcherPriority.Background);
             _externalAudioPollTimer.Interval = TimeSpan.FromMilliseconds(1500);
@@ -767,6 +792,8 @@ namespace UniPlaySong
             _externalAudioPollTimer = null;
             _idlePollTimer?.Stop();
             _idlePollTimer = null;
+            _focusVerifyTimer?.Stop();
+            _focusVerifyTimer = null;
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
@@ -1168,24 +1195,85 @@ namespace UniPlaySong
                 _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
-        /// <summary>
-        /// Handles application losing focus.
-        /// Pauses music when Playnite loses focus if PauseOnFocusLoss is enabled.
-        /// </summary>
+        // Handles application losing focus.
+        // If ignore-brief is enabled, checks if focus went to the task switcher overlay.
+        // ForegroundStaging is transitional (appears while alt-tab overlay is visible),
+        // so we poll every 100ms until the foreground resolves to a real window.
         private void OnApplicationDeactivate(object sender, EventArgs e)
         {
-            if (_settings?.PauseOnFocusLoss == true)
-                _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
+            if (_settings?.PauseOnFocusLoss != true)
+                return;
+
+            // Skip P/Invoke work if already paused (e.g., game running, idle, manual pause)
+            if (_playbackService?.IsPaused == true)
+            {
+                _playbackService.AddPauseSource(Models.PauseSource.FocusLoss);
+                return;
+            }
+
+            if (_settings?.FocusLossIgnoreBrief == true && IsForegroundTaskSwitcher())
+            {
+                // Alt-tab overlay detected — poll until it resolves
+                if (_focusVerifyTimer == null)
+                {
+                    _focusVerifyTimer = new System.Windows.Threading.DispatcherTimer(
+                        System.Windows.Threading.DispatcherPriority.Normal);
+                    _focusVerifyTimer.Interval = TimeSpan.FromMilliseconds(100);
+                    _focusVerifyTimer.Tick += OnFocusVerifyTick;
+                }
+                _focusVerifyTimer.Stop();
+                _focusVerifyTimer.Start();
+                return;
+            }
+
+            // Real focus loss (non-switcher window, or ignore-brief disabled)
+            _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
         }
 
-        /// <summary>
-        /// Handles application gaining focus.
-        /// Resumes music when Playnite gains focus if PauseOnFocusLoss is enabled.
-        /// </summary>
+        // Polls until the foreground window is no longer a task switcher overlay.
+        // Once resolved: if it's our window → aborted alt-tab (no pause). Otherwise → real switch (pause).
+        private void OnFocusVerifyTick(object sender, EventArgs e)
+        {
+            if (IsForegroundTaskSwitcher())
+                return; // Still in task switcher — keep polling
+
+            // Resolved — stop polling and decide
+            _focusVerifyTimer?.Stop();
+
+            if (GetForegroundWindow() != _mainWindowHandle)
+                _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
+            // Else: aborted alt-tab — focus returned to Playnite, no pause needed
+        }
+
+        // Checks if the current foreground window is a known task switcher overlay.
+        // Reuses a single StringBuilder to avoid allocations on every poll tick.
+        private bool IsForegroundTaskSwitcher()
+        {
+            var foreground = GetForegroundWindow();
+            _classNameBuffer.Clear();
+            GetClassName(foreground, _classNameBuffer, _classNameBuffer.Capacity);
+            return _taskSwitcherClassNames.Contains(_classNameBuffer.ToString());
+        }
+
+        // Handles application gaining focus.
+        // Cancels pending verification if alt-tab was aborted.
+        // If StayPaused is enabled, converts FocusLoss → Manual so play button can clear it naturally.
         private void OnApplicationActivate(object sender, EventArgs e)
         {
-            // Always remove — if the source isn't present, HashSet.Remove is a no-op
-            _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
+            // Cancel pending focus verification — focus returned before the check fired
+            _focusVerifyTimer?.Stop();
+
+            if (_settings?.FocusLossStayPaused == true && _settings?.PauseOnFocusLoss == true)
+            {
+                // Atomic swap: FocusLoss → Manual so play button can clear it naturally.
+                // Must be atomic to avoid audible resume blip between remove and add.
+                _playbackService?.ConvertPauseSource(Models.PauseSource.FocusLoss, Models.PauseSource.Manual);
+            }
+            else
+            {
+                // Default: always remove FocusLoss (no-op if not present)
+                _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
+            }
         }
 
         // Handles Windows session lock/unlock (Win+L).

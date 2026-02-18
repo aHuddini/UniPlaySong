@@ -86,10 +86,37 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <Separator Margin="0,15"/>
+
+                    <!-- Pause Scenarios -->
+                    <TextBlock Text="Pause Scenarios" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Configure when music should automatically pause and resume"
+                               FontSize="11"
+                               Foreground="Gray"
+                               Margin="0,0,0,10"/>
+
                     <CheckBox Content="Pause music when Playnite loses focus"
                               IsChecked="{Binding Settings.PauseOnFocusLoss}"
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Stay paused after focus is restored"
+                              IsChecked="{Binding Settings.FocusLossStayPaused}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Music won't automatically resume when Playnite regains focus. Press play to resume manually."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
+                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Detects the alt-tab overlay and only pauses if you actually switch to another app. Aborted alt-tabs are ignored."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -130,6 +157,11 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Top Panel Display -->
+                    <TextBlock Text="Top Panel Display" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Show Now Playing (Desktop mode)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"

@@ -208,6 +208,8 @@ namespace UniPlaySong
         private string externalAudioExcludedApps = "obs64, obs32";
         private bool pauseOnIdle = false;
         private int idleTimeoutMinutes = 15;
+        private bool focusLossStayPaused = false;
+        private bool focusLossIgnoreBrief = false;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -512,6 +514,20 @@ namespace UniPlaySong
         {
             get => idleTimeoutMinutes;
             set { idleTimeoutMinutes = Math.Max(1, Math.Min(60, value)); OnPropertyChanged(); }
+        }
+
+        // When enabled, music stays paused after Playnite regains focus. User must press play manually.
+        public bool FocusLossStayPaused
+        {
+            get => focusLossStayPaused;
+            set { focusLossStayPaused = value; OnPropertyChanged(); }
+        }
+
+        // When enabled, alt-tab overlay doesn't trigger focus loss pause. Only actual app switches pause.
+        public bool FocusLossIgnoreBrief
+        {
+            get => focusLossIgnoreBrief;
+            set { focusLossIgnoreBrief = value; OnPropertyChanged(); }
         }
 
         /// <summary>
