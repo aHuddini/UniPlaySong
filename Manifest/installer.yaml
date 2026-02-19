@@ -2,11 +2,18 @@ AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.3.1
     RequiredApiVersion: 6.15.0
-    ReleaseDate: 2026-02-16
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.1/UniPlaySong-1_3_1-Feb16_2026.pext'
+    ReleaseDate: 2026-02-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.1/UniPlaySong-1_3_1-Feb18_2026.pext'
     Changelog:
+      - '[New Feature] Install-Aware Auto-Download: Automatically downloads music when a game is installed. Plays the downloaded track immediately if the game is still selected. Enabled by default in Downloads settings.'
+      - '[Experimental] Auto-Pause on External Audio: Automatically pauses music when another app (Spotify, YouTube, Discord) starts playing audio. Configurable debounce (0-10s), optional instant pause mode, and app exclusion list.'
+      - '[Experimental] Auto-Pause on Idle / AFK: Pauses music after no keyboard/mouse input for a configurable duration (1-60 min, default 15). Resumes when any input is detected.'
+      - '[Experimental] Random Game Picker Music: Plays each game''s music as you browse Playnite''s random game picker dialog. Music restores to your library selection when the dialog closes.'
+      - '[New Setting] Stay Paused on Focus Restore (#69): Option to keep music paused after Playnite regains focus. Press play to resume manually. Sub-option under Pause on Focus Loss.'
+      - '[New Setting] Ignore Brief Focus Loss (Alt-Tab): Detects the alt-tab overlay and only pauses if you actually switch apps. Sub-option under Pause on Focus Loss.'
       - '[Experimental, Improved] Enhanced Library Statistics: Background audio scan now provides average song length, total playtime, ID3 tag coverage, exact bitrate distribution (per standard kbps with VBR grouping), and reducible track size estimate.'
-      - '[Experimental] Reorganized stats layout with improved card labels and teal-accented Reducible Track Size card.'
+      - '[Improved] Settings UI: General tab reorganized with Pause Scenarios and Top Panel Display sections for better discoverability.'
+      - '[Fix] Focus Loss Fade: Fixed echo/doppler audio artifact when music pauses and resumes on brief focus loss. Mid-fade volume now transitions smoothly instead of jumping.'
   - Version: 1.3.0
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-16

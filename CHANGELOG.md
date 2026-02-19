@@ -5,6 +5,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.1] - TBD
 
 ### Added
+- **Install-Aware Auto-Download** - Automatically downloads music when a game transitions from uninstalled to installed, if it doesn't already have music. Plays the downloaded music immediately if the game is still selected. Enabled by default in Settings → Downloads
 - **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another application produces audio
   - Detects any app playing audio through Windows via NAudio CoreAudioApi session enumeration
   - Configurable debounce slider (0–10 seconds, default 0 "Instant") — controls how long external audio must persist before pausing. Default is instant (reacts on first detection poll)
@@ -19,6 +20,21 @@ All notable changes to UniPlaySong will be documented in this file.
   - Music resumes automatically when any keyboard or mouse input is detected
   - Known limitation: Does not detect gamepad input
   - Preserved across game switches (user is still AFK regardless of which game is selected)
+- **Stay Paused on Focus Restore** ([#69](https://github.com/aHuddini/UniPlaySong/issues/69)) - Option to keep music paused after Playnite regains focus
+  - When enabled, music stays paused after alt-tabbing back — press play to resume manually
+  - Uses atomic `ConvertPauseSource(FocusLoss → Manual)` to avoid audible resume blip
+  - Play and skip buttons work naturally (they clear Manual pause source)
+  - Sub-option under "Pause on focus loss" in General → Pause Scenarios
+- **Random Game Picker Music** (Experimental) - Plays music for each game shown in Playnite's random game picker dialog
+  - Hooks into the picker's ViewModel via `INotifyPropertyChanged` to detect game changes as you click "Pick Another"
+  - Restores previous game's music when the dialog is cancelled or closed with Escape
+  - Commits naturally when using "Play" or "Navigate to Game" (normal `OnGameSelected` flow takes over)
+  - Toggle in Settings → Experimental (disabled by default)
+- **Ignore Brief Focus Loss (Alt-Tab)** - Detects the alt-tab overlay and only pauses if you actually switch apps
+  - Uses Win32 `GetForegroundWindow()` + `GetClassName()` to identify the task switcher window (`ForegroundStaging` on Windows 11)
+  - Polls until the overlay resolves: aborted alt-tabs are ignored, completed switches pause normally
+  - Skips P/Invoke work entirely when music is already paused (game running, idle, etc.)
+  - Sub-option under "Pause on focus loss" in General → Pause Scenarios
 
 ### Improved
 - **Enhanced Library Statistics** (Experimental) - Expanded the stats panel with background audio-level metrics powered by TagLib#
@@ -28,6 +44,14 @@ All notable changes to UniPlaySong will be documented in this file.
   - Reorganized card layout: Total Songs → Total Size → Games with Music → Avg Songs/Game → Avg Song Length → Total Playtime → ID3 Tags → Top Games → Format Distribution → Bitrate Distribution → Reducible Track Size
   - Improved card labels for clarity (e.g., "Games in Library with Music", "Total Size of Songs", "Average #Songs / Game")
   - "Scanning...[Please Wait]" placeholder shown during background audio scan
+- **Settings UI Reorganization** - General tab now has clearly separated sections
+  - New "Pause Scenarios" section groups all pause-related options with a header and description
+  - New "Top Panel Display" section groups Now Playing and Media Controls options
+
+### Fixed
+- **Focus Loss Fade Artifact** - Fixed echo/doppler audio artifact when music pauses and resumes during brief focus loss
+  - Root cause: reversing a mid-fade-out (e.g., quick alt-tab back) used the old fade-out start time for the fade-in calculation, causing a sudden volume jump
+  - Fix: calculates the equivalent fade-in progress from the current player volume and backdates the start time so the fade-in continues smoothly from where the fade-out left off
 
 ## [1.3.0] - 2026-02-16
 

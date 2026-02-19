@@ -289,7 +289,28 @@ namespace UniPlaySong.Players
                 _pauseAction = null;
                 if (_playAction == null && _stopAction == null)
                 {
+                    // Reversing a fade-out that hasn't completed yet.
+                    // Calculate where the fade-in should start to match current volume,
+                    // preventing a volume jump (echo/doppler artifact on focus restore).
+                    double currentVolume = _player?.Volume ?? 0;
+                    double musicVolume = _getMusicVolume();
                     _isFadingOut = false;
+                    _fadeOutStartVolume = 0.0;
+
+                    if (musicVolume > 0.001 && currentVolume > 0.001)
+                    {
+                        // Fade-in formula: volume = musicVolume * progress²
+                        // Solve for progress: progress = sqrt(currentVolume / musicVolume)
+                        double ratio = Math.Min(1.0, currentVolume / musicVolume);
+                        double equivalentProgress = Math.Sqrt(ratio);
+                        double fadeInDuration = _getFadeInDuration();
+                        // Backdate start time so next tick continues from current volume
+                        _fadeStartTime = DateTime.Now.AddSeconds(-equivalentProgress * fadeInDuration);
+                    }
+                    else
+                    {
+                        _fadeStartTime = default;
+                    }
                 }
             }
             else

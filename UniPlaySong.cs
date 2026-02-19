@@ -329,6 +329,35 @@ namespace UniPlaySong
                     }
                 }
 
+                // Auto-download music when a game is newly installed
+                if (update.NewData.IsInstalled && !update.OldData.IsInstalled &&
+                    _settings?.AutoDownloadOnGameInstall == true)
+                {
+                    var gameForDownload = update.NewData;
+                    if (!_fileService.HasMusic(gameForDownload))
+                    {
+                        _fileLogger?.Debug($"Install-aware auto-download: '{gameForDownload.Name}' installed, starting download");
+                        Task.Run(async () =>
+                        {
+                            await AutoDownloadMusicForGamesAsync(new List<Game> { gameForDownload });
+
+                            // Play the newly downloaded music if this game is still selected
+                            if (_fileService.HasMusic(gameForDownload))
+                            {
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                {
+                                    var currentGame = SelectedGames?.FirstOrDefault();
+                                    if (currentGame != null && currentGame.Id == gameForDownload.Id)
+                                    {
+                                        _fileLogger?.Debug($"Install-aware auto-download: Playing newly downloaded music for '{gameForDownload.Name}'");
+                                        _coordinator.HandleGameSelected(currentGame, IsFullscreen);
+                                    }
+                                }));
+                            }
+                        });
+                    }
+                }
+
                 // Completion celebration: play sound when game marked as "Completed"
                 if (_settings?.EnableCompletionCelebration == true &&
                     update.NewData.CompletionStatusId != update.OldData.CompletionStatusId)
@@ -418,6 +447,8 @@ namespace UniPlaySong
             _idlePollTimer.Interval = TimeSpan.FromSeconds(10);
             _idlePollTimer.Tick += OnIdlePollTick;
             _idlePollTimer.Start();
+            Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
@@ -794,6 +825,7 @@ namespace UniPlaySong
             _idlePollTimer = null;
             _focusVerifyTimer?.Stop();
             _focusVerifyTimer = null;
+            Monitors.RandomPickerMonitor.Detach();
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;

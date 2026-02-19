@@ -210,6 +210,7 @@ namespace UniPlaySong
         private int idleTimeoutMinutes = 15;
         private bool focusLossStayPaused = false;
         private bool focusLossIgnoreBrief = false;
+        private bool enableRandomPickerMusic = false;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -528,6 +529,13 @@ namespace UniPlaySong
         {
             get => focusLossIgnoreBrief;
             set { focusLossIgnoreBrief = value; OnPropertyChanged(); }
+        }
+
+        // Play music while browsing Playnite's Random Game Picker dialog
+        public bool EnableRandomPickerMusic
+        {
+            get => enableRandomPickerMusic;
+            set { enableRandomPickerMusic = value; OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -976,6 +984,15 @@ namespace UniPlaySong
         {
             get => autoDownloadOnLibraryUpdate;
             set { autoDownloadOnLibraryUpdate = value; OnPropertyChanged(); }
+        }
+
+        private bool autoDownloadOnGameInstall = true;
+
+        // Automatically download music when a game changes to installed status
+        public bool AutoDownloadOnGameInstall
+        {
+            get => autoDownloadOnGameInstall;
+            set { autoDownloadOnGameInstall = value; OnPropertyChanged(); }
         }
 
         /// <summary>

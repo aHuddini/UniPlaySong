@@ -2140,6 +2140,15 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <CheckBox Content="Automatically download music when a game is installed"
+                              IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When a game changes from uninstalled to installed, music will be automatically downloaded in the background if the game doesn't already have music. Uses the same download logic as above."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <Separator Margin="0,15"/>
 
                     <TextBlock Text="Bulk Download" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
@@ -3108,6 +3117,19 @@
                         <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
                                    Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
                     </StackPanel>
+
+                    <!-- Random Picker Music -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Play music while browsing the random game picker"
+                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
 
                 </StackPanel>
             </ScrollViewer>

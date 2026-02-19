@@ -22,9 +22,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.1
 
-- **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another app (Spotify, YouTube, Discord, etc.) starts playing audio. Resumes when external audio stops. Defaults to instant detection with faded transitions. Configurable debounce (0-10s), optional instant pause mode (no fade), and app exclusion list for screen recorders like OBS. Uses NAudio CoreAudioApi for Windows audio session detection.
-- **Auto-Pause on Idle / AFK** (Experimental) - Pauses music after no keyboard/mouse input for a configurable duration (1-60 min, default 15). Resumes when any input is detected. Covers the gap when users walk away without locking their PC. Does not detect gamepad input.
-- **Enhanced Library Statistics** (Experimental) - Audio-level metrics powered by background TagLib# scan: average song length, total playtime, ID3 tag coverage, bitrate distribution (exact counts per standard kbps), and reducible track size with estimated space savings. Reorganized card layout with improved labels.
+- **Install-Aware Auto-Download** - Automatically downloads music when a game is installed. If the game is still selected, music starts playing immediately after download. Enabled by default.
+- **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another app (Spotify, YouTube, Discord, etc.) starts playing audio. Resumes when external audio stops. Configurable debounce (0-10s), optional instant pause mode (no fade), and app exclusion list for screen recorders like OBS.
+- **Auto-Pause on Idle / AFK** (Experimental) - Pauses music after no keyboard/mouse input for a configurable duration (1-60 min, default 15). Resumes when any input is detected.
+- **Random Game Picker Music** (Experimental) - Plays each game's music as you browse Playnite's random game picker dialog ("Pick Another"). Music restores to your library selection when the dialog closes.
+- **Stay Paused on Focus Restore** ([#69](https://github.com/aHuddini/UniPlaySong/issues/69)) - Option to keep music paused after alt-tabbing back to Playnite. Press play to resume manually.
+- **Ignore Brief Focus Loss (Alt-Tab)** - Detects the alt-tab overlay and only pauses if you actually switch apps. Aborted alt-tabs are ignored.
+- **Enhanced Library Statistics** (Experimental) - Audio-level metrics: average song length, total playtime, ID3 tag coverage, bitrate distribution, and reducible track size estimate.
+- **Settings UI Reorganization** - General tab now has clearly separated Pause Scenarios and Top Panel Display sections.
+- **Focus Loss Fade Fix** - Fixed echo/doppler audio artifact when music pauses and resumes on brief focus loss.
 
 ### Previous Versions
 - **v1.3.0**: Completion Fanfare (11 retro jingle presets), Song Count Badge, Default Music Indicator, Song Progress Indicator, Download Complete Sound, Celebration Toast, Auto-Pause on System Lock, Enhanced Library Statistics (card grid), skip/crossfade fixes
@@ -95,11 +101,11 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Playback**: Volume, fade effects, preview mode, song randomization, default music, completion fanfare
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
-- **Downloads**: Tool paths, auto-download options, bulk download
+- **Downloads**: Tool paths, auto-download options, install-aware auto-download, bulk download
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: Download notification sound, celebration toast notification, library statistics with audio metrics
+- **Experimental**: External audio detection, idle/AFK pause, random game picker music, download notification sound, celebration toast, library statistics with audio metrics
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA
