@@ -20,6 +20,7 @@ namespace UniPlaySong.Players
         private readonly Func<double> _getFadeInDuration;
         private readonly Func<double> _getFadeOutDuration;
         private readonly ErrorHandlerService _errorHandler;
+        private readonly FileLogger _fileLogger;
         
         private Timer _fadeTimer;
         
@@ -39,13 +40,14 @@ namespace UniPlaySong.Players
         // This ensures we continue from the current volume when switching to games with no music
         private double _fadeOutStartVolume = 0.0;
 
-        public MusicFader(IMusicPlayer player, Func<double> getMusicVolume, Func<double> getFadeInDuration, Func<double> getFadeOutDuration, ErrorHandlerService errorHandler = null)
+        public MusicFader(IMusicPlayer player, Func<double> getMusicVolume, Func<double> getFadeInDuration, Func<double> getFadeOutDuration, ErrorHandlerService errorHandler = null, FileLogger fileLogger = null)
         {
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _getMusicVolume = getMusicVolume ?? (() => 1.0);
             _getFadeInDuration = getFadeInDuration ?? (() => Constants.DefaultFadeInDuration);
             _getFadeOutDuration = getFadeOutDuration ?? (() => Constants.DefaultFadeOutDuration);
             _errorHandler = errorHandler;
+            _fileLogger = fileLogger;
 
             // Use 16ms interval (60 FPS) for smoother, more perceptible fades
             // Common practice: 16-33ms (60-30 FPS) for audio fades
@@ -99,7 +101,7 @@ namespace UniPlaySong.Players
                         _fadeOutStartVolume = musicVolume;
                     }
                 }
-                
+
                 // Calculate elapsed time since fade started
                 double elapsedSeconds = (DateTime.Now - _fadeStartTime).TotalSeconds;
                 double progress = Math.Min(1.0, elapsedSeconds / fadeDuration);
@@ -163,18 +165,18 @@ namespace UniPlaySong.Players
                     _stopAction?.Invoke();
                     _player.Volume = 0; // Ensure volume is 0 before playAction
                     _playAction.Invoke();
-                    
+
                     // CRITICAL FIX: After playAction (which calls Load()/Play()), force volume to 0
                     // SDL2's Play() doesn't reset volume, but we need to ensure it's 0 for fade-in
                     // This is especially important in fullscreen where volume state might be inconsistent
                     // Also ensure _isFadingOut is false BEFORE setting volume, so next tick knows to fade in
                     _isFadingOut = false;
                     _player.Volume = 0;
-                    
+
                     // Reset fade start time for new fade-in
                     _fadeStartTime = default;
                     _fadeOutStartVolume = 0.0; // Clear fade-out start volume
-                    
+
                     _stopAction = _playAction = null;
                     // CRITICAL: Don't return here - continue timer to fade in (matching PNS)
                     // The next tick will be in fade-in mode and will start fading in from volume 0
@@ -191,18 +193,18 @@ namespace UniPlaySong.Players
                     {
                         _player.Volume = musicVolume;
                     }
-                    
+
                     // Reset fade start time for next fade
                     _fadeStartTime = default;
                     _fadeOutStartVolume = 0.0; // Clear fade-out start volume
-                    
+
                     // If fade-in is complete, we're done
                     if (!_isFadingOut)
                     {
                         return;
                     }
                 }
-                
+
                 // Handle pause/stop actions (separate from song switching)
                 if (_player.Volume == 0 && (_pauseAction != null || _stopAction != null))
                 {
@@ -235,8 +237,6 @@ namespace UniPlaySong.Players
                 // Reset tick tracking and fade start time when starting new fade
                 _lastTickCall = default;
                 _fadeStartTime = default;
-                
-                // Diagnostic: Log dispatcher availability
                 _fadeTimer.Start();
             }
         }
@@ -268,7 +268,7 @@ namespace UniPlaySong.Players
                 // Always start fade-out when switching (even if already fading in)
                 bool wasAlreadyFadingOut = _isFadingOut;
                 _isFadingOut = true;
-                
+
                 // CRITICAL FIX: If already fading out, don't reset fade start time
                 // This prevents volume from resetting to full when rapidly switching games
                 // Instead, continue the fade-out from the current volume level
@@ -277,7 +277,6 @@ namespace UniPlaySong.Players
                     // Only reset fade start time if this is a new fade-out
                     _fadeStartTime = default;
                 }
-                // If already fading out, keep the existing _fadeStartTime to continue the fade smoothly
             }
             EnsureTimer();
         }

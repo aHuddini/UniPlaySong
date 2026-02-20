@@ -135,7 +135,8 @@ namespace UniPlaySong.Services
                 () => _targetVolume * _volumeMultiplier,
                 () => _fadeInDuration,
                 () => _fadeOutDuration,
-                _errorHandler
+                _errorHandler,
+                _fileLogger
             );
 
             _musicPlayer.MediaEnded += OnMediaEnded;
@@ -767,8 +768,8 @@ namespace UniPlaySong.Services
                         },
                         playAction: () =>
                         {
-                            // PNS pattern: Fader sets volume to 0 before calling this - don't set volume (fader controls it)
                             _musicPlayer.Load(newSongPath);
+                            _musicPlayer.Volume = 0; // NAudio Load() creates new VolumeSampleProvider at 1.0 — must reset before Play()
                             _currentSongPath = newSongPath;
                             ClearAllPauseSources();
 
@@ -1319,6 +1320,7 @@ namespace UniPlaySong.Services
                             _currentSongPath = songToPlay;
 
                             _musicPlayer.Load(songToPlay);
+                            _musicPlayer.Volume = 0; // NAudio Load() creates new VolumeSampleProvider at 1.0 — must reset before Play()
                             _musicPlayer.Play(TimeSpan.Zero);
 
                             MarkSongStart();
