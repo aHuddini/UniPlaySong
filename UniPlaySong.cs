@@ -103,6 +103,8 @@ namespace UniPlaySong
         private Services.GameMusicTagService _tagService;
         private Services.AudioAmplifyService _amplifyService;
         private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
+        private Services.MediaKeyService _mediaKeyService;
+        private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
@@ -448,6 +450,44 @@ namespace UniPlaySong
             _idlePollTimer.Tick += OnIdlePollTick;
             _idlePollTimer.Start();
             Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+
+            // Media key control (experimental)
+            if (_settings?.EnableMediaKeyControl == true)
+            {
+                try
+                {
+                    _mediaKeyService = new Services.MediaKeyService(_fileLogger);
+                    _mediaKeyService.PlayPausePressed += OnMediaKeyPlayPause;
+                    _mediaKeyService.NextTrackPressed += OnMediaKeyNext;
+                    _mediaKeyService.PreviousTrackPressed += OnMediaKeyPrevious;
+                    _mediaKeyService.Start();
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"MediaKeyService failed to start: {ex.Message}");
+                }
+            }
+
+            // Taskbar thumbnail media controls (Desktop only)
+            if (IsDesktop && _settings?.ShowTaskbarMediaControls == true)
+            {
+                try
+                {
+                    _taskbarMediaControls = new Services.TaskbarMediaControls(_fileLogger);
+                    _taskbarMediaControls.PlayPauseClicked += OnMediaKeyPlayPause;
+                    _taskbarMediaControls.NextClicked += OnMediaKeyNext;
+                    _taskbarMediaControls.PreviousClicked += OnMediaKeyPrevious;
+                    bool isPlaying = _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true;
+                    _taskbarMediaControls.Attach(isPlaying);
+                    _playbackService.OnPlaybackStateChanged += OnTaskbarPlaybackStateChanged;
+                    _playbackService.OnMusicStarted += OnTaskbarMusicStarted;
+                    _playbackService.OnMusicStopped += OnTaskbarMusicStopped;
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"TaskbarMediaControls failed to attach: {ex.Message}");
+                }
+            }
 
             if (Application.Current.MainWindow != null)
             {
@@ -826,6 +866,16 @@ namespace UniPlaySong
             _focusVerifyTimer?.Stop();
             _focusVerifyTimer = null;
             Monitors.RandomPickerMonitor.Detach();
+            _mediaKeyService?.Dispose();
+            _mediaKeyService = null;
+            if (_taskbarMediaControls != null)
+            {
+                _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;
+                _playbackService.OnMusicStarted -= OnTaskbarMusicStarted;
+                _playbackService.OnMusicStopped -= OnTaskbarMusicStopped;
+                _taskbarMediaControls.Detach();
+                _taskbarMediaControls = null;
+            }
             if (Application.Current.MainWindow != null)
             {
                 Application.Current.MainWindow.StateChanged -= OnWindowStateChanged;
@@ -1494,6 +1544,50 @@ namespace UniPlaySong
             {
                 _fileLogger?.Debug($"Idle poll error: {ex.Message}");
             }
+        }
+
+        #region Media Key Handlers
+
+        private void OnMediaKeyPlayPause()
+        {
+            if (_playbackService == null) return;
+
+            if (_playbackService.IsPaused)
+                _playbackService.RemovePauseSource(Models.PauseSource.Manual);
+            else if (_playbackService.IsPlaying || _playbackService.IsLoaded)
+                _playbackService.AddPauseSource(Models.PauseSource.Manual);
+
+            _topPanelMediaControl?.UpdateIcons();
+        }
+
+        private void OnMediaKeyNext()
+        {
+            _playbackService?.SkipToNextSong();
+            _topPanelMediaControl?.UpdateIcons();
+        }
+
+        private void OnMediaKeyPrevious()
+        {
+            _playbackService?.RestartCurrentSong();
+            _topPanelMediaControl?.UpdateIcons();
+        }
+
+        #endregion
+
+        private void OnTaskbarPlaybackStateChanged()
+        {
+            bool isPlaying = _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true;
+            _taskbarMediaControls?.UpdatePlaybackState(isPlaying);
+        }
+
+        private void OnTaskbarMusicStarted(UniPlaySongSettings settings)
+        {
+            _taskbarMediaControls?.UpdatePlaybackState(true);
+        }
+
+        private void OnTaskbarMusicStopped(UniPlaySongSettings settings)
+        {
+            _taskbarMediaControls?.UpdatePlaybackState(false);
         }
 
         /// <summary>

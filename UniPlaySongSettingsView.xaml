@@ -3131,6 +3131,28 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Media Key Control -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Media Key Control" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Control music with keyboard media keys"
+                              IsChecked="{Binding Settings.EnableMediaKeyControl}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Show media controls in taskbar thumbnail preview"
+                              IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="Adds Previous, Play/Pause, and Next buttons to Playnite's taskbar hover preview (Desktop mode only). The play/pause icon updates to reflect the current playback state. Requires Playnite restart to take effect."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

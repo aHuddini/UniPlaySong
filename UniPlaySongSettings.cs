@@ -211,6 +211,8 @@ namespace UniPlaySong
         private bool focusLossStayPaused = false;
         private bool focusLossIgnoreBrief = false;
         private bool enableRandomPickerMusic = false;
+        private bool enableMediaKeyControl = false;
+        private bool showTaskbarMediaControls = false;
         private bool showNowPlayingInTopPanel = false;
         private bool hideNowPlayingForDefaultMusic = false;
         private bool showDefaultMusicIndicator = false;
@@ -536,6 +538,20 @@ namespace UniPlaySong
         {
             get => enableRandomPickerMusic;
             set { enableRandomPickerMusic = value; OnPropertyChanged(); }
+        }
+
+        // Control music playback using keyboard media keys (Play/Pause, Next, Previous)
+        public bool EnableMediaKeyControl
+        {
+            get => enableMediaKeyControl;
+            set { enableMediaKeyControl = value; OnPropertyChanged(); }
+        }
+
+        // Show media control buttons (Previous/Play-Pause/Next) in the taskbar thumbnail preview
+        public bool ShowTaskbarMediaControls
+        {
+            get => showTaskbarMediaControls;
+            set { showTaskbarMediaControls = value; OnPropertyChanged(); }
         }
 
         /// <summary>

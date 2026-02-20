@@ -46,6 +46,7 @@ namespace UniPlaySong.Services
         bool SuppressAutoLoop { get; set; } // suppresses auto-loop on song end
 
         void SkipToNextSong();
+        void RestartCurrentSong();
         int CurrentGameSongCount { get; }
         event System.Action OnSongCountChanged;
         void RefreshSongCount();

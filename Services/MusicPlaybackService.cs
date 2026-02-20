@@ -1055,6 +1055,19 @@ namespace UniPlaySong.Services
             }
         }
 
+        public void RestartCurrentSong()
+        {
+            if (_musicPlayer?.IsLoaded != true || string.IsNullOrEmpty(_currentSongPath)) return;
+
+            _fileLogger?.Debug($"RestartCurrentSong: Restarting '{Path.GetFileName(_currentSongPath)}'");
+
+            // Restarting is an explicit user action — clear manual pause so it plays
+            RemovePauseSource(Models.PauseSource.Manual);
+
+            _musicPlayer.Play(TimeSpan.Zero);
+            MarkSongStart();
+        }
+
         public void SetVolume(double volume)
         {
             _targetVolume = Math.Max(0.0, Math.Min(1.0, volume));
