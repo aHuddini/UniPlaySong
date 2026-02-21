@@ -38,7 +38,7 @@
                     <CheckBox Content="Suppress Playnite Native Background Music"
                               IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
                               Margin="0,5"/>
-                    <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode, ensuring only UniPlaySong audio is heard."
+                    <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -67,7 +67,7 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
                     
-                    <CheckBox Content="Do not play music on startup" 
+                    <CheckBox Content="Do not play music on startup (Fullscreen)" 
                               IsChecked="{Binding Settings.SkipFirstSelectionAfterModeSwitch}" 
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, music will not play on the first game selection after switching to fullscreen mode" 
@@ -76,7 +76,7 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
                     
-                    <CheckBox Content="Theme Compatible Login Skip"
+                    <CheckBox Content="Theme Compatible Login Skip (Fullscreen)"
                               IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
                               IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
                               Margin="0,5"/>
@@ -89,9 +89,27 @@
                     <Separator Margin="0,15"/>
 
                     <!-- Top Panel Display -->
-                    <TextBlock Text="Top Panel Display" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Media Controls" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
-                    <CheckBox Content="Show Now Playing (Desktop mode)"
+                    <CheckBox Content="Show Media Controls (Desktop)"
+                              IsChecked="{Binding Settings.ShowDesktopMediaControls}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                              Margin="0,5"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                        <Run Foreground="Gray">Displays the play/pause and skip buttons. Disable to show only the Now Playing text.</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
+
+                    <CheckBox Content="Show Media Controls in Taskbar's Thumbnail Preview"
+                              IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
+                              Margin="0,5"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                        <Run Foreground="Gray">Adds Previous, Play/Pause, and Next buttons to Playnite's taskbar hover preview (Desktop mode only).</Run>
+                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                    </TextBlock>
+
+                    <CheckBox Content="Show Now Playing (Desktop)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Command="{Binding SetRestartRequired}"
                               CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
@@ -134,16 +152,6 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <CheckBox Content="Show Media Controls (Desktop mode)"
-                              IsChecked="{Binding Settings.ShowDesktopMediaControls}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="0,5"/>
-                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Displays the play/pause and skip buttons. Disable to show only the Now Playing text.</Run>
-                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
-                    </TextBlock>
-
                     <Separator Margin="0,15"/>
 
                     <!-- Music Status Tags -->
@@ -179,7 +187,7 @@
                     <!-- Performance -->
                     <TextBlock Text="Performance" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
-                    <CheckBox Content="Enable Song List Cache (Opt-in)"
+                    <CheckBox Content="Enable Song List Cache"
                               IsChecked="{Binding Settings.EnableSongListCache}"
                               Margin="0,5"/>
                     <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). This cache aims to mitigate any performance issues caused by repeated directory scans when scrolling between games. Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
@@ -187,181 +195,11 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. When cache is enabled, note that manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
+                    <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. Manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
                                FontSize="11"
                                Foreground="#FFB74D"
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Pause Scenarios -->
-                    <TextBlock Text="Pause Scenarios" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <TextBlock Text="Configure when music should automatically pause and resume"
-                               FontSize="11"
-                               Foreground="Gray"
-                               Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Playnite loses focus"
-                              IsChecked="{Binding Settings.PauseOnFocusLoss}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <CheckBox Content="Stay paused after focus is restored"
-                              IsChecked="{Binding Settings.FocusLossStayPaused}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Text="Music won't automatically resume when Playnite regains focus. Press play to resume manually."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
-                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Text="Detects the alt-tab overlay and only pauses if you actually switch to another app. Aborted alt-tabs are ignored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Playnite is minimized"
-                              IsChecked="{Binding Settings.PauseOnMinimize}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar. Music will resume when Playnite is restored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Playnite is in system tray"
-                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when Playnite is hidden in the system tray (e.g., on startup or after closing to tray). Music will resume when Playnite is restored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Compatibility: Pause on Play (Splash Screen Mode)"
-                              IsChecked="{Binding Settings.PauseOnGameStart}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Windows is locked"
-                              IsChecked="{Binding Settings.PauseOnSystemLock}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <!-- Audio Awareness -->
-                    <CheckBox Content="Pause music when another app plays audio"
-                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
-                               FontSize="11"
-                               Foreground="Orange"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
-                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
-                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
-                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
-                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                            <Setter Property="Text" Value="Instant"/>
-                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
-                               FontSize="11"
-                               Foreground="CornflowerBlue"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <CheckBox Content="Instant pause (no fade transition)"
-                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
-                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
-                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-
-                    <!-- Idle Detection -->
-                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
-                              IsChecked="{Binding Settings.PauseOnIdle}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnIdle}">
-                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="1" Maximum="60"
-                                Value="{Binding Settings.IdleTimeoutMinutes}"
-                                Width="200"
-                                TickFrequency="5" IsSnapToTickEnabled="False"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
-                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
-                    </StackPanel>
 
                     <Separator Margin="0,15"/>
 
@@ -371,7 +209,7 @@
                     <CheckBox Content="Enable Debug Logging"
                               IsChecked="{Binding Settings.EnableDebugLogging}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Use this when troubleshooting issues. Disable for normal use to reduce log file size."
+                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Disable for normal use to reduce log file size."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -410,7 +248,7 @@
                                    Width="30"/>
                     </StackPanel>
 
-                    <CheckBox Content="Lower volume when idle (gradual fade to 25%)"
+                    <CheckBox Content="Lower Volume When Idle (To 25%)"
                               IsChecked="{Binding Settings.LowerVolumeOnIdle}"
                               Margin="0,10,0,5"/>
                     <TextBlock Text="Gradually lowers music volume after inactivity instead of pausing. Volume restores instantly on any input. Can be used alongside Pause on Idle with different timeouts."
@@ -737,6 +575,196 @@
                                 <ComboBoxItem Content="Platinum"/>
                             </ComboBox>
                         </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Pauses Tab -->
+        <TabItem Header="Pauses">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Pause Scenarios" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Configure when music should automatically pause and resume"
+                               FontSize="11"
+                               Foreground="Gray"
+                               Margin="0,0,0,20"/>
+
+                    <!-- System Events -->
+                    <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Compatibility: Pause on Play (Splash Screen Mode)"
+                              IsChecked="{Binding Settings.PauseOnGameStart}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Windows is locked"
+                              IsChecked="{Binding Settings.PauseOnSystemLock}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Window State -->
+                    <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite loses focus"
+                              IsChecked="{Binding Settings.PauseOnFocusLoss}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Stay paused after focus is restored"
+                              IsChecked="{Binding Settings.FocusLossStayPaused}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Music won't automatically resume when Playnite regains focus. Press play to resume manually."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
+                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Detects the alt-tab overlay and only pauses if you actually switch to another app. Aborted alt-tabs are ignored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is minimized"
+                              IsChecked="{Binding Settings.PauseOnMinimize}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar. Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is in system tray"
+                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is hidden in the system tray (e.g., on startup or after closing to tray). Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Audio Awareness -->
+                    <TextBlock Text="Audio Awareness" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when another app plays audio"
+                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
+                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                            <Setter Property="Text" Value="Instant"/>
+                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
+                               FontSize="11"
+                               Foreground="CornflowerBlue"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Content="Instant pause (no fade transition)"
+                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
+                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Idle Detection -->
+                    <TextBlock Text="Idle Detection" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
+                              IsChecked="{Binding Settings.PauseOnIdle}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnIdle}">
+                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="60"
+                                Value="{Binding Settings.IdleTimeoutMinutes}"
+                                Width="200"
+                                TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
@@ -2014,8 +2042,8 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- Audio Editing Tab -->
-        <TabItem Header="Audio Editing">
+        <!-- Editing Tab -->
+        <TabItem Header="Editing">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
                     <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
@@ -2271,7 +2299,7 @@
                     <CheckBox Content="Automatically normalize downloaded music"
                               IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
                               Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Audio Editing tab. Requires FFmpeg."
+                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab. Requires FFmpeg."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -3171,15 +3199,6 @@
                               IsChecked="{Binding Settings.EnableMediaKeyControl}"
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Show media controls in taskbar thumbnail preview"
-                              IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="Adds Previous, Play/Pause, and Next buttons to Playnite's taskbar hover preview (Desktop mode only). The play/pause icon updates to reflect the current playback state. Requires Playnite restart to take effect."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

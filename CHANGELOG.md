@@ -27,6 +27,9 @@ All notable changes to UniPlaySong will be documented in this file.
   - Library-wide export: main menu → "Export Music Library Playlist (UPS)" with progress dialog
   - Extended M3U format with `#EXTINF` duration/title entries and absolute file paths
 
+### Changed
+- **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", Taskbar Thumbnail Media Controls promoted from Experimental to General, fullscreen-only options labeled accordingly.
+
 ### Fixed
 - **Play Button Clears Stale Pause Sources** - Play button now clears automatic pause sources (Idle, ExternalAudio, SystemLock) when resuming. Previously, stale sources could remain active after long idle or lock/unlock cycles, causing music to stay paused even after clicking play.
 - **System Unlock Clears Idle State** - Unlocking Windows now properly clears the idle pause source and restores idle volume. Fixes music not resuming after lock/unlock when idle detection or idle volume lowering was active before locking.
