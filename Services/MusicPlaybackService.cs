@@ -72,6 +72,7 @@ namespace UniPlaySong.Services
         private MusicFader _fader;
         private double _targetVolume = Constants.DefaultTargetVolume;
         private double _volumeMultiplier = 1.0;
+        private double _idleVolumeMultiplier = 1.0;
         private double _fadeInDuration = Constants.DefaultFadeInDuration;
         private double _fadeOutDuration = Constants.DefaultFadeOutDuration;
 
@@ -132,7 +133,7 @@ namespace UniPlaySong.Services
 
             _fader = new MusicFader(
                 _musicPlayer,
-                () => _targetVolume * _volumeMultiplier,
+                () => _targetVolume * _volumeMultiplier * _idleVolumeMultiplier,
                 () => _fadeInDuration,
                 () => _fadeOutDuration,
                 _errorHandler,
@@ -1074,7 +1075,7 @@ namespace UniPlaySong.Services
 
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
-                _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
             }
         }
 
@@ -1086,7 +1087,17 @@ namespace UniPlaySong.Services
 
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
-                _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
+            }
+        }
+
+        public void SetIdleVolumeMultiplier(double multiplier)
+        {
+            _idleVolumeMultiplier = Math.Max(0.0, Math.Min(1.0, multiplier));
+
+            if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
+            {
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
             }
         }
 

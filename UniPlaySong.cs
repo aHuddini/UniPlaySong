@@ -144,6 +144,11 @@ namespace UniPlaySong
         private System.Windows.Threading.DispatcherTimer _idlePollTimer;
         private bool _idleDetected;
 
+        // Dynamic Volume on Idle — gradual volume fade when inactive
+        private bool _idleVolumeLowered;
+        private System.Windows.Threading.DispatcherTimer _idleVolumeFadeTimer;
+        private double _idleVolumeFadeCurrent = 1.0;
+
         // Task switcher detection — checks foreground window class to distinguish alt-tab overlay from real focus loss
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -1156,9 +1161,10 @@ namespace UniPlaySong
                 // Check if player backend needs switching (Live Effects or Visualizer require NAudio)
                 bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
                 bool vizToggled = e.OldSettings.ShowSpectrumVisualizer != e.NewSettings.ShowSpectrumVisualizer;
-                if (liveEffectsChanged || vizToggled)
+                bool peakMeterToggled = e.OldSettings.ShowPeakMeter != e.NewSettings.ShowPeakMeter;
+                if (liveEffectsChanged || vizToggled || peakMeterToggled)
                 {
-                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer} - recreating music player");
+                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
                 }
             }
@@ -1498,16 +1504,25 @@ namespace UniPlaySong
             }
         }
 
-        // Polls keyboard/mouse inactivity to pause music after a configurable idle timeout.
+        // Polls keyboard/mouse inactivity for idle-based features (pause and/or volume lowering).
         // Uses Win32 GetLastInputInfo — does not detect gamepad input.
         private void OnIdlePollTick(object sender, EventArgs e)
         {
-            if (_settings?.PauseOnIdle != true)
+            bool pauseEnabled = _settings?.PauseOnIdle == true;
+            bool volumeEnabled = _settings?.LowerVolumeOnIdle == true;
+
+            // Fast exit: neither idle feature enabled
+            if (!pauseEnabled && !volumeEnabled)
             {
                 if (_idleDetected)
                 {
                     _idleDetected = false;
                     _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                }
+                if (_idleVolumeLowered)
+                {
+                    _idleVolumeLowered = false;
+                    RestoreIdleVolume();
                 }
                 return;
             }
@@ -1519,31 +1534,92 @@ namespace UniPlaySong
                     return;
 
                 uint idleMs = (uint)Environment.TickCount - info.dwTime;
-                uint thresholdMs = (uint)(_settings.IdleTimeoutMinutes * 60 * 1000);
 
-                if (idleMs >= thresholdMs)
+                // Pause on Idle
+                if (pauseEnabled)
                 {
-                    if (!_idleDetected)
+                    uint thresholdMs = (uint)(_settings.IdleTimeoutMinutes * 60 * 1000);
+                    if (idleMs >= thresholdMs)
                     {
-                        _idleDetected = true;
-                        _fileLogger?.Debug($"Idle detected ({_settings.IdleTimeoutMinutes}min), pausing");
-                        _playbackService?.AddPauseSource(Models.PauseSource.Idle);
+                        if (!_idleDetected)
+                        {
+                            _idleDetected = true;
+                            _fileLogger?.Debug($"Idle detected ({_settings.IdleTimeoutMinutes}min), pausing");
+                            _playbackService?.AddPauseSource(Models.PauseSource.Idle);
+                        }
                     }
-                }
-                else
-                {
-                    if (_idleDetected)
+                    else if (_idleDetected)
                     {
                         _idleDetected = false;
                         _fileLogger?.Debug("Input detected, resuming from idle");
                         _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
                     }
                 }
+                else if (_idleDetected)
+                {
+                    _idleDetected = false;
+                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                }
+
+                // Dynamic Volume on Idle
+                if (volumeEnabled)
+                {
+                    uint volumeThresholdMs = (uint)(_settings.IdleVolumeTimeoutMinutes * 60 * 1000);
+                    if (idleMs >= volumeThresholdMs)
+                    {
+                        if (!_idleVolumeLowered)
+                        {
+                            _idleVolumeLowered = true;
+                            _fileLogger?.Debug($"Idle volume: lowering to 25% ({_settings.IdleVolumeTimeoutMinutes}min)");
+                            StartIdleVolumeFade(0.25);
+                        }
+                    }
+                    else if (_idleVolumeLowered)
+                    {
+                        _idleVolumeLowered = false;
+                        _fileLogger?.Debug("Input detected, restoring volume");
+                        RestoreIdleVolume();
+                    }
+                }
+                else if (_idleVolumeLowered)
+                {
+                    _idleVolumeLowered = false;
+                    RestoreIdleVolume();
+                }
             }
             catch (Exception ex)
             {
                 _fileLogger?.Debug($"Idle poll error: {ex.Message}");
             }
+        }
+
+        private void StartIdleVolumeFade(double target)
+        {
+            if (_idleVolumeFadeTimer == null)
+            {
+                _idleVolumeFadeTimer = new System.Windows.Threading.DispatcherTimer(
+                    System.Windows.Threading.DispatcherPriority.Background);
+                _idleVolumeFadeTimer.Interval = TimeSpan.FromMilliseconds(50);
+                _idleVolumeFadeTimer.Tick += OnIdleVolumeFadeTick;
+            }
+            _idleVolumeFadeTimer.Start();
+        }
+
+        private void OnIdleVolumeFadeTick(object sender, EventArgs e)
+        {
+            // Step ~0.015 per 50ms tick = 1.0→0.25 in ~50 ticks = ~2.5 seconds
+            _idleVolumeFadeCurrent = Math.Max(0.25, _idleVolumeFadeCurrent - 0.015);
+            _playbackService?.SetIdleVolumeMultiplier(_idleVolumeFadeCurrent);
+
+            if (_idleVolumeFadeCurrent <= 0.25)
+                _idleVolumeFadeTimer.Stop();
+        }
+
+        private void RestoreIdleVolume()
+        {
+            _idleVolumeFadeTimer?.Stop();
+            _idleVolumeFadeCurrent = 1.0;
+            _playbackService?.SetIdleVolumeMultiplier(1.0);
         }
 
         #region Media Key Handlers
@@ -1794,7 +1870,7 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false);
+            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false);
 
             if (needsNAudio)
             {
@@ -2688,6 +2764,14 @@ namespace UniPlaySong
                     Action = _ => _gameMenuHandler.DeleteAllMusicForGames(games)
                 });
 
+                // Export M3U Playlist - combined playlist for selected games
+                items.Add(new GameMenuItem
+                {
+                    Description = $"Export M3U Playlist ({games.Count} games)",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.ExportPlaylistForGames(games)
+                });
+
                 // Add retry option if there are failed downloads
                 var failedCount = _gameMenuHandler.FailedDownloads.Count(fd => !fd.Resolved);
                 if (failedCount > 0)
@@ -2978,6 +3062,22 @@ namespace UniPlaySong
                     Action = _ => _gameMenuHandler.OpenMusicFolder(game)
                 });
 
+                // Export Song List — deferred to future release
+                // items.Add(new GameMenuItem
+                // {
+                //     Description = "Export Song List",
+                //     MenuSection = menuSection,
+                //     Action = _ => _gameMenuHandler.ExportSongList(game)
+                // });
+
+                // Export M3U Playlist
+                items.Add(new GameMenuItem
+                {
+                    Description = "Export M3U Playlist",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.ExportPlaylist(game)
+                });
+
                 // === Controller Mode Submenu (Controller-friendly dialogs) ===
                 items.Add(new GameMenuItem
                 {
@@ -3028,6 +3128,13 @@ namespace UniPlaySong
                     Action = _ => _mainMenuHandler.OpenSettings()
                 }
             };
+
+            // Export entire music library as M3U playlist
+            items.Add(new MainMenuItem
+            {
+                Description = "Export Music Library Playlist (UPS)",
+                Action = _ => _gameMenuHandler.ExportLibraryPlaylist()
+            });
 
             // Add retry failed downloads option if there are any failed downloads
             if (_gameMenuHandler.FailedDownloads.Any(fd => !fd.Resolved))
@@ -3804,12 +3911,14 @@ namespace UniPlaySong
                 // Invalidate cache for all affected directories since we deleted files
                 if (deletedFiles > 0 && _fileService != null)
                 {
-                    var deletedDirectories = longSongs
+                    var affectedDirs = longSongs
                         .Select(s => System.IO.Path.GetDirectoryName(s.filePath))
-                        .Distinct();
-                    foreach (var dir in deletedDirectories)
+                        .Distinct()
+                        .ToList();
+                    foreach (var dir in affectedDirs)
                     {
                         _fileService.InvalidateCacheForDirectory(dir);
+                        _fileService.CleanupEmptyDirectory(dir);
                     }
                 }
 

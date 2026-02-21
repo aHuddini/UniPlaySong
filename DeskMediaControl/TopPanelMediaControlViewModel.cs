@@ -25,11 +25,13 @@ namespace UniPlaySong.DeskMediaControl
         private TopPanelItem _skipItem;
         private TopPanelItem _nowPlayingItem;
         private TopPanelItem _spectrumItem;
+        private TopPanelItem _peakMeterItem;
         private TopPanelItem _progressItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
         private NowPlayingPanel _nowPlayingPanel;
         private SpectrumVisualizerControl _spectrumVisualizer;
+        private PeakMeterControl _peakMeter;
         private SongProgressBar _progressBar;
         private SongMetadataService _metadataService;
 
@@ -58,6 +60,12 @@ namespace UniPlaySong.DeskMediaControl
                 yield return _spectrumItem;
             }
 
+            if (_peakMeterItem != null)
+            {
+                _peakMeterItem.Visible = settings?.ShowPeakMeter == true;
+                yield return _peakMeterItem;
+            }
+
             if (_progressItem != null && progressPosition == ProgressBarPosition.AfterVisualizer)
                 yield return _progressItem;
 
@@ -83,6 +91,7 @@ namespace UniPlaySong.DeskMediaControl
 
             InitializeTopPanelItems();
             InitializeSpectrumVisualizer();
+            InitializePeakMeter();
             InitializeProgressBar();
             InitializeNowPlayingPanel();
             SubscribeToEvents(_getPlaybackService());
@@ -185,6 +194,26 @@ namespace UniPlaySong.DeskMediaControl
             catch (System.Exception ex)
             {
                 _log?.Invoke($"TopPanel: Error initializing spectrum visualizer: {ex.Message}");
+            }
+        }
+
+        private void InitializePeakMeter()
+        {
+            try
+            {
+                _peakMeter = new PeakMeterControl();
+                _peakMeter.SetSettingsProvider(_getSettings);
+                _peakMeterItem = new TopPanelItem
+                {
+                    Icon = _peakMeter,
+                    Title = "UniPlaySong: Peak Meter",
+                    Visible = true
+                };
+                _log?.Invoke("TopPanel: Peak meter initialized");
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Error initializing peak meter: {ex.Message}");
             }
         }
 
@@ -427,6 +456,11 @@ namespace UniPlaySong.DeskMediaControl
                     if (_spectrumItem != null)
                         _spectrumItem.Visible = vizEnabled;
                     _spectrumVisualizer?.SetActive(isPlaying && vizEnabled);
+
+                    bool peakEnabled = settings?.ShowPeakMeter == true;
+                    if (_peakMeterItem != null)
+                        _peakMeterItem.Visible = peakEnabled;
+                    _peakMeter?.SetActive(isPlaying && peakEnabled);
 
                     // Progress bar active state
                     _progressBar?.SetActive(isPlaying);

@@ -243,6 +243,7 @@ namespace UniPlaySong.Services
 
                         PrimarySongManager.ClearPrimarySong(directory, _errorHandler);
                         InvalidateCacheForGame(game);
+                        CleanupEmptyDirectory(directory);
 
                         return deleted;
                     },
@@ -262,6 +263,7 @@ namespace UniPlaySong.Services
 
                     PrimarySongManager.ClearPrimarySong(directory, null);
                     InvalidateCacheForGame(game);
+                    CleanupEmptyDirectory(directory);
 
                     return deleted;
                 }
@@ -292,6 +294,28 @@ namespace UniPlaySong.Services
                 }
             });
             return deleted;
+        }
+
+        // Removes a game music directory if it contains no more audio files
+        public void CleanupEmptyDirectory(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) return;
+
+            bool hasAudioFiles = Directory.EnumerateFiles(directory)
+                .Any(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)));
+
+            if (!hasAudioFiles)
+            {
+                try
+                {
+                    Directory.Delete(directory, true);
+                    Logger.Debug($"Cleaned up empty music directory: {Path.GetFileName(directory)}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Failed to clean up directory '{directory}': {ex.Message}");
+                }
+            }
         }
     }
 }

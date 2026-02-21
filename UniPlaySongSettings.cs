@@ -208,6 +208,8 @@ namespace UniPlaySong
         private string externalAudioExcludedApps = "obs64, obs32";
         private bool pauseOnIdle = false;
         private int idleTimeoutMinutes = 15;
+        private bool lowerVolumeOnIdle = false;
+        private int idleVolumeTimeoutMinutes = 15;
         private bool focusLossStayPaused = false;
         private bool focusLossIgnoreBrief = false;
         private bool enableRandomPickerMusic = false;
@@ -220,6 +222,7 @@ namespace UniPlaySong
         private ProgressBarPosition progressBarPosition = ProgressBarPosition.AfterSkipButton;
         private bool showDesktopMediaControls = false;
         private bool showSpectrumVisualizer = true;
+        private bool showPeakMeter = false;
         private bool autoDeleteMusicOnGameRemoval = true;
 
         // Gamification
@@ -519,6 +522,20 @@ namespace UniPlaySong
             set { idleTimeoutMinutes = Math.Max(1, Math.Min(60, value)); OnPropertyChanged(); }
         }
 
+        // Gradually lower volume to 25% after inactivity. Restores instantly on input.
+        public bool LowerVolumeOnIdle
+        {
+            get => lowerVolumeOnIdle;
+            set { lowerVolumeOnIdle = value; OnPropertyChanged(); }
+        }
+
+        // Minutes of inactivity before volume lowers (1-60). Only used when LowerVolumeOnIdle is enabled.
+        public int IdleVolumeTimeoutMinutes
+        {
+            get => idleVolumeTimeoutMinutes;
+            set { idleVolumeTimeoutMinutes = Math.Max(1, Math.Min(60, value)); OnPropertyChanged(); }
+        }
+
         // When enabled, music stays paused after Playnite regains focus. User must press play manually.
         public bool FocusLossStayPaused
         {
@@ -611,6 +628,13 @@ namespace UniPlaySong
         {
             get => showSpectrumVisualizer;
             set { showSpectrumVisualizer = value; OnPropertyChanged(); }
+        }
+
+        // Show real-time peak meter (L/R channels) in the top panel. Requires NAudio player.
+        public bool ShowPeakMeter
+        {
+            get => showPeakMeter;
+            set { showPeakMeter = value; OnPropertyChanged(); }
         }
 
         /// <summary>

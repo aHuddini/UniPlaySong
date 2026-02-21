@@ -2,7 +2,32 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.3.1] - TBD
+## [1.3.2] - TBD
+
+### Added
+- **Global Media Key Control** (Experimental) - Control music playback using keyboard media keys (Play/Pause, Next Track, Previous Track, Stop)
+  - Uses Win32 `RegisterHotKey` with a hidden `HwndSource` message window for zero per-keystroke overhead
+  - Works globally even when Playnite is not focused
+  - Play/Pause toggles manual pause, Next skips to a random different song, Previous restarts current song, Stop acts as Play/Pause
+  - Graceful degradation: if another app has claimed a media key, that key is skipped (logged in debug log)
+  - Toggle in Settings → Experimental (disabled by default, requires Playnite restart)
+- **Taskbar Thumbnail Media Controls** (Experimental) - Previous/Play-Pause/Next buttons in Windows taskbar preview pane
+  - Uses WPF's built-in `TaskbarItemInfo` (wraps `ITaskbarList3` COM) — no external dependencies
+  - Play/Pause icon dynamically updates to reflect current playback state
+  - Vector-rendered 32x32 icons generated at runtime (no external image files)
+  - Desktop mode only; guarded against overwriting Playnite's own `TaskbarItemInfo` if set
+  - Toggle in Settings → Experimental (disabled by default, requires Playnite restart)
+- **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion
+  - Triggers after all deletion paths: Delete All Music, Delete Long Songs, and controller single-song deletion
+  - Checks for remaining audio files before removal (cleans up `.primarysong.json` and other non-audio leftovers)
+  - Matches existing cleanup pattern used by game removal and orphan cleanup
+- **M3U Playlist Export** - Export music as M3U playlists for external players (VLC, foobar2000, MPC)
+  - Per-game export: right-click game → "Export M3U Playlist"
+  - Multi-game export: select multiple games → "Export M3U Playlist (N games)"
+  - Library-wide export: main menu → "Export Music Library Playlist (UPS)" with progress dialog
+  - Extended M3U format with `#EXTINF` duration/title entries and absolute file paths
+
+## [1.3.1] - 2026-02-18
 
 ### Added
 - **Install-Aware Auto-Download** - Automatically downloads music when a game transitions from uninstalled to installed, if it doesn't already have music. Plays the downloaded music immediately if the game is still selected. Enabled by default in Settings → Downloads

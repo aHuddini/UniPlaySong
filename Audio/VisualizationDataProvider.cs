@@ -22,6 +22,8 @@ namespace UniPlaySong.Audio
         // Per-update peak tracking (written by audio thread, read by UI)
         private volatile float _currentPeak;
         private volatile float _currentRms;
+        private volatile float _currentPeakL, _currentPeakR;
+        private volatile float _currentRmsL, _currentRmsR;
 
         // FFT configuration — set at construction, immutable thereafter.
         // Supported sizes: 512 (~86Hz/bin, ~11.6ms), 1024 (~43Hz/bin, ~23ms), 2048 (~21.5Hz/bin, ~46ms)
@@ -150,29 +152,37 @@ namespace UniPlaySong.Audio
             int samplesRead = _source.Read(buffer, offset, count);
             if (samplesRead == 0) return 0;
 
-            float peak = 0f;
-            float sumSq = 0f;
+            float peakL = 0f, peakR = 0f;
+            float sumSqL = 0f, sumSqR = 0f;
             int monoCount = 0;
 
             int pos = _writePos;
             for (int i = 0; i < samplesRead; i += _channels)
             {
-                float sample = buffer[offset + i];
-                if (_channels == 2 && i + 1 < samplesRead)
-                    sample = (sample + buffer[offset + i + 1]) * 0.5f;
+                float left = buffer[offset + i];
+                float right = (_channels == 2 && i + 1 < samplesRead) ? buffer[offset + i + 1] : left;
 
-                float abs = sample > 0 ? sample : -sample;
-                if (abs > peak) peak = abs;
-                sumSq += sample * sample;
+                float absL = left > 0 ? left : -left;
+                float absR = right > 0 ? right : -right;
+                if (absL > peakL) peakL = absL;
+                if (absR > peakR) peakR = absR;
+                sumSqL += left * left;
+                sumSqR += right * right;
                 monoCount++;
 
+                // Mono downmix for FFT circular buffer
+                float sample = (left + right) * 0.5f;
                 _sampleBuffer[pos & (BufferSize - 1)] = sample;
                 pos++;
             }
 
             _writePos = pos;
-            _currentPeak = peak;
-            _currentRms = monoCount > 0 ? (float)Math.Sqrt(sumSq / monoCount) : 0f;
+            _currentPeakL = peakL;
+            _currentPeakR = peakR;
+            _currentRmsL = monoCount > 0 ? (float)Math.Sqrt(sumSqL / monoCount) : 0f;
+            _currentRmsR = monoCount > 0 ? (float)Math.Sqrt(sumSqR / monoCount) : 0f;
+            _currentPeak = Math.Max(peakL, peakR);
+            _currentRms = monoCount > 0 ? (float)Math.Sqrt((sumSqL + sumSqR) / (monoCount * 2)) : 0f;
             _newSamplesSignal.Set();
 
             return samplesRead;
@@ -183,6 +193,15 @@ namespace UniPlaySong.Audio
         {
             peak = _currentPeak;
             rms = _currentRms;
+        }
+
+        // Stereo peak and RMS levels for L/R channel meters
+        public void GetStereoLevels(out float peakL, out float peakR, out float rmsL, out float rmsR)
+        {
+            peakL = _currentPeakL;
+            peakR = _currentPeakR;
+            rmsL = _currentRmsL;
+            rmsR = _currentRmsR;
         }
 
         // UI thread: copies pre-calculated spectrum data (just Array.Copy)

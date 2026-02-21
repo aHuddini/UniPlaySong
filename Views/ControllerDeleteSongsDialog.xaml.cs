@@ -986,6 +986,10 @@ namespace UniPlaySong.Views
                 // Invalidate song cache since we deleted a file
                 _fileService?.InvalidateCacheForGame(_currentGame);
 
+                // If this was the last audio file, clean up the empty directory
+                var musicDir = Path.GetDirectoryName(filePath);
+                _fileService?.CleanupEmptyDirectory(musicDir);
+
                 // Update UI
                 PopulateFilesList();
                 

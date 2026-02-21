@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -1785,6 +1786,224 @@ namespace UniPlaySong.Menus
             );
 
             _logger.Debug($"Bulk delete complete - {totalDeleted} files deleted from {gamesDeleted} games");
+        }
+
+        #endregion
+
+        #region Export
+
+        // Exports a rich song list CSV compatible with mp3_tools_suite audit format
+        public void ExportSongList(Game game)
+        {
+            if (game == null) return;
+
+            var songs = _fileService.GetAvailableSongs(game);
+            if (songs == null || songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No songs found for this game.", "UniPlaySong");
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = $"{SanitizeFileName(game.Name)} - Song List",
+                DefaultExt = ".csv",
+                Filter = "CSV files (*.csv)|*.csv"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("GameTitle,GameSource,GameId,Name,Artist,Duration,Bitrate,Size,Format,FilePath");
+
+            var gameTitle = CsvEscape(game.Name);
+            var gameSource = CsvEscape(game.Source?.Name ?? "");
+            var gameId = game.Id.ToString();
+
+            foreach (var songPath in songs)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(songPath);
+                var ext = Path.GetExtension(songPath).TrimStart('.').ToUpperInvariant();
+                long fileSize = 0;
+                var duration = TimeSpan.Zero;
+                string artist = "";
+                int bitrate = 0;
+
+                try { fileSize = new FileInfo(songPath).Length; } catch { }
+
+                try
+                {
+                    using (var file = TagLib.File.Create(songPath))
+                    {
+                        duration = file.Properties?.Duration ?? TimeSpan.Zero;
+                        bitrate = file.Properties?.AudioBitrate ?? 0;
+                        if (file.Tag?.Performers != null && file.Tag.Performers.Length > 0)
+                            artist = file.Tag.Performers[0] ?? "";
+                    }
+                }
+                catch { }
+
+                var durationStr = duration.TotalSeconds > 0
+                    ? $"{(int)duration.TotalMinutes}:{duration.Seconds:D2}"
+                    : "";
+                var bitrateStr = bitrate > 0 ? $"{bitrate}" : "";
+
+                sb.AppendLine($"{gameTitle},{gameSource},{gameId},{CsvEscape(fileName)},{CsvEscape(artist)},{durationStr},{bitrateStr},{FormatFileSize(fileSize)},{ext},{CsvEscape(songPath)}");
+            }
+
+            File.WriteAllText(dialog.FileName, sb.ToString());
+            _playniteApi.Dialogs.ShowMessage($"Exported {songs.Count} songs to:\n{dialog.FileName}", "UniPlaySong");
+        }
+
+        // Exports a per-game M3U playlist
+        public void ExportPlaylist(Game game)
+        {
+            if (game == null) return;
+
+            var songs = _fileService.GetAvailableSongs(game);
+            if (songs == null || songs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No songs found for this game.", "UniPlaySong");
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = SanitizeFileName(game.Name),
+                DefaultExt = ".m3u",
+                Filter = "M3U Playlist (*.m3u)|*.m3u"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var lines = BuildM3U(songs);
+            File.WriteAllLines(dialog.FileName, lines);
+            _playniteApi.Dialogs.ShowMessage($"Exported {songs.Count} songs to:\n{dialog.FileName}", "UniPlaySong");
+        }
+
+        // Exports M3U playlist for multiple selected games
+        public void ExportPlaylistForGames(List<Game> games)
+        {
+            if (games == null || games.Count == 0) return;
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = $"UniPlaySong - {games.Count} games",
+                DefaultExt = ".m3u",
+                Filter = "M3U Playlist (*.m3u)|*.m3u"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var allSongs = new List<string>();
+            foreach (var game in games)
+            {
+                allSongs.AddRange(_fileService.GetAvailableSongs(game));
+            }
+
+            if (allSongs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No songs found for the selected games.", "UniPlaySong");
+                return;
+            }
+
+            var lines = BuildM3U(allSongs);
+            File.WriteAllLines(dialog.FileName, lines);
+            _playniteApi.Dialogs.ShowMessage($"Exported {allSongs.Count} songs from {games.Count} games to:\n{dialog.FileName}", "UniPlaySong");
+        }
+
+        // Exports the entire music library as a single M3U playlist
+        public void ExportLibraryPlaylist()
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = "UniPlaySong Library",
+                DefaultExt = ".m3u",
+                Filter = "M3U Playlist (*.m3u)|*.m3u"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var allSongs = new List<string>();
+
+            _playniteApi.Dialogs.ActivateGlobalProgress(args =>
+            {
+                var gamesWithMusic = _playniteApi.Database.Games
+                    .Where(g => _fileService.HasMusic(g))
+                    .ToList();
+
+                args.ProgressMaxValue = gamesWithMusic.Count;
+
+                foreach (var game in gamesWithMusic)
+                {
+                    if (args.CancelToken.IsCancellationRequested) return;
+                    allSongs.AddRange(_fileService.GetAvailableSongs(game));
+                    args.CurrentProgressValue++;
+                }
+            }, new GlobalProgressOptions("Building playlist...", true));
+
+            if (allSongs.Count == 0)
+            {
+                _playniteApi.Dialogs.ShowMessage("No music found in your library.", "UniPlaySong");
+                return;
+            }
+
+            var lines = BuildM3U(allSongs);
+            File.WriteAllLines(dialog.FileName, lines);
+            _playniteApi.Dialogs.ShowMessage($"Exported {allSongs.Count} songs to:\n{dialog.FileName}", "UniPlaySong");
+        }
+
+        private List<string> BuildM3U(List<string> songPaths)
+        {
+            var lines = new List<string> { "#EXTM3U" };
+
+            foreach (var path in songPaths)
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                int durationSecs = -1;
+
+                try
+                {
+                    using (var file = TagLib.File.Create(path))
+                    {
+                        var dur = file.Properties?.Duration ?? TimeSpan.Zero;
+                        if (dur.TotalSeconds > 0)
+                            durationSecs = (int)dur.TotalSeconds;
+                    }
+                }
+                catch { }
+
+                lines.Add($"#EXTINF:{durationSecs},{name}");
+                lines.Add(path);
+            }
+
+            return lines;
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return "export";
+            var invalid = Path.GetInvalidFileNameChars();
+            return string.Concat(name.Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c));
+        }
+
+        private static string CsvEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            return value;
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes >= 1_073_741_824)
+                return $"{bytes / 1_073_741_824.0:F1} GB";
+            if (bytes >= 1_048_576)
+                return $"{bytes / 1_048_576.0:F1} MB";
+            if (bytes >= 1024)
+                return $"{bytes / 1024.0:F1} KB";
+            return $"{bytes} B";
         }
 
         #endregion

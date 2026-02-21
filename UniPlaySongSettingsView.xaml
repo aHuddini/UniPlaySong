@@ -158,6 +158,123 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Audio Awareness -->
+                    <CheckBox Content="Pause music when another app plays audio"
+                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
+                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                            <Setter Property="Text" Value="Instant"/>
+                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
+                               FontSize="11"
+                               Foreground="CornflowerBlue"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Content="Instant pause (no fade transition)"
+                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
+                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+
+                    <!-- Idle Detection -->
+                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
+                              IsChecked="{Binding Settings.PauseOnIdle}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnIdle}">
+                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="60"
+                                Value="{Binding Settings.IdleTimeoutMinutes}"
+                                Width="200"
+                                TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
+                    </StackPanel>
+
+                    <CheckBox Content="Lower volume when idle (gradual fade to 25%)"
+                              IsChecked="{Binding Settings.LowerVolumeOnIdle}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="Gradually lowers music volume after inactivity instead of pausing. Volume restores instantly on any input. Can be used alongside Pause on Idle with different timeouts."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.LowerVolumeOnIdle}">
+                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="60"
+                                Value="{Binding Settings.IdleVolumeTimeoutMinutes}"
+                                Width="200" TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="{Binding Settings.IdleVolumeTimeoutMinutes, StringFormat='{}{0} min'}"/>
+                    </StackPanel>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Top Panel Display -->
@@ -3017,106 +3134,22 @@
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
-                    <!-- Audio Awareness -->
-                    <TextBlock Text="Audio Awareness" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
-                    <CheckBox Content="Pause music when another app plays audio"
-                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
+                    <!-- Peak Meter -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Peak Meter (VU Display)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Show Peak Meter in top panel"
+                              IsChecked="{Binding Settings.ShowPeakMeter}"
                               Margin="0,5,0,5"/>
-                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
+                    <TextBlock Text="Real-time L/R audio level meter with green/yellow/red LED-style bars. Requires NAudio player (auto-enabled). May impact performance on some systems."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
+                               Margin="20,0,0,5"/>
+                    <TextBlock Text="&#x26A0; Experimental: This feature may cause lag on some systems."
                                FontSize="11"
                                Foreground="Orange"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
-                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
-                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
-                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
-                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                            <Setter Property="Text" Value="Instant"/>
-                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
-                               FontSize="11"
-                               Foreground="CornflowerBlue"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <CheckBox Content="Instant pause (no fade transition)"
-                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
-                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
-                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-
-                    <!-- Idle Detection -->
-                    <TextBlock Text="Idle Detection" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
-
-                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
-                              IsChecked="{Binding Settings.PauseOnIdle}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnIdle}">
-                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="1" Maximum="60"
-                                Value="{Binding Settings.IdleTimeoutMinutes}"
-                                Width="200"
-                                TickFrequency="5" IsSnapToTickEnabled="False"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
-                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
-                    </StackPanel>
 
                     <!-- Random Picker Music -->
                     <Separator Margin="0,15"/>
