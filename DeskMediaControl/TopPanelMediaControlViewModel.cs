@@ -362,6 +362,10 @@ namespace UniPlaySong.DeskMediaControl
                 if (playbackService.IsPaused)
                 {
                     _log?.Invoke("TopPanel: Resuming playback via manual toggle");
+                    // Clear all automatic pause sources — user explicitly wants to play
+                    playbackService.RemovePauseSource(PauseSource.Idle);
+                    playbackService.RemovePauseSource(PauseSource.ExternalAudio);
+                    playbackService.RemovePauseSource(PauseSource.SystemLock);
                     playbackService.RemovePauseSource(PauseSource.Manual);
                 }
                 else if (playbackService.IsPlaying || playbackService.IsLoaded)

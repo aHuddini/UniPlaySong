@@ -26,6 +26,8 @@ Built with the help of Claude Code and Cursor IDE
 - **Taskbar Thumbnail Media Controls** (Experimental) - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only).
 - **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion.
 - **M3U Playlist Export** - Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).
+- **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock) — fixes music staying paused after long idle or lock/unlock cycles.
+- **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
 
 ### Previous Versions
 - **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix

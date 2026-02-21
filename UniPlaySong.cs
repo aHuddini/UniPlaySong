@@ -1378,9 +1378,23 @@ namespace UniPlaySong
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
             {
-                // Always remove — HashSet.Remove is a no-op if not present
                 Application.Current?.Dispatcher?.Invoke(() =>
-                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock));
+                {
+                    // Clear idle state — user is back at the PC
+                    if (_idleDetected)
+                    {
+                        _idleDetected = false;
+                        _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                    }
+                    if (_idleVolumeLowered)
+                    {
+                        _idleVolumeLowered = false;
+                        RestoreIdleVolume();
+                    }
+
+                    // Always remove — HashSet.Remove is a no-op if not present
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                });
             }
         }
 
