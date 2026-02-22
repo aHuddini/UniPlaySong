@@ -107,6 +107,8 @@
 
                     <CheckBox Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
                               IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
                         <Run Foreground="Gray">Adds Media Controls to Playnite's taskbar hover preview.</Run>
