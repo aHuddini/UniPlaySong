@@ -26,9 +26,11 @@ Built with the help of Claude Code and Cursor IDE
 - **Taskbar Thumbnail Media Controls** (Experimental) - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only).
 - **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion.
 - **M3U Playlist Export** - Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).
+- **Extended Default Music Sources** - Three new default music fallbacks: Custom Folder, Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.
 - **Settings Reorganization** - General settings reorganization to improve navigation experience. Dedicated "Pauses" tab, cleaner labels, and streamlined General settings.
 - **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock) — fixes music staying paused after long idle or lock/unlock cycles.
 - **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
+- **Bug Fix**: Settings no longer silently reset when using Browse/Select buttons in settings dialogs.
 
 ### Previous Versions
 - **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix
@@ -97,14 +99,14 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Settings Tabs
 - **General**: Music behavior, pause settings, desktop controls, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music, completion fanfare
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
 - **Downloads**: Tool paths, auto-download options, install-aware auto-download, bulk download
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: External audio detection, idle/AFK pause, random game picker music, media key control, taskbar media buttons, download notification sound, celebration toast, library statistics with audio metrics
+- **Experimental**: External audio detection, idle/AFK pause, media key control, taskbar media buttons, download notification sound, celebration toast, library statistics with audio metrics
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA

@@ -469,6 +469,81 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Default Music Source: Custom Folder -->
+                    <RadioButton Content="Use custom music folder"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                        <TextBox Text="{Binding Settings.DefaultMusicFolderPath}"
+                                 Width="330"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="True"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                Command="{Binding BrowseForDefaultMusicFolder}"/>
+                    </StackPanel>
+                    <TextBlock Text="Randomly plays music from any audio files in the selected folder"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,3,0,10"/>
+
+                    <!-- Default Music Source: Random Game -->
+                    <RadioButton Content="Pick from random game"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <TextBlock Text="Randomly selects a song from any game in your music library"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Default Music Source: Custom Rotation -->
+                    <RadioButton Content="Custom game rotation"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5"/>
+                    <StackPanel Margin="20,5,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Select Games..."
+                                    Width="120"
+                                    IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                    Command="{Binding SelectRotationGames}"/>
+                            <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                       Text="{Binding RotationGameCountText}"/>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding RotationGameNames}" Margin="0,5,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="#7BA4D4" Margin="5,1"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <TextBlock Text="Uses music from your selected games as the default rotation pool"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,3,0,10"/>
+
+                    <!-- Continue same song option (for pool-based sources) -->
+                    <CheckBox Content="Continue same song on game switch"
+                              IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
+                              IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="When enabled, the same default song keeps playing as you browse games instead of picking a new random song each time. Applies to Custom Folder, Random Game, and Custom Rotation sources."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <Separator Margin="0,15"/>
 
                     <CheckBox Content="Play Music Only for Installed Games"
@@ -576,6 +651,20 @@
                             </ComboBox>
                         </StackPanel>
                     </StackPanel>
+
+                    <!-- Random Game Picker -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Play music while browsing the random game picker"
+                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -2283,14 +2372,37 @@
 
                     <Separator Margin="0,10"/>
 
-                    <CheckBox Content="Use cookies from browser (Firefox)"
-                              IsChecked="{Binding Settings.UseFirefoxCookies}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, uses Firefox cookies for YouTube downloads. This helps bypass bot detection and improves download reliability. Make sure Firefox is installed and you're logged into YouTube in Firefox."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                    <TextBlock Text="Cookie Source" FontSize="13" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                    <TextBlock Text="Choose a cookie source to improve yt-dlp and YouTube download reliability."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                    <RadioButton Content="No cookies"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=None}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+
+                    <RadioButton Content="Use cookies from Firefox"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Firefox}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+                    <TextBlock Text="Requires Firefox installed with an active YouTube login."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,3"/>
+
+                    <RadioButton Content="Use custom cookies file"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,3,0,0">
+                        <TextBox Text="{Binding Settings.CustomCookiesFilePath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="False"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Command="{Binding BrowseForCookiesFile}"/>
+                    </StackPanel>
+                    <TextBlock Text="Select a Netscape-format cookies.txt file exported from your browser."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,3,0,5"/>
 
                     <Separator Margin="0,15"/>
 
@@ -3175,19 +3287,6 @@
                     <TextBlock Text="&#x26A0; Experimental: This feature may cause lag on some systems."
                                FontSize="11"
                                Foreground="Orange"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <!-- Random Picker Music -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-
-                    <CheckBox Content="Play music while browsing the random game picker"
-                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
-                               FontSize="11"
-                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 

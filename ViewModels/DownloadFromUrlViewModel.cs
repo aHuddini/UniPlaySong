@@ -327,9 +327,16 @@ namespace UniPlaySong.ViewModels
                 var rateLimitOptions = " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
                 var arguments = $"--dump-json --no-download{rateLimitOptions} \"{url}\"";
 
-                if (_settingsService.Current?.UseFirefoxCookies == true)
+                var currentCookieMode = _settingsService.Current?.CookieMode ?? CookieMode.None;
+                if (currentCookieMode == CookieMode.Firefox)
                 {
-                    arguments = $"--cookies-from-browser firefox " + arguments;
+                    arguments = "--cookies-from-browser firefox " + arguments;
+                }
+                else if (currentCookieMode == CookieMode.CustomFile)
+                {
+                    var cookiesPath = _settingsService.Current?.CustomCookiesFilePath ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(cookiesPath))
+                        arguments = $"--cookies \"{cookiesPath}\" " + arguments;
                 }
 
                 var processInfo = new System.Diagnostics.ProcessStartInfo

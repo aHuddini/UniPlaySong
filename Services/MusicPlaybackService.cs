@@ -55,6 +55,9 @@ namespace UniPlaySong.Services
         private string _lastDefaultMusicPath = null;
         private TimeSpan _defaultMusicPausedOnTime = default;
 
+        // Provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
+        private Func<DefaultMusicSource, UniPlaySongSettings, List<string>> _defaultSongPoolProvider;
+
         // Initialization gate to prevent music playback until OnApplicationStarted completes
         // This ensures window state is checked before any music can play
         private bool _initializationComplete = false;
@@ -361,7 +364,7 @@ namespace UniPlaySong.Services
 
         #endregion
 
-        // Checks if path is default music (native or custom). The two options are mutually exclusive.
+        // Checks if path is default music. Used to determine if same default music can continue playing.
         private bool IsDefaultMusicPath(string path, UniPlaySongSettings settings)
         {
             if (string.IsNullOrWhiteSpace(path) || settings == null || !settings.EnableDefaultMusic)
@@ -379,6 +382,13 @@ namespace UniPlaySong.Services
                     var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
                     return presetPath != null &&
                            string.Equals(path, presetPath, StringComparison.OrdinalIgnoreCase);
+
+                case DefaultMusicSource.CustomFolder:
+                case DefaultMusicSource.RandomGame:
+                case DefaultMusicSource.CustomRotation:
+                    // For pool-based sources, match against the last default music path we set
+                    return !string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
+                           string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase);
 
                 case DefaultMusicSource.CustomFile:
                 default:
@@ -499,15 +509,16 @@ namespace UniPlaySong.Services
                 var gameId = game.Id.ToString();
                 var songs = _fileService.GetAvailableSongs(game);
 
-                // Skip game-specific music for uninstalled games — fall through to default music
-                if (songs.Count > 0 && settings?.MusicOnlyForInstalledGames == true && game.IsInstalled != true)
+                // Skip game-specific music for uninstalled games — fall through to default music.
+                // forceReload bypasses this (used by Random Picker to preview uninstalled games).
+                if (songs.Count > 0 && !forceReload && settings?.MusicOnlyForInstalledGames == true && game.IsInstalled != true)
                 {
                     _fileLogger?.Info($"PlayGameMusic: {game.Name} is not installed, skipping game music (MusicOnlyForInstalledGames enabled)");
                     songs.Clear();
                 }
 
                 // Default music fallback when no game music found.
-                // Three sources: BundledPreset, NativeTheme, or CustomFile (driven by DefaultMusicSourceOption).
+                // Six sources driven by DefaultMusicSourceOption.
                 // UseNativeMusicAsDefault kept in sync for backward compatibility.
                 if (songs.Count == 0 && settings?.EnableDefaultMusic == true)
                 {
@@ -536,6 +547,38 @@ namespace UniPlaySong.Services
                             else
                             {
                                 _fileLogger?.Warn($"BundledPreset selected but preset file not found: {settings.SelectedBundledPreset}");
+                            }
+                            break;
+
+                        case DefaultMusicSource.CustomFolder:
+                        case DefaultMusicSource.RandomGame:
+                        case DefaultMusicSource.CustomRotation:
+                            // "Continue same song" — reuse the previous default song even after
+                            // switching to game music and back (session-persistent)
+                            if (settings.DefaultMusicContinueSameSong &&
+                                !string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
+                                File.Exists(_lastDefaultMusicPath))
+                            {
+                                _fileLogger?.Debug($"Continuing same default song: {Path.GetFileName(_lastDefaultMusicPath)}");
+                                songs.Add(_lastDefaultMusicPath);
+                            }
+                            else if (_defaultSongPoolProvider != null)
+                            {
+                                var pool = _defaultSongPoolProvider(settings.DefaultMusicSourceOption, settings);
+                                if (pool.Count > 0)
+                                {
+                                    var picked = pool[_random.Next(pool.Count)];
+                                    _fileLogger?.Info($"No game music for {game.Name}, using {settings.DefaultMusicSourceOption}: {Path.GetFileName(picked)}");
+                                    // Set _lastDefaultMusicPath BEFORE adding to songs so that
+                                    // IsDefaultMusicPath() recognizes it as default music downstream.
+                                    // Without this, the first pool-based song is treated as game music.
+                                    _lastDefaultMusicPath = picked;
+                                    songs.Add(picked);
+                                }
+                                else
+                                {
+                                    _fileLogger?.Warn($"{settings.DefaultMusicSourceOption} selected but no songs found in pool.");
+                                }
                             }
                             break;
 
@@ -643,9 +686,9 @@ namespace UniPlaySong.Services
                     // Check if default music is already playing - if so, continue (preserve position).
                     // Handles switching between games with no music (both use default music).
                     // Use case-insensitive path comparison to handle path variations (native music file paths).
-                    if (string.Equals(_currentSongPath, songToPlay, StringComparison.OrdinalIgnoreCase) && 
-                        _isPlayingDefaultMusic && 
-                        _musicPlayer?.IsLoaded == true && 
+                    if (string.Equals(_currentSongPath, songToPlay, StringComparison.OrdinalIgnoreCase) &&
+                        _isPlayingDefaultMusic &&
+                        _musicPlayer?.IsLoaded == true &&
                         string.Equals(_musicPlayer.Source, songToPlay, StringComparison.OrdinalIgnoreCase) &&
                         IsPlaying)
                     {
@@ -692,10 +735,12 @@ namespace UniPlaySong.Services
                                 {
                                     _musicPlayer.Load(songToPlay);
                                     _musicPlayer.Volume = 0;
+                                    // Set _lastDefaultMusicPath BEFORE _currentSongPath so the
+                                    // setter's IsDefaultMusicPath() check recognizes it as default music
+                                    _lastDefaultMusicPath = songToPlay;
+                                    _isPlayingDefaultMusic = true;
                                     _currentSongPath = songToPlay;
                                     ClearAllPauseSources();
-                                    _isPlayingDefaultMusic = true;
-                                    _lastDefaultMusicPath = songToPlay;
                                     _songStartTime = DateTime.MinValue;
 
                                     if (_isPaused)
@@ -1101,6 +1146,16 @@ namespace UniPlaySong.Services
             }
         }
 
+        public void SetDefaultSongPoolProvider(Func<DefaultMusicSource, UniPlaySongSettings, List<string>> provider)
+        {
+            _defaultSongPoolProvider = provider;
+        }
+
+        public void ClearLastDefaultMusicPath()
+        {
+            _lastDefaultMusicPath = null;
+        }
+
         public void SetFadeInDuration(double seconds)
         {
             _fadeInDuration = Math.Max(0.05, Math.Min(2.0, seconds));
@@ -1171,7 +1226,9 @@ namespace UniPlaySong.Services
                 _musicPlayer.Play();
 
                 // Update internal state to match what we just set
+                _currentSongPath = filePath;
                 _targetVolume = volume;
+                _isPlayingDefaultMusic = false;
                 ClearAllPauseSources();
             }
             catch (Exception ex)

@@ -119,10 +119,8 @@ namespace UniPlaySong
         // Bundled jingles list for the celebration sound ComboBox
         public List<Services.BundledJingleInfo> CelebrationJingles => Services.BundledJingleService.GetJingles();
 
-        /// <summary>
-        /// Creates a new settings object with updated property value
-        /// This ensures property change notifications are properly triggered
-        /// </summary>
+        // Deep-clones current settings via JSON roundtrip, then applies the update.
+        // This ensures ALL properties are preserved (previously only ~30 of 180 were copied).
         private UniPlaySongSettings CreateSettingsWithUpdate(Action<UniPlaySongSettings> updateAction)
         {
             if (settings == null)
@@ -130,45 +128,8 @@ namespace UniPlaySong
                 return new UniPlaySongSettings();
             }
 
-            var newSettings = new UniPlaySongSettings
-            {
-                EnableMusic = settings.EnableMusic,
-                MusicState = settings.MusicState,
-                SkipFirstSelectionAfterModeSwitch = settings.SkipFirstSelectionAfterModeSwitch,
-                ThemeCompatibleSilentSkip = settings.ThemeCompatibleSilentSkip,
-                PauseOnTrailer = settings.PauseOnTrailer,
-                MusicVolume = settings.MusicVolume,
-                FadeInDuration = settings.FadeInDuration,
-                FadeOutDuration = settings.FadeOutDuration,
-                YtDlpPath = settings.YtDlpPath,
-                FFmpegPath = settings.FFmpegPath,
-                EnableDefaultMusic = settings.EnableDefaultMusic,
-                DefaultMusicPath = settings.DefaultMusicPath,
-                BackupCustomMusicPath = settings.BackupCustomMusicPath,
-                SuppressPlayniteBackgroundMusic = settings.SuppressPlayniteBackgroundMusic,
-                UseNativeMusicAsDefault = settings.UseNativeMusicAsDefault,
-                DefaultMusicSourceOption = settings.DefaultMusicSourceOption,
-                SelectedBundledPreset = settings.SelectedBundledPreset,
-                BundledPresetMigrated = settings.BundledPresetMigrated,
-                MusicOnlyForInstalledGames = settings.MusicOnlyForInstalledGames,
-                NormalizationTargetLoudness = settings.NormalizationTargetLoudness,
-                NormalizationTruePeak = settings.NormalizationTruePeak,
-                NormalizationLoudnessRange = settings.NormalizationLoudnessRange,
-                NormalizationCodec = settings.NormalizationCodec,
-                NormalizationSuffix = settings.NormalizationSuffix,
-                SkipAlreadyNormalized = settings.SkipAlreadyNormalized,
-                DoNotPreserveOriginals = settings.DoNotPreserveOriginals,
-                EnableCompletionCelebration = settings.EnableCompletionCelebration,
-                CelebrationSoundType = settings.CelebrationSoundType,
-                SelectedCelebrationJingle = settings.SelectedCelebrationJingle,
-                CelebrationSoundPath = settings.CelebrationSoundPath,
-                PlaySoundOnDownloadComplete = settings.PlaySoundOnDownloadComplete,
-                ShowCelebrationToast = settings.ShowCelebrationToast,
-                CelebrationToastDurationSeconds = settings.CelebrationToastDurationSeconds,
-                CelebrationToastTheme = settings.CelebrationToastTheme,
-                ApplyLiveEffectsToJingles = settings.ApplyLiveEffectsToJingles,
-                ShowDefaultMusicIndicator = settings.ShowDefaultMusicIndicator
-            };
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
+            var newSettings = Newtonsoft.Json.JsonConvert.DeserializeObject<UniPlaySongSettings>(json);
 
             updateAction(newSettings);
             return newSettings;
@@ -208,6 +169,23 @@ namespace UniPlaySong
             );
         });
 
+
+        public ICommand BrowseForCookiesFile => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var filePath = PlayniteApi.Dialogs.SelectFile("Cookies file|cookies.txt|All files|*.*");
+                    if (!string.IsNullOrWhiteSpace(filePath))
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.CustomCookiesFilePath = filePath);
+                    }
+                },
+                context: "selecting cookies file",
+                showUserMessage: true
+            );
+        });
 
         public ICommand BrowseForDefaultMusicFile => new Common.RelayCommand<object>((a) =>
         {
@@ -294,6 +272,58 @@ namespace UniPlaySong
                 showUserMessage: true
             );
         });
+
+        public ICommand BrowseForDefaultMusicFolder => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var selectedFolder = PlayniteApi.Dialogs.SelectFolder();
+                    if (!string.IsNullOrWhiteSpace(selectedFolder))
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.DefaultMusicFolderPath = selectedFolder);
+                    }
+                },
+                context: "selecting default music folder",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand SelectRotationGames => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var fileService = plugin.GetFileService();
+                    var gamesWithMusic = PlayniteApi.Database.Games
+                        .Where(g => fileService?.HasMusic(g) == true)
+                        .OrderBy(g => g.Name)
+                        .ToList();
+
+                    var dialog = new Views.GameSelectionDialog(gamesWithMusic, Settings.CustomRotationGameIds);
+                    if (dialog.ShowDialog() == true)
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.CustomRotationGameIds = dialog.SelectedGameIds);
+                        OnPropertyChanged(nameof(RotationGameNames));
+                        OnPropertyChanged(nameof(RotationGameCountText));
+                    }
+                },
+                context: "selecting rotation games",
+                showUserMessage: true
+            );
+        });
+
+        public string RotationGameCountText =>
+            $"{Settings?.CustomRotationGameIds?.Count ?? 0} game(s) selected";
+
+        public List<string> RotationGameNames =>
+            Settings?.CustomRotationGameIds?
+                .Select(id => PlayniteApi.Database.Games[id]?.Name)
+                .Where(n => n != null)
+                .OrderBy(n => n)
+                .ToList() ?? new List<string>();
 
         public ICommand NormalizeAllMusicCommand => new Common.RelayCommand<object>((a) =>
         {

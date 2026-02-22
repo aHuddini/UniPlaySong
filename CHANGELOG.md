@@ -26,13 +26,23 @@ All notable changes to UniPlaySong will be documented in this file.
   - Multi-game export: select multiple games → "Export M3U Playlist (N games)"
   - Library-wide export: main menu → "Export Music Library Playlist (UPS)" with progress dialog
   - Extended M3U format with `#EXTINF` duration/title entries and absolute file paths
+- **Extended Default Music Sources** - Three new default music source options in Settings → Playback → Default Music:
+  - **Custom Folder**: Point to any directory of audio files — UPS randomly picks from it when no game music is available
+  - **Random Game**: Randomly selects a song from any game in your downloaded music library
+  - **Custom Game Rotation**: Select specific games whose music serves as the default rotation pool, with a searchable multi-select game picker dialog
+  - **Continue Same Song**: Optional toggle to keep the same default song playing across game switches instead of re-rolling on each selection
+  - All three sources integrate with existing skip behavior (skip picks a new random song from the pool)
 
 ### Changed
 - **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", Taskbar Thumbnail Media Controls promoted from Experimental to General, fullscreen-only options labeled accordingly.
+- **Random Game Picker promoted to Playback** - Graduated from Experimental to Settings → Playback. Now uses instant song switching (no fader) for snappy browsing.
 
 ### Fixed
 - **Play Button Clears Stale Pause Sources** - Play button now clears automatic pause sources (Idle, ExternalAudio, SystemLock) when resuming. Previously, stale sources could remain active after long idle or lock/unlock cycles, causing music to stay paused even after clicking play.
 - **System Unlock Clears Idle State** - Unlocking Windows now properly clears the idle pause source and restores idle volume. Fixes music not resuming after lock/unlock when idle detection or idle volume lowering was active before locking.
+- **Random Picker music not stopping on close (SDL2 mode)** - Deferred playback via `BeginInvoke` could race with the picker's close handler, causing the last previewed song to keep playing after the dialog was dismissed. Fixed with an `IsActive` guard on the deferred action.
+- **Default music skipped for uninstalled games after live effects toggle** - Player recreation used `forceReload: true` which bypassed the `MusicOnlyForInstalledGames` filter, causing game-specific music to play instead of falling through to default music. Changed to `forceReload: false`.
+- **Settings silently resetting on dialog interactions** - `CreateSettingsWithUpdate` only cloned ~30 of 180 properties. Clicking Browse/Select buttons in settings would silently reset all un-mapped properties (live effects, visualizer, normalization, etc.) to defaults. Replaced with JSON deep clone that preserves all properties automatically.
 
 ## [1.3.1] - 2026-02-18
 

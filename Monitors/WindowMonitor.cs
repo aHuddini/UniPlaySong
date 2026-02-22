@@ -18,6 +18,7 @@ namespace UniPlaySong.Monitors
         private static readonly ILogger Logger = LogManager.GetLogger();
         private static IMusicPlaybackService _playbackService;
         private static ErrorHandlerService _errorHandler;
+        private static bool _classHandlerRegistered;
 
         /// <summary>
         /// Attaches the window monitor to Playnite's window system
@@ -26,12 +27,16 @@ namespace UniPlaySong.Monitors
         {
             _playbackService = playbackService;
             _errorHandler = errorHandler;
-            
-            // Register handler for all window loaded events
-            EventManager.RegisterClassHandler(
-                typeof(Window),
-                Window.LoadedEvent,
-                new RoutedEventHandler(Window_Loaded));
+
+            // RegisterClassHandler is permanent (no unregister API) — only call once
+            if (!_classHandlerRegistered)
+            {
+                EventManager.RegisterClassHandler(
+                    typeof(Window),
+                    Window.LoadedEvent,
+                    new RoutedEventHandler(Window_Loaded));
+                _classHandlerRegistered = true;
+            }
         }
 
         /// <summary>

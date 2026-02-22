@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
-using Playnite.SDK;
+using System.Windows.Threading;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
@@ -12,10 +12,13 @@ namespace UniPlaySong.Monitors
     // Monitors Playnite's Random Game Picker dialog and plays music for each displayed game
     public class RandomPickerMonitor
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly Random _random = new Random();
         private static IMusicPlaybackService _playbackService;
         private static UniPlaySongSettings _settings;
         private static FileLogger _fileLogger;
+
+        // True while the picker dialog is open and this monitor is handling playback
+        public static bool IsActive => _hookedViewModel != null;
 
         private static bool _classHandlerRegistered;
         private static INotifyPropertyChanged _hookedViewModel;
@@ -108,7 +111,29 @@ namespace UniPlaySong.Monitors
             if (game == null) return;
 
             _fileLogger?.Debug($"RandomPickerMonitor: Playing music for '{game.Name}'");
-            _playbackService?.PlayGameMusic(game, _settings, false);
+
+            if (_playbackService == null) return;
+
+            // Instant switch via PlayPreview (no fader) to avoid volume wobble from
+            // overlapping fade-out/fade-in cycles during rapid browsing.
+            // Deferred via BeginInvoke so the picker UI updates before playback starts.
+            var songs = _playbackService.GetAvailableSongs(game);
+            if (songs.Count > 0)
+            {
+                var song = songs[_random.Next(songs.Count)];
+                var volume = _settings.MusicVolume / 100.0;
+                _fileLogger?.Debug($"RandomPickerMonitor: Playing '{System.IO.Path.GetFileName(song)}'");
+                Application.Current?.Dispatcher?.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    // Guard: skip if picker was closed before this deferred action ran
+                    if (!IsActive) return;
+                    _playbackService?.PlayPreview(song, volume);
+                }));
+                return;
+            }
+
+            // No game-specific songs — fall through to PlayGameMusic for default music fallback
+            _playbackService.PlayGameMusic(game, _settings, true);
         }
 
         private static void OnPickerWindowClosed(object sender, EventArgs e)

@@ -136,6 +136,17 @@ namespace UniPlaySong.Common
             Log("DEBUG", message);
         }
 
+        // Lazy debug: message lambda only evaluates when debug logging is enabled.
+        // Use for hot paths to avoid string interpolation allocation when debug is off.
+        public void Debug(Func<string> messageFactory)
+        {
+            if (IsDebugEnabled != null && !IsDebugEnabled())
+            {
+                return;
+            }
+            Log("DEBUG", messageFactory());
+        }
+
         public void Warn(string message)
         {
             Log("WARN", message);

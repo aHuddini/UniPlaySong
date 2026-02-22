@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Models;
+using UniPlaySong.Monitors;
 
 namespace UniPlaySong.Services
 {
@@ -196,6 +197,14 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"HandleGameSelected: ShouldPlayMusic returned false for {game.Name} - stopping all music");
                 // Stop any currently playing music (including default music)
                 _playbackService?.Stop();
+                _firstSelect = false;
+                return;
+            }
+
+            // Picker owns all playback while its dialog is open — don't interfere
+            if (RandomPickerMonitor.IsActive)
+            {
+                _fileLogger?.Debug($"HandleGameSelected: Random Picker active, skipping normal playback for {game.Name}");
                 _firstSelect = false;
                 return;
             }

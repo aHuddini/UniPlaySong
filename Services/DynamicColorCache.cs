@@ -78,20 +78,23 @@ namespace UniPlaySong.Services
         {
             try
             {
+                // Snapshot under lock to minimize hold time — serialization + file I/O happen outside
+                string json;
                 lock (_lock)
                 {
-                    var dir = Path.GetDirectoryName(_cacheFilePath);
-                    if (!Directory.Exists(dir))
-                        Directory.CreateDirectory(dir);
-
-                    var tempPath = _cacheFilePath + ".tmp";
-                    var json = JsonConvert.SerializeObject(_cache, Formatting.Indented);
-                    File.WriteAllText(tempPath, json);
-
-                    if (File.Exists(_cacheFilePath))
-                        File.Delete(_cacheFilePath);
-                    File.Move(tempPath, _cacheFilePath);
+                    json = JsonConvert.SerializeObject(_cache, Formatting.Indented);
                 }
+
+                var dir = Path.GetDirectoryName(_cacheFilePath);
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                var tempPath = _cacheFilePath + ".tmp";
+                File.WriteAllText(tempPath, json);
+
+                if (File.Exists(_cacheFilePath))
+                    File.Delete(_cacheFilePath);
+                File.Move(tempPath, _cacheFilePath);
             }
             catch
             {

@@ -22,15 +22,17 @@ namespace UniPlaySong.Downloaders
         private readonly HttpClient _httpClient;
         private readonly string _ytDlpPath;
         private readonly string _ffmpegPath;
-        private readonly bool _useFirefoxCookies;
+        private readonly CookieMode _cookieMode;
+        private readonly string _customCookiesFilePath;
         private readonly ErrorHandlerService _errorHandler;
 
-        public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, bool useFirefoxCookies, ErrorHandlerService errorHandler)
+        public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath, ErrorHandlerService errorHandler)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _ytDlpPath = ytDlpPath;
             _ffmpegPath = ffmpegPath;
-            _useFirefoxCookies = useFirefoxCookies;
+            _cookieMode = cookieMode;
+            _customCookiesFilePath = customCookiesFilePath ?? string.Empty;
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
@@ -228,16 +230,18 @@ namespace UniPlaySong.Downloaders
                 // These help prevent rate limiting during batch downloads
                 var rateLimitOptions = " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
 
-                if (_useFirefoxCookies)
+                if (_cookieMode != CookieMode.None)
                 {
-                    // Simplified command when using Firefox cookies - extract audio to MP3
-                    // Minimal options: cookies, extract audio, MP3 format, FFmpeg location, output path, and URL
+                    // Simplified command when using cookies - extract audio to MP3
                     // Post-processor args ensure SDL_mixer compatibility (48kHz stereo, matches normalization)
                     var cookiesPostArgs = isPreview
                         ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
                         : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
-                    arguments = $"--cookies-from-browser firefox -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
-                    Logger.DebugIf(LogPrefix,"Using simplified yt-dlp command with Firefox cookies");
+                    var cookiesArg = _cookieMode == CookieMode.Firefox
+                        ? "--cookies-from-browser firefox"
+                        : $"--cookies \"{_customCookiesFilePath}\"";
+                    arguments = $"{cookiesArg} -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    Logger.DebugIf(LogPrefix,$"Using simplified yt-dlp command with cookies ({_cookieMode})");
                 }
                 else
                 {

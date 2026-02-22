@@ -32,6 +32,12 @@ namespace UniPlaySong.Services
         // Sets an idle volume multiplier (composes with base volume and fullscreen multiplier)
         void SetIdleVolumeMultiplier(double multiplier);
 
+        // Sets a provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
+        void SetDefaultSongPoolProvider(System.Func<DefaultMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
+
+        // Clears the cached default music path so the next fallback picks a fresh song
+        void ClearLastDefaultMusicPath();
+
         bool IsPlaying { get; }
         bool IsPaused { get; }
         bool IsLoaded { get; }

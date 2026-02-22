@@ -140,7 +140,17 @@ namespace UniPlaySong
     {
         CustomFile,     // User-selected music file
         NativeTheme,    // Playnite's built-in theme music
-        BundledPreset   // Bundled ambient tracks shipped with the plugin
+        BundledPreset,  // Bundled ambient tracks shipped with the plugin
+        CustomFolder,   // User-selected directory of audio files
+        RandomGame,     // Random song from any game's music library
+        CustomRotation  // Songs from user-selected games
+    }
+
+    public enum CookieMode
+    {
+        None,       // No cookies
+        Firefox,    // Use Firefox browser cookies via --cookies-from-browser firefox
+        CustomFile  // Use a Netscape-format cookies file via --cookies
     }
 
     public enum CelebrationSoundType
@@ -354,16 +364,33 @@ namespace UniPlaySong
             set { ffmpegPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        private bool useFirefoxCookies = false;
+        private CookieMode cookieMode = CookieMode.None;
+        private string customCookiesFilePath = string.Empty;
 
-        /// <summary>
-        /// Use cookies from Firefox browser for YouTube downloads
-        /// When enabled, uses simplified yt-dlp command with --cookies-from-browser firefox
-        /// </summary>
+        // Cookie source for YouTube downloads (None, Firefox browser, or custom Netscape file)
+        public CookieMode CookieMode
+        {
+            get => cookieMode;
+            set { cookieMode = value; OnPropertyChanged(); }
+        }
+
+        // Path to a Netscape-format cookies.txt file (used when CookieMode is CustomFile)
+        public string CustomCookiesFilePath
+        {
+            get => customCookiesFilePath;
+            set { customCookiesFilePath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Backward compat: old UseFirefoxCookies migrates to CookieMode.Firefox on load
+        [JsonIgnore]
         public bool UseFirefoxCookies
         {
-            get => useFirefoxCookies;
-            set { useFirefoxCookies = value; OnPropertyChanged(); }
+            get => cookieMode == CookieMode.Firefox;
+            set
+            {
+                if (value) cookieMode = CookieMode.Firefox;
+                OnPropertyChanged();
+            }
         }
 
         /// <summary>
@@ -716,6 +743,9 @@ namespace UniPlaySong
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
         private string selectedBundledPreset = string.Empty; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
+        private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
+        private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
+        private bool defaultMusicContinueSameSong = false; // Keep playing same song across game switches
 
         /// <summary>
         /// Enable default music fallback when no game music is found
@@ -800,6 +830,27 @@ namespace UniPlaySong
                 selectedBundledPreset = value ?? string.Empty;
                 OnPropertyChanged();
             }
+        }
+
+        // Directory path for CustomFolder default music source
+        public string DefaultMusicFolderPath
+        {
+            get => defaultMusicFolderPath;
+            set { defaultMusicFolderPath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Game IDs for CustomRotation default music source
+        public List<Guid> CustomRotationGameIds
+        {
+            get => customRotationGameIds;
+            set { customRotationGameIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        // When true, pool-based default sources keep playing the same song across game switches
+        public bool DefaultMusicContinueSameSong
+        {
+            get => defaultMusicContinueSameSong;
+            set { defaultMusicContinueSameSong = value; OnPropertyChanged(); }
         }
 
         /// <summary>

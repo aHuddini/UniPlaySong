@@ -46,8 +46,9 @@ namespace UniPlaySong.Downloaders
 
             _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
             _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
-            var useFirefoxCookies = settings?.UseFirefoxCookies ?? false;
-            _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, useFirefoxCookies, errorHandler);
+            var cookieMode = settings?.CookieMode ?? CookieMode.None;
+            var customCookiesPath = settings?.CustomCookiesFilePath ?? string.Empty;
+            _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, cookieMode, customCookiesPath, errorHandler);
             _soundCloudDownloader = new SoundCloudDownloader(ytDlpPath, ffmpegPath, errorHandler);
 
             Cleanup();

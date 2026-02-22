@@ -34,6 +34,7 @@ namespace UniPlaySong
     public class UniPlaySong : GenericPlugin
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly int _selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
         private readonly IPlayniteAPI _api;
         private readonly FileLogger _fileLogger;
         
@@ -117,8 +118,10 @@ namespace UniPlaySong
         private double _playniteFullscreenVolume = 1.0;
         private dynamic _fullscreenSettingsObj;
 
-        // External audio detection (polls Windows audio sessions to pause when other apps play audio)
-        private System.Windows.Threading.DispatcherTimer _externalAudioPollTimer;
+        // External audio detection (polls Windows audio sessions to pause when other apps play audio).
+        // Uses System.Timers.Timer (ThreadPool) to keep COM interop off the UI thread.
+        private System.Timers.Timer _externalAudioPollTimer;
+        private int _externalAudioPollRunning; // Re-entrancy guard (0=idle, 1=running)
         private bool _externalAudioDetected;
         private int _externalAudioDebounceCount;
         private int _externalAudioSilenceCount;
@@ -444,10 +447,9 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
 
-            _externalAudioPollTimer = new System.Windows.Threading.DispatcherTimer(
-                System.Windows.Threading.DispatcherPriority.Background);
-            _externalAudioPollTimer.Interval = TimeSpan.FromMilliseconds(1500);
-            _externalAudioPollTimer.Tick += OnExternalAudioPollTick;
+            _externalAudioPollTimer = new System.Timers.Timer(1500);
+            _externalAudioPollTimer.Elapsed += OnExternalAudioPollTick;
+            _externalAudioPollTimer.AutoReset = true;
             _externalAudioPollTimer.Start();
             _idlePollTimer = new System.Windows.Threading.DispatcherTimer(
                 System.Windows.Threading.DispatcherPriority.Background);
@@ -865,6 +867,7 @@ namespace UniPlaySong
             Application.Current.Activated -= OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             _externalAudioPollTimer?.Stop();
+            _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
             _idlePollTimer?.Stop();
             _idlePollTimer = null;
@@ -1148,7 +1151,8 @@ namespace UniPlaySong
                 bool downloadSettingsChanged =
                     e.OldSettings.YtDlpPath != e.NewSettings.YtDlpPath ||
                     e.OldSettings.FFmpegPath != e.NewSettings.FFmpegPath ||
-                    e.OldSettings.UseFirefoxCookies != e.NewSettings.UseFirefoxCookies;
+                    e.OldSettings.CookieMode != e.NewSettings.CookieMode ||
+                    e.OldSettings.CustomCookiesFilePath != e.NewSettings.CustomCookiesFilePath;
 
                 if (downloadSettingsChanged && _downloadManager != null)
                 {
@@ -1169,6 +1173,31 @@ namespace UniPlaySong
                 }
             }
 
+            // Reload default music when source, folder, or rotation list changes
+            if (e.OldSettings != null && e.NewSettings != null)
+            {
+                bool defaultMusicChanged =
+                    e.OldSettings.DefaultMusicSourceOption != e.NewSettings.DefaultMusicSourceOption ||
+                    e.OldSettings.DefaultMusicPath != e.NewSettings.DefaultMusicPath ||
+                    e.OldSettings.DefaultMusicFolderPath != e.NewSettings.DefaultMusicFolderPath ||
+                    e.OldSettings.SelectedBundledPreset != e.NewSettings.SelectedBundledPreset ||
+                    e.OldSettings.EnableDefaultMusic != e.NewSettings.EnableDefaultMusic ||
+                    !RotationIdsEqual(e.OldSettings.CustomRotationGameIds, e.NewSettings.CustomRotationGameIds);
+
+                if (defaultMusicChanged && _playbackService != null)
+                {
+                    _fileLogger?.Debug($"Default music settings changed (source: {e.OldSettings.DefaultMusicSourceOption} → {e.NewSettings.DefaultMusicSourceOption}), reloading");
+                    // Clear cached default song so a fresh pick happens
+                    _playbackService.ClearLastDefaultMusicPath();
+                    // Replay for current game with new settings
+                    var game = SelectedGames?.FirstOrDefault();
+                    if (game != null)
+                    {
+                        _playbackService.PlayGameMusic(game, e.NewSettings, true);
+                    }
+                }
+            }
+
             // Re-subscribe to PropertyChanged for backward compatibility
             if (e.OldSettings != null)
             {
@@ -1178,6 +1207,18 @@ namespace UniPlaySong
             {
                 e.NewSettings.PropertyChanged += OnSettingsChanged;
             }
+        }
+
+        private static bool RotationIdsEqual(List<Guid> a, List<Guid> b)
+        {
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
+            if (a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
         }
 
         // One-time migration: converts old boolean default music settings to the new enum-based DefaultMusicSourceOption.
@@ -1402,29 +1443,37 @@ namespace UniPlaySong
         // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).
         private void OnExternalAudioPollTick(object sender, EventArgs e)
         {
-            // Adjust poll rate dynamically (1.0s in instant mode, 1.5s otherwise)
-            var targetInterval = TimeSpan.FromMilliseconds(ExternalAudioPollIntervalMs);
-            if (_externalAudioPollTimer.Interval != targetInterval)
-                _externalAudioPollTimer.Interval = targetInterval;
-
-            if (_settings?.PauseOnExternalAudio != true)
-            {
-                if (_externalAudioDetected)
-                {
-                    _externalAudioDetected = false;
-                    _externalAudioDebounceCount = 0;
-                    _externalAudioSilenceCount = 0;
-                    if (_externalAudioPausedInstantly)
-                        _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                    else
-                        _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
-                    _externalAudioPausedInstantly = false;
-                }
+            // Re-entrancy guard — skip if previous tick is still running (COM can be slow)
+            if (Interlocked.CompareExchange(ref _externalAudioPollRunning, 1, 0) != 0)
                 return;
-            }
 
             try
             {
+                // Adjust poll rate dynamically (0.5s in instant mode, 1.0s otherwise)
+                var targetMs = ExternalAudioPollIntervalMs;
+                if (Math.Abs(_externalAudioPollTimer.Interval - targetMs) > 1.0)
+                    _externalAudioPollTimer.Interval = targetMs;
+
+                if (_settings?.PauseOnExternalAudio != true)
+                {
+                    if (_externalAudioDetected)
+                    {
+                        _externalAudioDetected = false;
+                        _externalAudioDebounceCount = 0;
+                        _externalAudioSilenceCount = 0;
+                        var wasInstant = _externalAudioPausedInstantly;
+                        _externalAudioPausedInstantly = false;
+                        DispatchPauseAction(() =>
+                        {
+                            if (wasInstant)
+                                _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                            else
+                                _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                        });
+                    }
+                    return;
+                }
+
                 // Rebuild excluded apps cache if setting changed
                 var excludedRaw = _settings?.ExternalAudioExcludedApps ?? "";
                 if (excludedRaw != _externalAudioExcludedAppsRaw)
@@ -1438,7 +1487,7 @@ namespace UniPlaySong
                 }
 
                 bool audioFound = false;
-                int selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+                int selfPid = _selfPid;
 
                 using (var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator())
                 {
@@ -1488,11 +1537,15 @@ namespace UniPlaySong
                     {
                         _externalAudioDetected = true;
                         _externalAudioPausedInstantly = _settings?.ExternalAudioInstantPause == true;
-                        _fileLogger?.Debug($"External audio detected, pausing{(_externalAudioPausedInstantly ? " (instant)" : "")}");
-                        if (_externalAudioPausedInstantly)
-                            _playbackService?.AddPauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                        else
-                            _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
+                        var useInstant = _externalAudioPausedInstantly;
+                        _fileLogger?.Debug($"External audio detected, pausing{(useInstant ? " (instant)" : "")}");
+                        DispatchPauseAction(() =>
+                        {
+                            if (useInstant)
+                                _playbackService?.AddPauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                            else
+                                _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
+                        });
                     }
                 }
                 else
@@ -1503,12 +1556,16 @@ namespace UniPlaySong
                     if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioDebounceThreshold)
                     {
                         _externalAudioDetected = false;
-                        _fileLogger?.Debug($"External audio stopped, resuming{(_externalAudioPausedInstantly ? " (instant)" : "")}");
-                        if (_externalAudioPausedInstantly)
-                            _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                        else
-                            _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                        var wasInstant = _externalAudioPausedInstantly;
+                        _fileLogger?.Debug($"External audio stopped, resuming{(wasInstant ? " (instant)" : "")}");
                         _externalAudioPausedInstantly = false;
+                        DispatchPauseAction(() =>
+                        {
+                            if (wasInstant)
+                                _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
+                            else
+                                _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
+                        });
                     }
                 }
             }
@@ -1516,6 +1573,16 @@ namespace UniPlaySong
             {
                 _fileLogger?.Debug($"External audio poll error: {ex.Message}");
             }
+            finally
+            {
+                Interlocked.Exchange(ref _externalAudioPollRunning, 0);
+            }
+        }
+
+        // Dispatches a pause source action to the UI thread (non-blocking)
+        private void DispatchPauseAction(Action action)
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(action);
         }
 
         // Polls keyboard/mouse inactivity for idle-based features (pause and/or volume lowering).
@@ -1758,6 +1825,7 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+            _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
 
             if (_settings != null)
             {
@@ -1949,6 +2017,7 @@ namespace UniPlaySong
                 // Recreate playback service with new player
                 var oldService = _playbackService;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+                _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
 
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
@@ -1984,11 +2053,14 @@ namespace UniPlaySong
                 // Re-subscribe top panel control to the new playback service
                 _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
 
+                // Re-attach picker monitor to the new playback service
+                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+
                 // Restart music for the current game if music was playing before the switch
                 if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
                 {
                     _fileLogger?.Debug($"Restarting music for game: {currentGame.Name}");
-                    _playbackService.PlayGameMusic(currentGame, _settings, forceReload: true);
+                    _playbackService.PlayGameMusic(currentGame, _settings, forceReload: false);
                 }
             }
             catch (Exception ex)
@@ -3493,6 +3565,68 @@ namespace UniPlaySong
 
         #endregion
 
+        #region Default Song Pool
+
+        // Provides song pools for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
+        private List<string> GetDefaultSongPool(DefaultMusicSource source, UniPlaySongSettings settings)
+        {
+            var songs = new List<string>();
+
+            switch (source)
+            {
+                case DefaultMusicSource.CustomFolder:
+                    var folder = settings?.DefaultMusicFolderPath;
+                    if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
+                    {
+                        try
+                        {
+                            songs = Directory.GetFiles(folder)
+                                .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
+                                .ToList();
+                        }
+                        catch (Exception ex)
+                        {
+                            _fileLogger?.Warn($"Error scanning custom folder '{folder}': {ex.Message}");
+                        }
+                    }
+                    break;
+
+                case DefaultMusicSource.RandomGame:
+                    var allGames = _api?.Database?.Games;
+                    if (allGames != null)
+                    {
+                        foreach (var game in allGames)
+                        {
+                            var gameSongs = _fileService.GetAvailableSongs(game);
+                            if (gameSongs.Count > 0)
+                                songs.AddRange(gameSongs);
+                        }
+                    }
+                    break;
+
+                case DefaultMusicSource.CustomRotation:
+                    var gameIds = settings?.CustomRotationGameIds;
+                    if (gameIds != null && _api?.Database?.Games != null)
+                    {
+                        foreach (var gameId in gameIds)
+                        {
+                            var game = _api.Database.Games[gameId];
+                            if (game != null)
+                            {
+                                var gameSongs = _fileService.GetAvailableSongs(game);
+                                if (gameSongs.Count > 0)
+                                    songs.AddRange(gameSongs);
+                            }
+                        }
+                    }
+                    break;
+            }
+
+            return songs;
+        }
+
+        #endregion
+
         #region Public API
 
         /// <summary>
@@ -4005,8 +4139,8 @@ namespace UniPlaySong
                 // Debug settings
                 currentSettings.EnableDebugLogging = defaultSettings.EnableDebugLogging;
 
-                // Note: We intentionally don't reset FFmpegPath, YtDlpPath, UseFirefoxCookies
-                // as these are system-specific paths that users configure
+                // Note: We intentionally don't reset FFmpegPath, YtDlpPath, CookieMode, CustomCookiesFilePath
+                // as these are system-specific paths/settings that users configure
 
                 // Save the settings
                 SavePluginSettings(currentSettings);
