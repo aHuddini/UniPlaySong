@@ -243,6 +243,21 @@ namespace UniPlaySong
                 }
             }
 
+            // Suppress native music BEFORE service init — Playnite starts its background
+            // music early, and InitializeServices() takes ~330ms. Moving this ahead of
+            // service init eliminates the audible bleed window.
+            if (IsFullscreen)
+            {
+                try
+                {
+                    SuppressNativeMusic();
+                }
+                catch
+                {
+                    // Audio system may not be initialized yet - ignore
+                }
+            }
+
             InitializeServices();
 
             InitializeMenuHandlers();
@@ -275,21 +290,6 @@ namespace UniPlaySong
 
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
             SubscribeToMainModel();
-
-            // Suppress native music early in fullscreen — matches PlayniteSounds pattern.
-            // Must happen in constructor because Playnite's background music starts playing
-            // before OnApplicationStarted fires, causing audible bleed.
-            if (IsFullscreen)
-            {
-                try
-                {
-                    SuppressNativeMusic();
-                }
-                catch
-                {
-                    // Audio system may not be initialized yet - ignore
-                }
-            }
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
             Logger.Info($"UniPlaySong v{assemblyVersion} loaded");
@@ -420,9 +420,8 @@ namespace UniPlaySong
                 AttachLoginInputHandler();
             }
 
-            // In fullscreen mode: suppress native music + integrate with volume slider.
-            // Constructor attempts suppression early, but MainView.mainModel may not be
-            // initialized yet — retry here as a safety net (idempotent: already-zero is a no-op).
+            // In fullscreen mode: suppress native music (retry — constructor may have been too early)
+            // and integrate with Playnite's BackgroundVolume slider.
             if (IsFullscreen)
             {
                 SuppressNativeMusic();
@@ -2265,7 +2264,7 @@ namespace UniPlaySong
         }
 
         // Suppresses Playnite's native background music by stopping playback and preventing reload.
-        // Uses reflection to access Playnite's internal BackgroundMusic property and SDL2_mixer to stop playback.
+        // Matches PlayniteSounds pattern: direct GetProperty on runtime type (no inheritance walk).
         private void SuppressNativeMusic()
         {
             if (!IsFullscreen)
@@ -2278,52 +2277,40 @@ namespace UniPlaySong
             {
                 var mainModel = GetMainModel();
                 if (mainModel?.App == null)
-                    return;
-
-                var appType = mainModel.App.GetType();
-
-                // Walk up inheritance chain to find FullscreenApplication
-                while (appType != null && appType.Name != "FullscreenApplication")
                 {
-                    appType = appType.BaseType;
+                    _fileLogger?.Debug("SuppressNativeMusic: mainModel.App is null — too early in startup");
+                    return;
                 }
 
-                if (appType == null)
-                    return;
-
-                var backgroundMusicProperty = appType.GetProperty("BackgroundMusic",
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                // Match PNS: GetProperty directly on runtime type (finds inherited static properties)
+                var backgroundMusicProperty = ((object)mainModel.App)
+                    .GetType()
+                    .GetProperty("BackgroundMusic");
 
                 if (backgroundMusicProperty == null)
+                {
+                    _fileLogger?.Debug("SuppressNativeMusic: BackgroundMusic property not found");
                     return;
+                }
 
-                IntPtr currentMusic = (IntPtr)(backgroundMusicProperty.GetValue(null) ?? IntPtr.Zero);
+                IntPtr currentMusic = (IntPtr)backgroundMusicProperty.GetValue(null);
 
                 if (currentMusic != IntPtr.Zero)
                 {
                     SDL2MixerWrapper.Mix_HaltMusic();
                     SDL2MixerWrapper.Mix_FreeMusic(currentMusic);
-                    // Set to Zero to prevent Playnite from reloading
-                    backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
-
+                    backgroundMusicProperty.GetSetMethod(true).Invoke(null, new[] { IntPtr.Zero as object });
                     _fileLogger?.Debug("SuppressNativeMusic: Stopped native music");
                 }
                 else
                 {
-                    // Music not loaded yet - set to Zero to prevent loading
-                    backgroundMusicProperty.GetSetMethod(true)?.Invoke(null, new object[] { IntPtr.Zero });
-                    _fileLogger?.Debug("SuppressNativeMusic: Set to Zero (no music loaded)");
+                    _fileLogger?.Debug("SuppressNativeMusic: BackgroundMusic already Zero");
                 }
             }
             catch (Exception ex)
             {
                 _fileLogger?.Debug($"SuppressNativeMusic: Exception - {ex.Message}");
-                // Fallback to simple halt if reflection fails
-                try
-                {
-                    SDL2MixerWrapper.Mix_HaltMusic();
-                }
-                catch { }
+                try { SDL2MixerWrapper.Mix_HaltMusic(); } catch { }
             }
         }
 
