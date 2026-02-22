@@ -243,9 +243,9 @@ namespace UniPlaySong
                 }
             }
 
-            // Suppress native music BEFORE service init — Playnite starts its background
-            // music early, and InitializeServices() takes ~330ms. Moving this ahead of
-            // service init eliminates the audible bleed window.
+            // IMPORTANT: Keep this as early as possible in the constructor.
+            // Playnite starts its native background music before plugins finish loading.
+            // Any delay (e.g. InitializeServices ~330ms) causes audible bleed.
             if (IsFullscreen)
             {
                 try
