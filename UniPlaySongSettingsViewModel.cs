@@ -642,7 +642,7 @@ namespace UniPlaySong
                         return "(No song playing)";
 
                     // If playing default music (not a bundled preset), don't show song info
-                    if (playbackService.IsPlayingDefaultMusic && !playbackService.IsPlayingBundledPreset)
+                    if (playbackService.IsPlayingDefaultMusic && !playbackService.IsPlayingBundledPreset && !playbackService.IsPlayingPoolBasedDefault)
                         return "(Default music)";
 
                     if (!System.IO.File.Exists(currentPath))

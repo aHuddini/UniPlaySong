@@ -2304,7 +2304,7 @@ namespace UniPlaySong
         // PNS-matching suppression — exact PlayniteSounds pattern.
         // Single GetProperty on runtime type (no inheritance walk, no BindingFlags, no preemptive zero-set).
         // Only acts when music is actually loaded (currentMusic != 0).
-        private void SuppressNativeMusic_PNS([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
+        private void SuppressNativeMusic_PNS()
         {
             if (_api.ApplicationInfo.Mode != ApplicationMode.Fullscreen
                 || _settings?.SuppressPlayniteBackgroundMusic != true)
@@ -2312,20 +2312,14 @@ namespace UniPlaySong
 
             var mainModel = GetMainModel();
             if (mainModel?.App == null)
-            {
-                _fileLogger?.Debug($"SuppressNativeMusic_PNS [{caller}]: mainModel.App is null — too early");
                 return;
-            }
 
             dynamic backgroundMusicProperty = ((object)mainModel.App)
                 .GetType()
                 .GetProperty("BackgroundMusic");
 
             if (backgroundMusicProperty == null)
-            {
-                _fileLogger?.Debug($"SuppressNativeMusic_PNS [{caller}]: BackgroundMusic property not found");
                 return;
-            }
 
             IntPtr currentMusic = (IntPtr)backgroundMusicProperty.GetValue(null);
             if (currentMusic != new IntPtr(0))
@@ -2333,11 +2327,6 @@ namespace UniPlaySong
                 SDL2MixerWrapper.Mix_HaltMusic();
                 SDL2MixerWrapper.Mix_FreeMusic(currentMusic);
                 backgroundMusicProperty.GetSetMethod(true).Invoke(null, new[] { new IntPtr(0) as object });
-                _fileLogger?.Debug($"SuppressNativeMusic_PNS [{caller}]: Stopped native music (ptr: 0x{currentMusic.ToInt64():X})");
-            }
-            else
-            {
-                _fileLogger?.Debug($"SuppressNativeMusic_PNS [{caller}]: No music loaded (ptr: 0x0)");
             }
         }
 

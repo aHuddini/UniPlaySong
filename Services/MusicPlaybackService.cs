@@ -123,6 +123,8 @@ namespace UniPlaySong.Services
         public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
         public bool IsPlayingBundledPreset => _isPlayingDefaultMusic &&
             _currentSettings?.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset;
+        public bool IsPlayingPoolBasedDefault => _isPlayingDefaultMusic &&
+            _currentSettings?.DefaultMusicSourceOption.IsPoolBased() == true;
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
         {
@@ -1033,6 +1035,60 @@ namespace UniPlaySong.Services
 
         public void SkipToNextSong()
         {
+            // Pool-based default music: skip within the default music pool
+            if (IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null)
+            {
+                var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
+                if (pool.Count < 2)
+                {
+                    _fileLogger?.Info($"SkipToNextSong: Only {pool.Count} song(s) in default pool, cannot skip");
+                    return;
+                }
+
+                string nextSong;
+                int attempts = 0;
+                do
+                {
+                    nextSong = pool[_random.Next(pool.Count)];
+                    attempts++;
+                }
+                while (nextSong == _currentSongPath && attempts < 10);
+
+                _fileLogger?.Info($"SkipToNextSong (default pool): '{Path.GetFileName(_currentSongPath)}' → '{Path.GetFileName(nextSong)}'");
+                _previousSongPath = _currentSongPath;
+                _lastDefaultMusicPath = nextSong;
+
+                bool wasPaused = _isPaused;
+                RemovePauseSource(Models.PauseSource.Manual);
+
+                if (wasPaused)
+                {
+                    _musicPlayer?.Load(nextSong);
+                    _musicPlayer?.Play();
+                    _fader?.FadeIn();
+                    MarkSongStart();
+                    _currentSongPath = nextSong;
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else
+                {
+                    OnSongChanged?.Invoke(nextSong);
+                    _fader?.Switch(
+                        stopAction: () => { _musicPlayer?.Close(); },
+                        preloadAction: () => { _musicPlayer?.PreLoad(nextSong); },
+                        playAction: () =>
+                        {
+                            _musicPlayer?.Load(nextSong);
+                            _musicPlayer?.Play();
+                            MarkSongStart();
+                            _currentSongPathBacking = nextSong;
+                            OnPlaybackStateChanged?.Invoke();
+                        }
+                    );
+                }
+                return;
+            }
+
             if (_currentGame == null)
             {
                 _fileLogger?.Info("SkipToNextSong: No current game, cannot skip");
@@ -1047,37 +1103,37 @@ namespace UniPlaySong.Services
             }
 
             // Select random song, avoiding current song
-            string nextSong;
-            int attempts = 0;
+            string nextGameSong;
+            int gameAttempts = 0;
             do
             {
-                nextSong = songs[_random.Next(songs.Count)];
-                attempts++;
+                nextGameSong = songs[_random.Next(songs.Count)];
+                gameAttempts++;
             }
-            while (nextSong == _currentSongPath && attempts < 10);
+            while (nextGameSong == _currentSongPath && gameAttempts < 10);
 
-            _fileLogger?.Info($"SkipToNextSong: Skipping from '{Path.GetFileName(_currentSongPath)}' to '{Path.GetFileName(nextSong)}'");
+            _fileLogger?.Info($"SkipToNextSong: Skipping from '{Path.GetFileName(_currentSongPath)}' to '{Path.GetFileName(nextGameSong)}'");
 
             _previousSongPath = _currentSongPath;
 
             // Skipping is an explicit user action — clear manual pause so the new song plays
-            bool wasPaused = _isPaused;
+            bool gamePaused = _isPaused;
             RemovePauseSource(Models.PauseSource.Manual);
 
-            if (wasPaused)
+            if (gamePaused)
             {
                 // Already silent — skip the fade and load immediately
-                _musicPlayer?.Load(nextSong);
+                _musicPlayer?.Load(nextGameSong);
                 _musicPlayer?.Play();
                 _fader?.FadeIn();
                 MarkSongStart();
-                _currentSongPath = nextSong;
+                _currentSongPath = nextGameSong;
                 OnPlaybackStateChanged?.Invoke();
             }
             else
             {
                 // Fire song changed early so UI (Now Playing text, visualizer) updates immediately
-                OnSongChanged?.Invoke(nextSong);
+                OnSongChanged?.Invoke(nextGameSong);
 
                 // Playing — use Switch() for smooth crossfade with preloading
                 _fader?.Switch(
@@ -1087,14 +1143,14 @@ namespace UniPlaySong.Services
                     },
                     preloadAction: () =>
                     {
-                        _musicPlayer?.PreLoad(nextSong);
+                        _musicPlayer?.PreLoad(nextGameSong);
                     },
                     playAction: () =>
                     {
-                        _musicPlayer?.Load(nextSong);
+                        _musicPlayer?.Load(nextGameSong);
                         _musicPlayer?.Play();
                         MarkSongStart();
-                        _currentSongPathBacking = nextSong; // Set backing field directly (OnSongChanged already fired)
+                        _currentSongPathBacking = nextGameSong; // Set backing field directly (OnSongChanged already fired)
                         OnPlaybackStateChanged?.Invoke();
                     }
                 );
@@ -1473,6 +1529,30 @@ namespace UniPlaySong.Services
                         FadeOutAndStop();
                         OnMusicStopped?.Invoke(_currentSettings);
                         return;
+                    }
+
+                    // Auto-advance for pool-based default music (radio mode)
+                    if (_isCurrentSongDefaultMusic && IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null)
+                    {
+                        var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
+                        if (pool.Count > 1)
+                        {
+                            string nextPoolSong;
+                            int poolAttempts = 0;
+                            do
+                            {
+                                nextPoolSong = pool[_random.Next(pool.Count)];
+                                poolAttempts++;
+                            }
+                            while (nextPoolSong == _currentSongPath && poolAttempts < 10);
+
+                            _previousSongPath = _currentSongPath;
+                            _lastDefaultMusicPath = nextPoolSong;
+                            LoadAndPlayFile(nextPoolSong);
+                            _currentSongPath = nextPoolSong;
+                            _fileLogger?.Info($"Auto-advanced default pool: {Path.GetFileName(nextPoolSong)}");
+                            return;
+                        }
                     }
 
                     // PNS PATTERN: Check for randomization on song end (similar to PlayniteSound)

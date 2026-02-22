@@ -146,6 +146,17 @@ namespace UniPlaySong
         CustomRotation  // Songs from user-selected games
     }
 
+    public static class DefaultMusicSourceExtensions
+    {
+        // Pool-based sources have multiple songs (supports skip, auto-advance, song info display)
+        public static bool IsPoolBased(this DefaultMusicSource source)
+        {
+            return source == DefaultMusicSource.CustomFolder
+                || source == DefaultMusicSource.RandomGame
+                || source == DefaultMusicSource.CustomRotation;
+        }
+    }
+
     public enum CookieMode
     {
         None,       // No cookies

@@ -432,7 +432,8 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (_skipItem == null || _skipIcon == null) return;
 
-            _canSkip = playbackService?.CurrentGameSongCount >= 2;
+            _canSkip = playbackService?.CurrentGameSongCount >= 2
+                || playbackService?.IsPlayingPoolBasedDefault == true;
             _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
             _skipItem.Title = _canSkip
                 ? "UniPlaySong: Skip to Next Song"
@@ -472,10 +473,12 @@ namespace UniPlaySong.DeskMediaControl
                         _progressItem.Visible = settings?.ShowProgressBar == true;
 
                     // Hide Now Playing panel when default music is playing (no game-specific music)
+                    // Exception: pool-based defaults show song info (radio mode)
                     if (_nowPlayingItem != null && settings?.ShowNowPlayingInTopPanel == true)
                     {
                         bool hideForDefault = settings.HideNowPlayingForDefaultMusic &&
-                                              playbackService?.IsPlayingDefaultMusic == true;
+                                              playbackService?.IsPlayingDefaultMusic == true &&
+                                              playbackService?.IsPlayingPoolBasedDefault != true;
                         _nowPlayingItem.Visible = !hideForDefault;
                     }
                 }

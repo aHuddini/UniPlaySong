@@ -75,7 +75,7 @@ namespace UniPlaySong.Services
 
             // Default music handling: show "[Default]" indicator if enabled, otherwise keep blank
             // Exception: bundled presets always show metadata (with optional prefix)
-            if (_playbackService.IsPlayingDefaultMusic && !_playbackService.IsPlayingBundledPreset)
+            if (_playbackService.IsPlayingDefaultMusic && !_playbackService.IsPlayingBundledPreset && !_playbackService.IsPlayingPoolBasedDefault)
             {
                 bool showIndicator = _getSettings?.Invoke()?.ShowDefaultMusicIndicator ?? false;
                 if (showIndicator)
