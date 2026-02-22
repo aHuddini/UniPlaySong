@@ -13,14 +13,14 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  UniPlaySong Backup Script" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Get script directory
+# Get project root (one level up from scripts/)
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sourceDir = $scriptDir
-$parentDir = Split-Path -Parent $scriptDir
+$sourceDir = Split-Path -Parent $scriptDir
+$parentDir = Split-Path -Parent $sourceDir
 
 # Read version from version.txt if not provided
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $versionFile = Join-Path $scriptDir "version.txt"
+    $versionFile = Join-Path $sourceDir "version.txt"
     if (Test-Path $versionFile) {
         $Version = (Get-Content $versionFile -Raw).Trim()
     } else {

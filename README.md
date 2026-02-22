@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-1.3.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
-  <img src="GHdisplay.png" alt="UniPlaySong" width="150">
+  <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
 </p>
 
 <p align="center">
@@ -62,7 +62,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Desktop Controls** - Optional top panel media controls and Now Playing information
 - **Tagging & Filters** - Tag games with music/no music for better music management
 
-<img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
+<img src="docs/assets/DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
 ---
 
@@ -124,7 +124,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ```powershell
 dotnet clean -c Release && dotnet restore && dotnet build -c Release
-powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
+powershell -ExecutionPolicy Bypass -File .\scripts\package_extension.ps1 -Configuration Release
 ```
 
 See `docs/dev_docs/` for detailed build instructions.

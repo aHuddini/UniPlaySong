@@ -19,12 +19,13 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Configuration: $Configuration" -ForegroundColor Yellow
 Write-Host ""
 
-# Get script directory
+# Get project root (one level up from scripts/)
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+$projectRoot = Split-Path -Parent $scriptDir
+Set-Location $projectRoot
 
 # Read version from version.txt (single source of truth)
-$versionFile = Join-Path $scriptDir "version.txt"
+$versionFile = Join-Path $projectRoot "version.txt"
 if (-not (Test-Path $versionFile)) {
     Write-Host "ERROR: version.txt not found. Please create it with the version number (e.g., 1.0.3.2)" -ForegroundColor Red
     exit 1
@@ -34,7 +35,7 @@ $versionFull = (Get-Content $versionFile -Raw).Trim()
 $version = $versionFull -replace '\.', '_'
 
 # Update AssemblyInfo.cs with version from version.txt
-$assemblyInfoPath = Join-Path $scriptDir "AssemblyInfo.cs"
+$assemblyInfoPath = Join-Path $projectRoot "AssemblyInfo.cs"
 if (Test-Path $assemblyInfoPath) {
     $assemblyInfoContent = Get-Content $assemblyInfoPath -Raw
     # Update version attributes if they exist
@@ -95,7 +96,7 @@ New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
 Write-Host "Copying extension files..." -ForegroundColor Yellow
 
 # Update extension.yaml with current version before copying
-$extensionYamlPath = Join-Path $scriptDir "extension.yaml"
+$extensionYamlPath = Join-Path $projectRoot "extension.yaml"
 if (Test-Path $extensionYamlPath) {
     $yamlContent = Get-Content $extensionYamlPath -Raw
     # Update version line if it exists
@@ -123,7 +124,7 @@ foreach ($file in $coreFiles) {
 }
 
 # Copy AutoSearchDatabase folder (bundled search hints)
-$autoSearchDbDir = Join-Path $scriptDir "AutoSearchDatabase"
+$autoSearchDbDir = Join-Path $projectRoot "AutoSearchDatabase"
 if (Test-Path $autoSearchDbDir) {
     $destAutoSearchDb = Join-Path $packageDir "AutoSearchDatabase"
     Copy-Item $autoSearchDbDir -Destination $destAutoSearchDb -Recurse -Force
@@ -133,7 +134,7 @@ if (Test-Path $autoSearchDbDir) {
 }
 
 # Copy DefaultMusic folder (bundled ambient presets)
-$defaultMusicDir = Join-Path $scriptDir "DefaultMusic"
+$defaultMusicDir = Join-Path $projectRoot "DefaultMusic"
 if (Test-Path $defaultMusicDir) {
     $destDefaultMusic = Join-Path $packageDir "DefaultMusic"
     Copy-Item $defaultMusicDir -Destination $destDefaultMusic -Recurse -Force
@@ -143,7 +144,7 @@ if (Test-Path $defaultMusicDir) {
 }
 
 # Copy Jingles folder (bundled celebration jingles)
-$jinglesDir = Join-Path $scriptDir "Jingles"
+$jinglesDir = Join-Path $projectRoot "Jingles"
 if (Test-Path $jinglesDir) {
     $destJingles = Join-Path $packageDir "Jingles"
     Copy-Item $jinglesDir -Destination $destJingles -Recurse -Force
@@ -164,11 +165,11 @@ $sdl2Found = $false
 # Try multiple locations
 $searchPaths = @(
     # PlayniteSound output directory
-    (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) "src\PlayniteSound") "bin\Release\net4.6.2"),
+    (Join-Path (Join-Path (Split-Path -Parent $projectRoot) "src\PlayniteSound") "bin\Release\net4.6.2"),
     # PlayniteSound installed extension
     (Get-ChildItem -Path "$env:APPDATA\Playnite\Extensions" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Sound*" -or $_.Name -like "*9c960604*" } | Select-Object -First 1 | ForEach-Object { $_.FullName }),
     # Local lib directory
-    (Join-Path $scriptDir "lib")
+    (Join-Path $projectRoot "lib")
 )
 
 foreach ($dll in $sdl2Dlls) {
@@ -200,7 +201,7 @@ if ($sdl2Found) {
 
 # Copy dependencies - Use lib\dll as primary source, fallback to build output
 Write-Host "Copying dependencies..." -ForegroundColor Yellow
-$dllLibDir = Join-Path $scriptDir "lib\dll"
+$dllLibDir = Join-Path $projectRoot "lib\dll"
 
 # Required DLLs for the extension (explicit list to ensure nothing is missed)
 $requiredDlls = @(
@@ -327,7 +328,7 @@ if (-not (Test-Path (Join-Path $packageDir "HtmlAgilityPack.dll"))) {
 Write-Host "Creating .pext package..." -ForegroundColor Yellow
 
 # Create pext output folder if it doesn't exist
-$pextOutputDir = Join-Path $scriptDir "pext"
+$pextOutputDir = Join-Path $projectRoot "pext"
 if (-not (Test-Path $pextOutputDir)) {
     New-Item -ItemType Directory -Path $pextOutputDir -Force | Out-Null
     Write-Host "  Created pext output folder" -ForegroundColor Gray
