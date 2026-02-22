@@ -409,8 +409,8 @@
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledPreset}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                 Margin="20,5,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="40,5,0,0">
                         <TextBlock Text="Preset: " VerticalAlignment="Center"/>
                         <ComboBox ItemsSource="{Binding BundledPresets}"
                                   SelectedValue="{Binding Settings.SelectedBundledPreset}"
@@ -420,19 +420,19 @@
                                   Width="350"
                                   Margin="5,0,0,0"/>
                     </StackPanel>
-                    <TextBlock Text="Ships with the plugin — ambient tracks licensed under Pixabay Content License"
+                    <TextBlock Text="Bundled ambient tracks"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,3,0,10"/>
+                               Margin="40,3,0,10"/>
 
                     <!-- Default Music Source: Custom File -->
                     <RadioButton Content="Use custom music file"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                 Margin="20,5,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="40,5,0,0">
                         <TextBox Text="{Binding Settings.DefaultMusicPath}"
                                  Width="330"
                                  Margin="0,0,10,0"
@@ -452,39 +452,39 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,3,0,10"/>
+                               Margin="40,3,0,10"/>
 
                     <!-- Default Music Source: Native Theme -->
                     <RadioButton Content="Use Playnite native theme music"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NativeTheme}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
+                                 Margin="20,5,0,0"/>
                     <TextBlock Text="Uses Playnite's vanilla default theme background music"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                               Margin="40,0,0,10"/>
 
                     <!-- Default Music Source: Random Game -->
                     <RadioButton Content="Pick From Random Game"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
+                                 Margin="20,5,0,0"/>
                     <TextBlock Text="Randomly selects a song from any game in your music library"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                               Margin="40,0,0,10"/>
 
                     <!-- Default Music Source: Custom Folder -->
                     <RadioButton Content="Custom Music Folder (Playlist Mode)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                 Margin="20,5,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="40,5,0,0">
                         <TextBox Text="{Binding Settings.DefaultMusicFolderPath}"
                                  Width="330"
                                  Margin="0,0,10,0"
@@ -499,15 +499,15 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,3,0,10"/>
+                               Margin="40,3,0,10"/>
 
                     <!-- Default Music Source: Custom Rotation -->
                     <RadioButton Content="Custom Game Rotation (Playlist Mode)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
-                                 Margin="0,5"/>
-                    <StackPanel Margin="20,5,0,0">
+                                 Margin="20,5,0,0"/>
+                    <StackPanel Margin="40,5,0,0">
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Select Games..."
                                     Width="120"
@@ -528,7 +528,7 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,3,0,10"/>
+                               Margin="40,3,0,10"/>
 
                     <!-- Continue same song option (for pool-based sources) -->
                     <CheckBox Content="Keep Same Default Track On Game Switch"
