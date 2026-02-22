@@ -21,4 +21,7 @@ Jingles/*.wav
 Jingles/*.ogg
 Jingles/*.flac
 
+# Bundled default music with unclear licensing
+DefaultMusic/PS2 Menu - Ambience.mp3
+
 nul

@@ -34,8 +34,15 @@ All notable changes to UniPlaySong will be documented in this file.
   - All three sources integrate with existing skip behavior (skip picks a new random song from the pool)
 
 ### Changed
-- **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", Taskbar Thumbnail Media Controls promoted from Experimental to General, fullscreen-only options labeled accordingly.
-- **Random Game Picker promoted to Playback** - Graduated from Experimental to Settings → Playback. Now uses instant song switching (no fader) for snappy browsing.
+- **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", fullscreen-only options labeled accordingly.
+- **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback, now uses instant song switching for snappy browsing), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
+- **Per-Tab Reset Buttons** - Each settings tab (General, Playback, Pauses, Live Effects, Editing, Downloads, Search) now has a "Reset to Defaults" button in the tab header. Tool paths (yt-dlp, FFmpeg) are preserved on reset.
+- **Improved Default Settings** - New installs now ship with a better out-of-box experience: media controls, now playing display, auto-tagging, song randomization, bundled default music preset, live effects with Rehearsal style, spectrum visualizer, external audio pausing, and completion celebration all enabled by default.
+- **Settings UI Polish** - Horizontal checkbox grouping for compact layout, italic tab subtitles in sage/seafoam accent, collapsible Dynamic Color Tuning section, streamlined button descriptions.
+- **Custom Cookies File** - New cookie source option in Settings → Downloads. Browse for a Netscape-format cookies.txt file exported from any browser, replacing the Firefox-only option. Previous Firefox cookie support remains available alongside the new option.
+- **Bundled Default Music** - Renamed bundled preset files for cleaner filenames. Added PS2 Menu Ambience as a fourth bundled preset option.
+- **Style Preset Tuning** - Rehearsal preset updated to Reverb-first effect chain with -1dB makeup gain. All style presets capped at 1dB maximum makeup gain to prevent audio clipping.
+- **Global Settings Reset Rewritten** - Cleanup menu's "Reset Settings to Defaults" now uses JSON deep clone instead of incomplete manual property copying, ensuring all 180+ properties are properly reset.
 
 ### Fixed
 - **Play Button Clears Stale Pause Sources** - Play button now clears automatic pause sources (Idle, ExternalAudio, SystemLock) when resuming. Previously, stale sources could remain active after long idle or lock/unlock cycles, causing music to stay paused even after clicking play.

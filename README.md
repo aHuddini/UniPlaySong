@@ -22,15 +22,21 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.2
 
-- **Global Media Key Control** (Experimental) - Control music with keyboard media keys (Play/Pause, Next, Previous, Stop). Works globally even when Playnite is not focused.
-- **Taskbar Thumbnail Media Controls** (Experimental) - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only).
+- **Taskbar Thumbnail Media Controls** - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only). Graduated from Experimental.
+- **Global Media Key Control** (Experimental) - Control music with keyboard media keys (Play/Pause, Next, Previous, Stop).
 - **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion.
 - **M3U Playlist Export** - Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).
-- **Extended Default Music Sources** - Three new default music fallbacks: Custom Folder, Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.
-- **Settings Reorganization** - General settings reorganization to improve navigation experience. Dedicated "Pauses" tab, cleaner labels, and streamlined General settings.
-- **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock) — fixes music staying paused after long idle or lock/unlock cycles.
-- **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
+- **Extended Default Music Sources** - Three new default music fallbacks: Custom Folder (Playlist), Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.
+- **PS2 Menu Ambience** - New bundled default music preset. Four ambient tracks now ship with the plugin.
+- **Custom Cookies File** - New cookie source option for yt-dlp downloads. Use a Netscape-format cookies.txt from any browser, alongside the existing Firefox option.
+- **Per-Tab Reset Buttons** - Each settings tab now has its own "Reset to Defaults" button.
+- **Improved Default Settings** - Better out-of-box experience with media controls, visualizer, live effects (Rehearsal), auto-tagging, song randomization, and completion celebration all enabled by default.
+- **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
+- **Settings Reorganization** - Dedicated "Pauses" tab, cleaner labels, collapsible Dynamic Color Tuning, and some streamlined General settings.
+- **Style Preset Tuning** - All style presets capped at 1dB makeup gain to prevent clipping. Rehearsal preset updated with Reverb-first chain.
 - **Bug Fix**: Settings no longer silently reset when using Browse/Select buttons in settings dialogs.
+- **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock).
+- **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
 
 ### Previous Versions
 - **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix
@@ -98,15 +104,16 @@ Download or update directly from the Playnite add-on database, or browse Generic
 3. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
-- **General**: Music behavior, pause settings, desktop controls, tags, troubleshooting
+- **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
 - **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music
+- **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
-- **Downloads**: Tool paths, auto-download options, install-aware auto-download, bulk download
+- **Downloads**: Tool paths, cookie source (none/Firefox/custom file), auto-download options, install-aware auto-download, bulk download
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: External audio detection, idle/AFK pause, media key control, taskbar media buttons, download notification sound, celebration toast, library statistics with audio metrics
+- **Experimental**: Media key control, download notification sound, song progress bar, peak meter, library statistics with audio metrics
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA

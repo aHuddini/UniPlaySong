@@ -4086,10 +4086,6 @@ namespace UniPlaySong
         {
             try
             {
-                // Create new default settings
-                var defaultSettings = new UniPlaySongSettings();
-
-                // Copy default values to current settings
                 var currentSettings = _settings;
                 if (currentSettings == null)
                 {
@@ -4097,50 +4093,22 @@ namespace UniPlaySong
                     return false;
                 }
 
-                // Playback settings
-                currentSettings.EnableMusic = defaultSettings.EnableMusic;
-                currentSettings.MusicState = defaultSettings.MusicState;
-                currentSettings.MusicVolume = defaultSettings.MusicVolume;
-                currentSettings.RandomizeOnEverySelect = defaultSettings.RandomizeOnEverySelect;
-                currentSettings.RandomizeOnMusicEnd = defaultSettings.RandomizeOnMusicEnd;
-                currentSettings.SkipFirstSelectionAfterModeSwitch = defaultSettings.SkipFirstSelectionAfterModeSwitch;
-                currentSettings.ThemeCompatibleSilentSkip = defaultSettings.ThemeCompatibleSilentSkip;
-                currentSettings.PauseOnTrailer = defaultSettings.PauseOnTrailer;
-                currentSettings.PauseOnFocusLoss = defaultSettings.PauseOnFocusLoss;
-                currentSettings.PauseOnMinimize = defaultSettings.PauseOnMinimize;
-                currentSettings.PauseWhenInSystemTray = defaultSettings.PauseWhenInSystemTray;
-                currentSettings.PauseOnGameStart = defaultSettings.PauseOnGameStart;
-                currentSettings.PauseOnSystemLock = defaultSettings.PauseOnSystemLock;
+                // Preserve system-specific paths before reset
+                var savedFfmpegPath = currentSettings.FFmpegPath;
+                var savedYtDlpPath = currentSettings.YtDlpPath;
 
-                // Default music settings
-                currentSettings.EnableDefaultMusic = defaultSettings.EnableDefaultMusic;
-                currentSettings.DefaultMusicPath = defaultSettings.DefaultMusicPath;
-                currentSettings.UseNativeMusicAsDefault = defaultSettings.UseNativeMusicAsDefault;
-                currentSettings.SuppressPlayniteBackgroundMusic = defaultSettings.SuppressPlayniteBackgroundMusic;
+                // JSON deep clone a fresh default instance to get ALL properties at their defaults
+                var defaultSettings = new UniPlaySongSettings();
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(defaultSettings);
+                var freshSettings = Newtonsoft.Json.JsonConvert.DeserializeObject<UniPlaySongSettings>(json);
 
-                // Download settings
-                currentSettings.AutoDownloadOnLibraryUpdate = defaultSettings.AutoDownloadOnLibraryUpdate;
-                currentSettings.LastAutoLibUpdateAssetsDownload = defaultSettings.LastAutoLibUpdateAssetsDownload;
-                currentSettings.AutoNormalizeAfterDownload = defaultSettings.AutoNormalizeAfterDownload;
+                // Restore preserved paths
+                freshSettings.FFmpegPath = savedFfmpegPath;
+                freshSettings.YtDlpPath = savedYtDlpPath;
 
-                // Normalization settings
-                currentSettings.NormalizationTargetLoudness = defaultSettings.NormalizationTargetLoudness;
-                currentSettings.NormalizationTruePeak = defaultSettings.NormalizationTruePeak;
-                currentSettings.NormalizationLoudnessRange = defaultSettings.NormalizationLoudnessRange;
-                currentSettings.NormalizationCodec = defaultSettings.NormalizationCodec;
-                currentSettings.NormalizationSuffix = defaultSettings.NormalizationSuffix;
-                currentSettings.TrimSuffix = defaultSettings.TrimSuffix;
-                currentSettings.DoNotPreserveOriginals = defaultSettings.DoNotPreserveOriginals;
-
-                // Cache settings
-                currentSettings.EnableSearchCache = defaultSettings.EnableSearchCache;
-                currentSettings.SearchCacheDurationDays = defaultSettings.SearchCacheDurationDays;
-
-                // Debug settings
-                currentSettings.EnableDebugLogging = defaultSettings.EnableDebugLogging;
-
-                // Note: We intentionally don't reset FFmpegPath, YtDlpPath, CookieMode, CustomCookiesFilePath
-                // as these are system-specific paths/settings that users configure
+                // Copy all values from fresh defaults to current settings via JSON round-trip
+                var freshJson = Newtonsoft.Json.JsonConvert.SerializeObject(freshSettings);
+                Newtonsoft.Json.JsonConvert.PopulateObject(freshJson, currentSettings);
 
                 // Save the settings
                 SavePluginSettings(currentSettings);

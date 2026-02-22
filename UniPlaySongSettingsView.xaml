@@ -24,7 +24,11 @@
         <TabItem Header="General">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="General Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+                    <Grid Margin="0,0,0,20">
+                        <TextBlock Text="General Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetGeneralTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
                     
                     <CheckBox Content="Enable Music"
                               IsChecked="{Binding Settings.EnableMusic}"
@@ -91,31 +95,31 @@
                     <!-- Top Panel Display -->
                     <TextBlock Text="Media Controls" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
-                    <CheckBox Content="Show Media Controls (Desktop)"
+                    <CheckBox Content="Show Media Controls on Panel (Desktop)"
                               IsChecked="{Binding Settings.ShowDesktopMediaControls}"
                               Command="{Binding SetRestartRequired}"
                               CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Displays the play/pause and skip buttons. Disable to show only the Now Playing text.</Run>
+                        <Run Foreground="Gray">Displays the play/pause and skip buttons on Playnite's Top Panel.</Run>
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
-                    <CheckBox Content="Show Media Controls in Taskbar's Thumbnail Preview"
+                    <CheckBox Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
                               IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Adds Previous, Play/Pause, and Next buttons to Playnite's taskbar hover preview (Desktop mode only).</Run>
+                        <Run Foreground="Gray">Adds Media Controls to Playnite's taskbar hover preview.</Run>
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
-                    <CheckBox Content="Show Now Playing (Desktop)"
+                    <CheckBox Content="Show Now Playing on Panel (Desktop)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Command="{Binding SetRestartRequired}"
                               CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="0,5"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
-                        <Run Foreground="Gray">Displays the current song title, artist, and duration.</Run>
+                        <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnight's Top Panel.</Run>
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
@@ -133,7 +137,7 @@
                               IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
                               IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Margin="20,0,0,0"/>
-                    <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing instead of game-specific music"
+                    <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -176,11 +180,6 @@
                                 Width="140"
                                 Command="{Binding RemoveAllMusicTagsCommand}"/>
                     </StackPanel>
-                    <TextBlock Text="Manually scan your entire library and update music status tags. 'Remove All Tags' clears all UniPlaySong tags from your games."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
 
                     <Separator Margin="0,15"/>
 
@@ -190,7 +189,7 @@
                     <CheckBox Content="Enable Song List Cache"
                               IsChecked="{Binding Settings.EnableSongListCache}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). This cache aims to mitigate any performance issues caused by repeated directory scans when scrolling between games. Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
+                    <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -217,14 +216,9 @@
 
                     <Button Content="Open Log Folder"
                             Width="160"
-                            Margin="0,5,0,0"
+                            Margin="0,5,0,15"
                             HorizontalAlignment="Left"
                             Command="{Binding OpenLogFolderCommand}"/>
-                    <TextBlock Text="Opens the folder containing UniPlaySong.log for troubleshooting."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -233,11 +227,14 @@
         <TabItem Header="Playback">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Playback Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Playback Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetPlaybackTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <!-- Volume -->
-                    <TextBlock Text="Music Volume" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Music Volume: " VerticalAlignment="Center" Width="120"/>
                         <Slider Minimum="0" Maximum="100"
@@ -251,7 +248,7 @@
                     <CheckBox Content="Lower Volume When Idle (To 25%)"
                               IsChecked="{Binding Settings.LowerVolumeOnIdle}"
                               Margin="0,10,0,5"/>
-                    <TextBlock Text="Gradually lowers music volume after inactivity instead of pausing. Volume restores instantly on any input. Can be used alongside Pause on Idle with different timeouts."
+                    <TextBlock Text="Gradually lowers music volume after inactivity instead of pausing. Volume restores instantly on any input."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -330,7 +327,7 @@
                     <CheckBox Content="Enable Preview Mode"
                               IsChecked="{Binding Settings.EnablePreviewMode}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, game music will restart after the specified duration. Great for cycling through long tracks when browsing your library. Does not affect default music."
+                    <TextBlock Text="When enabled, game music will restart after the specified duration. Does not affect default music."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -368,7 +365,7 @@
                     <CheckBox Content="Randomize song upon selection"
                               IsChecked="{Binding Settings.RandomizeOnEverySelect}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, a random song will be selected each time you select a game (after primary song plays). Provides variety when browsing your library."
+                    <TextBlock Text="When enabled, a random song will be selected each time you select a game (after primary song plays)."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -377,7 +374,7 @@
                     <CheckBox Content="Randomize song when current song ends"
                               IsChecked="{Binding Settings.RandomizeOnMusicEnd}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, after the current song finishes, a new random song will be selected from available songs. Creates automatic variety during extended listening."
+                    <TextBlock Text="When enabled, after the current song finishes, a new random song will be selected from available songs."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -386,7 +383,7 @@
                     <CheckBox Content="Stop after song ends (no loop)"
                               IsChecked="{Binding Settings.StopAfterSongEnds}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music stops after the current song finishes instead of looping or advancing to the next song. Applies to both regular playback and preview mode."
+                    <TextBlock Text="When enabled, music stops after the current song finishes instead of looping or advancing to the next song. Applies to regular playback and preview mode."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -396,7 +393,7 @@
 
                     <!-- Default Music -->
                     <TextBlock Text="Default Music" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Play fallback music when no game music is found" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+                    <TextBlock Text="Play fallback music when no game music is found. Disable to maintain silence when no game music is found." FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Enable Default Music"
                               IsChecked="{Binding Settings.EnableDefaultMusic}"
@@ -549,7 +546,7 @@
                     <CheckBox Content="Play Music Only for Installed Games"
                               IsChecked="{Binding Settings.MusicOnlyForInstalledGames}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, game-specific music only plays for games installed on your machine. Uninstalled games will use default music instead (or be silent if default music is off)."
+                    <TextBlock Text="When enabled, music only plays for selected games installed on your machine. Uninstalled games will use default music instead (or be silent if default music is off)."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -612,7 +609,7 @@
                         <CheckBox Content="Apply live effects to jingles"
                                   IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
                                   Margin="0,10,0,3"/>
-                        <TextBlock Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects regardless of Live Effects setting."
+                        <TextBlock Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."
                                    FontSize="11"
                                    Foreground="Gray"
                                    TextWrapping="Wrap"
@@ -673,10 +670,15 @@
         <TabItem Header="Pauses">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Pause Scenarios" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Pause Scenarios" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetPausesTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
                     <TextBlock Text="Configure when music should automatically pause and resume"
                                FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                Margin="0,0,0,20"/>
 
                     <!-- System Events -->
@@ -863,10 +865,15 @@
         <TabItem Header="Live Effects">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Live Audio Effects" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Live Audio Effects" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetLiveEffectsTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
                     <TextBlock Text="Apply real-time audio effects during playback using NAudio processing. Requires enabling the master toggle below."
                                FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                TextWrapping="Wrap"
                                Margin="0,0,0,20"/>
 
@@ -883,7 +890,7 @@
 
                     <!-- Style Preset Section -->
                     <TextBlock Text="Style Preset" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
-                    <TextBlock Text="Quick-start styles that configure all effects at once. Selecting a style will override your current effect settings. Set to 'None' for manual control."
+                    <TextBlock Text="One-click styles that configure all effects at once. Set to 'None' for manual control."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -914,7 +921,7 @@
                             <ComboBoxItem Content="Cyberpunk (Slow)"/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text="Each style creatively combines filters, reverb, slow effect, and more. After selecting a style, tweaking any individual setting below will automatically switch back to 'None (Manual)' so your changes are preserved."
+                    <TextBlock Text="Tweaking any individual effect below will switch back to 'None (Manual)' so your changes are preserved."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -1638,99 +1645,102 @@
                                Margin="20,0,0,10"/>
 
                     <!-- Dynamic Color Tuning (V1 + Alt Algo — Vibrant Vibes uses hardcoded vivid params) -->
-                    <TextBlock Text="Dynamic Color Tuning (Experimental)"
-                               FontWeight="SemiBold"
-                               Margin="0,10,0,0"
-                               IsEnabled="{Binding Settings.ShowSpectrumVisualizer}"/>
-                    <TextBlock Text="Fine-tune how colors are extracted from game artwork for Dynamic V1 and Alt Algo. Vibrant Vibes uses its own aggressive settings. Most users won't need to change these."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                    <Expander Header="Dynamic Color Tuning (Experimental)"
+                              IsExpanded="False"
+                              Margin="0,10,0,0"
+                              IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                        <StackPanel Margin="10,10,0,0">
+                            <TextBlock Text="Fine-tune how colors are extracted from game artwork for Dynamic V1 and Alt Algo. Vibrant Vibes uses its own aggressive settings. Most users won't need to change these."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,5"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                        <TextBlock Text="Min Brightness (Base): " VerticalAlignment="Center" Width="170"/>
-                        <TextBlock Text="{Binding Settings.DynMinBrightnessBottom}"
-                                   VerticalAlignment="Center"
-                                   Width="30"/>
-                        <Slider Minimum="30" Maximum="220"
-                                Value="{Binding Settings.DynMinBrightnessBottom}"
-                                Width="180"
-                                SmallChange="5"
-                                LargeChange="20"
-                                TickFrequency="30"
-                                TickPlacement="BottomRight"/>
-                    </StackPanel>
-                    <TextBlock Text="Minimum brightness for the gradient base color. Higher = brighter bars from dark artwork. Default: 200"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <TextBlock Text="Min Brightness (Base): " VerticalAlignment="Center" Width="170"/>
+                                <TextBlock Text="{Binding Settings.DynMinBrightnessBottom}"
+                                           VerticalAlignment="Center"
+                                           Width="30"/>
+                                <Slider Minimum="30" Maximum="220"
+                                        Value="{Binding Settings.DynMinBrightnessBottom}"
+                                        Width="180"
+                                        SmallChange="5"
+                                        LargeChange="20"
+                                        TickFrequency="30"
+                                        TickPlacement="BottomRight"/>
+                            </StackPanel>
+                            <TextBlock Text="Minimum brightness for the gradient base color. Higher = brighter bars from dark artwork. Default: 200"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,5"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                        <TextBlock Text="Min Brightness (Tip): " VerticalAlignment="Center" Width="170"/>
-                        <TextBlock Text="{Binding Settings.DynMinBrightnessTop}"
-                                   VerticalAlignment="Center"
-                                   Width="30"/>
-                        <Slider Minimum="30" Maximum="220"
-                                Value="{Binding Settings.DynMinBrightnessTop}"
-                                Width="180"
-                                SmallChange="5"
-                                LargeChange="20"
-                                TickFrequency="30"
-                                TickPlacement="BottomRight"/>
-                    </StackPanel>
-                    <TextBlock Text="Minimum brightness for the gradient tip color. Higher = more vivid peaks. Default: 150"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <TextBlock Text="Min Brightness (Tip): " VerticalAlignment="Center" Width="170"/>
+                                <TextBlock Text="{Binding Settings.DynMinBrightnessTop}"
+                                           VerticalAlignment="Center"
+                                           Width="30"/>
+                                <Slider Minimum="30" Maximum="220"
+                                        Value="{Binding Settings.DynMinBrightnessTop}"
+                                        Width="180"
+                                        SmallChange="5"
+                                        LargeChange="20"
+                                        TickFrequency="30"
+                                        TickPlacement="BottomRight"/>
+                            </StackPanel>
+                            <TextBlock Text="Minimum brightness for the gradient tip color. Higher = more vivid peaks. Default: 150"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,5"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                        <TextBlock Text="Min Saturation (Base): " VerticalAlignment="Center" Width="170"/>
-                        <TextBlock Text="{Binding Settings.DynMinSatBottom}"
-                                   VerticalAlignment="Center"
-                                   Width="30"/>
-                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0" Maximum="80"
-                                Value="{Binding Settings.DynMinSatBottom}"
-                                Width="180"
-                                SmallChange="5"
-                                LargeChange="10"
-                                TickFrequency="10"
-                                TickPlacement="BottomRight"/>
-                    </StackPanel>
-                    <TextBlock Text="Minimum color saturation for the gradient base. Higher = more vivid, less washed out. Default: 30%"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <TextBlock Text="Min Saturation (Base): " VerticalAlignment="Center" Width="170"/>
+                                <TextBlock Text="{Binding Settings.DynMinSatBottom}"
+                                           VerticalAlignment="Center"
+                                           Width="30"/>
+                                <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Slider Minimum="0" Maximum="80"
+                                        Value="{Binding Settings.DynMinSatBottom}"
+                                        Width="180"
+                                        SmallChange="5"
+                                        LargeChange="10"
+                                        TickFrequency="10"
+                                        TickPlacement="BottomRight"/>
+                            </StackPanel>
+                            <TextBlock Text="Minimum color saturation for the gradient base. Higher = more vivid, less washed out. Default: 30%"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,5"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                        <TextBlock Text="Min Saturation (Tip): " VerticalAlignment="Center" Width="170"/>
-                        <TextBlock Text="{Binding Settings.DynMinSatTop}"
-                                   VerticalAlignment="Center"
-                                   Width="30"/>
-                        <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0" Maximum="80"
-                                Value="{Binding Settings.DynMinSatTop}"
-                                Width="180"
-                                SmallChange="5"
-                                LargeChange="10"
-                                TickFrequency="10"
-                                TickPlacement="BottomRight"/>
-                    </StackPanel>
-                    <TextBlock Text="Minimum color saturation for the gradient tip. Higher = more vivid peaks. Default: 35%"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <TextBlock Text="Min Saturation (Tip): " VerticalAlignment="Center" Width="170"/>
+                                <TextBlock Text="{Binding Settings.DynMinSatTop}"
+                                           VerticalAlignment="Center"
+                                           Width="30"/>
+                                <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Slider Minimum="0" Maximum="80"
+                                        Value="{Binding Settings.DynMinSatTop}"
+                                        Width="180"
+                                        SmallChange="5"
+                                        LargeChange="10"
+                                        TickFrequency="10"
+                                        TickPlacement="BottomRight"/>
+                            </StackPanel>
+                            <TextBlock Text="Minimum color saturation for the gradient tip. Higher = more vivid peaks. Default: 35%"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,5"/>
 
-                    <Button Content="Reset to Defaults"
-                            Width="140"
-                            Margin="0,5,0,10"
-                            HorizontalAlignment="Left"
-                            Command="{Binding ResetDynamicTuningCommand}"/>
+                            <Button Content="Reset to Defaults"
+                                    Width="140"
+                                    Margin="0,5,0,10"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding ResetDynamicTuningCommand}"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Advanced Customization (collapsed by default) -->
                     <Expander Header="Advanced Customization (Experimental)"
@@ -2135,16 +2145,15 @@
         <TabItem Header="Editing">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetEditingTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
                     <TextBlock Text="Normalize volume levels and trim audio files. Operations are performed on-demand — not in real-time during playback."
                                FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-
-                    <TextBlock Text="Normalization requires processing each file twice (analysis + application), which can be CPU-intensive for large libraries. Use bulk operations below to normalize files when needed."
-                               FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                TextWrapping="Wrap"
                                Margin="0,0,0,10"/>
 
@@ -2356,8 +2365,12 @@
         <TabItem Header="Downloads">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Download Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Configure download tools and auto-download behavior" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Download Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetDownloadsTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Configure download tools and auto-download behavior" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,5">
                         <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
@@ -2454,11 +2467,6 @@
                                    Foreground="Gray"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
-                    <TextBlock Text="Use this to populate music for your existing game library. Shows progress and can be cancelled."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -2467,8 +2475,12 @@
         <TabItem Header="Search">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="20">
-                    <TextBlock Text="Search Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="Gray" Margin="0,0,0,20"/>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Search Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetSearchTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <CheckBox Content="Enable Search Result Caching"
                               IsChecked="{Binding Settings.EnableSearchCache}"
@@ -2571,11 +2583,12 @@
                     <TextBlock Text="Music Migration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
                     <TextBlock Text="Transfer music files between PlayniteSound and UniPlaySong extensions."
                                FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                TextWrapping="Wrap"
                                Margin="0,0,0,10"/>
 
-                    <TextBlock Text="Note: Only audio files will be migrated. Metadata files (.json) are not transferred. Files are copied, not moved - originals remain in place."
+                    <TextBlock Text="Note: Only audio files will be migrated. Metadata files (.json) are not transferred."
                                FontSize="11"
                                Foreground="#FFA500"
                                FontWeight="SemiBold"
@@ -2693,7 +2706,8 @@
                     <TextBlock Text="Toast Notification Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
                     <TextBlock Text="Customize the appearance and behavior of toast notifications shown in fullscreen/controller mode."
                                FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                TextWrapping="Wrap"
                                Margin="0,0,0,20"/>
 
@@ -3001,7 +3015,8 @@
                     <TextBlock Text="Cleanup &amp; Reset" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
                     <TextBlock Text="Reset UniPlaySong settings and remove all downloaded content."
                                FontSize="11"
-                               Foreground="Gray"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
                                TextWrapping="Wrap"
                                Margin="0,0,0,20"/>
 

@@ -5,8 +5,25 @@ Packages:
     ReleaseDate: 2026-02-20
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.2/UniPlaySong-1_3_2-Feb20_2026.pext'
     Changelog:
-      - '[Experimental] Global Media Key Control: Control music with keyboard media keys (Play/Pause, Next, Previous, Stop). Works globally even when Playnite is not focused. Requires restart.'
-      - '[Experimental] Taskbar Thumbnail Media Controls: Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only). Requires restart.'
+      - '[New Feature] Taskbar Thumbnail Media Controls: Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Graduated from Experimental.'
+      - '[New Feature] Auto-Cleanup Empty Folders: Automatically removes empty game music directories after song deletion.'
+      - '[New Feature] M3U Playlist Export: Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).'
+      - '[New Feature] Extended Default Music Sources: Three new options — Custom Folder (Playlist), Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.'
+      - '[New Feature] PS2 Menu Ambience: Use the Playstation 2 Menu music as background music! New bundled default music preset.'
+      - '[New Feature] Custom Cookies: New cookie source option for yt-dlp. Load a cookies.txt from any browser.'
+      - '[New Feature] Per-Tab Reset Buttons: Each settings tab has a "Reset to Defaults" button. Tool paths (yt-dlp, FFmpeg) preserved on reset.'
+      - '[Experimental] Global Media Key Control: Control music with keyboard media keys (Play/Pause, Next, Previous, Stop). Works globally even when Playnite is not focused.'
+      - '[Graduated] Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).'
+      - '[Improved] Default Settings: Better out-of-box experience with media controls, visualizer, live effects (Rehearsal), auto-tagging, song randomization, and completion celebration enabled by default.'
+      - '[Improved] Settings Reorganization: Dedicated "Pauses" tab, cleaner labels, collapsible Dynamic Color Tuning, streamlined General settings.'
+      - '[Improved] Settings UI Polish: Italic tab subtitles, streamlined button descriptions.'
+      - '[Improved] Style Preset Tuning: All presets capped at 1dB makeup gain. Rehearsal style updated to Reverb-first chain with -1dB gain.'
+      - '[Improved] Global Settings Reset: Cleanup menu "Reset to Defaults" rewritten to cover all settings.'
+      - '[Fix] Settings silently resetting when using Browse/Select buttons in settings dialogs.'
+      - '[Fix] Play button not clearing stale automatic pause sources (Idle, External Audio, System Lock) after long idle or lock/unlock cycles.'
+      - '[Fix] System unlock not clearing idle state or restoring idle volume.'
+      - '[Fix] Random Picker music not stopping on close in SDL2 mode.'
+      - '[Fix] Default music skipped for uninstalled games after live effects toggle.'
   - Version: 1.3.1
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-18
@@ -15,7 +32,7 @@ Packages:
       - '[New Feature] Install-Aware Auto-Download: Automatically downloads music when a game is installed. Plays the downloaded track immediately if the game is still selected. Enabled by default in Downloads settings.'
       - '[Experimental] Auto-Pause on External Audio: Automatically pauses music when another app (Spotify, YouTube, Discord) starts playing audio. Configurable debounce (0-10s), optional instant pause mode, and app exclusion list.'
       - '[Experimental] Auto-Pause on Idle / AFK: Pauses music after no keyboard/mouse input for a configurable duration (1-60 min, default 15). Resumes when any input is detected.'
-      - '[Experimental] Random Game Picker Music: Plays each game''s music as you browse Playnite''s random game picker dialog. Music restores to your library selection when the dialog closes.'
+      - '[Experimental] Random Game Picker Music: Plays each game music as you browse Playnite random game picker dialog. Music restores to your library selection when the dialog closes.'
       - '[New Setting] Stay Paused on Focus Restore (#69): Option to keep music paused after Playnite regains focus. Press play to resume manually. Sub-option under Pause on Focus Loss.'
       - '[New Setting] Ignore Brief Focus Loss (Alt-Tab): Detects the alt-tab overlay and only pauses if you actually switch apps. Sub-option under Pause on Focus Loss.'
       - '[Experimental, Improved] Enhanced Library Statistics: Background audio scan now provides average song length, total playtime, ID3 tag coverage, exact bitrate distribution (per standard kbps with VBR grouping), and reducible track size estimate.'

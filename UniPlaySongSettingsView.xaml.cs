@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using UniPlaySong.Common;
 
 namespace UniPlaySong
 {
@@ -14,6 +17,222 @@ namespace UniPlaySong
             InitializeComponent();
             // DO NOT set DataContext manually - Playnite sets it automatically
             // to the ISettings object returned by GetSettings()
+        }
+
+        // Per-tab reset helper: shows confirmation, returns settings object or null if cancelled
+        private UniPlaySongSettings ConfirmAndGetSettings(string tabName)
+        {
+            var vm = DataContext as UniPlaySongSettingsViewModel;
+            if (vm == null) return null;
+
+            var result = vm.PlayniteApi.Dialogs.ShowMessage(
+                $"Reset {tabName} settings to defaults?",
+                $"Reset {tabName}",
+                System.Windows.MessageBoxButton.YesNo);
+            if (result != System.Windows.MessageBoxResult.Yes) return null;
+
+            return vm.Settings;
+        }
+
+        private void ResetGeneralTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("General");
+            if (s == null) return;
+
+            s.EnableMusic = true;
+            s.SuppressPlayniteBackgroundMusic = true;
+            s.MusicState = AudioState.Always;
+            s.SkipFirstSelectionAfterModeSwitch = false;
+            s.ThemeCompatibleSilentSkip = true;
+            s.ShowDesktopMediaControls = true;
+            s.ShowTaskbarMediaControls = true;
+            s.ShowNowPlayingInTopPanel = true;
+            s.HideNowPlayingForDefaultMusic = false;
+            s.ShowDefaultMusicIndicator = true;
+            s.ShowProgressBar = false;
+            s.ProgressBarPosition = ProgressBarPosition.AfterSkipButton;
+            s.AutoTagOnLibraryUpdate = true;
+            s.AutoDeleteMusicOnGameRemoval = true;
+            s.EnableSongListCache = false;
+            s.EnableDebugLogging = false;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetPlaybackTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Playback");
+            if (s == null) return;
+
+            s.MusicVolume = Constants.DefaultMusicVolume;
+            s.LowerVolumeOnIdle = false;
+            s.IdleVolumeTimeoutMinutes = 15;
+            s.FadeInDuration = Constants.DefaultFadeInDuration;
+            s.FadeOutDuration = Constants.DefaultFadeOutDuration;
+            s.EnablePreviewMode = false;
+            s.PreviewDuration = Constants.DefaultPreviewDuration;
+            s.PauseOnTrailer = true;
+            s.RandomizeOnEverySelect = true;
+            s.RandomizeOnMusicEnd = true;
+            s.StopAfterSongEnds = false;
+            s.EnableDefaultMusic = true;
+            s.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+            s.SelectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3";
+            s.DefaultMusicPath = string.Empty;
+            s.DefaultMusicFolderPath = string.Empty;
+            s.CustomRotationGameIds = new List<Guid>();
+            s.DefaultMusicContinueSameSong = false;
+            s.BackupCustomMusicPath = string.Empty;
+            s.MusicOnlyForInstalledGames = false;
+            s.EnableCompletionCelebration = true;
+            s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+            s.CelebrationSoundPath = string.Empty;
+            s.PlaySoundOnDownloadComplete = false;
+            s.ApplyLiveEffectsToJingles = true;
+            s.ShowCelebrationToast = true;
+            s.CelebrationToastDurationSeconds = 8;
+            s.CelebrationToastTheme = CelebrationToastTheme.Gold;
+            s.EnableRandomPickerMusic = true;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetPausesTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Pauses");
+            if (s == null) return;
+
+            s.PauseOnGameStart = true;
+            s.PauseOnSystemLock = false;
+            s.PauseOnFocusLoss = false;
+            s.FocusLossStayPaused = false;
+            s.FocusLossIgnoreBrief = false;
+            s.PauseOnMinimize = true;
+            s.PauseWhenInSystemTray = true;
+            s.PauseOnExternalAudio = true;
+            s.ExternalAudioDebounceSeconds = 0;
+            s.ExternalAudioInstantPause = false;
+            s.ExternalAudioExcludedApps = "obs64, obs32";
+            s.PauseOnIdle = false;
+            s.IdleTimeoutMinutes = 15;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetLiveEffectsTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Live Effects");
+            if (s == null) return;
+
+            // Reset master toggles
+            s.LiveEffectsEnabled = true;
+            s.ShowSpectrumVisualizer = true;
+            s.ShowPeakMeter = false;
+
+            // Reset all effects (reuses same logic as existing inline reset)
+            s.SelectedStylePreset = StylePreset.HuddiniRehearsal;
+            s.EffectChainPreset = EffectChainPreset.Standard;
+            s.HighPassEnabled = false;
+            s.HighPassCutoff = 80;
+            s.LowPassEnabled = false;
+            s.LowPassCutoff = 8000;
+            s.ReverbEnabled = false;
+            s.SelectedReverbPreset = ReverbPreset.Custom;
+            s.ReverbRoomSize = 75;
+            s.ReverbReverberance = 50;
+            s.ReverbDamping = 50;
+            s.ReverbPreDelay = 10;
+            s.ReverbToneLow = 100;
+            s.ReverbToneHigh = 100;
+            s.ReverbWetGain = -6;
+            s.ReverbDryGain = 0;
+            s.ReverbStereoWidth = 100;
+            s.ReverbMix = 50;
+            s.SlowEnabled = false;
+            s.SlowAmount = 0;
+            s.StereoWidenerEnabled = false;
+            s.StereoWidenerWidth = 50;
+            s.ChorusEnabled = false;
+            s.ChorusRate = 30;
+            s.ChorusDepth = 50;
+            s.ChorusMix = 40;
+            s.BitcrusherEnabled = false;
+            s.BitcrusherBitDepth = 8;
+            s.BitcrusherDownsample = 1;
+            s.TremoloEnabled = false;
+            s.TremoloRate = 40;
+            s.TremoloDepth = 50;
+            s.MakeupGainEnabled = false;
+            s.MakeupGain = 0;
+
+            // Reset advanced reverb tuning
+            s.AdvancedReverbTuningEnabled = false;
+            s.ReverbWetGainMultiplier = 3;
+            s.ReverbAllpassFeedback = 50;
+            s.ReverbHfDampingMin = 20;
+            s.ReverbHfDampingMax = 50;
+
+            // Reset visualizer tuning to defaults
+            ApplyVizPresetValues(s, VizPreset.Default);
+            s.SelectedVizPreset = VizPreset.Punchy;
+            s.VizColorTheme = 0; // Dynamic
+            s.VizGradientEnabled = true;
+
+            // Reset dynamic color tuning
+            s.DynMinBrightnessBottom = 200;
+            s.DynMinBrightnessTop = 150;
+            s.DynMinSatBottom = 30;
+            s.DynMinSatTop = 35;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetEditingTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Editing");
+            if (s == null) return;
+
+            // FFmpegPath is preserved
+            s.NormalizationTargetLoudness = -16.0;
+            s.NormalizationTruePeak = -1.5;
+            s.NormalizationLoudnessRange = 11.0;
+            s.NormalizationCodec = "libmp3lame";
+            s.NormalizationSuffix = "-normalized";
+            s.SkipAlreadyNormalized = true;
+            s.DoNotPreserveOriginals = true;
+            s.AutoNormalizeAfterDownload = false;
+            s.TrimSuffix = "-trimmed";
+            s.PreciseTrimSuffix = "-ptrimmed";
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetDownloadsTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Downloads");
+            if (s == null) return;
+
+            // YtDlpPath is preserved
+            s.CookieMode = CookieMode.None;
+            s.CustomCookiesFilePath = string.Empty;
+            s.AutoDownloadOnLibraryUpdate = true;
+            s.AutoDownloadOnGameInstall = true;
+            s.MaxConcurrentDownloads = 3;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetSearchTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Search");
+            if (s == null) return;
+
+            s.EnableSearchCache = true;
+            s.SearchCacheDurationDays = 7;
+            s.AutoCheckHintsOnStartup = false;
+
+            ShowButtonFeedback(sender, "Reset!");
         }
 
         private void CopyLiveEffectsToClipboard_Click(object sender, RoutedEventArgs e)

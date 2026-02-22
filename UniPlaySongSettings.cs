@@ -195,7 +195,7 @@ namespace UniPlaySong
         private bool enableMusic = true;
         private AudioState musicState = AudioState.Always;
         private bool skipFirstSelectionAfterModeSwitch = false;
-        private bool themeCompatibleSilentSkip = false;
+        private bool themeCompatibleSilentSkip = true;
         private bool pauseOnTrailer = true;
         private int musicVolume = Constants.DefaultMusicVolume;
         private double fadeInDuration = Constants.DefaultFadeInDuration;
@@ -210,9 +210,9 @@ namespace UniPlaySong
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
         private bool pauseWhenInSystemTray = true;
-        private bool pauseOnGameStart = false;
+        private bool pauseOnGameStart = true;
         private bool pauseOnSystemLock = false;
-        private bool pauseOnExternalAudio = false;
+        private bool pauseOnExternalAudio = true;
         private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32";
@@ -222,15 +222,15 @@ namespace UniPlaySong
         private int idleVolumeTimeoutMinutes = 15;
         private bool focusLossStayPaused = false;
         private bool focusLossIgnoreBrief = false;
-        private bool enableRandomPickerMusic = false;
+        private bool enableRandomPickerMusic = true;
         private bool enableMediaKeyControl = false;
-        private bool showTaskbarMediaControls = false;
-        private bool showNowPlayingInTopPanel = false;
+        private bool showTaskbarMediaControls = true;
+        private bool showNowPlayingInTopPanel = true;
         private bool hideNowPlayingForDefaultMusic = false;
-        private bool showDefaultMusicIndicator = false;
+        private bool showDefaultMusicIndicator = true;
         private bool showProgressBar = false;
         private ProgressBarPosition progressBarPosition = ProgressBarPosition.AfterSkipButton;
-        private bool showDesktopMediaControls = false;
+        private bool showDesktopMediaControls = true;
         private bool showSpectrumVisualizer = true;
         private bool showPeakMeter = false;
         private bool autoDeleteMusicOnGameRemoval = true;
@@ -241,7 +241,7 @@ namespace UniPlaySong
         private string selectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
         private string celebrationSoundPath = string.Empty;
         private bool showCelebrationToast = true;
-        private int celebrationToastDurationSeconds = 6;
+        private int celebrationToastDurationSeconds = 8;
         private CelebrationToastTheme celebrationToastTheme = CelebrationToastTheme.Gold;
         private bool applyLiveEffectsToJingles = true;
 
@@ -741,7 +741,7 @@ namespace UniPlaySong
         private bool useNativeMusicAsDefault = false;
         private bool musicOnlyForInstalledGames = false;
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
-        private string selectedBundledPreset = string.Empty; // Filename of selected bundled preset
+        private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
@@ -821,7 +821,7 @@ namespace UniPlaySong
             }
         }
 
-        // Filename of the selected bundled preset (e.g. "tunetank-dark-space-ambient-348870.mp3")
+        // Filename of the selected bundled preset (e.g. "tunetank-dark-space-ambient.mp3")
         public string SelectedBundledPreset
         {
             get => selectedBundledPreset;
@@ -916,7 +916,7 @@ namespace UniPlaySong
         private string normalizationCodec = "libmp3lame";
         private string normalizationSuffix = "-normalized";
         private bool skipAlreadyNormalized = true;
-        private bool doNotPreserveOriginals = false;
+        private bool doNotPreserveOriginals = true;
         private bool autoNormalizeAfterDownload = false;
 
         // Audio Trimming Settings
@@ -1031,7 +1031,7 @@ namespace UniPlaySong
         }
 
         // Song Playback Behavior
-        private bool randomizeOnEverySelect = false;
+        private bool randomizeOnEverySelect = true;
         private bool randomizeOnMusicEnd = true;
         private bool stopAfterSongEnds = false;
 
@@ -1160,7 +1160,7 @@ namespace UniPlaySong
         }
 
         // Live Effects Settings
-        private bool liveEffectsEnabled = false;
+        private bool liveEffectsEnabled = true;
         private bool lowPassEnabled = false;
         private bool highPassEnabled = false;
         private bool reverbEnabled = false;
@@ -1182,7 +1182,7 @@ namespace UniPlaySong
         private EffectChainPreset effectChainPreset = EffectChainPreset.Standard;
         private bool slowEnabled = false;
         private int slowAmount = 0;           // 0-50 (maps to speed: 1.0x to 0.5x)
-        private StylePreset selectedStylePreset = StylePreset.None;
+        private StylePreset selectedStylePreset = StylePreset.HuddiniRehearsal;
         private bool _applyingStylePreset = false;
 
         // Stereo Widener
@@ -2570,8 +2570,7 @@ namespace UniPlaySong
             switch (style)
             {
                 case StylePreset.HuddiniRehearsal:
-                    // Huddini Style — wide stereo, rich reverb, live rehearsal room
-                    // Full-range with gentle filtering, high reverb mix for immersion
+                    // Wide stereo, rich reverb, live rehearsal room feel
                     HighPassEnabled = true;
                     HighPassCutoff = 145;
                     LowPassEnabled = true;
@@ -2596,13 +2595,12 @@ namespace UniPlaySong
                     BitcrusherEnabled = false;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 0;
-                    EffectChainPreset = EffectChainPreset.Standard;
+                    MakeupGain = -1;
+                    EffectChainPreset = EffectChainPreset.ReverbFirst;
                     break;
 
                 case StylePreset.HuddiniBrightRoom:
-                    // Huddini Style — open, spacious large room with bright tone
-                    // Wide stereo, LargeRoom reverb at moderate mix
+                    // Open, spacious large room with bright tone and wide stereo
                     HighPassEnabled = true;
                     HighPassCutoff = 180;
                     LowPassEnabled = false;
@@ -2624,8 +2622,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.HuddiniRetroRadio:
-                    // Huddini Style — narrow bandpass, bathroom reverb, bitcrushed
-                    // Old AM radio — tight band, collapsed stereo, gritty digital
+                    // Narrow bandpass, bathroom reverb, bitcrushed AM radio
                     HighPassEnabled = true;
                     HighPassCutoff = 636;
                     LowPassEnabled = true;
@@ -2645,13 +2642,12 @@ namespace UniPlaySong
                     BitcrusherDownsample = 2;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.HuddiniLoBit:
-                    // Huddini Style — dark lo-fi, heavy bitcrusher, narrow and gritty
-                    // LoFi reverb for warmth, aggressive downsample for crunch
+                    // Dark lo-fi, heavy bitcrusher, aggressive downsample
                     HighPassEnabled = true;
                     HighPassCutoff = 509;
                     LowPassEnabled = true;
@@ -2667,13 +2663,12 @@ namespace UniPlaySong
                     BitcrusherDownsample = 3;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.HuddiniSlowedDream:
-                    // Huddini Style — deep slow with vaporwave reverb, wide and dreamy
-                    // Gentle slowdown with lush reverb and wide stereo, subdued gain
+                    // Deep slow with vaporwave reverb, wide and dreamy
                     HighPassEnabled = false;
                     HighPassCutoff = 200;
                     LowPassEnabled = false;
@@ -2713,8 +2708,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.HuddiniCaveLake:
-                    // Huddini Style — submerged cave, heavy slow, underwater reverb
-                    // Chorus adds murky pitch drift, LP-first chain for deep filtering
+                    // Submerged cave, heavy slow, underwater reverb with chorus drift
                     HighPassEnabled = true;
                     HighPassCutoff = 191;
                     LowPassEnabled = true;
@@ -2737,8 +2731,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.HuddiniHoneyRoom:
-                    // Huddini Style — bright metallic reverb, subtle bitcrush, wide
-                    // Sci-fi corridor with boosted wet, reverb-first chain for shimmer
+                    // Bright sci-fi reverb, subtle bitcrush, wide stereo, slight slow
                     HighPassEnabled = true;
                     HighPassCutoff = 200;
                     LowPassEnabled = false;
@@ -2759,12 +2752,12 @@ namespace UniPlaySong
                     BitcrusherDownsample = 1;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.ReverbFirst;
                     break;
 
                 case StylePreset.CleanBoost:
-                    // Volume boost + stereo widening — makes everything bigger
+                    // Volume boost with stereo widening
                     HighPassEnabled = false;
                     LowPassEnabled = false;
                     ReverbEnabled = false;
@@ -2775,13 +2768,12 @@ namespace UniPlaySong
                     BitcrusherEnabled = false;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 6;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.WarmFMRadio:
-                    // Cozy radio broadcast — soft top end, lounge cafe warmth
-                    // Chorus for analog broadcast texture, makeup gain for presence
+                    // Cozy radio broadcast with soft top end and lounge cafe warmth
                     HighPassEnabled = false;
                     LowPassEnabled = true;
                     LowPassCutoff = 5500;
@@ -2797,13 +2789,12 @@ namespace UniPlaySong
                     BitcrusherEnabled = false;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.BrightAiry:
-                    // Crisp, open, spacious — bass cleaned up, wide stereo field
-                    // Large room reverb with bright tone, high mix for atmosphere
+                    // Crisp, open, spacious with wide stereo field
                     HighPassEnabled = true;
                     HighPassCutoff = 180;
                     LowPassEnabled = false;
@@ -2817,13 +2808,12 @@ namespace UniPlaySong
                     BitcrusherEnabled = false;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.Telephone:
-                    // Tinny phone speaker — narrow band, collapsed stereo, bit-reduced
-                    // Bitcrusher degrades quality, narrow width sells the phone speaker
+                    // Tinny phone speaker with narrow band and collapsed stereo
                     HighPassEnabled = true;
                     HighPassCutoff = 500;
                     LowPassEnabled = true;
@@ -2840,13 +2830,12 @@ namespace UniPlaySong
                     BitcrusherDownsample = 1;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 3;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.ConcertLive:
-                    // In the audience — big hall, wide stereo, full range
-                    // Concert hall at high mix, widener for immersion
+                    // Big concert hall with wide stereo and full range
                     HighPassEnabled = true;
                     HighPassCutoff = 80;
                     LowPassEnabled = false;
@@ -2860,13 +2849,12 @@ namespace UniPlaySong
                     BitcrusherEnabled = false;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.MuffledNextRoom:
-                    // Music bleeding through a wall — heavy LP, dark room, quiet
-                    // Very narrow stereo, high reverb mix to sell the distance
+                    // Music bleeding through a wall, heavy LP, dark and quiet
                     HighPassEnabled = true;
                     HighPassCutoff = 100;
                     LowPassEnabled = true;
@@ -2886,8 +2874,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.LoFiChill:
-                    // Lo-fi study beats — dark, warm, gritty
-                    // Bitcrusher for texture, LoFi reverb at low mix for warmth
+                    // Lo-fi study beats, dark and warm with bitcrusher texture
                     HighPassEnabled = true;
                     HighPassCutoff = 120;
                     LowPassEnabled = true;
@@ -2904,13 +2891,12 @@ namespace UniPlaySong
                     BitcrusherDownsample = 2;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.Standard;
                     break;
 
                 case StylePreset.SlowedReverb:
-                    // The classic vaporwave aesthetic — slowed with lush reverb
-                    // High reverb mix is the point, widener for dreamy space
+                    // Classic vaporwave aesthetic, slowed with lush reverb
                     HighPassEnabled = false;
                     LowPassEnabled = false;
                     ReverbEnabled = true;
@@ -2928,8 +2914,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.VinylNight:
-                    // Old record player — warm, gentle, slightly slowed
-                    // Chorus for analog pitch drift, vinyl reverb kept subtle
+                    // Old record player, warm and gentle with analog pitch drift
                     HighPassEnabled = false;
                     LowPassEnabled = true;
                     LowPassCutoff = 5000;
@@ -2950,8 +2935,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.UnderwaterDream:
-                    // Submerged — deep, murky, everything filtered and distant
-                    // Underwater reverb cranked high, chorus for pitch drift
+                    // Submerged, deep and murky with underwater reverb
                     HighPassEnabled = true;
                     HighPassCutoff = 150;
                     LowPassEnabled = true;
@@ -2974,8 +2958,7 @@ namespace UniPlaySong
                     break;
 
                 case StylePreset.Cyberpunk:
-                    // Neon dystopia — bright metallic reverb, digital edge
-                    // Sci-fi corridor at high mix, bitcrusher for digital grit
+                    // Neon dystopia with bright metallic reverb and digital edge
                     HighPassEnabled = true;
                     HighPassCutoff = 200;
                     LowPassEnabled = false;
@@ -2992,7 +2975,7 @@ namespace UniPlaySong
                     BitcrusherDownsample = 1;
                     TremoloEnabled = false;
                     MakeupGainEnabled = true;
-                    MakeupGain = 2;
+                    MakeupGain = 1;
                     EffectChainPreset = EffectChainPreset.ReverbFirst;
                     break;
 
