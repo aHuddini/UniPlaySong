@@ -420,10 +420,13 @@ namespace UniPlaySong
                 AttachLoginInputHandler();
             }
 
-            // In fullscreen mode: integrate with Playnite's BackgroundVolume slider.
-            // Native music suppression already handled in constructor (PNS pattern: single call).
+            // In fullscreen mode: suppress native music + integrate with volume slider.
+            // Constructor attempts suppression early, but MainView.mainModel may not be
+            // initialized yet — retry here as a safety net (idempotent: already-zero is a no-op).
             if (IsFullscreen)
             {
+                SuppressNativeMusic();
+
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
                 InitializeFullscreenSettingsRef();
                 SubscribeToFullscreenVolumeChanges();
