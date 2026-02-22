@@ -2277,21 +2277,14 @@ namespace UniPlaySong
             {
                 var mainModel = GetMainModel();
                 if (mainModel?.App == null)
-                {
-                    _fileLogger?.Debug("SuppressNativeMusic: mainModel.App is null — too early in startup");
                     return;
-                }
 
-                // Match PNS: GetProperty directly on runtime type (finds inherited static properties)
                 var backgroundMusicProperty = ((object)mainModel.App)
                     .GetType()
                     .GetProperty("BackgroundMusic");
 
                 if (backgroundMusicProperty == null)
-                {
-                    _fileLogger?.Debug("SuppressNativeMusic: BackgroundMusic property not found");
                     return;
-                }
 
                 IntPtr currentMusic = (IntPtr)backgroundMusicProperty.GetValue(null);
 
@@ -2300,16 +2293,10 @@ namespace UniPlaySong
                     SDL2MixerWrapper.Mix_HaltMusic();
                     SDL2MixerWrapper.Mix_FreeMusic(currentMusic);
                     backgroundMusicProperty.GetSetMethod(true).Invoke(null, new[] { IntPtr.Zero as object });
-                    _fileLogger?.Debug("SuppressNativeMusic: Stopped native music");
-                }
-                else
-                {
-                    _fileLogger?.Debug("SuppressNativeMusic: BackgroundMusic already Zero");
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _fileLogger?.Debug($"SuppressNativeMusic: Exception - {ex.Message}");
                 try { SDL2MixerWrapper.Mix_HaltMusic(); } catch { }
             }
         }
