@@ -1226,20 +1226,31 @@ namespace UniPlaySong
         // New installs already default to BundledPreset and this is a no-op.
         private void MigrateBundledPresetSettings()
         {
-            if (_settings == null || _settings.BundledPresetMigrated) return;
+            if (_settings == null) return;
 
-            // All existing users migrate to bundled presets
-            _settings.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+            bool changed = false;
 
-            // Auto-select first bundled preset if none selected
-            if (string.IsNullOrEmpty(_settings.SelectedBundledPreset))
+            if (!_settings.BundledPresetMigrated)
             {
-                _settings.SelectedBundledPreset = Services.BundledPresetService.GetDefaultPresetFilename();
+                // All existing users migrate to bundled presets
+                _settings.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+                _settings.BundledPresetMigrated = true;
+                changed = true;
             }
 
-            _settings.BundledPresetMigrated = true;
-            SavePluginSettings(_settings);
-            _fileLogger?.Debug($"BundledPreset migration: source={_settings.DefaultMusicSourceOption}, preset={_settings.SelectedBundledPreset}");
+            // Always validate: if preset is blank or doesn't resolve to a real file, fix it
+            if (string.IsNullOrEmpty(_settings.SelectedBundledPreset) ||
+                Services.BundledPresetService.ResolvePresetPath(_settings.SelectedBundledPreset) == null)
+            {
+                _settings.SelectedBundledPreset = Services.BundledPresetService.GetDefaultPresetFilename();
+                changed = true;
+            }
+
+            if (changed)
+            {
+                SavePluginSettings(_settings);
+                _fileLogger?.Debug($"BundledPreset migration: source={_settings.DefaultMusicSourceOption}, preset={_settings.SelectedBundledPreset}");
+            }
         }
 
         /// <summary>
