@@ -1867,6 +1867,65 @@ namespace UniPlaySong
 
         #endregion
 
+        #region PA Sidebar Integration
+
+        public ICommand BrowseForPASidebarMusic => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var dialog = new Microsoft.Win32.OpenFileDialog
+                    {
+                        Filter = "Audio Files|*.mp3;*.wav;*.flac;*.wma;*.ogg;*.m4a"
+                    };
+
+                    if (dialog.ShowDialog() == true)
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.PASidebarCustomPath = dialog.FileName);
+                    }
+                },
+                context: "selecting PA sidebar music file",
+                showUserMessage: true
+            );
+        });
+
+        public ICommand SelectPASidebarGame => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var fileService = plugin.GetFileService();
+                    var gamesWithMusic = PlayniteApi.Database.Games
+                        .Where(g => fileService?.HasMusic(g) == true)
+                        .OrderBy(g => g.Name)
+                        .ToList();
+
+                    var preselected = Settings.PASidebarGameId != Guid.Empty
+                        ? new List<Guid> { Settings.PASidebarGameId }
+                        : new List<Guid>();
+
+                    var dialog = new Views.GameSelectionDialog(gamesWithMusic, preselected);
+                    dialog.Title = "Select a game for PA sidebar music";
+                    if (dialog.ShowDialog() == true && dialog.SelectedGameIds.Count > 0)
+                    {
+                        var selectedId = dialog.SelectedGameIds.First();
+                        var gameName = PlayniteApi.Database.Games[selectedId]?.Name ?? "Unknown";
+                        Settings = CreateSettingsWithUpdate(s =>
+                        {
+                            s.PASidebarGameId = selectedId;
+                            s.PASidebarGameName = gameName;
+                        });
+                    }
+                },
+                context: "selecting PA sidebar game",
+                showUserMessage: true
+            );
+        });
+
+        #endregion
+
         // Library stats — structured properties for card grid layout
         private string _statsGamesWithMusic = "...";
         public string StatsGamesWithMusic { get => _statsGamesWithMusic; set { _statsGamesWithMusic = value; OnPropertyChanged(); } }

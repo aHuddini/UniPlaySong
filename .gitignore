@@ -23,6 +23,9 @@ Jingles/*.wav
 Jingles/*.ogg
 Jingles/*.flac
 
+# PlayniteAchievements local fork for UPS integration development
+PAchievements-UPS/
+
 # Bundled default music with unclear licensing
 DefaultMusic/PS2 Menu - Ambience.mp3
 

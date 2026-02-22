@@ -224,6 +224,12 @@ namespace UniPlaySong
         private bool focusLossIgnoreBrief = false;
         private bool enableRandomPickerMusic = true;
         private bool enableMediaKeyControl = false;
+        private bool enablePASidebarMusic = false;
+        private int paSidebarMusicSource = 0; // 0=Preset, 1=Game, 2=Custom File
+        private string paSidebarPreset = "";
+        private Guid paSidebarGameId = Guid.Empty;
+        private string paSidebarGameName = "";
+        private string paSidebarCustomPath = "";
         private bool showTaskbarMediaControls = true;
         private bool showNowPlayingInTopPanel = true;
         private bool hideNowPlayingForDefaultMusic = false;
@@ -589,6 +595,48 @@ namespace UniPlaySong
         {
             get => enableMediaKeyControl;
             set { enableMediaKeyControl = value; OnPropertyChanged(); }
+        }
+
+        // Play background music while browsing the PlayniteAchievements sidebar
+        public bool EnablePASidebarMusic
+        {
+            get => enablePASidebarMusic;
+            set { enablePASidebarMusic = value; OnPropertyChanged(); }
+        }
+
+        // Music source for PA sidebar: 0=Default Preset, 1=Specific Game, 2=Custom File
+        public int PASidebarMusicSource
+        {
+            get => paSidebarMusicSource;
+            set { paSidebarMusicSource = value; OnPropertyChanged(); }
+        }
+
+        // Bundled default music preset name for PA sidebar
+        public string PASidebarPreset
+        {
+            get => paSidebarPreset;
+            set { paSidebarPreset = value; OnPropertyChanged(); }
+        }
+
+        // Game ID whose music to play when PA sidebar is open
+        public Guid PASidebarGameId
+        {
+            get => paSidebarGameId;
+            set { paSidebarGameId = value; OnPropertyChanged(); }
+        }
+
+        // Display name for the selected game (UI only)
+        public string PASidebarGameName
+        {
+            get => paSidebarGameName;
+            set { paSidebarGameName = value; OnPropertyChanged(); }
+        }
+
+        // Custom audio file path for PA sidebar music
+        public string PASidebarCustomPath
+        {
+            get => paSidebarCustomPath;
+            set { paSidebarCustomPath = value; OnPropertyChanged(); }
         }
 
         // Show media control buttons (Previous/Play-Pause/Next) in the taskbar thumbnail preview

@@ -3318,6 +3318,88 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- PlayniteAchievements Sidebar Integration -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="PlayniteAchievements Sidebar Music" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Play background music while browsing PA sidebar"
+                              IsChecked="{Binding Settings.EnablePASidebarMusic}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Plays a theme song as backdrop while the PlayniteAchievements sidebar is open. Music reverts to the current library selection when you leave the sidebar. Requires the PlayniteAchievements plugin (with UPS-compatible build) and a Playnite restart."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <StackPanel Margin="20,0,0,0"
+                                IsEnabled="{Binding Settings.EnablePASidebarMusic}">
+                        <TextBlock Text="Music Source:" FontSize="11" Foreground="Gray" Margin="0,0,0,5"/>
+                        <ComboBox SelectedIndex="{Binding Settings.PASidebarMusicSource}"
+                                  Width="200" HorizontalAlignment="Left" Margin="0,0,0,8">
+                            <ComboBoxItem Content="Default Music Preset"/>
+                            <ComboBoxItem Content="Specific Game"/>
+                            <ComboBoxItem Content="Custom File"/>
+                        </ComboBox>
+
+                        <!-- Preset picker (source = 0) -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.PASidebarMusicSource}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="Preset: " VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                            <ComboBox ItemsSource="{Binding BundledPresets}"
+                                      SelectedValue="{Binding Settings.PASidebarPreset}"
+                                      SelectedValuePath="File"
+                                      DisplayMemberPath="DisplayName"
+                                      Width="300" Margin="5,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Game picker (source = 1) -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.PASidebarMusicSource}" Value="1">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="{Binding Settings.PASidebarGameName, TargetNullValue='No game selected', FallbackValue='No game selected'}"
+                                       VerticalAlignment="Center" FontSize="11" Foreground="Gray" MinWidth="150"/>
+                            <Button Content="Select Game..."
+                                    Command="{Binding SelectPASidebarGame}"
+                                    Margin="10,0,0,0" Padding="8,3"/>
+                        </StackPanel>
+
+                        <!-- File picker (source = 2) -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.PASidebarMusicSource}" Value="2">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBox Text="{Binding Settings.PASidebarCustomPath}"
+                                     Width="300" IsReadOnly="True" Margin="0,0,10,0"/>
+                            <Button Content="Browse..."
+                                    Command="{Binding BrowseForPASidebarMusic}"
+                                    Padding="8,3"/>
+                        </StackPanel>
+                    </StackPanel>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

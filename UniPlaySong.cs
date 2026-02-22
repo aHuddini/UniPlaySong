@@ -106,6 +106,7 @@ namespace UniPlaySong
         private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
         private Services.MediaKeyService _mediaKeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
+        private PAchievementsBridge _paBridge;
         private IMusicPlaybackCoordinator _coordinator;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
@@ -303,6 +304,10 @@ namespace UniPlaySong
         /// </summary>
         public override void OnGameSelected(OnGameSelectedEventArgs args)
         {
+            // PA sidebar owns playback while active — ignore Playnite's game selection events
+            if (_paBridge?.IsSidebarActive == true)
+                return;
+
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
             UpdateDynamicVisualizerColors(game);
@@ -495,6 +500,23 @@ namespace UniPlaySong
                 catch (Exception ex)
                 {
                     _fileLogger?.Debug($"TaskbarMediaControls failed to attach: {ex.Message}");
+                }
+            }
+
+            // PlayniteAchievements sidebar music integration (experimental)
+            if (_settings?.EnablePASidebarMusic == true)
+            {
+                try
+                {
+                    _paBridge = new PAchievementsBridge(
+                        _api, _coordinator as MusicPlaybackCoordinator,
+                        _playbackService as MusicPlaybackService, _fileService,
+                        _settings, _fileLogger);
+                    _paBridge.TryConnect();
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"PAchievementsBridge failed to initialize: {ex.Message}");
                 }
             }
 
@@ -878,6 +900,8 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _paBridge?.Dispose();
+            _paBridge = null;
             if (_taskbarMediaControls != null)
             {
                 _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;

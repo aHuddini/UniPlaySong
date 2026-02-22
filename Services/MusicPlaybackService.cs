@@ -1198,6 +1198,71 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Fades out any currently-playing track, then loads and fades in the new file.
+        // Used by PAchievementsBridge for smooth sidebar music transitions.
+        public void FadeToFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                _fileLogger?.Warn($"FadeToFile: Cannot load file: {filePath ?? "null"}");
+                return;
+            }
+
+            try
+            {
+                bool isCurrentlyPlaying = _musicPlayer?.IsActive == true || _musicPlayer?.IsLoaded == true;
+
+                if (isCurrentlyPlaying && _currentSongPath != filePath)
+                {
+                    _fileLogger?.Debug($"FadeToFile: Switching to {Path.GetFileName(filePath)}");
+                    OnSongChanged?.Invoke(filePath);
+
+                    _fader.Switch(
+                        stopAction: () =>
+                        {
+                            StopPreviewTimer();
+                            _musicPlayer.Close();
+                            _currentSongPath = null;
+                            ClearAllPauseSources();
+                        },
+                        preloadAction: () =>
+                        {
+                            _musicPlayer.PreLoad(filePath);
+                        },
+                        playAction: () =>
+                        {
+                            _musicPlayer.Load(filePath);
+                            _musicPlayer.Volume = 0;
+                            _currentSongPath = filePath;
+                            ClearAllPauseSources();
+                            _musicPlayer.Play();
+                            MarkSongStart();
+                            _fileLogger?.Debug($"FadeToFile: Playing {Path.GetFileName(filePath)}");
+                        }
+                    );
+                }
+                else
+                {
+                    _fileLogger?.Debug($"FadeToFile: Initial play {Path.GetFileName(filePath)}");
+                    _musicPlayer.Load(filePath);
+                    _musicPlayer.Volume = 0;
+                    _currentSongPath = filePath;
+                    ClearAllPauseSources();
+                    _musicPlayer.Play();
+                    MarkSongStart();
+                    _fader.FadeIn();
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(
+                    ex,
+                    context: "fading to file",
+                    showUserMessage: false
+                );
+            }
+        }
+
         public void PlayPreview(string filePath, double volume)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))

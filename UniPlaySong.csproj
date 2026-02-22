@@ -7,6 +7,7 @@
         <RootNamespace>UniPlaySong</RootNamespace>
         <AssemblyName>UniPlaySong</AssemblyName>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <DefaultItemExcludes>$(DefaultItemExcludes);PAchievements-UPS\**</DefaultItemExcludes>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
