@@ -9,6 +9,7 @@ Packages:
       - '[Live Effects] Smoother Fading: Volume fades are now buttery smooth with no audible stepping. Pause/resume transitions sound clean even with heavy reverb effects applied.'
       - '[Bugfix] Short Track Reliability: Short audio clips no longer get stuck or freeze playback controls when used with Live Effects.'
       - '[Bugfix] Pause/Resume Stability: Fixed several edge cases where music could fail to resume after pausing, especially during game switches or with short tracks.'
+      - '[Bugfix] Custom Folder/Pool Default Music: Skip, Now Playing, and Song Progress now work correctly when using Custom Folder, Random Game, or Custom Game Rotation as the default music source.'
       - '[Performance] Game Switch UI Lag Eliminated: Eliminated ~70ms UI delay that occurred on every game switch when Live Effects or Visualizer was enabled. NAudio audio pipeline rewritten for better performance.'
       - '[Experimental] Configurable Fade Curves: Five fade curve styles (Linear, Quadratic, Cubic, S-Curve, Logarithmic) independently selectable for fade-in and fade-out.'
       - '[Improved] Fade Duration Slider: Refined range (0.10-5s), finer 0.05s tick granularity for precise control, and a note about how Live Effects influence fade perception.'

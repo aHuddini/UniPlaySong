@@ -14,6 +14,9 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Short Track EOF During Pause** - Short songs that reached EOF while logically paused (volume 0, still in mixer) would stall the fader permanently. The mixer auto-removes inputs on EOF, but `IsActive` still returned true because `_logicallyPaused` wasn't cleared. Fixed: `OnSongEnded` clears logical pause state; `Resume()` re-adds to mixer if song was auto-removed.
 - **Interrupted Song Switch** - If a pause source (e.g., game starting) arrived during a mid-fade song switch, the pause overwrote the fader's pending action, orphaning the new song load. Fixed: `MusicFader.HasPendingPlayAction` detects orphaned loads; `RemovePauseSource` executes them on resume.
 
+### Fixed
+- **Default Music Pool Sources — Media Controls** - Skip, Now Playing display, and Song Progress bar now work correctly when Custom Folder (Playlist), Random Game, or Custom Game Rotation is selected as the default music source. Previously these controls were non-functional or showed stale data with pool-based sources.
+
 ### Added
 - **Persistent Mixer Architecture** - NAudio backend now uses a single `WaveOutEvent` + `MixingSampleProvider` that lives for the lifetime of the player. Songs are swapped via `AddMixerInput()`/`RemoveMixerInput()` instead of creating and destroying a `WaveOutEvent` per song. Eliminates the ~70ms UI-thread freeze from Windows audio API calls on every game switch.
 - **Configurable Fade Curves** - Five fade curve types, independently selectable for fade-in and fade-out via Experimental settings: Linear, Quadratic, Cubic, S-Curve, and Logarithmic. Default: Quadratic fade-in, Cubic fade-out.
