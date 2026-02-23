@@ -31,6 +31,11 @@ namespace UniPlaySong.Services
         void Pause();
         void Resume();
         void Close();
+
+        // Sets a volume ramp from current volume to target over the given duration.
+        // NAudio: per-sample interpolation on the audio thread (no stepping artifacts).
+        // SDL2/WPF: DispatcherTimer stepping with exponential curve (preserves current behavior).
+        void SetVolumeRamp(double targetVolume, double durationSeconds);
     }
 }
 

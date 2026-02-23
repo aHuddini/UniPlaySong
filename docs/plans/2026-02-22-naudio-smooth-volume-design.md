@@ -1,12 +1,12 @@
-# NAudio Smooth Volume Fix — Design Document
+# NAudio Audio Artifact Fix — Design Document
 
 ## Problem
 
-Tremolo/stutter audio artifact when using NAudioMusicPlayer (Live Effects or Visualizer enabled). Occurs during fades (fade-in on song start, pause/resume).
+Tremolo/stutter audio artifact when using NAudioMusicPlayer (Live Effects or Visualizer enabled). Occurs during fades (fade-in on song start, fade-out on pause/game switch, pause/resume transitions).
 
 ### Root Cause
 
-`MusicFader` uses a `System.Timers.Timer` at ~16ms intervals (~60 ticks/sec), setting `IMusicPlayer.Volume` each tick via `Dispatcher.Invoke`. In the NAudio pipeline, this flows through `VolumeSampleProvider`, which applies a flat buffer-wide multiply — every sample in the current buffer gets the same volume value.
+`MusicFader` used a `System.Timers.Timer` at ~16ms intervals (~60 ticks/sec), setting `IMusicPlayer.Volume` each tick via `Dispatcher.Invoke`. In the NAudio pipeline, this flowed through `VolumeSampleProvider`, which applies a flat buffer-wide multiply — every sample in the current buffer gets the same volume value.
 
 This creates a staircase waveform: volume jumps discretely ~60 times per second. The reverb chain downstream (8 parallel comb filters with feedback loops in `EffectsChain`) amplifies the rate-of-change discontinuities at step boundaries into audible tremolo.
 
@@ -16,21 +16,51 @@ SDL2 is unaffected because `Mix_VolumeMusic()` is applied by SDL2 internally aft
 
 During steady-state playback, `Volume` is constant — no discontinuities exist. During fades, volume changes ~60x/sec, creating step boundaries that the reverb's comb filters amplify.
 
-## Chosen Approach: Option 3 — "Fader Steps for Both, NAudio Smooths"
+## Approaches Attempted
 
-### Principle
+### Option 3 (Failed): "Fader Steps for Both, NAudio Smooths"
 
-The fader (`MusicFader`) continues stepping volume ~60x/sec for both backends — zero changes to shared code. A new `SmoothVolumeSampleProvider` replaces NAudio's built-in `VolumeSampleProvider` in the NAudio pipeline only. It interpolates between the fader's discrete steps on the audio thread, producing ~44,100 smooth volume transitions per second instead of ~60 staircase jumps.
+Replaced `VolumeSampleProvider` with `SmoothVolumeSampleProvider` (per-sample linear ramp) but left the fader completely unchanged — it still called `Volume` setter ~60x/sec.
 
-### Why This Approach
+**Result:** Intermittent play/pause stuttering. The fader's rapid `Volume` setter calls (~60/sec) conflicted with the audio-thread ramp. Each setter call triggered a new ~16ms ramp, but the ramp calculation used `_currentVolume` which was being modified on the audio thread simultaneously. The setter overwrote the ramp target before the previous ramp completed, causing volume to bounce.
 
-- **Zero risk to SDL2** — fader is completely unchanged
-- **Minimal code surface** — one new file, three lines changed in `NAudioMusicPlayer.cs`
-- **Addresses root cause** — eliminates the discontinuities that reverb amplifies
-- **No architectural changes** — no persistent mixer, no fader rewrite
+**Lesson:** The fader and the provider cannot independently control volume. Either the fader steps and the provider accepts passively (original design), or the fader delegates and the provider ramps autonomously. Hybrid doesn't work.
 
-### Pipeline Change
+### Option 1 (Succeeded): "Fader Delegates, Backends Ramp"
 
+Rewrote `MusicFader` to call `SetVolumeRamp(target, duration)` **once** at the start of each fade phase, then poll `_player.Volume` every 50ms to detect ramp completion and fire actions.
+
+Each backend implements `SetVolumeRamp` optimally:
+- **NAudio**: `SmoothVolumeSampleProvider.SetTargetWithRamp()` — per-sample exponential curve on the audio thread (44,100 increments/sec). Zero discrete steps for reverb to amplify.
+- **SDL2/WPF**: Own `DispatcherTimer` at 16ms with exponential curve (`progress^2` fade-in, `1-(1-progress)^2` fade-out). Same behavior as the old fader.
+
+## Architecture
+
+### Before (broken)
+```
+Fader (System.Timers.Timer, 16ms, ~60 steps/sec)
+  → Dispatcher.Invoke → _player.Volume = curvedValue (per tick)
+    → VolumeSampleProvider: flat buffer multiply → STAIRCASE → reverb amplifies → TREMOLO
+
+All backends receive same Volume stepping
+```
+
+### After (fixed)
+```
+Fader (DispatcherTimer, 50ms poll, NO volume stepping)
+  → SetVolumeRamp(target, duration) called ONCE per phase
+  → Polls _player.Volume to detect completion → fires stop/play/pause actions
+
+NAudio backend:
+  SmoothVolumeSampleProvider.SetTargetWithRamp()
+    → per-sample exponential curve on audio thread → SMOOTH → reverb happy
+
+SDL2/WPF backend:
+  Own DispatcherTimer (16ms, ~60 steps/sec, exponential curve)
+    → Same behavior as old fader, proven artifact-free
+```
+
+### Pipeline Change (NAudio only)
 ```
 Before:  AudioFileReader → EffectsChain → VizProvider → VolumeSampleProvider → WaveOutEvent
 After:   AudioFileReader → EffectsChain → VizProvider → SmoothVolumeSampleProvider → WaveOutEvent
@@ -38,50 +68,60 @@ After:   AudioFileReader → EffectsChain → VizProvider → SmoothVolumeSample
 
 ## SmoothVolumeSampleProvider Design
 
-Drop-in replacement for `VolumeSampleProvider`. Same `ISampleProvider` interface, same `Volume` property signature.
+Per-sample exponential-curve volume ramp. Curves match SDL2/WPF exactly:
+- **Fade-in**: `progress^2` (starts fast, slows down)
+- **Fade-out**: `1-(1-progress)^2` (starts slow, speeds up)
+
+### SetTargetWithRamp(target, duration)
+Called by fader once per phase. Calculates total ramp samples from `sampleRate * channels * duration`. Stores start volume, target, total samples, and resets position counter. The audio thread handles the entire ramp.
 
 ### Volume Property
-
-- **Setter** (called by fader on UI thread, ~60x/sec): stores target volume, calculates per-sample increment to ramp from current to target over ~16ms (one fader interval worth of samples = `sampleRate * channels * 0.016`)
-- **Getter** (called by fader to check current volume): returns `_currentVolume` (audio-thread owned)
+- **Setter**: Instant volume set (no ramp). Used by fader for `Volume = 0` safety resets before play actions.
+- **Getter**: Returns `_currentVolume` (audio-thread owned). The fader polls this at 50ms to detect ramp completion.
 
 ### Read() Method
+- **Ramping**: Per-sample exponential curve using position-based progress. Calculates volume per sample from `progress = pos / totalSamples`, applies curve, multiplies buffer sample.
+- **Steady state**: Fast paths for `vol == 0` (zero-fill), `vol == 1` (passthrough), other (constant multiply).
 
-- **Ramping state**: applies per-sample linear interpolation (`vol += increment` per sample), clamping at target. Once target reached, switches to steady state for remainder of buffer.
-- **Steady state fast paths**: `vol == 0` → zero-fill buffer; `vol == 1` → pass through unmodified; other → constant multiply.
+## MusicFader Design
 
-### Thread Safety
+`DispatcherTimer` at 50ms, `DispatcherPriority.Normal`. Does NOT step volume.
 
-- `_targetVolume`: `volatile float`, written by UI thread (fader), read by audio thread
-- `_currentVolume`: owned by audio thread (written in `Read()`, read by `Volume` getter)
-- `_rampIncrement`, `_isRamping`: set atomically in the setter before `_isRamping = true`
+### TimerTick() Flow
+1. Fire preload action once (early in fade-out, gives time to prepare next song)
+2. If `!_rampStarted`: call `SetVolumeRamp(target, duration)` once, set `_rampStarted = true`
+3. Poll `_player.Volume`:
+   - **Song switch**: fade-out done (`<= 0.0001`) + has `_playAction` → stop old, play new, reset for fade-in
+   - **Fade-in complete**: `currentVol >= musicVolume - 0.001` → set final volume, stop timer
+   - **Pause/stop complete**: fade-out done + has `_pauseAction`/`_stopAction` → execute, stop timer
 
-### Ramp Duration
+### Resume from Paused
+Sets `_player.Volume = 0` **before** calling `_player.Resume()`, ensuring the fade-in ramp starts from silence. This prevents a blip at whatever stale volume the player was paused at.
 
-~16ms of samples at source sample rate × channels. At 44100Hz stereo: `44100 * 2 * 0.016 = 1411` samples per ramp. This matches the fader's tick interval, so each fader step is fully interpolated before the next arrives.
+### Phase Transitions
+`SnapshotFadeParams()` captures `_snapVolume` and `_snapDuration` at phase start. `EnsureTimer()` resets `_rampStarted = false` and starts timer if not running.
 
-## Testing Results (2026-02-22)
+## SDL2 Song-End Fix (Bonus)
 
-The SmoothVolumeSampleProvider was implemented and tested. Initial results showed improvement — artifact was absent for the first few game switches. However, the artifact returned after several switches, indicating that per-sample volume smoothing alone does not fully resolve the issue. The approach was reverted.
+`OnMusicFinishedInternal()` now marshals `MediaEnded` to the UI thread via `Dispatcher.BeginInvoke`. Previously it fired `MediaEnded` directly on the SDL2 audio callback thread. The handler then called `LoadAndPlayFile()` → `Mix_LoadMUS()` + `Mix_PlayMusic()` while SDL2 held the audio device lock, risking a crash.
 
-### Implications
-
-The root cause may involve more than just volume stepping discontinuities. Possible contributing factors:
-- WaveOutEvent device recreation on each song load (per-song device architecture)
-- Buffer underruns during the transition period
-- EffectsChain state carrying over between volume ramp segments
-- Interaction between the fader's `Dispatcher.Invoke` timing and the audio thread's buffer boundaries
-
-### Fallback: Option 1 — Fader Rewrite
-
-If a future attempt is needed, Option 1 would rewrite `MusicFader` to use `SetVolumeRamp()` (single call per fade phase) with a `DispatcherTimer` monitor for NAudio, while keeping timer stepping for SDL2. This addresses the timing jitter from `Dispatcher.Invoke` in addition to the stepping discontinuity.
-
-## Files
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `Audio/SmoothVolumeSampleProvider.cs` | New file (reverted) |
-| `Services/NAudioMusicPlayer.cs` | 3-line swap: field type + construction + using directive (reverted) |
-| `Players/MusicFader.cs` | No change |
-| `Services/MusicPlaybackService.cs` | No change |
-| `Services/SDL2MusicPlayer.cs` | No change |
+| `Audio/SmoothVolumeSampleProvider.cs` | New — per-sample exponential volume ramp for NAudio |
+| `Services/IMusicPlayer.cs` | Added `SetVolumeRamp(double, double)` to interface |
+| `Services/NAudioMusicPlayer.cs` | Swapped `VolumeSampleProvider` → `SmoothVolumeSampleProvider`, added `SetVolumeRamp` |
+| `Services/SDL2MusicPlayer.cs` | Added `SetVolumeRamp` (DispatcherTimer + exponential curve), fixed `OnMusicFinishedInternal` threading |
+| `Services/MusicPlayer.cs` | Added `SetVolumeRamp` (DispatcherTimer + exponential curve) |
+| `Players/MusicFader.cs` | Rewritten — `DispatcherTimer` monitor, calls `SetVolumeRamp` once per phase |
+| `Services/MusicPlaybackService.cs` | Updated 2 stale comments |
+
+## Testing Results (2026-02-22)
+
+- Option 3 (smooth provider only, fader unchanged): Failed — intermittent play/pause stuttering
+- Option 1 (fader rewrite + smooth provider + backend ramps): **Succeeded**
+  - No tremolo/stutter on game switching (20+ switches tested)
+  - No artifact on pause/resume (alt-tab, media controls)
+  - Exponential fade curves feel natural (matching SDL2/WPF behavior)
+  - Resume from pause starts cleanly from silence (no blip)

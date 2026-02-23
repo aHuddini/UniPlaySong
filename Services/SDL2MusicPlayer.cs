@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Playnite.SDK;
 using UniPlaySong.Players.SDL;
 using UniPlaySong.Services;
@@ -25,6 +27,14 @@ namespace UniPlaySong.Services
         private static bool _isSDLAudioInitialized = false;
         private SDL2Mixer.MusicFinishedCallback _musicFinishedCallback;
         private readonly ErrorHandlerService _errorHandler;
+
+        // Volume ramp state — SDL2 has no per-sample ramp, so we step via DispatcherTimer
+        private DispatcherTimer _rampTimer;
+        private double _rampTarget;
+        private double _rampStartVolume;
+        private DateTime _rampStartTime;
+        private double _rampDuration;
+        private const double RampIntervalMs = 16; // ~60 steps/sec
 
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
@@ -246,6 +256,8 @@ namespace UniPlaySong.Services
 
         public void Close()
         {
+            _rampTimer?.Stop();
+
             if (_music != IntPtr.Zero)
             {
                 Stop();
@@ -258,12 +270,87 @@ namespace UniPlaySong.Services
             _source = string.Empty;
         }
 
+        // Exponential-curve volume ramp matching the old fader's behavior.
+        // Fade-in: progress^2 (starts fast, slows). Fade-out: 1-(1-progress)^2 (starts slow, speeds up).
+        public void SetVolumeRamp(double targetVolume, double durationSeconds)
+        {
+            _rampTimer?.Stop();
+
+            if (durationSeconds <= 0)
+            {
+                Volume = targetVolume;
+                return;
+            }
+
+            _rampTarget = Math.Max(0.0, Math.Min(1.0, targetVolume));
+            _rampStartVolume = _volume;
+            _rampStartTime = DateTime.Now;
+            _rampDuration = durationSeconds;
+
+            if (_rampTimer == null)
+            {
+                _rampTimer = new DispatcherTimer(DispatcherPriority.Normal)
+                {
+                    Interval = TimeSpan.FromMilliseconds(RampIntervalMs)
+                };
+                _rampTimer.Tick += OnRampTick;
+            }
+            _rampTimer.Start();
+        }
+
+        private void OnRampTick(object sender, EventArgs e)
+        {
+            double elapsed = (DateTime.Now - _rampStartTime).TotalSeconds;
+            double progress = Math.Min(1.0, elapsed / _rampDuration);
+
+            bool fadingOut = _rampTarget < _rampStartVolume;
+            double curvedVolume;
+
+            if (fadingOut)
+            {
+                // Fade-out: exponential decay — 1-(1-progress)^2
+                double curve = 1.0 - Math.Pow(1.0 - progress, 2.0);
+                curvedVolume = _rampStartVolume * (1.0 - curve);
+            }
+            else
+            {
+                // Fade-in: exponential rise — progress^2
+                double curve = Math.Pow(progress, 2.0);
+                curvedVolume = _rampStartVolume + (_rampTarget - _rampStartVolume) * curve;
+            }
+
+            Volume = Math.Max(0.0, Math.Min(1.0, curvedVolume));
+
+            if (progress >= 1.0)
+            {
+                Volume = _rampTarget;
+                _rampTimer?.Stop();
+            }
+        }
+
+        // Called on SDL2 audio callback thread when music finishes.
+        // Must marshal MediaEnded to the UI thread — calling Mix_LoadMUS/Mix_PlayMusic
+        // from within this callback crashes because SDL2 holds the audio device lock.
         private void OnMusicFinishedInternal()
         {
             if (_isActive)
             {
                 _isActive = false;
-                MediaEnded?.Invoke(this, EventArgs.Empty);
+                try
+                {
+                    var dispatcher = Application.Current?.Dispatcher;
+                    if (dispatcher != null)
+                    {
+                        dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            MediaEnded?.Invoke(this, EventArgs.Empty);
+                        }));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "SDL2 OnMusicFinished: Error dispatching MediaEnded");
+                }
             }
         }
 

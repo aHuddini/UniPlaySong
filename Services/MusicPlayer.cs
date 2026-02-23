@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Playnite.SDK;
 using UniPlaySong.Services;
 
@@ -18,7 +19,15 @@ namespace UniPlaySong.Services
         private MediaPlayer _mediaPlayer;
         private MediaTimeline _timeLine;
         private readonly ErrorHandlerService _errorHandler;
-        
+
+        // Volume ramp state — WPF MediaPlayer has no per-sample ramp, so we step via DispatcherTimer
+        private DispatcherTimer _rampTimer;
+        private double _rampTarget;
+        private double _rampStartVolume;
+        private DateTime _rampStartTime;
+        private double _rampDuration;
+        private const double RampIntervalMs = 16;
+
         // Preloaded player for seamless switching
         private MediaPlayer _preloadedMediaPlayer;
         private MediaTimeline _preloadedTimeLine;
@@ -279,10 +288,66 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Exponential-curve volume ramp matching the old fader's behavior.
+        public void SetVolumeRamp(double targetVolume, double durationSeconds)
+        {
+            _rampTimer?.Stop();
+
+            if (durationSeconds <= 0)
+            {
+                Volume = targetVolume;
+                return;
+            }
+
+            _rampTarget = Math.Max(0.0, Math.Min(1.0, targetVolume));
+            _rampStartVolume = _mediaPlayer?.Volume ?? 0;
+            _rampStartTime = DateTime.Now;
+            _rampDuration = durationSeconds;
+
+            if (_rampTimer == null)
+            {
+                _rampTimer = new DispatcherTimer(DispatcherPriority.Normal)
+                {
+                    Interval = TimeSpan.FromMilliseconds(RampIntervalMs)
+                };
+                _rampTimer.Tick += OnRampTick;
+            }
+            _rampTimer.Start();
+        }
+
+        private void OnRampTick(object sender, EventArgs e)
+        {
+            double elapsed = (DateTime.Now - _rampStartTime).TotalSeconds;
+            double progress = Math.Min(1.0, elapsed / _rampDuration);
+
+            bool fadingOut = _rampTarget < _rampStartVolume;
+            double curvedVolume;
+
+            if (fadingOut)
+            {
+                double curve = 1.0 - Math.Pow(1.0 - progress, 2.0);
+                curvedVolume = _rampStartVolume * (1.0 - curve);
+            }
+            else
+            {
+                double curve = Math.Pow(progress, 2.0);
+                curvedVolume = _rampStartVolume + (_rampTarget - _rampStartVolume) * curve;
+            }
+
+            Volume = Math.Max(0.0, Math.Min(1.0, curvedVolume));
+
+            if (progress >= 1.0)
+            {
+                Volume = _rampTarget;
+                _rampTimer?.Stop();
+            }
+        }
+
         public void Close()
         {
             try
             {
+                _rampTimer?.Stop();
                 if (_mediaPlayer != null)
                 {
                     if (_mediaPlayer.Clock != null)

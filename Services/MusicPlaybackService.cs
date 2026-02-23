@@ -817,7 +817,7 @@ namespace UniPlaySong.Services
                         playAction: () =>
                         {
                             _musicPlayer.Load(newSongPath);
-                            _musicPlayer.Volume = 0; // NAudio Load() creates new VolumeSampleProvider at 1.0 — must reset before Play()
+                            _musicPlayer.Volume = 0; // Ensure volume starts at 0 before fade-in
                             _currentSongPath = newSongPath;
                             ClearAllPauseSources();
 
@@ -1457,7 +1457,7 @@ namespace UniPlaySong.Services
                             _currentSongPath = songToPlay;
 
                             _musicPlayer.Load(songToPlay);
-                            _musicPlayer.Volume = 0; // NAudio Load() creates new VolumeSampleProvider at 1.0 — must reset before Play()
+                            _musicPlayer.Volume = 0; // Ensure volume starts at 0 before fade-in
                             _musicPlayer.Play(TimeSpan.Zero);
 
                             MarkSongStart();

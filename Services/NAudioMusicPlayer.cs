@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Media;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+
 using Playnite.SDK;
 using UniPlaySong.Audio;
 
@@ -21,7 +21,7 @@ namespace UniPlaySong.Services
         private WaveOutEvent _outputDevice;
         private EffectsChain _effectsChain;
         private VisualizationDataProvider _visualizationProvider;
-        private VolumeSampleProvider _volumeProvider;
+        private SmoothVolumeSampleProvider _volumeProvider;
         private readonly SettingsService _settingsService;
         private bool _isDisposed;
 
@@ -76,7 +76,7 @@ namespace UniPlaySong.Services
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
                 _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
                 VisualizationDataProvider.Current = _visualizationProvider;
-                _volumeProvider = new VolumeSampleProvider(_visualizationProvider);
+                _volumeProvider = new SmoothVolumeSampleProvider(_visualizationProvider);
 
                 _outputDevice = new WaveOutEvent();
                 _outputDevice.PlaybackStopped += OnPlaybackStopped;
@@ -207,6 +207,11 @@ namespace UniPlaySong.Services
             {
                 Logger.Error(ex, $"[{LogPrefix}] Error during close");
             }
+        }
+
+        public void SetVolumeRamp(double targetVolume, double durationSeconds)
+        {
+            _volumeProvider?.SetTargetWithRamp((float)targetVolume, (float)durationSeconds);
         }
 
         private void OnPlaybackStopped(object sender, StoppedEventArgs e)

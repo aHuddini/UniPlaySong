@@ -1,10 +1,10 @@
-# NAudio Smooth Volume Fix — Implementation Plan
+# NAudio Audio Artifact Fix — Implementation Plan
 
-> **Status:** Attempted and reverted (2026-02-22). See design doc for test results and next steps.
+> **Status:** Implemented and verified (2026-02-22). Option 1 succeeded.
 
-**Goal:** Eliminate tremolo/stutter artifact in NAudio mode by replacing `VolumeSampleProvider` with a per-sample linear ramp provider.
+**Goal:** Eliminate tremolo/stutter artifact in NAudio mode by replacing the fader's per-tick volume stepping with a single `SetVolumeRamp()` call per fade phase, delegating per-sample interpolation to the audio thread.
 
-**Architecture:** Drop-in swap — one new file, three lines changed in NAudioMusicPlayer.cs. Zero changes to MusicFader, MusicPlaybackService, or SDL2MusicPlayer.
+**Architecture:** New `SetVolumeRamp` method on `IMusicPlayer`. NAudio uses per-sample exponential ramp (`SmoothVolumeSampleProvider`). SDL2/WPF use their own DispatcherTimer with exponential curves. MusicFader rewritten to call `SetVolumeRamp` once and poll for completion.
 
 ---
 
@@ -13,131 +13,58 @@
 **Files:**
 - Create: `Audio/SmoothVolumeSampleProvider.cs`
 
-**Implementation:**
+Per-sample exponential-curve volume ramp for NAudio pipeline. `SetTargetWithRamp(target, duration)` called once by fader. Position-based progress, `progress^2` fade-in, `1-(1-progress)^2` fade-out. `Volume` setter for instant sets (no ramp).
 
-```csharp
-using System.Runtime.CompilerServices;
-using NAudio.Wave;
+## Task 2: Add SetVolumeRamp to IMusicPlayer
 
-namespace UniPlaySong.Audio
-{
-    // Per-sample linear volume ramp: smooths the fader's ~60 discrete volume steps/sec
-    // into continuous interpolation on the audio thread. Eliminates discontinuities that
-    // reverb's comb filters would otherwise amplify into audible tremolo.
-    public class SmoothVolumeSampleProvider : ISampleProvider
-    {
-        private readonly ISampleProvider _source;
-        private readonly int _rampSamples;
-        private float _currentVolume;
-        private volatile float _targetVolume;
-        private float _rampIncrement;
-        private bool _isRamping;
+**Files:**
+- Modify: `Services/IMusicPlayer.cs`
 
-        public WaveFormat WaveFormat => _source.WaveFormat;
+Added `void SetVolumeRamp(double targetVolume, double durationSeconds)`.
 
-        public float Volume
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _currentVolume;
-            set
-            {
-                float target = value;
-                _targetVolume = target;
-                float delta = target - _currentVolume;
-                if (delta == 0f || _rampSamples <= 1)
-                {
-                    _currentVolume = target;
-                    _isRamping = false;
-                    return;
-                }
-                _rampIncrement = delta / _rampSamples;
-                _isRamping = true;
-            }
-        }
-
-        public SmoothVolumeSampleProvider(ISampleProvider source)
-        {
-            _source = source;
-            _currentVolume = 0f;
-            _targetVolume = 0f;
-            _isRamping = false;
-            // ~16ms of samples at source sample rate x channels (interleaved)
-            _rampSamples = (int)(source.WaveFormat.SampleRate * source.WaveFormat.Channels * 0.016f);
-            if (_rampSamples < 1) _rampSamples = 1;
-        }
-
-        public int Read(float[] buffer, int offset, int count)
-        {
-            int read = _source.Read(buffer, offset, count);
-            if (read == 0) return 0;
-
-            float vol = _currentVolume;
-
-            if (!_isRamping)
-            {
-                // Steady state: constant volume (fast paths)
-                if (vol == 0f)
-                {
-                    for (int i = 0; i < read; i++)
-                        buffer[offset + i] = 0f;
-                }
-                else if (vol != 1f)
-                {
-                    for (int i = 0; i < read; i++)
-                        buffer[offset + i] *= vol;
-                }
-                // vol == 1f: pass through unmodified
-                return read;
-            }
-
-            // Ramping: per-sample linear interpolation
-            float inc = _rampIncrement;
-            float target = _targetVolume;
-            bool rampingUp = inc > 0f;
-
-            for (int i = 0; i < read; i++)
-            {
-                buffer[offset + i] *= vol;
-                vol += inc;
-                // Clamp at target
-                if (rampingUp ? vol >= target : vol <= target)
-                {
-                    vol = target;
-                    _isRamping = false;
-                    inc = 0f; // Rest of buffer at constant target volume
-                }
-            }
-
-            _currentVolume = vol;
-            return read;
-        }
-    }
-}
-```
-
-## Task 2: Wire into NAudioMusicPlayer
+## Task 3: Wire into NAudioMusicPlayer
 
 **Files:**
 - Modify: `Services/NAudioMusicPlayer.cs`
 
-**Changes (3 lines):**
+**Changes:**
+1. Removed `using NAudio.Wave.SampleProviders;`
+2. Changed field: `VolumeSampleProvider` → `SmoothVolumeSampleProvider`
+3. Changed construction: `new VolumeSampleProvider(...)` → `new SmoothVolumeSampleProvider(...)`
+4. Added `SetVolumeRamp` delegating to `_volumeProvider.SetTargetWithRamp()`
 
-1. Remove `using NAudio.Wave.SampleProviders;` (only used for VolumeSampleProvider)
-2. Change field: `private VolumeSampleProvider _volumeProvider;` → `private SmoothVolumeSampleProvider _volumeProvider;`
-3. Change construction: `new VolumeSampleProvider(_visualizationProvider)` → `new SmoothVolumeSampleProvider(_visualizationProvider)`
+## Task 4: Implement SetVolumeRamp in SDL2MusicPlayer
 
-No other changes needed — `Volume` property setter already casts to `(float)value`, and `using UniPlaySong.Audio;` already exists.
+**Files:**
+- Modify: `Services/SDL2MusicPlayer.cs`
 
-## Task 3: Build and Package
+Own DispatcherTimer at 16ms (~60 steps/sec) with exponential curve matching old fader behavior. Also fixed `OnMusicFinishedInternal` to marshal `MediaEnded` to UI thread via `Dispatcher.BeginInvoke`.
 
-```bash
-dotnet clean -c Release
-dotnet build -c Release
-powershell -ExecutionPolicy Bypass -File scripts/package_extension.ps1
-```
+## Task 5: Implement SetVolumeRamp in MusicPlayer (WPF)
+
+**Files:**
+- Modify: `Services/MusicPlayer.cs`
+
+Same DispatcherTimer + exponential curve pattern as SDL2.
+
+## Task 6: Rewrite MusicFader
+
+**Files:**
+- Modify: `Players/MusicFader.cs`
+
+Replaced `System.Timers.Timer` (16ms, Dispatcher.Invoke, per-tick volume stepping) with `DispatcherTimer` (50ms, polling only). Calls `SetVolumeRamp` once per fade phase. Polls `_player.Volume` to detect completion and fire actions.
+
+Key fix: Resume from paused sets `_player.Volume = 0` before `_player.Resume()` to prevent blip.
+
+## Task 7: Update MusicPlaybackService comments
+
+**Files:**
+- Modify: `Services/MusicPlaybackService.cs`
+
+Updated 2 stale comments referencing `VolumeSampleProvider at 1.0`.
 
 ## Test Results
 
-**Initial testing (2026-02-22):** Artifact was absent for the first few game switches, then returned. This suggests per-sample volume smoothing helps but does not fully resolve the issue. The changes were reverted.
+**Option 3 (smooth provider only):** Failed — fader's ~60/sec Volume setter calls conflicted with audio-thread ramp.
 
-**Next steps:** Consider Option 1 (fader rewrite with `SetVolumeRamp()` + `DispatcherTimer` monitor) or investigate whether the per-song WaveOutEvent recreation contributes to the artifact independently of volume stepping.
+**Option 1 (full implementation):** Succeeded — no artifact on game switching, pause/resume, or alt-tab.
