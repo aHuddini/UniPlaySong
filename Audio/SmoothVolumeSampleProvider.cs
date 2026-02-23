@@ -7,7 +7,7 @@ namespace UniPlaySong.Audio
     // The fader calls SetTargetWithRamp() once per fade phase.
     // The audio thread applies an exponential curve per-sample — no discrete steps,
     // no timer jitter, no rate-of-change discontinuities through reverb.
-    // Curves match SDL2/WPF: fade-in = progress^2, fade-out = 1-(1-progress)^2.
+    // Curves: fade-in = progress^2 (slow start), fade-out = linear (even spread).
     // The fader polls Volume (getter) to detect when the ramp completes.
     public class SmoothVolumeSampleProvider : ISampleProvider
     {
@@ -23,7 +23,17 @@ namespace UniPlaySong.Audio
         private bool _isRamping;
         private bool _isRampingDown;
 
+        // Diagnostic: track ramp transitions for logging
+        private int _rampCompletionCount;
+        private float _lastRampStartVol;
+        private float _lastRampEndVol;
+
         public WaveFormat WaveFormat => _source.WaveFormat;
+
+        public bool IsRamping => _isRamping;
+
+        // Diagnostic snapshot for logging
+        public string DiagSnapshot => $"vol={_currentVolume:F4}, target={_rampTarget:F4}, ramping={_isRamping}, down={_isRampingDown}, pos={_rampPosition}/{_rampTotalSamples}, completions={_rampCompletionCount}";
 
         // Getter: returns actual current volume (audio-thread owned).
         // The fader polls this to detect ramp completion.
@@ -63,6 +73,7 @@ namespace UniPlaySong.Audio
             if (_rampTotalSamples <= 0) _rampTotalSamples = 1;
 
             _rampStartVolume = _currentVolume;
+            _lastRampStartVol = _currentVolume;
             _rampTarget = target;
             _rampPosition = 0;
             _isRampingDown = target < _currentVolume;
@@ -107,6 +118,8 @@ namespace UniPlaySong.Audio
                 {
                     vol = target;
                     _isRamping = false;
+                    _lastRampEndVol = vol;
+                    _rampCompletionCount++;
                     // Fill remaining samples at target volume
                     buffer[offset + i] *= vol;
                     for (int j = i + 1; j < read; j++)
@@ -118,9 +131,8 @@ namespace UniPlaySong.Audio
 
                 if (down)
                 {
-                    // Fade-out: 1-(1-progress)^2 — starts slow, speeds up
-                    float curve = 1f - (1f - progress) * (1f - progress);
-                    vol = startVol * (1f - curve);
+                    // Fade-out: linear ramp — even volume drop across the entire duration.
+                    vol = startVol * (1f - progress);
                 }
                 else
                 {

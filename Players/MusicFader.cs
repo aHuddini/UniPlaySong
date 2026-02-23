@@ -79,13 +79,19 @@ namespace UniPlaySong.Players
                 {
                     double target = _isFadingOut ? 0.0 : musicVolume;
                     double duration = _snapDuration;
+                    _fileLogger?.Debug($"[Fader] Tick — starting ramp: target={target:F4}, duration={duration:F3}s, currentVol={currentVol:F4}, fadingOut={_isFadingOut}");
                     _player.SetVolumeRamp(target, duration);
                     _rampStarted = true;
+                }
+                else
+                {
+                    _fileLogger?.Debug($"[Fader] Tick — polling: vol={currentVol:F4}, fadingOut={_isFadingOut}, hasPause={_pauseAction != null}, hasPlay={_playAction != null}, hasStop={_stopAction != null}");
                 }
 
                 // Handle song switching when fade-out reaches zero
                 if (_isFadingOut && currentVol <= 0.0001 && _pauseAction == null && _playAction != null)
                 {
+                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete, switching song");
                     _player.Volume = 0;
                     _stopAction?.Invoke();
                     _playAction.Invoke();
@@ -101,6 +107,7 @@ namespace UniPlaySong.Players
                 // Handle fade-in complete
                 if (!_isFadingOut && _rampStarted && currentVol >= musicVolume - 0.001)
                 {
+                    _fileLogger?.Debug($"[Fader] Tick — fade-in complete: vol={currentVol:F4}, target={musicVolume:F4}");
                     _player.Volume = musicVolume;
                     _fadeTimer?.Stop();
                     return;
@@ -109,6 +116,7 @@ namespace UniPlaySong.Players
                 // Handle fade-out complete for pause/stop
                 if (_isFadingOut && currentVol <= 0.0001 && (_pauseAction != null || _stopAction != null))
                 {
+                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete for {(_pauseAction != null ? "PAUSE" : "STOP")}: vol={currentVol:F4}");
                     _player.Volume = 0;
                     _pauseAction?.Invoke();
                     _stopAction?.Invoke();
@@ -146,9 +154,11 @@ namespace UniPlaySong.Players
 
         public void Pause()
         {
+            _fileLogger?.Debug($"[Fader] Pause() called — vol={_player.Volume:F4}, isFadingOut={_isFadingOut}, isPaused={_isPaused}");
             _isFadingOut = true;
             _pauseAction = _player.Pause;
             SnapshotFadeParams();
+            _fileLogger?.Debug($"[Fader] Pause() snap — target=0, duration={_snapDuration:F3}s, musicVol={_snapVolume:F4}");
             EnsureTimer();
         }
 
@@ -177,12 +187,14 @@ namespace UniPlaySong.Players
 
         public void Resume()
         {
+            _fileLogger?.Debug($"[Fader] Resume() called — vol={_player.Volume:F4}, isPaused={_isPaused}, isFadingOut={_isFadingOut}, hasPlay={_playAction != null}, hasStop={_stopAction != null}");
             if (!_isPaused)
             {
                 _pauseAction = null;
                 if (_playAction == null && _stopAction == null)
                 {
                     // Reversing a fade-out that hasn't completed — switch to fading in
+                    _fileLogger?.Debug($"[Fader] Resume() — reversing incomplete fade-out, switching to fade-in");
                     _isFadingOut = false;
                 }
             }
@@ -190,6 +202,7 @@ namespace UniPlaySong.Players
             {
                 if (_playAction != null || _stopAction != null)
                 {
+                    _fileLogger?.Debug($"[Fader] Resume() — executing pending play/stop actions");
                     _stopAction?.Invoke();
                     _playAction?.Invoke();
                     _player.Volume = 0;
@@ -199,13 +212,17 @@ namespace UniPlaySong.Players
                 {
                     // Ensure volume is 0 before resuming so the fade-in ramp starts
                     // from silence — prevents a blip at the volume the player was paused at
+                    _fileLogger?.Debug($"[Fader] Resume() — setting vol=0, then calling player.Resume()");
                     _player.Volume = 0;
+                    _fileLogger?.Debug($"[Fader] Resume() — vol after set: {_player.Volume:F4}");
                     _player.Resume();
+                    _fileLogger?.Debug($"[Fader] Resume() — player resumed, vol now: {_player.Volume:F4}");
                 }
                 _isPaused = false;
                 _isFadingOut = false;
             }
             SnapshotFadeParams();
+            _fileLogger?.Debug($"[Fader] Resume() snap — target={_snapVolume:F4}, duration={_snapDuration:F3}s, isFadingOut={_isFadingOut}");
             EnsureTimer();
         }
 

@@ -1975,7 +1975,7 @@ namespace UniPlaySong
             {
                 try
                 {
-                    var player = new NAudioMusicPlayer(_settingsService);
+                    var player = new NAudioMusicPlayer(_settingsService, _fileLogger);
                     // NAudioMusicPlayer initialized (Live Effects enabled)
                     _isUsingLiveEffectsPlayer = true;
                     return player;

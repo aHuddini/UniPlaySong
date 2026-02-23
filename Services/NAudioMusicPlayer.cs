@@ -4,6 +4,7 @@ using NAudio.Wave;
 
 using Playnite.SDK;
 using UniPlaySong.Audio;
+using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
@@ -16,6 +17,7 @@ namespace UniPlaySong.Services
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "NAudioPlayer";
+        private FileLogger _fileLogger;
 
         private AudioFileReader _audioFile;
         private WaveOutEvent _outputDevice;
@@ -24,6 +26,12 @@ namespace UniPlaySong.Services
         private SmoothVolumeSampleProvider _volumeProvider;
         private readonly SettingsService _settingsService;
         private bool _isDisposed;
+
+        // Logical pause state. WaveOutEvent stays running to avoid stale-buffer blips.
+        // The fader sets volume to 0 before "pausing" — the audio thread outputs silence.
+        // Position is saved on pause and restored on resume so the song doesn't drift.
+        private bool _logicallyPaused;
+        private TimeSpan _pausedPosition;
 
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
@@ -34,21 +42,28 @@ namespace UniPlaySong.Services
             set
             {
                 if (_volumeProvider != null)
+                {
+                    _fileLogger?.Debug($"[NAudio] Volume SET: {_volumeProvider.Volume:F4} → {value:F4} (instant, cancels ramp)");
                     _volumeProvider.Volume = (float)value;
+                }
             }
         }
 
         public bool IsLoaded { get; private set; }
 
+        // WaveOutEvent never pauses — it stays Playing while logically paused (volume=0).
+        // IsActive returns true for both playing and logically-paused states so
+        // MusicPlaybackService takes the fader.Resume() path instead of musicPlayer.Play().
         public bool IsActive => _outputDevice?.PlaybackState == PlaybackState.Playing;
 
         public TimeSpan? CurrentTime => _audioFile?.CurrentTime;
 
         public string Source { get; private set; }
 
-        public NAudioMusicPlayer(SettingsService settingsService)
+        public NAudioMusicPlayer(SettingsService settingsService, FileLogger fileLogger = null)
         {
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+            _fileLogger = fileLogger;
         }
 
         public void PreLoad(string filePath)
@@ -131,29 +146,26 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Logical pause — WaveOutEvent keeps running, outputting silence (volume is already 0
+        // from the fader's fade-out). This avoids stale pre-rendered buffers that cause audio
+        // blips when WaveOutEvent.Pause()/Play() is used.
+        // Saves current position so resume can seek back (song advances at vol=0 otherwise).
         public void Pause()
         {
-            try
-            {
-                _outputDevice?.Pause();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"[{LogPrefix}] Failed to pause");
-            }
+            _pausedPosition = _audioFile?.CurrentTime ?? TimeSpan.Zero;
+            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, playbackState={_outputDevice?.PlaybackState}, vol={_volumeProvider?.Volume:F4}");
+            _logicallyPaused = true;
         }
 
+        // Logical resume — seeks back to saved position, then the fader ramps volume up.
         public void Resume()
         {
-            try
+            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, playbackState={_outputDevice?.PlaybackState}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
+            if (_audioFile != null && _logicallyPaused)
             {
-                _outputDevice?.Play();
+                _audioFile.CurrentTime = _pausedPosition;
             }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"[{LogPrefix}] Failed to resume");
-                MediaFailed?.Invoke(this, null);
-            }
+            _logicallyPaused = false;
         }
 
         public void Stop()
@@ -211,6 +223,7 @@ namespace UniPlaySong.Services
 
         public void SetVolumeRamp(double targetVolume, double durationSeconds)
         {
+            _fileLogger?.Debug($"[NAudio] SetVolumeRamp({targetVolume:F4}, {durationSeconds:F3}s) — before: {_volumeProvider?.DiagSnapshot}");
             _volumeProvider?.SetTargetWithRamp((float)targetVolume, (float)durationSeconds);
         }
 
