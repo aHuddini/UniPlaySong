@@ -190,6 +190,16 @@ namespace UniPlaySong
         BelowNowPlaying     // Embedded inside now playing panel (below scrolling text)
     }
 
+    // Fade curve shapes for NAudio per-sample volume ramping
+    public enum FadeCurveType
+    {
+        Linear,     // Constant rate — sounds "stuck loud then cliff" on fade-out
+        Quadratic,  // progress² / (1-t)² — moderate curve
+        Cubic,      // progress³ / (1-t)³ — aggressive perceptual decay (default fade-out)
+        SCurve,     // Smoothstep 3t²-2t³ — gentle start and end, fast middle
+        Logarithmic // Log-based — fast initial change, slow tail
+    }
+
     public enum VizPreset
     {
         Custom = 0,
@@ -245,6 +255,10 @@ namespace UniPlaySong
         private bool showSpectrumVisualizer = true;
         private bool showPeakMeter = false;
         private bool autoDeleteMusicOnGameRemoval = true;
+
+        // NAudio fade curve experimentation
+        private FadeCurveType naudioFadeInCurve = FadeCurveType.Quadratic;
+        private FadeCurveType naudioFadeOutCurve = FadeCurveType.Cubic;
 
         // Gamification
         private bool enableCompletionCelebration = true;
@@ -673,6 +687,20 @@ namespace UniPlaySong
         {
             get => showPeakMeter;
             set { showPeakMeter = value; OnPropertyChanged(); }
+        }
+
+        // NAudio fade-in curve shape (only applies when Live Effects or Visualizer enabled)
+        public FadeCurveType NaudioFadeInCurve
+        {
+            get => naudioFadeInCurve;
+            set { naudioFadeInCurve = value; OnPropertyChanged(); }
+        }
+
+        // NAudio fade-out curve shape (only applies when Live Effects or Visualizer enabled)
+        public FadeCurveType NaudioFadeOutCurve
+        {
+            get => naudioFadeOutCurve;
+            set { naudioFadeOutCurve = value; OnPropertyChanged(); }
         }
 
         /// <summary>

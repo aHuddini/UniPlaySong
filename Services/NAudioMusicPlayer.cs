@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Media;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 using Playnite.SDK;
 using UniPlaySong.Audio;
@@ -8,28 +11,42 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// NAudio-based music player with live effects support.
-    /// Implements IMusicPlayer for integration with MusicPlaybackService.
-    /// Used when LiveEffectsEnabled is true in settings.
-    /// </summary>
+    // NAudio-based music player with persistent mixer architecture.
+    // A single WaveOutEvent + MixingSampleProvider lives for the lifetime of the player.
+    // Songs are swapped via AddMixerInput/RemoveMixerInput — no device create/destroy per song.
+    // This eliminates the ~70ms UI-thread freeze from WaveOutEvent lifecycle on every game switch.
     public class NAudioMusicPlayer : IMusicPlayer, IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "NAudioPlayer";
         private FileLogger _fileLogger;
 
-        private AudioFileReader _audioFile;
-        private WaveOutEvent _outputDevice;
-        private EffectsChain _effectsChain;
-        private VisualizationDataProvider _visualizationProvider;
-        private SmoothVolumeSampleProvider _volumeProvider;
         private readonly SettingsService _settingsService;
         private bool _isDisposed;
 
-        // Logical pause state. WaveOutEvent stays running to avoid stale-buffer blips.
-        // The fader sets volume to 0 before "pausing" — the audio thread outputs silence.
-        // Position is saved on pause and restored on resume so the song doesn't drift.
+        // Fixed mixer format — all songs resampled to match
+        private static readonly WaveFormat MixerFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
+
+        // Persistent infrastructure (created once on first Load, never stopped until Dispose)
+        private WaveOutEvent _outputDevice;
+        private MixingSampleProvider _mixer;
+        private SmoothVolumeSampleProvider _volumeProvider;
+        private bool _persistentLayerInitialized;
+
+        // Per-song chain (created on Load, removed on Close)
+        private AudioFileReader _audioFile;
+        private EffectsChain _effectsChain;
+        private VisualizationDataProvider _visualizationProvider;
+        private SongEndDetectorSampleProvider _songEndDetector;
+        private ISampleProvider _mixerInput; // Final provider added to mixer (after format normalization)
+        private bool _isInMixer;
+
+        // Preloaded file reader — created during fade-out to reduce Load() time
+        private AudioFileReader _preloadedAudioFile;
+        private string _preloadedPath;
+
+        // Logical state (replaces PlaybackState checks since WaveOutEvent never stops)
+        private bool _isPlaying;
         private bool _logicallyPaused;
         private TimeSpan _pausedPosition;
 
@@ -51,10 +68,8 @@ namespace UniPlaySong.Services
 
         public bool IsLoaded { get; private set; }
 
-        // WaveOutEvent never pauses — it stays Playing while logically paused (volume=0).
-        // IsActive returns true for both playing and logically-paused states so
-        // MusicPlaybackService takes the fader.Resume() path instead of musicPlayer.Play().
-        public bool IsActive => _outputDevice?.PlaybackState == PlaybackState.Playing;
+        // IsActive: true when playing or logically paused (so fader takes Resume path, not Play)
+        public bool IsActive => _isPlaying || _logicallyPaused;
 
         public TimeSpan? CurrentTime => _audioFile?.CurrentTime;
 
@@ -66,10 +81,83 @@ namespace UniPlaySong.Services
             _fileLogger = fileLogger;
         }
 
+        // Creates the persistent mixer + WaveOutEvent on first use.
+        // Mixer uses ReadFully=true so it outputs silence when no inputs are connected.
+        private void EnsurePersistentLayer()
+        {
+            if (_persistentLayerInitialized) return;
+
+            var sw = Stopwatch.StartNew();
+
+            _mixer = new MixingSampleProvider(MixerFormat) { ReadFully = true };
+
+            _volumeProvider = new SmoothVolumeSampleProvider(
+                _mixer,
+                getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
+                getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+
+            _outputDevice = new WaveOutEvent();
+            _outputDevice.PlaybackStopped += OnPlaybackStopped;
+            _outputDevice.Init(_volumeProvider);
+            _outputDevice.Play(); // Starts once, runs forever outputting silence until inputs added
+
+            _persistentLayerInitialized = true;
+
+            sw.Stop();
+            _fileLogger?.Debug($"[NAudio] EnsurePersistentLayer: {sw.ElapsedMilliseconds}ms (mixer+volume+device+play)");
+        }
+
+        // Error recovery: tears down the persistent layer so next Load() rebuilds it
+        private void TearDownPersistentLayer()
+        {
+            try
+            {
+                if (_outputDevice != null)
+                {
+                    _outputDevice.PlaybackStopped -= OnPlaybackStopped;
+                    _outputDevice.Stop();
+                    _outputDevice.Dispose();
+                    _outputDevice = null;
+                }
+                _mixer = null;
+                _volumeProvider = null;
+                _persistentLayerInitialized = false;
+                _fileLogger?.Debug("[NAudio] TearDownPersistentLayer complete");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] Error tearing down persistent layer");
+            }
+        }
+
         public void PreLoad(string filePath)
         {
-            // Preloading not implemented in v1 - placeholder for future dual-player implementation
-            // For now, this is a no-op. The file will be loaded fresh when Load() is called.
+            try
+            {
+                var sw = Stopwatch.StartNew();
+
+                if (_preloadedAudioFile != null)
+                {
+                    _preloadedAudioFile.Dispose();
+                    _preloadedAudioFile = null;
+                    _preloadedPath = null;
+                }
+
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    _preloadedAudioFile = new AudioFileReader(filePath);
+                    _preloadedPath = filePath;
+                }
+
+                sw.Stop();
+                _fileLogger?.Debug($"[NAudio] PreLoad: {sw.ElapsedMilliseconds}ms — {System.IO.Path.GetFileName(filePath)}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] Failed to preload: {filePath}");
+                _preloadedAudioFile = null;
+                _preloadedPath = null;
+            }
         }
 
         public void Load(string filePath)
@@ -82,30 +170,76 @@ namespace UniPlaySong.Services
 
             try
             {
-                Close();
+                var sw = Stopwatch.StartNew();
 
-                // Loading music file
+                RemoveCurrentSongChain();
+                long removeMs = sw.ElapsedMilliseconds;
 
-                _audioFile = new AudioFileReader(filePath);
+                EnsurePersistentLayer();
+                long persistMs = sw.ElapsedMilliseconds;
+
+                // Use preloaded AudioFileReader if path matches, otherwise load fresh
+                bool usedPreload = false;
+                if (_preloadedAudioFile != null && _preloadedPath == filePath)
+                {
+                    _audioFile = _preloadedAudioFile;
+                    _preloadedAudioFile = null;
+                    _preloadedPath = null;
+                    usedPreload = true;
+                }
+                else
+                {
+                    if (_preloadedAudioFile != null)
+                    {
+                        _preloadedAudioFile.Dispose();
+                        _preloadedAudioFile = null;
+                        _preloadedPath = null;
+                    }
+                    _audioFile = new AudioFileReader(filePath);
+                }
+                long readerMs = sw.ElapsedMilliseconds;
+
                 _effectsChain = new EffectsChain(_audioFile, _settingsService);
+                long chainMs = sw.ElapsedMilliseconds;
+
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
                 _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
                 VisualizationDataProvider.Current = _visualizationProvider;
-                _volumeProvider = new SmoothVolumeSampleProvider(_visualizationProvider);
+                long vizMs = sw.ElapsedMilliseconds;
 
-                _outputDevice = new WaveOutEvent();
-                _outputDevice.PlaybackStopped += OnPlaybackStopped;
-                _outputDevice.Init(_volumeProvider);
+                // Song end detection — fires when source returns fewer samples than requested
+                _songEndDetector = new SongEndDetectorSampleProvider(_visualizationProvider);
+                _songEndDetector.SongEnded += OnSongEnded;
+
+                // Format normalization for mixer compatibility (44100Hz stereo float)
+                ISampleProvider normalized = _songEndDetector;
+
+                // Mono → stereo
+                if (normalized.WaveFormat.Channels == 1)
+                {
+                    normalized = new MonoToStereoSampleProvider(normalized);
+                }
+
+                // Resample if sample rate doesn't match mixer
+                if (normalized.WaveFormat.SampleRate != MixerFormat.SampleRate)
+                {
+                    normalized = new WdlResamplingSampleProvider(normalized, MixerFormat.SampleRate);
+                }
+
+                _mixerInput = normalized;
+                long normalizeMs = sw.ElapsedMilliseconds;
 
                 Source = filePath;
                 IsLoaded = true;
+                _logicallyPaused = false;
 
-                // Loaded successfully
+                sw.Stop();
+                _fileLogger?.Debug($"[NAudio] Load: {sw.ElapsedMilliseconds}ms total (Remove={removeMs}, Persist={persistMs - removeMs}, Reader={readerMs - persistMs}{(usedPreload ? " PRELOADED" : "")}, Chain={chainMs - readerMs}, Viz={vizMs - chainMs}, Normalize={normalizeMs - vizMs}) — {System.IO.Path.GetFileName(filePath)}");
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"[{LogPrefix}] Failed to load: {filePath}");
-                Close();
+                RemoveCurrentSongChain();
                 MediaFailed?.Invoke(this, null);
             }
         }
@@ -114,13 +248,23 @@ namespace UniPlaySong.Services
         {
             try
             {
-                // If the audio has reached the end, seek back to the beginning before playing
-                // This is necessary for looping - NAudio doesn't auto-reset position on Play()
+                if (_mixerInput == null || _mixer == null) return;
+
+                // If the audio has reached the end, seek back to the beginning (for looping)
                 if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
                 {
                     _audioFile.CurrentTime = TimeSpan.Zero;
+                    _songEndDetector?.Reset();
                 }
-                _outputDevice?.Play();
+
+                if (!_isInMixer)
+                {
+                    _mixer.AddMixerInput(_mixerInput);
+                    _isInMixer = true;
+                }
+
+                _isPlaying = true;
+                _logicallyPaused = false;
             }
             catch (Exception ex)
             {
@@ -137,7 +281,7 @@ namespace UniPlaySong.Services
                 {
                     _audioFile.CurrentTime = startFrom;
                 }
-                _outputDevice?.Play();
+                Play();
             }
             catch (Exception ex)
             {
@@ -146,40 +290,44 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Logical pause — WaveOutEvent keeps running, outputting silence (volume is already 0
-        // from the fader's fade-out). This avoids stale pre-rendered buffers that cause audio
-        // blips when WaveOutEvent.Pause()/Play() is used.
-        // Saves current position so resume can seek back (song advances at vol=0 otherwise).
+        // Logical pause — song stays in mixer outputting silence (volume already 0 from fader).
+        // Position is saved so resume can seek back (song advances at vol=0 otherwise).
         public void Pause()
         {
             _pausedPosition = _audioFile?.CurrentTime ?? TimeSpan.Zero;
-            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, playbackState={_outputDevice?.PlaybackState}, vol={_volumeProvider?.Volume:F4}");
+            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, vol={_volumeProvider?.Volume:F4}");
             _logicallyPaused = true;
+            _isPlaying = false;
         }
 
         // Logical resume — seeks back to saved position, then the fader ramps volume up.
+        // If the song ended while paused (short track EOF), re-adds to mixer from saved position.
         public void Resume()
         {
-            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, playbackState={_outputDevice?.PlaybackState}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
-            if (_audioFile != null && _logicallyPaused)
+            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={_isInMixer}");
+            if (_audioFile != null)
             {
                 _audioFile.CurrentTime = _pausedPosition;
+
+                // Song ended while paused — re-add to mixer so audio flows again
+                if (!_isInMixer && _mixerInput != null && _mixer != null)
+                {
+                    _songEndDetector?.Reset();
+                    _mixer.AddMixerInput(_mixerInput);
+                    _isInMixer = true;
+                    _fileLogger?.Debug("[NAudio] Resume() — re-added to mixer after EOF during pause");
+                }
             }
             _logicallyPaused = false;
+            _isPlaying = true;
         }
 
         public void Stop()
         {
             try
             {
-                if (_outputDevice != null)
-                {
-                    // Remove handler BEFORE stopping to prevent MediaEnded being fired
-                    _outputDevice.PlaybackStopped -= OnPlaybackStopped;
-                    _outputDevice.Stop();
-                    // Re-attach handler for future playback
-                    _outputDevice.PlaybackStopped += OnPlaybackStopped;
-                }
+                RemoveSongFromMixer();
+                _isPlaying = false;
             }
             catch (Exception ex)
             {
@@ -191,29 +339,17 @@ namespace UniPlaySong.Services
         {
             try
             {
-                if (_outputDevice != null)
-                {
-                    _outputDevice.PlaybackStopped -= OnPlaybackStopped;
-                    _outputDevice.Stop();
-                    _outputDevice.Dispose();
-                    _outputDevice = null;
-                }
+                var sw = Stopwatch.StartNew();
 
-                _effectsChain = null;
-                if (VisualizationDataProvider.Current == _visualizationProvider)
-                    VisualizationDataProvider.Current = null;
-                _visualizationProvider?.Dispose();
-                _visualizationProvider = null;
-                _volumeProvider = null;
+                RemoveCurrentSongChain();
 
-                if (_audioFile != null)
-                {
-                    _audioFile.Dispose();
-                    _audioFile = null;
-                }
+                sw.Stop();
+                _fileLogger?.Debug($"[NAudio] Close: {sw.ElapsedMilliseconds}ms");
 
                 IsLoaded = false;
                 Source = null;
+                _isPlaying = false;
+                _logicallyPaused = false;
             }
             catch (Exception ex)
             {
@@ -227,17 +363,88 @@ namespace UniPlaySong.Services
             _volumeProvider?.SetTargetWithRamp((float)targetVolume, (float)durationSeconds);
         }
 
+        // Removes current song chain from mixer and disposes per-song resources.
+        // Does NOT touch the persistent layer (device/mixer/volume provider).
+        private void RemoveCurrentSongChain()
+        {
+            RemoveSongFromMixer();
+
+            if (_songEndDetector != null)
+            {
+                _songEndDetector.SongEnded -= OnSongEnded;
+                _songEndDetector = null;
+            }
+
+            _effectsChain = null;
+
+            if (VisualizationDataProvider.Current == _visualizationProvider)
+                VisualizationDataProvider.Current = null;
+            _visualizationProvider?.Dispose();
+            _visualizationProvider = null;
+
+            _mixerInput = null;
+
+            if (_audioFile != null)
+            {
+                _audioFile.Dispose();
+                _audioFile = null;
+            }
+        }
+
+        // Guarded removal from mixer — only calls RemoveMixerInput if actually in mixer
+        private void RemoveSongFromMixer()
+        {
+            if (_isInMixer && _mixerInput != null && _mixer != null)
+            {
+                try
+                {
+                    _mixer.RemoveMixerInput(_mixerInput);
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"[NAudio] RemoveSongFromMixer: {ex.Message}");
+                }
+                _isInMixer = false;
+            }
+        }
+
+        // Called on the audio thread when song reaches EOF.
+        // MixingSampleProvider auto-removes the input on partial read (read < count),
+        // so _isInMixer must be set false here. MediaEnded is marshaled to the UI thread.
+        // Also clears _logicallyPaused so IsActive returns false — this lets the fader's
+        // stall detection kick in if the song ended during a fade-out pause.
+        private void OnSongEnded()
+        {
+            _isInMixer = false;
+            _isPlaying = false;
+            _logicallyPaused = false;
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher != null)
+                {
+                    dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        MediaEnded?.Invoke(this, EventArgs.Empty);
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] Error dispatching MediaEnded from SongEndDetector");
+            }
+        }
+
+        // Device-level error (hardware disconnect, driver crash, etc.)
+        // Tears down persistent layer so next Load() rebuilds it fresh.
         private void OnPlaybackStopped(object sender, StoppedEventArgs e)
         {
             if (e.Exception != null)
             {
-                Logger.Error(e.Exception, $"[{LogPrefix}] Playback stopped with error");
+                Logger.Error(e.Exception, $"[{LogPrefix}] Playback stopped with error — tearing down persistent layer");
+                TearDownPersistentLayer();
                 MediaFailed?.Invoke(this, null);
-            }
-            else if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
-            {
-                // Song reached the end (with small tolerance for timing)
-                MediaEnded?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -245,8 +452,48 @@ namespace UniPlaySong.Services
         {
             if (!_isDisposed)
             {
-                Close();
+                RemoveCurrentSongChain();
+                TearDownPersistentLayer();
+
+                if (_preloadedAudioFile != null)
+                {
+                    _preloadedAudioFile.Dispose();
+                    _preloadedAudioFile = null;
+                    _preloadedPath = null;
+                }
+
                 _isDisposed = true;
+            }
+        }
+
+        // Thin wrapper that detects when the source returns fewer samples than requested (EOF).
+        // MixingSampleProvider auto-removes inputs on partial reads (read < count), NOT on read == 0.
+        // So the detector must fire on the partial read — the zero-read is unreachable after removal.
+        private class SongEndDetectorSampleProvider : ISampleProvider
+        {
+            private readonly ISampleProvider _source;
+            private bool _ended;
+            public event Action SongEnded;
+            public WaveFormat WaveFormat => _source.WaveFormat;
+
+            public SongEndDetectorSampleProvider(ISampleProvider source)
+            {
+                _source = source ?? throw new ArgumentNullException(nameof(source));
+            }
+
+            // Reset for looping — allows the detector to fire again on next EOF
+            public void Reset() { _ended = false; }
+
+            public int Read(float[] buffer, int offset, int count)
+            {
+                if (_ended) return 0;
+                int read = _source.Read(buffer, offset, count);
+                if (read < count && !_ended)
+                {
+                    _ended = true;
+                    SongEnded?.Invoke();
+                }
+                return read;
             }
         }
     }

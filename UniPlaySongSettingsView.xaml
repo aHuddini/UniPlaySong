@@ -18,6 +18,7 @@
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
         <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
         <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
+        <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -3322,6 +3323,42 @@
                               IsChecked="{Binding Settings.EnableMediaKeyControl}"
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- NAudio Fade Curve Tuning -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="NAudio Fade Curves" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Only applies when Live Effects or Visualizer is enabled (NAudio pipeline)"
+                               FontSize="11" FontStyle="Italic" Foreground="#90A8A0" Margin="0,0,0,8"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                        <TextBlock Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
+                        <ComboBox SelectedIndex="{Binding Settings.NaudioFadeInCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                                  Width="150">
+                            <ComboBoxItem Content="Linear"/>
+                            <ComboBoxItem Content="Quadratic"/>
+                            <ComboBoxItem Content="Cubic"/>
+                            <ComboBoxItem Content="S-Curve"/>
+                            <ComboBoxItem Content="Logarithmic"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                        <TextBlock Text="Fade-out curve:" VerticalAlignment="Center" Width="110"/>
+                        <ComboBox SelectedIndex="{Binding Settings.NaudioFadeOutCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                                  Width="150">
+                            <ComboBoxItem Content="Linear"/>
+                            <ComboBoxItem Content="Quadratic"/>
+                            <ComboBoxItem Content="Cubic"/>
+                            <ComboBoxItem Content="S-Curve"/>
+                            <ComboBoxItem Content="Logarithmic"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <TextBlock Text="Linear: constant rate. Quadratic: moderate curve. Cubic: aggressive perceptual decay (default fade-out). S-Curve: gentle start/end, fast middle. Logarithmic: fast initial change, slow tail."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

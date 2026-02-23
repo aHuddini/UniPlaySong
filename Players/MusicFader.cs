@@ -40,6 +40,10 @@ namespace UniPlaySong.Players
         // Track whether we've already kicked off the audio-thread ramp for this phase
         private bool _rampStarted;
 
+        // True when paused with a pending play action (e.g., pause interrupted a song switch).
+        // MusicPlaybackService checks this on RemovePauseSource to execute the orphaned action.
+        public bool HasPendingPlayAction => _isPaused && _playAction != null;
+
 
 
         public MusicFader(IMusicPlayer player, Func<double> getMusicVolume, Func<double> getFadeInDuration, Func<double> getFadeOutDuration, ErrorHandlerService errorHandler = null, FileLogger fileLogger = null)
@@ -99,12 +103,12 @@ namespace UniPlaySong.Players
                 if (_isFadingOut && (currentVol <= 0.0001 || rampStalled) && _pauseAction == null && _playAction != null)
                 {
                     _fileLogger?.Debug($"[Fader] Tick — fade-out complete{(rampStalled ? " (stalled)" : "")}, switching song");
-                    _player.Volume = 0;
-                    _stopAction?.Invoke();
+                    if (rampStalled) _player.Volume = 0;
 
-                    // Defer playAction to a separate dispatcher frame so the UI thread
-                    // can process pending messages between Close() and Load()+Play().
-                    // Without this, the combined Close+Load+Play blocks the UI for 150-500ms.
+                    // Defer both Close() and Load()+Play() to a separate dispatcher frame.
+                    // Close() disposes WaveOutEvent (~15ms) and Load() creates a new one (~57ms).
+                    // Running either in the timer tick blocks the UI thread during game navigation.
+                    var pendingStop = _stopAction;
                     var pendingPlay = _playAction;
                     _isFadingOut = false;
                     _stopAction = _playAction = null;
@@ -114,6 +118,7 @@ namespace UniPlaySong.Players
                     {
                         try
                         {
+                            pendingStop?.Invoke();
                             pendingPlay.Invoke();
                             SnapshotFadeParams();
                             _rampStarted = false;
@@ -140,7 +145,7 @@ namespace UniPlaySong.Players
                 if (_isFadingOut && (currentVol <= 0.0001 || rampStalled) && (_pauseAction != null || _stopAction != null))
                 {
                     _fileLogger?.Debug($"[Fader] Tick — fade-out complete{(rampStalled ? " (stalled)" : "")} for {(_pauseAction != null ? "PAUSE" : "STOP")}: vol={currentVol:F4}");
-                    _player.Volume = 0;
+                    if (rampStalled || _pauseAction != null) _player.Volume = 0;
                     _pauseAction?.Invoke();
                     _stopAction?.Invoke();
                     _isPaused = _pauseAction != null;

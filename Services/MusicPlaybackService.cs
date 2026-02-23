@@ -198,7 +198,15 @@ namespace UniPlaySong.Services
 
             if (wasPaused && !_isPaused)
             {
-                if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+                // Interrupted switch: pause arrived during a song-switch fade-out, orphaning
+                // the play action. Resume the fader to execute the pending load+play.
+                if (_fader?.HasPendingPlayAction == true)
+                {
+                    _fileLogger?.Debug($"Resume: {source} removed — fader has pending play action (interrupted switch)");
+                    _fader.Resume();
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
                     // Player is loaded and actively playing (was paused mid-playback) — resume via fader
                     _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
@@ -257,7 +265,14 @@ namespace UniPlaySong.Services
 
             if (wasPaused && !_isPaused)
             {
-                if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+                // Interrupted switch: fader has orphaned play action from a paused song switch
+                if (_fader?.HasPendingPlayAction == true)
+                {
+                    _fileLogger?.Debug($"Resume (instant): {source} removed — fader has pending play action (interrupted switch)");
+                    _fader.Resume();
+                    OnPlaybackStateChanged?.Invoke();
+                }
+                else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
                     _fileLogger?.Debug($"Resume (instant): {source} removed (no pause sources remaining)");
                     _musicPlayer.Resume();
