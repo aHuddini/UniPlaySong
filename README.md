@@ -28,7 +28,7 @@ Built with the help of Claude Code and Cursor IDE
 - [Performance] **Game Switch UI Lag Eliminated** — Eliminated an annoying ~70ms UI delay that occurred on every game switch when Live Effects or Visualizer was enabled (where faders masked this issue and it was apparent on lower-end hardware). Optimizations with NAudio should hopefully reduce unnecessary overhead with Playnite's UI.
 - [Bugfix] **Short Track Reliability** — Short audio clips no longer get stuck or freeze playback controls when used with Live Effects.
 - [Bugfix] **Pause/Resume Stability** — Fixed several edge cases where music could fail to resume after pausing, especially during game switches or with short tracks.
-- [Improved] **Fade Duration Slider** — Refined range (0.10–5s), finer 0.05s tick granularity for precise control, and a note about how Live Effects influence fade perception.
+- [Improved] **Fade-In/Out Duration Slider** — Refined range (0.10–5s), finer 0.05s tick granularity for precise control, and a note about how Live Effects influence fade perception.
 
 ### Previous Version
 - **v1.3.2**: Taskbar Thumbnail Media Controls, Global Media Key Control, Auto-Cleanup Empty Folders, M3U Playlist Export, Extended Default Music Sources, PS2 Menu Ambience, Per-Tab Reset Buttons, Improved Default Settings, Settings Reorganization
