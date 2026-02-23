@@ -40,10 +40,7 @@ namespace UniPlaySong.Players
         // Track whether we've already kicked off the audio-thread ramp for this phase
         private bool _rampStarted;
 
-        // Post-fade delay: lets reverb tail decay before destroying the audio chain.
-        // Counts timer ticks (50ms each) after fade-out reaches 0 before executing stop/play.
-        private int _postFadeDelayTicks;
-        private const int PostFadeDelayTickCount = 2; // 100ms (2 × 50ms ticks)
+
 
         public MusicFader(IMusicPlayer player, Func<double> getMusicVolume, Func<double> getFadeInDuration, Func<double> getFadeOutDuration, ErrorHandlerService errorHandler = null, FileLogger fileLogger = null)
         {
@@ -96,22 +93,13 @@ namespace UniPlaySong.Players
                 // Handle song switching when fade-out reaches zero
                 if (_isFadingOut && currentVol <= 0.0001 && _pauseAction == null && _playAction != null)
                 {
-                    _player.Volume = 0;
-
-                    // Post-fade delay: let reverb tail decay before destroying the audio chain
-                    if (_postFadeDelayTicks < PostFadeDelayTickCount)
-                    {
-                        _postFadeDelayTicks++;
-                        return;
-                    }
-
                     _fileLogger?.Debug($"[Fader] Tick — fade-out complete, switching song");
+                    _player.Volume = 0;
                     _stopAction?.Invoke();
                     _playAction.Invoke();
 
                     _isFadingOut = false;
                     _stopAction = _playAction = null;
-                    _postFadeDelayTicks = 0;
                     // Re-snapshot for fade-in phase
                     SnapshotFadeParams();
                     _rampStarted = false; // Next tick will start fade-in ramp
@@ -160,7 +148,7 @@ namespace UniPlaySong.Players
         {
             _rampStarted = false;
             _preloadFired = false;
-            _postFadeDelayTicks = 0;
+
             if (_fadeTimer != null && !_fadeTimer.IsEnabled)
             {
                 _fadeTimer.Start();
@@ -262,7 +250,7 @@ namespace UniPlaySong.Players
             _playAction = null;
             _preloadAction = null;
             _rampStarted = false;
-            _postFadeDelayTicks = 0;
+
         }
 
         public void FadeOutAndStop(Action onComplete = null)
