@@ -1515,6 +1515,14 @@ namespace UniPlaySong.Services
                     // Fire OnSongEnded event before handling looping/randomization
                     OnSongEnded?.Invoke();
 
+                    // If paused (logical pause — WaveOutEvent reached EOF at vol=0), don't advance.
+                    // The song will restart from the saved position when resumed.
+                    if (_isPaused)
+                    {
+                        _fileLogger?.Debug($"OnMediaEnded: Ignoring — music is paused");
+                        return;
+                    }
+
                     // If SuppressAutoLoop is set, an external handler manages playback
                     if (SuppressAutoLoop)
                     {

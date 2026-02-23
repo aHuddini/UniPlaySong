@@ -10,8 +10,8 @@ namespace UniPlaySong.Common
 
         public const double DefaultFadeInDuration = 0.5;
         public const double DefaultFadeOutDuration = 0.3;
-        public const double MinFadeDuration = 0.05;
-        public const double MaxFadeDuration = 10.0;
+        public const double MinFadeDuration = 0.10;
+        public const double MaxFadeDuration = 5.0;
 
         #endregion
         

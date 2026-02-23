@@ -269,8 +269,13 @@
                     <Separator Margin="0,15"/>
 
                     <!-- Fade Effects -->
-                    <TextBlock Text="Fade Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Control how music transitions in and out" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+                    <TextBlock Text="Fade Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Control how music transitions in and out. With Live Effects enabled, fades may feel different due to reverb tail processing."
+                               FontSize="12"
+                               FontStyle="Italic"
+                               Foreground="#808090"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
 
                     <!-- Fade In Duration -->
                     <StackPanel Orientation="Horizontal" Margin="0,10">
@@ -280,17 +285,18 @@
                                    Width="35"
                                    Margin="0,0,3,0"/>
                         <TextBlock Text="s" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0.05" Maximum="10"
+                        <Slider Minimum="0.10" Maximum="5"
                                 Value="{Binding Settings.FadeInDuration}"
-                                Width="180"
+                                Width="200"
+                                IsSnapToTickEnabled="True"
                                 SmallChange="0.05"
                                 LargeChange="0.5"
-                                TickFrequency="0.5"
-                                TickPlacement="BottomRight"
+                                TickFrequency="0.05"
+                                TickPlacement="None"
                                 AutoToolTipPlacement="TopLeft"
                                 AutoToolTipPrecision="2"/>
                     </StackPanel>
-                    <TextBlock Text="How long music fades in when starting or resuming (longer = smoother)"
+                    <TextBlock Text="How long music fades in (longer = smoother)"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -304,17 +310,18 @@
                                    Width="35"
                                    Margin="0,0,3,0"/>
                         <TextBlock Text="s" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0.05" Maximum="10"
+                        <Slider Minimum="0.10" Maximum="5"
                                 Value="{Binding Settings.FadeOutDuration}"
-                                Width="180"
+                                Width="200"
+                                IsSnapToTickEnabled="True"
                                 SmallChange="0.05"
                                 LargeChange="0.5"
-                                TickFrequency="0.5"
-                                TickPlacement="BottomRight"
+                                TickFrequency="0.05"
+                                TickPlacement="None"
                                 AutoToolTipPlacement="TopLeft"
                                 AutoToolTipPrecision="2"/>
                     </StackPanel>
-                    <TextBlock Text="How long music fades out when switching games or pausing (shorter = snappier)"
+                    <TextBlock Text="How long music fades out (shorter = snappier)"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
