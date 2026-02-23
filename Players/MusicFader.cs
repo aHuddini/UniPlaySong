@@ -90,10 +90,15 @@ namespace UniPlaySong.Players
                     _fileLogger?.Debug($"[Fader] Tick — polling: vol={currentVol:F4}, fadingOut={_isFadingOut}, hasPause={_pauseAction != null}, hasPlay={_playAction != null}, hasStop={_stopAction != null}");
                 }
 
-                // Handle song switching when fade-out reaches zero
-                if (_isFadingOut && currentVol <= 0.0001 && _pauseAction == null && _playAction != null)
+                // Detect stalled ramp: if the player's audio thread stopped (e.g. short
+                // song reached EOF during fade-out), the volume ramp freezes because
+                // Read() is no longer called.  Force-complete pending actions immediately.
+                bool rampStalled = _isFadingOut && _rampStarted && !_player.IsActive;
+
+                // Handle song switching when fade-out reaches zero (or ramp stalled)
+                if (_isFadingOut && (currentVol <= 0.0001 || rampStalled) && _pauseAction == null && _playAction != null)
                 {
-                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete, switching song");
+                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete{(rampStalled ? " (stalled)" : "")}, switching song");
                     _player.Volume = 0;
                     _stopAction?.Invoke();
                     _playAction.Invoke();
@@ -115,10 +120,10 @@ namespace UniPlaySong.Players
                     return;
                 }
 
-                // Handle fade-out complete for pause/stop
-                if (_isFadingOut && currentVol <= 0.0001 && (_pauseAction != null || _stopAction != null))
+                // Handle fade-out complete for pause/stop (or ramp stalled)
+                if (_isFadingOut && (currentVol <= 0.0001 || rampStalled) && (_pauseAction != null || _stopAction != null))
                 {
-                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete for {(_pauseAction != null ? "PAUSE" : "STOP")}: vol={currentVol:F4}");
+                    _fileLogger?.Debug($"[Fader] Tick — fade-out complete{(rampStalled ? " (stalled)" : "")} for {(_pauseAction != null ? "PAUSE" : "STOP")}: vol={currentVol:F4}");
                     _player.Volume = 0;
                     _pauseAction?.Invoke();
                     _stopAction?.Invoke();

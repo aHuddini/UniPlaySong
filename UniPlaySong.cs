@@ -287,6 +287,14 @@ namespace UniPlaySong
             }
 
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
+
+            // Sync ThemeOverlayActive state that may have been set by MusicControl
+            // before this handler was registered (e.g. Welcome Hub shown at startup)
+            if (_settings?.ThemeOverlayActive == true)
+            {
+                _coordinator?.HandleThemeOverlayChange(true);
+            }
+
             SubscribeToMainModel();
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
