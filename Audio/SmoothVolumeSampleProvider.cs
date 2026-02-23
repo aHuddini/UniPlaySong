@@ -7,7 +7,7 @@ namespace UniPlaySong.Audio
     // The fader calls SetTargetWithRamp() once per fade phase.
     // The audio thread applies an exponential curve per-sample — no discrete steps,
     // no timer jitter, no rate-of-change discontinuities through reverb.
-    // Curves: fade-in = progress^2 (slow start), fade-out = linear (even spread).
+    // Curves: fade-in = progress^2 (slow start), fade-out = (1-t)^3 cubic (perceptually even decay).
     // The fader polls Volume (getter) to detect when the ramp completes.
     public class SmoothVolumeSampleProvider : ISampleProvider
     {
@@ -131,8 +131,11 @@ namespace UniPlaySong.Audio
 
                 if (down)
                 {
-                    // Fade-out: linear ramp — even volume drop across the entire duration.
-                    vol = startVol * (1f - progress);
+                    // Fade-out: cubic curve — perceptually smooth volume decay.
+                    // Human hearing is logarithmic; linear ramps sound "stuck loud then cliff".
+                    // (1-t)^3 drops perceptibly from the start and tapers cleanly to silence.
+                    float inv = 1f - progress;
+                    vol = startVol * inv * inv * inv;
                 }
                 else
                 {
