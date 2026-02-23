@@ -33,6 +33,15 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
    - Caching strategy
    - Performance optimizations
 
+5. **[NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md)** - NAudio audio pipeline deep-dive
+   - Persistent mixer architecture (v1.3.3+)
+   - Per-sample volume ramping (SmoothVolumeSampleProvider)
+   - Configurable fade curves (5 types)
+   - Song end detection, format normalization
+   - VisualizationDataProvider (FFT + peak/RMS)
+   - Logical pause mechanism
+   - SDL2 comparison table
+
 ### Version-Specific Documentation
 
 - **[v1.2.11_TECHNICAL_NOTES.md](v1.2.11_TECHNICAL_NOTES.md)** - v1.2.11 implementation notes
@@ -150,6 +159,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-02-14
-**Documentation Version**: 1.1
+**Last Updated**: 2026-02-22
+**Documentation Version**: 1.2
 

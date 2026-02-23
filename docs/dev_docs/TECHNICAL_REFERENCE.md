@@ -737,7 +737,9 @@ private bool ShouldRestartForPreview()
 
 ### Implementation
 
-**Location**: `Players/MusicFader.cs`, `Services/MusicPlaybackService.cs`
+**Location**: `Players/MusicFader.cs`, `Audio/SmoothVolumeSampleProvider.cs`, `Services/MusicPlaybackService.cs`
+
+Full technical details: [NAudio Pipeline Documentation](NAUDIO_PIPELINE.md)
 
 ### Volume Management
 
@@ -787,10 +789,24 @@ _fader.Resume();
 
 ### Fade Implementation
 
-**MusicFader Class:**
-- Uses `DispatcherTimer` for smooth volume transitions
-- Updates volume in small increments over fade duration
-- Handles both SDL2 and WPF MediaPlayer implementations
+**MusicFader** (`Players/MusicFader.cs`):
+- `DispatcherTimer` at 50ms polls for ramp completion — does NOT step volume
+- Calls `player.SetVolumeRamp(target, duration)` once per fade phase
+- Polls `player.Volume` to detect completion, then fires stop/play/pause actions
+- Song-switch completion deferred to `Dispatcher.BeginInvoke(Background)` to avoid UI blocking
+- `HasPendingPlayAction`: detects orphaned play actions from interrupted song switches
+
+**Backend Volume Ramping:**
+
+| Backend | Ramp Method | Rate | Artifacts |
+|---------|-------------|------|-----------|
+| **NAudio** | `SmoothVolumeSampleProvider` — per-sample curve on audio thread | 44,100 steps/sec | None (smooth through reverb) |
+| **SDL2** | Own `DispatcherTimer` at 16ms with exponential curve | ~60 steps/sec | None (no reverb to amplify) |
+
+**NAudio Fade Curves** (configurable in Experimental settings):
+- Linear, Quadratic (default in), Cubic (default out), S-Curve, Logarithmic
+- Independently selectable for fade-in and fade-out
+- Snapshotted at ramp start — mid-fade setting changes are safe
 
 ---
 

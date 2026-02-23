@@ -22,18 +22,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.3
 
-- **NAudio Audio Pipeline Overhaul** - Major rewrite of the volume and fading system used when Live Effects or Visualizer is enabled. Resolves a longstanding audio artifact (tremolo/stutter/doppler effect) that had been present since the introduction of Live Effects in v1.1.4. The artifact was caused by discrete volume stepping from a timer-based fader interacting with reverb feedback loops, producing audible discontinuities during game switching and pause/resume.
-  - **Per-sample volume ramping** — New `SmoothVolumeSampleProvider` applies volume changes at 44,100 increments/second on the audio thread (vs ~60 timer-based steps/second before), eliminating rate-of-change discontinuities that reverb amplified into tremolo.
-  - **Cubic fade-out curve** — Fade-outs now use a `(1-t)³` cubic curve instead of linear. Human hearing is logarithmic; the old linear ramp sounded "stuck loud then cliff." The cubic curve drops perceptibly from the start and tapers cleanly to silence.
-  - **Logical pause architecture** — NAudio's `WaveOutEvent` now stays running during pause (outputting silence at volume 0) instead of using `Pause()`/`Play()`, which caused stale pre-rendered buffer blips on resume. Position is saved on pause and restored on resume.
-  - **Fader stall recovery** — Short audio clips (sound effects, jingles) that reach EOF during a fade-out no longer permanently freeze the fader. The fader detects stalled ramps and force-completes pending actions.
-  - **Pause respected on song end** — Music no longer auto-advances to the next song while paused.
+- [Critical Fix] **Audio Artifact Eliminated** — Resolved a longstanding audio flutter/tremolo that occurred when Live Effects or Visualizer was enabled. The artifact had been present since Live Effects were introduced in v1.1.4 and was most noticeable during game switching and pause/resume.
+- [Live Effects] **Smoother Fading** — Volume fades are now buttery smooth with no audible stepping. Pause/resume transitions should sound clean even with heavy reverb effects applied.
+- [Experimental] **Configurable Fade Curves** — Five fade curve styles (Linear, Quadratic, Cubic, S-Curve, Logarithmic) independently selectable for fade-in and fade-out.
+- [Performance] **Game Switch UI Lag Eliminated** — Eliminated an annoying ~70ms UI delay that occurred on every game switch when Live Effects or Visualizer was enabled (where faders masked this issue and it was apparent on lower-end hardware). Optimizations with NAudio should hopefully reduce unnecessary overhead with Playnite's UI.
+- [Bugfix] **Short Track Reliability** — Short audio clips no longer get stuck or freeze playback controls when used with Live Effects.
+- [Bugfix] **Pause/Resume Stability** — Fixed several edge cases where music could fail to resume after pausing, especially during game switches or with short tracks.
+- [Improved] **Fade Duration Slider** — Refined range (0.10–5s), finer 0.05s tick granularity for precise control, and a note about how Live Effects influence fade perception.
 
-### Previous Versions
+### Previous Version
 - **v1.3.2**: Taskbar Thumbnail Media Controls, Global Media Key Control, Auto-Cleanup Empty Folders, M3U Playlist Export, Extended Default Music Sources, PS2 Menu Ambience, Per-Tab Reset Buttons, Improved Default Settings, Settings Reorganization
-- **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix
-- **v1.3.0**: Completion Fanfare (11 retro jingle presets), Song Count Badge, Default Music Indicator, Song Progress Indicator, Download Complete Sound, Celebration Toast, Auto-Pause on System Lock, Enhanced Library Statistics (card grid), skip/crossfade fixes
-- **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI
 ---
 
 ## 🎬 Demo

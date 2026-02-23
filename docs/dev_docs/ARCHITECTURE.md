@@ -55,11 +55,17 @@ UniPlaySong/
 │   ├── MediaElementsMonitor.cs # Video playback detection
 │   └── GameContextBindingFactory.cs # Game context binding
 │
+├── Audio/                     # NAudio audio processing pipeline
+│   ├── EffectsChain.cs        # Reverb + echo + EQ pipeline (style presets)
+│   ├── SmoothVolumeSampleProvider.cs # Per-sample curve ramp (5 fade curves)
+│   └── VisualizationDataProvider.cs  # FFT + peak/RMS tap for spectrum visualizer
+│
 ├── Players/                   # Audio playback implementations
 │   ├── IMusicPlayer.cs        # Music player interface
 │   ├── MusicPlayer.cs         # WPF MediaPlayer implementation (fallback)
-│   ├── SDL2MusicPlayer.cs     # SDL2 implementation (primary)
-│   ├── MusicFader.cs          # Volume fade-in/fade-out controller
+│   ├── SDL2MusicPlayer.cs     # SDL2 implementation (default)
+│   ├── NAudioMusicPlayer.cs   # NAudio implementation (Live Effects/Visualizer)
+│   ├── MusicFader.cs          # Volume ramp monitor + action dispatcher
 │   └── SDL/                   # SDL2 P/Invoke wrappers
 │       ├── SDL.cs             # SDL2 core library bindings
 │       └── SDL_mixer.cs       # SDL2_mixer audio library bindings
@@ -522,7 +528,7 @@ Services are initialized in `UniPlaySong.cs` and passed to dependent services vi
 `MusicPlaybackCoordinator` centralizes all playback decision logic, preventing scattered conditionals throughout the codebase.
 
 ### 3. Strategy Pattern
-Multiple music player implementations (`SDL2MusicPlayer`, `MusicPlayer`) implement `IMusicPlayer` interface, allowing runtime selection.
+Three music player backends implement `IMusicPlayer`: `SDL2MusicPlayer` (default), `NAudioMusicPlayer` (Live Effects/Visualizer), and `MusicPlayer` (WPF fallback). Selected at runtime based on settings.
 
 ### 4. Observer Pattern
 Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyChanged`).
@@ -650,8 +656,11 @@ Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyC
 
 1. **Search Caching**: `SearchCacheService` caches search results to avoid repeated API calls
 2. **Lazy Loading**: Services are initialized only when needed
-3. **Preloading**: SDL2 player supports preloading next song during fade-out
+3. **Preloading**: Both SDL2 and NAudio players preload the next song's file reader during fade-out
 4. **File Enumeration**: Cached file lists to avoid repeated directory scans
+5. **Persistent Mixer (NAudio)**: `WaveOutEvent` + `MixingSampleProvider` created once — songs swapped via `AddMixerInput()`/`RemoveMixerInput()`. Eliminates ~70ms UI-thread freeze from WaveOutEvent lifecycle per song switch
+6. **Per-Sample Volume Ramp (NAudio)**: `SmoothVolumeSampleProvider` ramps on the audio thread (44,100 steps/sec) instead of the UI thread (~60 steps/sec), eliminating reverb-amplified tremolo artifacts
+7. **Deferred Song Switch**: MusicFader defers Close+Load+Play to `Dispatcher.BeginInvoke(Background)` so the timer tick never blocks UI
 
 ## Testing Considerations
 
@@ -712,6 +721,11 @@ The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following
 
 ### Debug Tab
 - Enable debug logging toggle
+
+## Related Documentation
+
+- [NAudio Pipeline](NAUDIO_PIPELINE.md) — Persistent mixer, volume ramping, visualization, fade curves
+- [NAudio Audio Artifact Fix](../plans/2026-02-22-naudio-smooth-volume-design.md) — Design doc for the per-sample ramp that eliminated tremolo artifacts
 
 ## Future Architecture Improvement Ideas
 

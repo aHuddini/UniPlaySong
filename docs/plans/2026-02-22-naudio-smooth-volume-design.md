@@ -125,3 +125,31 @@ Sets `_player.Volume = 0` **before** calling `_player.Resume()`, ensuring the fa
   - No artifact on pause/resume (alt-tab, media controls)
   - Exponential fade curves feel natural (matching SDL2/WPF behavior)
   - Resume from pause starts cleanly from silence (no blip)
+
+---
+
+## Addendum: Persistent Mixer + Configurable Curves (v1.3.3)
+
+Two follow-up changes built on the smooth volume foundation:
+
+### 1. Persistent Mixer Architecture
+
+The per-song `WaveOutEvent` lifecycle (~70ms: Init=57ms + Dispose=15ms) was still blocking the UI thread during game switches. Replaced with a persistent `MixingSampleProvider` + single `WaveOutEvent` that runs for the player's lifetime. Songs are swapped via `AddMixerInput()`/`RemoveMixerInput()` — song switch dropped to **0ms**.
+
+`SmoothVolumeSampleProvider` moved from the per-song chain to the persistent layer (between mixer output and WaveOutEvent). See [NAUDIO_PIPELINE.md](../dev_docs/NAUDIO_PIPELINE.md) for full architecture.
+
+Key changes:
+- `SongEndDetectorSampleProvider`: detects EOF via `read < count` (mixer auto-removes on partial read)
+- Format normalization: `MonoToStereoSampleProvider` + `WdlResamplingSampleProvider` to match 44100Hz/2ch mixer format
+- `OnSongEnded` dispatches `MediaEnded` to UI thread via `BeginInvoke` (audio thread → UI thread)
+- Error recovery: device failures tear down and rebuild the persistent layer
+
+### 2. Configurable Fade Curves
+
+Replaced hardcoded quadratic/cubic curves with 5 selectable types: Linear, Quadratic, Cubic, S-Curve, Logarithmic. Independently configurable for fade-in and fade-out in Experimental settings.
+
+`SmoothVolumeSampleProvider` constructor accepts `Func<FadeCurveType>` getters. Curve is snapshotted at ramp start via `_activeCurve = _isRampingDown ? _getFadeOutCurve() : _getFadeInCurve()`.
+
+### 3. Interrupted Switch Recovery
+
+`MusicFader.HasPendingPlayAction` property detects when a pause source arrived during a mid-fade song switch, orphaning the play action. `RemovePauseSource()` checks this first and calls `_fader.Resume()` to execute the orphaned load+play.
