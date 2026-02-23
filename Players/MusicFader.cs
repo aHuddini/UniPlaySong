@@ -101,13 +101,29 @@ namespace UniPlaySong.Players
                     _fileLogger?.Debug($"[Fader] Tick — fade-out complete{(rampStalled ? " (stalled)" : "")}, switching song");
                     _player.Volume = 0;
                     _stopAction?.Invoke();
-                    _playAction.Invoke();
 
+                    // Defer playAction to a separate dispatcher frame so the UI thread
+                    // can process pending messages between Close() and Load()+Play().
+                    // Without this, the combined Close+Load+Play blocks the UI for 150-500ms.
+                    var pendingPlay = _playAction;
                     _isFadingOut = false;
                     _stopAction = _playAction = null;
-                    // Re-snapshot for fade-in phase
-                    SnapshotFadeParams();
-                    _rampStarted = false; // Next tick will start fade-in ramp
+                    _fadeTimer?.Stop();
+
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            pendingPlay.Invoke();
+                            SnapshotFadeParams();
+                            _rampStarted = false;
+                            EnsureTimer();
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandler?.HandleError(ex, context: "MusicFader deferred play", showUserMessage: false);
+                        }
+                    }), DispatcherPriority.Background);
                     return;
                 }
 

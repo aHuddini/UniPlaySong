@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.3.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,25 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.2
+## What's New - v1.3.3
 
-- **Taskbar Thumbnail Media Controls** - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only). Graduated from Experimental.
-- **Global Media Key Control** (Experimental) - Control music with keyboard media keys (Play/Pause, Next, Previous, Stop).
-- **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion.
-- **M3U Playlist Export** - Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).
-- **Extended Default Music Sources** - Three new default music fallbacks: Custom Folder (Playlist), Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.
-- **PS2 Menu Ambience** - New bundled default music preset. Four ambient tracks now ship with the plugin.
-- **Custom Cookies File** - New cookie source option for yt-dlp downloads. Use a Netscape-format cookies.txt from any browser, alongside the existing Firefox option.
-- **Per-Tab Reset Buttons** - Each settings tab now has its own "Reset to Defaults" button.
-- **Improved Default Settings** - Better out-of-box experience with media controls, visualizer, live effects (Rehearsal), auto-tagging, song randomization, and completion celebration all enabled by default.
-- **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
-- **Settings Reorganization** - Dedicated "Pauses" tab, cleaner labels, collapsible Dynamic Color Tuning, and some streamlined General settings.
-- **Style Preset Tuning** - All style presets capped at 1dB makeup gain to prevent clipping. Rehearsal preset updated with Reverb-first chain.
-- **Bug Fix**: Settings no longer silently reset when using Browse/Select buttons in settings dialogs.
-- **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock).
-- **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
+- **NAudio Audio Pipeline Overhaul** - Major rewrite of the volume and fading system used when Live Effects or Visualizer is enabled. Resolves a longstanding audio artifact (tremolo/stutter/doppler effect) that had been present since the introduction of Live Effects in v1.1.4. The artifact was caused by discrete volume stepping from a timer-based fader interacting with reverb feedback loops, producing audible discontinuities during game switching and pause/resume.
+  - **Per-sample volume ramping** — New `SmoothVolumeSampleProvider` applies volume changes at 44,100 increments/second on the audio thread (vs ~60 timer-based steps/second before), eliminating rate-of-change discontinuities that reverb amplified into tremolo.
+  - **Cubic fade-out curve** — Fade-outs now use a `(1-t)³` cubic curve instead of linear. Human hearing is logarithmic; the old linear ramp sounded "stuck loud then cliff." The cubic curve drops perceptibly from the start and tapers cleanly to silence.
+  - **Logical pause architecture** — NAudio's `WaveOutEvent` now stays running during pause (outputting silence at volume 0) instead of using `Pause()`/`Play()`, which caused stale pre-rendered buffer blips on resume. Position is saved on pause and restored on resume.
+  - **Fader stall recovery** — Short audio clips (sound effects, jingles) that reach EOF during a fade-out no longer permanently freeze the fader. The fader detects stalled ramps and force-completes pending actions.
+  - **Pause respected on song end** — Music no longer auto-advances to the next song while paused.
 
 ### Previous Versions
+- **v1.3.2**: Taskbar Thumbnail Media Controls, Global Media Key Control, Auto-Cleanup Empty Folders, M3U Playlist Export, Extended Default Music Sources, PS2 Menu Ambience, Per-Tab Reset Buttons, Improved Default Settings, Settings Reorganization
 - **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix
 - **v1.3.0**: Completion Fanfare (11 retro jingle presets), Song Count Badge, Default Music Indicator, Song Progress Indicator, Download Complete Sound, Celebration Toast, Auto-Pause on System Lock, Enhanced Library Statistics (card grid), skip/crossfade fixes
 - **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI

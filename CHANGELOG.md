@@ -2,7 +2,18 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.3.2] - TBD
+## [1.3.3] - TBD
+
+### Fixed (Critical — NAudio Audio Pipeline)
+- **Audio Artifact Eliminated** - Resolved a longstanding tremolo/stutter/doppler audio artifact that occurred when Live Effects or Visualizer was enabled. This artifact was unknowingly present since Live Effects were introduced in v1.1.4, manifesting as audible flutter during game switching and pause/resume. Root cause: the fader applied ~60 discrete volume steps/second via a `System.Timers.Timer`, and the EffectsChain's reverb feedback loops amplified the rate-of-change discontinuities at each step boundary into audible tremolo.
+- **Per-Sample Volume Ramping** - Replaced timer-based discrete volume stepping with `SmoothVolumeSampleProvider`, which applies volume changes per-sample on the audio thread (44,100+ increments/second). Zero discontinuities through reverb, zero timer jitter, zero rate-of-change artifacts.
+- **Cubic Fade-Out Curve** - Fade-outs now use a `(1-t)³` cubic curve instead of linear. Human hearing is logarithmic (Weber-Fechner law); linear ramps sound "stuck loud then cliff." The cubic curve produces perceptually even decay that tapers cleanly to silence, regardless of starting volume.
+- **Logical Pause (NAudio)** - `WaveOutEvent` now stays running during pause (outputting silence at volume 0) instead of using `Pause()`/`Play()`. The old approach caused stale pre-rendered buffer blips on resume because NAudio pre-renders audio buffers. Position is saved on pause and restored on resume so the song doesn't drift while paused.
+- **Fader Stall Recovery** - Short audio clips (sound effects, jingles) that reach EOF during a fade-out ramp no longer permanently freeze the fader and break all playback controls. The fader now detects when the audio thread has stopped processing samples and force-completes pending switch/pause/stop actions.
+- **Pause Respected on Song End** - Music no longer silently auto-advances to the next song while paused. With logical pause, `WaveOutEvent` reaches EOF at volume 0 and fires `MediaEnded`; this is now properly ignored when paused.
+- **MusicFader Rewrite** - The fader timer no longer steps volume directly. It monitors the audio-thread ramp for completion and dispatches phase transitions (stop/play for song switches, pause actions, etc.). This eliminates all timer-driven volume artifacts.
+
+## [1.3.2] - 2026-02-20
 
 ### Added
 - **Global Media Key Control** (Experimental) - Control music playback using keyboard media keys (Play/Pause, Next Track, Previous Track, Stop)
