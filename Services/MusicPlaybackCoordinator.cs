@@ -80,12 +80,6 @@ namespace UniPlaySong.Services
                 return false;
             }
 
-            if (_settings.VideoIsPlaying)
-            {
-                _fileLogger?.Debug("ShouldPlayMusic: Returning false - video is playing");
-                return false;
-            }
-
             if (_settings.ThemeOverlayActive)
             {
                 _fileLogger?.Debug("ShouldPlayMusic: Returning false - theme overlay is active");

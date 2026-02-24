@@ -250,10 +250,10 @@ namespace UniPlaySong
                 }
             }
 
-            // PNS suppression after settings loaded — reflection + zero-set
+            // Suppress native music after settings loaded
             if (IsFullscreen)
             {
-                try { SuppressNativeMusic_PNS(); } catch { }
+                try { SuppressNativeMusic(); } catch { }
             }
 
             InitializeServices();
@@ -397,6 +397,13 @@ namespace UniPlaySong
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+
+            // Playnite sets IsMusicMuted=false when a game stops (GamesEditor.Controllers_Stopped).
+            // Re-assert our suppression so native music doesn't come back after game exit.
+            if (IsFullscreen && _settings?.SuppressPlayniteBackgroundMusic == true)
+            {
+                _api.ApplicationSettings.Fullscreen.IsMusicMuted = true;
+            }
         }
 
         /// <summary>
@@ -430,7 +437,7 @@ namespace UniPlaySong
             // integrate with Playnite's BackgroundVolume slider.
             if (IsFullscreen)
             {
-                SuppressNativeMusic_PNS();
+                SuppressNativeMusic();
 
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
                 InitializeFullscreenSettingsRef();
@@ -1870,7 +1877,7 @@ namespace UniPlaySong
             // Mid-init suppression — ~150ms into InitializeServices
             if (IsFullscreen)
             {
-                try { SuppressNativeMusic_PNS(); } catch { }
+                try { SuppressNativeMusic(); } catch { }
             }
 
             // Initialize search cache service
@@ -2308,6 +2315,20 @@ namespace UniPlaySong
         //     }
         //     catch { try { SDL2MixerWrapper.Mix_HaltMusic(); } catch { } }
         // }
+
+        // Primary suppression via official SDK API — no reflection, no SDL manipulation.
+        // IsMusicMuted is [JsonIgnore] so it auto-resets on Playnite restart (no cleanup needed).
+        // Falls through to SuppressNativeMusic_PNS() as belt-and-suspenders for race conditions
+        // where music loads after IsMusicMuted is set.
+        private void SuppressNativeMusic()
+        {
+            if (_api.ApplicationInfo.Mode != ApplicationMode.Fullscreen
+                || _settings?.SuppressPlayniteBackgroundMusic != true)
+                return;
+
+            _api.ApplicationSettings.Fullscreen.IsMusicMuted = true;
+            SuppressNativeMusic_PNS();
+        }
 
         // PNS-matching suppression — exact PlayniteSounds pattern.
         // Single GetProperty on runtime type (no inheritance walk, no BindingFlags, no preemptive zero-set).
