@@ -15,6 +15,8 @@ namespace UniPlaySong.Services
         void Resume();
         void PauseImmediate(); // Instant pause (no fade), for notification sounds
         void ResumeImmediate(); // Instant resume (no fade), for notification sounds
+        void PauseForJingle();     // Instant pause for celebration jingle (dedicated PauseSource.Jingle)
+        void ResumeFromJingle();   // Resume after jingle ends with fade-in
 
         void AddPauseSource(PauseSource source); // pauses if first source
         void RemovePauseSource(PauseSource source); // resumes if all sources cleared
@@ -34,6 +36,9 @@ namespace UniPlaySong.Services
 
         // Sets a provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
         void SetDefaultSongPoolProvider(System.Func<DefaultMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
+
+        // Sets a provider that returns true when a Playnite filter preset is currently active (for Filter Mode)
+        void SetFilterActiveProvider(System.Func<bool> provider);
 
         // Clears the cached default music path so the next fallback picks a fresh song
         void ClearLastDefaultMusicPath();

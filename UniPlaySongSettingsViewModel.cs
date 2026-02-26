@@ -325,6 +325,195 @@ namespace UniPlaySong
                 .OrderBy(n => n)
                 .ToList() ?? new List<string>();
 
+        // Builds a map of CompletionStatus.Id → total song count across all games with that status.
+        private Dictionary<Guid, int> BuildStatusSongCounts()
+        {
+            var fileService = plugin.GetFileService();
+            var counts = new Dictionary<Guid, int>();
+            if (fileService == null) return counts;
+            foreach (var game in PlayniteApi.Database.Games)
+            {
+                var statusId = game.CompletionStatusId;
+                var songCount = fileService.GetAvailableSongs(game).Count;
+                if (songCount > 0)
+                {
+                    if (counts.ContainsKey(statusId))
+                        counts[statusId] += songCount;
+                    else
+                        counts[statusId] = songCount;
+                }
+            }
+            return counts;
+        }
+
+        public ICommand SelectNostalgiaStatusesCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var allStatuses = PlayniteApi.Database.CompletionStatuses
+                        .OrderBy(s => s.Name)
+                        .ToList();
+                    var currentIds = Settings?.NostalgiaStatusIds ?? new List<Guid>();
+                    var songCounts = BuildStatusSongCounts();
+
+                    var dialog = new Views.CompletionStatusSelectionDialog(allStatuses, currentIds, songCounts);
+                    if (dialog.ShowDialog() == true)
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.NostalgiaStatusIds = dialog.SelectedStatusIds);
+                        OnPropertyChanged(nameof(NostalgiaStatusSummary));
+                    }
+                },
+                context: "selecting Nostalgia Mode statuses",
+                showUserMessage: true
+            );
+        });
+
+        // Builds "StatusName (N songs)" labels for selected status IDs.
+        private string BuildStatusSummary(List<Guid> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return "No statuses selected";
+            var counts = BuildStatusSongCounts();
+            var parts = ids
+                .Select(id =>
+                {
+                    var name = PlayniteApi.Database.CompletionStatuses.FirstOrDefault(s => s.Id == id)?.Name;
+                    if (name == null) return null;
+                    return counts.TryGetValue(id, out var n) ? $"{name} ({n} song{(n == 1 ? "" : "s")})" : name;
+                })
+                .Where(p => p != null)
+                .OrderBy(p => p)
+                .ToList();
+            return parts.Count > 0 ? string.Join(", ", parts) : "No statuses selected";
+        }
+
+        public string NostalgiaStatusSummary
+        {
+            get => BuildStatusSummary(Settings?.NostalgiaStatusIds);
+        }
+
+        public ICommand SelectDefaultMusicStatusPoolCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var allStatuses = PlayniteApi.Database.CompletionStatuses
+                        .OrderBy(s => s.Name)
+                        .ToList();
+                    var currentIds = Settings?.DefaultMusicStatusPoolIds ?? new List<Guid>();
+                    var songCounts = BuildStatusSongCounts();
+
+                    var dialog = new Views.CompletionStatusSelectionDialog(allStatuses, currentIds, songCounts);
+                    if (dialog.ShowDialog() == true)
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.DefaultMusicStatusPoolIds = dialog.SelectedStatusIds);
+                        OnPropertyChanged(nameof(DefaultMusicStatusPoolSummary));
+                    }
+                },
+                context: "selecting Nostalgia Playlist Mode statuses",
+                showUserMessage: true
+            );
+        });
+
+        public string DefaultMusicStatusPoolSummary
+        {
+            get => BuildStatusSummary(Settings?.DefaultMusicStatusPoolIds);
+        }
+
+        // --- Game Property Filter commands and summaries ---
+
+        public ICommand SelectGamePropFilterPlatformsCommand => new Common.RelayCommand<object>((a) =>
+        {
+            plugin.GetErrorHandlerService()?.Try(() =>
+            {
+                var items = PlayniteApi.Database.Platforms
+                    .Select(p => (p.Id, p.Name ?? "(Unknown)"))
+                    .Where(p => !string.IsNullOrWhiteSpace(p.Item2));
+                var dialog = new Views.GenericItemSelectionDialog(
+                    "Select Platforms",
+                    "Only play game-specific music for games on these platforms:",
+                    items,
+                    Settings?.GamePropFilterPlatformIds ?? new List<Guid>());
+                if (dialog.ShowDialog() == true)
+                {
+                    Settings = CreateSettingsWithUpdate(s => s.GamePropFilterPlatformIds = dialog.SelectedIds);
+                    OnPropertyChanged(nameof(GamePropFilterPlatformSummary));
+                }
+            }, context: "selecting Game Property Filter platforms", showUserMessage: true);
+        });
+
+        public ICommand SelectGamePropFilterGenresCommand => new Common.RelayCommand<object>((a) =>
+        {
+            plugin.GetErrorHandlerService()?.Try(() =>
+            {
+                var items = PlayniteApi.Database.Genres
+                    .Select(g => (g.Id, g.Name ?? "(Unknown)"))
+                    .Where(g => !string.IsNullOrWhiteSpace(g.Item2));
+                var dialog = new Views.GenericItemSelectionDialog(
+                    "Select Genres",
+                    "Only play game-specific music for games in these genres:",
+                    items,
+                    Settings?.GamePropFilterGenreIds ?? new List<Guid>());
+                if (dialog.ShowDialog() == true)
+                {
+                    Settings = CreateSettingsWithUpdate(s => s.GamePropFilterGenreIds = dialog.SelectedIds);
+                    OnPropertyChanged(nameof(GamePropFilterGenreSummary));
+                }
+            }, context: "selecting Game Property Filter genres", showUserMessage: true);
+        });
+
+        public ICommand SelectGamePropFilterSourcesCommand => new Common.RelayCommand<object>((a) =>
+        {
+            plugin.GetErrorHandlerService()?.Try(() =>
+            {
+                var items = PlayniteApi.Database.Sources
+                    .Select(s => (s.Id, s.Name ?? "(Unknown)"))
+                    .Where(s => !string.IsNullOrWhiteSpace(s.Item2));
+                var dialog = new Views.GenericItemSelectionDialog(
+                    "Select Sources",
+                    "Only play game-specific music for games from these sources:",
+                    items,
+                    Settings?.GamePropFilterSourceIds ?? new List<Guid>());
+                if (dialog.ShowDialog() == true)
+                {
+                    Settings = CreateSettingsWithUpdate(s => s.GamePropFilterSourceIds = dialog.SelectedIds);
+                    OnPropertyChanged(nameof(GamePropFilterSourceSummary));
+                }
+            }, context: "selecting Game Property Filter sources", showUserMessage: true);
+        });
+
+        private string BuildNameSummary(List<Guid> ids, Func<Guid, string> resolveName, string noneText)
+        {
+            if (ids == null || ids.Count == 0) return noneText;
+            var names = ids
+                .Select(id => resolveName(id))
+                .Where(n => n != null)
+                .OrderBy(n => n)
+                .ToList();
+            return names.Count > 0 ? string.Join(", ", names) : noneText;
+        }
+
+        public string GamePropFilterPlatformSummary =>
+            BuildNameSummary(
+                Settings?.GamePropFilterPlatformIds,
+                id => PlayniteApi.Database.Platforms.FirstOrDefault(p => p.Id == id)?.Name,
+                "No platforms selected");
+
+        public string GamePropFilterGenreSummary =>
+            BuildNameSummary(
+                Settings?.GamePropFilterGenreIds,
+                id => PlayniteApi.Database.Genres.FirstOrDefault(g => g.Id == id)?.Name,
+                "No genres selected");
+
+        public string GamePropFilterSourceSummary =>
+            BuildNameSummary(
+                Settings?.GamePropFilterSourceIds,
+                id => PlayniteApi.Database.Sources.FirstOrDefault(s => s.Id == id)?.Name,
+                "No sources selected");
+
         public ICommand NormalizeAllMusicCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

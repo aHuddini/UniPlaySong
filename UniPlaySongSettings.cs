@@ -143,7 +143,8 @@ namespace UniPlaySong
         BundledPreset,  // Bundled ambient tracks shipped with the plugin
         CustomFolder,   // User-selected directory of audio files
         RandomGame,     // Random song from any game's music library
-        CustomRotation  // Songs from user-selected games
+        CustomRotation,         // Songs from user-selected games
+        CompletionStatusPool    // Songs from games matching selected completion statuses
     }
 
     public static class DefaultMusicSourceExtensions
@@ -153,7 +154,8 @@ namespace UniPlaySong
         {
             return source == DefaultMusicSource.CustomFolder
                 || source == DefaultMusicSource.RandomGame
-                || source == DefaultMusicSource.CustomRotation;
+                || source == DefaultMusicSource.CustomRotation
+                || source == DefaultMusicSource.CompletionStatusPool;
         }
     }
 
@@ -233,7 +235,7 @@ namespace UniPlaySong
         private bool pauseWhenInSystemTray = true;
         private bool pauseOnGameStart = true;
         private bool pauseOnSystemLock = false;
-        private bool pauseOnExternalAudio = true;
+        private bool pauseOnExternalAudio = false;
         private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32";
@@ -779,6 +781,14 @@ namespace UniPlaySong
         private bool suppressPlayniteBackgroundMusic = true;
         private bool useNativeMusicAsDefault = false;
         private bool musicOnlyForInstalledGames = false;
+        private bool nostalgiaMode = false; // Only play game music for games matching selected completion statuses
+        private List<Guid> nostalgiaStatusIds = new List<Guid>(); // Completion status IDs that qualify for game music
+        private List<Guid> defaultMusicStatusPoolIds = new List<Guid>(); // Status IDs for CompletionStatusPool default music source
+        private bool gamePropFilterEnabled = false; // Only play game music for games matching selected platforms/genres/sources
+        private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
+        private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
+        private List<Guid> gamePropFilterGenreIds = new List<Guid>();
+        private List<Guid> gamePropFilterSourceIds = new List<Guid>();
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
@@ -845,6 +855,62 @@ namespace UniPlaySong
                 musicOnlyForInstalledGames = value;
                 OnPropertyChanged();
             }
+        }
+
+        // Nostalgia Mode: only play game-specific music for games whose completion status
+        // is in NostalgiaStatusIds. Other games fall through to default music (or silence).
+        public bool NostalgiaMode
+        {
+            get => nostalgiaMode;
+            set { nostalgiaMode = value; OnPropertyChanged(); }
+        }
+
+        // Completion status IDs that qualify a game for game-specific music in Nostalgia Mode.
+        public List<Guid> NostalgiaStatusIds
+        {
+            get => nostalgiaStatusIds;
+            set { nostalgiaStatusIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        // Completion status IDs for the CompletionStatusPool default music source.
+        public List<Guid> DefaultMusicStatusPoolIds
+        {
+            get => defaultMusicStatusPoolIds;
+            set { defaultMusicStatusPoolIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        // Game Property Filter: only play game-specific music for games matching selected platforms/genres/sources.
+        // Games that don't match fall through to default music (or silence if default music is off).
+        public bool GamePropFilterEnabled
+        {
+            get => gamePropFilterEnabled;
+            set { gamePropFilterEnabled = value; OnPropertyChanged(); }
+        }
+
+        public List<Guid> GamePropFilterPlatformIds
+        {
+            get => gamePropFilterPlatformIds;
+            set { gamePropFilterPlatformIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        public List<Guid> GamePropFilterGenreIds
+        {
+            get => gamePropFilterGenreIds;
+            set { gamePropFilterGenreIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        public List<Guid> GamePropFilterSourceIds
+        {
+            get => gamePropFilterSourceIds;
+            set { gamePropFilterSourceIds = value ?? new List<Guid>(); OnPropertyChanged(); }
+        }
+
+        // Filter Mode: only play game-specific music when a named Playnite filter preset is active.
+        // When no filter / "All Games" is active, games fall through to default music.
+        public bool FilterModeEnabled
+        {
+            get => filterModeEnabled;
+            set { filterModeEnabled = value; OnPropertyChanged(); }
         }
 
         // Which default music source to use: CustomFile, NativeTheme, or BundledPreset

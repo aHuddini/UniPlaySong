@@ -58,6 +58,9 @@ namespace UniPlaySong.Services
         // Provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
         private Func<DefaultMusicSource, UniPlaySongSettings, List<string>> _defaultSongPoolProvider;
 
+        // Provider that returns true when a Playnite filter preset is active (for Filter Mode)
+        private Func<bool> _filterActiveProvider;
+
         // Initialization gate to prevent music playback until OnApplicationStarted completes
         // This ensures window state is checked before any music can play
         private bool _initializationComplete = false;
@@ -404,6 +407,7 @@ namespace UniPlaySong.Services
                 case DefaultMusicSource.CustomFolder:
                 case DefaultMusicSource.RandomGame:
                 case DefaultMusicSource.CustomRotation:
+                case DefaultMusicSource.CompletionStatusPool:
                     // For pool-based sources, match against the last default music path we set
                     return !string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
                            string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase);
@@ -535,6 +539,56 @@ namespace UniPlaySong.Services
                     songs.Clear();
                 }
 
+                // Nostalgia Mode: skip game-specific music for games whose completion status
+                // isn't in the allowed list — fall through to default music.
+                if (songs.Count > 0 && !forceReload && settings?.NostalgiaMode == true
+                    && settings.NostalgiaStatusIds?.Count > 0)
+                {
+                    bool statusMatches = settings.NostalgiaStatusIds.Contains(game.CompletionStatusId);
+                    if (!statusMatches)
+                    {
+                        _fileLogger?.Info($"PlayGameMusic: {game.Name} completion status not in Nostalgia Mode filter, skipping game music");
+                        songs.Clear();
+                    }
+                }
+
+                // Game Property Filter: skip game-specific music if the game doesn't match
+                // any of the selected platforms, genres, or sources (OR logic across all three).
+                if (songs.Count > 0 && !forceReload && settings?.GamePropFilterEnabled == true)
+                {
+                    bool hasPlatformFilter = settings.GamePropFilterPlatformIds?.Count > 0;
+                    bool hasGenreFilter = settings.GamePropFilterGenreIds?.Count > 0;
+                    bool hasSourceFilter = settings.GamePropFilterSourceIds?.Count > 0;
+
+                    // If no filters configured at all, don't block music
+                    if (hasPlatformFilter || hasGenreFilter || hasSourceFilter)
+                    {
+                        bool matches = false;
+                        if (hasPlatformFilter && game.PlatformIds != null)
+                            matches = matches || game.PlatformIds.Any(id => settings.GamePropFilterPlatformIds.Contains(id));
+                        if (hasGenreFilter && game.GenreIds != null)
+                            matches = matches || game.GenreIds.Any(id => settings.GamePropFilterGenreIds.Contains(id));
+                        if (hasSourceFilter && game.SourceId != Guid.Empty)
+                            matches = matches || settings.GamePropFilterSourceIds.Contains(game.SourceId);
+
+                        if (!matches)
+                        {
+                            _fileLogger?.Info($"PlayGameMusic: {game.Name} doesn't match Game Property Filter, skipping game music");
+                            songs.Clear();
+                        }
+                    }
+                }
+
+                // Filter Mode: skip game-specific music when no Playnite filter preset is active.
+                if (songs.Count > 0 && !forceReload && settings?.FilterModeEnabled == true && _filterActiveProvider != null)
+                {
+                    if (!_filterActiveProvider())
+                    {
+                        _fileLogger?.Info($"PlayGameMusic: {game.Name} — Filter Mode active but no filter preset applied, skipping game music");
+                        songs.Clear();
+                    }
+                }
+
                 // Default music fallback when no game music found.
                 // Six sources driven by DefaultMusicSourceOption.
                 // UseNativeMusicAsDefault kept in sync for backward compatibility.
@@ -571,6 +625,7 @@ namespace UniPlaySong.Services
                         case DefaultMusicSource.CustomFolder:
                         case DefaultMusicSource.RandomGame:
                         case DefaultMusicSource.CustomRotation:
+                        case DefaultMusicSource.CompletionStatusPool:
                             // "Continue same song" — reuse the previous default song even after
                             // switching to game music and back (session-persistent)
                             if (settings.DefaultMusicContinueSameSong &&
@@ -1029,6 +1084,31 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Pauses main music instantly for jingle playback (dedicated Jingle pause source).
+        public void PauseForJingle()
+        {
+            if (_musicPlayer?.IsLoaded == true)
+            {
+                _fader?.CancelFade();
+                _musicPlayer.Volume = 0;  // Silence immediately (NAudio logical pause doesn't mute)
+                _musicPlayer.Pause();
+            }
+            // Always add source so ResumeFromJingle knows to fade back in
+            _activePauseSources.Add(PauseSource.Jingle);
+        }
+
+        // Resumes music after jingle ends with a smooth fade-in.
+        public void ResumeFromJingle()
+        {
+            _activePauseSources.Remove(PauseSource.Jingle);
+            if (!_isPaused && _musicPlayer?.IsLoaded == true)
+            {
+                _musicPlayer.Volume = 0;
+                _musicPlayer.Resume();
+                _fader?.FadeIn();
+            }
+        }
+
         public List<string> GetAvailableSongs(Game game)
         {
             return _fileService?.GetAvailableSongs(game) ?? new List<string>();
@@ -1221,6 +1301,11 @@ namespace UniPlaySong.Services
         public void SetDefaultSongPoolProvider(Func<DefaultMusicSource, UniPlaySongSettings, List<string>> provider)
         {
             _defaultSongPoolProvider = provider;
+        }
+
+        public void SetFilterActiveProvider(Func<bool> provider)
+        {
+            _filterActiveProvider = provider;
         }
 
         public void ClearLastDefaultMusicPath()

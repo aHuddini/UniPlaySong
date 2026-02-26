@@ -540,6 +540,29 @@
                                TextWrapping="Wrap"
                                Margin="40,3,0,10"/>
 
+                    <!-- Default Music Source: Completion Status Pool -->
+                    <RadioButton Content="By Completion Status (Nostalgia Playlist Mode)"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="20,5,0,0"/>
+                    <StackPanel Margin="40,5,0,10">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Select Statuses..."
+                                    Width="120"
+                                    IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                    Command="{Binding SelectDefaultMusicStatusPoolCommand}"/>
+                            <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"
+                                       Foreground="#7BA4D4"
+                                       Text="{Binding DefaultMusicStatusPoolSummary}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Text="Pools music from all games that match the selected completion statuses. Pairs with Nostalgia Mode — e.g. select 'Completed' to hear only music from your finished games."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
                     <!-- Continue same song option (for pool-based sources) -->
                     <CheckBox Content="Keep Same Default Track On Game Switch"
                               IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
@@ -561,6 +584,86 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <!-- Nostalgia Mode -->
+                    <CheckBox Content="Nostalgia Mode"
+                              IsChecked="{Binding Settings.NostalgiaMode}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only play game-specific music for games that match selected completion statuses. Other games fall through to default music (or silence if default music is off)."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,4,0,0"
+                                IsEnabled="{Binding Settings.NostalgiaMode}">
+                        <Button Content="Select Statuses..."
+                                Command="{Binding SelectNostalgiaStatusesCommand}"
+                                Padding="8,3" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding NostalgiaStatusSummary}"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock Margin="20,3,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
+                               Text="Tip: Select 'Completed' to play only games you've finished — like a personal nostalgia playlist."/>
+
+                    <!-- Game Property Filter -->
+                    <CheckBox Content="Game Property Filter"
+                              IsChecked="{Binding Settings.GamePropFilterEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only play game-specific music for games matching selected platforms, genres, or sources (OR logic). Non-matching games fall through to default music."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <StackPanel Margin="20,4,0,10"
+                                IsEnabled="{Binding Settings.GamePropFilterEnabled}">
+                        <!-- Platforms row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <Button Content="Platforms..."
+                                    Command="{Binding SelectGamePropFilterPlatformsCommand}"
+                                    Width="90" Padding="4,3"/>
+                            <TextBlock Text="{Binding GamePropFilterPlatformSummary}"
+                                       FontSize="11" Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <!-- Genres row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Button Content="Genres..."
+                                    Command="{Binding SelectGamePropFilterGenresCommand}"
+                                    Width="90" Padding="4,3"/>
+                            <TextBlock Text="{Binding GamePropFilterGenreSummary}"
+                                       FontSize="11" Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <!-- Sources row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Button Content="Sources..."
+                                    Command="{Binding SelectGamePropFilterSourcesCommand}"
+                                    Width="90" Padding="4,3"/>
+                            <TextBlock Text="{Binding GamePropFilterSourceSummary}"
+                                       FontSize="11" Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
+                               Text="Tip: Select 'PC' as a platform to hear music only when browsing PC games."/>
+
+                    <!-- Filter Mode -->
+                    <CheckBox Content="Filter Mode"
+                              IsChecked="{Binding Settings.FilterModeEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only play game-specific music when a Playnite filter preset is active. When browsing 'All Games' or using no filter, games fall through to default music."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
+                               Text="Tip: Create a filter preset (e.g. 'RPGs') — music plays only while that filter is active."/>
 
                     <Separator Margin="0,15"/>
 

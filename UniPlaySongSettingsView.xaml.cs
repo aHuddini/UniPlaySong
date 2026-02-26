@@ -84,6 +84,14 @@ namespace UniPlaySong
             s.DefaultMusicContinueSameSong = false;
             s.BackupCustomMusicPath = string.Empty;
             s.MusicOnlyForInstalledGames = false;
+            s.NostalgiaMode = false;
+            s.NostalgiaStatusIds = new List<Guid>();
+            s.DefaultMusicStatusPoolIds = new List<Guid>();
+            s.GamePropFilterEnabled = false;
+            s.GamePropFilterPlatformIds = new List<Guid>();
+            s.GamePropFilterGenreIds = new List<Guid>();
+            s.GamePropFilterSourceIds = new List<Guid>();
+            s.FilterModeEnabled = false;
             s.EnableCompletionCelebration = true;
             s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
             s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
@@ -110,7 +118,7 @@ namespace UniPlaySong
             s.FocusLossIgnoreBrief = false;
             s.PauseOnMinimize = true;
             s.PauseWhenInSystemTray = true;
-            s.PauseOnExternalAudio = true;
+            s.PauseOnExternalAudio = false;
             s.ExternalAudioDebounceSeconds = 0;
             s.ExternalAudioInstantPause = false;
             s.ExternalAudioExcludedApps = "obs64, obs32";

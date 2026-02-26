@@ -1852,6 +1852,7 @@ namespace UniPlaySong
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
+            _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
 
             if (_settings != null)
             {
@@ -2050,6 +2051,7 @@ namespace UniPlaySong
                 var oldService = _playbackService;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
+                _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
 
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
@@ -2133,6 +2135,57 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 _fileLogger?.Error($"Failed to attach input handler: {ex.Message}", ex);
+            }
+        }
+
+        // Returns true if any filter criteria is currently active in Playnite's game list.
+        // Uses GetCurrentFilterSettings() since GetActiveFilterPreset() only tracks programmatically-applied presets.
+        private bool IsAnyFilterActive()
+        {
+            try
+            {
+                // Built-in quick-filter presets (Recently Played, Most Played, etc.) are applied
+                // programmatically by Playnite, so GetActiveFilterPreset() returns a non-empty GUID
+                if (_api.MainView.GetActiveFilterPreset() != System.Guid.Empty)
+                {
+                    _fileLogger?.Debug("FilterMode: IsAnyFilterActive=True (named preset active)");
+                    return true;
+                }
+
+                // User-applied custom criteria filters (platform, genre, etc.)
+                var f = _api.MainView.GetCurrentFilterSettings();
+                if (f == null) return false;
+
+                bool active =
+                    f.IsInstalled || f.IsUnInstalled || f.Hidden || f.Favorite ||
+                    !string.IsNullOrEmpty(f.Name) || !string.IsNullOrEmpty(f.Version) ||
+                    (f.Genre?.Ids?.Count > 0) ||
+                    (f.Platform?.Ids?.Count > 0) ||
+                    (f.Publisher?.Ids?.Count > 0) ||
+                    (f.Developer?.Ids?.Count > 0) ||
+                    (f.Category?.Ids?.Count > 0) ||
+                    (f.Tag?.Ids?.Count > 0) ||
+                    (f.Series?.Ids?.Count > 0) ||
+                    (f.Region?.Ids?.Count > 0) ||
+                    (f.Source?.Ids?.Count > 0) ||
+                    (f.AgeRating?.Ids?.Count > 0) ||
+                    (f.Library?.Ids?.Count > 0) ||
+                    (f.CompletionStatuses?.Ids?.Count > 0) ||
+                    (f.Feature?.Ids?.Count > 0) ||
+                    (f.ReleaseYear?.Values?.Count > 0) ||
+                    (f.UserScore?.Values?.Count > 0) ||
+                    (f.CriticScore?.Values?.Count > 0) ||
+                    (f.CommunityScore?.Values?.Count > 0) ||
+                    (f.LastActivity?.Values?.Count > 0) ||
+                    (f.PlayTime?.Values?.Count > 0);
+
+                _fileLogger?.Debug($"FilterMode: IsAnyFilterActive={active}");
+                return active;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"FilterMode: IsAnyFilterActive threw: {ex.Message}");
+                return true; // fail open
             }
         }
 
@@ -3666,6 +3719,23 @@ namespace UniPlaySong
                         }
                     }
                     break;
+
+                case DefaultMusicSource.CompletionStatusPool:
+                    var statusIds = settings?.DefaultMusicStatusPoolIds;
+                    if (statusIds != null && statusIds.Count > 0 && _api?.Database?.Games != null)
+                    {
+                        var statusIdSet = new System.Collections.Generic.HashSet<Guid>(statusIds);
+                        foreach (var poolGame in _api.Database.Games)
+                        {
+                            if (statusIdSet.Contains(poolGame.CompletionStatusId))
+                            {
+                                var gameSongs = _fileService.GetAvailableSongs(poolGame);
+                                if (gameSongs.Count > 0)
+                                    songs.AddRange(gameSongs);
+                            }
+                        }
+                    }
+                    break;
             }
 
             return songs;
@@ -4388,8 +4458,8 @@ namespace UniPlaySong
             // Stop any previous jingle that might still be playing
             CleanupJinglePlayer();
 
-            // Pause the main music (no fade, preserves position)
-            _playbackService?.PauseImmediate();
+            // Pause the main music instantly (dedicated Jingle source, preserves position)
+            _playbackService?.PauseForJingle();
 
             try
             {
@@ -4419,14 +4489,14 @@ namespace UniPlaySong
             {
                 _fileLogger?.Warn($"Jingle playback failed: {ex.Message}");
                 CleanupJinglePlayer();
-                _playbackService?.ResumeImmediate();
+                _playbackService?.ResumeFromJingle();
             }
         }
 
         private void OnJingleEnded(object sender, EventArgs e)
         {
             CleanupJinglePlayer();
-            _playbackService?.ResumeImmediate();
+            _playbackService?.ResumeFromJingle();
         }
 
         private void CleanupJinglePlayer()
