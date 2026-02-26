@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.3.4-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,19 +20,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.3
+## What's New - v1.3.4
 
-- [Critical Fix] **Audio Artifact Eliminated** — Resolved a longstanding audio flutter/tremolo that occurred when Live Effects or Visualizer was enabled. The artifact had been present since Live Effects were introduced in v1.1.4 and was most noticeable during game switching and pause/resume.
-- [Live Effects] **Smoother Fading** — Volume fades are now buttery smooth with no audible stepping. Pause/resume transitions should sound clean even with heavy reverb effects applied.
-- [Experimental] **Configurable Fade Curves** — Five fade curve styles (Linear, Quadratic, Cubic, S-Curve, Logarithmic) independently selectable for fade-in and fade-out.
-- [Performance] **Game Switch UI Lag Eliminated** — Eliminated an annoying ~70ms UI delay that occurred on every game switch when Live Effects or Visualizer was enabled (where faders masked this issue and it was apparent on lower-end hardware). Optimizations with NAudio should hopefully reduce unnecessary overhead with Playnite's UI.
-- [Bugfix] **Short Track Reliability** — Short audio clips no longer get stuck or freeze playback controls when used with Live Effects.
-- [Bugfix] **Pause/Resume Stability** — Fixed several edge cases where music could fail to resume after pausing, especially during game switches or with short tracks.
-- [Default Music] **Custom Folder/Pool Sources Fully Supported** — Skip, Now Playing, and Song Progress now work correctly when using Custom Folder, Random Game, or Custom Game Rotation as the default music source.
-- [Improved] **Fade-In/Out Duration Slider** — Refined range (0.10–5s), finer 0.05s tick granularity for precise control, and a note about how Live Effects influence fade perception.
+- [New Feature] **Game Property Filter** — Play game-specific music only for games matching selected platforms, genres, or sources. Games that don't match fall through to default music. Configure in Settings → Playback.
+- [New Feature] **Filter Mode** — Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.
+- [Changed] **External Audio Pause Default** — "Pause on external audio" is now disabled by default.
 
 ### Previous Version
-- **v1.3.2**: Taskbar Thumbnail Media Controls, Global Media Key Control, Auto-Cleanup Empty Folders, M3U Playlist Export, Extended Default Music Sources, PS2 Menu Ambience, Per-Tab Reset Buttons, Improved Default Settings, Settings Reorganization
+- **v1.3.3**: Audio Artifact Eliminated (Live Effects tremolo fix), Smoother Fading, Configurable Fade Curves, Game Switch UI Lag Eliminated, Short Track Reliability fixes, Custom Folder/Pool Sources fully supported
 ---
 
 ## 🎬 Demo
@@ -96,7 +91,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music, game property filter, filter mode
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming

@@ -2,7 +2,16 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
-## [1.3.3] - TBD
+## [1.3.4] - TBD
+
+### Added
+- **Game Property Filter** - Play game-specific music only for games matching certain platforms, genres, or sources. Configure via Settings → Playback → Game Property Filter. Uses OR logic across all selected criteria — a game matches if it belongs to any selected platform, genre, or source. Games that don't match fall through to default music.
+- **Filter Mode** - Play game-specific music only when a Playnite filter is active. When enabled, switching to unfiltered ("All") view falls through to default music; applying any filter (platform, completion status, genre, custom preset, etc.) restores game-specific playback. Covers both criteria-based filters and Playnite's built-in quick-filter presets (Recently Played, Most Played). Configure via Settings → Playback.
+
+### Changed
+- **External Audio Pause Default** - "Pause on external audio" is now disabled by default. Previously enabled by default, which surprised new users with music stopping when launching games that played audio. Can be re-enabled in Settings → Pauses.
+
+## [1.3.3] - 2026-02-22
 
 ### Fixed (Critical — NAudio Audio Pipeline)
 - **Audio Artifact Eliminated** - Resolved a longstanding tremolo/stutter/doppler audio artifact that occurred when Live Effects or Visualizer was enabled. This artifact was unknowingly present since Live Effects were introduced in v1.1.4, manifesting as audible flutter during game switching and pause/resume. Root cause: the fader applied ~60 discrete volume steps/second via a `System.Timers.Timer`, and the EffectsChain's reverb feedback loops amplified the rate-of-change discontinuities at each step boundary into audible tremolo.
