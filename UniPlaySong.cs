@@ -531,6 +531,12 @@ namespace UniPlaySong
                 CheckForHintsUpdatesAsync();
             }
 
+            // Radio Mode: kick off playback immediately on startup (no game selection needed)
+            if (_settings?.RadioModeEnabled == true)
+            {
+                _playbackService?.StartRadioPlayback(_settings);
+            }
+
         }
 
         /// <summary>
@@ -1853,6 +1859,7 @@ namespace UniPlaySong
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+            _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
 
             if (_settings != null)
             {
@@ -2052,6 +2059,7 @@ namespace UniPlaySong
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+                _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
 
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
@@ -3721,6 +3729,80 @@ namespace UniPlaySong
                     break;
 
                 case DefaultMusicSource.CompletionStatusPool:
+                    var statusIds = settings?.DefaultMusicStatusPoolIds;
+                    if (statusIds != null && statusIds.Count > 0 && _api?.Database?.Games != null)
+                    {
+                        var statusIdSet = new System.Collections.Generic.HashSet<Guid>(statusIds);
+                        foreach (var poolGame in _api.Database.Games)
+                        {
+                            if (statusIdSet.Contains(poolGame.CompletionStatusId))
+                            {
+                                var gameSongs = _fileService.GetAvailableSongs(poolGame);
+                                if (gameSongs.Count > 0)
+                                    songs.AddRange(gameSongs);
+                            }
+                        }
+                    }
+                    break;
+            }
+
+            return songs;
+        }
+
+        private List<string> GetRadioSongPool(RadioMusicSource source, UniPlaySongSettings settings)
+        {
+            var songs = new List<string>();
+
+            switch (source)
+            {
+                case RadioMusicSource.FullLibrary:
+                    // Every downloaded song across the entire library
+                    if (_api?.Database?.Games != null)
+                    {
+                        foreach (var game in _api.Database.Games)
+                        {
+                            var gameSongs = _fileService.GetAvailableSongs(game);
+                            if (gameSongs.Count > 0)
+                                songs.AddRange(gameSongs);
+                        }
+                    }
+                    break;
+
+                case RadioMusicSource.CustomFolder:
+                    var folder = settings?.DefaultMusicFolderPath;
+                    if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
+                    {
+                        try
+                        {
+                            songs = Directory.GetFiles(folder)
+                                .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
+                                .ToList();
+                        }
+                        catch (Exception ex)
+                        {
+                            _fileLogger?.Warn($"RadioMode: Error scanning custom folder '{folder}': {ex.Message}");
+                        }
+                    }
+                    break;
+
+                case RadioMusicSource.CustomRotation:
+                    var gameIds = settings?.CustomRotationGameIds;
+                    if (gameIds != null && _api?.Database?.Games != null)
+                    {
+                        foreach (var gameId in gameIds)
+                        {
+                            var game = _api.Database.Games[gameId];
+                            if (game != null)
+                            {
+                                var gameSongs = _fileService.GetAvailableSongs(game);
+                                if (gameSongs.Count > 0)
+                                    songs.AddRange(gameSongs);
+                            }
+                        }
+                    }
+                    break;
+
+                case RadioMusicSource.CompletionStatusPool:
                     var statusIds = settings?.DefaultMusicStatusPoolIds;
                     if (statusIds != null && statusIds.Count > 0 && _api?.Database?.Games != null)
                     {

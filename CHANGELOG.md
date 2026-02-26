@@ -7,6 +7,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Added
 - **Game Property Filter** - Play game-specific music only for games matching certain platforms, genres, or sources. Configure via Settings → Playback → Game Property Filter. Uses OR logic across all selected criteria — a game matches if it belongs to any selected platform, genre, or source. Games that don't match fall through to default music.
 - **Filter Mode** - Play game-specific music only when a Playnite filter is active. When enabled, switching to unfiltered ("All") view falls through to default music; applying any filter (platform, completion status, genre, custom preset, etc.) restores game-specific playback. Covers both criteria-based filters and Playnite's built-in quick-filter presets (Recently Played, Most Played). Configure via Settings → Playback.
+- **Radio Mode** - Continuous background music from a fixed pool, ignoring game selection entirely. Four sources: Full Library (shuffles every downloaded song), Custom Folder, Custom Game Rotation, and Completion Status Pool. Overrides both game-specific and default music while active. Skip and Now Playing work as expected. Configure via Settings → Playback → Play Methods.
 
 ### Changed
 - **External Audio Pause Default** - "Pause on external audio" is now disabled by default. Previously enabled by default, which surprised new users with music stopping when launching games that played audio. Can be re-enabled in Settings → Pauses.

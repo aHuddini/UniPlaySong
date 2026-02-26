@@ -7,6 +7,7 @@ Packages:
     Changelog:
       - '[New Feature] Game Property Filter: Play game-specific music only for games matching selected platforms, genres, or sources. Unmatched games fall through to default music. Configure in Settings → Playback.'
       - '[New Feature] Filter Mode: Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.'
+      - '[New Feature] Radio Mode: Continuous background music from a fixed pool, ignoring game selection. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Overrides game-specific and default music while active.'
       - '[Changed] External Audio Pause Default: "Pause on external audio" is now disabled by default. Re-enable in Settings → Pauses if desired.'
   - Version: 1.3.3
     RequiredApiVersion: 6.15.0

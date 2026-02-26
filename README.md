@@ -24,6 +24,7 @@ Built with the help of Claude Code and Cursor IDE
 
 - [New Feature] **Game Property Filter** — Play game-specific music only for games matching selected platforms, genres, or sources. Games that don't match fall through to default music. Configure in Settings → Playback.
 - [New Feature] **Filter Mode** — Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.
+- [New Feature] **Radio Mode** — Continuous background music from a fixed pool, ignoring game selection entirely. Overrides both game-specific and default music while active. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Configure in Settings → Playback.
 - [Changed] **External Audio Pause Default** — "Pause on external audio" is now disabled by default.
 
 ### Previous Version
@@ -91,7 +92,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music, game property filter, filter mode
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music, game property filter, filter mode, radio mode
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming

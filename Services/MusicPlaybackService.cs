@@ -61,6 +61,13 @@ namespace UniPlaySong.Services
         // Provider that returns true when a Playnite filter preset is active (for Filter Mode)
         private Func<bool> _filterActiveProvider;
 
+        // Provider for Radio Mode pool sources (injected from UniPlaySong.cs)
+        private Func<RadioMusicSource, UniPlaySongSettings, List<string>> _radioSongPoolProvider;
+
+        // Radio Mode state
+        private bool _isInRadioMode = false;
+        private string _lastRadioSongPath = null;
+
         // Initialization gate to prevent music playback until OnApplicationStarted completes
         // This ensures window state is checked before any music can play
         private bool _initializationComplete = false;
@@ -124,10 +131,11 @@ namespace UniPlaySong.Services
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
         public TimeSpan? CurrentTime => _musicPlayer?.CurrentTime;
         public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
-        public bool IsPlayingBundledPreset => _isPlayingDefaultMusic &&
+        public bool IsInRadioMode => _isInRadioMode;
+        public bool IsPlayingBundledPreset => _isPlayingDefaultMusic && !_isInRadioMode &&
             _currentSettings?.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset;
         public bool IsPlayingPoolBasedDefault => _isPlayingDefaultMusic &&
-            _currentSettings?.DefaultMusicSourceOption.IsPoolBased() == true;
+            (_currentSettings?.DefaultMusicSourceOption.IsPoolBased() == true || _isInRadioMode);
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
         {
@@ -524,6 +532,24 @@ namespace UniPlaySong.Services
                 // Note: We don't check EnableMusic here for default music fallback.
                 // Default music should work even if EnableMusic is false (it's a fallback).
                 // But we still respect it for regular game music.
+            }
+
+            // Radio Mode: ignore game selection entirely — keep playing the radio pool uninterrupted.
+            // If radio is already playing, do nothing on game switch. If not yet started, kick it off.
+            if (settings?.RadioModeEnabled == true && !forceReload)
+            {
+                if (!_isInRadioMode || !IsPlaying)
+                    StartRadioPlayback(settings);
+                else
+                    _fileLogger?.Debug($"RadioMode: ignoring game switch to {game.Name} — radio continues");
+                return;
+            }
+
+            // If we were in radio mode but settings changed, stop radio state
+            if (_isInRadioMode)
+            {
+                _isInRadioMode = false;
+                _lastRadioSongPath = null;
             }
 
             try
@@ -1131,6 +1157,14 @@ namespace UniPlaySong.Services
 
         public void SkipToNextSong()
         {
+            // Radio Mode: skip within the radio pool
+            if (_isInRadioMode && _currentSettings?.RadioModeEnabled == true && _radioSongPoolProvider != null)
+            {
+                RemovePauseSource(Models.PauseSource.Manual);
+                StartRadioPlayback(_currentSettings);
+                return;
+            }
+
             // Pool-based default music: skip within the default music pool
             if (IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null)
             {
@@ -1306,6 +1340,57 @@ namespace UniPlaySong.Services
         public void SetFilterActiveProvider(Func<bool> provider)
         {
             _filterActiveProvider = provider;
+        }
+
+        public void SetRadioSongPoolProvider(Func<RadioMusicSource, UniPlaySongSettings, List<string>> provider)
+        {
+            _radioSongPoolProvider = provider;
+        }
+
+        // Picks a song from the radio pool and starts playing it.
+        // Called on first game selection after Radio Mode is enabled, and on song-end auto-advance.
+        public void StartRadioPlayback(UniPlaySongSettings settings)
+        {
+            if (_radioSongPoolProvider == null)
+            {
+                _fileLogger?.Warn("RadioMode: no pool provider registered, cannot start radio");
+                return;
+            }
+
+            var pool = _radioSongPoolProvider(settings.RadioMusicSource, settings);
+            if (pool == null || pool.Count == 0)
+            {
+                _fileLogger?.Warn($"RadioMode: pool empty for source {settings.RadioMusicSource}");
+                return;
+            }
+
+            string nextSong;
+            int attempts = 0;
+            do
+            {
+                nextSong = pool[_random.Next(pool.Count)];
+                attempts++;
+            }
+            while (nextSong == _lastRadioSongPath && pool.Count > 1 && attempts < 10);
+
+            _fileLogger?.Info($"RadioMode: starting — {System.IO.Path.GetFileName(nextSong)} (source: {settings.RadioMusicSource})");
+            _isInRadioMode = true;
+            _lastRadioSongPath = nextSong;
+            // Mark as default music so Now Playing, skip, and progress bar work correctly
+            _lastDefaultMusicPath = nextSong;
+            _isPlayingDefaultMusic = true;
+            _previousSongPath = _currentSongPath;
+            LoadAndPlayFile(nextSong);
+            // Set _currentSongPath AFTER LoadAndPlayFile — triggers OnSongChanged → Now Playing update
+            _currentSongPath = nextSong;
+            MarkSongStart();
+        }
+
+        public void StopRadioMode()
+        {
+            _isInRadioMode = false;
+            _lastRadioSongPath = null;
+            FadeOutAndStop();
         }
 
         public void ClearLastDefaultMusicPath()
@@ -1637,6 +1722,13 @@ namespace UniPlaySong.Services
                         StopPreviewTimer();
                         FadeOutAndStop();
                         OnMusicStopped?.Invoke(_currentSettings);
+                        return;
+                    }
+
+                    // Radio Mode auto-advance: pick next song from radio pool on song end
+                    if (_isInRadioMode && _currentSettings?.RadioModeEnabled == true && _radioSongPoolProvider != null)
+                    {
+                        StartRadioPlayback(_currentSettings);
                         return;
                     }
 

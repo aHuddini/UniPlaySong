@@ -576,6 +576,10 @@
 
                     <Separator Margin="0,15"/>
 
+                    <TextBlock Text="Play Methods" FontSize="13" FontWeight="SemiBold" Margin="0,5,0,2"/>
+                    <TextBlock Text="Control which games get game-specific music. Non-matching games fall through to default music."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
                     <CheckBox Content="Play Music Only for Installed Games"
                               IsChecked="{Binding Settings.MusicOnlyForInstalledGames}"
                               Margin="0,5"/>
@@ -664,6 +668,33 @@
                                Margin="20,0,0,5"/>
                     <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
                                Text="Tip: Create a filter preset (e.g. 'RPGs') — music plays only while that filter is active."/>
+
+                    <!-- Radio Mode -->
+                    <CheckBox Content="Radio Mode"
+                              IsChecked="{Binding Settings.RadioModeEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Ignore game selection entirely — music plays continuously from a fixed pool, like background radio. Overrides both game-specific and default music while active."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <StackPanel Margin="20,4,0,10"
+                                IsEnabled="{Binding Settings.RadioModeEnabled}">
+                        <RadioButton Content="Full Library (every downloaded song)"
+                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FullLibrary}"
+                                     Margin="0,2"/>
+                        <RadioButton Content="Custom Folder"
+                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"
+                                     Margin="0,2"/>
+                        <RadioButton Content="Custom Game Rotation"
+                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"
+                                     Margin="0,2"/>
+                        <RadioButton Content="Completion Status Pool"
+                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"
+                                     Margin="0,2"/>
+                    </StackPanel>
+                    <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
+                               Text="Tip: 'Full Library' shuffles every song you've downloaded. Other sources reuse your Default Music pool configuration."/>
 
                     <Separator Margin="0,15"/>
 

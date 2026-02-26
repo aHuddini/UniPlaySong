@@ -159,6 +159,16 @@ namespace UniPlaySong
         }
     }
 
+    // Radio Mode source — which pool to draw from when Radio Mode is active.
+    // Subset of DefaultMusicSource: only pool-based sources make sense for radio.
+    public enum RadioMusicSource
+    {
+        FullLibrary,         // Shuffle across every downloaded song in the entire library
+        CustomFolder,        // User-selected directory (same as DefaultMusicSource.CustomFolder)
+        CustomRotation,      // Songs from user-selected games (same as DefaultMusicSource.CustomRotation)
+        CompletionStatusPool // Songs from games matching selected completion statuses
+    }
+
     public enum CookieMode
     {
         None,       // No cookies
@@ -786,6 +796,8 @@ namespace UniPlaySong
         private List<Guid> defaultMusicStatusPoolIds = new List<Guid>(); // Status IDs for CompletionStatusPool default music source
         private bool gamePropFilterEnabled = false; // Only play game music for games matching selected platforms/genres/sources
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
+        private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
+        private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
         private List<Guid> gamePropFilterSourceIds = new List<Guid>();
@@ -911,6 +923,21 @@ namespace UniPlaySong
         {
             get => filterModeEnabled;
             set { filterModeEnabled = value; OnPropertyChanged(); }
+        }
+
+        // Radio Mode: ignore game selection entirely; play continuously from a fixed pool.
+        // Overrides all per-game music logic — game-specific songs never play while active.
+        public bool RadioModeEnabled
+        {
+            get => radioModeEnabled;
+            set { radioModeEnabled = value; OnPropertyChanged(); }
+        }
+
+        // Which pool Radio Mode draws from when RadioModeEnabled is true.
+        public RadioMusicSource RadioMusicSource
+        {
+            get => radioMusicSource;
+            set { radioMusicSource = value; OnPropertyChanged(); }
         }
 
         // Which default music source to use: CustomFile, NativeTheme, or BundledPreset
