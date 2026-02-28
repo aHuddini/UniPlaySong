@@ -1902,6 +1902,10 @@ namespace UniPlaySong
             // Initialize search hints service (allows user overrides for problematic game searches)
             var pluginInstallPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _hintsService = new SearchHintsService(pluginInstallPath, extensionDataPath);
+            if (_settings?.UseCustomHintsDatabase == true && !string.IsNullOrWhiteSpace(_settings?.CustomHintsDatabasePath))
+            {
+                _hintsService.SetCustomHintsPath(_settings.CustomHintsDatabasePath);
+            }
             _fileLogger?.Debug($"SearchHintsService initialized (bundled: {_hintsService.GetBundledHintsFilePath()}, user: {_hintsService.GetUserHintsFilePath()})");
 
             _downloadManager = new DownloadManager(

@@ -2667,13 +2667,34 @@
 
                     <Separator Margin="0,20"/>
 
-                    <!-- Auto-Search Hint Database Section -->
-                    <TextBlock Text="Auto-Search Hint Database" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-                    <TextBlock Text="The bundled search hints database helps auto-download find correct soundtracks for games with problematic names."
+                    <!-- Search Hint Database Section -->
+                    <TextBlock Text="Search Hint Database" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                    <TextBlock Text="The search hints database helps find correct soundtracks for games with problematic names."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="0,0,0,15"/>
+
+                    <RadioButton Content="Use bundled database"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}}"
+                                 GroupName="HintsDatabase"
+                                 Margin="0,5,0,5"/>
+
+                    <RadioButton Content="Use custom database file"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase}"
+                                 GroupName="HintsDatabase"
+                                 Margin="0,5,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.UseCustomHintsDatabase}">
+                        <TextBox Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="350"
+                                 VerticalContentAlignment="Center"
+                                 IsReadOnly="True"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Margin="5,0,0,0"
+                                Command="{Binding BrowseForCustomHintsDatabase}"/>
+                    </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,5">
                         <TextBlock Text="Status: " VerticalAlignment="Center" FontWeight="SemiBold"/>
@@ -2683,48 +2704,10 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
-                        <!-- DISABLED: GitHub download temporarily removed (GitHub TOS review) -->
-                        <!--
-                        <Button Content="Download GitHub File"
-                                Width="170"
-                                Command="{Binding DownloadHintsFromGitHub}"
-                                Background="#5E35B1"
-                                Foreground="White"/>
-                        -->
                         <Button Content="Open Database Folder"
                                 Width="160"
                                 Command="{Binding OpenHintsDatabaseFolder}"/>
                     </StackPanel>
-
-                    <!-- DISABLED: GitHub download/update features temporarily removed (GitHub TOS review) -->
-                    <!--
-                    <TextBlock Text="Downloads the latest search_hints.json from the UniPlaySong GitHub repository. The downloaded file will be used instead of the bundled version."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,5,0,0"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
-                        <Button Content="Revert to Bundled"
-                                Width="160"
-                                Command="{Binding RevertToBundledHints}"
-                                IsEnabled="{Binding HasDownloadedHints}"/>
-                    </StackPanel>
-                    <TextBlock Text="Delete the downloaded database and use the version bundled with the extension."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,5,0,0"/>
-
-                    <CheckBox Content="Check for updates on startup"
-                              IsChecked="{Binding Settings.AutoCheckHintsOnStartup}"
-                              Margin="0,15,0,5"/>
-                    <TextBlock Text="Automatically check if a newer search hints database is available on GitHub when Playnite starts. You will be notified if updates are available."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,0"/>
-                    -->
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

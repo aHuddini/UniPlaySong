@@ -28,6 +28,8 @@ namespace UniPlaySong.Downloaders
         private readonly IDownloader _zopharDownloader;
         private readonly IDownloader _ytDownloader;
         private readonly IDownloader _soundCloudDownloader;
+        private const bool _enableKHInsiderSearch = false; // Search disabled, hint-based downloads still work
+        private const bool _enableZopharSearch = false;    // Search disabled, hint-based downloads still work
         private readonly string _tempPath;
         private readonly ErrorHandlerService _errorHandler;
         private readonly SearchCacheService _cacheService;
@@ -44,11 +46,9 @@ namespace UniPlaySong.Downloaders
             _hintsService = hintsService;
             _settings = settings;
 
-            // DISABLED: KHInsider and Zophar sources temporarily removed (GitHub TOS review)
-            // _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
-            // _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
-            _khDownloader = null;
-            _zopharDownloader = null;
+            // KHInsider and Zophar: instantiated for hint-based downloads only (search/scrape disabled)
+            _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
+            _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
             var cookieMode = settings?.CookieMode ?? CookieMode.None;
             var customCookiesPath = settings?.CustomCookiesFilePath ?? string.Empty;
             _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, cookieMode, customCookiesPath, errorHandler);
@@ -100,8 +100,8 @@ namespace UniPlaySong.Downloaders
                     allAlbums.AddRange(hintAlbums);
                 }
 
-                // === PRIORITY 1: KHInsider — DISABLED (GitHub TOS review) ===
-                if (_khDownloader != null)
+                // === PRIORITY 1: KHInsider — search disabled, hint-based downloads still work ===
+                if (_enableKHInsiderSearch)
                 {
                     List<Album> khAlbums = null;
 
@@ -128,8 +128,8 @@ namespace UniPlaySong.Downloaders
                     }
                 }
 
-                // === PRIORITY 2: Zophar — DISABLED (GitHub TOS review) ===
-                if (_zopharDownloader != null)
+                // === PRIORITY 2: Zophar — search disabled, hint-based downloads still work ===
+                if (_enableZopharSearch)
                 {
                     List<Album> zopharAlbums = null;
 
@@ -1073,8 +1073,8 @@ namespace UniPlaySong.Downloaders
 
             // Priority order: KHInsider (best quality) → SoundCloud → YouTube (last resort)
 
-            // Add KHInsider album if available (highest priority) — DISABLED when _khDownloader is null
-            if (_khDownloader != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
+            // Add KHInsider album if available (highest priority for hints)
+            if (!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
             {
                 var albumId = $"game-soundtracks/album/{hint.KHInsiderAlbum}";
                 hintAlbums.Add(new Album

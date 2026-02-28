@@ -48,7 +48,7 @@ namespace UniPlaySong.Services
     }
 
     // Loads and provides search hints for problematic game names.
-    // Priority: 1. Downloaded from GitHub  2. Bundled (fallback)  3. User hints merged on top.
+    // Priority: 1. Custom file (if set)  2. Bundled  3. User hints merged on top.
     public class SearchHintsService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -57,6 +57,7 @@ namespace UniPlaySong.Services
         private readonly string _autoSearchDatabasePath;
         private readonly string _downloadedHintsPath;
         private readonly string _metadataPath;
+        private string _customHintsPath; // User-selected custom database file
         private Dictionary<string, SearchHint> _hints;
         private Dictionary<string, SearchHint> _bundledHints;  // Keep bundled hints for fallback
         private DateTime _lastLoadTime;
@@ -236,23 +237,31 @@ namespace UniPlaySong.Services
             SaveHints();
         }
 
+        // Sets the custom hints database path and reloads hints
+        public void SetCustomHintsPath(string path)
+        {
+            _customHintsPath = path;
+            LoadHints();
+        }
+
+        public string GetCustomHintsPath() => _customHintsPath;
+
         private void LoadHints()
         {
             _hints = new Dictionary<string, SearchHint>(StringComparer.OrdinalIgnoreCase);
             _bundledHints = new Dictionary<string, SearchHint>(StringComparer.OrdinalIgnoreCase);
 
-            // Always load bundled hints first (for fallback when downloaded hints lack direct links)
+            // Always load bundled hints first (for fallback)
             LoadHintsFromFile(_bundledHintsPath, "bundled", _bundledHints);
 
-            // Priority: Downloaded hints (from GitHub) > Bundled hints
-            // If downloaded hints exist, use them as primary; otherwise use bundled
-            if (File.Exists(_downloadedHintsPath))
+            // If custom database is set and exists, use it as primary
+            if (!string.IsNullOrWhiteSpace(_customHintsPath) && File.Exists(_customHintsPath))
             {
-                LoadHintsFromFile(_downloadedHintsPath, "downloaded", _hints);
+                LoadHintsFromFile(_customHintsPath, "custom", _hints);
             }
             else
             {
-                // No downloaded hints - copy bundled hints to main dictionary
+                // Use bundled hints as primary
                 foreach (var kvp in _bundledHints)
                 {
                     _hints[kvp.Key] = kvp.Value;

@@ -61,6 +61,16 @@ namespace UniPlaySong
                     settingsService?.ValidateNativeMusicFile(settings, showErrors: true);
                 }
             }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.UseCustomHintsDatabase))
+            {
+                var hintsService = plugin.GetSearchHintsService();
+                if (hintsService != null)
+                {
+                    var customPath = (settings?.UseCustomHintsDatabase == true) ? settings?.CustomHintsDatabasePath : null;
+                    hintsService.SetCustomHintsPath(customPath);
+                }
+                UpdateHintsDatabaseStatus();
+            }
             // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls now use SetRestartRequired command
             // which sets IsRestartRequired on the Playnite settings window for safe restart handling
         }
@@ -1007,34 +1017,48 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand BrowseForCustomHintsDatabase => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var filePath = PlayniteApi.Dialogs.SelectFile("JSON files|*.json|All files|*.*");
+                    if (!string.IsNullOrWhiteSpace(filePath))
+                    {
+                        Settings.CustomHintsDatabasePath = filePath;
+                        var hintsService = plugin.GetSearchHintsService();
+                        if (hintsService != null && Settings.UseCustomHintsDatabase)
+                        {
+                            hintsService.SetCustomHintsPath(filePath);
+                        }
+                        UpdateHintsDatabaseStatus();
+                    }
+                },
+                context: "browsing for custom hints database",
+                showUserMessage: true
+            );
+        });
+
         public void UpdateHintsDatabaseStatus()
         {
-            try
+            if (Settings.UseCustomHintsDatabase && !string.IsNullOrWhiteSpace(Settings.CustomHintsDatabasePath))
             {
-                var hintsService = plugin.GetSearchHintsService();
-                if (hintsService == null)
+                if (System.IO.File.Exists(Settings.CustomHintsDatabasePath))
                 {
-                    HintsDatabaseStatus = "Service not available";
-                    HasDownloadedHints = false;
-                    return;
-                }
-
-                HasDownloadedHints = hintsService.HasDownloadedHints();
-
-                if (HasDownloadedHints)
-                {
-                    HintsDatabaseStatus = hintsService.GetDownloadedHintsStatus();
+                    var fileName = System.IO.Path.GetFileName(Settings.CustomHintsDatabasePath);
+                    HintsDatabaseStatus = $"Using custom database: {fileName}";
                 }
                 else
                 {
-                    HintsDatabaseStatus = "Using bundled database";
+                    HintsDatabaseStatus = "Custom database file not found";
                 }
             }
-            catch (Exception ex)
+            else
             {
-                HintsDatabaseStatus = $"Error: {ex.Message}";
-                HasDownloadedHints = false;
+                HintsDatabaseStatus = "Using bundled database";
             }
+            HasDownloadedHints = false;
         }
 
         #endregion

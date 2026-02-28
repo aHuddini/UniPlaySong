@@ -22,13 +22,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.4
 
+> **Notice:** GitHub suspended our repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
+
+- [Removed] **Download Sources** — Download sources have been removed to avoid potential DMCA issues.
+- [Removed] **Bulk Download** — "Download Music for All Games" button removed.
+- [Removed] **Search Hints Online Updates** — The search hints database no longer checks for or downloads online updates. Use the bundled database or load a custom file via Settings → Search.
 - [New Feature] **Game Property Filter** — Play game-specific music only for games matching selected platforms, genres, or sources. Games that don't match fall through to default music. Configure in Settings → Playback.
 - [New Feature] **Filter Mode** — Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.
 - [New Feature] **Radio Mode** — Continuous background music from a fixed pool, ignoring game selection entirely. Overrides both game-specific and default music while active. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Configure in Settings → Playback.
 - [Changed] **External Audio Pause Default** — "Pause on external audio" is now disabled by default.
-- [Removed] **KHInsider & Zophar Download Sources** — These third-party download sources have been temporarily disabled. YouTube remains as the active source. Manual searches and per-game downloads still work.
-- [Removed] **Bulk Download** — "Download Music for All Games" button temporarily disabled.
-- [Removed] **Search Hints GitHub Updates** — The search hints database is now bundled-only; GitHub pull/auto-update functionality has been removed.
 
 ### Previous Version
 - **v1.3.3**: Audio Artifact Eliminated (Live Effects tremolo fix), Smoother Fading, Configurable Fade Curves, Game Switch UI Lag Eliminated, Short Track Reliability fixes, Custom Folder/Pool Sources fully supported

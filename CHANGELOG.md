@@ -4,6 +4,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.3.4] - TBD
 
+### Notice
+GitHub suspended our repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
+
+### Removed
+- **Download Sources** - Download sources have been removed to avoid potential DMCA issues.
+- **Bulk Download** - "Download Music for All Games" button removed from Settings → Downloads.
+- **Search Hints Online Updates** - The search hints database no longer checks for or downloads online updates. A bundled database is included with the extension, or you can load a custom database file via Settings → Search.
+
 ### Added
 - **Game Property Filter** - Play game-specific music only for games matching certain platforms, genres, or sources. Configure via Settings → Playback → Game Property Filter. Uses OR logic across all selected criteria — a game matches if it belongs to any selected platform, genre, or source. Games that don't match fall through to default music.
 - **Filter Mode** - Play game-specific music only when a Playnite filter is active. When enabled, switching to unfiltered ("All") view falls through to default music; applying any filter (platform, completion status, genre, custom preset, etc.) restores game-specific playback. Covers both criteria-based filters and Playnite's built-in quick-filter presets (Recently Played, Most Played). Configure via Settings → Playback.
@@ -11,11 +19,6 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Changed
 - **External Audio Pause Default** - "Pause on external audio" is now disabled by default. Previously enabled by default, which surprised new users with music stopping when launching games that played audio. Can be re-enabled in Settings → Pauses.
-
-### Removed
-- **KHInsider and Zophar Download Sources** - These third-party download sources have been temporarily disabled. YouTube remains as the active download source. Manual searches and per-game downloads via YouTube are unaffected.
-- **Bulk Download** - "Download Music for All Games" button temporarily disabled in Settings → Downloads. Individual per-game downloads via YouTube continue to work.
-- **Search Hints GitHub Updates** - The search hints database is now bundled-only. The "Download GitHub File", "Revert to Bundled", and "Check for updates on startup" options have been removed from Settings → Search. The bundled hints database continues to work as expected.
 
 ## [1.3.3] - 2026-02-22
 

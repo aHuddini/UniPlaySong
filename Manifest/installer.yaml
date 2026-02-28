@@ -5,13 +5,13 @@ Packages:
     ReleaseDate: 2026-02-26
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.4/UniPlaySong-1_3_4-Feb26_2026.pext'
     Changelog:
+      - '[Removed] Download sources removed to avoid potential DMCA issues.'
+      - '[Removed] Bulk Download: "Download Music for All Games" button removed.'
+      - '[Removed] Search Hints Online Updates: The search hints database no longer checks for or downloads online updates. Use the bundled database or load a custom file.'
       - '[New Feature] Game Property Filter: Play game-specific music only for games matching selected platforms, genres, or sources. Unmatched games fall through to default music. Configure in Settings → Playback.'
       - '[New Feature] Filter Mode: Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.'
       - '[New Feature] Radio Mode: Continuous background music from a fixed pool, ignoring game selection. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Overrides game-specific and default music while active.'
       - '[Changed] External Audio Pause Default: "Pause on external audio" is now disabled by default. Re-enable in Settings → Pauses if desired.'
-      - '[Removed] KHInsider & Zophar download sources temporarily disabled. YouTube remains active for manual searches and per-game downloads.'
-      - '[Removed] Bulk Download: "Download Music for All Games" button temporarily disabled.'
-      - '[Removed] Search Hints GitHub Updates: The search hints database is now bundled-only. GitHub pull and auto-update options have been removed.'
   - Version: 1.3.3
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-22

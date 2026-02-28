@@ -1011,6 +1011,10 @@ namespace UniPlaySong
         private int searchCacheDurationDays = 7;
         private bool autoCheckHintsOnStartup = true;
 
+        // Search Hints Database Settings
+        private bool useCustomHintsDatabase = false;
+        private string customHintsDatabasePath = "";
+
         /// <summary>
         /// Enable search result caching to optimize KHInsider → YouTube fallback
         /// When enabled, search results are cached for the specified duration
@@ -1039,6 +1043,18 @@ namespace UniPlaySong
         {
             get => autoCheckHintsOnStartup;
             set { autoCheckHintsOnStartup = value; OnPropertyChanged(); }
+        }
+
+        public bool UseCustomHintsDatabase
+        {
+            get => useCustomHintsDatabase;
+            set { useCustomHintsDatabase = value; OnPropertyChanged(); }
+        }
+
+        public string CustomHintsDatabasePath
+        {
+            get => customHintsDatabasePath;
+            set { customHintsDatabasePath = value; OnPropertyChanged(); }
         }
 
         // Audio Normalization Settings
