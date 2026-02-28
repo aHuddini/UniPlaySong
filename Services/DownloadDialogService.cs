@@ -115,8 +115,9 @@ namespace UniPlaySong.Services
 
             var sourceOptions = new List<Playnite.SDK.GenericItemOption>
             {
-                new Playnite.SDK.GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
-                new Playnite.SDK.GenericItemOption("Zophar", "Download from Zophar (Video game music archive)"),
+                // DISABLED: KHInsider and Zophar temporarily removed (GitHub TOS review)
+                // new Playnite.SDK.GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
+                // new Playnite.SDK.GenericItemOption("Zophar", "Download from Zophar (Video game music archive)"),
                 new Playnite.SDK.GenericItemOption("YouTube",
                     youtubeConfigured
                         ? "Download from YouTube (Playlists and videos)"

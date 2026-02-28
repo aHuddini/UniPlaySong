@@ -525,11 +525,11 @@ namespace UniPlaySong
             // Any game selection that happened during startup will now be processed
             _playbackService?.MarkInitializationComplete();
 
-            // Check for search hints updates on startup (if enabled)
-            if (_settings?.AutoCheckHintsOnStartup == true)
-            {
-                CheckForHintsUpdatesAsync();
-            }
+            // DISABLED: GitHub hints update check temporarily removed (GitHub TOS review)
+            // if (_settings?.AutoCheckHintsOnStartup == true)
+            // {
+            //     CheckForHintsUpdatesAsync();
+            // }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)
             if (_settings?.RadioModeEnabled == true)

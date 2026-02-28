@@ -240,7 +240,8 @@ namespace UniPlaySong
 
             s.EnableSearchCache = true;
             s.SearchCacheDurationDays = 7;
-            s.AutoCheckHintsOnStartup = false;
+            // DISABLED: GitHub hints auto-check temporarily removed (GitHub TOS review)
+            // s.AutoCheckHintsOnStartup = false;
 
             ShowButtonFeedback(sender, "Reset!");
         }

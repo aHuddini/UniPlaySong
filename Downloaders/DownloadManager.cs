@@ -44,8 +44,11 @@ namespace UniPlaySong.Downloaders
             _hintsService = hintsService;
             _settings = settings;
 
-            _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
-            _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
+            // DISABLED: KHInsider and Zophar sources temporarily removed (GitHub TOS review)
+            // _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
+            // _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
+            _khDownloader = null;
+            _zopharDownloader = null;
             var cookieMode = settings?.CookieMode ?? CookieMode.None;
             var customCookiesPath = settings?.CustomCookiesFilePath ?? string.Empty;
             _ytDownloader = new YouTubeDownloader(httpClient, ytDlpPath, ffmpegPath, cookieMode, customCookiesPath, errorHandler);
@@ -97,53 +100,59 @@ namespace UniPlaySong.Downloaders
                     allAlbums.AddRange(hintAlbums);
                 }
 
-                // === PRIORITY 1: KHInsider (best quality, curated VGM archive) ===
-                List<Album> khAlbums = null;
-
-                // Check cache only if not skipping
-                if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
+                // === PRIORITY 1: KHInsider — DISABLED (GitHub TOS review) ===
+                if (_khDownloader != null)
                 {
-                    DLog.Debug($"  KHInsider: {khAlbums.Count} (cached)");
-                }
-                else
-                {
-                    khAlbums = GetKHInsiderAlbumsWithStrategies(gameName, cancellationToken, auto);
+                    List<Album> khAlbums = null;
 
-                    // Only cache if not skipping cache (empty results will be skipped by cache service)
-                    if (!skipCache && _cacheService != null)
+                    // Check cache only if not skipping
+                    if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
                     {
-                        _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
+                        DLog.Debug($"  KHInsider: {khAlbums.Count} (cached)");
                     }
-                    DLog.Debug($"  KHInsider: {khAlbums?.Count ?? 0}");
-                }
-
-                if (khAlbums != null && khAlbums.Count > 0)
-                {
-                    allAlbums.AddRange(khAlbums);
-                }
-
-                // === PRIORITY 2: Zophar (good VGM archive with emulated formats) ===
-                List<Album> zopharAlbums = null;
-
-                if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.Zophar, out zopharAlbums))
-                {
-                    DLog.Debug($"  Zophar: {zopharAlbums.Count} (cached)");
-                }
-                else
-                {
-                    zopharAlbums = _zopharDownloader?.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList()
-                        ?? new List<Album>();
-
-                    if (!skipCache && _cacheService != null)
+                    else
                     {
-                        _cacheService.CacheSearchResult(gameName, Source.Zophar, zopharAlbums);
+                        khAlbums = GetKHInsiderAlbumsWithStrategies(gameName, cancellationToken, auto);
+
+                        // Only cache if not skipping cache (empty results will be skipped by cache service)
+                        if (!skipCache && _cacheService != null)
+                        {
+                            _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
+                        }
+                        DLog.Debug($"  KHInsider: {khAlbums?.Count ?? 0}");
                     }
-                    DLog.Debug($"  Zophar: {zopharAlbums.Count}");
+
+                    if (khAlbums != null && khAlbums.Count > 0)
+                    {
+                        allAlbums.AddRange(khAlbums);
+                    }
                 }
 
-                if (zopharAlbums != null && zopharAlbums.Count > 0)
+                // === PRIORITY 2: Zophar — DISABLED (GitHub TOS review) ===
+                if (_zopharDownloader != null)
                 {
-                    allAlbums.AddRange(zopharAlbums);
+                    List<Album> zopharAlbums = null;
+
+                    if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.Zophar, out zopharAlbums))
+                    {
+                        DLog.Debug($"  Zophar: {zopharAlbums.Count} (cached)");
+                    }
+                    else
+                    {
+                        zopharAlbums = _zopharDownloader?.GetAlbumsForGame(gameName, cancellationToken, auto)?.ToList()
+                            ?? new List<Album>();
+
+                        if (!skipCache && _cacheService != null)
+                        {
+                            _cacheService.CacheSearchResult(gameName, Source.Zophar, zopharAlbums);
+                        }
+                        DLog.Debug($"  Zophar: {zopharAlbums.Count}");
+                    }
+
+                    if (zopharAlbums != null && zopharAlbums.Count > 0)
+                    {
+                        allAlbums.AddRange(zopharAlbums);
+                    }
                 }
 
                 // === PRIORITY 3: YouTube (last resort, requires yt-dlp) ===
@@ -1064,8 +1073,8 @@ namespace UniPlaySong.Downloaders
 
             // Priority order: KHInsider (best quality) → SoundCloud → YouTube (last resort)
 
-            // Add KHInsider album if available (highest priority)
-            if (!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
+            // Add KHInsider album if available (highest priority) — DISABLED when _khDownloader is null
+            if (_khDownloader != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
             {
                 var albumId = $"game-soundtracks/album/{hint.KHInsiderAlbum}";
                 hintAlbums.Add(new Album
@@ -1120,7 +1129,7 @@ namespace UniPlaySong.Downloaders
                 case Source.SoundCloud:
                     return _soundCloudDownloader;
                 case Source.All:
-                    return _khDownloader;
+                    return _ytDownloader;
                 default:
                     DLog.Warn($"Unknown source: {source}");
                     return null;

@@ -7,10 +7,15 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Added
 - **Game Property Filter** - Play game-specific music only for games matching certain platforms, genres, or sources. Configure via Settings → Playback → Game Property Filter. Uses OR logic across all selected criteria — a game matches if it belongs to any selected platform, genre, or source. Games that don't match fall through to default music.
 - **Filter Mode** - Play game-specific music only when a Playnite filter is active. When enabled, switching to unfiltered ("All") view falls through to default music; applying any filter (platform, completion status, genre, custom preset, etc.) restores game-specific playback. Covers both criteria-based filters and Playnite's built-in quick-filter presets (Recently Played, Most Played). Configure via Settings → Playback.
-- **Radio Mode** - Continuous background music from a fixed pool, ignoring game selection entirely. Four sources: Full Library (shuffles every downloaded song), Custom Folder, Custom Game Rotation, and Completion Status Pool. Overrides both game-specific and default music while active. Skip and Now Playing work as expected. Configure via Settings → Playback → Play Methods.
+- **Radio Mode** - Continuous background music from a fixed pool, ignoring game selection entirely. Four sources: Full Library (shuffles every song in your library), Custom Folder, Custom Game Rotation, and Completion Status Pool. Overrides both game-specific and default music while active. Skip and Now Playing work as expected. Configure via Settings → Playback → Play Methods.
 
 ### Changed
 - **External Audio Pause Default** - "Pause on external audio" is now disabled by default. Previously enabled by default, which surprised new users with music stopping when launching games that played audio. Can be re-enabled in Settings → Pauses.
+
+### Removed
+- **KHInsider and Zophar Download Sources** - These third-party download sources have been temporarily disabled. YouTube remains as the active download source. Manual searches and per-game downloads via YouTube are unaffected.
+- **Bulk Download** - "Download Music for All Games" button temporarily disabled in Settings → Downloads. Individual per-game downloads via YouTube continue to work.
+- **Search Hints GitHub Updates** - The search hints database is now bundled-only. The "Download GitHub File", "Revert to Bundled", and "Check for updates on startup" options have been removed from Settings → Search. The bundled hints database continues to work as expected.
 
 ## [1.3.3] - 2026-02-22
 
@@ -65,7 +70,7 @@ All notable changes to UniPlaySong will be documented in this file.
   - Extended M3U format with `#EXTINF` duration/title entries and absolute file paths
 - **Extended Default Music Sources** - Three new default music source options in Settings → Playback → Default Music:
   - **Custom Folder**: Point to any directory of audio files — UPS randomly picks from it when no game music is available
-  - **Random Game**: Randomly selects a song from any game in your downloaded music library
+  - **Random Game**: Randomly selects a song from any game in your music library
   - **Custom Game Rotation**: Select specific games whose music serves as the default rotation pool, with a searchable multi-select game picker dialog
   - **Continue Same Song**: Optional toggle to keep the same default song playing across game switches instead of re-rolling on each selection
   - All three sources integrate with existing skip behavior (skip picks a new random song from the pool)
@@ -73,10 +78,9 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Changed
 - **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", fullscreen-only options labeled accordingly.
 - **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback, now uses instant song switching for snappy browsing), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
-- **Per-Tab Reset Buttons** - Each settings tab (General, Playback, Pauses, Live Effects, Editing, Downloads, Search) now has a "Reset to Defaults" button in the tab header. Tool paths (yt-dlp, FFmpeg) are preserved on reset.
+- **Per-Tab Reset Buttons** - Each settings tab now has a "Reset to Defaults" button in the tab header. Tool paths (FFmpeg) are preserved on reset.
 - **Improved Default Settings** - New installs now ship with a better out-of-box experience: media controls, now playing display, auto-tagging, song randomization, bundled default music preset, live effects with Rehearsal style, spectrum visualizer, external audio pausing, and completion celebration all enabled by default.
 - **Settings UI Polish** - Horizontal checkbox grouping for compact layout, italic tab subtitles in sage/seafoam accent, collapsible Dynamic Color Tuning section, streamlined button descriptions.
-- **Custom Cookies File** - New cookie source option in Settings → Downloads. Browse for a Netscape-format cookies.txt file exported from any browser, replacing the Firefox-only option. Previous Firefox cookie support remains available alongside the new option.
 - **Bundled Default Music** - Renamed bundled preset files for cleaner filenames. Added PS2 Menu Ambience as a fourth bundled preset option.
 - **Style Preset Tuning** - Rehearsal preset updated to Reverb-first effect chain with -1dB makeup gain. All style presets capped at 1dB maximum makeup gain to prevent audio clipping.
 - **Global Settings Reset Rewritten** - Cleanup menu's "Reset Settings to Defaults" now uses JSON deep clone instead of incomplete manual property copying, ensuring all 180+ properties are properly reset.
@@ -91,7 +95,6 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.1] - 2026-02-18
 
 ### Added
-- **Install-Aware Auto-Download** - Automatically downloads music when a game transitions from uninstalled to installed, if it doesn't already have music. Plays the downloaded music immediately if the game is still selected. Enabled by default in Settings → Downloads
 - **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another application produces audio
   - Detects any app playing audio through Windows via NAudio CoreAudioApi session enumeration
   - Configurable debounce slider (0–10 seconds, default 0 "Instant") — controls how long external audio must persist before pausing. Default is instant (reacts on first detection poll)
@@ -158,9 +161,6 @@ All notable changes to UniPlaySong will be documented in this file.
   - Shows `[Default]` alone for non-bundled default music, `[Default] Song Title - Artist` for bundled presets
   - Toggle in Settings → General (disabled by default, requires "Show Now Playing" to be enabled)
 - **Experimental Settings Tab** - New settings tab for features under active development
-- **Download Complete Notification** (Experimental) - Plays a notification sound when music downloads finish
-  - Briefly pauses current music so the notification is audible, then resumes automatically
-  - Toggle in Settings → Experimental
 - **Celebration Toast Notification** (Experimental) - Visual gold-glow toast popup when a game is marked completed, complementing the fanfare sound
   - Smooth pulsing glow animation with gold accent theme
   - Auto-dismisses after 6 seconds, click to dismiss early
@@ -196,14 +196,13 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Hide Now Playing for Default Music** - New sub-option under "Show Now Playing" that collapses the Now Playing panel when no game-specific music is playing (default music active). Settings → General
 
 ### Performance
-- **Song List Caching** - Directory scans cached in-memory with smart invalidation after file operations (downloads, edits, deletes). Opt-in toggle in General Settings → Performance
+- **Song List Caching** - Directory scans cached in-memory with smart invalidation after file operations. Opt-in toggle in General Settings → Performance
 - **Native Music Path Caching** - Cached native music file path at startup instead of scanning per game selection
 - **Parallel File Deletions** - Bulk delete operations (Delete All Music, Delete Long Songs) now run in parallel
-- **Async UI Operations** - Converted blocking delays to async across batch downloads and audio processing dialogs
 
 ### Fixed
 - **Shuffle Duplicate Sequences** - Fixed identical "random" songs when rapidly switching games in shuffle mode
-- **Song Cache Invalidation** - Downloaded/repaired music now appears immediately without needing to re-select the game
+- **Song Cache Invalidation** - Music now appears immediately after file changes without needing to re-select the game
 
 ## [1.2.10] - 2026-02-13
 
@@ -298,9 +297,6 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
 - **Desktop Media Controls** - Tighter button spacing for more compact top panel layout (24px closer)
 - **Code Quality** - Consolidated duplicate code and eliminated magic strings for improved maintainability
-  - Centralized default file extension (`.mp3`) to single constant
-  - Replaced manual file sanitization loops with unified utility method
-  - Reduced code duplication by ~40 lines across 9 files
 
 ### Fixed
 - **Settings Integration with other Plugins** - Fixed music and video audio playing simultaneously after opening/closing settings
@@ -308,8 +304,6 @@ All notable changes to UniPlaySong will be documented in this file.
   - Runtime state properties (`VideoIsPlaying`, `ThemeOverlayActive`) no longer persisted to disk, preventing startup playback issues
   - Eliminated double-fire property change handlers that caused inconsistent pause states
 - **Pause-on-X Settings Behavior** - Fixed stuck pause when disabling "Pause on Minimize/Focus Loss/System Tray" settings while their pause source is active
-  - Pause source removal now unconditional on window state changes
-  - Music properly resumes when re-enabling window after disabling pause setting
 
 ## [1.2.4] - 2026-01-30
 
@@ -338,56 +332,18 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Improved
 - **Safer Playnite Restart Handling** - Settings requiring restart now use Playnite's built-in mechanism
-  - Uses `IsRestartRequired` Playnite pattern instead of manual process restart
 
 ### Fixed
 - **Window State Pause Settings** - Fixed issues with pause settings at startup ([#51](https://github.com/aHuddini/UniPlaySong/issues/51), [#27](https://github.com/aHuddini/UniPlaySong/issues/27))
   - Music no longer plays briefly when Playnite launches minimized or in system tray
   - Music now correctly auto-plays when window is restored after starting minimized
-  - "Pause on Focus Loss", "Pause on Minimize", and "Pause when in System Tray" now work reliably at startup when used along Desktop Pause/Play media controls
 
 ## [1.2.2] - 2026-01-17
-
-### Added
-- **Download Manager with Review Mode** - Correct wrong album picks after auto-download
-  - Click "Review Downloads" to enter Review Mode, click games to re-download with different albums
-  - Games you've corrected show orange highlighting for easy tracking
-- **Auto-Add More Songs** - One-click bulk song expansion in Review Mode
-  - Adds 1-3 random songs per game from matched albums (works for successful AND skipped games)
-  - Newly downloaded songs play automatically as they complete
-- **Batch Manual Download Dialog** - Unified dialog for retrying failed games
-  - Cover thumbnails, custom search box, preview button, green checkmarks for progress
-- **Parallel Download Processing** - Up to 4 concurrent downloads, starts immediately as albums are found
-- **Music Playback Controls** - Pause/Resume button in download dialog footer
-- **SoundCloud Support** - New hints-only source for search hints database
-  - Add `soundcloudUrl` field to search_hints.json entries for direct SoundCloud downloads
-  - Supports both single tracks and playlists/sets
-  - Uses yt-dlp for reliable downloads with rate limiting
-- **Auto-Check for Hints Updates** - Optional startup check for search hints database updates
-  - Compares your local hints database with the latest GitHub version
-  - Notifies when new entries are available.
-  - Toggle in Settings → Search Cache → "Check for updates on startup"
-- **Bundled Hints Fallback** - When downloaded hints lack direct links, automatically falls back to bundled hints during download operations.
-
-### Fixed
-- **Search Hints Priority** - Reordered hint sources: KHInsider (best quality) → SoundCloud → YouTube (last resort)
 
 ### Performance
 - **Search Cache** - 90% smaller cache files with automatic migration from old format
 
 ## [1.2.1] - 2026-01-17
-
-### Improved
-- **YouTube Search Reliability** - Significantly improved auto-download success rate
-  - Updated internal Youtube parser client version to 2025 iteration
-  - Added dual-format playlist parser supporting both modern `lockupViewModel` and legacy `playlistRenderer` response formats
-  - Enhanced property fallbacks for title, channel, thumbnail, and video count extraction
-  - Addressed unicode bug in search results #48
-- **Dedicated Download Logging** - Cleaner logging separation
-  - New `downloader.log` file in extension folder for all download-related operations
-  - Automatic log rotation when exceeding 5MB (keeps one `.old` backup)
-  - Session markers for batch download operations
-  - Significantly reduced logging verbosity while maintaining important status messages
 
 ### Added
 - **Now Playing Display** - Shows current song title, artist, and duration in Desktop top panel
@@ -397,21 +353,16 @@ All notable changes to UniPlaySong will be documented in this file.
   - **Show Now Playing (Desktop mode)** - Toggle the Now Playing song info display
   - **Show Media Controls (Desktop mode)** - Toggle the Play/Pause and Skip buttons
   - Both options are disabled by default; changing requires Playnite restart
-- **New Search Hints: CONTRIBUTIONS WELCOME!** - Added YouTube playlist ID for Necromunda: Hired Gun (official YouTube Music album). 
 
 ## [1.2.0] - 2026-01-15
 
 ### Added
 - **Desktop Top Panel Media Controls** - Play/Pause and Skip buttons in Playnite's top panel bar ([#5](https://github.com/aHuddini/UniPlaySong/issues/5))
   - **Play/Pause button** - Always visible, toggles music playback with standard media player conventions
-    - Shows pause icon (⏸) when music is playing (click to pause)
-    - Shows play icon (▶) when music is paused/stopped (click to play)
   - **Skip/Next button** - Skip to a random different song from the current game's music folder
     - Greyed out (30% opacity) when only one song is available
     - Full opacity and functional when 2+ songs are available
-    - Automatically updates after downloading new music or auto-normalization
   - Uses IcoFont icons for visual consistency with Playnite's native UI
-  - Survives Live Effects toggle (properly resubscribes to recreated playback service)
 
 ## [1.1.9] - 2026-01-13
 
@@ -426,130 +377,52 @@ All notable changes to UniPlaySong will be documented in this file.
   - See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md) for usage examples
 
 ### Credits
-- **Special thanks to Mike Aniki** for his guidance and extensive testing help with getting this plugin to work with ANIKI REMAKE in mind! His theme can support UPS in the future.
+- **Special thanks to Mike Aniki** for his guidance and extensive testing help with getting this plugin to work with ANIKI REMAKE in mind!
 
 ## [1.1.8] - 2026-01-11
 
 ### Added
 - **Toast Notifications** - New lightweight notification system for controller-mode operations
-  - Custom Windows API blur effects (direct SetWindowCompositionAttribute calls, not WPF Blur Effect)
+  - Custom Windows API blur effects
   - Color-coded accent bars: green for success, red for errors, blue for info
   - Non-intrusive positioning with smooth fade animations
-  - Customizable appearance settings in new "Toast Notifications" settings tab
-  - Specifically designed for controller-mode features to replace buggy confirmation dialogs
-- **Toast Notification Customization (DEBUG ONLY, NOT IN RELEASE)** - Full control over notification appearance
-  - Background opacity slider (0-100%)
-  - Blur intensity control (0-25)
-  - Corner radius adjustment (0-20px)
-  - Custom accent color with RGB sliders and brightness adjustment
-  - Border color customization with RGB sliders
-  - Border thickness control (0-5px)
-  - Live preview of all color settings
-- **Custom Windows Blur System** - Direct Windows API blur infrastructure (Windows 10+ compatible)
-  - `SetWindowCompositionAttribute` Windows API integration
-  - `AccentPolicy` structure for blur/transparency control
-  - Support for both Basic blur (Windows 10+) and Acrylic blur (Windows 10 1803+) modes
-  - Extensible for future UI elements requiring native Windows blur effects
+  - Specifically designed for controller-mode features
 
 ### Changed
 - **Controller-Mode Dialog System** - Replaced problematic confirmation dialogs with toast notifications in controller mode
-  - Removes disruptive modal dialogs that interrupted controller navigation workflow
-  - Confirmation feedback now appears as subtle toast notifications
-  - Improves user experience in fullscreen/controller mode operations
 
 ### Fixed
 - **Settings Persistence** - Fixed critical bug where settings changes were not being saved
-  - Settings like "Pause music when Playnite loses focus" and "Automatically download music for new games" now persist correctly
-  - Root cause: ViewModel instance mismatch between GetSettings and GetSettingsView methods
-  - Implemented PlayniteSound pattern: cached ViewModel initialization in constructor
-  - Playnite now correctly sets DataContext without manual override
 - **Controller Mode Dialog Windows** - Fixed dialog handling in Fullscreen/Controller mode
-  - Dialogs now properly respect controller navigation context
-  - Improved focus management when dialogs open and close
-  - Fixed issues with dialogs becoming unresponsive or hidden
 - **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
-  - Resolved Playnite crashes during looped default music playback with custom music
-  - Improved stability when mixing live effects with default/fallback music sources
 
 ## [1.1.7] - 2026-01-10
 
 ### Fixed
-- **Batch Download UI Freeze** - Progress dialog no longer freezes with large game counts
-  - Replaced expensive LINQ-based progress counting with incremental counters (O(1) vs O(n))
-  - Added throttled UI updates (max 10 updates/second) to prevent dispatcher flooding
-  - Significantly improves responsiveness when downloading 100+ games
-- **Download Music Playback** - Fixed shuffle behavior and queue management during downloads
-  - Corrected random music playback interruptions during bulk operations
-  - Improved music queue handling for better user experience
+- **UI Performance** - Fixed progress dialog freezing with large game counts
 
 ## [1.1.6] - 2026-01-10
 
 ### Added
-- **UPS Hints in Manual Search** - Search hints now appear at the top of manual album search results
-  - Gold/orange color-coded highlighting makes hint albums easy to identify
-  - Hints from search_hints.json displayed with "★ UPS Hint" label
-  - Available in both Desktop and Fullscreen/Controller modes
-- **Auto-Download Uses Search Hints First** - Search hints are now prioritized in auto-download
-  - `BestAlbumPick` now checks for hint albums before fuzzy matching
-  - Games with configured YouTube playlists or KHInsider albums in search_hints.json will use those directly
-  - Significantly improves auto-download success rate for problematic game names
-- **Auto-Download Playback Resume** - Music playback now resumes during/after batch downloads
-  - Playback starts immediately when the currently-selected game's music downloads successfully
-  - If current game isn't in the batch, playback resumes after batch completes
-- **Manual Search Summary** - Summary popup now appears after completing manual retry for failed downloads
-  - Shows total games attempted, successful downloads, and skipped/cancelled games
-  - Lists game names for easy reference
-- **Auto-Search Hint Database** - New settings section for managing the search hints database
-  - Download latest search_hints.json from GitHub to get updated hints
+- **Search Hints Database** - New settings section for managing the bundled search hints database
   - Hints are stored in AutoSearchDatabase folder in extension data
-  - Shows download status with entry count and last update time
-  - Open Database Folder button for easy access to downloaded hints
-  - Revert to Bundled option to delete downloaded hints and use bundled version
+  - Open Database Folder button for easy access
 
 ### Changed
 - Renamed "User Hint" to "UPS Hint" throughout the UI for better branding
-- Added "GOG Cut" to game name suffix stripping (e.g., "Daggerfall Unity - GOG Cut" → "Daggerfall Unity")
-
-### Fixed
-- Search hints not being used during auto-download despite being configured
-  - Hint albums now have `Type = "Hint"` flag for proper identification
-  - `BestAlbumPick` and `BestAlbumPickBroader` now return hint albums immediately without fuzzy matching
-- Removed "Continue with remaining games?" popup during manual retry after auto-download failures
-  - Canceling manual search now silently continues to the next game
-- Manual download no longer interrupts preview playback
-  - Downloaded music won't auto-start if a preview is currently playing
+- Added "GOG Cut" to game name suffix stripping
 
 ## [1.1.5] - 2026-01-09
 
 ### Added
-- **Zophar Integration** - New download source for video game music
-  - Added Zophar.net as second-priority download source between KHInsider and YouTube
-  - Specializes in retro gaming soundtracks and emulated format rips
-  - Increases auto-download success rates for games not available on KHInsider
-  - Full caching and search hint support for problematic game names
 - **Search Hints Backend** - Intelligent game name resolution system
   - Dual-source system: bundled curated hints + user-editable custom hints
   - Provides direct album/playlist links for problematic games that cause search issues
   - Supports fuzzy matching, base name matching, and exact lookups
-- **Revamped Auto-Download Operation** - Improved bulk download performance and UX
-  - New dedicated GUI dialog for auto-download operations with real-time progress
-  - Parallel task execution for search and download operations
-  - Improved error handling and retry logic for failed downloads
-  - Better visual feedback during multi-game bulk operations
 - **Delete Long Songs** cleanup tool - Scans music library and deletes songs longer than 10 minutes
-  - Helps remove accidentally downloaded full albums, podcasts, or corrupted files
-  - Prevents bulk operations (normalization, trimming) from getting stuck on excessively long files
+  - Helps remove accidentally added full albums, podcasts, or corrupted files
   - Shows preview of files to be deleted with duration and total size before confirmation
-  - Uses progress dialog to prevent UI freeze during scan
 - **Import from PlayniteSound & Delete** migration option - Clean migration that imports music then removes PlayniteSound originals
-  - Two-step process: imports all music, then deletes original PlayniteSound files
-  - Includes double-confirmation to prevent accidental data loss
-  - Cleans up empty "Music Files" folders and game directories after deletion
-
-### Fixed
-- Back button in batch download album selection now properly returns to source selection ([#36](https://github.com/aHuddini/UniPlaySong/issues/36))
-  - Previously displayed "BACK_SIGNAL" text instead of allowing source change
-  - Now shows source selection dialog (KHInsider/YouTube) when pressing Back
 
 ## [1.1.4] - 2026-01-07
 
@@ -561,70 +434,46 @@ All notable changes to UniPlaySong will be documented in this file.
   - Extended Wet Gain range to +10 dB for more pronounced effects
 - **Live Effects: Effect Chain Ordering** - Configurable processing order with 6 preset orderings
 - **Live Effects: Advanced Reverb Tuning** - Expert-mode controls for algorithm parameters
-  - Wet Gain Multiplier (0.01-0.25) - Controls overall reverb intensity
-  - HF Damping Min/Max - Controls brightness/darkness range of damping slider
-  - Includes safety warnings about hearing damage risks
 - **Amplify Audio** feature with waveform-based gain adjustment editor
-  - Visual waveform display with real-time gain preview
-  - Clipping indicator shows when gain would exceed 0dBFS
-  - Headroom display shows maximum safe gain
-  - Supports gain range of -12dB to +12dB in 0.5dB steps
-  - Controller-friendly version for Fullscreen mode (D-Pad Up/Down for fine adjustment, LB/RB for coarse)
-  - Original files preserved in PreservedOriginals folder
 - Repair Music Folder option in Fullscreen mode context menu
-- Repair Audio File option with controller-friendly file picker in Fullscreen mode
-- Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18)). Auto-tags on library update with manual "Scan & Tag All Games" button in settings
+- Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18))
 
 ### Changed
 - Live Effects reverb algorithm now uses Reverberance (not Room Size) for feedback calculation, matching Audacity behavior
-- Reverb wet gain multiplier changed to 0.03 for balanced reverb intensity (adjustable via Advanced Tuning)
-- Reverb tuning constants extracted and documented in EffectsChain.cs for easy modification
 
 ### Fixed
-- Room size slider changes now apply in real-time during playback (previously required song restart)
+- Room size slider changes now apply in real-time during playback
 - Stop() no longer incorrectly triggers MediaEnded event in NAudio player
-- Music now properly restarts when toggling Live Effects on/off (instead of just stopping)
+- Music now properly restarts when toggling Live Effects on/off
 
 ## [1.1.3] - 2026-01-02
 
 ### Added
-- Pause music when in system tray: New option to pause music when Playnite is hidden in the system tray ([#27](https://github.com/aHuddini/UniPlaySong/issues/27))
-- Parallel bulk normalization: Audio normalization now processes up to 3 files in parallel for significantly faster bulk operations ([#25](https://github.com/aHuddini/UniPlaySong/issues/25))
-- Parallel bulk silence trimming: Silence trim operations also now process up to 3 files in parallel
-- Dialog windows now appear in Windows taskbar (Desktop mode): Easy to find dialogs when switching between applications ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
+- Pause music when in system tray ([#27](https://github.com/aHuddini/UniPlaySong/issues/27))
+- Parallel bulk normalization: Audio normalization now processes up to 3 files in parallel ([#25](https://github.com/aHuddini/UniPlaySong/issues/25))
+- Parallel bulk silence trimming
+- Dialog windows now appear in Windows taskbar (Desktop mode) ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
 
 ### Changed
-- Simplified bulk normalization progress dialog by removing success/fail counters ([#26](https://github.com/aHuddini/UniPlaySong/issues/26))
-- FFmpeg path setting consolidated to Audio Normalization tab only (removed duplicate from Downloads tab) ([#30](https://github.com/aHuddini/UniPlaySong/issues/30))
+- Simplified bulk normalization progress dialog ([#26](https://github.com/aHuddini/UniPlaySong/issues/26))
+- FFmpeg path setting consolidated to Audio Editing tab only ([#30](https://github.com/aHuddini/UniPlaySong/issues/30))
 
 ### Fixed
-- Normalization progress showing "0/0" after downloads ([#29](https://github.com/aHuddini/UniPlaySong/issues/29))
 - Dialog windows getting "lost" when switching to other programs in Desktop mode ([#28](https://github.com/aHuddini/UniPlaySong/issues/28))
-- Back button in Desktop download dialogs now properly navigates through the full flow (Song → Album → Source) instead of closing the dialog ([#31](https://github.com/aHuddini/UniPlaySong/issues/31))
 
 ## [1.1.2] - 2026-01-01
 
 ### Added
-- Precise Trim (Waveform Editor): Visual waveform-based audio trimming with draggable start/end markers, real-time duration display, and preview functionality. Desktop mode uses mouse-draggable markers; Fullscreen mode supports full Xbox controller navigation (D-Pad for markers, LB/RB for symmetric adjust, A=Preview, B=Cancel, Start=Apply)
-- Factory Reset & Cleanup Tools: New settings tab (Settings → Cleanup) with storage info display, Delete All Music, Reset Settings, and Factory Reset options. Double-confirmation dialogs prevent accidental data loss
-- Auto-Download on Library Update: Automatically download music when new games are added ([#17](https://github.com/aHuddini/UniPlaySong/issues/17)). Uses intelligent album/song selection, tries KHInsider first with YouTube fallback
-- Download Music for All Games: Bulk download button with non-blocking progress dialog, cancellation support, and summary of results
-- Auto-Normalize After Download: Option to automatically normalize downloaded music using configured settings ([#20](https://github.com/aHuddini/UniPlaySong/issues/20))
-- Audio Repair Tool: Fix problematic audio files that fail to play by re-encoding to 48kHz stereo format
+- Precise Trim (Waveform Editor): Visual waveform-based audio trimming with draggable start/end markers
+- Factory Reset & Cleanup Tools: New settings tab (Settings → Cleanup)
+- Audio Repair Tool: Fix problematic audio files by re-encoding to 48kHz stereo format
 
 ### Changed
 - "Pause when minimized" is now enabled by default for new installations ([#20](https://github.com/aHuddini/UniPlaySong/issues/20))
-- Desktop context menu reorganized with "Audio Processing" and "Audio Editing" submenus for better organization
-- Renamed menu items for consistency: "Normalize Single Song", "Normalize Music Folder", "Repair Music Folder"
+- Desktop context menu reorganized with "Audio Processing" and "Audio Editing" submenus
 
 ### Fixed
 - Music not playing after adding files to game (required restart before)
-- Desktop download preview audio overlap with game music
-- YouTube downloads failing to play due to encoding issues (unusual sample rates/channels)
-- YouTube JSON parsing "Path returned multiple tokens" error
-- Bulk download using stale cache results
-- Improved bulk download success rate with simplified game name search (strips edition suffixes like "Definitive Edition" when full name search fails)
-- KHInsider albums not found for games with colons in names (e.g., "Hitman: Absolution" now correctly finds "Hitman Absolution" album)
 
 ## [1.1.1] - 2025-12-15
 
@@ -635,7 +484,6 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Changed
 - Removed redundant per-game buttons from Normalization tab (use context menu instead)
 - Renamed trim options to "Silence Trim" for clarity
-- Extracted dialog handlers and common utilities into dedicated files for maintainability
 
 ### Fixed
 - PreservedOriginals path now opens correct backup location
@@ -657,38 +505,28 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.0.9] - 2025-11-15
 
 ### Added
-- Download From URL: Download music from specific YouTube URLs with preview ([#10](https://github.com/aHuddini/UniPlaySong/issues/10))
 - PlayniteSound Migration: Bidirectional import/export between PlayniteSound and UniPlaySong
 - New Migration tab in settings
 
 ### Changed
 - Reorganized context menu with logical groupings
-- Enhanced rate limiting for yt-dlp commands
 
 ## [1.0.8] - 2025-11-01
 
 ### Added
 - Debug Logging toggle to reduce log verbosity ([#3](https://github.com/aHuddini/UniPlaySong/issues/3))
-- Rate limiting for downloads ([#6](https://github.com/aHuddini/UniPlaySong/issues/6))
-- Firefox Cookies Support for YouTube downloads
-- JavaScript Runtime Support (Deno) for yt-dlp 2025.11.12+
 - Customizable Trim Suffix
 - Long Audio File Warning (>10 minutes)
 - Automatic Filename Sanitization
 
 ### Fixed
-- Double "MB MB" suffix in download dialogs ([#7](https://github.com/aHuddini/UniPlaySong/issues/7))
 - Topmost windows blocking other apps in Desktop mode ([#8](https://github.com/aHuddini/UniPlaySong/issues/8))
-- Failed downloads persisting across batch runs ([#9](https://github.com/aHuddini/UniPlaySong/issues/9))
-- Music not playing immediately after download
 - Preview threading InvalidOperationException
 - FFmpeg process deadlock during normalization/trimming
 - Normalization in non-English locales (decimal separator issues)
-- Default music not playing after downloading for another game
 - MP4 files being renamed to MP3
 
 ### Changed
-- Simplified Multi-Game Context Menu with automatic KHInsider→YouTube fallback
 - All trim features labeled as "Silence Trimming"
 - Improved progress tracking with succeeded/skipped/failed distinction
 

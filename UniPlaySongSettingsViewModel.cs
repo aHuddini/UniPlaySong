@@ -1027,7 +1027,7 @@ namespace UniPlaySong
                 }
                 else
                 {
-                    HintsDatabaseStatus = "Using bundled database (not downloaded from GitHub)";
+                    HintsDatabaseStatus = "Using bundled database";
                 }
             }
             catch (Exception ex)
