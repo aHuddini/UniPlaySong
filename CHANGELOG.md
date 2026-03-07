@@ -2,6 +2,8 @@
 
 All notable changes to UniPlaySong will be documented in this file.
 
+> **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
+
 ## [1.3.4] - TBD
 
 ### Notice
