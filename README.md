@@ -35,7 +35,7 @@ Built with the help of Claude Code and Cursor IDE
 ### Previous Version
 - **v1.3.3**: Audio Artifact Eliminated (Live Effects tremolo fix), Smoother Fading, Configurable Fade Curves, Game Switch UI Lag Eliminated, Short Track Reliability fixes, Custom Folder/Pool Sources fully supported
 
-> **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved below for reference.
+> **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
 ---
 
