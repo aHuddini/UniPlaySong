@@ -22,7 +22,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.4
 
-> **Notice:** GitHub suspended our repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
+> **Notice:** GitHub suspended my repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
 
 - [Removed] **Download Sources** — Download sources have been removed to avoid potential DMCA issues.
 - [Removed] **Bulk Download** — "Download Music for All Games" button removed.

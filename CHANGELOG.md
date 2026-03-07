@@ -5,7 +5,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.4] - TBD
 
 ### Notice
-GitHub suspended our repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
+GitHub suspended my repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
 
 ### Removed
 - **Download Sources** - Download sources have been removed to avoid potential DMCA issues.
