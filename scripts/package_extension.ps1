@@ -35,7 +35,7 @@ $versionFull = (Get-Content $versionFile -Raw).Trim()
 $version = $versionFull -replace '\.', '_'
 
 # Update AssemblyInfo.cs with version from version.txt
-$assemblyInfoPath = Join-Path $projectRoot "AssemblyInfo.cs"
+$assemblyInfoPath = Join-Path $projectRoot "src\AssemblyInfo.cs"
 if (Test-Path $assemblyInfoPath) {
     $assemblyInfoContent = Get-Content $assemblyInfoPath -Raw
     # Update version attributes if they exist
@@ -62,7 +62,7 @@ if (Test-Path $assemblyInfoPath) {
 }
 
 # Build paths
-$outputDir = "bin\$Configuration\net4.6.2"
+$outputDir = "src\bin\$Configuration\net4.6.2"
 $packageDir = "package"
 $extensionName = "UniPlaySong"
 $extensionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"

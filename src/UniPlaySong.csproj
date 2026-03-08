@@ -34,16 +34,16 @@
     </ItemGroup>
     
     <ItemGroup>
-        <None Include="extension.yaml">
+        <None Include="..\extension.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Include="icon.png">
+        <None Include="..\icon.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Include="LICENSE">
+        <None Include="..\LICENSE">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Include="AutoSearchDatabase\search_hints.json">
+        <None Include="..\AutoSearchDatabase\search_hints.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

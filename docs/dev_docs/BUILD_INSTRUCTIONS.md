@@ -54,7 +54,7 @@ cd X:\Projects\UniPlaySong; dotnet clean -c Release; dotnet restore; dotnet buil
 **Verify Output:**
 - Check that `UniPlaySong.dll` is created in:
   ```
-  bin\Release\net4.6.2\UniPlaySong.dll
+  src\bin\Release\net4.6.2\UniPlaySong.dll
   ```
 - Verify dependencies are copied (HtmlAgilityPack.dll, MaterialDesignThemes.Wpf.dll, etc.)
 
@@ -83,7 +83,7 @@ If you prefer using Visual Studio:
 5. **Verify Output**:
    - Check that `UniPlaySong.dll` is created in:
      ```
-     bin\Release\net4.6.2\UniPlaySong.dll
+     src\bin\Release\net4.6.2\UniPlaySong.dll
      ```
    - Verify dependencies are copied (HtmlAgilityPack.dll, etc.)
 
@@ -91,7 +91,7 @@ If you prefer using Visual Studio:
 
 ```powershell
 cd C:\Projects\UniPSound\UniPlaySong
-msbuild UniPlaySong.csproj /p:Configuration=Release /p:Platform=AnyCPU /t:Rebuild
+msbuild src\UniPlaySong.csproj /p:Configuration=Release /p:Platform=AnyCPU /t:Rebuild
 ```
 
 ## Verifying the Build
@@ -99,13 +99,13 @@ msbuild UniPlaySong.csproj /p:Configuration=Release /p:Platform=AnyCPU /t:Rebuil
 After building, verify:
 
 1. **Main DLL exists**:
-   - `bin\Release\net4.6.2\UniPlaySong.dll`
+   - `src\bin\Release\net4.6.2\UniPlaySong.dll`
 
 2. **Dependencies are present**:
-   - `bin\Release\net4.6.2\HtmlAgilityPack.dll`
-   - `bin\Release\net4.6.2\MaterialDesignThemes.Wpf.dll`
-   - `bin\Release\net4.6.2\MaterialDesignColors.dll`
-   - `bin\Release\net4.6.2\Newtonsoft.Json.dll`
+   - `src\bin\Release\net4.6.2\HtmlAgilityPack.dll`
+   - `src\bin\Release\net4.6.2\MaterialDesignThemes.Wpf.dll`
+   - `src\bin\Release\net4.6.2\MaterialDesignColors.dll`
+   - `src\bin\Release\net4.6.2\Newtonsoft.Json.dll`
    - Other dependencies as needed
    
 3. **SDL2 DLLs** (required for SDL2MusicPlayer):
@@ -197,10 +197,14 @@ After successful build and packaging:
 
 ```
 UniPlaySong/
-├── bin/Release/net4.6.2/    # Build output (after building)
-│   ├── UniPlaySong.dll      # Main extension DLL
-│   └── [dependencies]        # NuGet package DLLs
-├── lib/                      # SDL2 native DLLs (required)
+├── src/                         # All C# source code
+│   ├── bin/Release/net4.6.2/   # Build output (after building)
+│   │   ├── UniPlaySong.dll     # Main extension DLL
+│   │   └── [dependencies]      # NuGet package DLLs
+│   ├── UniPlaySong.csproj      # Project file
+│   ├── AssemblyInfo.cs         # Assembly metadata (auto-updated by scripts)
+│   └── [source folders]        # Audio, Common, Controls, etc.
+├── lib/                         # SDL2 native DLLs (required)
 │   ├── SDL2.dll             # SDL2 core library
 │   └── SDL2_mixer.dll       # SDL2 audio mixer
 ├── package/                  # Package output (created by packaging script)
@@ -209,10 +213,8 @@ UniPlaySong/
 │   ├── icon.png             # Extension icon
 │   └── [all dependencies]   # All required DLLs
 ├── version.txt              # Version number (single source of truth)
-├── AssemblyInfo.cs          # Assembly metadata (auto-updated by scripts)
 ├── extension.yaml           # Extension manifest (auto-updated by scripts)
 ├── icon.png                 # Extension icon
-├── UniPlaySong.csproj       # Project file
 ├── UniPlaySong.sln          # Solution file
 └── package_extension.ps1    # Packaging script (handles version updates)
 ```
