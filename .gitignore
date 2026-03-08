@@ -18,12 +18,12 @@ docs/dev_docs/roadmaps/
 CLAUDE.md
 
 # Bundled jingle audio files (not distributed in repo due to licensing)
-Jingles/*.mp3
-Jingles/*.wav
-Jingles/*.ogg
-Jingles/*.flac
+**/Jingles/*.mp3
+**/Jingles/*.wav
+**/Jingles/*.ogg
+**/Jingles/*.flac
 
 # Bundled default music with unclear licensing
-DefaultMusic/PS2 Menu - Ambience.mp3
+**/DefaultMusic/PS2 Menu - Ambience.mp3
 
 nul
