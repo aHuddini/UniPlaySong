@@ -134,7 +134,7 @@ if (Test-Path $autoSearchDbDir) {
 }
 
 # Copy DefaultMusic folder (bundled ambient presets)
-$defaultMusicDir = Join-Path $projectRoot "DefaultMusic"
+$defaultMusicDir = Join-Path $projectRoot "src\DefaultMusic"
 if (Test-Path $defaultMusicDir) {
     $destDefaultMusic = Join-Path $packageDir "DefaultMusic"
     Copy-Item $defaultMusicDir -Destination $destDefaultMusic -Recurse -Force
@@ -144,7 +144,7 @@ if (Test-Path $defaultMusicDir) {
 }
 
 # Copy Jingles folder (bundled celebration jingles)
-$jinglesDir = Join-Path $projectRoot "Jingles"
+$jinglesDir = Join-Path $projectRoot "src\Jingles"
 if (Test-Path $jinglesDir) {
     $destJingles = Join-Path $packageDir "Jingles"
     Copy-Item $jinglesDir -Destination $destJingles -Recurse -Force

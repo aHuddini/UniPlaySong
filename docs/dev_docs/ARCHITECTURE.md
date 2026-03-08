@@ -115,6 +115,8 @@ UniPlaySong/
 │   ├── ViewModels/                # MVVM view models
 │   │   └── DownloadDialogViewModel.cs     # Download dialog view model
 │   │
+│   ├── DefaultMusic/              # Bundled ambient preset audio files
+│   ├── Jingles/                   # Bundled celebration jingle audio files
 │   ├── UniPlaySong.csproj         # Project file
 │   └── UniPlaySong.cs             # Main plugin entry point
 │
