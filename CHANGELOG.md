@@ -8,6 +8,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Improved
 - **Open Music Folder** - When "Open Music Folder" is selected for a game with no existing music folder, a Yes/No dialog now asks if you want to create the folder and open it in Explorer. Previously showed a static info popup with the raw folder path. Selecting Yes creates the folder and opens it immediately; No cancels silently.
+- **Create Music Folders for All Games** - New bulk action in Settings → Editing. Creates a music folder for every game in the library that doesn't have one yet. Reports how many folders were created on completion.
+- **Game Folder Breadcrumbs** - Each game music folder now contains a `[Game Name].txt` file identifying the game by name and ID. Created automatically on folder creation, on "Open Music Folder" for existing folders, and retroactively for all existing folders via the bulk action. Makes raw folder browsing readable without needing to cross-reference GUIDs.
+- **Game Index File** - Running "Create Music Folders for All Games" generates a `_game-index.txt` in the parent `Games/` directory listing all games with music folders and their IDs, sorted alphabetically.
 
 ## [1.3.4] - 2026-03-07
 

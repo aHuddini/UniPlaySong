@@ -2441,16 +2441,50 @@ namespace UniPlaySong
         {
             var games = PlayniteApi.Database.Games;
             int created = 0;
+            var indexEntries = new List<(string Name, string Id)>();
+
             foreach (var game in games)
             {
                 var dir = _fileService?.GetGameMusicDirectory(game);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                if (string.IsNullOrEmpty(dir))
+                    continue;
+
+                if (!Directory.Exists(dir))
                 {
-                    _fileService.EnsureGameMusicDirectory(game);
+                    _fileService.EnsureGameMusicDirectory(game); // creates folder + breadcrumb
                     created++;
                 }
+                else
+                {
+                    _fileService.WriteBreadcrumb(game, dir); // retroactive for existing folders
+                }
+
+                indexEntries.Add((game.Name ?? "Unknown", game.Id.ToString()));
             }
+
+            RegenerateGameIndex(indexEntries);
             return created;
+        }
+
+        private void RegenerateGameIndex(List<(string Name, string Id)> entries)
+        {
+            if (_fileService == null || string.IsNullOrEmpty(_gamesPath))
+                return;
+
+            var indexPath = Path.Combine(_gamesPath, "_game-index.txt");
+            var sorted = entries.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("UniPlaySong Game Index");
+            lines.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd}");
+            lines.AppendLine($"Games with music folders: {sorted.Count}");
+            lines.AppendLine();
+            lines.AppendLine("Game Name | Folder ID");
+            lines.AppendLine(new string('-', 80));
+            foreach (var (name, id) in sorted)
+                lines.AppendLine($"{name} | {id}");
+
+            File.WriteAllText(indexPath, lines.ToString());
         }
 
         /// <summary>

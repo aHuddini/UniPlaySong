@@ -363,6 +363,7 @@ namespace UniPlaySong.Menus
                         var musicDir = _fileService?.GetGameMusicDirectory(game);
                         if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                         {
+                            _fileService.WriteBreadcrumb(game, musicDir);
                             Process.Start("explorer.exe", musicDir);
                         }
                         else if (!string.IsNullOrEmpty(musicDir))
@@ -391,6 +392,7 @@ namespace UniPlaySong.Menus
                     var musicDir = _fileService?.GetGameMusicDirectory(game);
                     if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                     {
+                        _fileService.WriteBreadcrumb(game, musicDir);
                         Process.Start("explorer.exe", musicDir);
                     }
                     else if (!string.IsNullOrEmpty(musicDir))
