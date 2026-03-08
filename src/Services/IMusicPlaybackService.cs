@@ -1,0 +1,90 @@
+using System.Collections.Generic;
+using Playnite.SDK.Models;
+using UniPlaySong.Models;
+
+namespace UniPlaySong.Services
+{
+    // High-level music playback service for games
+    public interface IMusicPlaybackService
+    {
+        void PlayGameMusic(Game game);
+        void PlayGameMusic(Game game, UniPlaySongSettings settings);
+        void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload);
+        void Stop();
+        void Pause();
+        void Resume();
+        void PauseImmediate(); // Instant pause (no fade), for notification sounds
+        void ResumeImmediate(); // Instant resume (no fade), for notification sounds
+        void PauseForJingle();     // Instant pause for celebration jingle (dedicated PauseSource.Jingle)
+        void ResumeFromJingle();   // Resume after jingle ends with fade-in
+
+        void AddPauseSource(PauseSource source); // pauses if first source
+        void RemovePauseSource(PauseSource source); // resumes if all sources cleared
+        void ConvertPauseSource(PauseSource from, PauseSource to); // atomic swap without triggering resume/pause
+        void AddPauseSourceImmediate(PauseSource source);    // Instant pause (no fade), tracks source
+        void RemovePauseSourceImmediate(PauseSource source);  // Instant resume (no fade), tracks source
+
+        List<string> GetAvailableSongs(Game game);
+        void SetVolume(double volume);
+        double GetVolume();
+
+        // Sets a volume multiplier on top of base volume (for Playnite fullscreen BackgroundVolume)
+        void SetVolumeMultiplier(double multiplier);
+
+        // Sets an idle volume multiplier (composes with base volume and fullscreen multiplier)
+        void SetIdleVolumeMultiplier(double multiplier);
+
+        // Sets a provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
+        void SetDefaultSongPoolProvider(System.Func<DefaultMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
+
+        // Sets a provider that returns true when a Playnite filter preset is currently active (for Filter Mode)
+        void SetFilterActiveProvider(System.Func<bool> provider);
+
+        // Sets a provider for Radio Mode pool sources (FullLibrary, CustomFolder, CustomRotation, CompletionStatusPool)
+        void SetRadioSongPoolProvider(System.Func<RadioMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
+
+        // Starts Radio Mode playback from the configured pool source
+        void StartRadioPlayback(UniPlaySongSettings settings);
+
+        // Stops Radio Mode playback and clears radio state
+        void StopRadioMode();
+
+        // Clears the cached default music path so the next fallback picks a fresh song
+        void ClearLastDefaultMusicPath();
+
+        bool IsPlaying { get; }
+        bool IsPaused { get; }
+        bool IsLoaded { get; }
+
+        void LoadAndPlayFile(string filePath);
+        void LoadAndPlayFileFrom(string filePath, System.TimeSpan startFrom);
+
+        void PlayPreview(string filePath, double volume); // no fading
+
+        event System.Action<UniPlaySongSettings> OnMusicStopped;
+        event System.Action<UniPlaySongSettings> OnMusicStarted;
+        event System.Action OnSongEnded;
+        event System.Action OnPlaybackStateChanged;
+
+        bool SuppressAutoLoop { get; set; } // suppresses auto-loop on song end
+
+        void SkipToNextSong();
+        void RestartCurrentSong();
+        int CurrentGameSongCount { get; }
+        event System.Action OnSongCountChanged;
+        void RefreshSongCount();
+        string CurrentSongPath { get; }
+        Game CurrentGame { get; }
+        event System.Action<string> OnSongChanged;
+
+        System.TimeSpan? CurrentTime { get; } // Current playback position (for progress indicator)
+
+        bool IsPlayingDefaultMusic { get; } // true if playing default/fallback music
+        bool IsPlayingBundledPreset { get; } // true if the current default music is a bundled preset (show metadata)
+        bool IsPlayingPoolBasedDefault { get; } // true if default music is from a pool source (enables radio-mode UI)
+
+        // Called when app init is complete; processes any deferred playback if window state allows
+        void MarkInitializationComplete();
+    }
+}
+

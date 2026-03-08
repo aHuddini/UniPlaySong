@@ -1,0 +1,40 @@
+AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+Type: Generic
+Name: 'UniPlaySong'
+Author: 'aHuddini'
+ShortDescription: 'Console-like game music preview experience with controller support, live reverb effects, spectrum visualizer, audio normalization, and silence trimming. Music plays when browsing your library, creating an immersive experience similar to PlayStation and Xbox game selection screens.'
+InstallerManifestUrl: 'https://gitea.com/aHuddini/UniPlaySong/raw/branch/main/Manifest/gitea/installer.yaml'
+SourceUrl: 'https://gitea.com/aHuddini/UniPlaySong'
+Description: |
+  UniPlaySong provides a console-like game music preview experience and controller-friendly song management for Playnite.
+
+  Key Features:
+  - Automatic music playback when selecting games in your library
+  - Fullscreen Xbox controller support for complete music management from your couch
+  - Live reverb effects with 18 Audacity-derived presets and style presets
+  - Audio-reactive spectrum visualizer with 22 color themes
+  - Audio normalization using FFmpeg (EBU R128 standard)
+  - Silence trimming to remove leading silence from audio files
+  - Customizable fade transitions, preview times, and randomization
+  - Primary song system for setting default tracks per game
+  - Default/fallback music support with 6 source options
+  - Radio Mode for continuous background music from fixed pools
+  - Works seamlessly with all Playnite themes (desktop and fullscreen)
+
+  Perfect for:
+  - Creating an immersive game browsing experience
+  - Managing game music libraries with controller support
+  - Enhancing audio with live reverb effects and visualizer
+  - Enjoying console-like music previews while browsing your collection
+
+  Designed for both Desktop and Fullscreen mode, with compatibility to modern themes like ANIKI REMAKE.
+Tags:
+  - 'music'
+  - 'audio'
+  - 'controller'
+  - 'fullscreen'
+  - 'normalization'
+  - 'trimming'
+  - 'visualizer'
+  - 'reverb'
+IconUrl: 'https://gitea.com/aHuddini/UniPlaySong/raw/branch/main/icon.png'

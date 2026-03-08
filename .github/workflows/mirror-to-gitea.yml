@@ -1,0 +1,20 @@
+name: Mirror to Gitea
+
+on:
+  schedule:
+    - cron: '0 */10 * * *'
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (bare clone)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push mirror to Gitea
+        run: |
+          git remote add gitea https://aHuddini:${{ secrets.GITEA_TOKEN }}@gitea.com/aHuddini/UniPlaySong.git
+          git push gitea --branches
+          git push gitea --tags

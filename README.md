@@ -1,9 +1,9 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.2-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.3.4-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
-  <img src="GHdisplay.png" alt="UniPlaySong" width="150">
+  <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
 </p>
 
 <p align="center">
@@ -20,28 +20,23 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.2
+## What's New - v1.3.4
 
-- **Taskbar Thumbnail Media Controls** - Previous, Play/Pause, and Next buttons in the Windows taskbar hover preview. Play/Pause icon reflects playback state (Desktop mode only). Graduated from Experimental.
-- **Global Media Key Control** (Experimental) - Control music with keyboard media keys (Play/Pause, Next, Previous, Stop).
-- **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion.
-- **M3U Playlist Export** - Export per-game, multi-game, or library-wide M3U playlists for external players (VLC, foobar2000, MPC).
-- **Extended Default Music Sources** - Three new default music fallbacks: Custom Folder (Playlist), Random Game, and Custom Game Rotation — with optional "continue same song" across game switches.
-- **PS2 Menu Ambience** - New bundled default music preset. Four ambient tracks now ship with the plugin.
-- **Custom Cookies File** - New cookie source option for yt-dlp downloads. Use a Netscape-format cookies.txt from any browser, alongside the existing Firefox option.
-- **Per-Tab Reset Buttons** - Each settings tab now has its own "Reset to Defaults" button.
-- **Improved Default Settings** - Better out-of-box experience with media controls, visualizer, live effects (Rehearsal), auto-tagging, song randomization, and completion celebration all enabled by default.
-- **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
-- **Settings Reorganization** - Dedicated "Pauses" tab, cleaner labels, collapsible Dynamic Color Tuning, and some streamlined General settings.
-- **Style Preset Tuning** - All style presets capped at 1dB makeup gain to prevent clipping. Rehearsal preset updated with Reverb-first chain.
-- **Bug Fix**: Settings no longer silently reset when using Browse/Select buttons in settings dialogs.
-- **Bug Fix**: Play button now clears stale automatic pause sources (Idle, External Audio, System Lock).
-- **Bug Fix**: System unlock now properly clears idle state and restores idle volume.
+> **Notice:** GitHub suspended my repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
 
-### Previous Versions
-- **v1.3.1**: Install-Aware Auto-Download, Auto-Pause on External Audio, Auto-Pause on Idle/AFK, Random Game Picker Music, Stay Paused on Focus Restore, Ignore Brief Focus Loss, Enhanced Library Statistics, Settings UI Reorganization, Focus Loss Fade Fix
-- **v1.3.0**: Completion Fanfare (11 retro jingle presets), Song Count Badge, Default Music Indicator, Song Progress Indicator, Download Complete Sound, Celebration Toast, Auto-Pause on System Lock, Enhanced Library Statistics (card grid), skip/crossfade fixes
-- **v1.2.11**: Bundled default music presets, installed games only, hide now playing for default music, song list caching, parallel deletions, async UI
+- [Removed] **Download Sources** — Download sources have been removed to avoid potential DMCA issues.
+- [Removed] **Bulk Download** — "Download Music for All Games" button removed.
+- [Removed] **Search Hints Online Updates** — The search hints database no longer checks for or downloads online updates. Use the bundled database or load a custom file via Settings → Search.
+- [New Feature] **Game Property Filter** — Play game-specific music only for games matching selected platforms, genres, or sources. Games that don't match fall through to default music. Configure in Settings → Playback.
+- [New Feature] **Filter Mode** — Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.
+- [New Feature] **Radio Mode** — Continuous background music from a fixed pool, ignoring game selection entirely. Overrides both game-specific and default music while active. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Configure in Settings → Playback.
+- [Changed] **External Audio Pause Default** — "Pause on external audio" is now disabled by default.
+
+### Previous Version
+- **v1.3.3**: Audio Artifact Eliminated (Live Effects tremolo fix), Smoother Fading, Configurable Fade Curves, Game Switch UI Lag Eliminated, Short Track Reliability fixes, Custom Folder/Pool Sources fully supported
+
+> **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
+
 ---
 
 ## 🎬 Demo
@@ -51,7 +46,6 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 ## 🎵 Features
 
-- **Auto-Download** - Automatic music search and downloads for existing libraries and new games from YouTube, KHInsider, and Zophar's Domain
 - **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
 - **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
 - **Audio-Reactive Visualizer** - Real-time spectrum visualizer with 22 color themes including Dynamic game-art colors, tuning presets, and per-bar gradient rendering (Desktop mode)
@@ -62,7 +56,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Desktop Controls** - Optional top panel media controls and Now Playing information
 - **Tagging & Filters** - Tag games with music/no music for better music management
 
-<img src="DEMOScreen1.png" alt="Demo Screenshot" width="600">
+<img src="docs/assets/DEMOScreen1.png" alt="Demo Screenshot" width="600">
 
 ---
 
@@ -70,7 +64,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 | Tool | Purpose | Download |
 |------|---------|----------|
-| **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** | Downloading music | [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases) |
+| **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** | Music searching and downloading | [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases) |
 | **[Deno](https://deno.com/)** | Required JS runtime for yt-dlp | [Deno.com](https://deno.com/) |
 | **[FFmpeg](https://ffmpeg.org/download.html)** | Audio processing | [Official Website](https://ffmpeg.org/download.html) |
 
@@ -81,7 +75,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 ## 📦 Installation
 
 ### Option 1: Direct Download
-1. Download the latest `.pext` file from [Releases](https://github.com/aHuddini/UniPlaySong/releases)
+1. Download the latest `.pext` file from [Releases](https://gitea.com/aHuddini/UniPlaySong/releases)
 2. Double-click the downloaded file to install
 
 ### Option 2: Playnite Add-on Database
@@ -100,22 +94,22 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Quick Start
 1. Install yt-dlp, Deno, and FFmpeg (see Requirements above)
-2. Right-click games (single or multiple) for music download and management options. Use "bulk download" in add-on settings for alternative bulk downloads
+2. Right-click games for music search and download options via YouTube
 3. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music, game property filter, filter mode, radio mode
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
-- **Downloads**: Tool paths, cookie source (none/Firefox/custom file), auto-download options, install-aware auto-download, bulk download
+- **Downloads**: Tool paths, cookie source, YouTube search and download
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: Media key control, download notification sound, song progress bar, peak meter, library statistics with audio metrics
+- **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics
 
-**Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`  
+**Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA
 
 ---
@@ -123,8 +117,8 @@ Download or update directly from the Playnite add-on database, or browse Generic
 ## 🛠️ Building from Source
 
 ```powershell
-dotnet clean -c Release && dotnet restore && dotnet build -c Release
-powershell -ExecutionPolicy Bypass -File .\package_extension.ps1 -Configuration Release
+dotnet clean -c Release && dotnet build -c Release
+powershell -ExecutionPolicy Bypass -File .\scripts\package_extension.ps1 -Configuration Release
 ```
 
 See `docs/dev_docs/` for detailed build instructions.
@@ -141,7 +135,7 @@ See `docs/dev_docs/` for detailed build instructions.
 - **MaterialDesignThemes** - WPF UI components (MIT)
 - **HtmlAgilityPack, Newtonsoft.Json, NAudio, FuzzySharp** - Core functionality (MIT)
 - **TagLibSharp** - Audio metadata (LGPL)
-- **yt-dlp** - Media downloading (Unlicense)
+- **yt-dlp** - Media searching and downloading (Unlicense)
 - **FFmpeg** - Audio processing (LGPL/GPL)
 
 ### Third-Party Acknowledgments
@@ -155,6 +149,6 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/aHuddini/UniPlaySong)
+- [Gitea Repository](https://gitea.com/aHuddini/UniPlaySong)
 - [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)
 - [Playnite](https://playnite.link/)
