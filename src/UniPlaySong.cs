@@ -2437,6 +2437,22 @@ namespace UniPlaySong
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
         }
 
+        public int CreateMissingMusicFolders()
+        {
+            var games = PlayniteApi.Database.Games;
+            int created = 0;
+            foreach (var game in games)
+            {
+                var dir = _fileService?.GetGameMusicDirectory(game);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    _fileService.EnsureGameMusicDirectory(game);
+                    created++;
+                }
+            }
+            return created;
+        }
+
         /// <summary>
         /// Normalize music files for a single game (for fullscreen menu).
         /// Delegates to NormalizationDialogHandler.

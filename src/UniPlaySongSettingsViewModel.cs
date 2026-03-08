@@ -569,6 +569,24 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand CreateMissingMusicFoldersCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    int created = plugin.CreateMissingMusicFolders();
+                    plugin.PlayniteApi.Dialogs.ShowMessage(
+                        created == 0
+                            ? "All games already have a music folder."
+                            : $"Created {created} music folder{(created == 1 ? "" : "s")}.",
+                        "UniPlaySong");
+                },
+                context: "creating missing music folders",
+                showUserMessage: true
+            );
+        });
+
         public ICommand TrimSelectedGamesCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();
