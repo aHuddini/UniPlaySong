@@ -325,6 +325,9 @@ Technical improvements and library integrations identified through research. The
 | **LoadingIndicators.WPF** | 1 | Collection of animated spinners (ring, wave, dots, etc.) for WPF. | Download dialog and any async operation. Currently no visual feedback while yt-dlp runs. |
 | **LiveCharts2** | 2 | Open-source interactive animated charts for WPF. | Music Dashboard: most-played games bar chart, play time trends, song frequency histogram. File away until dashboard work starts. |
 | **XamlBehaviors (Microsoft)** | 2 | Official XAML behaviors library — wire interactions in XAML without code-behind (`EventTrigger`, `InvokeCommandAction`). | Cleaner settings UI interactions on new UI work. Not worth retrofitting existing views — use opportunistically. |
+| **Lambda Converters** | 1 | Define WPF `IValueConverter`/`IMultiValueConverter` as static lambdas — no separate class per converter. Referenced via `x:Static` in XAML. | Eliminates per-converter boilerplate in settings UI bindings. bool→Visibility, enum display, null checks — all inline. |
+| **ValueConverters.NET** | 1 | Pre-built common WPF converters: datetime formatting, enum localization, culture-aware conversion. Drop-in NuGet. | Covers converters you'd otherwise write manually. Pairs with Lambda Converters for custom one-offs. |
+| **AutoGrid** | 2 | Drop-in WPF Grid replacement that auto-arranges children without manual row/column assignments. | Reduces settings tab XAML boilerplate on any new settings tabs or dialog layouts. |
 | **Flyleaf** | 3 | FFmpeg + DirectX media player with WPF control. Hardware-accelerated, MVVM-friendly, HDR-to-SDR. | Potential third player backend beyond SDL2/NAudio. Revisit only if SDL2 causes hard-to-fix bugs or format gaps. |
 
 ### Reference Codebases (Study, No Library to Add)
@@ -338,6 +341,16 @@ Technical improvements and library integrations identified through research. The
 | **DiffusionToolkit** | Medium | Thumbnail grid + metadata panel + folder tree for large media collections. Reference UI pattern for a song browser in the Music Dashboard. |
 | **NeeView** | Medium | Polished WPF media browser with gestures, plugin system, book-style navigation. Reference if Music Dashboard includes an album art / song browser panel. |
 | **CompactGUI** | Low | Simple "pick folder, show progress, show results" WPF workflow. Reference if bulk normalization gets a dedicated UI dialog. |
+| **WindowsEdgeLight** | High | WPF click-through overlay (`WS_EX_TRANSPARENT` + `WS_EX_LAYERED`), always-on-top, high-DPI aware, screen-capture excludable. Study: overlay positioning, DPI handling patterns for desktop bar and future fullscreen Now Playing overlay. |
+| **MediaFlyout** | Medium | WPF taskbar flyout for media controls — Fluent Design, acrylic, auto-hides tray icon when no media plays, middle-click pause-all. Study: tray icon + flyout popup design for a UniPlaySong tray flyout. |
+| **VoicemeeterFancyOSD** | Medium | Topmost overlay over fullscreen apps using private WinAPI (no graphics API hooks). Uses `ApplicationFrameHost.exe` rename trick for true topmost without Microsoft cert. Study: technique for fullscreen Now Playing overlay that works over games. |
+| **DesktopClock** | Low | Lightweight always-on-top WPF overlay with tray, context menu, customization. Simpler reference for persistent desktop overlay with minimal footprint. |
+
+### Patterns (No Library Required)
+
+| Pattern | Tier | What It Solves |
+|---------|------|----------------|
+| **Non-Blocking UI (Loaded + async Initialize)** | 1 | Subscribe to `Loaded` event, run async `Initialize()` after UI renders, set `IsBusy` during load. Prevents settings window freeze when scanning library or loading stats. No dependency — just async/await pattern. |
 
 ### ControlUp-Specific
 
