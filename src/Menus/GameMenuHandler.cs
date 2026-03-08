@@ -361,10 +361,15 @@ namespace UniPlaySong.Menus
                     {
                         _logger.Debug($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
                         var musicDir = _fileService?.GetGameMusicDirectory(game);
-                        if (!string.IsNullOrEmpty(musicDir))
+                        if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                         {
-                            Directory.CreateDirectory(musicDir);
                             Process.Start("explorer.exe", musicDir);
+                        }
+                        else
+                        {
+                            _playniteApi.Dialogs.ShowMessage(
+                                $"No music folder found for {game.Name}.\n\nMusic will be stored in:\n{_fileService?.GetGameMusicDirectory(game) ?? "Unknown"}",
+                                "UniPlaySong");
                         }
                     },
                     context: $"opening music folder for '{game?.Name}'",
@@ -378,10 +383,15 @@ namespace UniPlaySong.Menus
                 {
                     _logger.Debug($"OpenMusicFolder called for game: {game?.Name ?? "null"}");
                     var musicDir = _fileService?.GetGameMusicDirectory(game);
-                    if (!string.IsNullOrEmpty(musicDir))
+                    if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                     {
-                        Directory.CreateDirectory(musicDir);
                         Process.Start("explorer.exe", musicDir);
+                    }
+                    else
+                    {
+                        _playniteApi.Dialogs.ShowMessage(
+                            $"No music folder found for {game.Name}.\n\nMusic will be stored in:\n{_fileService?.GetGameMusicDirectory(game) ?? "Unknown"}",
+                            "UniPlaySong");
                     }
                 }
                 catch (Exception ex)
