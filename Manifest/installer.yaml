@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-02-26
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.4/UniPlaySong-1_3_4-Feb26_2026.pext'
     Changelog:
+      - '[Notice] GitHub suspended my repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. To minimize any liabilities to the Playnite ecosystem, certain features have been removed.'
       - '[Removed] Download sources removed to avoid potential DMCA issues.'
       - '[Removed] Bulk Download: "Download Music for All Games" button removed.'
       - '[Removed] Search Hints Online Updates: The search hints database no longer checks for or downloads online updates. Use the bundled database or load a custom file.'
