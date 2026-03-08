@@ -29,9 +29,9 @@ SDL2 native DLLs are stored in the parent `lib\` directory:
 
 When updating dependencies:
 1. Build the project: `dotnet build -c Release`
-2. Copy updated DLLs from `bin\Release\net4.6.2\` to this directory
+2. Copy updated DLLs from `src\bin\Release\net4.6.2\` to this directory
 3. Verify all required DLLs are present
-4. Rebuild package: `.\package_extension.ps1`
+4. Rebuild package: `.\scripts\package_extension.ps1`
 
 ## Packaging
 

@@ -117,7 +117,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 ## 🛠️ Building from Source
 
 ```powershell
-dotnet clean -c Release && dotnet restore && dotnet build -c Release
+dotnet clean -c Release && dotnet build -c Release
 powershell -ExecutionPolicy Bypass -File .\scripts\package_extension.ps1 -Configuration Release
 ```
 
