@@ -4,6 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.5] - 2026-03-08
+
+### Improved
+- **Open Music Folder** - When "Open Music Folder" is selected for a game with no existing music folder, a Yes/No dialog now asks if you want to create the folder and open it in Explorer. Previously showed a static info popup with the raw folder path. Selecting Yes creates the folder and opens it immediately; No cancels silently.
+
 ## [1.3.4] - 2026-03-07
 
 ### Notice
