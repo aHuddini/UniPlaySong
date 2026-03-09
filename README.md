@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.4-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.5-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,20 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.4
+## What's New - v1.3.5
 
-> **Notice:** GitHub suspended my repository and account without notice or explanation, jeopardizing the availability of UniPlaySong. Support tickets have been filed to resolve this. This update temporarily disables certain features to minimize any liabilities to the Playnite ecosystem. UniPlaySong has moved to [Gitea](https://gitea.com/aHuddini/UniPlaySong) as a backup until the GitHub situation is resolved.
-
-- [Removed] **Download Sources** — Download sources have been removed to avoid potential DMCA issues.
-- [Removed] **Bulk Download** — "Download Music for All Games" button removed.
-- [Removed] **Search Hints Online Updates** — The search hints database no longer checks for or downloads online updates. Use the bundled database or load a custom file via Settings → Search.
-- [New Feature] **Game Property Filter** — Play game-specific music only for games matching selected platforms, genres, or sources. Games that don't match fall through to default music. Configure in Settings → Playback.
-- [New Feature] **Filter Mode** — Play game-specific music only when a Playnite filter is active. Works with criteria-based filters and built-in quick-filter presets (Recently Played, Most Played, etc.). Configure in Settings → Playback.
-- [New Feature] **Radio Mode** — Continuous background music from a fixed pool, ignoring game selection entirely. Overrides both game-specific and default music while active. Four sources: Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool. Configure in Settings → Playback.
-- [Changed] **External Audio Pause Default** — "Pause on external audio" is now disabled by default.
+- [Improved] **Open Music Folder** — When clicking "Open Music Folder" for a game with no music folder yet, you'll now be asked if you want to create and open it. Previously showed a static info popup with no action.
+- [New Feature] **Create Music Folders for All Games** — New bulk action in Settings → Editing. Creates a music folder for every game in your library that doesn't have one yet.
+- [New Feature] **Game Folder Breadcrumbs** — Each game music folder UPS has now contains a named `.txt` file identifying the game, making the game ID folders easier navigate for users.
+- [New Feature] **Game Index File** — The bulk folder action generates a `_game-index.txt` in the UPS's game music library root folder, listing all games with folders and their associated IDs.
+- [New Feature] **Open Game Index** — New button in Settings → Editing → File Management opens the game index directly in a text editor for reference.
+- [Backend] **Localization Infrastructure Created** — Groundwork for community translation support. Future contributors can add language translation by providing a single XAML file in the future
 
 ### Previous Version
-- **v1.3.3**: Audio Artifact Eliminated (Live Effects tremolo fix), Smoother Fading, Configurable Fade Curves, Game Switch UI Lag Eliminated, Short Track Reliability fixes, Custom Folder/Pool Sources fully supported
+- **v1.3.4**: Game Property Filter, Filter Mode, Radio Mode, Download Sources removed (DMCA precaution), External Audio Pause now off by default
 
 > **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

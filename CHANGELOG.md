@@ -4,6 +4,18 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.5] - 2026-03-08
+
+### Improved
+- **Open Music Folder** - When "Open Music Folder" is selected for a game with no existing music folder, a Yes/No dialog now asks if you want to create the folder and open it in Explorer. Previously showed a static info popup with the raw folder path. Selecting Yes creates the folder and opens it immediately; No cancels silently.
+- **Create Music Folders for All Games** - New bulk action in Settings → Editing. Creates a music folder for every game in the library that doesn't have one yet. Reports how many folders were created on completion.
+- **Game Folder Breadcrumbs** - Each game music folder now contains a `[Game Name].txt` file identifying the game by name and ID. Created automatically on folder creation, on "Open Music Folder" for existing folders, and retroactively for all existing folders via the bulk action. Makes raw folder browsing readable without needing to cross-reference GUIDs.
+- **Game Index File** - Running "Create Music Folders for All Games" generates a `_game-index.txt` in the parent `Games/` directory listing all games with music folders and their IDs, sorted alphabetically.
+- **Open Game Index** - New button in Settings → Editing → File Management opens `_game-index.txt` directly in the default text editor. Shows a helpful prompt if the index hasn't been generated yet. The "Original File Management" section has been renamed to "File Management".
+
+### Added
+- **Localization Infrastructure** - Foundation for community translation support. Implements WPF `ResourceDictionary` locale loading at startup (`LoadLocalization()`): detects system locale, tries to load a matching `Localization/{locale}.xaml` file compiled into the assembly, falls back to `en_US.xaml`. `ResourceProvider.GetString(key)` helper provides safe fallback to the key name if a string is missing. English reference file (`src/Localization/en_US.xaml`) defines the canonical key contract with ~30 seed strings. String extraction from C# dialogs and XAML labels is deferred until a translator is available. See `docs/plans/2026-03-08-localization-plan.md` for the full extraction plan.
+
 ## [1.3.4] - 2026-03-07
 
 ### Notice
