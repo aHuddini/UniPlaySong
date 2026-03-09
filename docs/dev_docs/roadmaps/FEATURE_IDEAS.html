@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniPlaySong Feature Ideas</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #eaeaea;
+    --text-dim: #a0a0b0;
+    --text-muted: #6a6a7a;
+    --border: #2a2a4a;
+    --low: #4ade80;
+    --medium: #fbbf24;
+    --high: #f87171;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    padding-bottom: 6rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-low { background: rgba(74, 222, 128, 0.15); color: var(--low); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .badge-medium { background: rgba(251, 191, 36, 0.15); color: var(--medium); border: 1px solid rgba(251, 191, 36, 0.3); }
+  .badge-high { background: rgba(248, 113, 113, 0.15); color: var(--high); border: 1px solid rgba(248, 113, 113, 0.3); }
+
+  h2 {
+    font-size: 1.4rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+    color: var(--text);
+  }
+
+  h2 .count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 0.5rem;
+  }
+
+  .category-icon {
+    margin-right: 0.5rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  thead th {
+    background: var(--surface2);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    border-bottom: 2px solid var(--border);
+  }
+
+  thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 1.8rem;
+  }
+
+  thead th.sortable:hover {
+    color: var(--text);
+    background: rgba(233, 69, 96, 0.15);
+  }
+
+  thead th.sortable::after {
+    content: '⇅';
+    position: absolute;
+    right: 0.5rem;
+    opacity: 0.4;
+    font-size: 0.85rem;
+  }
+
+  thead th.sortable.sort-asc::after {
+    content: '↑';
+    opacity: 1;
+    color: var(--low);
+  }
+
+  thead th.sortable.sort-desc::after {
+    content: '↓';
+    opacity: 1;
+    color: var(--high);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(233, 69, 96, 0.05); }
+  tbody tr.selected { background: rgba(233, 69, 96, 0.12); }
+  tbody tr.selected:hover { background: rgba(233, 69, 96, 0.18); }
+
+  tbody tr.shipped { opacity: 0.45; text-decoration: line-through; }
+  tbody tr.shipped td.feature-name { color: var(--low); }
+  tbody tr.shipped:hover { opacity: 0.7; }
+
+  .badge-shipped {
+    background: rgba(74, 222, 128, 0.2);
+    color: var(--low);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+  }
+
+  .shipped-section {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.08), rgba(74, 222, 128, 0.03));
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .shipped-section h3 {
+    color: var(--low);
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+  }
+
+  .shipped-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .shipped-chip {
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+    color: var(--low);
+    padding: 0.35rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .shipped-chip .version {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-left: 0.3rem;
+  }
+
+  td {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+
+  td.cb-cell {
+    width: 36px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.5rem 0.3rem 0.5rem 0.6rem;
+  }
+
+  td.cb-cell input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  td.feature-name {
+    font-weight: 600;
+    white-space: nowrap;
+    color: #fff;
+    min-width: 180px;
+  }
+
+  td.feature-desc { color: var(--text-dim); line-height: 1.5; }
+  td.feature-effort, td.feature-impact { text-align: center; white-space: nowrap; }
+
+  code {
+    background: rgba(255,255,255,0.08);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  .priority-section {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .priority-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .priority-section ol {
+    padding-left: 1.5rem;
+    color: var(--text-dim);
+  }
+
+  .priority-section ol li {
+    padding: 0.2rem 0;
+  }
+
+  .quick-wins h3 { color: var(--low); }
+  .high-value h3 { color: var(--medium); }
+  .ambitious h3 { color: var(--high); }
+
+  .stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-card .label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Floating toolbar */
+  .toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface2);
+    border-top: 2px solid var(--accent);
+    padding: 0.8rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    transition: transform 0.3s ease;
+  }
+
+  .toolbar.hidden {
+    transform: translateY(100%);
+  }
+
+  .toolbar .selection-count {
+    font-size: 0.95rem;
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .toolbar .selection-count span {
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+
+  .toolbar button {
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-copy {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-copy:hover { background: #d6304d; transform: translateY(-1px); }
+  .btn-copy:active { transform: translateY(0); }
+
+  .btn-clear {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border) !important;
+  }
+  .btn-clear:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+  .btn-select-all {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border) !important;
+  }
+  .btn-select-all:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+  .toast {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: var(--low);
+    color: #000;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; padding-bottom: 6rem; }
+    td.feature-name { white-space: normal; min-width: 120px; }
+    .stats { flex-direction: column; }
+    .toolbar { padding: 0.6rem 1rem; gap: 0.8rem; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<h1>UniPlaySong Feature Ideas</h1>
+<p class="subtitle">Comprehensive collection of potential features, ranging from basic QoL improvements to ambitious experimental concepts. Check features you want to explore, then copy your selection to clipboard.</p>
+
+<div class="stats">
+  <div class="stat-card"><div class="number">142</div><div class="label">Total Ideas</div></div>
+  <div class="stat-card"><div class="number" style="color: var(--low);">21</div><div class="label">Shipped</div></div>
+  <div class="stat-card"><div class="number">31</div><div class="label">Quick Wins Left</div></div>
+  <div class="stat-card"><div class="number">12</div><div class="label">High Value</div></div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.3.4</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Nostalgia Mode <span class="version">v1.3.4</span></span>
+    <span class="shipped-chip">Nostalgia Playlist Mode (By Completion Status) <span class="version">v1.3.4</span></span>
+    <span class="shipped-chip">Radio Station Mode <span class="version">v1.3.4</span></span>
+    <span class="shipped-chip">Game Property Filter <span class="version">v1.3.4</span></span>
+    <span class="shipped-chip">Filter Mode <span class="version">v1.3.4</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.3.3</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Configurable Fade Curves (Experimental) <span class="version">v1.3.3</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.3.2</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Global Media Key Control <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Taskbar Thumbnail Media Controls (Graduated) <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Auto-Cleanup Empty Folders <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Playlist Export (M3U) <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Extended Default Music Sources <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">PS2 Menu Ambience Preset <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Custom Cookies File <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Per-Tab Reset Buttons <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Graduated 6 Experimental Features <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Improved Default Settings <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Settings Reorganization (Pauses) <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Style Preset Tuning <span class="version">v1.3.2</span></span>
+    <span class="shipped-chip">Global Settings Reset Rewrite <span class="version">v1.3.2</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.3.1</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Install-Aware Auto-Download <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Auto-Pause on External Audio <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Auto-Pause on Idle / AFK <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Stay Paused on Focus Restore <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Ignore Brief Focus Loss <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Enhanced Library Statistics <span class="version">v1.3.1</span></span>
+    <span class="shipped-chip">Settings UI Reorganization <span class="version">v1.3.1</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.3.0</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Completion Fanfare <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Song Count Badge <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Music Folder Size <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Default Music Indicator <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Download Complete Sound <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Celebration Toast <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Auto-Pause on System Lock <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Song Progress Indicator <span class="version">v1.3.0</span></span>
+    <span class="shipped-chip">Library Statistics Page <span class="version">v1.3.0</span></span>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge badge-low">Low</span> Hours of work</div>
+  <div class="legend-item"><span class="badge badge-medium">Medium</span> Days of work</div>
+  <div class="legend-item"><span class="badge badge-high">High</span> Week+ of work</div>
+  <div class="legend-item" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem;">Click Effort/Impact headers to sort</div>
+</div>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#128202;</span> Dashboard & Statistics <span class="count">(4 ideas)</span></h2>
+<table data-category="Dashboard & Statistics">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music Dashboard</td><td class="feature-desc">Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. A single place to explore your music library. Every modern player has this (Spotify Home, iTunes Library).</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Personal Top Charts</td><td class="feature-desc">"Top 10 Most Played Games", "Top 25 Songs", filterable by week/month/all-time. Requires play count tracking. Surface in dashboard.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Library Statistics Page</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>Detailed breakdown: file format distribution (MP3 vs FLAC %), bitrate stats, total duration, storage analysis. Like foobar2000's aggregate Properties view.</s></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Trends Graph</td><td class="feature-desc">Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127925;</span> Playback & Listening Experience <span class="count">(29 ideas)</span></h2>
+<table data-category="Playback & Listening Experience">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Gapless Playback</td><td class="feature-desc">Eliminate silence between tracks for continuous-mix soundtracks. Pre-buffer next track via <code>PreLoad()</code> infrastructure that already exists. Industry standard.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Crossfade Between Games</td><td class="feature-desc">Overlap fade-out/fade-in when switching games instead of silence gap. PS Store and Spotify do this. Existing MusicFader infrastructure supports this.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Sleep Timer</td><td class="feature-desc">Auto-stop music after configurable minutes. Common in Spotify/podcasts. Simple countdown calling <code>Stop()</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback Queue / Up Next</td><td class="feature-desc">Queue specific songs across games. "Add to queue" from right-click or dashboard. Persists across game selection.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Bookmarking / Favorites</td><td class="feature-desc">Star songs across your library. "Favorites" playlist as default music or browsable list. Like FFXIV's jukebox.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback History / Recently Played</td><td class="feature-desc">Track songs played and when. "Recently Played" list in dashboard.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Play Count Tracking</td><td class="feature-desc">Track per-song play counts. Surface "Most Played" stats. Standard in every music player.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Radio Station Mode</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>Continuous shuffle across entire library regardless of game selection. Like GTA radio for your collection. Transforms UPS from per-game to library-wide player.</s> <strong>Shipped v1.3.4</strong></td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Song Progress Indicator</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>Thin progress bar showing position within current song. Users currently have no position feedback.</s></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Resume From Last Position</td><td class="feature-desc">When returning to a game, resume song where it left off. Like podcast resume. Store per-game song + position.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Volume Per Game</td><td class="feature-desc">Different volume levels per game. Some soundtracks are naturally louder. Stored per game ID.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Fade Duration Per Game</td><td class="feature-desc">Per-game fade override. Atmospheric RPGs get long fades, action games get snappy transitions.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Quick Mute Toggle</td><td class="feature-desc">One-click mute that remembers previous volume. Music keeps playing silently. Like TV mute.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Don't Play This Song Skip List</td><td class="feature-desc">Blacklist songs without deleting them. "I like 9 of 10 tracks." Per-game skip list.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Startup Delay Option</td><td class="feature-desc">Configurable delay before music starts after Playnite launch.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Non-Destructive Trim Presets</td><td class="feature-desc">Save start/end points per song without modifying the file. Playback respects trim points via <code>LoadAndPlayFileFrom()</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Skip Short Files</td><td class="feature-desc">Skip files under a configurable duration (e.g., &lt;5s). Catches jingles/sound effects that accidentally got downloaded.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Default Music Randomization</td><td class="feature-desc">When using bundled presets, randomly pick which preset plays instead of always the same one.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Configurable Now Playing Format</td><td class="feature-desc">Let users choose display format: "Title - Artist", "Artist: Title", "Title (Game)", "Title only". Dropdown in settings.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">A-B Repeat / Loop Section</td><td class="feature-desc">Set loop points within a song to repeat a specific section. Useful for enjoying specific parts of long tracks. Common in foobar2000, Winamp.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Replay Current Song</td><td class="feature-desc">One-click "play again from start" without navigating menus. Standard back-skip-to-restart behavior.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Fade to Pause</td><td class="feature-desc">Instead of instant pause, fade out over ~0.5s then pause. Fade back in on resume. Uses existing <code>MusicFader</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Intro Skip</td><td class="feature-desc">Auto-skip the first N seconds of songs (configurable). Many game OST rips have long silent intros.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Ducking During Selection</td><td class="feature-desc">Briefly lower music volume when rapidly browsing games. Restore when user stops on a game. Prevents audio chaos.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback Memory Across Sessions</td><td class="feature-desc">Remember which song was playing when Playnite closed. Resume exact state on next launch. Like Spotify session restore.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Auto-Pause on System Lock <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Pause music when PC is locked (Win+L). Resume on unlock. <code>SystemEvents.SessionSwitch</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Auto-Pause on Idle / AFK <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Pause music after no input for configurable duration (1-60 min). Win32 <code>GetLastInputInfo()</code> with 10s polling. Resume on any keyboard/mouse input. Limitation: doesn't detect gamepad.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Auto-Pause on Another Audio Source <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Pause music when another app produces audio (YouTube, Discord, Spotify). NAudio CoreAudioApi session enumeration with configurable debounce, instant pause toggle, and app exclusion list. OBS excluded by default. See issue #19.</td><td class="feature-effort"><span class="badge badge-low">Low-Med</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Pause on Screen Off / Display Sleep</td><td class="feature-desc">Pause when monitor powers off due to inactivity. Catches users with display timeout but no auto-lock. Requires WndProc hook via <code>HwndSource.AddHook</code> for <code>WM_POWERBROADCAST</code> + <code>GUID_MONITOR_POWER_ON</code>. No existing WndProc hooks in codebase. Must distinguish display-off from system sleep, handle multi-monitor edge cases.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Stay Paused on Focus Restore (#69) <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Music stays paused after alt-tabbing back. Atomic <code>ConvertPauseSource(FocusLoss → Manual)</code> avoids audible blip. Play/skip buttons work naturally. <a href="https://github.com/aHuddini/UniPlaySong/issues/69">Issue #69</a>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Ignore Brief Focus Loss (Alt-Tab) <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Detects alt-tab overlay via Win32 <code>GetClassName()</code> and only pauses if you actually switch apps. Polls until overlay resolves. Skips P/Invoke when already paused.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Pause on Game Audio Detected</td><td class="feature-desc">Pause UPS music when the running game produces its own audio. Extends audio source detection with PID matching against active game process. Challenge: game PID ≠ audio session PID for Steam/Proton/Epic launchers. High false-positive risk.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Pause on Do Not Disturb / Focus Assist</td><td class="feature-desc">Pause music when Windows Focus Assist (DND) is active. Respects user's "leave me alone" signal. WNF state or registry query.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Pause on Battery Saver</td><td class="feature-desc">Pause music when laptop enters battery saver mode. Conserve CPU/audio resources. <code>SystemInformation.PowerStatus</code>. Niche but trivial.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">"Surprise Me" Button</td><td class="feature-desc">Pick a random game from library that has music and start playing it. Discovery mechanism for your own collection.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Session Recap</td><td class="feature-desc">After 30+ minutes, show a summary: "You listened to 12 songs from 5 games." Ephemeral notification.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#128269;</span> Discovery & Smart Features <span class="count">(20 ideas)</span></h2>
+<table data-category="Discovery & Smart Features">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Smart Shuffle</td><td class="feature-desc">Weight shuffle by play count (prefer less-played), recency, or rating instead of pure random.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Genre/Mood Tagging</td><td class="feature-desc">Tag songs with moods (epic, chill, melancholic). Offer "Play all chill game music" cross-library.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Context-Aware Playlists</td><td class="feature-desc">Auto-generate playlists from Playnite game data: "90s RPG Soundtracks", "All Metroidvania music", "Games I haven't finished."</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Tag-Based Auto-Playlists</td><td class="feature-desc">Generate playlists from existing Playnite tags ("cozy", "story-rich"). Reads existing tags, no setup needed.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Soundtrack Matching</td><td class="feature-desc">Instead of default music for games without tracks, play from a similar game (matched by genre/platform/era).</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Similar Game Music Recs</td><td class="feature-desc">"If you like Game A's music, try Game B." Based on genre, composer, or audio similarity.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Composer Database</td><td class="feature-desc">Local database mapping games to composers. Discover you have 15 games by the same person.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Mood Detection</td><td class="feature-desc">Analyze tempo, key, energy via NAudio FFT to auto-tag moods. Local Spotify-like audio features.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Smart Download Priority</td><td class="feature-desc">Bulk download prioritizes most-played games (Playnite play time data), recently added, or favorited.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Multi-Source Fallback</s></td><td class="feature-desc"><s>If YouTube fails, auto-try KHInsider, then Zophar. Cascading fallback with configurable priority.</s> ❌ N/A — KHInsider and Zophar removed in v1.3.4</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">No Music Tag Auto-Apply</td><td class="feature-desc">After failed downloads, automatically tag the game with "No Music" tag.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Reverb by Genre</td><td class="feature-desc">Auto-apply reverb presets based on game genre. Horror → Cathedral, Racing → Clean, RPG → Dreamy. Uses <code>game.Genres</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name" style="text-decoration:line-through;opacity:0.5">Completion-Status Music Filter</td><td class="feature-desc" style="text-decoration:line-through;opacity:0.5">Only play music from games matching a completion status. Nostalgia mode for beaten games, motivation mode for backlog. <strong>Shipped v1.3.4 as Nostalgia Mode + Nostalgia Playlist Mode.</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playtime-Weighted Shuffle</td><td class="feature-desc">In Radio mode, weight shuffle toward games with more playtime. Uses <code>game.Playtime</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Platform-Specific Search Hints</td><td class="feature-desc">Auto-adjust download search terms by platform. N64 → "OST", PS4 → "Soundtrack", Arcade → "BGM".</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Series/Franchise Playlist</td><td class="feature-desc">"Play all music from this franchise." Uses <code>game.Series</code> metadata. Select Zelda → all Zelda music.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Era-Based Playlists</td><td class="feature-desc">"Play all 90s game music." Filter by <code>game.ReleaseYear</code>. Nostalgia-by-decade mode.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Download for Series</td><td class="feature-desc">When downloading for one game, offer to download for all games in the same series.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Recently Added Games Priority</td><td class="feature-desc">In Radio/shuffle, weight toward recently added games (<code>game.Added</code>). Discover new additions.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127918;</span> Playnite-Aware Playback <span class="count">(10 ideas)</span></h2>
+<table data-category="Playnite-Aware Playback">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Per-Game Effects Presets</td><td class="feature-desc">Save live effects chain (reverb, bitcrusher, lo-fi) per game ID. Auto-apply on selection. "Dark Souls always gets Cathedral reverb."</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Per-Game Visualizer Theme</td><td class="feature-desc">Save spectrum visualizer color theme per game ID. Auto-switch on game selection. Uses existing 22 themes.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Mood Transition Bridge</td><td class="feature-desc">Play brief neutral transition sound when switching between intense and calm games. Detect mood via genre.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Game Launch Hype Fade</td><td class="feature-desc">Brief crescendo/hype fade (3-5s) before pausing on game start. Uses <code>MusicFader</code> + volume ramp.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Soundtrack Score Card</td><td class="feature-desc">Per-game overlay: song count, total duration, storage, format quality. Right-click "Music Info" option.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Install-Aware Auto-Download <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Auto-download music when a game is installed. Uses <code>OnGameInstalled</code> event. Zero-effort library building.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Uninstall Cleanup Prompt</td><td class="feature-desc">Offer to delete music files when a game is uninstalled. <code>OnGameUninstalled</code> event.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Developer/Publisher Playlist</td><td class="feature-desc">"Play all music from FromSoftware games." Uses <code>game.Developers</code>/<code>game.Publishers</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Category-Based Default Music</td><td class="feature-desc">Different default music per Playnite category. "Retro" → chiptune, "AAA" → orchestral. Uses <code>game.Categories</code>.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Score-Based Priority</td><td class="feature-desc">In Radio mode, weight shuffle toward higher-rated games. Uses <code>game.UserScore</code>/<code>game.CriticScore</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127911;</span> Audio & Effects <span class="count">(10 ideas)</span></h2>
+<table data-category="Audio & Effects">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Equalizer</td><td class="feature-desc">5-10 band EQ via NAudio BiQuadFilter. Presets: Bass Boost, Vocal, Flat.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback Speed Control</td><td class="feature-desc">0.5x-2.0x speed. "Slowed + reverb" trend. NAudio sample rate manipulation.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Cross-Game Volume Normalization</td><td class="feature-desc">ReplayGain-style real-time gain adjustment. No volume jumps between games.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Volume Duck</td><td class="feature-desc">Duck music volume on Windows notifications. Communications activity audio API.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Ambient Sound Layers</td><td class="feature-desc">Layer environmental sounds (rain, fireplace, space) on top of music. NAudio stream mixing.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">BPM Detection</td><td class="feature-desc">Detect BPM, smooth transitions between tempo-matched songs. DJ-like flow.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Adaptive Bitrate Conversion</td><td class="feature-desc">Auto-convert FLAC/WAV to lower bitrates for storage savings. FFmpeg handles conversion.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">"Calm Down" Mode</td><td class="feature-desc">One-click toggle: low-pass filter + volume reduction + slow fade. Night mode for audio. Uses existing NAudio filter chain.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Peak Meter / VU Display</td><td class="feature-desc">Real-time audio level meter. Classic VU look. NAudio sample data already available via <code>VisualizationDataProvider</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Tempo-Aware Shuffle</td><td class="feature-desc">Avoid jarring tempo jumps by preferring songs with similar BPM. Requires one-time BPM scan per file.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#128279;</span> Integration & Streaming <span class="count">(15 ideas)</span></h2>
+<table data-category="Integration & Streaming">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">OBS Text File Export</td><td class="feature-desc">Write <code>now_playing.txt</code> on each song change for OBS stream overlays. ~10 lines of code.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Discord Rich Presence</td><td class="feature-desc">Show "Listening to: Battle Theme - Final Fantasy VII" in Discord status.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Windows SMTC</td><td class="feature-desc">Integrate with Windows media overlay (Win+G, volume flyout, Bluetooth controls). Media keys already shipped v1.3.2 via RegisterHotKey; SMTC would add Win+G overlay and Bluetooth headphone controls.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">StreamDeck / Local API</td><td class="feature-desc">Expose controls via localhost REST API. StreamDeck, Touch Portal, AutoHotkey can control UPS.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Twitch Chat Integration</td><td class="feature-desc"><code>!song</code> shows current track, <code>!skip</code> votes to skip, <code>!request</code> queues music. Twitch IRC.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">DMCA-Safe Mode</td><td class="feature-desc">Flag/skip DMCA-problematic songs. Tag as "stream-safe" or "DMCA risk."</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Last.fm Scrobbling</td><td class="feature-desc">Submit played tracks to Last.fm. Track listening habits. Simple HTTP API.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Reactive Wallpaper</td><td class="feature-desc">Pipe FFT data to Wallpaper Engine/Lively Wallpaper for audio-reactive desktop backgrounds.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Network Streaming</td><td class="feature-desc">Stream audio via HTTP/Icecast. Listen on phone while PC plays Playnite on TV.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Headphone Detection</td><td class="feature-desc">Auto-pause on headphone unplug, resume on plug. Like smartphones.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Output Device Selection</td><td class="feature-desc">Choose output device independent of Windows default. Music through speakers, game through headphones.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Keyboard Shortcuts <span class="badge badge-shipped">Partial</span></td><td class="feature-desc">Global media keys (Play/Pause, Next, Previous, Stop) via RegisterHotKey. Custom hotkeys not yet supported.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Copy Song Info to Clipboard</td><td class="feature-desc">Button or menu: copies "Now Playing: Battle Theme - FF7" to clipboard for sharing.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playnite URI Handler</td><td class="feature-desc">Register <code>playnite://uniplay/</code> URI scheme. Deep links for external control without REST server.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Mode Switch Stinger</td><td class="feature-desc">Play short audio stinger when switching Desktop ↔ Fullscreen. Like console boot sounds.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127912;</span> Visual & UI <span class="count">(18 ideas)</span></h2>
+<table data-category="Visual & UI">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Album Art Display</td><td class="feature-desc">Extract/display album art from audio metadata. TagLib# reads embedded art. Game cover as fallback.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Mini Player Mode</td><td class="feature-desc">Small floating window with play/pause, skip, song info, visualizer. Like Spotify mini player.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Waveform Progress Bar</td><td class="feature-desc">SoundCloud-style waveform as progress indicator. NAudio waveform data generation.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Fullscreen Now Playing Overlay</td><td class="feature-desc">Brief toast showing what song started in Fullscreen mode. Like Xbox achievement notifications.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Reactive Visualizer Auto-Theme</td><td class="feature-desc">Visualizer auto-switches color palette based on game cover art. DynamicColor extraction exists.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Song Count Badge in Menu <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Right-click menu shows "UniPlaySong (3 songs)" with folder size info line.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Music Folder Size in Menu <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Info line shows "3 songs | 12.4 MB" below the menu header.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Volume % in Tooltip</td><td class="feature-desc">Show "Volume: 72%" in the top panel play/pause button tooltip.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Shuffle Indicator</td><td class="feature-desc">Show shuffle icon/text in Now Playing panel when shuffle mode is active.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Default Music Indicator <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">[Default] prefix in Now Playing ticker when fallback music is playing.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Reactive Cover Art</td><td class="feature-desc">Game cover image pulses/glows to the beat. Subtle animation via PluginUserControl.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Lyrics Display</td><td class="feature-desc">Fetch/display lyrics in dashboard. Embedded USLT tags or web APIs.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Toast Notification <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Gold-glow celebration toast popup on game completion (Experimental).</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Heatmap</td><td class="feature-desc">GitHub-contribution-style green grid showing listening days/duration.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music Map Visualization</td><td class="feature-desc">Interactive graph: games as nodes, connected by composer/genre. Like "Every Noise at Once."</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Preview on Hover</td><td class="feature-desc">In song list/dashboard, hovering plays a 10-second preview. Uses existing <code>PlayPreview()</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Now Playing Game Cover</td><td class="feature-desc">Show currently-playing game's cover art thumbnail next to Now Playing ticker. Instant visual context.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Fullscreen Visualizer Mode</td><td class="feature-desc">Full-window spectrum visualizer for fullscreen mode. Currently desktop-only. Screensaver-like ambient display.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#128218;</span> Library Management <span class="count">(12 ideas)</span></h2>
+<table data-category="Library Management">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Bulk Metadata Editor</td><td class="feature-desc">Edit song titles/artists across library without external tools. Clean up "Track 01" entries.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Duplicate Song Detection</td><td class="feature-desc">Scan for duplicate audio files by hash. Surface duplicates for cleanup.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Fingerprint Dedup</td><td class="feature-desc">Find duplicates across different bitrates using Chromaprint/AcoustID fingerprinting.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music Health Report</td><td class="feature-desc">Scan and report: corrupted files, short files, missing metadata, unsupported formats.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox"></td><td class="feature-name"><s>Auto-Cleanup Empty Folders</s></td><td class="feature-desc">After deleting songs, clean up empty game music directories. <strong>Shipped v1.3.2</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox"></td><td class="feature-name"><s>Playlist Export (M3U/PLS)</s></td><td class="feature-desc">Export per-game or whole-library playlists for external players. <strong>Shipped v1.3.2</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playlist Import (M3U/PLS)</td><td class="feature-desc">Import playlists from external players. Parse M3U/PLS, match files to games. Bidirectional workflow.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Backup/Restore</td><td class="feature-desc">One-click backup of entire music library to ZIP. Restore on new machine.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Completionist Tracking</td><td class="feature-desc">Show OST completion: "Hollow Knight: 12/26 tracks." Track counts from KHInsider.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Export Song List to Text</td><td class="feature-desc">Right-click game -> "Export Song List." Writes text file with all song names.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Open on KHInsider</s></td><td class="feature-desc"><s>Right-click game -> "Search on KHInsider." Opens browser to KHInsider search.</s> ❌ N/A — KHInsider removed in v1.3.4</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Settings Quick Reset</s> ✅</td><td class="feature-desc">"Reset to Defaults" button per settings tab. Tool paths preserved on reset. <strong>Shipped v1.3.2</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#128101;</span> Social & Community <span class="count">(5 ideas)</span></h2>
+<table data-category="Social & Community">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Shareable Music Profiles</td><td class="feature-desc">Export stats as shareable card/image. Like Spotify Wrapped for game music.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Community Download Lists</td><td class="feature-desc">Export/import curated download lists as JSON. Share on forums.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Soundtrack Ratings</td><td class="feature-desc">Rate soundtracks 1-5 stars. Aggregate "My top-rated." Feeds into smart shuffle.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Collaborative Playlists</td><td class="feature-desc">Store playlists as GitHub Gists. Share links, others import.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Soundtrack Credits Export</td><td class="feature-desc">Generate credits list of all soundtracks played during a session. For streamers.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127942;</span> Gamification & Engagement <span class="count">(6 ideas)</span></h2>
+<table data-category="Gamification & Engagement">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Completion Celebration <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Play victory fanfare when game marked "Completed." 11 bundled jingle presets, custom files, NAudio live effects chain.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music Collection Achievements</td><td class="feature-desc">Unlock badges: "100 soundtracks", "1000 songs listened", "Music for every RPG."</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Streaks</td><td class="feature-desc">Track consecutive days of listening. "15-day streak." Subtle engagement hook.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music Discovery Challenge</td><td class="feature-desc">Weekly suggestion: "Listen to music from a game you haven't played in 6+ months."</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Total Listening Time</td><td class="feature-desc">Increment counter on <code>OnSongEnded</code>. Display "Total: 42 hours" in settings.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"></td><td class="feature-name">Download Complete Sound <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc">Play system sound when downloads finish. Covers all download types.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127756;</span> Atmosphere & Immersion <span class="count">(7 ideas)</span></h2>
+<table data-category="Atmosphere & Immersion">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Time-of-Day Awareness</td><td class="feature-desc">Adjust mood/volume by time. Evening quieter/ambient. Auto-select bundled presets.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Dynamic Volume on Idle</td><td class="feature-desc">Lower volume when no game selection changes for X minutes. Presence-aware audio.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Game Launch Countdown</td><td class="feature-desc">Brief crescendo/hype sequence (3-10s) as game launches. Like a DJ build-up.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Sound Effects Pack System</td><td class="feature-desc">Downloadable UI sound packs for Playnite navigation. Like PS5/Switch UI sounds.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Custom Intro/Outro per Game</td><td class="feature-desc">Jingle before main music: "Now playing: Hollow Knight." Custom audio clips or TTS.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Multi-Track Layering</td><td class="feature-desc">Multiple simultaneous tracks per game (ambient + melody layers). Independent volume per layer. Like actual game audio engines. NAudio mixer.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Controller Vibration on Beat</td><td class="feature-desc">Pulse Xbox controller on detected beats. Tactile music feedback. Uses existing XInput + FFT beat detection.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#129514;</span> Experimental / Labs <span class="count">(13 ideas)</span></h2>
+<table data-category="Experimental / Labs">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Stem Separation</td><td class="feature-desc">AI-powered (Demucs) vocal/instrument separation. Create instrumental versions on the fly.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Karaoke Mode</td><td class="feature-desc">Stem separation + lyrics display. Remove vocals, show lyrics. Party feature.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Voice Commands</td><td class="feature-desc">"Skip song", "Play Zelda music." Windows Speech Recognition API. No cloud.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Radio DJ TTS</td><td class="feature-desc">Auto-generate announcements between songs using Windows SAPI TTS.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Podcast Generator</td><td class="feature-desc">Auto-generate podcast RSS from library with TTS intro/outro. Subscribe in podcast apps.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Crossfade DJ Mode</td><td class="feature-desc">Beat-matched crossfades between songs. Detect BPM, align beats.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Spatial Audio / Surround</td><td class="feature-desc">Position music in surround field. Windows Sonic / Dolby Atmos passthrough.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Theme Developer API</td><td class="feature-desc">Expose rich music state properties for custom theme widgets and music-reactive backgrounds.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Scriptable Rules Engine</td><td class="feature-desc">JSON-based rules: "When Souls game selected, enable Cathedral reverb." Automated per-game settings.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music-Aware Game Recs</td><td class="feature-desc">"You have music for 200 games but haven't played 50 of them." Surface unplayed games with music. Uses <code>game.PlayCount</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Soundtrack Similarity Engine</td><td class="feature-desc">Compare audio fingerprints to find "similar sounding" games. Chromaprint + vector similarity.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">AI Playlist Generation</td><td class="feature-desc">Describe mood in natural language ("epic boss fight music for a rainy evening"), generate playlist from library.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Music-Reactive Taskbar Color</td><td class="feature-desc">Taskbar color shifts with the music — calm = cool blue, intense = red/orange, ambient = purple. Uses SetWindowCompositionAttribute Win32 call on Shell_TrayWnd HWND. Audio energy from existing VisualizationDataProvider FFT data drives color. No DLL injection — safer than RainbowTaskbar's approach.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Last Played Song Indicator</td><td class="feature-desc">When selecting a game, show which song played last time. Per-game dictionary. Subtle text display.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#127959;</span> Architecture Ideas <span class="count"></span></h2>
+<p style="color:var(--text-secondary);margin-bottom:16px;">Technical improvements and library integrations — not user-facing features, but implementation strategies, dependency upgrades, and reference codebases that improve quality, reduce code, or unlock future features.</p>
+
+<h3 style="margin-top:24px;margin-bottom:8px;">&#128218; Libraries to Add</h3>
+<table data-category="Architecture Ideas">
+<thead><tr><th style="width:36px"></th><th>Library</th><th>What It Does / Concrete Benefit</th><th>Tier</th><th>Project</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">XamlAnimatedGif</td><td class="feature-desc">Animated GIF in WPF Image via one attached property. Memory-efficient JIT frame decode. Supersedes WpfAnimatedGif. Enables animated cover art panel — users drop cover_animated.gif in ExtraMetadata folder.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">XamlFlair</td><td class="feature-desc">Attached-property animations in pure XAML — fade, translate, scale, blur, color, compound in one line. WPF Storyboard under the hood. Pre-built presets: FadeIn, FadeOut, Blur, Grow, Shrink, SlideInFromLeft/Right. Rx.NET dependency — verify .NET 4.6.2 compat. Toast slide: Kind='FadeFrom,TranslateXFrom' animates opacity + position simultaneously. Keep NowPlayingPanel render loop as-is.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">SharpVectors</td><td class="feature-desc">Render .svg files directly in WPF. SVG icons for settings tabs, desktop bar, menu items. Perfect DPI scaling — no more multi-resolution PNG assets.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-medium">Both</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">CommunityToolkit.Mvvm</td><td class="feature-desc">Source generators for [ObservableProperty], [RelayCommand], INotifyPropertyChanged. Official MVVM successor to MvvmLight. .NET 4.6.2 compatible. Collapses UniPlaySongSettings.cs — dozens of manual OnPropertyChanged() calls replaced with decorated fields. Incremental per-class migration.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">LottieSharp</td><td class="feature-desc">Render Lottie JSON animations (After Effects exports) in WPF. Vector, scalable, tiny file. Animated UI elements from LottieFiles.com: download spinners, animated checkmarks, now-playing pulse. NOT for cover art. Requires .NET 4.7 — verify compat first.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">LoadingIndicators.WPF</td><td class="feature-desc">Animated spinners (ring, wave, dots) for WPF. Download dialog and async operations currently have no visual feedback while yt-dlp runs.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">LiveCharts2</td><td class="feature-desc">Open-source interactive animated charts. Music Dashboard: most-played games bar chart, play time trends, song frequency histogram. File away until dashboard work starts.</td><td class="feature-effort"><span class="badge badge-medium">Tier 2</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">XamlBehaviors (Microsoft)</td><td class="feature-desc">Official XAML behaviors — wire interactions without code-behind (EventTrigger, InvokeCommandAction). Cleaner settings UI on new work. Not worth retrofitting existing views.</td><td class="feature-effort"><span class="badge badge-medium">Tier 2</span></td><td class="feature-impact"><span class="badge badge-medium">Both</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Lambda Converters</td><td class="feature-desc">Define WPF IValueConverter as static lambdas — no separate class per converter. Referenced via x:Static in XAML. Eliminates per-converter boilerplate: bool→Visibility, enum display, null checks — all inline.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-medium">Both</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">ValueConverters.NET</td><td class="feature-desc">Pre-built common WPF converters: datetime formatting, enum localization, culture-aware conversion. Covers converters you'd otherwise write manually. Pairs with Lambda Converters for custom one-offs.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-medium">Both</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">AutoGrid</td><td class="feature-desc">Drop-in WPF Grid replacement — auto-arranges children without manual row/column assignments. Reduces settings tab XAML boilerplate on new tabs or dialog layouts.</td><td class="feature-effort"><span class="badge badge-medium">Tier 2</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Flyleaf</td><td class="feature-desc">FFmpeg + DirectX media player with WPF control. Hardware-accelerated, MVVM-friendly, HDR-to-SDR. Potential third player backend beyond SDL2/NAudio. Only revisit if SDL2 causes hard-to-fix bugs.</td><td class="feature-effort"><span class="badge badge-high">Tier 3</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">WpfAppBar</td><td class="feature-desc">Dock a WPF window to a screen edge (taskbar-style). Could allow ControlUp popup to optionally dock to screen edge instead of floating. CC0 licensed.</td><td class="feature-effort"><span class="badge badge-high">Tier 3</span></td><td class="feature-impact"><span class="badge badge-medium">ControlUp</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">iNKORE UI.WPF.Modern</td><td class="feature-desc">Fluent 2 design with Mica/acrylic. Reference for Windows 11 Mica material if ControlUp popup is redesigned. ControlUp already has custom acrylic — this is an upgrade path.</td><td class="feature-effort"><span class="badge badge-high">Tier 3</span></td><td class="feature-impact"><span class="badge badge-medium">ControlUp</span></td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:28px;margin-bottom:8px;">&#128270; Reference Codebases (Study, No Library to Add)</h3>
+<table data-category="Architecture Reference">
+<thead><tr><th style="width:36px"></th><th>Codebase</th><th>Relevance / What to Study</th><th>Priority</th><th>Project</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Vividl</td><td class="feature-desc">WPF GUI wrapper for yt-dlp — closest public reference to UniPlaySong's download dialog. Study: yt-dlp process lifecycle, per-item download queue UI, format selection, error surfacing from stderr.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">EarTrumpet</td><td class="feature-desc">Per-app volume control with system tray and audio peaking. Reference for tray-based audio UIs and how to expose per-app audio controls on Windows properly.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Sucrose (Wallpaper Engine alt)</td><td class="feature-desc">Open-source animated wallpaper engine. Study: fullscreen detection + auto-pause state machine (analogous to ShouldPlayMusic()), multi-monitor overlay handling, "pause when game is running" logic.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">OpenNetMeter</td><td class="feature-desc">Compact always-on-top overlay above taskbar — architecturally identical to UniPlaySong's desktop bar. Key technique: Shell_TrayWnd ownership + 200ms Z-order fix timer via SetWindowPos(HWND_TOPMOST, SWP_NOACTIVATE) to recover if OS resets Z-order after Explorer restart. XAML: WindowStyle="None" AllowsTransparency="True" Topmost="True" ShowInTaskbar="False".</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">DiffusionToolkit</td><td class="feature-desc">Thumbnail grid + metadata panel + folder tree for large media collections. Reference UI pattern for a song browser in the Music Dashboard.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">NeeView</td><td class="feature-desc">Polished WPF media browser with gestures, plugin system, book-style navigation. Reference if Music Dashboard includes an album art or song browser panel.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">CompactGUI</td><td class="feature-desc">"Pick folder, show progress, show results" WPF workflow. Reference for bulk normalization UI dialog design.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">WindowsEdgeLight</td><td class="feature-desc">WPF click-through overlay (WS_EX_TRANSPARENT + WS_EX_LAYERED), always-on-top, high-DPI aware, screen-capture excludable. Study: overlay positioning and DPI handling for desktop bar and fullscreen Now Playing overlay.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">MediaFlyout</td><td class="feature-desc">WPF taskbar flyout for media controls — Fluent Design, acrylic, auto-hides tray icon when no media plays, middle-click pause-all. Study: tray icon + flyout popup design for UniPlaySong tray flyout.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">VoicemeeterFancyOSD</td><td class="feature-desc">Topmost overlay over fullscreen apps using private WinAPI — no graphics API hooks. ApplicationFrameHost rename trick for true topmost without cert signing. Study: fullscreen Now Playing overlay technique.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">DesktopClock</td><td class="feature-desc">Key finding: contains FullscreenHideManager class — exactly the auto-hide-on-fullscreen behavior UniPlaySong's desktop bar needs when a game launches. Also uses CommunityToolkit.Mvvm + H.NotifyIcon + WpfWindowPlacement (save/restore position across sessions). Study FullscreenHideManager specifically.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">RainbowTaskbar</td><td class="feature-desc">Taskbar color/blur/transparency via native C++ DLL hooking Windows composition API (VisualTreeWatch, TAP — Taskbar Appearance Provider). Too invasive for a plugin directly. Seeds Music-Reactive Taskbar Color feature. Safer path: SetWindowCompositionAttribute Win32 on Shell_TrayWnd HWND — no injection needed. Reference for what's technically possible.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">UniPlaySong</span></td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:28px;margin-bottom:8px;">&#128161; Patterns (No Library Required)</h3>
+<table data-category="Architecture Patterns">
+<thead><tr><th style="width:36px"></th><th>Pattern</th><th>What It Solves</th><th>Tier</th><th>Project</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Non-Blocking UI (Loaded + async Initialize)</td><td class="feature-desc">Subscribe to Loaded event, run async Initialize() after UI renders, set IsBusy during load. Prevents settings window freeze when scanning library or loading stats. No dependency — pure async/await pattern.</td><td class="feature-effort"><span class="badge badge-low">Tier 1</span></td><td class="feature-impact"><span class="badge badge-high">UniPlaySong</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2 style="border-bottom-color: var(--low);">&#9733; Priority Recommendations</h2>
+
+<div class="priority-section quick-wins">
+<h3>&#9889; Quick Wins (Low effort, ship fast) &mdash; 31 remaining</h3>
+<ol>
+<li>Gapless playback</li>
+<li>Per-game effects presets</li>
+<li>OBS text file export</li>
+<li>Sleep timer</li>
+<li>Fade to pause</li>
+<li>Don't Play This Song skip list</li>
+<li>"Surprise Me" button</li>
+<li>Playback memory across sessions</li>
+<li>Community download lists (JSON export/import)</li>
+<li>Quick mute toggle</li>
+<li>Copy song info to clipboard</li>
+<li><s>Open on KHInsider context menu</s> ❌ N/A — removed in v1.3.4</li>
+<li>Total listening time tracker</li>
+<li>Personal top charts (most-played games/songs)</li>
+<li>Auto-skip short files</li>
+<li>"Calm Down" mode</li>
+<li>Audio ducking during game selection</li>
+<li>Per-game visualizer theme</li>
+<li>Now playing game cover</li>
+<li>Song preview on hover</li>
+<li><s>Completion-status music filter</s> ✅ Shipped v1.3.4</li>
+<li>Series/franchise playlist</li>
+<li>Era-based playlists</li>
+<li>Auto-reverb by genre</li>
+<li>Playtime-weighted shuffle</li>
+<li>Playnite URI handler</li>
+<li>Default music randomization</li>
+<li>Shuffle indicator in Now Playing</li>
+<li>Volume percentage in tooltip</li>
+<li>No Music tag auto-apply after failed downloads</li>
+<li>Replay current song</li>
+<li>Song intro skip</li>
+<li>Listening session recap</li>
+<li>Auto-pause on battery saver</li>
+</ol>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">Shipped in v1.3.4: Nostalgia Mode, Nostalgia Playlist Mode, Radio Station Mode, Game Property Filter, Filter Mode</p>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Shipped in v1.3.3: Configurable fade curves</p>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Shipped in v1.3.2: Global media key control, Taskbar thumbnail media controls (graduated), Auto-cleanup empty folders, Playlist export (M3U), Extended default music sources, PS2 Menu Ambience preset, Custom cookies file, Per-tab reset buttons, Graduated 6 experimental features, Improved defaults, Settings reorganization (Pauses tab), Style preset tuning, Global settings reset rewrite</p>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Shipped in v1.3.1: Install-aware auto-download, Auto-pause on external audio, Auto-pause on idle/AFK, Stay paused on focus restore, Ignore brief focus loss, Enhanced library statistics, Settings UI reorganization</p>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Shipped in v1.3.0: Completion celebration, Song count badge, Download complete sound, Default music indicator, Music folder size, Celebration toast, Auto-pause on system lock, Song progress indicator, Library statistics page</p>
+</div>
+
+<div class="priority-section high-value">
+<h3>&#128640; High-Value Features (Medium effort, big impact)</h3>
+<ol>
+<li>Music Dashboard (central stats/library hub)</li>
+<li>Windows SMTC (Win+G overlay + Bluetooth &mdash; media keys already shipped v1.3.2)</li>
+<li>Per-game effects presets (Low effort but High impact)</li>
+<li>Crossfade between games</li>
+<li><s>Radio Station mode</s> ✅ Shipped v1.3.4</li>
+<li>Context-aware playlists from game metadata</li>
+<li>DMCA-safe mode</li>
+<li>Hotkey/StreamDeck local API</li>
+<li>Discord Rich Presence</li>
+<li>Cross-game volume normalization</li>
+<li>Category-based default music</li>
+<li>Developer/publisher playlist</li>
+<li>Auto-pause on game audio detected</li>
+<li>Auto-pause on screen off/display sleep</li>
+</ol>
+</div>
+
+<div class="priority-section ambitious">
+<h3>&#127775; Ambitious Differentiators (High effort, unique positioning)</h3>
+<ol>
+<li>Soundtrack matching for games without music</li>
+<li>Multi-track layering per game</li>
+<li>Ambient sound layers</li>
+<li>Music-reactive desktop wallpaper</li>
+<li>Sound effects pack system</li>
+<li>Mood detection via audio analysis</li>
+<li>AI playlist generation</li>
+</ol>
+</div>
+
+<!-- Floating toolbar -->
+<div class="toolbar hidden" id="toolbar">
+  <div class="selection-count"><span id="count">0</span> features selected</div>
+  <button class="btn-select-all" onclick="selectAll()">Select All</button>
+  <button class="btn-clear" onclick="clearAll()">Clear All</button>
+  <button class="btn-copy" onclick="copyToClipboard()">Copy to Clipboard</button>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ========== Checkbox & Selection ==========
+  const toolbar = document.getElementById('toolbar');
+  const countEl = document.getElementById('count');
+  const toastEl = document.getElementById('toast');
+
+  function getCheckboxes() {
+    return document.querySelectorAll('tbody input[type="checkbox"]');
+  }
+
+  function updateCount() {
+    const checked = document.querySelectorAll('tbody input[type="checkbox"]:checked').length;
+    countEl.textContent = checked;
+    toolbar.classList.toggle('hidden', checked === 0);
+
+    // Update row highlighting
+    getCheckboxes().forEach(cb => {
+      cb.closest('tr').classList.toggle('selected', cb.checked);
+    });
+  }
+
+  // Attach change listeners to all checkboxes
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('tbody input[type="checkbox"]')) {
+      updateCount();
+    }
+  });
+
+  function selectAll() {
+    getCheckboxes().forEach(cb => { cb.checked = true; });
+    updateCount();
+  }
+
+  function clearAll() {
+    getCheckboxes().forEach(cb => { cb.checked = false; });
+    updateCount();
+  }
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 2500);
+  }
+
+  function copyToClipboard() {
+    const selected = [];
+    document.querySelectorAll('tbody input[type="checkbox"]:checked').forEach(cb => {
+      const row = cb.closest('tr');
+      const table = cb.closest('table');
+      const category = table.dataset.category || 'Unknown';
+      const name = row.querySelector('.feature-name').textContent.trim();
+      const effort = row.querySelector('.feature-effort .badge').textContent.trim();
+      const impact = row.querySelector('.feature-impact .badge').textContent.trim();
+      selected.push({ category, name, effort, impact });
+    });
+
+    if (selected.length === 0) return;
+
+    // Group by category
+    const grouped = {};
+    selected.forEach(item => {
+      if (!grouped[item.category]) grouped[item.category] = [];
+      grouped[item.category].push(item);
+    });
+
+    // Build formatted text
+    let text = `Selected Features (${selected.length}):\n`;
+    text += '='.repeat(40) + '\n\n';
+
+    for (const [cat, items] of Object.entries(grouped)) {
+      text += `[${cat}]\n`;
+      items.forEach(item => {
+        text += `  - ${item.name} (Effort: ${item.effort}, Impact: ${item.impact})\n`;
+      });
+      text += '\n';
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied ' + selected.length + ' features to clipboard!');
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copied ' + selected.length + ' features to clipboard!');
+    });
+  }
+
+  // ========== Column Sorting ==========
+  const LEVEL_ORDER = { low: 1, medium: 2, high: 3 };
+
+  function getLevelValue(cell) {
+    const badge = cell.querySelector('.badge');
+    if (!badge) return 0;
+    const text = badge.textContent.trim().toLowerCase();
+    return LEVEL_ORDER[text] || 0;
+  }
+
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', function() {
+      const table = this.closest('table');
+      const tbody = table.querySelector('tbody');
+      const sortKey = this.dataset.sort; // 'effort' or 'impact'
+      const cellClass = sortKey === 'effort' ? '.feature-effort' : '.feature-impact';
+
+      // Determine sort direction
+      let dir;
+      if (this.classList.contains('sort-asc')) {
+        dir = 'desc';
+      } else if (this.classList.contains('sort-desc')) {
+        dir = 'none';
+      } else {
+        dir = 'asc';
+      }
+
+      // Clear sort indicators on sibling headers in same table
+      table.querySelectorAll('th.sortable').forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+      });
+
+      if (dir === 'none') {
+        // Restore original order
+        restoreOriginalOrder(tbody);
+        return;
+      }
+
+      this.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+      // Sort rows
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort((a, b) => {
+        const aVal = getLevelValue(a.querySelector(cellClass));
+        const bVal = getLevelValue(b.querySelector(cellClass));
+        return dir === 'asc' ? aVal - bVal : bVal - aVal;
+      });
+
+      // Re-append in order
+      rows.forEach(row => tbody.appendChild(row));
+    });
+  });
+
+  // Store original row order for each tbody
+  document.querySelectorAll('table[data-category] tbody').forEach(tbody => {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.forEach((row, i) => row.dataset.origIndex = i);
+  });
+
+  function restoreOriginalOrder(tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => parseInt(a.dataset.origIndex) - parseInt(b.dataset.origIndex));
+    rows.forEach(row => tbody.appendChild(row));
+  }
+</script>
+
+</body>
+</html>

@@ -182,8 +182,34 @@ namespace UniPlaySong.Services
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 Directory.CreateDirectory(directory);
+                WriteBreadcrumb(game, directory);
             }
             return directory;
+        }
+
+        public void WriteBreadcrumb(Game game, string directory)
+        {
+            if (game == null || string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                return;
+
+            var safeName = SanitizeFileName(game.Name ?? "Unknown");
+            var breadcrumbPath = Path.Combine(directory, safeName + ".txt");
+
+            // Skip if any breadcrumb already exists
+            if (Directory.GetFiles(directory, "*.txt").Length > 0)
+                return;
+
+            File.WriteAllText(breadcrumbPath,
+                $"Game: {game.Name ?? "Unknown"}\r\nID: {game.Id}\r\n");
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var sanitized = new string(name.Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c).ToArray()).Trim();
+            if (sanitized.Length > 100)
+                sanitized = sanitized.Substring(0, 100).TrimEnd();
+            return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
         }
 
         /// <summary>

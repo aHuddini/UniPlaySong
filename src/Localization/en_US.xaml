@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:s="clr-namespace:System;assembly=mscorlib">
+
+    <!--
+        UniPlaySong Localization — English (en_US)
+
+        To add a new language:
+          1. Copy this file and rename it (e.g. fr_FR.xaml, de_DE.xaml, ja_JP.xaml)
+          2. Translate the string values — do NOT change the x:Key names
+          3. Place the file in the Localization/ folder and submit a pull request
+
+        Keys use the LOC_ prefix. Values are the English text to translate.
+        Do not translate: placeholder tokens like {0}, {1}, game names, file paths.
+    -->
+
+    <!-- ======================== -->
+    <!--   General / Shared       -->
+    <!-- ======================== -->
+    <s:String x:Key="LOC_PluginName">UniPlaySong</s:String>
+    <s:String x:Key="LOC_OK">OK</s:String>
+    <s:String x:Key="LOC_Cancel">Cancel</s:String>
+    <s:String x:Key="LOC_Yes">Yes</s:String>
+    <s:String x:Key="LOC_No">No</s:String>
+    <s:String x:Key="LOC_Error">Error</s:String>
+    <s:String x:Key="LOC_Warning">Warning</s:String>
+    <s:String x:Key="LOC_Success">Success</s:String>
+    <s:String x:Key="LOC_NoGamesSelected">Please select one or more games first.</s:String>
+    <s:String x:Key="LOC_NoGamesSelected_Title">No Games Selected</s:String>
+
+    <!-- ======================== -->
+    <!--   Music Folder           -->
+    <!-- ======================== -->
+    <s:String x:Key="LOC_OpenMusicFolder">Open Music Folder</s:String>
+    <s:String x:Key="LOC_OpenMusicFolder_CreatePrompt">No music folder exists yet for {0}.
+
+Would you like to create it and open it in Explorer?</s:String>
+    <s:String x:Key="LOC_CreateFoldersForAllGames">Create Music Folders for All Games</s:String>
+    <s:String x:Key="LOC_CreateFoldersResult_None">All games already have a music folder.</s:String>
+    <s:String x:Key="LOC_CreateFoldersResult_Created">Created {0} music folder(s).</s:String>
+
+    <!-- ======================== -->
+    <!--   Game Index             -->
+    <!-- ======================== -->
+    <s:String x:Key="LOC_OpenGameIndex">Open Game Index</s:String>
+    <s:String x:Key="LOC_GameIndex_NotFound">No game index found. Run 'Create Folders for All Games' first to generate it.</s:String>
+
+    <!-- ======================== -->
+    <!--   Settings Tabs          -->
+    <!-- ======================== -->
+    <s:String x:Key="LOC_Tab_General">General</s:String>
+    <s:String x:Key="LOC_Tab_Playback">Playback</s:String>
+    <s:String x:Key="LOC_Tab_Pauses">Pauses</s:String>
+    <s:String x:Key="LOC_Tab_LiveEffects">Live Effects</s:String>
+    <s:String x:Key="LOC_Tab_Editing">Editing</s:String>
+    <s:String x:Key="LOC_Tab_Downloads">Downloads</s:String>
+    <s:String x:Key="LOC_Tab_Search">Search</s:String>
+    <s:String x:Key="LOC_Tab_Migration">Migration</s:String>
+    <s:String x:Key="LOC_Tab_Cleanup">Cleanup</s:String>
+    <s:String x:Key="LOC_Tab_Experimental">Experimental</s:String>
+
+</ResourceDictionary>

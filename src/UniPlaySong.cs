@@ -414,6 +414,8 @@ namespace UniPlaySong
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
+            LoadLocalization();
+
             // Register plugin instance for access from dialogs and services
             Application.Current.Properties["UniPlaySongPlugin"] = this;
 
@@ -1841,6 +1843,42 @@ namespace UniPlaySong
 
         #region Initialization
 
+        private void LoadLocalization()
+        {
+            try
+            {
+                var culture = System.Globalization.CultureInfo.CurrentUICulture.Name; // e.g. "fr-FR"
+                var normalized = culture.Replace('-', '_');                            // "fr_FR"
+                var candidates = new[] { normalized, normalized.Substring(0, 2) };    // ["fr_FR", "fr"]
+
+                string loaded = null;
+                foreach (var candidate in candidates)
+                {
+                    var uri = new System.Uri($"pack://application:,,,/UniPlaySong;component/Localization/{candidate}.xaml", System.UriKind.Absolute);
+                    try
+                    {
+                        var dict = new ResourceDictionary { Source = uri };
+                        Application.Current.Resources.MergedDictionaries.Add(dict);
+                        loaded = candidate;
+                        break;
+                    }
+                    catch { /* locale file doesn't exist, try next */ }
+                }
+
+                if (loaded == null)
+                {
+                    // Fall back to English
+                    var uri = new System.Uri("pack://application:,,,/UniPlaySong;component/Localization/en_US.xaml", System.UriKind.Absolute);
+                    var dict = new ResourceDictionary { Source = uri };
+                    Application.Current.Resources.MergedDictionaries.Add(dict);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"LoadLocalization failed: {ex.Message}");
+            }
+        }
+
         private void InitializeServices()
         {
             var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
@@ -2435,6 +2473,61 @@ namespace UniPlaySong
         public void NormalizeAllMusicFiles()
         {
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
+        }
+
+        public string GetGameIndexPath()
+        {
+            return string.IsNullOrEmpty(_gamesPath) ? null : Path.Combine(_gamesPath, "_game-index.txt");
+        }
+
+        public int CreateMissingMusicFolders()
+        {
+            var games = PlayniteApi.Database.Games;
+            int created = 0;
+            var indexEntries = new List<(string Name, string Id)>();
+
+            foreach (var game in games)
+            {
+                var dir = _fileService?.GetGameMusicDirectory(game);
+                if (string.IsNullOrEmpty(dir))
+                    continue;
+
+                if (!Directory.Exists(dir))
+                {
+                    _fileService.EnsureGameMusicDirectory(game); // creates folder + breadcrumb
+                    created++;
+                }
+                else
+                {
+                    _fileService.WriteBreadcrumb(game, dir); // retroactive for existing folders
+                }
+
+                indexEntries.Add((game.Name ?? "Unknown", game.Id.ToString()));
+            }
+
+            RegenerateGameIndex(indexEntries);
+            return created;
+        }
+
+        private void RegenerateGameIndex(List<(string Name, string Id)> entries)
+        {
+            if (_fileService == null || string.IsNullOrEmpty(_gamesPath))
+                return;
+
+            var indexPath = Path.Combine(_gamesPath, "_game-index.txt");
+            var sorted = entries.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("UniPlaySong Game Index");
+            lines.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd}");
+            lines.AppendLine($"Games with music folders: {sorted.Count}");
+            lines.AppendLine();
+            lines.AppendLine("Game Name | Folder ID");
+            lines.AppendLine(new string('-', 80));
+            foreach (var (name, id) in sorted)
+                lines.AppendLine($"{name} | {id}");
+
+            File.WriteAllText(indexPath, lines.ToString());
         }
 
         /// <summary>

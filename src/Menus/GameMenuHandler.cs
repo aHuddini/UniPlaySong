@@ -363,13 +363,20 @@ namespace UniPlaySong.Menus
                         var musicDir = _fileService?.GetGameMusicDirectory(game);
                         if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                         {
+                            _fileService.WriteBreadcrumb(game, musicDir);
                             Process.Start("explorer.exe", musicDir);
                         }
-                        else
+                        else if (!string.IsNullOrEmpty(musicDir))
                         {
-                            _playniteApi.Dialogs.ShowMessage(
-                                $"No music folder found for {game.Name}.\n\nMusic will be stored in:\n{_fileService?.GetGameMusicDirectory(game) ?? "Unknown"}",
-                                "UniPlaySong");
+                            var result = _playniteApi.Dialogs.ShowMessage(
+                                $"No music folder exists yet for {game.Name}.\n\nWould you like to create it and open it in Explorer?",
+                                "UniPlaySong",
+                                System.Windows.MessageBoxButton.YesNo);
+                            if (result == System.Windows.MessageBoxResult.Yes)
+                            {
+                                _fileService.EnsureGameMusicDirectory(game);
+                                Process.Start("explorer.exe", musicDir);
+                            }
                         }
                     },
                     context: $"opening music folder for '{game?.Name}'",
@@ -385,13 +392,20 @@ namespace UniPlaySong.Menus
                     var musicDir = _fileService?.GetGameMusicDirectory(game);
                     if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                     {
+                        _fileService.WriteBreadcrumb(game, musicDir);
                         Process.Start("explorer.exe", musicDir);
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(musicDir))
                     {
-                        _playniteApi.Dialogs.ShowMessage(
-                            $"No music folder found for {game.Name}.\n\nMusic will be stored in:\n{_fileService?.GetGameMusicDirectory(game) ?? "Unknown"}",
-                            "UniPlaySong");
+                        var result = _playniteApi.Dialogs.ShowMessage(
+                            $"No music folder exists yet for {game.Name}.\n\nWould you like to create it and open it in Explorer?",
+                            "UniPlaySong",
+                            System.Windows.MessageBoxButton.YesNo);
+                        if (result == System.Windows.MessageBoxResult.Yes)
+                        {
+                            _fileService.EnsureGameMusicDirectory(game);
+                            Process.Start("explorer.exe", musicDir);
+                        }
                     }
                 }
                 catch (Exception ex)
