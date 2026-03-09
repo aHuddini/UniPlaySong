@@ -27,7 +27,7 @@ Built with the help of Claude Code and Cursor IDE
 - [New Feature] **Game Folder Breadcrumbs** — Each game music folder UPS has now contains a named `.txt` file identifying the game, making the game ID folders easier navigate for users.
 - [New Feature] **Game Index File** — The bulk folder action generates a `_game-index.txt` in the UPS's game music library root folder, listing all games with folders and their associated IDs.
 - [New Feature] **Open Game Index** — New button in Settings → Editing → File Management opens the game index directly in a text editor for reference.
-- [Foundation] **Localization Infrastructure** — Groundwork for community translation support. Future contributors can add a language by providing a single XAML file — no C# required.
+- [Backend] **Localization Infrastructure Created** — Groundwork for community translation support. Future contributors can add language translation by providing a single XAML file in the future
 
 ### Previous Version
 - **v1.3.4**: Game Property Filter, Filter Mode, Radio Mode, Download Sources removed (DMCA precaution), External Audio Pause now off by default
