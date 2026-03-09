@@ -2474,9 +2474,21 @@
 
                         <Separator Margin="0,15"/>
 
-                        <TextBlock Text="Original File Management" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                        <TextBlock Text="File Management" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <Button Content="Open Game Index"
+                                    Width="220"
+                                    Margin="0,0,10,0"
+                                    Command="{Binding OpenGameIndexCommand}"/>
+                            <TextBlock Text="Open the game index listing all games with music folders and their IDs."
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10">
                             <Button Content="Open Preserved Folder"
                                     Width="220"
                                     Margin="0,0,10,0"

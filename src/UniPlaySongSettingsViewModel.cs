@@ -587,6 +587,29 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand OpenGameIndexCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var indexPath = plugin.GetGameIndexPath();
+                    if (System.IO.File.Exists(indexPath))
+                    {
+                        System.Diagnostics.Process.Start(indexPath);
+                    }
+                    else
+                    {
+                        plugin.PlayniteApi.Dialogs.ShowMessage(
+                            "No game index found. Run 'Create Folders for All Games' first to generate it.",
+                            "UniPlaySong");
+                    }
+                },
+                context: "opening game index",
+                showUserMessage: true
+            );
+        });
+
         public ICommand TrimSelectedGamesCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

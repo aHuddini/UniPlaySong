@@ -2437,6 +2437,11 @@ namespace UniPlaySong
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
         }
 
+        public string GetGameIndexPath()
+        {
+            return string.IsNullOrEmpty(_gamesPath) ? null : Path.Combine(_gamesPath, "_game-index.txt");
+        }
+
         public int CreateMissingMusicFolders()
         {
             var games = PlayniteApi.Database.Games;

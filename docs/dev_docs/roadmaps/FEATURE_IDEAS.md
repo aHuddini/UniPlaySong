@@ -6,6 +6,15 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 ---
 
+## Shipped in v1.3.5
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Open Music Folder — Create Prompt~~ | Library Management | v1.3.5 |
+| ~~Create Music Folders for All Games (Bulk Action)~~ | Library Management | v1.3.5 |
+| ~~Game Folder Breadcrumbs~~ | Library Management | v1.3.5 |
+| ~~Game Index File~~ | Library Management | v1.3.5 |
+
 ## Shipped in v1.3.4
 
 | Feature | Category | Version |
@@ -72,7 +81,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
-| **Music Dashboard** | Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. A single place to explore your music library. Every modern music player has this (Spotify Home, iTunes Library). WPF UserControl in settings or standalone window. | Medium | High |
+| **Music Dashboard** | Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. A single place to explore your music library. Every modern music player has this (Spotify Home, iTunes Library). WPF UserControl in settings or standalone window. `_game-index.txt` and breadcrumb files could feed this without scanning folders at startup. | Medium | High |
 | **Personal Top Charts** | "Top 10 Most Played Games", "Top 25 Songs", filterable by week/month/all-time. Requires play count tracking. Surface in dashboard. | Low | Medium |
 | ~~**Library Statistics Page**~~ ✅ | ~~Detailed breakdown: file format distribution (MP3 vs FLAC %), bitrate stats, total duration, storage analysis. "50 GB of FLAC could be 12 GB as 320kbps MP3." Like foobar2000's aggregate Properties.~~ **Shipped v1.3.0** (**Enhanced v1.3.1:** avg song length, total playtime, ID3 tag count, bitrate distribution card, reducible track size card) | Low | Medium |
 | **Listening Trends Graph** | Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round. | Medium | Medium |
@@ -234,6 +243,14 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
+| **Breadcrumb Song Count** | Add `Songs: N` line to each game's breadcrumb `.txt`, updated when files are added/removed. Gives an at-a-glance count without opening the folder. | Low | Low |
+| **Breadcrumb Refresh Action** | "Refresh Breadcrumbs" bulk action in Settings → Editing. Updates all `.txt` files to reflect current game names (handles renames in Playnite). | Low | Low |
+| **Breadcrumb Platform Field** | Add `Platform: PC (Windows)` to breadcrumb content. Useful when the same game title exists on multiple platforms with separate library entries. | Low | Low |
+| **Orphan Cleanup — Named Games** | When cleanup finds orphaned GUID folders, read the breadcrumb `.txt` to show the game name (`"The Witcher 3 (no longer in library)"`) instead of a raw GUID path. | Low | Medium |
+| **Open Game Index Button** | Button in Settings → Editing to open `_game-index.txt` in the default text editor. One-liner `Process.Start`. | Low | Low |
+| **Index with Song Counts** | Include song count per game in `_game-index.txt` (e.g. `The Witcher 3 \| a1b2c3... \| 5 songs`). More useful than name+ID alone. | Low | Low |
+| **Index CSV Export** | Export `_game-index.txt` as CSV for spreadsheet analysis of your music library. | Low | Low |
+| **Breadcrumb as Playlist Seed** | Dashboard reads breadcrumb files to build filtered playlists (e.g. "all games on PC with music") without full folder scans at startup. Foundation for tag-based filtering. | Medium | High |
 | **Bulk Metadata Editor** | Edit song titles/artists across library without external tools. Clean up "Track 01" entries. | Medium | Medium |
 | **Duplicate Song Detection** | Scan for duplicate audio files by hash. Surface duplicates for cleanup. | Low | Medium |
 | **Audio Fingerprint Deduplication** | Find duplicates even across different bitrates/sources using Chromaprint/AcoustID fingerprinting. | High | Low |
