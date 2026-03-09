@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.6] - 2026-03-09
+
+### Added
+- **Fade Out Before Song End** — When Radio Mode or Randomize on Song End is active, a configurable fade-out (1–5s, default 3s) starts before the song finishes naturally, creating a smooth transition instead of an abrupt cut. Works with both SDL2 and NAudio backends. Setting: Playback tab.
+- **Icon Glow** (Experimental, Desktop only) — Adds a multi-layer neon glow effect around the selected game's icon. The glow color is automatically extracted from the game icon using HSV-based color analysis. Two rendering layers: a SkiaSharp pre-rendered outer glow image behind the icon, plus a WPF DropShadowEffect inner halo on the icon itself. When Live Effects/Visualizer is active (NAudio backend), the glow reacts to music in real-time using bass FFT energy, adaptive gain control, common mode subtraction, three-stage cascaded smoothing, spectral flux onset detection, and a fast punch signal for beat responsiveness. When NAudio is not active, falls back to a gentle sine-wave pulse animation (configurable speed) or static glow. Settings: Experimental tab — Glow Intensity, Glow Size, Pulse Speed, Audio Sensitivity, with a dedicated Reset button.
+
 ## [1.3.5] - 2026-03-08
 
 ### Improved

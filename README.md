@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.5-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.6-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,17 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.5
+## What's New - v1.3.6
 
-- [Improved] **Open Music Folder** — When clicking "Open Music Folder" for a game with no music folder yet, you'll now be asked if you want to create and open it. Previously showed a static info popup with no action.
-- [New Feature] **Create Music Folders for All Games** — New bulk action in Settings → Editing. Creates a music folder for every game in your library that doesn't have one yet.
-- [New Feature] **Game Folder Breadcrumbs** — Each game music folder UPS has now contains a named `.txt` file identifying the game, making the game ID folders easier navigate for users.
-- [New Feature] **Game Index File** — The bulk folder action generates a `_game-index.txt` in the UPS's game music library root folder, listing all games with folders and their associated IDs.
-- [New Feature] **Open Game Index** — New button in Settings → Editing → File Management opens the game index directly in a text editor for reference.
-- [Backend] **Localization Infrastructure Created** — Groundwork for community translation support. Future contributors can add language translation by providing a single XAML file in the future
+- [New Feature] **Fade Out Before Song End** — When using Radio Mode or Randomize on Song End, music now fades out smoothly in the final seconds before auto-advancing to the next song. Configurable duration (1–5s). Works in Live Effects and non-Live Effects modes.
+- [Experimental] **Icon Glow** — The selected game's icon now glows with colors extracted from the game art. When music is playing with Live Effects enabled, the glow pulses and breathes in sync with the beat. Configurable intensity, size, and audio sensitivity in Settings → Experimental. Desktop mode only.
 
 ### Previous Version
-- **v1.3.4**: Game Property Filter, Filter Mode, Radio Mode, Download Sources removed (DMCA precaution), External Audio Pause now off by default
+- **v1.3.5**: Open Music Folder create prompt, Bulk folder creation, Game folder breadcrumbs, Game index file, Open Game Index button, Localization infrastructure
 
 > **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -104,7 +100,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Search**: Search result caching and auto-search hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics
+- **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics, icon glow
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA

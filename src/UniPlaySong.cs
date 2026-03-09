@@ -111,6 +111,7 @@ namespace UniPlaySong
         private bool _isUsingLiveEffectsPlayer;
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
         private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
+        private IconGlow.IconGlowManager _iconGlowManager;
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
@@ -312,6 +313,10 @@ namespace UniPlaySong
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
             UpdateDynamicVisualizerColors(game);
+            if (_iconGlowManager != null && IsDesktop)
+            {
+                _iconGlowManager.OnGameSelected(game);
+            }
         }
 
         // Handles game state changes at the database level.
@@ -532,6 +537,12 @@ namespace UniPlaySong
             // {
             //     CheckForHintsUpdatesAsync();
             // }
+
+            // Icon glow effect (Desktop only) — always create, checks setting dynamically
+            if (IsDesktop)
+            {
+                _iconGlowManager = new IconGlow.IconGlowManager(_settings, _fileLogger);
+            }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)
             if (_settings?.RadioModeEnabled == true)
@@ -899,6 +910,8 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _iconGlowManager?.Destroy();
+            _iconGlowManager = null;
             if (_taskbarMediaControls != null)
             {
                 _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;

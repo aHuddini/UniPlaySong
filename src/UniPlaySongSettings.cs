@@ -2268,6 +2268,57 @@ namespace UniPlaySong
             set { toastBorderThickness = Math.Max(0, Math.Min(5, value)); OnPropertyChanged(); }
         }
 
+        private bool enableIconGlow = false;
+        private bool enableIconGlowPulse = true;
+        private double iconGlowIntensity = 1.8;
+        private double iconGlowSize = 6.0;
+        private double iconGlowPulseSpeed = 1.5;
+        private double iconGlowAudioSensitivity = 2.0;
+
+        // Pulsating glow border around the selected game's icon in Desktop mode.
+        // Color is extracted from the game's icon art. Audio-reactive when NAudio is active.
+        public bool EnableIconGlow
+        {
+            get => enableIconGlow;
+            set { enableIconGlow = value; OnPropertyChanged(); }
+        }
+
+        // When SDL2 backend is active (no audio data), enable a gentle fixed-rate pulse.
+        // When off, the glow is static. Ignored when NAudio is active (always audio-reactive).
+        public bool EnableIconGlowPulse
+        {
+            get => enableIconGlowPulse;
+            set { enableIconGlowPulse = value; OnPropertyChanged(); }
+        }
+
+        // Controls glow brightness. Higher = brighter, more vivid glow extending further from icon.
+        public double IconGlowIntensity
+        {
+            get => iconGlowIntensity;
+            set { iconGlowIntensity = Math.Max(0.5, Math.Min(3.0, value)); OnPropertyChanged(); }
+        }
+
+        // Controls how far the glow extends from the icon. Higher = wider, softer glow.
+        public double IconGlowSize
+        {
+            get => iconGlowSize;
+            set { iconGlowSize = Math.Max(2.0, Math.Min(12.0, value)); OnPropertyChanged(); }
+        }
+
+        // SDL2 fallback pulse cycle duration in seconds. Lower = faster pulse.
+        public double IconGlowPulseSpeed
+        {
+            get => iconGlowPulseSpeed;
+            set { iconGlowPulseSpeed = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
+        }
+
+        // Audio reactivity multiplier. Higher = more responsive to music peaks.
+        public double IconGlowAudioSensitivity
+        {
+            get => iconGlowAudioSensitivity;
+            set { iconGlowAudioSensitivity = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Applies a reverb preset by setting all reverb parameters.
         /// Presets are based on Audacity's exact factory preset values.

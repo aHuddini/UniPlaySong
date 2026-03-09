@@ -248,6 +248,37 @@ namespace UniPlaySong
             ShowButtonFeedback(sender, "Reset!");
         }
 
+        private void ResetExperimentalTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Experimental");
+            if (s == null) return;
+
+            s.EnableIconGlow = false;
+            s.EnableIconGlowPulse = true;
+            s.IconGlowIntensity = 1.8;
+            s.IconGlowSize = 6.0;
+            s.IconGlowPulseSpeed = 1.5;
+            s.IconGlowAudioSensitivity = 2.0;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetIconGlow_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as UniPlaySongSettingsViewModel;
+            var s = vm?.Settings;
+            if (s == null) return;
+
+            s.EnableIconGlow = true;
+            s.EnableIconGlowPulse = true;
+            s.IconGlowIntensity = 1.8;
+            s.IconGlowSize = 6.0;
+            s.IconGlowPulseSpeed = 1.5;
+            s.IconGlowAudioSensitivity = 2.0;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
         private void CopyLiveEffectsToClipboard_Click(object sender, RoutedEventArgs e)
         {
             var vm = DataContext as UniPlaySongSettingsViewModel;

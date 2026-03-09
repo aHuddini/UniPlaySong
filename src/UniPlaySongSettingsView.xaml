@@ -3531,6 +3531,59 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Icon Glow -->
+                    <Separator Margin="0,15"/>
+                    <Grid Margin="0,0,0,5">
+                        <TextBlock Text="Icon Glow" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Content="Reset Icon Glow" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetIconGlow_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <CheckBox Content="Enable Icon Glow (Desktop only)"
+                              IsChecked="{Binding Settings.EnableIconGlow}"
+                              Margin="0,12,0,4"
+                              ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
+                    <CheckBox Content="Enable pulse animation (SDL2 fallback)"
+                              IsChecked="{Binding Settings.EnableIconGlowPulse}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlow}"
+                              ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
+                    <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowIntensity}"
+                                Minimum="0.5" Maximum="3.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowSize}"
+                                Minimum="2.0" Maximum="12.0"
+                                TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
+                                Minimum="0.5" Maximum="4.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
+                                Minimum="0.5" Maximum="4.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
+                    </DockPanel>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
