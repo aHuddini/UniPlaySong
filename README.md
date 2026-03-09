@@ -24,8 +24,10 @@ Built with the help of Claude Code and Cursor IDE
 
 - [Improved] **Open Music Folder** — When clicking "Open Music Folder" for a game with no music folder yet, you'll now be asked if you want to create and open it. Previously showed a static info popup with no action.
 - [New Feature] **Create Music Folders for All Games** — New bulk action in Settings → Editing. Creates a music folder for every game in your library that doesn't have one yet.
-- [New Feature] **Game Folder Breadcrumbs** — Each game music folder now contains a named `.txt` file identifying the game, so browsing the raw folders in Explorer no longer requires cross-referencing GUIDs.
-- [New Feature] **Game Index File** — The bulk folder action generates a `_game-index.txt` in the music library root listing all games with folders and their IDs.
+- [New Feature] **Game Folder Breadcrumbs** — Each game music folder UPS has now contains a named `.txt` file identifying the game, making the game ID folders easier navigate for users.
+- [New Feature] **Game Index File** — The bulk folder action generates a `_game-index.txt` in the UPS's game music library root folder, listing all games with folders and their associated IDs.
+- [New Feature] **Open Game Index** — New button in Settings → Editing → File Management opens the game index directly in a text editor for reference.
+- [Foundation] **Localization Infrastructure** — Groundwork for community translation support. Future contributors can add a language by providing a single XAML file — no C# required.
 
 ### Previous Version
 - **v1.3.4**: Game Property Filter, Filter Mode, Radio Mode, Download Sources removed (DMCA precaution), External Audio Pause now off by default

@@ -14,6 +14,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | ~~Create Music Folders for All Games (Bulk Action)~~ | Library Management | v1.3.5 |
 | ~~Game Folder Breadcrumbs~~ | Library Management | v1.3.5 |
 | ~~Game Index File~~ | Library Management | v1.3.5 |
+| ~~Localization Infrastructure (Foundation)~~ | Social & Community | v1.3.5 |
 
 ## Shipped in v1.3.4
 
@@ -270,6 +271,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
+| **Localization / Translation Support** | Allow community contributors to translate the extension into other languages. Implementation: WPF `ResourceDictionary` XAML files per locale (e.g. `Localization/en_US.xaml`, `fr_FR.xaml`). Strings referenced via `{DynamicResource LOC_KeyName}` in XAML and a `ResourceProvider.GetString()` helper in C#. Locale auto-detected at startup, falls back to English. Scope is essential strings only: dialog messages, button labels, settings headers, option names, and key descriptions — not fine-print tooltips or debug strings (~250-350 strings total, roughly half the codebase). Contributors add a single XAML file per language. Best tackled before a v2.0 major release rather than as an incremental patch. | High | Medium |
 | **Shareable Music Profiles** | Export stats as shareable card/image: "200 soundtracks, 1500 songs, most played: Persona 5." Like Spotify Wrapped for game music. | Medium | Medium |
 | **Community Download Lists** | Export/import curated download lists (game name -> search terms) as JSON. Share on forums. Builds on auto-search database. | Low | Medium |
 | **Soundtrack Ratings** | Rate soundtracks 1-5 stars. Aggregate "My top-rated." Feeds into smart shuffle. | Low | Medium |

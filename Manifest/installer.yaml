@@ -5,10 +5,12 @@ Packages:
     ReleaseDate: 2026-03-08
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.5/UniPlaySong-1_3_5-Mar08_2026.pext'
     Changelog:
-      - '[Improved] Open Music Folder: Prompts to create and open the music folder if it does not exist yet, instead of showing a static info popup.'
+      - '[Improved] Open Music Folder: When right-clicking to open a folder for a game with no music, UPS now prompts to create and open the music folder if it does not exist yet.'
       - '[New Feature] Create Music Folders for All Games: Bulk action in Settings → Editing that creates a music folder for every game in the library that does not have one yet.'
-      - '[New Feature] Game Folder Breadcrumbs: Each game music folder now contains a named .txt file identifying the game, so raw folder browsing no longer requires cross-referencing GUIDs.'
-      - '[New Feature] Game Index File: The bulk folder action generates a _game-index.txt in the music library root listing all games with folders and their IDs.'
+      - '[New Feature] Game Folder Breadcrumbs: When opening a music folder from UPS, each game music folder will contain a named .txt file identifying the game, so manual folder browsing is easier to navigate for users.'
+      - '[New Feature] Game Index File: The bulk "Create Music Folders" action generates a _game-index.txt in the music library root listing all games with folders and their IDs.'
+      - '[New Feature] Open Game Index: Button in Settings → Editing → File Management opens the game index in your text editor.'
+      - '[Backend] Localization Infrastructure Started: Groundwork for community translation support. Not ready now, but contributors can add a language file in the future to help translate UPS into other languages.'
   - Version: 1.3.4
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-02-26

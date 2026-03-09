@@ -414,6 +414,8 @@ namespace UniPlaySong
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
+            LoadLocalization();
+
             // Register plugin instance for access from dialogs and services
             Application.Current.Properties["UniPlaySongPlugin"] = this;
 
@@ -1840,6 +1842,42 @@ namespace UniPlaySong
         #endregion
 
         #region Initialization
+
+        private void LoadLocalization()
+        {
+            try
+            {
+                var culture = System.Globalization.CultureInfo.CurrentUICulture.Name; // e.g. "fr-FR"
+                var normalized = culture.Replace('-', '_');                            // "fr_FR"
+                var candidates = new[] { normalized, normalized.Substring(0, 2) };    // ["fr_FR", "fr"]
+
+                string loaded = null;
+                foreach (var candidate in candidates)
+                {
+                    var uri = new System.Uri($"pack://application:,,,/UniPlaySong;component/Localization/{candidate}.xaml", System.UriKind.Absolute);
+                    try
+                    {
+                        var dict = new ResourceDictionary { Source = uri };
+                        Application.Current.Resources.MergedDictionaries.Add(dict);
+                        loaded = candidate;
+                        break;
+                    }
+                    catch { /* locale file doesn't exist, try next */ }
+                }
+
+                if (loaded == null)
+                {
+                    // Fall back to English
+                    var uri = new System.Uri("pack://application:,,,/UniPlaySong;component/Localization/en_US.xaml", System.UriKind.Absolute);
+                    var dict = new ResourceDictionary { Source = uri };
+                    Application.Current.Resources.MergedDictionaries.Add(dict);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"LoadLocalization failed: {ex.Message}");
+            }
+        }
 
         private void InitializeServices()
         {
