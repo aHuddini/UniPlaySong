@@ -97,6 +97,10 @@ namespace UniPlaySong.Services
             }
         }
 
+        public TimeSpan? TotalTime => _mediaPlayer?.NaturalDuration.HasTimeSpan == true
+            ? _mediaPlayer.NaturalDuration.TimeSpan
+            : (TimeSpan?)null;
+
         public string Source => _mediaPlayer?.Source?.LocalPath ?? string.Empty;
 
         /// <summary>

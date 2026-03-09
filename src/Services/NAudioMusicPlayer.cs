@@ -72,6 +72,7 @@ namespace UniPlaySong.Services
         public bool IsActive => _isPlaying || _logicallyPaused;
 
         public TimeSpan? CurrentTime => _audioFile?.CurrentTime;
+        public TimeSpan? TotalTime => _audioFile?.TotalTime;
 
         public string Source { get; private set; }
 

@@ -14,6 +14,7 @@ namespace UniPlaySong.Services
         bool IsLoaded { get; }
         bool IsActive { get; }
         TimeSpan? CurrentTime { get; }
+        TimeSpan? TotalTime { get; }
         string Source { get; }
 
         // Preloads a media file into a separate player for seamless switching

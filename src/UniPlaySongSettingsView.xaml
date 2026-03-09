@@ -328,6 +328,23 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Song End Fade-Out -->
+                    <CheckBox Content="Fade out before song ends (Radio Mode / Randomize on Song End)"
+                              IsChecked="{Binding Settings.FadeOutBeforeSongEnd}"
+                              Margin="0,12,0,4"
+                              ToolTip="Only active when Radio Mode or Randomize on Song End is enabled. Fades the current song out in the final seconds before it ends naturally, creating a smooth transition to the next track." />
+                    <StackPanel Orientation="Horizontal"
+                                Margin="20,0,0,0"
+                                IsEnabled="{Binding Settings.FadeOutBeforeSongEnd}">
+                        <TextBlock Text="Fade duration:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Slider Minimum="1" Maximum="5"
+                                Value="{Binding Settings.FadeOutBeforeSongEndDuration}"
+                                Width="120" TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Settings.FadeOutBeforeSongEndDuration, StringFormat='{}{0:F1}s'}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Preview Mode -->

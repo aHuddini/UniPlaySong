@@ -94,6 +94,8 @@ namespace UniPlaySong
             s.FilterModeEnabled = false;
             s.RadioModeEnabled = false;
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
+            s.FadeOutBeforeSongEnd = false;
+            s.FadeOutBeforeSongEndDuration = 3.0;
             s.EnableCompletionCelebration = true;
             s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
             s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";

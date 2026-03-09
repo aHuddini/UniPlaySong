@@ -1182,6 +1182,8 @@ namespace UniPlaySong
         private bool randomizeOnEverySelect = true;
         private bool randomizeOnMusicEnd = true;
         private bool stopAfterSongEnds = false;
+        private bool fadeOutBeforeSongEnd = false;
+        private double fadeOutBeforeSongEndDuration = 3.0;
 
         /// <summary>
         /// Randomize song selection when selecting a different game
@@ -1201,6 +1203,21 @@ namespace UniPlaySong
         {
             get => randomizeOnMusicEnd;
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
+        }
+
+        // Fade out the ending song N seconds before it finishes during auto-advance (Radio Mode or RandomizeOnMusicEnd).
+        // Only active when Radio Mode or Randomize on Music End is enabled. NAudio and SDL2 both supported.
+        public bool FadeOutBeforeSongEnd
+        {
+            get => fadeOutBeforeSongEnd;
+            set { fadeOutBeforeSongEnd = value; OnPropertyChanged(); }
+        }
+
+        // Duration in seconds of the pre-end fade-out (1–5s). Default: 3s.
+        public double FadeOutBeforeSongEndDuration
+        {
+            get => fadeOutBeforeSongEndDuration;
+            set { fadeOutBeforeSongEndDuration = Math.Max(1.0, Math.Min(5.0, value)); OnPropertyChanged(); }
         }
 
         // Stop playback after current song finishes instead of looping or randomizing

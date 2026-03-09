@@ -46,6 +46,9 @@ namespace UniPlaySong.Players.SDL
         public static extern double Mix_GetMusicPosition(IntPtr music);
 
         [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double Mix_MusicDuration(IntPtr music);
+
+        [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Mix_VolumeMusic(int volume);
 
         [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]

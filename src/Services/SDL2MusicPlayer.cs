@@ -115,6 +115,11 @@ namespace UniPlaySong.Services
             }
         }
 
+        public TimeSpan? TotalTime =>
+            _music != IntPtr.Zero
+                ? TimeSpan.FromSeconds(SDL2Mixer.Mix_MusicDuration(_music))
+                : (TimeSpan?)null;
+
         public string Source => _source;
 
         public void PreLoad(string filePath)
