@@ -35,7 +35,12 @@ namespace UniPlaySong.IconGlow
         private double _smoothedIntensity;
 
         // Audio-reactive: bass FFT energy + three-stage smoothing + onset detection
-        private double _gain;           // adaptive gain: rises fast, decays very slowly
+        // Rolling window peak normalizer — ~5 second window at 60fps
+        private const int PeakWindowSize = 300;
+        private double[] _peakWindow;   // circular buffer of recent peak levels
+        private int _peakWindowIdx;     // write index into circular buffer
+        private double _peakWindowMax;  // cached max of the window (recomputed every 30 frames)
+        private int _peakMaxAge;        // frames since last full recompute
         private double _commonMode;     // baseline tracker for common mode subtraction
         private double _smooth1;        // stage 1: fast envelope (catches beats)
         private double _smooth2;        // stage 2: medium breathing (integrates over phrases)
@@ -221,7 +226,10 @@ namespace UniPlaySong.IconGlow
             _originalIconIndex = iconIndex;
             _pulseStartTime = DateTime.UtcNow;
             _smoothedIntensity = 0.0;
-            _gain = 0.01;
+            _peakWindow = new double[PeakWindowSize];
+            _peakWindowIdx = 0;
+            _peakWindowMax = 0.001;
+            _peakMaxAge = 0;
             _commonMode = 0.0;
             _smooth1 = 0.0;
             _smooth2 = 0.0;
@@ -323,11 +331,21 @@ namespace UniPlaySong.IconGlow
                     level = rms * 0.7 + peak * 0.3;
                 }
 
-                // AGC
-                double gainAlpha = level > _gain ? 0.98 : 0.002;
-                _gain = gainAlpha * level + (1.0 - gainAlpha) * _gain;
-                _gain = Math.Max(_gain, 0.001);
-                double normalized = level / _gain;
+                // Rolling window peak normalization (~5s window)
+                _peakWindow[_peakWindowIdx] = level;
+                _peakWindowIdx = (_peakWindowIdx + 1) % PeakWindowSize;
+
+                _peakMaxAge++;
+                if (_peakMaxAge >= 30 || level > _peakWindowMax)
+                {
+                    _peakWindowMax = 0.001;
+                    for (int i = 0; i < PeakWindowSize; i++)
+                        if (_peakWindow[i] > _peakWindowMax)
+                            _peakWindowMax = _peakWindow[i];
+                    _peakMaxAge = 0;
+                }
+
+                double normalized = level / _peakWindowMax;
 
                 // Common mode subtraction
                 double cmAlpha = normalized > _commonMode ? 0.03 : 0.35;
@@ -341,10 +359,10 @@ namespace UniPlaySong.IconGlow
                 // Three-stage smoothing for breathing base
                 _smooth1 += (reactive - _smooth1) * (reactive > _smooth1 ? s1Rise : 0.25);
                 _smooth2 += (_smooth1 - _smooth2) * (_smooth1 > _smooth2 ? 0.35 : 0.15);
-                _smooth3 += (_smooth2 - _smooth3) * (_smooth2 > _smooth3 ? 0.25 : 0.10);
+                _smooth3 += (_smooth2 - _smooth3) * (_smooth2 > _smooth3 ? 0.25 : 0.22);
 
                 // Fast punch signal for beat flashes (lightly smoothed)
-                _punch += (reactive - _punch) * (reactive > _punch ? 0.90 : 0.40);
+                _punch += (reactive - _punch) * (reactive > _punch ? 0.90 : 0.55);
 
                 // Blend: smooth breathing base + punchy transients (dynamic weight)
                 double punchWeight = Math.Min(0.4, Math.Max(0.1, reactive * 2.0));
