@@ -26,6 +26,8 @@ namespace UniPlaySong.IconGlow
         private Image _currentIcon;
         private Image _currentGlowImage;
         private ScaleTransform _glowScale;
+        private RotateTransform _glowRotate;
+        private double _glowAngle;
         private DropShadowEffect _innerGlow;
         private Effect _savedEffect;
         private Grid _currentWrapperGrid;
@@ -101,6 +103,7 @@ namespace UniPlaySong.IconGlow
 
             _currentGlowImage = null;
             _glowScale = null;
+            _glowRotate = null;
             _innerGlow = null;
             _savedEffect = null;
             _currentWrapperGrid = null;
@@ -176,9 +179,13 @@ namespace UniPlaySong.IconGlow
             }
             var glowImage = GlowRenderer.CreateGlowImage(glowBitmap, icon.ActualWidth, icon.ActualHeight, _settings.IconGlowSize);
 
-            // ScaleTransform on glow image — peaks make glow physically expand
+            // TransformGroup: scale (audio peaks) + rotate (slow spin)
             var scale = new ScaleTransform(1.0, 1.0);
-            glowImage.RenderTransform = scale;
+            var rotate = new RotateTransform(0.0);
+            var transformGroup = new TransformGroup();
+            transformGroup.Children.Add(scale);
+            transformGroup.Children.Add(rotate);
+            glowImage.RenderTransform = transformGroup;
             glowImage.RenderTransformOrigin = new Point(0.5, 0.5);
 
             // === Layer 2: DropShadowEffect inner halo (on the icon itself) ===
@@ -219,6 +226,8 @@ namespace UniPlaySong.IconGlow
 
             _currentGlowImage = glowImage;
             _glowScale = scale;
+            _glowRotate = rotate;
+            _glowAngle = 0.0;
             _innerGlow = innerGlow;
             _currentWrapperGrid = wrapper;
             _currentIcon = icon;
@@ -362,10 +371,10 @@ namespace UniPlaySong.IconGlow
                 _smooth3 += (_smooth2 - _smooth3) * (_smooth2 > _smooth3 ? 0.25 : 0.22);
 
                 // Fast punch signal for beat flashes (lightly smoothed)
-                _punch += (reactive - _punch) * (reactive > _punch ? 0.90 : 0.55);
+                _punch += (reactive - _punch) * (reactive > _punch ? 0.70 : 0.45);
 
                 // Blend: smooth breathing base + punchy transients (dynamic weight)
-                double punchWeight = Math.Min(0.4, Math.Max(0.1, reactive * 2.0));
+                double punchWeight = Math.Min(0.2, Math.Max(0.1, reactive * 2.0));
                 rawIntensity = _smooth3 * (1.0 - punchWeight) + _punch * punchWeight;
                 rawIntensity = Math.Min(1.0, rawIntensity * _settings.IconGlowAudioSensitivity);
             }
@@ -376,25 +385,33 @@ namespace UniPlaySong.IconGlow
             }
             else
             {
-                // Static glow
+                // Static glow — keep timer alive only if spin is enabled
                 _currentGlowImage.Opacity = 1.0;
                 if (_innerGlow != null) _innerGlow.Opacity = 0.9;
+
+                if (_settings.EnableIconGlowSpin && _glowRotate != null)
+                {
+                    _glowAngle = (_glowAngle + 360.0 / (_settings.IconGlowSpinSpeed * 60.0)) % 360.0;
+                    _glowRotate.Angle = _glowAngle;
+                    return;
+                }
+
                 StopTimer();
                 return;
             }
 
-            _smoothedIntensity = rawIntensity;
+            // Power curve: compresses low values, snaps peaks harder toward 1.0
+            _smoothedIntensity = Math.Pow(rawIntensity, 0.5);
 
-            // Outer glow: opacity pulses 0.1–1.0
-            _currentGlowImage.Opacity = 0.1 + _smoothedIntensity * 0.9;
+            // Outer glow: opacity pulses 0.45–1.0 (floor prevents shrink illusion)
+            _currentGlowImage.Opacity = 0.45 + _smoothedIntensity * 0.55;
 
-            // Scale: use breathing base only (less punch to avoid jitter)
-            if (_glowScale != null)
+
+            // Slow rotation: degrees per frame = 360 / (spinSpeed * 60fps)
+            if (_glowRotate != null && _settings.EnableIconGlowSpin)
             {
-                double baseOnly = Math.Min(1.0, _smooth3 * _settings.IconGlowAudioSensitivity);
-                double s = 0.95 + baseOnly * 0.10;
-                _glowScale.ScaleX = s;
-                _glowScale.ScaleY = s;
+                _glowAngle = (_glowAngle + 360.0 / (_settings.IconGlowSpinSpeed * 60.0)) % 360.0;
+                _glowRotate.Angle = _glowAngle;
             }
 
             // Inner halo: blur radius and opacity use blended signal for punch

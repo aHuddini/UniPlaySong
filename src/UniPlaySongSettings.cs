@@ -2319,6 +2319,23 @@ namespace UniPlaySong
             set { iconGlowAudioSensitivity = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
         }
 
+        private bool enableIconGlowSpin = false;
+        private double iconGlowSpinSpeed = 20.0;
+
+        // Slowly rotates the glow image around the icon.
+        public bool EnableIconGlowSpin
+        {
+            get => enableIconGlowSpin;
+            set { enableIconGlowSpin = value; OnPropertyChanged(); }
+        }
+
+        // Seconds per full rotation (5–60s). Default: 20s.
+        public double IconGlowSpinSpeed
+        {
+            get => iconGlowSpinSpeed;
+            set { iconGlowSpinSpeed = Math.Max(5.0, Math.Min(60.0, value)); OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Applies a reverb preset by setting all reverb parameters.
         /// Presets are based on Audacity's exact factory preset values.

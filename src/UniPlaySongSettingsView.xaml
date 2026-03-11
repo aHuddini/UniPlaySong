@@ -3547,6 +3547,20 @@
                               Margin="20,0,0,4"
                               IsEnabled="{Binding Settings.EnableIconGlow}"
                               ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
+                    <CheckBox Content="Enable slow spin"
+                              IsChecked="{Binding Settings.EnableIconGlowSpin}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlow}"
+                              ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
+                    <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
+                        <TextBlock Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
+                        <TextBlock Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
+                                Minimum="5" Maximum="60"
+                                TickFrequency="5" IsSnapToTickEnabled="True"
+                                ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
+                    </DockPanel>
                     <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
                         <TextBlock Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
                         <TextBlock Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"

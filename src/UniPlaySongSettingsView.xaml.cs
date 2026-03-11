@@ -255,6 +255,8 @@ namespace UniPlaySong
 
             s.EnableIconGlow = false;
             s.EnableIconGlowPulse = true;
+            s.EnableIconGlowSpin = false;
+            s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;
             s.IconGlowPulseSpeed = 1.5;
@@ -271,6 +273,8 @@ namespace UniPlaySong
 
             s.EnableIconGlow = true;
             s.EnableIconGlowPulse = true;
+            s.EnableIconGlowSpin = false;
+            s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;
             s.IconGlowPulseSpeed = 1.5;
