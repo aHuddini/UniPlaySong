@@ -253,9 +253,11 @@ namespace UniPlaySong
             var s = ConfirmAndGetSettings("Experimental");
             if (s == null) return;
 
+            s.IconGlowPreset = IconGlowPreset.Custom;
             s.EnableIconGlow = false;
             s.EnableIconGlowPulse = true;
             s.EnableIconGlowSpin = false;
+            s.EnableIconGlowSpinAcceleration = false;
             s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;
@@ -271,9 +273,11 @@ namespace UniPlaySong
             var s = vm?.Settings;
             if (s == null) return;
 
+            s.IconGlowPreset = IconGlowPreset.Custom;
             s.EnableIconGlow = true;
             s.EnableIconGlowPulse = true;
             s.EnableIconGlowSpin = false;
+            s.EnableIconGlowSpinAcceleration = false;
             s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;

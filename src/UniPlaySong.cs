@@ -541,7 +541,18 @@ namespace UniPlaySong
             // Icon glow effect (Desktop only) — always create, checks setting dynamically
             if (IsDesktop)
             {
-                _iconGlowManager = new IconGlow.IconGlowManager(_settings, _fileLogger);
+                _iconGlowManager = new IconGlow.IconGlowManager(_settingsService, _fileLogger);
+
+                // Apply glow to the already-selected game on startup.
+                // Delayed 1s so Playnite's visual tree is fully rendered before TileFinder runs.
+                var selectedGame = _api.MainView.SelectedGames?.FirstOrDefault();
+                if (selectedGame != null)
+                {
+                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
+                        Application.Current?.Dispatcher?.BeginInvoke(
+                            System.Windows.Threading.DispatcherPriority.Loaded,
+                            new Action(() => _iconGlowManager?.OnGameSelected(selectedGame))));
+                }
             }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)

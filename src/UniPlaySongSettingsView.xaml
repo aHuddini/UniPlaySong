@@ -3542,6 +3542,30 @@
                               IsChecked="{Binding Settings.EnableIconGlow}"
                               Margin="0,12,0,4"
                               ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
+                    <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Preset:" VerticalAlignment="Center" Width="130"/>
+                        <ComboBox SelectedValue="{Binding Settings.IconGlowPreset}"
+                                  SelectedValuePath="Tag"
+                                  Width="160" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
+                            <!-- Audio-reactive presets (most reactive first) -->
+                            <ComboBoxItem Content="Reactive" Tag="{x:Static local:IconGlowPreset.Reactive}"/>
+                            <ComboBoxItem Content="Pulse" Tag="{x:Static local:IconGlowPreset.Pulse}"/>
+                            <ComboBoxItem Content="Bass Punch" Tag="{x:Static local:IconGlowPreset.BassPunch}"/>
+                            <ComboBoxItem Content="Neon" Tag="{x:Static local:IconGlowPreset.Neon}"/>
+                            <ComboBoxItem Content="Mellow" Tag="{x:Static local:IconGlowPreset.Mellow}"/>
+                            <!-- Visual-only presets -->
+                            <ComboBoxItem Content="Ambient" Tag="{x:Static local:IconGlowPreset.Ambient}"/>
+                            <ComboBoxItem Content="Subtle" Tag="{x:Static local:IconGlowPreset.Subtle}"/>
+                            <ComboBoxItem Content="Sharp Static" Tag="{x:Static local:IconGlowPreset.SharpStatic}"/>
+                            <ComboBoxItem Content="Sharp Bright" Tag="{x:Static local:IconGlowPreset.SharpBright}"/>
+                            <ComboBoxItem Content="Sharp Vivid" Tag="{x:Static local:IconGlowPreset.SharpVivid}"/>
+                            <ComboBoxItem Content="Sharp Warm" Tag="{x:Static local:IconGlowPreset.SharpWarm}"/>
+                            <ComboBoxItem Content="Sharp Cool" Tag="{x:Static local:IconGlowPreset.SharpCool}"/>
+                            <ComboBoxItem Content="Sharp Pulse" Tag="{x:Static local:IconGlowPreset.SharpPulse}"/>
+                        </ComboBox>
+                    </DockPanel>
+                    <StackPanel IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
                     <CheckBox Content="Enable pulse animation (SDL2 fallback)"
                               IsChecked="{Binding Settings.EnableIconGlowPulse}"
                               Margin="20,0,0,4"
@@ -3552,6 +3576,11 @@
                               Margin="20,0,0,4"
                               IsEnabled="{Binding Settings.EnableIconGlow}"
                               ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
+                    <CheckBox Content="Beat-reactive spin acceleration"
+                              IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
+                              Margin="40,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlowSpin}"
+                              ToolTip="When enabled, the glow spin speeds up on audio beats." />
                     <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
                         <TextBlock Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
                         <TextBlock Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
@@ -3597,6 +3626,7 @@
                                 TickFrequency="0.1" IsSnapToTickEnabled="True"
                                 ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
                     </DockPanel>
+                    </StackPanel>
 
                 </StackPanel>
             </ScrollViewer>

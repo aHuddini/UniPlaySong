@@ -223,6 +223,26 @@ namespace UniPlaySong
         Reactive        // Maximum responsiveness — minimal smoothing, high gain
     }
 
+    public enum IconGlowPreset
+    {
+        Custom,      // user-controlled sliders
+        // Audio-reactive presets (designed for music)
+        Reactive,    // full 3-band (bass/mids/treble), maximum reactivity
+        Pulse,       // strong beat-locked flash
+        BassPunch,   // kick-locked, bass-only, snappy decay
+        Neon,        // bright spinning neon color cycle
+        Mellow,      // slow, warm, always-bright, gentle drift
+        // Visual-only presets (sine pulse, no meaningful audio response)
+        Ambient,     // slow dreamy breathing
+        Subtle,      // barely-there ambient glow
+        SharpStatic, // tight edge glow, barely breathing, no spin
+        SharpBright, // tight edge, high intensity visible glow
+        SharpVivid,  // tight edge, dramatic flash burst
+        SharpWarm,   // tight edge with warm amber/gold color cycle
+        SharpCool,   // tight edge with icy blue/teal color cycle
+        SharpPulse   // tight edge, fast heartbeat rhythm
+    }
+
     public class UniPlaySongSettings : ObservableObject
     {
         private bool enableMusic = true;
@@ -2321,6 +2341,7 @@ namespace UniPlaySong
 
         private bool enableIconGlowSpin = false;
         private double iconGlowSpinSpeed = 20.0;
+        private bool enableIconGlowSpinAcceleration = false;
 
         // Slowly rotates the glow image around the icon.
         public bool EnableIconGlowSpin
@@ -2334,6 +2355,157 @@ namespace UniPlaySong
         {
             get => iconGlowSpinSpeed;
             set { iconGlowSpinSpeed = Math.Max(5.0, Math.Min(60.0, value)); OnPropertyChanged(); }
+        }
+
+        // When enabled, spin speed increases on audio beats.
+        public bool EnableIconGlowSpinAcceleration
+        {
+            get => enableIconGlowSpinAcceleration;
+            set { enableIconGlowSpinAcceleration = value; OnPropertyChanged(); }
+        }
+
+        private IconGlowPreset iconGlowPreset = IconGlowPreset.Custom;
+
+        // When a preset is selected, its values are applied immediately and sliders are locked.
+        // Custom leaves all slider values as-is.
+        public IconGlowPreset IconGlowPreset
+        {
+            get => iconGlowPreset;
+            set
+            {
+                iconGlowPreset = value;
+                ApplyIconGlowPreset(value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IconGlowSlidersEnabled));
+            }
+        }
+
+        // True only when preset is Custom — used to enable/disable sliders in XAML
+        public bool IconGlowSlidersEnabled => iconGlowPreset == IconGlowPreset.Custom;
+
+        private void ApplyIconGlowPreset(IconGlowPreset preset)
+        {
+            switch (preset)
+            {
+                case IconGlowPreset.Pulse:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 5.0;
+                    IconGlowPulseSpeed = 1.0;
+                    IconGlowAudioSensitivity = 3.5;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 22.0; // slow, lazy spin
+                    break;
+                case IconGlowPreset.Ambient:
+                    IconGlowIntensity = 1.4;
+                    IconGlowSize = 9.0;
+                    IconGlowPulseSpeed = 4.0; // very slow breathing
+                    IconGlowAudioSensitivity = 1.0;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 30.0; // barely drifting
+                    break;
+                case IconGlowPreset.Neon:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 6.0;
+                    IconGlowPulseSpeed = 1.2;
+                    IconGlowAudioSensitivity = 2.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 10.0; // fast spin, electric energy
+                    break;
+                case IconGlowPreset.Subtle:
+                    IconGlowIntensity = 0.6;
+                    IconGlowSize = 3.0;
+                    IconGlowPulseSpeed = 3.5;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 30.0; // barely perceptible drift
+                    break;
+                case IconGlowPreset.SharpStatic:
+                    IconGlowIntensity = 0.8;
+                    IconGlowSize = 2.0;
+                    IconGlowPulseSpeed = 2.5;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpBright:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 3.0;
+                    IconGlowPulseSpeed = 1.5; // noticeable breathing
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpVivid:
+                    IconGlowIntensity = 3.0;
+                    IconGlowSize = 3.5;
+                    IconGlowPulseSpeed = 0.8; // fast, dramatic flash
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpWarm:
+                    IconGlowIntensity = 1.5;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 2.0; // moderate breathing to show off colors
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpCool:
+                    IconGlowIntensity = 1.5;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 2.0;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpPulse:
+                    IconGlowIntensity = 2.0;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 0.8; // fast heartbeat rhythm
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.BassPunch:
+                    IconGlowIntensity = 2.2;
+                    IconGlowSize = 5.0;
+                    IconGlowPulseSpeed = 1.0; // sine fallback speed
+                    IconGlowAudioSensitivity = 3.0;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.Mellow:
+                    IconGlowIntensity = 1.6;
+                    IconGlowSize = 8.0;
+                    IconGlowPulseSpeed = 3.5; // slow sine fallback
+                    IconGlowAudioSensitivity = 2.0; // more sensitive since smooth3-only dampens heavily
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 28.0; // very slow drift
+                    break;
+                case IconGlowPreset.Reactive:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 6.0;
+                    IconGlowPulseSpeed = 1.5; // sine fallback speed
+                    IconGlowAudioSensitivity = 3.5;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 15.0;
+                    break;
+                // Custom: no-op, user controls sliders
+            }
         }
 
         /// <summary>
