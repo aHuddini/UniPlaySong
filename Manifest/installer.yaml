@@ -8,6 +8,7 @@ Packages:
       - '[New Setting] Fade Out Before Song End: When Radio Mode or Randomize on Song End is active, music fades out smoothly in the final seconds before auto-advancing to the next track. Configurable duration (1–5s). Enable in Playback tab.'
       - '[Experimental] Icon Glow Reactor: The selected game icon glows with colors extracted from the game art. With Live Effects enabled, the glow pulses in sync with the music beat. Configurable intensity, size, and audio sensitivity. Desktop mode only. Enable in Experimental tab.'
       - '[Experimental] List Icon Glow: Game icons in list/grid view glow when selected or hovered, with color-matched glow extracted from game art. Optional Subtle mode. Smooth fade transitions. Desktop mode only. Enable in Experimental tab.'
+      - '[Experimental] Sidebar Glow Presets: 22 audio-reactive animation modes for the sidebar behind game icons. Includes Breathing, Glow Bars, Plasma Grid, DNA Helix, Laser, Voronoi, Snow, Neon Line, and more. All react to music beat. Desktop mode only. Select mode in Experimental tab.'
   - Version: 1.3.5
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-08

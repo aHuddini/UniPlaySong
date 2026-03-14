@@ -338,9 +338,9 @@
                                 Margin="20,0,0,0"
                                 IsEnabled="{Binding Settings.FadeOutBeforeSongEnd}">
                         <TextBlock Text="Fade duration:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Slider Minimum="1" Maximum="5"
+                        <Slider Minimum="0.2" Maximum="5"
                                 Value="{Binding Settings.FadeOutBeforeSongEndDuration}"
-                                Width="120" TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                Width="150" TickFrequency="0.1" IsSnapToTickEnabled="True"
                                 VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Settings.FadeOutBeforeSongEndDuration, StringFormat='{}{0:F1}s'}"
                                    VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>

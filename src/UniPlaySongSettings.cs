@@ -1259,11 +1259,11 @@ namespace UniPlaySong
             set { fadeOutBeforeSongEnd = value; OnPropertyChanged(); }
         }
 
-        // Duration in seconds of the pre-end fade-out (1–5s). Default: 3s.
+        // Duration in seconds of the pre-end fade-out (0.2–5s). Default: 3s.
         public double FadeOutBeforeSongEndDuration
         {
             get => fadeOutBeforeSongEndDuration;
-            set { fadeOutBeforeSongEndDuration = Math.Max(1.0, Math.Min(5.0, value)); OnPropertyChanged(); }
+            set { fadeOutBeforeSongEndDuration = Math.Max(0.2, Math.Min(5.0, value)); OnPropertyChanged(); }
         }
 
         // Stop playback after current song finishes instead of looping or randomizing

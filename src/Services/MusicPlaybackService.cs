@@ -1602,7 +1602,7 @@ namespace UniPlaySong.Services
 
             var totalTime = _musicPlayer?.TotalTime;
             double fadeDuration = _currentSettings.FadeOutBeforeSongEndDuration;
-            double minSongLength = fadeDuration + 5.0; // don't bother on very short songs
+            double minSongLength = fadeDuration + 2.0; // don't bother on very short songs
 
             if (totalTime == null || totalTime.Value.TotalSeconds < minSongLength)
                 return;
