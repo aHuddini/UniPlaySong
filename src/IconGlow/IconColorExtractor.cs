@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,8 +17,8 @@ namespace UniPlaySong.IconGlow
         private static readonly Color DefaultColor1 = Color.FromRgb(100, 149, 237); // Cornflower blue
         private static readonly Color DefaultColor2 = Color.FromRgb(180, 100, 255); // Purple
 
-        private readonly Dictionary<Guid, (Color primary, Color secondary)> _cache =
-            new Dictionary<Guid, (Color, Color)>();
+        private readonly ConcurrentDictionary<Guid, (Color primary, Color secondary)> _cache =
+            new ConcurrentDictionary<Guid, (Color, Color)>();
         private FileLogger _fileLogger;
 
         public void SetFileLogger(FileLogger fileLogger) => _fileLogger = fileLogger;
@@ -28,7 +29,7 @@ namespace UniPlaySong.IconGlow
                 return cached;
 
             var colors = ExtractFromBitmap(imageSource as BitmapSource);
-            _cache[gameId] = colors;
+            _cache.TryAdd(gameId, colors);
             _fileLogger?.Debug($"[IconGlow] Colors for {gameId}: " +
                 $"#{colors.primary.R:X2}{colors.primary.G:X2}{colors.primary.B:X2} → " +
                 $"#{colors.secondary.R:X2}{colors.secondary.G:X2}{colors.secondary.B:X2}");

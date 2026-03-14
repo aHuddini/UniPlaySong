@@ -2411,10 +2411,10 @@ namespace UniPlaySong
                     IconGlowIntensity = 2.5;
                     IconGlowSize = 5.0;
                     IconGlowPulseSpeed = 1.0;
-                    IconGlowAudioSensitivity = 3.5;
+                    IconGlowAudioSensitivity = 2.8;
                     EnableIconGlowPulse = true;
                     EnableIconGlowSpin = true;
-                    IconGlowSpinSpeed = 22.0; // slow, lazy spin
+                    IconGlowSpinSpeed = 35.0; // slow drift
                     break;
                 case IconGlowPreset.Ambient:
                     IconGlowIntensity = 1.4;

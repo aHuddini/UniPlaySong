@@ -1,8 +1,10 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -43,6 +45,7 @@ namespace UniPlaySong.IconGlow
         private Grid _currentWrapperGrid;
         private Panel _currentParentPanel;
         private int _originalIconIndex;
+        private int _renderVersion; // incremented on each game select to discard stale renders
 
         // Animation state
         private DateTime _pulseStartTime;
@@ -260,29 +263,52 @@ namespace UniPlaySong.IconGlow
                 return;
             }
 
-            var (extractedColor1, extractedColor2) = _colorExtractor.GetGlowColors(game.Id, icon.Source);
+            // Snapshot values needed for background render
+            var iconSource = icon.Source as BitmapSource;
+            if (iconSource == null) return;
+            if (!iconSource.IsFrozen) iconSource = (BitmapSource)iconSource.CloneCurrentValue();
+            if (!iconSource.IsFrozen) iconSource.Freeze();
 
-            // For color-cycling presets, use preset colors for the outer glow instead of icon colors
-            Color color1, color2;
-            if (HasCyclingOuterGlow(_settings.IconGlowPreset))
-            {
-                GetOuterGlowColors(out color1, out color2);
-            }
-            else
-            {
-                color1 = extractedColor1;
-                color2 = extractedColor2;
-            }
+            var gameId = game.Id;
+            double iconW = icon.ActualWidth, iconH = icon.ActualHeight;
+            double glowSize = _settings.IconGlowSize;
+            double glowIntensity = _settings.IconGlowIntensity;
+            bool cycling = HasCyclingOuterGlow(_settings.IconGlowPreset);
+            Color cycleC1 = Colors.White, cycleC2 = Colors.White;
+            if (cycling) GetOuterGlowColors(out cycleC1, out cycleC2);
 
-            // Render outer glow bitmap
-            var glowBitmap = GlowRenderer.RenderGlow(icon.Source, color1, color2,
-                _settings.IconGlowSize, icon.ActualWidth, icon.ActualHeight, _settings.IconGlowIntensity);
+            int thisVersion = ++_renderVersion;
+
+            // Offload color extraction + SkiaSharp render to background thread
+            Task.Run(() =>
+            {
+                var (extractedColor1, extractedColor2) = _colorExtractor.GetGlowColors(gameId, iconSource);
+                Color color1 = cycling ? cycleC1 : extractedColor1;
+                Color color2 = cycling ? cycleC2 : extractedColor2;
+
+                var glowBitmap = GlowRenderer.RenderGlow(iconSource, color1, color2,
+                    glowSize, iconW, iconH, glowIntensity);
+
+                // Marshal result back to UI thread
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    if (_renderVersion != thisVersion) return; // stale render, discard
+                    ApplyRenderedGlow(game, icon, parent, iconIndex, reuseWrapper,
+                        glowBitmap, extractedColor1, color1, iconW, iconH, glowSize);
+                }));
+            });
+        }
+
+        private void ApplyRenderedGlow(Game game, Image icon, Panel parent, int iconIndex,
+            bool reuseWrapper, BitmapSource glowBitmap, Color extractedColor1, Color color1,
+            double iconW, double iconH, double glowSize)
+        {
             if (glowBitmap == null)
             {
                 _fileLogger?.Debug("[IconGlow] GlowRenderer returned null");
                 return;
             }
-            var glowImage = GlowRenderer.CreateGlowImage(glowBitmap, icon.ActualWidth, icon.ActualHeight, _settings.IconGlowSize);
+            var glowImage = GlowRenderer.CreateGlowImage(glowBitmap, iconW, iconH, glowSize);
 
             // Transform: scale (audio peaks) + rotate (slow spin)
             var scale = new ScaleTransform(1.0, 1.0);
@@ -383,7 +409,7 @@ namespace UniPlaySong.IconGlow
             _lastAppliedSize = _settings.IconGlowSize;
             _lastAppliedIntensity = _settings.IconGlowIntensity;
 
-            _fileLogger?.Debug($"[IconGlow] Applied glow to {game.Name} (#{color1.R:X2}{color1.G:X2}{color1.B:X2} → #{color2.R:X2}{color2.G:X2}{color2.B:X2}, {icon.ActualWidth}x{icon.ActualHeight})");
+            _fileLogger?.Debug($"[IconGlow] Applied glow to {game.Name} (#{color1.R:X2}{color1.G:X2}{color1.B:X2}, {iconW}x{iconH})");
             StartTimer();
         }
 
@@ -502,37 +528,56 @@ namespace UniPlaySong.IconGlow
 
         // Re-renders the outer glow image periodically for color-cycling presets.
         // Uses crossfade to smoothly blend between old and new color renders.
+        private bool _cycleRenderPending;
+
         private void UpdateCyclingOuterGlow()
         {
             if (_currentGlowImage == null || _currentIcon == null || _currentWrapperGrid == null) return;
             if (!HasCyclingOuterGlow(_settings.IconGlowPreset)) return;
-            // Don't start a new re-render while a crossfade is already in progress
             if (_fadingOutGlowImage != null) return;
+            if (_cycleRenderPending) return;
             if ((DateTime.UtcNow - _lastOuterGlowRerender).TotalSeconds < OuterGlowRerenderInterval) return;
 
             _lastOuterGlowRerender = DateTime.UtcNow;
+            _cycleRenderPending = true;
 
+            // Snapshot values for background render
             GetOuterGlowColors(out var c1, out var c2);
-            var glowBitmap = GlowRenderer.RenderGlow(_currentIcon.Source, c1, c2,
-                _settings.IconGlowSize, _currentIcon.ActualWidth, _currentIcon.ActualHeight, _settings.IconGlowIntensity);
-            if (glowBitmap == null) return;
+            var iconSource = _currentIcon.Source as BitmapSource;
+            if (iconSource == null) { _cycleRenderPending = false; return; }
+            if (!iconSource.IsFrozen) iconSource = (BitmapSource)iconSource.CloneCurrentValue();
+            if (!iconSource.IsFrozen) iconSource.Freeze();
 
-            var newGlowImage = GlowRenderer.CreateGlowImage(glowBitmap, _currentIcon.ActualWidth, _currentIcon.ActualHeight, _settings.IconGlowSize);
+            double glowSize = _settings.IconGlowSize;
+            double iconW = _currentIcon.ActualWidth, iconH = _currentIcon.ActualHeight;
+            double glowIntensity = _settings.IconGlowIntensity;
 
-            // Share the same transform objects so scale/rotate updates affect both during crossfade
-            var transformGroup = new TransformGroup();
-            transformGroup.Children.Add(_glowScale);
-            transformGroup.Children.Add(_glowRotate);
-            newGlowImage.RenderTransform = transformGroup;
-            newGlowImage.RenderTransformOrigin = new Point(0.5, 0.5);
-            newGlowImage.Opacity = 0; // starts invisible, fades in
+            Task.Run(() =>
+            {
+                var glowBitmap = GlowRenderer.RenderGlow(iconSource, c1, c2,
+                    glowSize, iconW, iconH, glowIntensity);
 
-            // Crossfade: old glow fades out, new glow fades in (slow blend over 1.2s)
-            _fadingOutGlowImage = _currentGlowImage;
-            _fadeProgress = 0;
-            _activeCrossfadeDuration = CyclingCrossfadeDuration;
-            _currentWrapperGrid.Children.Insert(0, newGlowImage);
-            _currentGlowImage = newGlowImage;
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    _cycleRenderPending = false;
+                    if (glowBitmap == null || _currentGlowImage == null || _currentWrapperGrid == null) return;
+
+                    var newGlowImage = GlowRenderer.CreateGlowImage(glowBitmap, iconW, iconH, glowSize);
+
+                    var transformGroup = new TransformGroup();
+                    transformGroup.Children.Add(_glowScale);
+                    transformGroup.Children.Add(_glowRotate);
+                    newGlowImage.RenderTransform = transformGroup;
+                    newGlowImage.RenderTransformOrigin = new Point(0.5, 0.5);
+                    newGlowImage.Opacity = 0;
+
+                    _fadingOutGlowImage = _currentGlowImage;
+                    _fadeProgress = 0;
+                    _activeCrossfadeDuration = CyclingCrossfadeDuration;
+                    _currentWrapperGrid.Children.Insert(0, newGlowImage);
+                    _currentGlowImage = newGlowImage;
+                }));
+            });
         }
 
         private static bool HasCyclingOuterGlow(IconGlowPreset preset)
@@ -692,10 +737,10 @@ namespace UniPlaySong.IconGlow
             }
             else if (preset == IconGlowPreset.Pulse)
             {
-                // Skip 1 smooth stage — blend smooth2 (two-stage) with punch
-                double bassPunchWeight = Math.Min(0.45, Math.Max(0.15, bassReactive * 2.5));
-                bassIntensity = _bassSmooth2 * (1 - bassPunchWeight) + _bassPunch * bassPunchWeight;
-                bassIntensity = Math.Min(1.0, Math.Pow(bassIntensity * _settings.IconGlowAudioSensitivity, 0.42));
+                // Mostly smooth with light punch — avoids random spikes
+                double bassPunchWeight = Math.Min(0.25, Math.Max(0.08, bassReactive * 1.5));
+                bassIntensity = _bassSmooth3 * (1 - bassPunchWeight) + _bassPunch * bassPunchWeight;
+                bassIntensity = Math.Min(1.0, Math.Pow(bassIntensity * _settings.IconGlowAudioSensitivity, 0.50));
             }
             else if (preset == IconGlowPreset.Neon)
             {
@@ -834,7 +879,7 @@ namespace UniPlaySong.IconGlow
                 case IconGlowPreset.SharpStatic:
                     return 0.80 + sine * 0.20; // nearly still, minimal breathing
                 case IconGlowPreset.SharpBright:
-                    return 0.35 + sine * 0.65; // visible pulse, stays bright
+                    return 0.45 + sine * 0.50; // natural breathing, never too dark or bright
                 case IconGlowPreset.SharpVivid:
                     return Math.Pow(sine, 0.7); // dramatic full-range, slight bias toward bright
                 case IconGlowPreset.SharpWarm:
@@ -869,7 +914,7 @@ namespace UniPlaySong.IconGlow
                 case IconGlowPreset.BassPunch:
                     floor = 0.08; range = 0.92; break;
                 case IconGlowPreset.Pulse:
-                    floor = 0.38; range = 0.57; break;
+                    floor = 0.45; range = 0.40; break;
                 case IconGlowPreset.Neon:
                     floor = 0.25; range = 0.75; break;
                 case IconGlowPreset.Mellow:
@@ -1005,7 +1050,7 @@ namespace UniPlaySong.IconGlow
         {
             switch (preset)
             {
-                case IconGlowPreset.Pulse:     return 0.80; // moderate white shift at peak
+                case IconGlowPreset.Pulse:     return 0.50; // gentle white shift, preserves base color
                 case IconGlowPreset.Reactive:   return 0.95;
                 case IconGlowPreset.BassPunch:  return 0.90;
                 case IconGlowPreset.Mellow:     return 0.40;

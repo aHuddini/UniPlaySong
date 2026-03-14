@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -64,6 +65,7 @@ namespace UniPlaySong.IconGlow
         private Guid _selectedGameId;
         private Game _lastSelectedGame;
         private System.Windows.Threading.DispatcherTimer _glowTimer;
+        private int _listRenderVersion;
 
         public ListHoverGlowManager(SettingsService settingsService, IconColorExtractor colorExtractor)
         {
@@ -170,25 +172,56 @@ namespace UniPlaySong.IconGlow
                 double dsBlur = subtle ? SubtleDropShadowBlurRadius : FullDropShadowBlurRadius;
                 double dsOpacity = subtle ? SubtleDropShadowOpacity : FullDropShadowOpacity;
 
-                var color1 = GetGlowColor(gameId, icon);
-
-                // SkiaSharp render — the expensive part. Old glow is still visible during this.
-                var glowBitmap = GetOrRenderGlow(gameId, icon, glowSize, glowIntensity);
-                if (glowBitmap == null) { ClearSelectedGlow(); return; }
-
                 var parent = FindParentPanel(icon);
                 if (parent == null) { ClearSelectedGlow(); return; }
 
                 int iconIndex = parent.Children.IndexOf(icon);
                 if (iconIndex < 0) { ClearSelectedGlow(); return; }
 
-                // --- Phase 2: visual tree mutations ---
+                // Snapshot icon source for background render
+                var iconSource = icon.Source as BitmapSource;
+                if (iconSource == null) { ClearSelectedGlow(); return; }
+                if (!iconSource.IsFrozen) iconSource = (BitmapSource)iconSource.CloneCurrentValue();
+                if (!iconSource.IsFrozen) iconSource.Freeze();
+
+                double iconW = icon.ActualWidth, iconH = icon.ActualHeight;
+                int thisVersion = ++_listRenderVersion;
+
+                // Offload color extraction + SkiaSharp render to background thread
+                Task.Run(() =>
+                {
+                    var color1 = GetGlowColorBg(gameId, iconSource);
+                    var glowBitmap = RenderGlowBg(gameId, iconSource, iconW, iconH, glowSize, glowIntensity);
+
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        if (_listRenderVersion != thisVersion) return; // stale
+                        ApplySelectedGlowResult(icon, parent, iconIndex, gameId,
+                            glowBitmap, color1, iconW, iconH, glowSize, glowOpacity, dsBlur, dsOpacity);
+                    }));
+                });
+            }
+            catch
+            {
+                // Visual tree may not be ready
+            }
+        }
+
+        private void ApplySelectedGlowResult(Image icon, Panel parent, int iconIndex, Guid gameId,
+            BitmapSource glowBitmap, Color color1, double iconW, double iconH,
+            double glowSize, double glowOpacity, double dsBlur, double dsOpacity)
+        {
+            try
+            {
+                if (glowBitmap == null) return;
+
+                // Verify icon is still valid in the visual tree
+                if (icon.ActualWidth <= 0) return;
+
                 if (icon == _hoveredIcon)
                     ClearHoverGlow();
 
-                // Build and insert new glow immediately after
-                var glowImage = GlowRenderer.CreateGlowImage(glowBitmap,
-                    icon.ActualWidth, icon.ActualHeight, glowSize);
+                var glowImage = GlowRenderer.CreateGlowImage(glowBitmap, iconW, iconH, glowSize);
                 glowImage.Opacity = 0;
                 glowImage.BeginAnimation(UIElement.OpacityProperty,
                     new DoubleAnimation(0, glowOpacity, FadeInDuration));
@@ -214,28 +247,29 @@ namespace UniPlaySong.IconGlow
                     ClipToBounds = false
                 };
 
+                // Re-check iconIndex in case visual tree changed during async render
+                int currentIndex = parent.Children.IndexOf(icon);
+                if (currentIndex < 0) return;
+
                 icon.Margin = new Thickness(0);
-                parent.Children.RemoveAt(iconIndex);
+                parent.Children.RemoveAt(currentIndex);
                 wrapper.Children.Add(glowImage);
                 wrapper.Children.Add(icon);
 
                 if (parent is DockPanel)
                     DockPanel.SetDock(wrapper, DockPanel.GetDock(icon));
 
-                parent.Children.Insert(iconIndex, wrapper);
+                parent.Children.Insert(currentIndex, wrapper);
 
                 _selectedIcon = icon;
                 _selectedParent = parent;
                 _selectedWrapper = wrapper;
-                _selectedOriginalIndex = iconIndex;
+                _selectedOriginalIndex = currentIndex;
                 _selectedGameId = gameId;
                 _selectedSavedEffect = savedEffect;
                 _selectedSavedMargin = savedMargin;
             }
-            catch
-            {
-                // Visual tree may not be ready
-            }
+            catch { }
         }
 
         // Swaps the glow image inside the existing wrapper without tearing it down
@@ -505,6 +539,34 @@ namespace UniPlaySong.IconGlow
                 return primary;
             }
             return Color.FromRgb(100, 149, 237);
+        }
+
+        // Thread-safe: gets glow color from a frozen BitmapSource
+        private Color GetGlowColorBg(Guid gameId, BitmapSource iconSource)
+        {
+            if (gameId != Guid.Empty && iconSource != null)
+            {
+                var (primary, _) = _colorExtractor.GetGlowColors(gameId, iconSource);
+                return primary;
+            }
+            return Color.FromRgb(100, 149, 237);
+        }
+
+        // Thread-safe: renders glow bitmap from a frozen BitmapSource
+        private BitmapSource RenderGlowBg(Guid gameId, BitmapSource iconSource,
+            double iconW, double iconH, double glowSize, double glowIntensity)
+        {
+            Color color1, color2;
+            if (gameId != Guid.Empty && iconSource != null)
+                (color1, color2) = _colorExtractor.GetGlowColors(gameId, iconSource);
+            else
+            {
+                color1 = Color.FromRgb(100, 149, 237);
+                color2 = Color.FromRgb(180, 100, 255);
+            }
+
+            return GlowRenderer.RenderGlow(iconSource, color1, color2,
+                glowSize, iconW, iconH, glowIntensity);
         }
 
         // Returns a freshly rendered glow bitmap (cache cleared on setting change via Detach/Attach cycle)
