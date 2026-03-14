@@ -113,6 +113,7 @@ namespace UniPlaySong
         private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
         private IconGlow.IconGlowManager _iconGlowManager;
         private IconGlow.ListHoverGlowManager _listHoverGlowManager;
+        private IconGlow.SidebarGlowManager _sidebarGlowManager;
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
@@ -319,6 +320,7 @@ namespace UniPlaySong
                 _iconGlowManager.OnGameSelected(game);
             }
             _listHoverGlowManager?.OnGameSelected(game);
+            _sidebarGlowManager?.OnGameSelected(game);
         }
 
         // Handles game state changes at the database level.
@@ -562,6 +564,14 @@ namespace UniPlaySong
                     Application.Current?.Dispatcher?.BeginInvoke(
                         System.Windows.Threading.DispatcherPriority.Loaded,
                         new Action(() => _listHoverGlowManager?.Attach())));
+
+                // Audio-reactive sidebar background color
+                _sidebarGlowManager = new IconGlow.SidebarGlowManager(
+                    _iconGlowManager.ColorExtractor, _settingsService, _api);
+                System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
+                    Application.Current?.Dispatcher?.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Loaded,
+                        new Action(() => _sidebarGlowManager?.Attach())));
             }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)
@@ -932,6 +942,8 @@ namespace UniPlaySong
             _mediaKeyService = null;
             _iconGlowManager?.Destroy();
             _iconGlowManager = null;
+            _sidebarGlowManager?.Detach();
+            _sidebarGlowManager = null;
             _listHoverGlowManager?.Detach();
             _listHoverGlowManager = null;
             if (_taskbarMediaControls != null)

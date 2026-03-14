@@ -266,7 +266,8 @@ namespace UniPlaySong
             s.IconGlowSize = 6.0;
             s.IconGlowPulseSpeed = 1.5;
             s.IconGlowAudioSensitivity = 2.0;
-
+            s.EnableSidebarGlow = false;
+            s.SidebarGlowMode = SidebarGlowMode.Breathing;
             ShowButtonFeedback(sender, "Reset!");
         }
 

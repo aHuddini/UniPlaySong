@@ -223,6 +223,32 @@ namespace UniPlaySong
         Reactive        // Maximum responsiveness — minimal smoothing, high gain
     }
 
+    public enum SidebarGlowMode
+    {
+        Breathing,   // subtle tint + opacity breathing
+        GlowBars,    // VU meter glow bars filling bottom-up
+        PlasmaGrid,  // plasma color wash, audio-reactive
+        PixelGrid,   // pixelated plasma grid with visible cell gaps
+        RainDrops,   // digital rain columns falling downward
+        Waveform,    // oscillating sine wave, amplitude from audio
+        Fire,        // bottom-up flame effect with warm palette
+        Starfield,   // rising sparks/stars, spawn rate from audio
+        Ripple,      // concentric rings expanding from center
+        Aurora,      // flowing horizontal bands like northern lights
+        Heartbeat,   // EKG-style pulse line scrolling vertically
+        Waterfall,   // spectrogram-style color bands scrolling down
+        Nebula,      // swirling 3D point cloud with Lissajous orbits
+        DnaHelix,    // double helix of dots spiraling vertically
+        DnaHelixBloom, // DNA helix with bloom/glow halos
+        Matrix,      // classic green character rain streaks
+        Laser,       // converging rainbow beams sweeping from edges
+        PulseWaves,  // layered glowing sine waves in multiple colors
+        Voronoi,     // glowing vertical line distorted by Voronoi noise
+        EqualizerGrid, // tiled grid of bars with rippling sine-driven widths
+        Snow,        // multi-layer parallax snowfall with drift
+        NeonLine     // smooth glowing vertical beam that snakes horizontally
+    }
+
     public enum IconGlowPreset
     {
         Custom,      // user-controlled sliders
@@ -2402,6 +2428,21 @@ namespace UniPlaySong
 
         // True only when preset is Custom — used to enable/disable sliders in XAML
         public bool IconGlowSlidersEnabled => iconGlowPreset == IconGlowPreset.Custom;
+
+        // Sidebar Glow
+        private bool enableSidebarGlow = false;
+        public bool EnableSidebarGlow
+        {
+            get => enableSidebarGlow;
+            set { enableSidebarGlow = value; OnPropertyChanged(); }
+        }
+
+        private SidebarGlowMode sidebarGlowMode = SidebarGlowMode.Breathing;
+        public SidebarGlowMode SidebarGlowMode
+        {
+            get => sidebarGlowMode;
+            set { sidebarGlowMode = value; OnPropertyChanged(); }
+        }
 
         private void ApplyIconGlowPreset(IconGlowPreset preset)
         {

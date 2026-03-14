@@ -19,6 +19,7 @@
         <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
         <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
         <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
+        <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -3654,6 +3655,50 @@
                               Margin="20,0,0,4"
                               IsEnabled="{Binding Settings.EnableListIconGlow}"
                               ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
+
+                    <!-- Sidebar Glow -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Sidebar Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
+                              IsChecked="{Binding Settings.EnableSidebarGlow}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                        <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Width="160"
+                                  SelectedIndex="{Binding Settings.SidebarGlowMode, Converter={StaticResource SidebarGlowModeConverter}}"
+                                  IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                            <ComboBoxItem Content="Breathing"/>
+                            <ComboBoxItem Content="Glow Bars"/>
+                            <ComboBoxItem Content="Plasma Grid"/>
+                            <ComboBoxItem Content="Pixel Grid"/>
+                            <ComboBoxItem Content="Rain Drops"/>
+                            <ComboBoxItem Content="Waveform"/>
+                            <ComboBoxItem Content="Fire"/>
+                            <ComboBoxItem Content="Starfield"/>
+                            <ComboBoxItem Content="Ripple"/>
+                            <ComboBoxItem Content="Aurora"/>
+                            <ComboBoxItem Content="Heartbeat"/>
+                            <ComboBoxItem Content="Waterfall"/>
+                            <ComboBoxItem Content="Nebula"/>
+                            <ComboBoxItem Content="DNA Helix"/>
+                            <ComboBoxItem Content="DNA Helix Bloom"/>
+                            <ComboBoxItem Content="Matrix"/>
+                            <ComboBoxItem Content="Laser"/>
+                            <ComboBoxItem Content="Pulse Waves"/>
+                            <ComboBoxItem Content="Voronoi"/>
+                            <ComboBoxItem Content="Equalizer Grid"/>
+                            <ComboBoxItem Content="Snow"/>
+                            <ComboBoxItem Content="Neon Line"/>
+                        </ComboBox>
+                    </StackPanel>
 
                 </StackPanel>
             </ScrollViewer>
