@@ -2339,6 +2339,26 @@ namespace UniPlaySong
             set { iconGlowAudioSensitivity = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
         }
 
+        private bool enableListIconGlow = false;
+
+        // Independent toggle for list/grid icon glow (hover + selected game highlighting).
+        // Separate from the main Icon Glow visual reactor on the details panel.
+        public bool EnableListIconGlow
+        {
+            get => enableListIconGlow;
+            set { enableListIconGlow = value; OnPropertyChanged(); }
+        }
+
+        private bool subtleListGlow = false;
+
+        // When true, selected game's list glow uses softer SkiaSharp values (less intense, smaller).
+        // When false, selected game gets full-strength SkiaSharp glow.
+        public bool SubtleListGlow
+        {
+            get => subtleListGlow;
+            set { subtleListGlow = value; OnPropertyChanged(); }
+        }
+
         private bool enableIconGlowSpin = false;
         private double iconGlowSpinSpeed = 20.0;
         private bool enableIconGlowSpinAcceleration = false;

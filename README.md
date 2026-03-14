@@ -24,6 +24,7 @@ Built with the help of Claude Code and Cursor IDE
 
 - [New Feature] **Fade Out Before Song End** — When using Radio Mode or Randomize on Song End, music now fades out smoothly in the final seconds before auto-advancing to the next song. Configurable duration (1–5s). Works in Live Effects and non-Live Effects modes.
 - [Experimental] **Icon Glow** — The selected game's icon now glows with colors extracted from the game art. When music is playing with Live Effects enabled, the glow pulses and breathes in sync with the beat. Configurable intensity, size, and audio sensitivity in Settings → Experimental. Desktop mode only.
+- [Experimental] **List Icon Glow** — Game icons in the list/grid view glow when selected or hovered. The selected game gets a full color-matched glow behind the icon; hovered games get a softer shadow effect. Optional "Subtle" mode for a gentler look. Smooth fade-in and fade-out transitions. Desktop mode only.
 
 ### Previous Version
 - **v1.3.5**: Open Music Folder create prompt, Bulk folder creation, Game folder breadcrumbs, Game index file, Open Game Index button, Localization infrastructure

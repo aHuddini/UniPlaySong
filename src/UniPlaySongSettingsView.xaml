@@ -996,6 +996,20 @@
 
                     <Separator Margin="0,15"/>
 
+                    <!-- Theme/Trailer Video -->
+                    <TextBlock Text="Theme Video" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when a trailer or theme video plays"
+                              IsChecked="{Binding Settings.PauseOnTrailer}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Separator Margin="0,15"/>
+
                     <!-- Idle Detection -->
                     <TextBlock Text="Idle Detection" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
@@ -3627,6 +3641,19 @@
                                 ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
                     </DockPanel>
                     </StackPanel>
+
+                    <!-- List Icon Glow -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="List Icon Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Enable List Icon Glow (Desktop only)"
+                              IsChecked="{Binding Settings.EnableListIconGlow}"
+                              Margin="0,12,0,4"
+                              ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
+                    <CheckBox Content="Subtle glow (softer effect)"
+                              IsChecked="{Binding Settings.SubtleListGlow}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableListIconGlow}"
+                              ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
 
                 </StackPanel>
             </ScrollViewer>

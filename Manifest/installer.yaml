@@ -6,7 +6,8 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.6/UniPlaySong-1_3_6-Mar09_2026.pext'
     Changelog:
       - '[New Setting] Fade Out Before Song End: When Radio Mode or Randomize on Song End is active, music fades out smoothly in the final seconds before auto-advancing to the next track. Configurable duration (1–5s). Enable in Playback tab.'
-      - '[Experimental] Icon Glow: The selected game icon glows with colors extracted from the game art. With Live Effects enabled, the glow pulses in sync with the music beat. Configurable intensity, size, and audio sensitivity. Desktop mode only. Enable in Experimental tab.'
+      - '[Experimental] Icon Glow Reactor: The selected game icon glows with colors extracted from the game art. With Live Effects enabled, the glow pulses in sync with the music beat. Configurable intensity, size, and audio sensitivity. Desktop mode only. Enable in Experimental tab.'
+      - '[Experimental] List Icon Glow: Game icons in list/grid view glow when selected or hovered, with color-matched glow extracted from game art. Optional Subtle mode. Smooth fade transitions. Desktop mode only. Enable in Experimental tab.'
   - Version: 1.3.5
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-08

@@ -112,6 +112,7 @@ namespace UniPlaySong
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
         private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
         private IconGlow.IconGlowManager _iconGlowManager;
+        private IconGlow.ListHoverGlowManager _listHoverGlowManager;
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
@@ -317,6 +318,7 @@ namespace UniPlaySong
             {
                 _iconGlowManager.OnGameSelected(game);
             }
+            _listHoverGlowManager?.OnGameSelected(game);
         }
 
         // Handles game state changes at the database level.
@@ -553,6 +555,13 @@ namespace UniPlaySong
                             System.Windows.Threading.DispatcherPriority.Loaded,
                             new Action(() => _iconGlowManager?.OnGameSelected(selectedGame))));
                 }
+
+                // Hover glow for game list icons — lightweight DropShadowEffect on mouse hover
+                _listHoverGlowManager = new IconGlow.ListHoverGlowManager(_settingsService, _iconGlowManager.ColorExtractor);
+                System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
+                    Application.Current?.Dispatcher?.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Loaded,
+                        new Action(() => _listHoverGlowManager?.Attach())));
             }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)
@@ -923,6 +932,8 @@ namespace UniPlaySong
             _mediaKeyService = null;
             _iconGlowManager?.Destroy();
             _iconGlowManager = null;
+            _listHoverGlowManager?.Detach();
+            _listHoverGlowManager = null;
             if (_taskbarMediaControls != null)
             {
                 _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;

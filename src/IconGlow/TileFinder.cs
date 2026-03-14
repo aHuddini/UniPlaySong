@@ -88,7 +88,19 @@ namespace UniPlaySong.IconGlow
             return null;
         }
 
-        private static T FindChildByName<T>(DependencyObject parent, string name) where T : FrameworkElement
+        // Walks up the visual tree to find the nearest ancestor of type T.
+        public static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T match)
+                    return match;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
+        public static T FindChildByName<T>(DependencyObject parent, string name) where T : FrameworkElement
         {
             if (parent == null) return null;
 

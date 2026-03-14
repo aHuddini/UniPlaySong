@@ -25,6 +25,8 @@ namespace UniPlaySong.IconGlow
         private readonly IconColorExtractor _colorExtractor = new IconColorExtractor();
         private readonly FileLogger _fileLogger;
 
+        public IconColorExtractor ColorExtractor => _colorExtractor;
+
         // Always reads the current settings object (survives Playnite JSON reload)
         private UniPlaySongSettings _settings => _settingsService.Current;
 

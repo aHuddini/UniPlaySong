@@ -126,6 +126,7 @@ namespace UniPlaySong
             s.ExternalAudioDebounceSeconds = 0;
             s.ExternalAudioInstantPause = false;
             s.ExternalAudioExcludedApps = "obs64, obs32";
+            s.PauseOnTrailer = true;
             s.PauseOnIdle = false;
             s.IdleTimeoutMinutes = 15;
 
@@ -258,6 +259,8 @@ namespace UniPlaySong
             s.EnableIconGlowPulse = true;
             s.EnableIconGlowSpin = false;
             s.EnableIconGlowSpinAcceleration = false;
+            s.EnableListIconGlow = false;
+            s.SubtleListGlow = false;
             s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;
@@ -278,6 +281,8 @@ namespace UniPlaySong
             s.EnableIconGlowPulse = true;
             s.EnableIconGlowSpin = false;
             s.EnableIconGlowSpinAcceleration = false;
+            s.EnableListIconGlow = false;
+            s.SubtleListGlow = false;
             s.IconGlowSpinSpeed = 20.0;
             s.IconGlowIntensity = 1.8;
             s.IconGlowSize = 6.0;
