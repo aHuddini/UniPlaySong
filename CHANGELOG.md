@@ -4,6 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.7] - 2026-03-15
+
+### Fixed
+- **Live Effects Toggle Not Working** — Turning off Live Effects while the Spectrum Visualizer or Peak Meter was enabled had no effect — reverb and other audio effects continued playing. Root cause: the EffectsChain only checked individual effect toggles (ReverbEnabled, etc.) but never checked the master `LiveEffectsEnabled` switch. When NAudio stayed active for the visualizer, effects kept processing. Fix: EffectsChain now bypasses all processing when `LiveEffectsEnabled` is false, regardless of individual effect states.
+
 ## [1.3.6] - 2026-03-09
 
 ### Added

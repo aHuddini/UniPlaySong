@@ -397,6 +397,10 @@ namespace UniPlaySong.Audio
                 _lastRoomSize = settings.ReverbRoomSize;
             }
 
+            // Bypass all effects when Live Effects is disabled (even if NAudio is active for visualizer)
+            if (!settings.LiveEffectsEnabled)
+                return samplesRead;
+
             // Check if any effects are enabled
             bool anyEffectEnabled = settings.HighPassEnabled || settings.LowPassEnabled
                                     || settings.ReverbEnabled || slowActive

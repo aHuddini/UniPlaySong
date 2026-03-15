@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.6-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.7-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,16 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.6
+## What's New - v1.3.7
 
-- [Experimental] **Music Library Dashboard** — Browse your game music library from a dedicated sidebar page. Game card grid, track listings, search, radio mode for shuffling your entire library, and an expanded now-playing view. Has its own independent audio player. Desktop mode only.
-- [New Feature] **Fade Out Before Song End** — Smooth fade-out before auto-advancing to the next song. Configurable duration (1–5s). Works in Live Effects and non-Live Effects modes.
-- [Experimental] **Icon Glow** — The selected game's icon glows with colors extracted from the game art. Pulses in sync with the beat when Live Effects is enabled. Desktop mode only.
-- [Experimental] **List Icon Glow** — Game icons in the list/grid view glow when selected or hovered. Optional "Subtle" mode. Desktop mode only.
-- [Experimental] **Sidebar Glow Presets** — 22 audio-reactive animation modes for the sidebar behind game icons. Desktop mode only.
+- [Critical Fix] **Live Effects Toggle** — Turning off Live Effects now properly disables all audio effects (reverb, chorus, etc.) even when the Visualizer or Peak Meter is enabled.
 
 ### Previous Version
-- **v1.3.5**: Open Music Folder create prompt, Bulk folder creation, Game folder breadcrumbs, Game index file, Open Game Index button, Localization infrastructure
+- **v1.3.6**: Music Library Dashboard, Icon Glow Visualizer Effects (22 sidebar animations), Fade Out Before Song End, Pause on External Audio improvements
 
 > **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

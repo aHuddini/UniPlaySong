@@ -1,0 +1,50 @@
+<Window x:Class="DashboardTestApp.TestWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Music Dashboard Test" Width="1200" Height="800"
+        Background="#1a1a2e" WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="150"/>
+        </Grid.RowDefinitions>
+
+        <!-- Test controls bar -->
+        <Border Grid.Row="0" Background="#252545" Padding="8">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Dashboard Test Harness" Foreground="#aaa" FontSize="12"
+                               VerticalAlignment="Center" Margin="8,0"/>
+                    <Button Content="Simulate Main Playing" Click="OnSimulateMainPlaying"
+                            Margin="12,0" Padding="8,4" Background="#333" Foreground="#ccc" BorderThickness="0"/>
+                    <Button Content="Simulate Main Stop" Click="OnSimulateMainStop"
+                            Margin="4,0" Padding="8,4" Background="#333" Foreground="#ccc" BorderThickness="0"/>
+                    <Button Content="Back to Grid" Click="OnBackToGrid"
+                            Margin="4,0" Padding="8,4" Background="#333" Foreground="#ccc" BorderThickness="0"/>
+                    <Button Content="Clear Log" Click="OnClearLog"
+                            Margin="4,0" Padding="8,4" Background="#333" Foreground="#ccc" BorderThickness="0"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Text="Ready" Foreground="#888" FontSize="11"
+                           VerticalAlignment="Center" HorizontalAlignment="Right" Margin="16,0"
+                           DockPanel.Dock="Right"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Dashboard view will be hosted here -->
+        <ContentControl x:Name="DashboardHost" Grid.Row="1"/>
+
+        <!-- Log panel -->
+        <Border Grid.Row="2" Background="#0a0a1a" BorderBrush="#333" BorderThickness="0,1,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Debug Log" Foreground="#666" FontSize="10"
+                           Margin="8,4"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="LogText" Foreground="#8ac" FontSize="10"
+                               FontFamily="Consolas" TextWrapping="Wrap" Margin="8,2"/>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

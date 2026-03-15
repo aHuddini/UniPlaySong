@@ -1,0 +1,11 @@
+<Application x:Class="DashboardTestApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="TestWindow.xaml">
+    <Application.Resources>
+        <!-- Provide the Playnite theme resources the dashboard expects -->
+        <SolidColorBrush x:Key="TextBrush" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="GlyphBrush" Color="#6c5ce7"/>
+        <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#1a1a2e"/>
+    </Application.Resources>
+</Application>

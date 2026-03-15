@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net4.6.2</TargetFramework>
+        <UseWPF>true</UseWPF>
+        <RootNamespace>DashboardTestApp</RootNamespace>
+        <AssemblyName>DashboardTestApp</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\UniPlaySong.csproj" />
+    </ItemGroup>
+</Project>
