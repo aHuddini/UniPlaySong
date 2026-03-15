@@ -228,6 +228,7 @@ namespace UniPlaySong
         Breathing,   // subtle tint + opacity breathing
         GlowBars,    // VU meter glow bars filling bottom-up
         PlasmaGrid,  // plasma color wash, audio-reactive
+        PlasmaTinted, // plasma locked to game icon primary/secondary colors
         PixelGrid,   // pixelated plasma grid with visible cell gaps
         RainDrops,   // digital rain columns falling downward
         Waveform,    // oscillating sine wave, amplitude from audio
@@ -2435,6 +2436,14 @@ namespace UniPlaySong
         {
             get => enableSidebarGlow;
             set { enableSidebarGlow = value; OnPropertyChanged(); }
+        }
+
+        // Music Dashboard (coming soon — toggle is display-only for now)
+        private bool showMusicDashboard = false;
+        public bool ShowMusicDashboard
+        {
+            get => showMusicDashboard;
+            set { showMusicDashboard = value; OnPropertyChanged(); }
         }
 
         private SidebarGlowMode sidebarGlowMode = SidebarGlowMode.Breathing;

@@ -22,10 +22,11 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.6
 
-- [New Feature] **Fade Out Before Song End** — When using Radio Mode or Randomize on Song End, music now fades out smoothly in the final seconds before auto-advancing to the next song. Configurable duration (1–5s). Works in Live Effects and non-Live Effects modes.
-- [Experimental] **Icon Glow** — The selected game's icon now glows with colors extracted from the game art. When music is playing with Live Effects enabled, the glow pulses and breathes in sync with the beat. Configurable intensity, size, and audio sensitivity in Settings → Experimental. Desktop mode only.
-- [Experimental] **List Icon Glow** — Game icons in the list/grid view glow when selected or hovered. The selected game gets a full color-matched glow behind the icon; hovered games get a softer shadow effect. Optional "Subtle" mode for a gentler look. Smooth fade-in and fade-out transitions. Desktop mode only.
-- [Experimental] **Sidebar Glow Presets** — 22 audio-reactive animation modes for the sidebar behind game icons. Presets range from subtle (Breathing, Aurora) to dramatic (DNA Helix, Laser, Voronoi). All presets react to music when Live Effects is active, with sine-wave fallback when no audio data is available. Includes shader-inspired effects adapted from GLSL originals. Desktop mode only.
+- [Experimental] **Music Library Dashboard** — Browse your game music library from a dedicated sidebar page. Game card grid, track listings, search, radio mode for shuffling your entire library, and an expanded now-playing view. Has its own independent audio player. Desktop mode only.
+- [New Feature] **Fade Out Before Song End** — Smooth fade-out before auto-advancing to the next song. Configurable duration (1–5s). Works in Live Effects and non-Live Effects modes.
+- [Experimental] **Icon Glow** — The selected game's icon glows with colors extracted from the game art. Pulses in sync with the beat when Live Effects is enabled. Desktop mode only.
+- [Experimental] **List Icon Glow** — Game icons in the list/grid view glow when selected or hovered. Optional "Subtle" mode. Desktop mode only.
+- [Experimental] **Sidebar Glow Presets** — 22 audio-reactive animation modes for the sidebar behind game icons. Desktop mode only.
 
 ### Previous Version
 - **v1.3.5**: Open Music Folder create prompt, Bulk folder creation, Game folder breadcrumbs, Game index file, Open Game Index button, Localization infrastructure

@@ -26,9 +26,16 @@ UniPlaySong/
 │   │   ├── RelayCommand.cs        # MVVM command pattern implementation
 │   │   └── XInputWrapper.cs       # Xbox controller input (single source of truth)
 │   │
-│   ├── DeskMediaControl/          # Desktop mode top panel media controls
+│   ├── DeskMediaControl/          # Desktop mode media controls + Music Dashboard
 │   │   ├── MediaControlIcons.cs           # IcoFont icon constants for media buttons
-│   │   └── TopPanelMediaControlViewModel.cs # ViewModel for play/pause and skip buttons
+│   │   ├── TopPanelMediaControlViewModel.cs # ViewModel for play/pause and skip buttons
+│   │   ├── MusicLibraryView.xaml          # Full-page Music Library Dashboard UI
+│   │   ├── MusicLibraryView.xaml.cs       # Dashboard code-behind (visualizer, tabs, glow)
+│   │   ├── MusicLibraryViewModel.cs       # Dashboard ViewModel (game list, tabs, playback)
+│   │   ├── ProgressWidthConverter.cs      # Progress bar width MultiBinding converter
+│   │   ├── SpectrumVisualizerControl.cs   # Spectrum visualizer (multi-instance safe)
+│   │   ├── PeakMeterControl.cs            # Peak meter visualization
+│   │   └── SongTitleCleaner.cs            # Filename → title/artist parser
 │   │
 │   ├── Downloaders/               # Music download implementations
 │   │   ├── IDownloader.cs         # Downloader interface
@@ -40,6 +47,8 @@ UniPlaySong/
 │   │
 │   ├── Models/                    # Data structures
 │   │   ├── Album.cs               # Album/soundtrack model
+│   │   ├── GameCardItem.cs        # Display model for dashboard game grid cards
+│   │   ├── SongListItem.cs        # Display model for dashboard song lists
 │   │   ├── Song.cs                # Individual song model
 │   │   ├── GameMusic.cs           # Game music association model
 │   │   ├── Source.cs              # Download source enum
@@ -74,6 +83,8 @@ UniPlaySong/
 │   ├── Services/                  # Core business logic services
 │   │   ├── MusicPlaybackService.cs        # High-level playback orchestration
 │   │   ├── IMusicPlaybackService.cs       # Playback service interface
+│   │   ├── DashboardPlaybackService.cs    # Independent NAudio player for Music Dashboard
+│   │   ├── IDashboardPlaybackService.cs   # Dashboard playback interface
 │   │   ├── MusicPlaybackCoordinator.cs    # Central playback decision coordinator
 │   │   ├── IMusicPlaybackCoordinator.cs   # Coordinator interface
 │   │   ├── GameMusicFileService.cs        # File system operations for game music
@@ -382,7 +393,28 @@ public override IEnumerable<TopPanelItem> GetTopPanelItems()
 }
 ```
 
-### 11. Cleanup Operations (`UniPlaySong.cs`)
+### 11. Music Library Dashboard (`DeskMediaControl/`)
+
+**Full-page music library browser** accessible from the Playnite sidebar. Replaces the original narrow dashboard panel.
+
+#### Architecture
+
+- **MusicLibraryView.xaml/.cs**: Full-page WPF UserControl with three vertical sections: persistent now-playing bar (top), tab bar, scrollable content area. Returned by `GetSidebarItems()` as a `SiderbarItemType.View`.
+- **MusicLibraryViewModel.cs**: Top-level ViewModel using the Func<> closure injection pattern. Manages now-playing state, game list, tab switching, search filtering, and delegates playback to `IDashboardPlaybackService`.
+- **DashboardPlaybackService.cs**: Independent playback service with its own `NAudioMusicPlayer` instance. Coordinates with the main `MusicPlaybackService` via `PauseSource.Dashboard`. Supports single file, playlist (game songs), and radio mode (all library shuffle). Player is created lazily and disposed when dashboard closes.
+- **IDashboardPlaybackService.cs**: Clean interface for dashboard playback operations.
+- **GameCardItem.cs**: Display model for game grid cards (name, icon, song count, duration, playing state).
+- **SongListItem.cs**: Display model for track lists (title, artist, game name, duration, playing state).
+
+#### Key Design Decisions
+
+- **Decoupled Player**: Dashboard owns its own NAudioMusicPlayer, never touches the main player directly. Only interaction is via `PauseSource.Dashboard` on the main service.
+- **VisualizationDataProvider Swap**: When dashboard plays, it becomes `VisualizationDataProvider.Current`. On stop, restores the main player's provider.
+- **Lazy Player Lifecycle**: NAudioMusicPlayer created on first play, fully disposed (WaveOutEvent, audio device, buffers) on dashboard close. No resources held when not in use.
+- **Game-to-Directory Matching**: Game music directories use `game.Id.ToString()` as folder names. Dashboard resolves these to Playnite Game objects for cover art and display names.
+- **Two-Phase Loading**: Game list appears immediately with names/song counts, cover art and durations load progressively in background.
+
+### 12. Cleanup Operations (`UniPlaySong.cs`)
 
 **Plugin data management** operations accessible via Settings → Cleanup tab:
 

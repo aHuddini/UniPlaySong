@@ -31,6 +31,7 @@ namespace UniPlaySong.IconGlow
         private double _originalOpacity;
         private bool _originalSaved;
         private Color _baseColor = Color.FromRgb(100, 149, 237);
+        private Color _secondaryColor = Color.FromRgb(200, 150, 100);
         private Color _lastAppliedColor;
         private double _smoothedEnergy;
         private DateTime _pulseStartTime = DateTime.UtcNow;
@@ -234,6 +235,7 @@ namespace UniPlaySong.IconGlow
             if (game == null)
             {
                 _baseColor = Color.FromRgb(100, 149, 237);
+                _secondaryColor = Color.FromRgb(200, 150, 100);
                 return;
             }
 
@@ -249,17 +251,20 @@ namespace UniPlaySong.IconGlow
                     bitmap.EndInit();
                     bitmap.Freeze();
 
-                    var (primary, _) = _colorExtractor.GetGlowColors(game.Id, bitmap);
+                    var (primary, secondary) = _colorExtractor.GetGlowColors(game.Id, bitmap);
                     _baseColor = primary;
+                    _secondaryColor = secondary;
                 }
                 else
                 {
                     _baseColor = Color.FromRgb(100, 149, 237);
+                    _secondaryColor = Color.FromRgb(200, 150, 100);
                 }
             }
             catch
             {
                 _baseColor = Color.FromRgb(100, 149, 237);
+                _secondaryColor = Color.FromRgb(200, 150, 100);
             }
 
             _smoothedEnergy = 0;
@@ -337,7 +342,7 @@ namespace UniPlaySong.IconGlow
 
         private void ActivateMode(SidebarGlowMode mode)
         {
-            if (mode == SidebarGlowMode.GlowBars || mode == SidebarGlowMode.PlasmaGrid)
+            if (mode == SidebarGlowMode.GlowBars || mode == SidebarGlowMode.PlasmaGrid || mode == SidebarGlowMode.PlasmaTinted)
                 InjectDotCanvas();
             else if (mode == SidebarGlowMode.PixelGrid)
                 InjectPixelCanvas();
@@ -406,6 +411,8 @@ namespace UniPlaySong.IconGlow
                 RenderGlowBars(energy);
             else if (_activeMode == SidebarGlowMode.PlasmaGrid)
                 RenderPlasmaGrid(energy);
+            else if (_activeMode == SidebarGlowMode.PlasmaTinted)
+                RenderPlasmaTinted(energy);
             else if (_activeMode == SidebarGlowMode.PixelGrid)
                 RenderPixelGrid(energy);
             else if (_activeMode == SidebarGlowMode.RainDrops)
@@ -661,6 +668,88 @@ namespace UniPlaySong.IconGlow
                         _bars[i, gl].Fill = new SolidColorBrush(Color.FromArgb(ca, cr, cg, cb));
                         _bars[i, gl].Width = canvasWidth;
                         _bars[i, gl].Height = barHeight + gap; // fill the gap for seamless look
+                        _bars[i, gl].Opacity = 1.0;
+                        Canvas.SetLeft(_bars[i, gl], 0);
+                        Canvas.SetTop(_bars[i, gl], y);
+                    }
+                    else
+                    {
+                        _bars[i, gl].Opacity = 0;
+                    }
+                }
+            }
+        }
+
+        // --- Plasma Tinted mode ---
+        // Like Plasma Grid but colors are locked to the game icon's primary and secondary
+        // colors. Plasma waves modulate between the two extracted colors instead of
+        // free-cycling RGB, keeping the effect visually matched to the game art.
+
+        private void RenderPlasmaTinted(double energy)
+        {
+            if (_barCanvas == null || _bars == null) return;
+
+            double canvasHeight = _sidebarBorder.ActualHeight;
+            double canvasWidth = _sidebarBorder.ActualWidth;
+            if (canvasHeight <= 0 || canvasWidth <= 0) return;
+
+            double time = (DateTime.UtcNow - _pulseStartTime).TotalSeconds;
+            double gap = 2.0;
+            double barHeight = (canvasHeight - gap * (BarCount + 1)) / BarCount;
+            if (barHeight < 2) barHeight = 2;
+
+            for (int i = 0; i < BarCount; i++)
+            {
+                double alpha = energy > _barSmoothed[i] ? 0.3 : 0.05;
+                _barSmoothed[i] += (energy - _barSmoothed[i]) * alpha;
+            }
+
+            // Primary and secondary colors from game icon
+            double pR = _baseColor.R / 255.0;
+            double pG = _baseColor.G / 255.0;
+            double pB = _baseColor.B / 255.0;
+            double sR = _secondaryColor.R / 255.0;
+            double sG = _secondaryColor.G / 255.0;
+            double sB = _secondaryColor.B / 255.0;
+
+            for (int i = 0; i < BarCount; i++)
+            {
+                double v = (double)i / BarCount;
+                double snd = _barSmoothed[i];
+
+                // Blend factor oscillates between primary and secondary using plasma waves
+                double blend = Math.Pow(Math.Cos(time * 1.2 + v * 3.5) * 0.5 + 0.5, 1.5);
+                // Second wave adds variation
+                double blend2 = Math.Pow(Math.Sin(time * 0.8 - v * 2.1) * 0.5 + 0.5, 1.5);
+                double mix = blend * 0.6 + blend2 * 0.4;
+
+                // Lerp between primary and secondary
+                double r = (pR * (1 - mix) + sR * mix) * snd;
+                double g = (pG * (1 - mix) + sG * mix) * snd;
+                double b = (pB * (1 - mix) + sB * mix) * snd;
+
+                // Slight brightness variation per bar for depth
+                double brightPulse = 0.8 + 0.2 * Math.Sin(time * 2.0 + i * 0.7);
+                r *= brightPulse;
+                g *= brightPulse;
+                b *= brightPulse;
+
+                // Fade toward bottom: top bars (high i) are brightest, bottom bars (low i) fade out
+                double heightFade = 0.25 + (double)i / BarCount * 0.75;
+                double y = canvasHeight - (i + 1) * (barHeight + gap);
+
+                byte cr = (byte)Math.Min(255, r * 255);
+                byte cg = (byte)Math.Min(255, g * 255);
+                byte cb = (byte)Math.Min(255, b * 255);
+                byte ca = (byte)Math.Min(180, 255 * snd * 0.6 * heightFade);
+
+                for (int gl = 0; gl < GlowLayers; gl++)
+                {
+                    if (gl == GlowLayers - 1)
+                    {
+                        _bars[i, gl].Fill = new SolidColorBrush(Color.FromArgb(ca, cr, cg, cb));
+                        _bars[i, gl].Width = canvasWidth;
+                        _bars[i, gl].Height = barHeight + gap;
                         _bars[i, gl].Opacity = 1.0;
                         Canvas.SetLeft(_bars[i, gl], 0);
                         Canvas.SetTop(_bars[i, gl], y);

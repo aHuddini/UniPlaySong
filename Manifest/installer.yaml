@@ -5,10 +5,12 @@ Packages:
     ReleaseDate: 2026-03-09
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.6/UniPlaySong-1_3_6-Mar09_2026.pext'
     Changelog:
-      - '[New Setting] Fade Out Before Song End: When Radio Mode or Randomize on Song End is active, music fades out smoothly in the final seconds before auto-advancing to the next track. Configurable duration (1–5s). Enable in Playback tab.'
-      - '[Experimental] Icon Glow Reactor: The selected game icon glows with colors extracted from the game art. With Live Effects enabled, the glow pulses in sync with the music beat. Configurable intensity, size, and audio sensitivity. Desktop mode only. Enable in Experimental tab.'
-      - '[Experimental] List Icon Glow: Game icons in list/grid view glow when selected or hovered, with color-matched glow extracted from game art. Optional Subtle mode. Smooth fade transitions. Desktop mode only. Enable in Experimental tab.'
-      - '[Experimental] Sidebar Glow Presets: 22 audio-reactive animation modes for the sidebar behind game icons. Includes Breathing, Glow Bars, Plasma Grid, DNA Helix, Laser, Voronoi, Snow, Neon Line, and more. All react to music beat. Desktop mode only. Select mode in Experimental tab.'
+      - '[Experimental] Music Library Dashboard (Desktop): Browse your game music library from a sidebar page. Game grid, track listings, search, radio mode, and now-playing view with its own audio player.'
+      - '[New Setting] Fade Out Before Song End: Smooth fade-out before auto-advancing to the next track. Configurable 1–5s. Playback tab.'
+      - '[Experimental] Icon Glow (Desktop): Selected game icon glows with colors from game art. Pulses with music when Live Effects is on. Desktop only.'
+      - '[Experimental] List Icon Glow (Desktop): Game icons glow when selected or hovered in list/grid view. Optional Subtle mode. Desktop only.'
+      - '[Experimental] Sidebar Visualizer Effects (Desktop): 22 audio-reactive animations for the sidebar. Includes DNA Helix, Laser, Voronoi, Snow, Neon Line, and more. Desktop only.'
+      - '[Improved] Pause on External Audio: Improved reliability of external audio detection. Better error handling and diagnostic logging.'
   - Version: 1.3.5
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-08

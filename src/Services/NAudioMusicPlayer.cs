@@ -27,6 +27,9 @@ namespace UniPlaySong.Services
         // Fixed mixer format — all songs resampled to match
         private static readonly WaveFormat MixerFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
 
+        // When true, Load() won't set VisualizationDataProvider.Current (for multi-instance support)
+        public bool SuppressVisualizationProvider { get; set; }
+
         // Persistent infrastructure (created once on first Load, never stopped until Dispose)
         private WaveOutEvent _outputDevice;
         private MixingSampleProvider _mixer;
@@ -205,7 +208,8 @@ namespace UniPlaySong.Services
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
                 _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
-                VisualizationDataProvider.Current = _visualizationProvider;
+                if (!SuppressVisualizationProvider)
+                    VisualizationDataProvider.Current = _visualizationProvider;
                 long vizMs = sw.ElapsedMilliseconds;
 
                 // Song end detection — fires when source returns fewer samples than requested

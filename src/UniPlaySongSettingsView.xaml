@@ -3678,6 +3678,7 @@
                             <ComboBoxItem Content="Breathing"/>
                             <ComboBoxItem Content="Glow Bars"/>
                             <ComboBoxItem Content="Plasma Grid"/>
+                            <ComboBoxItem Content="Plasma Tinted"/>
                             <ComboBoxItem Content="Pixel Grid"/>
                             <ComboBoxItem Content="Rain Drops"/>
                             <ComboBoxItem Content="Waveform"/>
@@ -3699,6 +3700,17 @@
                             <ComboBoxItem Content="Neon Line"/>
                         </ComboBox>
                     </StackPanel>
+
+                    <!-- Music Dashboard -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Music Dashboard" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Enable Music Dashboard sidebar panel (Desktop only)"
+                              IsChecked="{Binding Settings.ShowMusicDashboard}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,10">
+                        A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
+                    </TextBlock>
 
                 </StackPanel>
             </ScrollViewer>

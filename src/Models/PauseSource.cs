@@ -17,6 +17,7 @@ namespace UniPlaySong.Models
         SystemLock,                 // Windows session is locked (Win+L) (PauseOnSystemLock setting)
         ExternalAudio,              // Another application is producing audio (PauseOnExternalAudio setting)
         Idle,                       // No keyboard/mouse input for configured duration (PauseOnIdle setting)
-        Jingle                      // Celebration jingle is playing — pause main music, fade back in on completion
+        Jingle,                     // Celebration jingle is playing — pause main music, fade back in on completion
+        Dashboard                   // Dashboard player is active — pause main music while dashboard plays independently
     }
 }

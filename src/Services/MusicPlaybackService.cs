@@ -338,6 +338,8 @@ namespace UniPlaySong.Services
                     preservedSources.Add(PauseSource.Idle);
                 if (_activePauseSources.Contains(PauseSource.Video))
                     preservedSources.Add(PauseSource.Video);
+                if (_activePauseSources.Contains(PauseSource.Dashboard))
+                    preservedSources.Add(PauseSource.Dashboard);
                 var clearedCount = _activePauseSources.Count - preservedSources.Count;
                 _activePauseSources.Clear();
 
