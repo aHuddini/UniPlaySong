@@ -111,6 +111,9 @@ namespace UniPlaySong
         private bool _isUsingLiveEffectsPlayer;
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
         private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
+        private IconGlow.IconGlowManager _iconGlowManager;
+        private IconGlow.ListHoverGlowManager _listHoverGlowManager;
+        private IconGlow.SidebarGlowManager _sidebarGlowManager;
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
@@ -176,6 +179,12 @@ namespace UniPlaySong
 
         // Desktop top panel media control (play/pause button)
         private TopPanelMediaControlViewModel _topPanelMediaControl;
+
+        // Desktop sidebar Music Library panel
+        private MusicLibraryViewModel _libraryViewModel;
+        private MusicLibraryView _libraryView;
+        private SidebarItem _dashboardSidebarItem;
+        private DashboardPlaybackService _dashboardPlaybackService;
 
         // Cached settings ViewModel - ensures GetSettings and GetSettingsView use the same instance
         // Critical: Without this, GetSettingsView creates a separate ViewModel and changes aren't saved
@@ -312,6 +321,12 @@ namespace UniPlaySong
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
             UpdateDynamicVisualizerColors(game);
+            if (_iconGlowManager != null && IsDesktop)
+            {
+                _iconGlowManager.OnGameSelected(game);
+            }
+            _listHoverGlowManager?.OnGameSelected(game);
+            _sidebarGlowManager?.OnGameSelected(game);
         }
 
         // Handles game state changes at the database level.
@@ -532,6 +547,38 @@ namespace UniPlaySong
             // {
             //     CheckForHintsUpdatesAsync();
             // }
+
+            // Icon glow effect (Desktop only) — always create, checks setting dynamically
+            if (IsDesktop)
+            {
+                _iconGlowManager = new IconGlow.IconGlowManager(_settingsService, _fileLogger);
+
+                // Apply glow to the already-selected game on startup.
+                // Delayed 1s so Playnite's visual tree is fully rendered before TileFinder runs.
+                var selectedGame = _api.MainView.SelectedGames?.FirstOrDefault();
+                if (selectedGame != null)
+                {
+                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
+                        Application.Current?.Dispatcher?.BeginInvoke(
+                            System.Windows.Threading.DispatcherPriority.Loaded,
+                            new Action(() => _iconGlowManager?.OnGameSelected(selectedGame))));
+                }
+
+                // Hover glow for game list icons — lightweight DropShadowEffect on mouse hover
+                _listHoverGlowManager = new IconGlow.ListHoverGlowManager(_settingsService, _iconGlowManager.ColorExtractor);
+                System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
+                    Application.Current?.Dispatcher?.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Loaded,
+                        new Action(() => _listHoverGlowManager?.Attach())));
+
+                // Audio-reactive sidebar background color
+                _sidebarGlowManager = new IconGlow.SidebarGlowManager(
+                    _iconGlowManager.ColorExtractor, _settingsService, _api);
+                System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
+                    Application.Current?.Dispatcher?.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Loaded,
+                        new Action(() => _sidebarGlowManager?.Attach())));
+            }
 
             // Radio Mode: kick off playback immediately on startup (no game selection needed)
             if (_settings?.RadioModeEnabled == true)
@@ -878,6 +925,7 @@ namespace UniPlaySong
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             _playbackService?.Stop();
+            _dashboardPlaybackService?.Dispose();
             CleanupJinglePlayer();
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
@@ -899,6 +947,12 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _iconGlowManager?.Destroy();
+            _iconGlowManager = null;
+            _sidebarGlowManager?.Detach();
+            _sidebarGlowManager = null;
+            _listHoverGlowManager?.Detach();
+            _listHoverGlowManager = null;
             if (_taskbarMediaControls != null)
             {
                 _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;
@@ -1391,6 +1445,7 @@ namespace UniPlaySong
 
             // Real focus loss (non-switcher window, or ignore-brief disabled)
             _playbackService?.AddPauseSource(Models.PauseSource.FocusLoss);
+            _dashboardPlaybackService?.PauseForSystem();
         }
 
         // Polls until the foreground window is no longer a task switcher overlay.
@@ -1437,6 +1492,7 @@ namespace UniPlaySong
                 // Default: always remove FocusLoss (no-op if not present)
                 _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
             }
+            _dashboardPlaybackService?.ResumeFromSystem();
         }
 
         // Handles Windows session lock/unlock (Win+L).
@@ -1448,7 +1504,10 @@ namespace UniPlaySong
                 if (_settings?.PauseOnSystemLock == true)
                 {
                     Application.Current?.Dispatcher?.Invoke(() =>
-                        _playbackService?.AddPauseSource(Models.PauseSource.SystemLock));
+                    {
+                        _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
+                        _dashboardPlaybackService?.PauseForSystem();
+                    });
                 }
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
@@ -1469,6 +1528,7 @@ namespace UniPlaySong
 
                     // Always remove — HashSet.Remove is a no-op if not present
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _dashboardPlaybackService?.ResumeFromSystem();
                 });
             }
         }
@@ -1524,40 +1584,50 @@ namespace UniPlaySong
                 int selfPid = _selfPid;
 
                 using (var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                using (var device = enumerator.GetDefaultAudioEndpoint(
+                    NAudio.CoreAudioApi.DataFlow.Render,
+                    NAudio.CoreAudioApi.Role.Multimedia))
                 {
-                    var device = enumerator.GetDefaultAudioEndpoint(
-                        NAudio.CoreAudioApi.DataFlow.Render,
-                        NAudio.CoreAudioApi.Role.Multimedia);
                     var sessions = device.AudioSessionManager.Sessions;
+                    float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
 
                     for (int i = 0; i < sessions.Count; i++)
                     {
-                        var session = sessions[i];
-                        uint sessionPid = session.GetProcessID;
-
-                        if (sessionPid == selfPid || sessionPid == 0)
-                            continue;
-
-                        if (session.IsSystemSoundsSession)
-                            continue;
-
-                        // Check exclusion list by process name
-                        if (_externalAudioExcludedPids.Count > 0)
+                        try
                         {
-                            try
+                            var session = sessions[i];
+                            uint sessionPid = session.GetProcessID;
+
+                            if (sessionPid == selfPid || sessionPid == 0)
+                                continue;
+
+                            if (session.IsSystemSoundsSession)
+                                continue;
+
+                            // Check exclusion list by process name
+                            if (_externalAudioExcludedPids.Count > 0)
                             {
-                                var proc = System.Diagnostics.Process.GetProcessById((int)sessionPid);
-                                if (_externalAudioExcludedPids.Contains(proc.ProcessName.ToLowerInvariant()))
-                                    continue;
+                                try
+                                {
+                                    var proc = System.Diagnostics.Process.GetProcessById((int)sessionPid);
+                                    if (_externalAudioExcludedPids.Contains(proc.ProcessName.ToLowerInvariant()))
+                                        continue;
+                                }
+                                catch { }
                             }
-                            catch { } // Process may have exited between enumeration and lookup
-                        }
 
-                        float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
-                        if (session.AudioMeterInformation.MasterPeakValue > peakThreshold)
+                            float peak = session.AudioMeterInformation.MasterPeakValue;
+                            if (peak > peakThreshold)
+                            {
+                                audioFound = true;
+                                break;
+                            }
+                        }
+                        catch (Exception sessionEx)
                         {
-                            audioFound = true;
-                            break;
+                            // Individual session COM errors (bad driver, process exited, etc.)
+                            // Log once per session, don't abort the entire scan
+                            _fileLogger?.Debug($"External audio: session {i} error: {sessionEx.Message}");
                         }
                     }
                 }
@@ -1603,9 +1673,14 @@ namespace UniPlaySong
                     }
                 }
             }
+            catch (System.Runtime.InteropServices.COMException comEx)
+            {
+                // COM threading issue — WASAPI may require STA on some systems
+                _fileLogger?.Debug($"External audio poll COM error: {comEx.Message} (HRESULT: 0x{comEx.HResult:X8})");
+            }
             catch (Exception ex)
             {
-                _fileLogger?.Debug($"External audio poll error: {ex.Message}");
+                _fileLogger?.Debug($"External audio poll error: {ex.GetType().Name}: {ex.Message}");
             }
             finally
             {
@@ -2002,6 +2077,26 @@ namespace UniPlaySong
                     (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
                 );
                 _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
+
+                // Dashboard playback service (independent NAudio player)
+                _dashboardPlaybackService = new DashboardPlaybackService(
+                    _settingsService,
+                    _playbackService,
+                    _fileLogger
+                );
+
+                // Music Library sidebar panel
+                _libraryViewModel = new MusicLibraryViewModel(
+                    () => _playbackService,
+                    () => _settings,
+                    () => SelectedGames?.FirstOrDefault(),
+                    _fileService,
+                    () => _api,
+                    _gamesPath,
+                    _dashboardPlaybackService,
+                    msg => _fileLogger?.Debug(msg)
+                );
+                _fileLogger?.Debug("MusicLibraryViewModel initialized");
             }
         }
 
@@ -2134,8 +2229,9 @@ namespace UniPlaySong
 
                 _fileLogger?.Debug($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
 
-                // Re-subscribe top panel control to the new playback service
+                // Re-subscribe top panel and dashboard to the new playback service
                 _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
+                _libraryViewModel?.ResubscribeToEvents(_playbackService);
 
                 // Re-attach picker monitor to the new playback service
                 Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
@@ -3458,6 +3554,74 @@ namespace UniPlaySong
             }
 
             return Enumerable.Empty<TopPanelItem>();
+        }
+
+        public override IEnumerable<SidebarItem> GetSidebarItems()
+        {
+            if (!IsDesktop)
+                yield break;
+
+            if (_dashboardSidebarItem == null)
+            {
+                try
+                {
+                    _dashboardSidebarItem = new SidebarItem
+                    {
+                        Type = SiderbarItemType.View,
+                        Title = "Music Dashboard",
+                        Icon = new System.Windows.Controls.TextBlock
+                        {
+                            Text = MediaControlIcons.Music,
+                            FontFamily = Playnite.SDK.ResourceProvider.GetResource("FontIcoFont") as System.Windows.Media.FontFamily,
+                            FontSize = 20
+                        },
+                        Visible = _settings?.ShowMusicDashboard ?? false,
+                        Opened = () =>
+                        {
+                            try
+                            {
+                                if (_libraryViewModel == null)
+                                    return new System.Windows.Controls.UserControl { Content = new System.Windows.Controls.TextBlock { Text = "Dashboard loading..." } };
+
+                                if (_libraryView == null)
+                                {
+                                    _libraryView = new MusicLibraryView();
+                                    _libraryView.Initialize(_libraryViewModel, () => _settings);
+                                }
+                                _libraryView.OnOpened();
+                                return _libraryView;
+                            }
+                            catch (Exception ex)
+                            {
+                                _fileLogger?.Error($"MusicLibrary: Error opening: {ex.Message}");
+                                return new System.Windows.Controls.UserControl { Content = new System.Windows.Controls.TextBlock { Text = "Error loading music library." } };
+                            }
+                        },
+                        Closed = () =>
+                        {
+                            try { _libraryView?.OnClosed(); }
+                            catch (Exception ex) { _fileLogger?.Error($"MusicLibrary: Error closing: {ex.Message}"); }
+                        }
+                    };
+
+                    // Toggle visibility when setting changes
+                    if (_settingsService != null)
+                    {
+                        _settingsService.Current.PropertyChanged += (s, e) =>
+                        {
+                            if (e.PropertyName == nameof(UniPlaySongSettings.ShowMusicDashboard))
+                                _dashboardSidebarItem.Visible = _settings?.ShowMusicDashboard ?? false;
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Error($"Dashboard: Error creating sidebar item: {ex.Message}");
+                    yield break;
+                }
+            }
+
+            yield return _dashboardSidebarItem;
         }
 
         /// <summary>

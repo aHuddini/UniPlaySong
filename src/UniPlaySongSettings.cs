@@ -223,6 +223,53 @@ namespace UniPlaySong
         Reactive        // Maximum responsiveness — minimal smoothing, high gain
     }
 
+    public enum SidebarGlowMode
+    {
+        Breathing,   // subtle tint + opacity breathing
+        GlowBars,    // VU meter glow bars filling bottom-up
+        PlasmaGrid,  // plasma color wash, audio-reactive
+        PlasmaTinted, // plasma locked to game icon primary/secondary colors
+        PixelGrid,   // pixelated plasma grid with visible cell gaps
+        RainDrops,   // digital rain columns falling downward
+        Waveform,    // oscillating sine wave, amplitude from audio
+        Fire,        // bottom-up flame effect with warm palette
+        Starfield,   // rising sparks/stars, spawn rate from audio
+        Ripple,      // concentric rings expanding from center
+        Aurora,      // flowing horizontal bands like northern lights
+        Heartbeat,   // EKG-style pulse line scrolling vertically
+        Waterfall,   // spectrogram-style color bands scrolling down
+        Nebula,      // swirling 3D point cloud with Lissajous orbits
+        DnaHelix,    // double helix of dots spiraling vertically
+        DnaHelixBloom, // DNA helix with bloom/glow halos
+        Matrix,      // classic green character rain streaks
+        Laser,       // converging rainbow beams sweeping from edges
+        PulseWaves,  // layered glowing sine waves in multiple colors
+        Voronoi,     // glowing vertical line distorted by Voronoi noise
+        EqualizerGrid, // tiled grid of bars with rippling sine-driven widths
+        Snow,        // multi-layer parallax snowfall with drift
+        NeonLine     // smooth glowing vertical beam that snakes horizontally
+    }
+
+    public enum IconGlowPreset
+    {
+        Custom,      // user-controlled sliders
+        // Audio-reactive presets (designed for music)
+        Reactive,    // full 3-band (bass/mids/treble), maximum reactivity
+        Pulse,       // strong beat-locked flash
+        BassPunch,   // kick-locked, bass-only, snappy decay
+        Neon,        // bright spinning neon color cycle
+        Mellow,      // slow, warm, always-bright, gentle drift
+        // Visual-only presets (sine pulse, no meaningful audio response)
+        Ambient,     // slow dreamy breathing
+        Subtle,      // barely-there ambient glow
+        SharpStatic, // tight edge glow, barely breathing, no spin
+        SharpBright, // tight edge, high intensity visible glow
+        SharpVivid,  // tight edge, dramatic flash burst
+        SharpWarm,   // tight edge with warm amber/gold color cycle
+        SharpCool,   // tight edge with icy blue/teal color cycle
+        SharpPulse   // tight edge, fast heartbeat rhythm
+    }
+
     public class UniPlaySongSettings : ObservableObject
     {
         private bool enableMusic = true;
@@ -1182,6 +1229,8 @@ namespace UniPlaySong
         private bool randomizeOnEverySelect = true;
         private bool randomizeOnMusicEnd = true;
         private bool stopAfterSongEnds = false;
+        private bool fadeOutBeforeSongEnd = false;
+        private double fadeOutBeforeSongEndDuration = 3.0;
 
         /// <summary>
         /// Randomize song selection when selecting a different game
@@ -1201,6 +1250,21 @@ namespace UniPlaySong
         {
             get => randomizeOnMusicEnd;
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
+        }
+
+        // Fade out the ending song N seconds before it finishes during auto-advance (Radio Mode or RandomizeOnMusicEnd).
+        // Only active when Radio Mode or Randomize on Music End is enabled. NAudio and SDL2 both supported.
+        public bool FadeOutBeforeSongEnd
+        {
+            get => fadeOutBeforeSongEnd;
+            set { fadeOutBeforeSongEnd = value; OnPropertyChanged(); }
+        }
+
+        // Duration in seconds of the pre-end fade-out (0.2–5s). Default: 3s.
+        public double FadeOutBeforeSongEndDuration
+        {
+            get => fadeOutBeforeSongEndDuration;
+            set { fadeOutBeforeSongEndDuration = Math.Max(0.2, Math.Min(5.0, value)); OnPropertyChanged(); }
         }
 
         // Stop playback after current song finishes instead of looping or randomizing
@@ -2249,6 +2313,269 @@ namespace UniPlaySong
         {
             get => toastBorderThickness;
             set { toastBorderThickness = Math.Max(0, Math.Min(5, value)); OnPropertyChanged(); }
+        }
+
+        private bool enableIconGlow = false;
+        private bool enableIconGlowPulse = true;
+        private double iconGlowIntensity = 1.8;
+        private double iconGlowSize = 6.0;
+        private double iconGlowPulseSpeed = 1.5;
+        private double iconGlowAudioSensitivity = 2.0;
+
+        // Pulsating glow border around the selected game's icon in Desktop mode.
+        // Color is extracted from the game's icon art. Audio-reactive when NAudio is active.
+        public bool EnableIconGlow
+        {
+            get => enableIconGlow;
+            set { enableIconGlow = value; OnPropertyChanged(); }
+        }
+
+        // When SDL2 backend is active (no audio data), enable a gentle fixed-rate pulse.
+        // When off, the glow is static. Ignored when NAudio is active (always audio-reactive).
+        public bool EnableIconGlowPulse
+        {
+            get => enableIconGlowPulse;
+            set { enableIconGlowPulse = value; OnPropertyChanged(); }
+        }
+
+        // Controls glow brightness. Higher = brighter, more vivid glow extending further from icon.
+        public double IconGlowIntensity
+        {
+            get => iconGlowIntensity;
+            set { iconGlowIntensity = Math.Max(0.5, Math.Min(3.0, value)); OnPropertyChanged(); }
+        }
+
+        // Controls how far the glow extends from the icon. Higher = wider, softer glow.
+        public double IconGlowSize
+        {
+            get => iconGlowSize;
+            set { iconGlowSize = Math.Max(2.0, Math.Min(12.0, value)); OnPropertyChanged(); }
+        }
+
+        // SDL2 fallback pulse cycle duration in seconds. Lower = faster pulse.
+        public double IconGlowPulseSpeed
+        {
+            get => iconGlowPulseSpeed;
+            set { iconGlowPulseSpeed = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
+        }
+
+        // Audio reactivity multiplier. Higher = more responsive to music peaks.
+        public double IconGlowAudioSensitivity
+        {
+            get => iconGlowAudioSensitivity;
+            set { iconGlowAudioSensitivity = Math.Max(0.5, Math.Min(4.0, value)); OnPropertyChanged(); }
+        }
+
+        private bool enableListIconGlow = false;
+
+        // Independent toggle for list/grid icon glow (hover + selected game highlighting).
+        // Separate from the main Icon Glow visual reactor on the details panel.
+        public bool EnableListIconGlow
+        {
+            get => enableListIconGlow;
+            set { enableListIconGlow = value; OnPropertyChanged(); }
+        }
+
+        private bool subtleListGlow = false;
+
+        // When true, selected game's list glow uses softer SkiaSharp values (less intense, smaller).
+        // When false, selected game gets full-strength SkiaSharp glow.
+        public bool SubtleListGlow
+        {
+            get => subtleListGlow;
+            set { subtleListGlow = value; OnPropertyChanged(); }
+        }
+
+        private bool enableIconGlowSpin = false;
+        private double iconGlowSpinSpeed = 20.0;
+        private bool enableIconGlowSpinAcceleration = false;
+
+        // Slowly rotates the glow image around the icon.
+        public bool EnableIconGlowSpin
+        {
+            get => enableIconGlowSpin;
+            set { enableIconGlowSpin = value; OnPropertyChanged(); }
+        }
+
+        // Seconds per full rotation (5–60s). Default: 20s.
+        public double IconGlowSpinSpeed
+        {
+            get => iconGlowSpinSpeed;
+            set { iconGlowSpinSpeed = Math.Max(5.0, Math.Min(60.0, value)); OnPropertyChanged(); }
+        }
+
+        // When enabled, spin speed increases on audio beats.
+        public bool EnableIconGlowSpinAcceleration
+        {
+            get => enableIconGlowSpinAcceleration;
+            set { enableIconGlowSpinAcceleration = value; OnPropertyChanged(); }
+        }
+
+        private IconGlowPreset iconGlowPreset = IconGlowPreset.Custom;
+
+        // When a preset is selected, its values are applied immediately and sliders are locked.
+        // Custom leaves all slider values as-is.
+        public IconGlowPreset IconGlowPreset
+        {
+            get => iconGlowPreset;
+            set
+            {
+                iconGlowPreset = value;
+                ApplyIconGlowPreset(value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IconGlowSlidersEnabled));
+            }
+        }
+
+        // True only when preset is Custom — used to enable/disable sliders in XAML
+        public bool IconGlowSlidersEnabled => iconGlowPreset == IconGlowPreset.Custom;
+
+        // Sidebar Glow
+        private bool enableSidebarGlow = false;
+        public bool EnableSidebarGlow
+        {
+            get => enableSidebarGlow;
+            set { enableSidebarGlow = value; OnPropertyChanged(); }
+        }
+
+        // Music Dashboard (coming soon — toggle is display-only for now)
+        private bool showMusicDashboard = false;
+        public bool ShowMusicDashboard
+        {
+            get => showMusicDashboard;
+            set { showMusicDashboard = value; OnPropertyChanged(); }
+        }
+
+        private SidebarGlowMode sidebarGlowMode = SidebarGlowMode.Breathing;
+        public SidebarGlowMode SidebarGlowMode
+        {
+            get => sidebarGlowMode;
+            set { sidebarGlowMode = value; OnPropertyChanged(); }
+        }
+
+        private void ApplyIconGlowPreset(IconGlowPreset preset)
+        {
+            switch (preset)
+            {
+                case IconGlowPreset.Pulse:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 5.0;
+                    IconGlowPulseSpeed = 1.0;
+                    IconGlowAudioSensitivity = 2.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 35.0; // slow drift
+                    break;
+                case IconGlowPreset.Ambient:
+                    IconGlowIntensity = 1.4;
+                    IconGlowSize = 9.0;
+                    IconGlowPulseSpeed = 4.0; // very slow breathing
+                    IconGlowAudioSensitivity = 1.0;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 30.0; // barely drifting
+                    break;
+                case IconGlowPreset.Neon:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 6.0;
+                    IconGlowPulseSpeed = 1.2;
+                    IconGlowAudioSensitivity = 2.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 10.0; // fast spin, electric energy
+                    break;
+                case IconGlowPreset.Subtle:
+                    IconGlowIntensity = 0.6;
+                    IconGlowSize = 3.0;
+                    IconGlowPulseSpeed = 3.5;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 30.0; // barely perceptible drift
+                    break;
+                case IconGlowPreset.SharpStatic:
+                    IconGlowIntensity = 0.8;
+                    IconGlowSize = 2.0;
+                    IconGlowPulseSpeed = 2.5;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpBright:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 3.0;
+                    IconGlowPulseSpeed = 1.5; // noticeable breathing
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpVivid:
+                    IconGlowIntensity = 3.0;
+                    IconGlowSize = 3.5;
+                    IconGlowPulseSpeed = 0.8; // fast, dramatic flash
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpWarm:
+                    IconGlowIntensity = 1.5;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 2.0; // moderate breathing to show off colors
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpCool:
+                    IconGlowIntensity = 1.5;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 2.0;
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.SharpPulse:
+                    IconGlowIntensity = 2.0;
+                    IconGlowSize = 2.5;
+                    IconGlowPulseSpeed = 0.8; // fast heartbeat rhythm
+                    IconGlowAudioSensitivity = 0.8;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = false;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.BassPunch:
+                    IconGlowIntensity = 2.2;
+                    IconGlowSize = 5.0;
+                    IconGlowPulseSpeed = 1.0; // sine fallback speed
+                    IconGlowAudioSensitivity = 3.0;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 20.0;
+                    break;
+                case IconGlowPreset.Mellow:
+                    IconGlowIntensity = 1.6;
+                    IconGlowSize = 8.0;
+                    IconGlowPulseSpeed = 3.5; // slow sine fallback
+                    IconGlowAudioSensitivity = 2.0; // more sensitive since smooth3-only dampens heavily
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 28.0; // very slow drift
+                    break;
+                case IconGlowPreset.Reactive:
+                    IconGlowIntensity = 2.5;
+                    IconGlowSize = 6.0;
+                    IconGlowPulseSpeed = 1.5; // sine fallback speed
+                    IconGlowAudioSensitivity = 3.5;
+                    EnableIconGlowPulse = true;
+                    EnableIconGlowSpin = true;
+                    IconGlowSpinSpeed = 15.0;
+                    break;
+                // Custom: no-op, user controls sliders
+            }
         }
 
         /// <summary>

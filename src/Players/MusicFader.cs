@@ -153,6 +153,15 @@ namespace UniPlaySong.Players
                     _fadeTimer?.Stop();
                     return;
                 }
+
+                // Pure fade-out complete (no action attached) — stop ticking
+                else if (_isFadingOut && (currentVol <= 0.0001 || rampStalled))
+                {
+                    _fileLogger?.Debug($"[Fader] Tick — pure fade-out complete: vol={currentVol:F4}");
+                    _isFadingOut = false;
+                    _fadeTimer?.Stop();
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -252,6 +261,19 @@ namespace UniPlaySong.Players
             }
             SnapshotFadeParams();
             _fileLogger?.Debug($"[Fader] Resume() snap — target={_snapVolume:F4}, duration={_snapDuration:F3}s, isFadingOut={_isFadingOut}");
+            EnsureTimer();
+        }
+
+        // Fades volume to zero with no stop/pause action.
+        // Used for pre-song-end fade: the player reaches natural EOF at vol=0,
+        // then OnMediaEnded fires normally to handle the auto-advance.
+        public void FadeOut()
+        {
+            _isFadingOut = true;
+            _pauseAction = null;
+            _stopAction = null;
+            _playAction = null;
+            SnapshotFadeParams();
             EnsureTimer();
         }
 

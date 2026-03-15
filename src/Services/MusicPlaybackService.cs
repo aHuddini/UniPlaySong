@@ -81,6 +81,7 @@ namespace UniPlaySong.Services
         private DateTime _songStartTime = DateTime.MinValue;
         private UniPlaySongSettings _currentSettings;
         private System.Windows.Threading.DispatcherTimer _previewTimer;
+        private System.Windows.Threading.DispatcherTimer _songEndFadeTimer;
 
         private MusicFader _fader;
         private double _targetVolume = Constants.DefaultTargetVolume;
@@ -337,6 +338,8 @@ namespace UniPlaySong.Services
                     preservedSources.Add(PauseSource.Idle);
                 if (_activePauseSources.Contains(PauseSource.Video))
                     preservedSources.Add(PauseSource.Video);
+                if (_activePauseSources.Contains(PauseSource.Dashboard))
+                    preservedSources.Add(PauseSource.Dashboard);
                 var clearedCount = _activePauseSources.Count - preservedSources.Count;
                 _activePauseSources.Clear();
 
@@ -822,6 +825,7 @@ namespace UniPlaySong.Services
                                 stopAction: () =>
                                 {
                                     StopPreviewTimer();
+                                    CancelSongEndFade();
                                     _musicPlayer.Close();
                                     _currentSongPath = null;
                                     ClearAllPauseSources();
@@ -903,6 +907,7 @@ namespace UniPlaySong.Services
                         stopAction: () =>
                         {
                             StopPreviewTimer();
+                            CancelSongEndFade();
                             _musicPlayer.Close();
                             _currentSongPath = null;
                             ClearAllPauseSources();
@@ -1001,6 +1006,7 @@ namespace UniPlaySong.Services
             try
             {
                 StopPreviewTimer();
+                CancelSongEndFade();
                 _musicPlayer?.Stop();
                 _musicPlayer?.Close();
                 _currentSongPath = null;
@@ -1026,11 +1032,13 @@ namespace UniPlaySong.Services
 
         private void FadeOutAndStop()
         {
+            CancelSongEndFade();
             bool playerActive = (_musicPlayer?.IsLoaded ?? false) || (_musicPlayer?.IsActive ?? false);
 
             if (playerActive)
             {
                 StopPreviewTimer();
+                CancelSongEndFade();
                 _fader.FadeOutAndStop(() =>
                 {
                     _musicPlayer?.Close();
@@ -1058,6 +1066,7 @@ namespace UniPlaySong.Services
             {
                 bool wasPlaying = !_isPaused;
                 StopPreviewTimer();
+                CancelSongEndFade();
                 _fileLogger?.Debug("Pause: Calling fader.Pause()");
                 _fader?.Pause();
                 _activePauseSources.Add(PauseSource.Manual);
@@ -1566,6 +1575,8 @@ namespace UniPlaySong.Services
                 _previewTimer.Start();
                 _fileLogger?.Debug($"Preview timer started: {Path.GetFileName(_currentSongPath)} ({_currentSettings.PreviewDuration}s)");
             }
+
+            ScheduleSongEndFade();
         }
 
         private void StopPreviewTimer()
@@ -1574,6 +1585,56 @@ namespace UniPlaySong.Services
             {
                 _previewTimer.Stop();
                 _fileLogger?.Debug("Preview timer stopped");
+            }
+        }
+
+        // Schedules a one-shot timer to fade out the current song before it ends.
+        // Only created when: FadeOutBeforeSongEnd is on AND auto-advance is active AND TotalTime is known.
+        private void ScheduleSongEndFade()
+        {
+            CancelSongEndFade();
+
+            if (_currentSettings?.FadeOutBeforeSongEnd != true)
+                return;
+
+            bool autoAdvanceActive = (_currentSettings.RadioModeEnabled && _isInRadioMode)
+                || (_currentSettings.RandomizeOnMusicEnd && !_isCurrentSongDefaultMusic);
+            if (!autoAdvanceActive)
+                return;
+
+            var totalTime = _musicPlayer?.TotalTime;
+            double fadeDuration = _currentSettings.FadeOutBeforeSongEndDuration;
+            double minSongLength = fadeDuration + 2.0; // don't bother on very short songs
+
+            if (totalTime == null || totalTime.Value.TotalSeconds < minSongLength)
+                return;
+
+            double delay = totalTime.Value.TotalSeconds - fadeDuration;
+
+            _songEndFadeTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(delay)
+            };
+            _songEndFadeTimer.Tick += (s, e) =>
+            {
+                _songEndFadeTimer.Stop();
+                _songEndFadeTimer = null;
+                if (_musicPlayer?.IsActive == true && !_isPaused)
+                {
+                    _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} ({fadeDuration}s before end)");
+                    _fader.FadeOut();
+                }
+            };
+            _songEndFadeTimer.Start();
+            _fileLogger?.Debug($"[SongEndFade] Scheduled fade in {delay:F1}s for {Path.GetFileName(_currentSongPath)}");
+        }
+
+        private void CancelSongEndFade()
+        {
+            if (_songEndFadeTimer != null)
+            {
+                _songEndFadeTimer.Stop();
+                _songEndFadeTimer = null;
             }
         }
 
@@ -1720,6 +1781,7 @@ namespace UniPlaySong.Services
                     {
                         _fileLogger?.Info($"Song ended (StopAfterSongEnds): {Path.GetFileName(_currentSongPath)}");
                         StopPreviewTimer();
+                        CancelSongEndFade();
                         FadeOutAndStop();
                         OnMusicStopped?.Invoke(_currentSettings);
                         return;

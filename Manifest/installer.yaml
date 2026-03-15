@@ -1,5 +1,16 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.3.6
+    RequiredApiVersion: 6.15.0
+    ReleaseDate: 2026-03-09
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.6/UniPlaySong-1_3_6-Mar09_2026.pext'
+    Changelog:
+      - '[Experimental] Music Library Dashboard (Desktop): Browse your game music library from a sidebar page. Game grid, track listings, search, radio mode, and now-playing view with its own audio player.'
+      - '[New Setting] Fade Out Before Song End: Smooth fade-out before auto-advancing to the next track. Configurable 1–5s. Playback tab.'
+      - '[Experimental] Icon Glow (Desktop): Selected game icon glows with colors from game art. Pulses with music when Live Effects is on. Desktop only.'
+      - '[Experimental] List Icon Glow (Desktop): Game icons glow when selected or hovered in list/grid view. Optional Subtle mode. Desktop only.'
+      - '[Experimental] Sidebar Visualizer Effects (Desktop): 22 audio-reactive animations for the sidebar. Includes DNA Helix, Laser, Voronoi, Snow, Neon Line, and more. Desktop only.'
+      - '[Improved] Pause on External Audio: Improved reliability of external audio detection. Better error handling and diagnostic logging.'
   - Version: 1.3.5
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-08

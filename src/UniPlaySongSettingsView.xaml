@@ -19,6 +19,7 @@
         <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
         <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
         <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
+        <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -327,6 +328,23 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <!-- Song End Fade-Out -->
+                    <CheckBox Content="Fade out before song ends (Radio Mode / Randomize on Song End)"
+                              IsChecked="{Binding Settings.FadeOutBeforeSongEnd}"
+                              Margin="0,12,0,4"
+                              ToolTip="Only active when Radio Mode or Randomize on Song End is enabled. Fades the current song out in the final seconds before it ends naturally, creating a smooth transition to the next track." />
+                    <StackPanel Orientation="Horizontal"
+                                Margin="20,0,0,0"
+                                IsEnabled="{Binding Settings.FadeOutBeforeSongEnd}">
+                        <TextBlock Text="Fade duration:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Slider Minimum="0.2" Maximum="5"
+                                Value="{Binding Settings.FadeOutBeforeSongEndDuration}"
+                                Width="150" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Settings.FadeOutBeforeSongEndDuration, StringFormat='{}{0:F1}s'}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
 
                     <Separator Margin="0,15"/>
 
@@ -976,6 +994,20 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"
                                IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Theme/Trailer Video -->
+                    <TextBlock Text="Theme Video" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when a trailer or theme video plays"
+                              IsChecked="{Binding Settings.PauseOnTrailer}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
 
                     <Separator Margin="0,15"/>
 
@@ -3513,6 +3545,172 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <!-- Icon Glow -->
+                    <Separator Margin="0,15"/>
+                    <Grid Margin="0,0,0,5">
+                        <TextBlock Text="Icon Glow" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Content="Reset Icon Glow" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetIconGlow_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <CheckBox Content="Enable Icon Glow (Desktop only)"
+                              IsChecked="{Binding Settings.EnableIconGlow}"
+                              Margin="0,12,0,4"
+                              ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
+                    <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Preset:" VerticalAlignment="Center" Width="130"/>
+                        <ComboBox SelectedValue="{Binding Settings.IconGlowPreset}"
+                                  SelectedValuePath="Tag"
+                                  Width="160" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
+                            <!-- Audio-reactive presets (most reactive first) -->
+                            <ComboBoxItem Content="Reactive" Tag="{x:Static local:IconGlowPreset.Reactive}"/>
+                            <ComboBoxItem Content="Pulse" Tag="{x:Static local:IconGlowPreset.Pulse}"/>
+                            <ComboBoxItem Content="Bass Punch" Tag="{x:Static local:IconGlowPreset.BassPunch}"/>
+                            <ComboBoxItem Content="Neon" Tag="{x:Static local:IconGlowPreset.Neon}"/>
+                            <ComboBoxItem Content="Mellow" Tag="{x:Static local:IconGlowPreset.Mellow}"/>
+                            <!-- Visual-only presets -->
+                            <ComboBoxItem Content="Ambient" Tag="{x:Static local:IconGlowPreset.Ambient}"/>
+                            <ComboBoxItem Content="Subtle" Tag="{x:Static local:IconGlowPreset.Subtle}"/>
+                            <ComboBoxItem Content="Sharp Static" Tag="{x:Static local:IconGlowPreset.SharpStatic}"/>
+                            <ComboBoxItem Content="Sharp Bright" Tag="{x:Static local:IconGlowPreset.SharpBright}"/>
+                            <ComboBoxItem Content="Sharp Vivid" Tag="{x:Static local:IconGlowPreset.SharpVivid}"/>
+                            <ComboBoxItem Content="Sharp Warm" Tag="{x:Static local:IconGlowPreset.SharpWarm}"/>
+                            <ComboBoxItem Content="Sharp Cool" Tag="{x:Static local:IconGlowPreset.SharpCool}"/>
+                            <ComboBoxItem Content="Sharp Pulse" Tag="{x:Static local:IconGlowPreset.SharpPulse}"/>
+                        </ComboBox>
+                    </DockPanel>
+                    <StackPanel IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
+                    <CheckBox Content="Enable pulse animation (SDL2 fallback)"
+                              IsChecked="{Binding Settings.EnableIconGlowPulse}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlow}"
+                              ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
+                    <CheckBox Content="Enable slow spin"
+                              IsChecked="{Binding Settings.EnableIconGlowSpin}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlow}"
+                              ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
+                    <CheckBox Content="Beat-reactive spin acceleration"
+                              IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
+                              Margin="40,0,0,4"
+                              IsEnabled="{Binding Settings.EnableIconGlowSpin}"
+                              ToolTip="When enabled, the glow spin speeds up on audio beats." />
+                    <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
+                        <TextBlock Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
+                        <TextBlock Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
+                                Minimum="5" Maximum="60"
+                                TickFrequency="5" IsSnapToTickEnabled="True"
+                                ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
+                    </DockPanel>
+                    <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowIntensity}"
+                                Minimum="0.5" Maximum="3.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowSize}"
+                                Minimum="2.0" Maximum="12.0"
+                                TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
+                                Minimum="0.5" Maximum="4.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
+                    </DockPanel>
+                    <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                        <TextBlock Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
+                        <TextBlock Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
+                                   VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                        <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
+                                Minimum="0.5" Maximum="4.0"
+                                TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
+                    </DockPanel>
+                    </StackPanel>
+
+                    <!-- List Icon Glow -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="List Icon Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Enable List Icon Glow (Desktop only)"
+                              IsChecked="{Binding Settings.EnableListIconGlow}"
+                              Margin="0,12,0,4"
+                              ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
+                    <CheckBox Content="Subtle glow (softer effect)"
+                              IsChecked="{Binding Settings.SubtleListGlow}"
+                              Margin="20,0,0,4"
+                              IsEnabled="{Binding Settings.EnableListIconGlow}"
+                              ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
+
+                    <!-- Sidebar Glow -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Sidebar Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
+                              IsChecked="{Binding Settings.EnableSidebarGlow}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                        <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Width="160"
+                                  SelectedIndex="{Binding Settings.SidebarGlowMode, Converter={StaticResource SidebarGlowModeConverter}}"
+                                  IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                            <ComboBoxItem Content="Breathing"/>
+                            <ComboBoxItem Content="Glow Bars"/>
+                            <ComboBoxItem Content="Plasma Grid"/>
+                            <ComboBoxItem Content="Plasma Tinted"/>
+                            <ComboBoxItem Content="Pixel Grid"/>
+                            <ComboBoxItem Content="Rain Drops"/>
+                            <ComboBoxItem Content="Waveform"/>
+                            <ComboBoxItem Content="Fire"/>
+                            <ComboBoxItem Content="Starfield"/>
+                            <ComboBoxItem Content="Ripple"/>
+                            <ComboBoxItem Content="Aurora"/>
+                            <ComboBoxItem Content="Heartbeat"/>
+                            <ComboBoxItem Content="Waterfall"/>
+                            <ComboBoxItem Content="Nebula"/>
+                            <ComboBoxItem Content="DNA Helix"/>
+                            <ComboBoxItem Content="DNA Helix Bloom"/>
+                            <ComboBoxItem Content="Matrix"/>
+                            <ComboBoxItem Content="Laser"/>
+                            <ComboBoxItem Content="Pulse Waves"/>
+                            <ComboBoxItem Content="Voronoi"/>
+                            <ComboBoxItem Content="Equalizer Grid"/>
+                            <ComboBoxItem Content="Snow"/>
+                            <ComboBoxItem Content="Neon Line"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Music Dashboard -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Music Dashboard" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+
+                    <CheckBox Content="Enable Music Dashboard sidebar panel (Desktop only)"
+                              IsChecked="{Binding Settings.ShowMusicDashboard}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,10">
+                        A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
+                    </TextBlock>
 
                 </StackPanel>
             </ScrollViewer>

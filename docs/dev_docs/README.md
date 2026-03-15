@@ -52,6 +52,11 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
 
 ### Roadmaps
 
+- **[MUSIC_DASHBOARD_ROADMAP.md](roadmaps/MUSIC_DASHBOARD_ROADMAP.md)** - Music Library Dashboard (IMPLEMENTED v1.3.6, Experimental)
+  - Full-page library browser with tabbed game/track browsing
+  - Independent NAudio player, radio mode, expanded now-playing view
+  - Design specs: `docs/superpowers/specs/2026-03-14-music-library-dashboard-design.md`
+
 - **[CONTROLLER_SDK_MIGRATION_ROADMAP.md](CONTROLLER_SDK_MIGRATION_ROADMAP.md)** - Future refactor: XInput polling → SDK 6.15 events
   - Migrate 5 controller dialogs from XInput P/Invoke to SDK event-driven API
   - Adds PS4/PS5/Switch controller support via SDL2
@@ -159,6 +164,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-02-22
-**Documentation Version**: 1.2
+**Last Updated**: 2026-03-14
+**Documentation Version**: 1.3
 

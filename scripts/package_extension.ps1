@@ -299,6 +299,44 @@ foreach ($depName in $materialDesignDeps) {
     }
 }
 
+# Copy SkiaSharp native DLLs (required for IconGlow gaussian blur)
+Write-Host "Copying SkiaSharp native DLLs..." -ForegroundColor Yellow
+$skiaSubDirs = @("x86", "x64")
+foreach ($subDir in $skiaSubDirs) {
+    $skiaSrcDir = Join-Path $outputDir $subDir
+    if (Test-Path $skiaSrcDir) {
+        $skiaDestDir = Join-Path $packageDir $subDir
+        if (-not (Test-Path $skiaDestDir)) {
+            New-Item -ItemType Directory -Path $skiaDestDir -Force | Out-Null
+        }
+        Copy-Item (Join-Path $skiaSrcDir "*") -Destination $skiaDestDir -Force
+        Write-Host "  Copied: $subDir\libSkiaSharp.dll" -ForegroundColor Gray
+    }
+}
+
+# Copy System.Memory.dll (SkiaSharp dependency, excluded by System.* filter above)
+$sysMemDll = Join-Path $outputDir "System.Memory.dll"
+if (Test-Path $sysMemDll) {
+    $destPath = Join-Path $packageDir "System.Memory.dll"
+    if (-not (Test-Path $destPath)) {
+        Copy-Item $sysMemDll -Destination $destPath -Force
+        Write-Host "  Copied: System.Memory.dll (SkiaSharp dependency)" -ForegroundColor Gray
+    }
+}
+
+# Copy System.Buffers.dll and System.Runtime.CompilerServices.Unsafe.dll (System.Memory transitive deps)
+$transitiveDeps = @("System.Buffers.dll", "System.Runtime.CompilerServices.Unsafe.dll", "System.Numerics.Vectors.dll")
+foreach ($dep in $transitiveDeps) {
+    $depPath = Join-Path $outputDir $dep
+    if (Test-Path $depPath) {
+        $destPath = Join-Path $packageDir $dep
+        if (-not (Test-Path $destPath)) {
+            Copy-Item $depPath -Destination $destPath -Force
+            Write-Host "  Copied: $dep (transitive dependency)" -ForegroundColor Gray
+        }
+    }
+}
+
 # Also check for HtmlAgilityPack if not already copied
 if (-not (Test-Path (Join-Path $packageDir "HtmlAgilityPack.dll"))) {
     Write-Host "  Attempting to copy HtmlAgilityPack from NuGet..." -ForegroundColor Yellow
@@ -348,7 +386,7 @@ if (Test-Path $zipFilePath) {
 
 # Verify package contents before creating archive
 Write-Host "Verifying package contents..." -ForegroundColor Yellow
-$packageFiles = Get-ChildItem -Path $packageDir -File
+$packageFiles = Get-ChildItem -Path $packageDir -File -Recurse
 $requiredFiles = @("UniPlaySong.dll", "extension.yaml", "icon.png")
 $missingFiles = @()
 
