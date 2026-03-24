@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using NAudio.Wave;
@@ -37,7 +38,8 @@ namespace UniPlaySong.Services
         private bool _persistentLayerInitialized;
 
         // Per-song chain (created on Load, removed on Close)
-        private AudioFileReader _audioFile;
+        // WaveStream base type supports both AudioFileReader (MP3/WAV/FLAC) and VorbisWaveReader (OGG)
+        private WaveStream _audioFile;
         private EffectsChain _effectsChain;
         private VisualizationDataProvider _visualizationProvider;
         private SongEndDetectorSampleProvider _songEndDetector;
@@ -45,7 +47,7 @@ namespace UniPlaySong.Services
         private bool _isInMixer;
 
         // Preloaded file reader — created during fade-out to reduce Load() time
-        private AudioFileReader _preloadedAudioFile;
+        private WaveStream _preloadedAudioFile;
         private string _preloadedPath;
 
         // Logical state (replaces PlaybackState checks since WaveOutEvent never stops)
@@ -134,6 +136,15 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Creates the appropriate WaveStream reader based on file extension.
+        // OGG uses OggFileReader (NVorbis); all others use AudioFileReader (MediaFoundation fallback).
+        private static WaveStream CreateAudioReader(string filePath)
+        {
+            if (Path.GetExtension(filePath).Equals(".ogg", StringComparison.OrdinalIgnoreCase))
+                return new OggFileReader(filePath);
+            return new AudioFileReader(filePath);
+        }
+
         public void PreLoad(string filePath)
         {
             try
@@ -149,7 +160,7 @@ namespace UniPlaySong.Services
 
                 if (!string.IsNullOrEmpty(filePath))
                 {
-                    _preloadedAudioFile = new AudioFileReader(filePath);
+                    _preloadedAudioFile = CreateAudioReader(filePath);
                     _preloadedPath = filePath;
                 }
 
@@ -199,11 +210,11 @@ namespace UniPlaySong.Services
                         _preloadedAudioFile = null;
                         _preloadedPath = null;
                     }
-                    _audioFile = new AudioFileReader(filePath);
+                    _audioFile = CreateAudioReader(filePath);
                 }
                 long readerMs = sw.ElapsedMilliseconds;
 
-                _effectsChain = new EffectsChain(_audioFile, _settingsService);
+                _effectsChain = new EffectsChain((ISampleProvider)_audioFile, _settingsService);
                 long chainMs = sw.ElapsedMilliseconds;
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;

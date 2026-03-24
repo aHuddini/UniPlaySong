@@ -168,7 +168,7 @@ namespace UniPlaySong.Services
                         _preloadedPath = string.Empty;
                     }
                 }
-                
+
                 if (_music == IntPtr.Zero)
                 {
                     // Load fresh

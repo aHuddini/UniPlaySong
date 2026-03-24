@@ -769,7 +769,7 @@ namespace UniPlaySong.Services
                 }
 
                 string songToPlay = SelectSongToPlay(game, songs, isNewGame);
-                
+
                 if (string.IsNullOrWhiteSpace(songToPlay) || !File.Exists(songToPlay))
                 {
                     _fileLogger?.Warn($"Song not found: {songToPlay}");
