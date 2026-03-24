@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-03-24
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.8/UniPlaySong-1_3_8-Mar24_2026.pext'
     Changelog:
-      - 'placeholder'
+      - '[Fix] OGG Vorbis Support: OGG files are now properly recognized and play on both SDL2 and NAudio backends. Added native OGG decoding via NVorbis — no Windows codec pack required.'
   - Version: 1.3.7
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-15

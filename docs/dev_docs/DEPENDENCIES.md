@@ -63,6 +63,27 @@ All NuGet packages are defined in `UniPlaySong.csproj` and automatically restore
 - **Usage**: UI interactions and behaviors in XAML
 - **Location**: Included transitively via MaterialDesignThemes
 
+### Audio Dependencies
+
+#### NAudio (1.10.0)
+- **Purpose**: Advanced audio pipeline for live effects, visualization, and format decoding
+- **Usage**:
+  - `NAudioMusicPlayer` persistent mixer architecture
+  - `AudioFileReader` for MP3/WAV/FLAC/WMA decoding
+  - `EffectsChain` reverb/chorus processing
+  - `VisualizationDataProvider` FFT analysis
+- **Location**: Used in `Services/NAudioMusicPlayer.cs`, `Audio/EffectsChain.cs`
+
+#### NVorbis (0.10.4)
+- **Purpose**: Pure managed OGG Vorbis decoder
+- **Usage**:
+  - Decodes OGG Vorbis audio files in the NAudio pipeline
+  - Wrapped by `OggFileReader` (extends `WaveStream`, implements `ISampleProvider`)
+  - Eliminates dependency on Windows Media Foundation OGG codecs
+- **Location**: Used in `Audio/OggFileReader.cs`
+- **Notes**: Added in v1.3.8 to fix OGG playback on systems without Windows OGG codecs
+- **License**: MIT
+
 ### Utility Dependencies
 
 #### Newtonsoft.Json (13.0.1)
@@ -271,7 +292,7 @@ public bool ValidateFFmpegAvailable(string ffmpegPath)
 
 ## Dependency Versions
 
-### Current Versions (as of v1.0.6)
+### Current Versions (as of v1.3.8)
 
 | Package | Version | Purpose |
 |---------|--------|---------|
@@ -281,6 +302,8 @@ public bool ValidateFFmpegAvailable(string ffmpegPath)
 | System.Net.Http | 4.3.4 | HTTP client |
 | MaterialDesignThemes | 4.7.0 | UI components |
 | MaterialDesignColors | 2.1.0 | Color palette |
+| NAudio | 1.10.0 | Audio pipeline |
+| NVorbis | 0.10.4 | OGG Vorbis decoder |
 | Newtonsoft.Json | 13.0.1 | JSON serialization |
 | System.ValueTuple | 4.5.0 | Tuple support |
 | SDL2.dll | 2.30.5 | Audio core |

@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.7-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.8-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,12 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.7
+## What's New - v1.3.8
 
-- [Critical Fix] **Live Effects Toggle** — Turning off Live Effects now properly disables all audio effects (reverb, chorus, etc.) even when the Visualizer or Peak Meter is enabled.
+- **OGG Vorbis Support Restored** — OGG files are now properly recognized and play on both audio backends. Added native OGG decoding so no Windows codec pack is needed.
 
 ### Previous Version
-- **v1.3.6**: Music Library Dashboard, Icon Glow Visualizer Effects (22 sidebar animations), Fade Out Before Song End, Pause on External Audio improvements
+- **v1.3.7**: Critical fix for Live Effects toggle not disabling audio effects when Visualizer/Peak Meter is active
 
 > **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

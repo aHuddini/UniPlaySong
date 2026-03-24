@@ -67,6 +67,7 @@ UniPlaySong/
 │   │
 │   ├── Audio/                     # NAudio audio processing pipeline
 │   │   ├── EffectsChain.cs        # Reverb + echo + EQ pipeline (style presets)
+│   │   ├── OggFileReader.cs       # NVorbis-based OGG Vorbis reader (WaveStream + ISampleProvider)
 │   │   ├── SmoothVolumeSampleProvider.cs # Per-sample curve ramp (5 fade curves)
 │   │   └── VisualizationDataProvider.cs  # FFT + peak/RMS tap for spectrum visualizer
 │   │

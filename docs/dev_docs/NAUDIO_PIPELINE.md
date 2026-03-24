@@ -19,7 +19,7 @@ Persistent layer (created once on first Load, never stopped until Dispose):
             → WaveOutEvent (Init + Play called once, runs forever)
 
 Per-song chain (created on Load, removed on Close):
-    AudioFileReader
+    AudioFileReader / OggFileReader (NVorbis for .ogg files)
         → EffectsChain (reverb, echo, EQ — configurable style presets)
             → VisualizationDataProvider (FFT + peak/RMS tap for spectrum visualizer)
                 → SongEndDetectorSampleProvider (fires event on partial read)
