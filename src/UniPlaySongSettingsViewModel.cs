@@ -708,15 +708,10 @@ namespace UniPlaySong
             errorHandler?.Try(
                 () =>
                 {
-                    var playniteExtensions = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        Constants.PlayniteFolderName,
-                        Constants.PlayniteExtensionsFolderName);
-
-                    var extensionFolders = Directory.GetDirectories(playniteExtensions, Constants.ExtensionFolderName + "*");
-                    if (extensionFolders.Length > 0)
+                    var extensionFolder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                    if (!string.IsNullOrEmpty(extensionFolder) && Directory.Exists(extensionFolder))
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", extensionFolders[0]);
+                        System.Diagnostics.Process.Start("explorer.exe", extensionFolder);
                     }
                     else
                     {

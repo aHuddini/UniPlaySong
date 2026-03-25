@@ -8,6 +8,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Fixed
 - **OGG Vorbis Playback** — OGG files placed in game music folders were silently ignored. Two issues: `.ogg` was missing from the supported extensions list (dropped during a prior cleanup), and NAudio's `AudioFileReader` falls back to Windows Media Foundation for unknown formats, which fails with `COMException 0xC00D36C4` on systems without an OGG codec. Files are now recognized and play correctly on both SDL2 and NAudio backends.
+- **Open Log Folder** — The "Open Log Folder" button in Settings crashed with `DirectoryNotFoundException` on non-standard Playnite installs (e.g. portable installs in `AppData\Local`). The path was hardcoded to `AppData\Roaming\Playnite\Extensions`. Now uses the actual DLL location, which works for any Playnite install type.
 
 ### Added
 - **Native OGG Decoding** — New `OggFileReader` wrapper around NVorbis provides codec-independent OGG Vorbis decoding for the NAudio pipeline. No Windows codec or third-party codec pack required. SDL2 already had built-in OGG support via stb_vorbis.

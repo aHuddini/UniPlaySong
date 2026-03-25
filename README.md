@@ -22,12 +22,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.8
 
-- **OGG Vorbis Support Restored** — OGG files are now properly recognized and play on both audio backends. Added native OGG decoding so no Windows codec pack is needed.
+- **OGG Vorbis Support Restored** — OGG files are now properly recognized and play with Live Effects enabled or disabled. Added native OGG decoding so no Windows codec pack is needed.
+- **Open Log Folder Fix** — No longer crashes on non-standard Playnite installs (portable, custom paths).
 
 ### Previous Version
 - **v1.3.7**: Critical fix for Live Effects toggle not disabling audio effects when Visualizer/Peak Meter is active
 
-> **Release Availability Notice:** Due to the GitHub account suspension, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
+> **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
 ---
 
