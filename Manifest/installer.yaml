@@ -5,8 +5,10 @@ Packages:
     ReleaseDate: 2026-03-24
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.8/UniPlaySong-1_3_8-Mar24_2026.pext'
     Changelog:
-      - '[Fix] OGG Vorbis Support: OGG files are now properly recognized and plays properly with non-Live Effects and Live Effects enabled.'
+      - '[Playback Fix] OGG Vorbis Support: OGG files are now properly recognized and plays properly with non-Live Effects and Live Effects enabled.'
       - '[Settings Fix] Open Log Folder Button: Button no longer crashes on non-standard Playnite installs (portable, AppData\Local). Uses actual extension location instead of hardcoded path.'
+      - '[Critical Fix, Theme Compatibility] Attempt to prevent UPS Music from being blocked by certain themes: Themes that set certain flags during app startup appears to permanently block automatic music playback for UPS users.'
+      - '[Improved] External Audio Detection: Wallpaper Engine processes now excluded by default under "Pause on External Audio" setting. Thread safety also improved for mode switches.'
   - Version: 1.3.7
     RequiredApiVersion: 6.15.0
     ReleaseDate: 2026-03-15

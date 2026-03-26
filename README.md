@@ -24,6 +24,8 @@ Built with the help of Claude Code and Cursor IDE
 
 - **OGG Vorbis Support Restored** — OGG files are now properly recognized and play with Live Effects enabled or disabled. Added native OGG decoding so no Windows codec pack is needed.
 - **Open Log Folder Fix** — No longer crashes on non-standard Playnite installs (portable, custom paths).
+- **Music Blocked on Startup Fix** — Themes that set overlay flags during startup no longer permanently block automatic music playback.
+- **Wallpaper Engine Compatibility** — Wallpaper Engine processes now excluded from external audio detection by default. Existing users get the exclusions automatically.
 
 ### Previous Version
 - **v1.3.7**: Critical fix for Live Effects toggle not disabling audio effects when Visualizer/Peak Meter is active

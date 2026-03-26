@@ -125,10 +125,10 @@ namespace UniPlaySong
         // Uses System.Timers.Timer (ThreadPool) to keep COM interop off the UI thread.
         private System.Timers.Timer _externalAudioPollTimer;
         private int _externalAudioPollRunning; // Re-entrancy guard (0=idle, 1=running)
-        private bool _externalAudioDetected;
+        private volatile bool _externalAudioDetected;
         private int _externalAudioDebounceCount;
         private int _externalAudioSilenceCount;
-        private bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
+        private volatile bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
         private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
         private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
         private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
@@ -297,11 +297,13 @@ namespace UniPlaySong
 
             _settingsService.SettingPropertyChanged += OnSettingsServicePropertyChanged;
 
-            // Sync ThemeOverlayActive state that may have been set by MusicControl
-            // before this handler was registered (e.g. Welcome Hub shown at startup)
-            if (_settings?.ThemeOverlayActive == true)
+            // Reset transient state that should never persist across restarts.
+            // ThemeOverlayActive/VideoIsPlaying are runtime flags set by MusicControl/themes.
+            // If persisted as true (e.g. Playnite closed during overlay), they block all music on next launch.
+            if (_settings != null)
             {
-                _coordinator?.HandleThemeOverlayChange(true);
+                _settings.ThemeOverlayActive = false;
+                _settings.VideoIsPlaying = false;
             }
 
             SubscribeToMainModel();

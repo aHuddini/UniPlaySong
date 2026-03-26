@@ -125,7 +125,7 @@ namespace UniPlaySong
             s.PauseOnExternalAudio = false;
             s.ExternalAudioDebounceSeconds = 0;
             s.ExternalAudioInstantPause = false;
-            s.ExternalAudioExcludedApps = "obs64, obs32";
+            s.ExternalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32";
             s.PauseOnTrailer = true;
             s.PauseOnIdle = false;
             s.IdleTimeoutMinutes = 15;

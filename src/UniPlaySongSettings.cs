@@ -295,7 +295,7 @@ namespace UniPlaySong
         private bool pauseOnExternalAudio = false;
         private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
-        private string externalAudioExcludedApps = "obs64, obs32";
+        private string externalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32";
         private bool pauseOnIdle = false;
         private int idleTimeoutMinutes = 15;
         private bool lowerVolumeOnIdle = false;

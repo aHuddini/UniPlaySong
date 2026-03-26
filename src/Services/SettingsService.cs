@@ -43,6 +43,7 @@ namespace UniPlaySong.Services
                 var newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
                 if (newSettings != null)
                 {
+                    MigrateSettings(newSettings);
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
                 else
@@ -233,6 +234,38 @@ namespace UniPlaySong.Services
             }
             
             SettingPropertyChanged?.Invoke(this, e);
+        }
+
+        // One-time migrations for existing users when new defaults are added.
+        // Each migration is idempotent — safe to run on every load.
+        // TODO: Remove migration code after v1.3.9 — by then all active users will have the updated defaults.
+        private void MigrateSettings(UniPlaySongSettings settings)
+        {
+            bool changed = false;
+
+            // v1.3.8: Add Wallpaper Engine to default excluded apps
+            var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32" };
+            var currentExclusions = (settings.ExternalAudioExcludedApps ?? "")
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .ToList();
+            var currentLower = new HashSet<string>(currentExclusions.Select(s => s.ToLowerInvariant()));
+
+            foreach (var exclusion in requiredExclusions)
+            {
+                if (!currentLower.Contains(exclusion))
+                {
+                    currentExclusions.Add(exclusion);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                settings.ExternalAudioExcludedApps = string.Join(", ", currentExclusions);
+                _plugin.SavePluginSettings(settings);
+                _fileLogger?.Info($"Settings migration: Added Wallpaper Engine to excluded apps: {settings.ExternalAudioExcludedApps}");
+            }
         }
     }
 
