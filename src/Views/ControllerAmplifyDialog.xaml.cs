@@ -48,6 +48,10 @@ namespace UniPlaySong.Views
         private AmplifyWaveformData _waveformData;
         private CancellationTokenSource _loadingCancellation;
 
+        // Tracks whether music was restarted after a successful operation
+        // When true, CloseDialog skips stopping playback so the new song keeps playing
+        private bool _musicRestarted = false;
+
         // Gain state
         private float _currentGainDb = 0f;
         private const float MinGainDb = -12f;
@@ -933,6 +937,7 @@ namespace UniPlaySong.Views
                     if (_currentGame != null)
                     {
                         _playbackService?.PlayGameMusic(_currentGame, settings, forceReload: true);
+                        _musicRestarted = true;
                     }
 
                     // Return to file selection step for intuitive workflow
@@ -961,9 +966,16 @@ namespace UniPlaySong.Views
 
         private void CloseDialog(bool skipStop = false)
         {
-            // Stop any preview playback, unless we're closing after a successful operation
-            // that will immediately start new music playback
-            if (!skipStop)
+            _repeatTimer?.Stop();
+
+            if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+            {
+                var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                plugin?.GetControllerEventRouter()?.Unregister(this);
+            }
+
+            // Stop playback only if music wasn't already restarted by a successful operation
+            if (!skipStop && !_musicRestarted)
             {
                 _playbackService?.Stop();
             }

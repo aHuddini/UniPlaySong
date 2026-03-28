@@ -821,6 +821,13 @@ namespace UniPlaySong.Views
         {
             try
             {
+                // Unregister from controller router to prevent stale input during close
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
+
                 // Stop any preview and restore game music
                 StopCurrentPreview();
                 
