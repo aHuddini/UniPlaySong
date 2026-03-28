@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NAudio.Wave;
 using Playnite.SDK;
+using UniPlaySong.Audio;
 using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
@@ -21,6 +22,20 @@ namespace UniPlaySong.Services
 
         // Target number of samples for waveform display
         private const int TargetWaveformSamples = 1000;
+
+        // Creates the appropriate audio reader for waveform generation.
+        // OGG uses OggFileReader (NVorbis); all others use AudioFileReader.
+        // Returns (WaveStream for Length/WaveFormat, ISampleProvider for float Read).
+        private static (WaveStream stream, ISampleProvider samples) CreateWaveformReader(string filePath)
+        {
+            if (Path.GetExtension(filePath).Equals(".ogg", StringComparison.OrdinalIgnoreCase))
+            {
+                var ogg = new OggFileReader(filePath);
+                return (ogg, ogg);
+            }
+            var afr = new AudioFileReader(filePath);
+            return (afr, afr);
+        }
 
         public AudioAmplifyService(
             ErrorHandlerService errorHandler = null,
@@ -46,10 +61,11 @@ namespace UniPlaySong.Services
                         return null;
                     }
 
-                    using (var reader = new AudioFileReader(audioFilePath))
+                    var (stream, sampleReader) = CreateWaveformReader(audioFilePath);
+                    using (stream)
                     {
-                        var totalSamples = reader.Length / (reader.WaveFormat.BitsPerSample / 8);
-                        var channels = reader.WaveFormat.Channels;
+                        var totalSamples = stream.Length / (stream.WaveFormat.BitsPerSample / 8);
+                        var channels = stream.WaveFormat.Channels;
                         var samplesPerChannel = totalSamples / channels;
 
                         // Calculate how many source samples to average per output sample
@@ -67,7 +83,7 @@ namespace UniPlaySong.Services
                         {
                             token.ThrowIfCancellationRequested();
 
-                            int samplesRead = reader.Read(buffer, 0, buffer.Length);
+                            int samplesRead = sampleReader.Read(buffer, 0, buffer.Length);
                             if (samplesRead == 0) break;
 
                             // Find max absolute value in this chunk (averaging channels)
@@ -102,13 +118,13 @@ namespace UniPlaySong.Services
                             }
                         }
 
-                        Logger.DebugIf(LogPrefix,$"Waveform generated: {outputSamples.Length} samples, duration={reader.TotalTime:mm\\:ss\\.fff}, peak={peakDb:F1}dB");
+                        Logger.DebugIf(LogPrefix,$"Waveform generated: {outputSamples.Length} samples, duration={stream.TotalTime:mm\\:ss\\.fff}, peak={peakDb:F1}dB");
 
                         return new AmplifyWaveformData
                         {
                             Samples = outputSamples,
-                            Duration = reader.TotalTime,
-                            SampleRate = reader.WaveFormat.SampleRate,
+                            Duration = stream.TotalTime,
+                            SampleRate = stream.WaveFormat.SampleRate,
                             Channels = channels,
                             FilePath = audioFilePath,
                             PeakAmplitude = rawGlobalMax,

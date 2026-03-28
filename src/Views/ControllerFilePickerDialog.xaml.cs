@@ -2,32 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
+using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
     /// <summary>
     /// Controller-friendly file picker dialog for setting/removing primary songs
     /// </summary>
-    public partial class ControllerFilePickerDialog : UserControl
+    public partial class ControllerFilePickerDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "FilePicker";
 
-        // Controller monitoring
-        private CancellationTokenSource _controllerMonitoringCancellation;
-        private bool _isMonitoring = false;
-        private ushort _lastButtonState = 0;
-
-        // D-pad debouncing - prevents double-input from both XInput and WPF processing
+        // D-pad debouncing - prevents double-input from both controller and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
         private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
 
@@ -60,15 +56,23 @@ namespace UniPlaySong.Views
             InitializeComponent();
             
             // Focus on the list box when loaded
-            Loaded += (s, e) => 
+            Loaded += (s, e) =>
             {
                 FilesListBox.Focus();
-                StartControllerMonitoring();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Register(this);
+                }
             };
             
-            Unloaded += (s, e) => 
+            Unloaded += (s, e) =>
             {
-                StopControllerMonitoring();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
                 StopCurrentPreview();
             };
 
@@ -312,148 +316,40 @@ namespace UniPlaySong.Views
 
         #region Controller Support
 
-        /// <summary>
-        /// Start monitoring Xbox controller input
-        /// </summary>
-        private void StartControllerMonitoring()
-        {
-            if (_isMonitoring) return;
-
-            _isMonitoring = true;
-            _controllerMonitoringCancellation = new CancellationTokenSource();
-
-            // Initialize _lastButtonState with current controller state to prevent
-            // detecting held buttons from previous dialogs as new presses
-            try
-            {
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastButtonState = state.Gamepad.wButtons;
-                }
-            }
-            catch { /* Ignore initialization errors */ }
-
-            _ = Task.Run(async () =>
-            {
-                // Small delay to let any held buttons be released
-                await Task.Delay(150);
-                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
-            });
-        }
-
-        /// <summary>
-        /// Stop monitoring Xbox controller input
-        /// </summary>
-        private void StopControllerMonitoring()
-        {
-            if (!_isMonitoring) return;
-
-            _isMonitoring = false;
-            _controllerMonitoringCancellation?.Cancel();
-        }
-
-        /// <summary>
-        /// Check for Xbox controller button presses
-        /// </summary>
-        private async Task CheckButtonPresses(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                    uint result = (uint)XInputWrapper.XInputGetState(0, ref state); // Check controller 0
-
-                    if (result == 0) // Success
-                    {
-                        ushort currentButtons = state.Gamepad.wButtons;
-                        ushort pressedButtons = (ushort)(currentButtons & ~_lastButtonState);
-
-                        if (pressedButtons != 0)
-                        {
-                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
-                            _ = Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                HandleControllerInput(pressedButtons, state.Gamepad);
-                            }));
-                        }
-
-                        _lastButtonState = currentButtons;
-                    }
-
-                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception)
-                {
-                    // Error in controller monitoring - continue polling
-                    await Task.Delay(100, cancellationToken);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Handle Xbox controller input
-        /// </summary>
-        private void HandleControllerInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        public void OnControllerButtonPressed(ControllerInput button)
         {
             try
             {
-                // A button - Confirm selection
-                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
+                switch (button)
                 {
-                    ConfirmButton_Click(null, null);
-                    return;
-                }
-
-                // B button - Cancel
-                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
-                {
-                    CancelButton_Click(null, null);
-                    return;
-                }
-
-                // X/Y buttons - Preview
-                if ((pressedButtons & (XInputWrapper.XINPUT_GAMEPAD_X | XInputWrapper.XINPUT_GAMEPAD_Y)) != 0)
-                {
-                    PreviewSelectedFile();
-                    return;
-                }
-
-                // D-Pad navigation with debouncing
-                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-                {
-                    if (TryDpadNavigation())
-                        NavigateList(-1);
-                }
-                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-                {
-                    if (TryDpadNavigation())
-                        NavigateList(1);
-                }
-
-                // Shoulder buttons - Page navigation
-                if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-                {
-                    NavigateList(-5); // Page up
-                }
-                else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-                {
-                    NavigateList(5); // Page down
-                }
-
-                // Triggers - Jump to top/bottom
-                if (gamepad.bLeftTrigger > 128)
-                {
-                    JumpToItem(0); // Top
-                }
-                else if (gamepad.bRightTrigger > 128)
-                {
-                    JumpToItem(FilesListBox.Items.Count - 1); // Bottom
+                    case ControllerInput.A:
+                        ConfirmButton_Click(null, null);
+                        break;
+                    case ControllerInput.B:
+                        CancelButton_Click(null, null);
+                        break;
+                    case ControllerInput.X:
+                    case ControllerInput.Y:
+                        PreviewSelectedFile();
+                        break;
+                    case ControllerInput.DPadUp:
+                        if (TryDpadNavigation()) NavigateList(-1);
+                        break;
+                    case ControllerInput.DPadDown:
+                        if (TryDpadNavigation()) NavigateList(1);
+                        break;
+                    case ControllerInput.LeftShoulder:
+                        NavigateList(-5);
+                        break;
+                    case ControllerInput.RightShoulder:
+                        NavigateList(5);
+                        break;
+                    case ControllerInput.TriggerLeft:
+                        JumpToItem(0);
+                        break;
+                    case ControllerInput.TriggerRight:
+                        JumpToItem(FilesListBox.Items.Count - 1);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -461,6 +357,8 @@ namespace UniPlaySong.Views
                 Logger.Error(ex, "Error handling controller input");
             }
         }
+
+        public void OnControllerButtonReleased(ControllerInput button) { }
 
         /// <summary>
         /// Check if enough time has passed since last D-pad navigation (debouncing)

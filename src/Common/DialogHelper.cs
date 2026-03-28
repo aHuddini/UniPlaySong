@@ -5,12 +5,26 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 
 namespace UniPlaySong.Common
 {
     // Helper for creating dialogs and toast notifications
     public static class DialogHelper
     {
+        private class ModalControllerReceiver : Services.Controller.IControllerInputReceiver
+        {
+            private readonly Action<ControllerInput> _onPressed;
+
+            public ModalControllerReceiver(Action<ControllerInput> onPressed)
+            {
+                _onPressed = onPressed;
+            }
+
+            public void OnControllerButtonPressed(ControllerInput button) => _onPressed?.Invoke(button);
+            public void OnControllerButtonReleased(ControllerInput button) { }
+        }
+
         private static readonly ILogger Logger = LogManager.GetLogger();
 
         // ============================================================================
@@ -574,8 +588,6 @@ namespace UniPlaySong.Common
             try
             {
                 Window window = null;
-                System.Threading.CancellationTokenSource controllerCts = null;
-                ushort lastButtonState = 0;
 
                 // Create the message content
                 var grid = new System.Windows.Controls.Grid();
@@ -652,66 +664,34 @@ namespace UniPlaySong.Common
                     }
                 };
 
-                // Start controller monitoring
-                controllerCts = new System.Threading.CancellationTokenSource();
+                // Register with controller event router for SDK-driven input
+                ModalControllerReceiver receiver = null;
+                Services.Controller.ControllerEventRouter router = null;
 
-                // Initialize lastButtonState with current controller state
-                try
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
-                    XInputWrapper.XINPUT_STATE initState = new XInputWrapper.XINPUT_STATE();
-                    if (XInputWrapper.XInputGetState(0, ref initState) == 0)
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    router = plugin?.GetControllerEventRouter();
+                    if (router != null)
                     {
-                        lastButtonState = initState.Gamepad.wButtons;
+                        receiver = new ModalControllerReceiver(btn =>
+                        {
+                            if (btn == ControllerInput.A || btn == ControllerInput.B)
+                            {
+                                window?.Close();
+                            }
+                        });
+                        router.Register(receiver);
                     }
                 }
-                catch { }
 
-                var controllerTask = System.Threading.Tasks.Task.Run(async () =>
+                window.Closing += (s, e) =>
                 {
-                    await System.Threading.Tasks.Task.Delay(100); // Initial delay
-
-                    while (!controllerCts.Token.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                            if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                            {
-                                ushort currentButtons = state.Gamepad.wButtons;
-                                ushort pressedButtons = (ushort)(currentButtons & ~lastButtonState);
-
-                                // A or B button closes the dialog
-                                if ((pressedButtons & (XInputWrapper.XINPUT_GAMEPAD_A | XInputWrapper.XINPUT_GAMEPAD_B)) != 0)
-                                {
-                                    window.Dispatcher.Invoke(() => window?.Close());
-                                }
-
-                                lastButtonState = currentButtons;
-                            }
-
-                            await System.Threading.Tasks.Task.Delay(50, controllerCts.Token);
-                        }
-                        catch (System.Threading.Tasks.TaskCanceledException)
-                        {
-                            break;
-                        }
-                        catch { }
-                    }
-                }, controllerCts.Token);
-
-                window.Closed += (s, e) =>
-                {
-                    controllerCts?.Cancel();
+                    if (receiver != null && router != null)
+                        router.Unregister(receiver);
                 };
 
                 window.ShowDialog();
-
-                controllerCts?.Cancel();
-
-                // Wait for all buttons to be released before returning
-                // This prevents the A/B button press that closed this dialog from being
-                // detected as a new press by the calling dialog
-                WaitForButtonRelease();
             }
             catch (Exception ex)
             {
@@ -736,8 +716,6 @@ namespace UniPlaySong.Common
                 System.Windows.Controls.Button yesButton = null;
                 System.Windows.Controls.Button noButton = null;
                 int selectedIndex = 0; // 0 = Yes, 1 = No
-                System.Threading.CancellationTokenSource controllerCts = null;
-                ushort lastButtonState = 0;
 
                 // Create buttons with references
                 Action updateButtonStyles = () =>
@@ -865,85 +843,50 @@ namespace UniPlaySong.Common
                     }
                 };
 
-                // Start controller monitoring
-                controllerCts = new System.Threading.CancellationTokenSource();
+                // Register with controller event router for SDK-driven input
+                ModalControllerReceiver receiver = null;
+                Services.Controller.ControllerEventRouter router = null;
 
-                // Initialize lastButtonState with current controller state
-                try
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
-                    XInputWrapper.XINPUT_STATE initState = new XInputWrapper.XINPUT_STATE();
-                    if (XInputWrapper.XInputGetState(0, ref initState) == 0)
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    router = plugin?.GetControllerEventRouter();
+                    if (router != null)
                     {
-                        lastButtonState = initState.Gamepad.wButtons;
+                        receiver = new ModalControllerReceiver(btn =>
+                        {
+                            Logger.Debug($"[ConfirmDialog] Button received: {btn}");
+                            // D-pad left/right to toggle selection
+                            if (btn == ControllerInput.DPadLeft || btn == ControllerInput.DPadRight)
+                            {
+                                selectedIndex = selectedIndex == 0 ? 1 : 0;
+                                updateButtonStyles();
+                                Logger.Debug($"[ConfirmDialog] Selection toggled to: {(selectedIndex == 0 ? "Yes" : "No")}");
+                            }
+                            // A button = confirm selection
+                            else if (btn == ControllerInput.A)
+                            {
+                                result = selectedIndex == 0;
+                                window?.Close();
+                            }
+                            // B button = cancel (No)
+                            else if (btn == ControllerInput.B)
+                            {
+                                result = false;
+                                window?.Close();
+                            }
+                        });
+                        router.Register(receiver);
                     }
                 }
-                catch { }
 
-                var controllerTask = System.Threading.Tasks.Task.Run(async () =>
+                window.Closing += (s, e) =>
                 {
-                    await System.Threading.Tasks.Task.Delay(100); // Initial delay
-
-                    while (!controllerCts.Token.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                            if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                            {
-                                ushort currentButtons = state.Gamepad.wButtons;
-                                ushort pressedButtons = (ushort)(currentButtons & ~lastButtonState);
-
-                                if (pressedButtons != 0)
-                                {
-                                    window.Dispatcher.Invoke(() =>
-                                    {
-                                        // D-pad left/right to switch selection
-                                        if ((pressedButtons & (XInputWrapper.XINPUT_GAMEPAD_DPAD_LEFT | XInputWrapper.XINPUT_GAMEPAD_DPAD_RIGHT)) != 0)
-                                        {
-                                            selectedIndex = selectedIndex == 0 ? 1 : 0;
-                                            updateButtonStyles();
-                                        }
-                                        // A button = confirm selection
-                                        else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
-                                        {
-                                            result = selectedIndex == 0;
-                                            window?.Close();
-                                        }
-                                        // B button = cancel (No)
-                                        else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
-                                        {
-                                            result = false;
-                                            window?.Close();
-                                        }
-                                    });
-                                }
-
-                                lastButtonState = currentButtons;
-                            }
-
-                            await System.Threading.Tasks.Task.Delay(50, controllerCts.Token);
-                        }
-                        catch (System.Threading.Tasks.TaskCanceledException)
-                        {
-                            break;
-                        }
-                        catch { }
-                    }
-                }, controllerCts.Token);
-
-                window.Closed += (s, e) =>
-                {
-                    controllerCts?.Cancel();
+                    if (receiver != null && router != null)
+                        router.Unregister(receiver);
                 };
 
                 window.ShowDialog();
-
-                controllerCts?.Cancel();
-
-                // Wait for all buttons to be released before returning
-                // This prevents the A button press that closed this dialog from being
-                // detected as a new press by the calling dialog
-                WaitForButtonRelease();
 
                 return result;
             }
@@ -1607,42 +1550,6 @@ namespace UniPlaySong.Common
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Error dispatching celebration toast");
-            }
-        }
-
-        /// Waits for controller A/B buttons to be released + grace period (prevents button leak to parent dialog).
-        private static void WaitForButtonRelease(int timeoutMs = 1000, int gracePeriodMs = 150)
-        {
-            try
-            {
-                var startTime = DateTime.Now;
-                while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMs)
-                {
-                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                    if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                    {
-                        // Check if A and B buttons are released (these are the confirm/cancel buttons)
-                        ushort confirmButtons = (ushort)(
-                            XInputWrapper.XINPUT_GAMEPAD_A |
-                            XInputWrapper.XINPUT_GAMEPAD_B
-                        );
-
-                        if ((state.Gamepad.wButtons & confirmButtons) == 0)
-                        {
-                            // Buttons released - now wait the grace period
-                            // This gives parent dialogs time to sync their button state
-                            System.Threading.Thread.Sleep(gracePeriodMs);
-                            return;
-                        }
-                    }
-                    System.Threading.Thread.Sleep(16); // ~60Hz polling
-                }
-                // Timeout reached - still add grace period
-                System.Threading.Thread.Sleep(gracePeriodMs);
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, "Error in WaitForButtonRelease");
             }
         }
 

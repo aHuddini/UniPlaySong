@@ -7,11 +7,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Downloaders;
 using UniPlaySong.Models;
 using UniPlaySong.Services;
+using UniPlaySong.Services.Controller;
 using UniPlaySong.ViewModels;
 
 namespace UniPlaySong.Views
@@ -20,15 +22,12 @@ namespace UniPlaySong.Views
     /// Controller-optimized download dialog that provides full download functionality
     /// Runs completely separate from the main dialog with seamless fullscreen navigation
     /// </summary>
-    public partial class SimpleControllerDialog : UserControl
+    public partial class SimpleControllerDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "ControllerDownload";
 
-        private CancellationTokenSource _controllerMonitoringCancellation;
-        private bool _isMonitoring = false;
-
-        // D-pad debouncing - prevents double-input from both XInput and WPF processing
+        // D-pad debouncing - prevents double-input from both controller and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
         private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
 
@@ -94,11 +93,22 @@ namespace UniPlaySong.Views
             PreviewKeyDown += OnKeyDown;
             Focusable = true;
             
-            // Start monitoring Xbox controller
-            Loaded += (s, e) => StartControllerMonitoring();
-            Unloaded += (s, e) => 
+            // Register with centralized controller event router
+            Loaded += (s, e) =>
             {
-                StopControllerMonitoring();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Register(this);
+                }
+            };
+            Unloaded += (s, e) =>
+            {
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
                 StopCurrentPreview(); // Stop any playing preview and restore game music
             };
         }
@@ -1551,221 +1561,62 @@ namespace UniPlaySong.Views
             }
         }
 
-        #region Xbox Controller Support
+        #region Controller Input (SDK Events)
 
-        private XInputWrapper.XINPUT_STATE _lastControllerState;
-        private bool _hasLastState = false;
-
-        /// <summary>
-        /// Start monitoring Xbox controller input
-        /// </summary>
-        private void StartControllerMonitoring()
+        public void OnControllerButtonPressed(ControllerInput button)
         {
-            if (_isMonitoring) return;
-
             try
             {
-                _isMonitoring = true;
-                _controllerMonitoringCancellation = new CancellationTokenSource();
+                // Block input during modal cooldown period
+                if (DateTime.Now < _modalCooldownUntil) return;
 
-                // Initialize _lastControllerState with current controller state to prevent
-                // detecting held buttons from previous dialogs as new presses
-                try
+                switch (button)
                 {
-                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                    if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                    {
-                        _lastControllerState = state;
-                        _hasLastState = true;
-                        Logger.DebugIf(LogPrefix, $"Initialized controller state: buttons={state.Gamepad.wButtons}");
-                    }
+                    case ControllerInput.A:
+                        ConfirmButton_Click(this, new RoutedEventArgs());
+                        break;
+                    case ControllerInput.B:
+                        CancelButton_Click(this, new RoutedEventArgs());
+                        break;
+                    case ControllerInput.X:
+                    case ControllerInput.Y:
+                        // Preview rate limiting
+                        var timeSinceLastRequest = (DateTime.Now - _lastPreviewRequestTime).TotalMilliseconds;
+                        if (timeSinceLastRequest < MinPreviewIntervalMs)
+                        {
+                            var remainingMs = MinPreviewIntervalMs - timeSinceLastRequest;
+                            UpdateInputFeedback($"Please wait {remainingMs / 1000.0:F1}s before previewing again");
+                            return;
+                        }
+                        HandlePreviewAction();
+                        break;
+                    case ControllerInput.DPadUp:
+                        if (TryDpadNavigation()) NavigateList(-1);
+                        break;
+                    case ControllerInput.DPadDown:
+                        if (TryDpadNavigation()) NavigateList(1);
+                        break;
+                    case ControllerInput.LeftShoulder:
+                        NavigateList(-5);
+                        break;
+                    case ControllerInput.RightShoulder:
+                        NavigateList(5);
+                        break;
+                    case ControllerInput.TriggerLeft:
+                        JumpToItem(0);
+                        break;
+                    case ControllerInput.TriggerRight:
+                        JumpToItem(-1);
+                        break;
                 }
-                catch { /* Ignore initialization errors */ }
-
-                Task.Run(async () =>
-                {
-                    Logger.DebugIf(LogPrefix, "Starting Xbox controller monitoring");
-
-                    // Small delay to let any held buttons be released
-                    await Task.Delay(150);
-                    
-                    while (!_controllerMonitoringCancellation.Token.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            // Check controller 0 (first controller)
-                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                            int result = XInputWrapper.XInputGetState(0, ref state);
-                            
-                            if (result == 0) // Success
-                            {
-                                // Check for button presses (only on state change)
-                                if (_hasLastState && state.dwPacketNumber != _lastControllerState.dwPacketNumber)
-                                {
-                                    CheckButtonPresses(state.Gamepad, _lastControllerState.Gamepad);
-                                }
-                                
-                                _lastControllerState = state;
-                                _hasLastState = true;
-                            }
-                            
-                            await Task.Delay(33, _controllerMonitoringCancellation.Token); // Check every 33ms (~30Hz) for smoother polling
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.DebugIf(LogPrefix, ex, "Error in controller monitoring loop");
-                            await Task.Delay(1000, _controllerMonitoringCancellation.Token); // Wait longer on error
-                        }
-                    }
-                    
-                    Logger.DebugIf(LogPrefix, "Xbox controller monitoring stopped");
-                }, _controllerMonitoringCancellation.Token);
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Failed to start controller monitoring");
-                _isMonitoring = false;
+                Logger.Error(ex, "Error handling controller input");
             }
         }
 
-        /// <summary>
-        /// Stop monitoring Xbox controller input
-        /// </summary>
-        private void StopControllerMonitoring()
-        {
-            try
-            {
-                _isMonitoring = false;
-                _controllerMonitoringCancellation?.Cancel();
-                _controllerMonitoringCancellation?.Dispose();
-                _controllerMonitoringCancellation = null;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error stopping controller monitoring");
-            }
-        }
-
-        /// <summary>
-        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
-        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
-        /// </summary>
-        private void RefreshControllerStateWithCooldown()
-        {
-            try
-            {
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastControllerState = state;
-                    _hasLastState = true;
-                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={state.Gamepad.wButtons}");
-                }
-
-                // Set cooldown to block any input processing for ModalCooldownMs
-                // This is the key defense against race conditions
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
-            }
-            catch (Exception ex)
-            {
-                Logger.DebugIf(LogPrefix, ex, "Error refreshing controller state");
-                // Still set cooldown even on error
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-            }
-        }
-
-        /// <summary>
-        /// Check for button presses and handle them
-        /// </summary>
-        private void CheckButtonPresses(XInputWrapper.XINPUT_GAMEPAD currentState, XInputWrapper.XINPUT_GAMEPAD lastState)
-        {
-            try
-            {
-                // Get newly pressed buttons (buttons that are pressed now but weren't before)
-                ushort newlyPressed = (ushort)(currentState.wButtons & ~lastState.wButtons);
-
-                if (newlyPressed == 0) return; // No new button presses
-
-                // Dispatch to UI thread
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
-                        {
-                            UpdateInputFeedback("Xbox A Button ✓");
-                            ConfirmButton_Click(this, new RoutedEventArgs());
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
-                        {
-                            UpdateInputFeedback("Xbox B Button ✓");
-                            CancelButton_Click(this, new RoutedEventArgs());
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_X) != 0)
-                        {
-                            UpdateInputFeedback("Xbox X Button ✓");
-                            HandlePreviewAction();
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_Y) != 0)
-                        {
-                            UpdateInputFeedback("Xbox Y Button ✓");
-                            HandlePreviewAction();
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-                        {
-                            if (TryDpadNavigation())
-                            {
-                                UpdateInputFeedback("Xbox D-Pad Up ✓");
-                                NavigateList(-1);
-                            }
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-                        {
-                            if (TryDpadNavigation())
-                            {
-                                UpdateInputFeedback("Xbox D-Pad Down ✓");
-                                NavigateList(1);
-                            }
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-                        {
-                            UpdateInputFeedback("Xbox Left Bumper ✓");
-                            NavigateList(-5);
-                        }
-                        else if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-                        {
-                            UpdateInputFeedback("Xbox Right Bumper ✓");
-                            NavigateList(5);
-                        }
-                        
-                        // Check triggers (they're analog, so we check if they're pressed above threshold)
-                        if (currentState.bLeftTrigger > 128 && lastState.bLeftTrigger <= 128)
-                        {
-                            UpdateInputFeedback("Xbox Left Trigger ✓");
-                            JumpToItem(0);
-                        }
-                        else if (currentState.bRightTrigger > 128 && lastState.bRightTrigger <= 128)
-                        {
-                            UpdateInputFeedback("Xbox Right Trigger ✓");
-                            JumpToItem(-1);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex, "Error handling controller button press");
-                    }
-                }));
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error checking button presses");
-            }
-        }
+        public void OnControllerButtonReleased(ControllerInput button) { }
 
         #endregion
 

@@ -9,10 +9,12 @@ using System.Windows.Media;
 using System.IO;
 using System.Windows.Threading;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Models.WaveformTrim;
 using UniPlaySong.Services;
+using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
@@ -21,28 +23,18 @@ namespace UniPlaySong.Views
     /// Step 1: File selection
     /// Step 2: Waveform-based trim editing
     /// </summary>
-    public partial class ControllerWaveformTrimDialog : UserControl
+    public partial class ControllerWaveformTrimDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "PreciseTrim:Controller";
-
-        // Controller monitoring
-        private CancellationTokenSource _controllerMonitoringCancellation;
-        private bool _isMonitoring = false;
-        private ushort _lastButtonState = 0;
-        private byte _lastLeftTrigger = 0;
-        private byte _lastRightTrigger = 0;
 
         // D-pad debouncing for file selection (300ms for reliable single-item navigation)
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
         private const int DpadDebounceMs = 300;
 
-        // Continuous D-pad input tracking for waveform editor
-        private ushort _heldDpadDirection = 0;
-        private DateTime _dpadHoldStartTime = DateTime.MinValue;
-        private DateTime _lastDpadRepeatTime = DateTime.MinValue;
-        private const int InitialRepeatDelayMs = 200;  // Initial delay before repeat starts
-        private const int FastRepeatIntervalMs = 50;   // Fast repeat interval when holding
+        // Continuous D-pad repeat for waveform editor
+        private DispatcherTimer _repeatTimer;
+        private ControllerInput _heldButton;
 
         // State
         private Game _currentGame;
@@ -82,15 +74,27 @@ namespace UniPlaySong.Views
         {
             InitializeComponent();
 
+            _repeatTimer = new DispatcherTimer();
+            _repeatTimer.Tick += RepeatTimer_Tick;
+
             Loaded += (s, e) =>
             {
                 FilesListBox.Focus();
-                StartControllerMonitoring();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Register(this);
+                }
             };
 
             Unloaded += (s, e) =>
             {
-                StopControllerMonitoring();
+                _repeatTimer?.Stop();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
                 StopPreview();
                 _loadingCancellation?.Cancel();
             };
@@ -458,155 +462,33 @@ namespace UniPlaySong.Views
 
         #region Controller Input Handling
 
-        private void StartControllerMonitoring()
-        {
-            if (_isMonitoring) return;
+        // Fixed time increment for marker movement (simple, consistent 0.5 second steps)
+        private static readonly TimeSpan MarkerIncrement = TimeSpan.FromMilliseconds(500);
+        // Size adjustment increment for LB/RB
+        private static readonly TimeSpan SizeIncrement = TimeSpan.FromMilliseconds(500);
 
-            _isMonitoring = true;
-            _controllerMonitoringCancellation = new CancellationTokenSource();
-
-            // Initialize _lastButtonState with current controller state to prevent
-            // detecting held buttons from previous dialogs as new presses
-            try
-            {
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastButtonState = state.Gamepad.wButtons;
-                    _lastLeftTrigger = state.Gamepad.bLeftTrigger;
-                    _lastRightTrigger = state.Gamepad.bRightTrigger;
-                    Logger.DebugIf(LogPrefix, $"Initialized controller state: buttons={state.Gamepad.wButtons}");
-                }
-            }
-            catch { /* Ignore initialization errors */ }
-
-            _ = Task.Run(async () =>
-            {
-                // Small delay to let any held buttons be released
-                await Task.Delay(150);
-                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
-            });
-            Logger.DebugIf(LogPrefix,"Started controller monitoring for waveform trim dialog");
-        }
-
-        private void StopControllerMonitoring()
-        {
-            if (!_isMonitoring) return;
-
-            _isMonitoring = false;
-            _controllerMonitoringCancellation?.Cancel();
-            Logger.DebugIf(LogPrefix,"Stopped controller monitoring for waveform trim dialog");
-        }
-
-        /// <summary>
-        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
-        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
-        /// </summary>
         private void RefreshControllerStateWithCooldown()
         {
-            try
-            {
-                // First, refresh the stored button state to current
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastButtonState = state.Gamepad.wButtons;
-                    _lastLeftTrigger = state.Gamepad.bLeftTrigger;
-                    _lastRightTrigger = state.Gamepad.bRightTrigger;
-                    Logger.DebugIf(LogPrefix, $"Refreshed controller state: buttons={state.Gamepad.wButtons}");
-                }
-
-                // Set cooldown to block any input processing for ModalCooldownMs
-                // This is the key defense against race conditions
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
-            }
-            catch (Exception ex)
-            {
-                Logger.DebugIf(LogPrefix, $"Error refreshing controller state: {ex.Message}");
-                // Still set cooldown even on error
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-            }
+            _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
         }
 
-        private async Task CheckButtonPresses(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                    uint result = (uint)XInputWrapper.XInputGetState(0, ref state);
-
-                    if (result == 0) // Success
-                    {
-                        ushort currentButtons = state.Gamepad.wButtons;
-                        ushort pressedButtons = (ushort)(currentButtons & ~_lastButtonState);
-
-                        // Handle newly pressed buttons (edge detection)
-                        if (pressedButtons != 0)
-                        {
-                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
-                            _ = Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                HandleControllerInput(pressedButtons, state.Gamepad);
-                            }));
-                        }
-
-                        // In waveform editor mode, also check for held D-pad for continuous movement
-                        if (_currentStep == DialogStep.WaveformEditor)
-                        {
-                            _ = Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                HandleDpadContinuousInput(state.Gamepad);
-                            }));
-                            HandleTriggerInput(state.Gamepad);
-                        }
-
-                        _lastButtonState = currentButtons;
-                        _lastLeftTrigger = state.Gamepad.bLeftTrigger;
-                        _lastRightTrigger = state.Gamepad.bRightTrigger;
-                    }
-
-                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Logger.DebugIf(LogPrefix,$"Error in controller monitoring: {ex.Message}");
-                    await Task.Delay(100, cancellationToken);
-                }
-            }
-        }
-
-        private void HandleControllerInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        public void OnControllerButtonPressed(ControllerInput button)
         {
             try
             {
                 // Block input if a modal dialog is being shown
-                if (_isShowingModalDialog)
-                {
-                    return;
-                }
+                if (_isShowingModalDialog) return;
 
                 // Block input during cooldown period after modal dialogs close
-                // This prevents the button press that closed the modal from being detected as a new press
-                if (DateTime.Now < _modalCooldownUntil)
-                {
-                    Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
-                    return;
-                }
+                if (DateTime.Now < _modalCooldownUntil) return;
 
                 if (_currentStep == DialogStep.FileSelection)
                 {
-                    HandleFileSelectionInput(pressedButtons, gamepad);
+                    HandleFileSelectionInput(button);
                 }
                 else
                 {
-                    HandleWaveformEditorInput(pressedButtons, gamepad);
+                    HandleWaveformEditorInput(button);
                 }
             }
             catch (Exception ex)
@@ -615,204 +497,127 @@ namespace UniPlaySong.Views
             }
         }
 
-        private void HandleFileSelectionInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        public void OnControllerButtonReleased(ControllerInput button)
         {
-            // A button - Select file
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
+            if (button == _heldButton)
             {
-                SelectFileAndProceed();
-                return;
-            }
-
-            // B button - Cancel
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
-            {
-                CancelButton_Click(null, null);
-                return;
-            }
-
-            // D-Pad navigation
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-            {
-                if (TryDpadNavigation())
-                    NavigateList(-1);
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-            {
-                if (TryDpadNavigation())
-                    NavigateList(1);
-            }
-
-            // Shoulder buttons - Page navigation
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-            {
-                NavigateList(-5);
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-            {
-                NavigateList(5);
+                _repeatTimer.Stop();
+                _heldButton = ControllerInput.None;
             }
         }
 
-        // Fixed time increment for marker movement (simple, consistent 0.5 second steps)
-        private static readonly TimeSpan MarkerIncrement = TimeSpan.FromMilliseconds(500);
-        // Size adjustment increment for LB/RB
-        private static readonly TimeSpan SizeIncrement = TimeSpan.FromMilliseconds(500);
+        private void RepeatTimer_Tick(object sender, EventArgs e)
+        {
+            HandleEditorDpadAction(_heldButton);
+            _repeatTimer.Interval = TimeSpan.FromMilliseconds(50); // Fast repeat
+        }
 
-        private void HandleWaveformEditorInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        private void HandleFileSelectionInput(ControllerInput button)
+        {
+            switch (button)
+            {
+                case ControllerInput.A:
+                    SelectFileAndProceed();
+                    break;
+                case ControllerInput.B:
+                    CancelButton_Click(null, null);
+                    break;
+                case ControllerInput.DPadUp:
+                    if (TryDpadNavigation()) NavigateList(-1);
+                    break;
+                case ControllerInput.DPadDown:
+                    if (TryDpadNavigation()) NavigateList(1);
+                    break;
+                case ControllerInput.LeftShoulder:
+                    NavigateList(-5);
+                    break;
+                case ControllerInput.RightShoulder:
+                    NavigateList(5);
+                    break;
+                case ControllerInput.TriggerLeft:
+                    JumpToItem(0);
+                    break;
+                case ControllerInput.TriggerRight:
+                    JumpToItem(FilesListBox.Items.Count - 1);
+                    break;
+            }
+        }
+
+        private void HandleWaveformEditorInput(ControllerInput button)
         {
             if (_trimWindow == null) return;
 
-            // A button - Preview
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
+            switch (button)
             {
-                PreviewButton_Click(null, null);
-                return;
+                case ControllerInput.A:
+                    PreviewButton_Click(null, null);
+                    return;
+                case ControllerInput.B:
+                    BackButton_Click(null, null);
+                    return;
+                case ControllerInput.X:
+                    ApplyTrimButton_Click(null, null);
+                    return;
+                case ControllerInput.Y:
+                    ResetButton_Click(null, null);
+                    return;
+                case ControllerInput.LeftShoulder:
+                    _trimWindow.AdjustSizeByTime(-SizeIncrement);
+                    UpdateTrimWindowVisuals();
+                    UpdateTimeDisplay();
+                    UpdateFeedback("Waveform", "Window contracted");
+                    return;
+                case ControllerInput.RightShoulder:
+                    _trimWindow.AdjustSizeByTime(SizeIncrement);
+                    UpdateTrimWindowVisuals();
+                    UpdateTimeDisplay();
+                    UpdateFeedback("Waveform", "Window expanded");
+                    return;
             }
 
-            // B button - Back to file selection
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
+            // D-pad in editor mode: apply immediately and start repeat timer
+            if (button == ControllerInput.DPadLeft || button == ControllerInput.DPadRight ||
+                button == ControllerInput.DPadUp || button == ControllerInput.DPadDown)
             {
-                BackButton_Click(null, null);
-                return;
-            }
-
-            // X button - Apply trim
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_X) != 0)
-            {
-                ApplyTrimButton_Click(null, null);
-                return;
-            }
-
-            // Y button - Reset
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_Y) != 0)
-            {
-                ResetButton_Click(null, null);
-                return;
-            }
-
-            // LB - Contract window (move both markers inward)
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-            {
-                _trimWindow.AdjustSizeByTime(-SizeIncrement);
-                UpdateTrimWindowVisuals();
-                UpdateTimeDisplay();
-                UpdateFeedback("Waveform", "Window contracted");
-            }
-
-            // RB - Expand window (move both markers outward)
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-            {
-                _trimWindow.AdjustSizeByTime(SizeIncrement);
-                UpdateTrimWindowVisuals();
-                UpdateTimeDisplay();
-                UpdateFeedback("Waveform", "Window expanded");
-            }
-
-            // Note: D-pad continuous input is handled separately in CheckButtonPresses
-            // to properly track held state vs newly pressed state
-        }
-
-        /// <summary>
-        /// Handles D-pad input with continuous movement when held.
-        /// D-Pad Left/Right: Move start marker (blue)
-        /// D-Pad Up/Down: Move end marker (red)
-        /// </summary>
-        private void HandleDpadContinuousInput(XInputWrapper.XINPUT_GAMEPAD gamepad)
-        {
-            var now = DateTime.Now;
-            ushort currentDpad = (ushort)(gamepad.wButtons & (
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_LEFT |
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_RIGHT |
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_UP |
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN));
-
-            // Check if D-pad direction changed
-            if (currentDpad != _heldDpadDirection)
-            {
-                _heldDpadDirection = currentDpad;
-                if (currentDpad != 0)
-                {
-                    // New direction pressed - apply immediately and start hold tracking
-                    _dpadHoldStartTime = now;
-                    _lastDpadRepeatTime = now;
-                    ApplyDpadAction(currentDpad);
-                }
-                return;
-            }
-
-            // If D-pad is held, check for continuous repeat
-            if (currentDpad != 0)
-            {
-                var holdDuration = (now - _dpadHoldStartTime).TotalMilliseconds;
-                var timeSinceLastRepeat = (now - _lastDpadRepeatTime).TotalMilliseconds;
-
-                // After initial delay, repeat at fast interval
-                if (holdDuration > InitialRepeatDelayMs && timeSinceLastRepeat >= FastRepeatIntervalMs)
-                {
-                    _lastDpadRepeatTime = now;
-                    ApplyDpadAction(currentDpad);
-                }
+                HandleEditorDpadAction(button);
+                _heldButton = button;
+                _repeatTimer.Interval = TimeSpan.FromMilliseconds(200); // Initial delay
+                _repeatTimer.Start();
             }
         }
 
-        /// <summary>
-        /// Apply the marker adjustment based on D-pad direction.
-        /// </summary>
-        private void ApplyDpadAction(ushort dpadDirection)
+        // Apply the marker adjustment based on D-pad direction
+        private void HandleEditorDpadAction(ControllerInput button)
         {
             if (_trimWindow == null) return;
 
-            // D-Pad Left - Move start marker earlier
-            if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_LEFT) != 0)
+            switch (button)
             {
-                _trimWindow.AdjustStartByTime(-MarkerIncrement);
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
+                case ControllerInput.DPadLeft:
+                    _trimWindow.AdjustStartByTime(-MarkerIncrement);
                     UpdateTrimWindowVisuals();
                     UpdateTimeDisplay();
                     UpdateFeedback("Waveform", $"Start: {FormatTime(_trimWindow.StartTime)}");
-                }));
-            }
-            // D-Pad Right - Move start marker later
-            else if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_RIGHT) != 0)
-            {
-                _trimWindow.AdjustStartByTime(MarkerIncrement);
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
+                    break;
+                case ControllerInput.DPadRight:
+                    _trimWindow.AdjustStartByTime(MarkerIncrement);
                     UpdateTrimWindowVisuals();
                     UpdateTimeDisplay();
                     UpdateFeedback("Waveform", $"Start: {FormatTime(_trimWindow.StartTime)}");
-                }));
-            }
-            // D-Pad Up - Move end marker later (extend)
-            else if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-            {
-                _trimWindow.AdjustEndByTime(MarkerIncrement);
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
+                    break;
+                case ControllerInput.DPadUp:
+                    _trimWindow.AdjustEndByTime(MarkerIncrement);
                     UpdateTrimWindowVisuals();
                     UpdateTimeDisplay();
                     UpdateFeedback("Waveform", $"End: {FormatTime(_trimWindow.EndTime)}");
-                }));
-            }
-            // D-Pad Down - Move end marker earlier (shorten)
-            else if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-            {
-                _trimWindow.AdjustEndByTime(-MarkerIncrement);
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
+                    break;
+                case ControllerInput.DPadDown:
+                    _trimWindow.AdjustEndByTime(-MarkerIncrement);
                     UpdateTrimWindowVisuals();
                     UpdateTimeDisplay();
                     UpdateFeedback("Waveform", $"End: {FormatTime(_trimWindow.EndTime)}");
-                }));
+                    break;
             }
-        }
-
-        private void HandleTriggerInput(XInputWrapper.XINPUT_GAMEPAD gamepad)
-        {
-            // Triggers not used in waveform editor mode currently
-            // Could be used for fine-tuning in the future if needed
         }
 
         private bool TryDpadNavigation()
@@ -833,6 +638,15 @@ namespace UniPlaySong.Views
 
             int newIndex = Math.Max(0, Math.Min(FilesListBox.Items.Count - 1, FilesListBox.SelectedIndex + offset));
             FilesListBox.SelectedIndex = newIndex;
+            FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
+        }
+
+        private void JumpToItem(int index)
+        {
+            if (FilesListBox.Items.Count == 0) return;
+
+            int targetIndex = Math.Max(0, Math.Min(FilesListBox.Items.Count - 1, index));
+            FilesListBox.SelectedIndex = targetIndex;
             FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
         }
 
@@ -1070,7 +884,7 @@ namespace UniPlaySong.Views
             }
             else
             {
-                // In waveform editor mode, D-pad adjusts markers - handled by XInput continuous input
+                // In waveform editor mode, D-pad adjusts markers via SDK controller events
                 // Arrow keys here just mark as handled to prevent WPF default behavior
                 switch (e.Key)
                 {
@@ -1167,7 +981,12 @@ namespace UniPlaySong.Views
                     Playhead.Visibility = Visibility.Collapsed;
                 }
 
-                StopControllerMonitoring();
+                _repeatTimer?.Stop();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
                 _loadingCancellation?.Cancel();
 
                 var window = Window.GetWindow(this);

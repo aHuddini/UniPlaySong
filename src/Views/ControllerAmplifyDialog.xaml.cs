@@ -5,11 +5,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using System.IO;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
+using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
@@ -18,26 +21,18 @@ namespace UniPlaySong.Views
     /// Step 1: File selection
     /// Step 2: Gain adjustment with waveform visualization
     /// </summary>
-    public partial class ControllerAmplifyDialog : UserControl
+    public partial class ControllerAmplifyDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private const string LogPrefix = "Amplify:Controller";
-
-        // Controller monitoring
-        private CancellationTokenSource _controllerMonitoringCancellation;
-        private bool _isMonitoring = false;
-        private ushort _lastButtonState = 0;
 
         // D-pad debouncing for file selection
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
         private const int DpadDebounceMs = 300; // 300ms for reliable single-item navigation
 
-        // Continuous D-pad input tracking for gain adjustment
-        private ushort _heldDpadDirection = 0;
-        private DateTime _dpadHoldStartTime = DateTime.MinValue;
-        private DateTime _lastDpadRepeatTime = DateTime.MinValue;
-        private const int InitialRepeatDelayMs = 200;
-        private const int FastRepeatIntervalMs = 50;
+        // Continuous D-pad repeat for gain adjustment in editor mode
+        private DispatcherTimer _repeatTimer;
+        private ControllerInput _heldButton;
 
         // State
         private Game _currentGame;
@@ -77,15 +72,27 @@ namespace UniPlaySong.Views
         {
             InitializeComponent();
 
+            _repeatTimer = new DispatcherTimer();
+            _repeatTimer.Tick += RepeatTimer_Tick;
+
             Loaded += (s, e) =>
             {
                 FilesListBox.Focus();
-                StartControllerMonitoring();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Register(this);
+                }
             };
 
             Unloaded += (s, e) =>
             {
-                StopControllerMonitoring();
+                _repeatTimer.Stop();
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    plugin?.GetControllerEventRouter()?.Unregister(this);
+                }
                 _loadingCancellation?.Cancel();
             };
 
@@ -530,121 +537,13 @@ namespace UniPlaySong.Views
 
         #region Controller Input Handling
 
-        private void StartControllerMonitoring()
-        {
-            if (_isMonitoring) return;
-
-            _isMonitoring = true;
-            _controllerMonitoringCancellation = new CancellationTokenSource();
-
-            // Initialize _lastButtonState with current controller state to prevent
-            // detecting held buttons from previous dialogs as new presses
-            try
-            {
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastButtonState = state.Gamepad.wButtons;
-                }
-            }
-            catch { /* Ignore initialization errors */ }
-
-            _ = Task.Run(async () =>
-            {
-                // Small delay to let any held buttons be released
-                await Task.Delay(150);
-                await CheckButtonPresses(_controllerMonitoringCancellation.Token);
-            });
-            Logger.DebugIf(LogPrefix,"Started controller monitoring for amplify dialog");
-        }
-
-        private void StopControllerMonitoring()
-        {
-            if (!_isMonitoring) return;
-
-            _isMonitoring = false;
-            _controllerMonitoringCancellation?.Cancel();
-            Logger.DebugIf(LogPrefix,"Stopped controller monitoring for amplify dialog");
-        }
-
-        /// <summary>
-        /// Refresh controller state and activate cooldown to prevent stale button states from triggering actions.
-        /// Call this after modal dialogs close to re-sync the controller state and block immediate re-detection.
-        /// </summary>
+        // Activate cooldown to block input for a period after modal dialogs close
         private void RefreshControllerStateWithCooldown()
         {
-            try
-            {
-                XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                if (XInputWrapper.XInputGetState(0, ref state) == 0)
-                {
-                    _lastButtonState = state.Gamepad.wButtons;
-                    Logger.DebugIf(LogPrefix, $"Refreshed controller state after dialog: buttons={state.Gamepad.wButtons}");
-                }
-
-                // Set cooldown to block any input processing for ModalCooldownMs
-                // This is the key defense against race conditions
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-                Logger.DebugIf(LogPrefix, $"Modal cooldown active until {_modalCooldownUntil:HH:mm:ss.fff}");
-            }
-            catch (Exception ex)
-            {
-                Logger.DebugIf(LogPrefix, $"Error refreshing controller state: {ex.Message}");
-                // Still set cooldown even on error
-                _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
-            }
+            _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
         }
 
-        private async Task CheckButtonPresses(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                    uint result = (uint)XInputWrapper.XInputGetState(0, ref state);
-
-                    if (result == 0)
-                    {
-                        ushort currentButtons = state.Gamepad.wButtons;
-                        ushort pressedButtons = (ushort)(currentButtons & ~_lastButtonState);
-
-                        if (pressedButtons != 0)
-                        {
-                            // Discard suppresses CS4014 warning - we don't need to await UI dispatch
-                            _ = Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                HandleControllerInput(pressedButtons, state.Gamepad);
-                            }));
-                        }
-
-                        // In amplify editor mode, check for held D-pad
-                        if (_currentStep == DialogStep.AmplifyEditor)
-                        {
-                            _ = Dispatcher.BeginInvoke(new Action(() =>
-                            {
-                                HandleDpadContinuousInput(state.Gamepad);
-                            }));
-                        }
-
-                        _lastButtonState = currentButtons;
-                    }
-
-                    await Task.Delay(33, cancellationToken); // Check every 33ms (~30Hz) for smoother polling
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Logger.DebugIf(LogPrefix,$"Error in controller monitoring: {ex.Message}");
-                    await Task.Delay(100, cancellationToken);
-                }
-            }
-        }
-
-        private void HandleControllerInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        public void OnControllerButtonPressed(ControllerInput button)
         {
             try
             {
@@ -655,7 +554,6 @@ namespace UniPlaySong.Views
                 }
 
                 // Block input during cooldown period after modal dialogs close
-                // This prevents the button press that closed the modal from being detected as a new press
                 if (DateTime.Now < _modalCooldownUntil)
                 {
                     Logger.DebugIf(LogPrefix, "Ignoring input - modal cooldown active");
@@ -664,11 +562,11 @@ namespace UniPlaySong.Views
 
                 if (_currentStep == DialogStep.FileSelection)
                 {
-                    HandleFileSelectionInput(pressedButtons, gamepad);
+                    HandleFileSelectionInput(button);
                 }
                 else
                 {
-                    HandleAmplifyEditorInput(pressedButtons, gamepad);
+                    HandleAmplifyEditorInput(button);
                 }
             }
             catch (Exception ex)
@@ -677,155 +575,107 @@ namespace UniPlaySong.Views
             }
         }
 
-        private void HandleFileSelectionInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
+        public void OnControllerButtonReleased(ControllerInput button)
         {
-            // A button - Select file
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
+            if (button == _heldButton)
             {
-                SelectFileAndProceed();
-                return;
+                _repeatTimer.Stop();
+                _heldButton = ControllerInput.None;
             }
+        }
 
-            // B button - Cancel
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
+        private void HandleFileSelectionInput(ControllerInput button)
+        {
+            switch (button)
             {
-                CloseDialog();
-                return;
+                case ControllerInput.A:
+                    SelectFileAndProceed();
+                    break;
+                case ControllerInput.B:
+                    CloseDialog();
+                    break;
+                case ControllerInput.DPadUp:
+                    if (TryDpadNavigation()) NavigateFileList(-1);
+                    break;
+                case ControllerInput.DPadDown:
+                    if (TryDpadNavigation()) NavigateFileList(1);
+                    break;
+                case ControllerInput.LeftShoulder:
+                    NavigateFileList(-5);
+                    break;
+                case ControllerInput.RightShoulder:
+                    NavigateFileList(5);
+                    break;
+                case ControllerInput.TriggerLeft:
+                    NavigateFileList(-FilesListBox.Items.Count);
+                    break;
+                case ControllerInput.TriggerRight:
+                    NavigateFileList(FilesListBox.Items.Count);
+                    break;
             }
+        }
 
-            // D-pad navigation (with debounce)
-            var now = DateTime.Now;
-            if ((now - _lastDpadNavigationTime).TotalMilliseconds < DpadDebounceMs)
-                return;
+        private void HandleAmplifyEditorInput(ControllerInput button)
+        {
+            switch (button)
+            {
+                case ControllerInput.A:
+                    PreviewButton_Click(null, null);
+                    break;
+                case ControllerInput.B:
+                    BackButton_Click(null, null);
+                    break;
+                case ControllerInput.X:
+                    ApplyButton_Click(null, null);
+                    break;
+                case ControllerInput.Y:
+                    ResetButton_Click(null, null);
+                    break;
+                case ControllerInput.DPadUp:
+                case ControllerInput.DPadDown:
+                    HandleEditorDpadAction(button);
+                    _heldButton = button;
+                    _repeatTimer.Interval = TimeSpan.FromMilliseconds(200);
+                    _repeatTimer.Start();
+                    break;
+                case ControllerInput.LeftShoulder:
+                    AdjustGain(-CoarseGainStep);
+                    UpdateFeedback("Amplify", $"Gain: {_currentGainDb:+0.0;-0.0;0} dB");
+                    break;
+                case ControllerInput.RightShoulder:
+                    AdjustGain(+CoarseGainStep);
+                    UpdateFeedback("Amplify", $"Gain: {_currentGainDb:+0.0;-0.0;0} dB");
+                    break;
+            }
+        }
 
+        private void HandleEditorDpadAction(ControllerInput button)
+        {
+            if (button == ControllerInput.DPadUp)
+            {
+                AdjustGain(+FineGainStep);
+            }
+            else if (button == ControllerInput.DPadDown)
+            {
+                AdjustGain(-FineGainStep);
+            }
+        }
+
+        private void RepeatTimer_Tick(object sender, EventArgs e)
+        {
+            HandleEditorDpadAction(_heldButton);
+            _repeatTimer.Interval = TimeSpan.FromMilliseconds(50); // Fast repeat
+        }
+
+        private void NavigateFileList(int delta)
+        {
             int currentIndex = FilesListBox.SelectedIndex;
-            int newIndex = currentIndex;
-
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-            {
-                newIndex = Math.Max(0, currentIndex - 1);
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-            {
-                newIndex = Math.Min(FilesListBox.Items.Count - 1, currentIndex + 1);
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-            {
-                newIndex = Math.Max(0, currentIndex - 5);
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-            {
-                newIndex = Math.Min(FilesListBox.Items.Count - 1, currentIndex + 5);
-            }
+            int newIndex = Math.Max(0, Math.Min(FilesListBox.Items.Count - 1, currentIndex + delta));
 
             if (newIndex != currentIndex && newIndex >= 0)
             {
                 FilesListBox.SelectedIndex = newIndex;
                 FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
-                _lastDpadNavigationTime = now;
-            }
-        }
-
-        private void HandleAmplifyEditorInput(ushort pressedButtons, XInputWrapper.XINPUT_GAMEPAD gamepad)
-        {
-            // A button - Preview
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_A) != 0)
-            {
-                PreviewButton_Click(null, null);
-                return;
-            }
-
-            // B button - Back to file selection
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_B) != 0)
-            {
-                BackButton_Click(null, null);
-                return;
-            }
-
-            // X button - Apply
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_X) != 0)
-            {
-                ApplyButton_Click(null, null);
-                return;
-            }
-
-            // Y button - Reset
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_Y) != 0)
-            {
-                ResetButton_Click(null, null);
-                return;
-            }
-
-            // LB/RB - Coarse adjustment
-            if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
-            {
-                AdjustGain(-CoarseGainStep);
-                UpdateFeedback("Amplify", $"Gain: {_currentGainDb:+0.0;-0.0;0} dB");
-            }
-            else if ((pressedButtons & XInputWrapper.XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
-            {
-                AdjustGain(+CoarseGainStep);
-                UpdateFeedback("Amplify", $"Gain: {_currentGainDb:+0.0;-0.0;0} dB");
-            }
-        }
-
-        private void HandleDpadContinuousInput(XInputWrapper.XINPUT_GAMEPAD gamepad)
-        {
-            ushort currentDpad = (ushort)(gamepad.wButtons & (
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_UP |
-                XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN));
-
-            var now = DateTime.Now;
-
-            if (currentDpad != 0)
-            {
-                if (_heldDpadDirection != currentDpad)
-                {
-                    // New direction pressed
-                    _heldDpadDirection = currentDpad;
-                    _dpadHoldStartTime = now;
-                    _lastDpadRepeatTime = now;
-
-                    // Use shared debounce to prevent double-input from keyboard handler
-                    // TryDpadNavigation() updates _lastDpadNavigationTime which is shared
-                    // with the keyboard handler, so only one of them will process the initial press
-                    if (TryDpadNavigation())
-                    {
-                        ProcessDpadGainAdjustment(currentDpad);
-                    }
-                }
-                else
-                {
-                    // Same direction held - continuous repeat (keyboard won't fire repeatedly)
-                    var holdDuration = (now - _dpadHoldStartTime).TotalMilliseconds;
-
-                    if (holdDuration >= InitialRepeatDelayMs)
-                    {
-                        var timeSinceLastRepeat = (now - _lastDpadRepeatTime).TotalMilliseconds;
-
-                        if (timeSinceLastRepeat >= FastRepeatIntervalMs)
-                        {
-                            ProcessDpadGainAdjustment(currentDpad);
-                            _lastDpadRepeatTime = now;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                _heldDpadDirection = 0;
-            }
-        }
-
-        private void ProcessDpadGainAdjustment(ushort dpadDirection)
-        {
-            if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_UP) != 0)
-            {
-                AdjustGain(+FineGainStep);
-            }
-            else if ((dpadDirection & XInputWrapper.XINPUT_GAMEPAD_DPAD_DOWN) != 0)
-            {
-                AdjustGain(-FineGainStep);
             }
         }
 

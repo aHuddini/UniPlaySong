@@ -39,7 +39,7 @@ namespace UniPlaySong
         private readonly FileLogger _fileLogger;
         
         // Xbox controller monitoring for login bypass
-        private CancellationTokenSource _controllerLoginMonitoringCancellation;
+        // _isControllerLoginMonitoring flag — set true when login screen active, checked by SDK controller override
         private bool _isControllerLoginMonitoring = false;
         
         // Assembly resolution handler for Material Design and other dependencies
@@ -107,6 +107,7 @@ namespace UniPlaySong
         private Services.MediaKeyService _mediaKeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
+        private Services.Controller.ControllerEventRouter _controllerEventRouter;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
@@ -266,6 +267,7 @@ namespace UniPlaySong
             }
 
             InitializeServices();
+            _controllerEventRouter = new Services.Controller.ControllerEventRouter(_fileLogger);
 
             InitializeMenuHandlers();
 
@@ -949,6 +951,7 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _controllerEventRouter = null;
             _iconGlowManager?.Destroy();
             _iconGlowManager = null;
             _sidebarGlowManager?.Detach();
@@ -975,12 +978,46 @@ namespace UniPlaySong
                 Application.Current.Properties.Remove("UniPlaySongPlugin");
             }
 
-            StopControllerLoginMonitoring();
+            _isControllerLoginMonitoring = false;
             UnsubscribeFromFullscreenVolumeChanges();
 
             _dynamicColorCache?.Save();
 
             _fileLogger?.Debug("Application stopped");
+        }
+
+        private void RouteControllerInput(OnControllerButtonStateChangedArgs args)
+        {
+            if (args == null) return;
+
+            _fileLogger?.Debug($"[Controller] {args.Button} {args.State} (router has receiver: {_controllerEventRouter != null})");
+
+            // Login bypass — check before routing to active dialog
+            if (_isControllerLoginMonitoring && args.State == ControllerInputState.Pressed
+                && (args.Button == ControllerInput.A || args.Button == ControllerInput.Start))
+            {
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    _coordinator?.HandleLoginDismiss();
+                }));
+                _isControllerLoginMonitoring = false;
+                return;
+            }
+
+            if (args.State == ControllerInputState.Pressed)
+                _controllerEventRouter?.HandleButtonPressed(args.Button);
+            else if (args.State == ControllerInputState.Released)
+                _controllerEventRouter?.HandleButtonReleased(args.Button);
+        }
+
+        public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
+        {
+            RouteControllerInput(args);
+        }
+
+        public override void OnDesktopControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
+        {
+            RouteControllerInput(args);
         }
 
         #endregion
@@ -2276,8 +2313,9 @@ namespace UniPlaySong
                     Application.Current.MainWindow.PreviewKeyDown += OnLoginDismissKeyPress;
                     _fileLogger?.Debug("Login input handler attached");
                     
-                    // Also start monitoring Xbox controller for login bypass
-                    StartControllerLoginMonitoring();
+                    // SDK controller events handle login bypass via OnControllerButtonStateChanged
+                    _isControllerLoginMonitoring = true;
+                    _fileLogger?.Debug("Starting Xbox controller login monitoring");
                 }
             }
             catch (Exception ex)
@@ -4152,6 +4190,8 @@ namespace UniPlaySong
         /// </summary>
         public Services.GameMusicTagService GetGameMusicTagService() => _tagService;
 
+        public Services.Controller.ControllerEventRouter GetControllerEventRouter() => _controllerEventRouter;
+
         /// <summary>
         /// Gets the Playnite API instance.
         /// </summary>
@@ -4643,125 +4683,9 @@ namespace UniPlaySong
         #endregion
 
         #region Xbox Controller Login Bypass Support
-
-        private XInputWrapper.XINPUT_STATE _lastControllerLoginState;
-        private bool _hasLastLoginState = false;
-
-        /// <summary>
-        /// Starts monitoring Xbox controller input for login screen bypass.
-        /// Polls controller every 50ms and triggers login dismiss on A or Start button press.
-        /// </summary>
-        private void StartControllerLoginMonitoring()
-        {
-            if (_isControllerLoginMonitoring) return;
-
-            try
-            {
-                _isControllerLoginMonitoring = true;
-                _controllerLoginMonitoringCancellation = new CancellationTokenSource();
-                
-                Task.Run(async () =>
-                {
-                    _fileLogger?.Debug("Starting Xbox controller login monitoring");
-                    
-                    while (!_controllerLoginMonitoringCancellation.Token.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            // Check controller 0 (first controller)
-                            XInputWrapper.XINPUT_STATE state = new XInputWrapper.XINPUT_STATE();
-                            int result = XInputWrapper.XInputGetState(0, ref state);
-                            
-                            if (result == 0) // Success
-                            {
-                                // Check for button presses (only on state change)
-                                if (_hasLastLoginState && state.dwPacketNumber != _lastControllerLoginState.dwPacketNumber)
-                                {
-                                    CheckLoginBypassButtonPresses(state.Gamepad, _lastControllerLoginState.Gamepad);
-                                }
-                                
-                                _lastControllerLoginState = state;
-                                _hasLastLoginState = true;
-                            }
-                            
-                            await Task.Delay(50, _controllerLoginMonitoringCancellation.Token); // Check every 50ms
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            _fileLogger?.Debug($"Error in controller login monitoring loop: {ex.Message}");
-                            await Task.Delay(1000, _controllerLoginMonitoringCancellation.Token); // Wait longer on error
-                        }
-                    }
-                    
-                    _fileLogger?.Debug("Xbox controller login monitoring stopped");
-                }, _controllerLoginMonitoringCancellation.Token);
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Error($"Failed to start controller login monitoring: {ex.Message}", ex);
-                _isControllerLoginMonitoring = false;
-            }
-        }
-
-        /// <summary>
-        /// Stops monitoring Xbox controller input for login screen bypass.
-        /// </summary>
-        private void StopControllerLoginMonitoring()
-        {
-            try
-            {
-                _isControllerLoginMonitoring = false;
-                _controllerLoginMonitoringCancellation?.Cancel();
-                _controllerLoginMonitoringCancellation?.Dispose();
-                _controllerLoginMonitoringCancellation = null;
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Error($"Error stopping controller login monitoring: {ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// Checks for login bypass button presses (A button or Start button).
-        /// Detects newly pressed buttons and triggers login dismiss on UI thread.
-        /// </summary>
-        private void CheckLoginBypassButtonPresses(XInputWrapper.XINPUT_GAMEPAD currentState, XInputWrapper.XINPUT_GAMEPAD lastState)
-        {
-            try
-            {
-                // Get newly pressed buttons (pressed now but not before)
-                ushort newlyPressed = (ushort)(currentState.wButtons & ~lastState.wButtons);
-                
-                if (newlyPressed == 0)
-                    return;
-                
-                if ((newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 || (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_START) != 0)
-                {
-                    string buttonName = (newlyPressed & XInputWrapper.XINPUT_GAMEPAD_A) != 0 ? "A" : "Start";
-                    _fileLogger?.Debug($"Xbox controller {buttonName} button pressed - triggering login dismiss");
-                    
-                    Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        try
-                        {
-                            _coordinator.HandleLoginDismiss();
-                        }
-                        catch (Exception ex)
-                        {
-                            _fileLogger?.Error($"Error handling controller login dismiss: {ex.Message}", ex);
-                        }
-                    }));
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Error($"Error checking login bypass button presses: {ex.Message}", ex);
-            }
-        }
+        // Login bypass is handled by OnControllerButtonStateChanged SDK override.
+        // _isControllerLoginMonitoring flag is set true when login screen is active,
+        // checked by the override, and cleared after login dismiss.
 
         #endregion
 
