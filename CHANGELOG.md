@@ -4,6 +4,29 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.9] - 2026-03-28
+
+### Changed
+- **Controller Input: SDK Migration** — All 5 controller dialogs (File Picker, Delete Songs, Download, Amplify, Waveform Trim) migrated from XInput polling to Playnite SDK 6.15 event-driven controller input. Supports Xbox, PlayStation, Switch Pro, and generic controllers via SDL2. Zero CPU when idle — no more 30Hz polling loops.
+- **Controller Infrastructure** — New `IControllerInputReceiver` interface and stack-based `ControllerEventRouter` for centralized event routing. Nested modal dialogs properly push/pop on the receiver stack.
+- **DialogHelper Modals** — Confirmation and message dialogs now use SDK events instead of XInput polling. Yes/No buttons are focus-navigable via D-pad (Playnite's built-in D-pad→keyboard translation).
+- **Login Bypass** — Controller login dismiss replaced XInput polling with SDK `OnControllerButtonStateChanged` override.
+- **D-Pad Navigation Speed** — Debounce reduced from 300ms to 150ms across all controller dialogs for snappier scrolling.
+- **XInputWrapper Removed** — `XInputWrapper.cs` deleted. `ControllerDetectionService` (presence detection) retained separately.
+
+### Fixed
+- **Amplify Dialog: Music Not Resuming** — After amplifying a song and closing the dialog, the newly amplified song now continues playing instead of stopping.
+- **Delete Dialog: B Button Leak** — Pressing B to close the delete dialog no longer triggers an unwanted delete confirmation popup.
+- **OGG Audio Editing** — Amplify and Trim audio features now fully support `.ogg` format. Waveform generators use `OggFileReader` for loading, gain adjustment, and trimming OGG Vorbis files.
+- **Confirmation Dialog Buttons** — Yes/No buttons now have rounded corners matching the highlight style.
+- **Modal Dialog Controller Restore** — After a confirmation modal closes, the parent dialog's controller input is properly restored via the receiver stack.
+
+### Added
+- `IControllerInputReceiver` — interface for dialogs receiving SDK controller events
+- `ControllerEventRouter` — stack-based router with registration cooldown and `DispatcherPriority.Input` dispatch for modal compatibility
+- `OnControllerButtonStateChanged` + `OnDesktopControllerButtonStateChanged` — SDK overrides in UniPlaySong.cs for both Fullscreen and Desktop modes
+- Continuous D-pad repeat via `DispatcherTimer` in Amplify (gain adjustment) and Trim (marker movement) dialogs
+
 ## [1.3.8] - 2026-03-24
 
 ### Fixed

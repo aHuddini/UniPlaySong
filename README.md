@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.8-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.9-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,15 +20,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.8
+## What's New - v1.3.9
 
-- **OGG Vorbis Support Restored** — OGG files are now properly recognized and play with Live Effects enabled or disabled. Added native OGG decoding so no Windows codec pack is needed.
-- **Open Log Folder Fix** — No longer crashes on non-standard Playnite installs (portable, custom paths).
-- **Music Blocked on Startup Fix** — Themes that set overlay flags during startup no longer permanently block automatic music playback.
-- **Wallpaper Engine Compatibility** — Wallpaper Engine processes now excluded from external audio detection by default. Existing users get the exclusions automatically.
+- **Controller SDK Migration** — All controller dialogs now use Playnite SDK events instead of XInput polling. Supports Xbox, PlayStation, Switch Pro, and generic controllers. Zero CPU when idle.
+- **Faster D-Pad Navigation** — Snappier scrolling in all file picker dialogs.
+- **OGG Audio Editing** — Amplify and Trim audio features now fully support .ogg format.
+- **Amplify Playback Fix** — Music continues playing after amplifying a song and closing the dialog.
+- **Delete Dialog Fix** — B button should no longer trigger unwanted delete confirmation.
+
+> **Note:** The controller SDK migration is a major refactor. If you encounter controller input issues in Fullscreen mode, please report them on [GitHub Issues](https://github.com/aHuddini/UniPlaySong/issues).
 
 ### Previous Version
-- **v1.3.7**: Critical fix for Live Effects toggle not disabling audio effects when Visualizer/Peak Meter is active
+- **v1.3.8**: OGG Vorbis support, theme compatibility fix, Wallpaper Engine exclusions, external audio thread safety
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
