@@ -25,7 +25,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing - prevents double-input from both controller and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
+        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations (prevents keyboard+controller double-input)
 
         // Dialog state
         private Game _currentGame;
@@ -319,6 +319,13 @@ namespace UniPlaySong.Views
                         DeleteButton_Click(null, null);
                         break;
                     case ControllerInput.B:
+                        // Unregister immediately to prevent any further input during close
+                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                        {
+                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                            plugin?.GetControllerEventRouter()?.Unregister(this);
+                        }
+                        _modalCooldownUntil = DateTime.Now.AddMilliseconds(500);
                         CancelButton_Click(null, null);
                         break;
                     case ControllerInput.X:

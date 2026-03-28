@@ -73,17 +73,14 @@ namespace UniPlaySong.Services.Controller
 
             if (receiver == null) return;
 
-            if (Application.Current?.Dispatcher?.CheckAccess() == true)
-            {
-                receiver.OnControllerButtonPressed(button);
-            }
-            else
-            {
-                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            // Use Input priority so the nested ShowDialog() message pump processes our events.
+            // Default BeginInvoke priority (Normal) may be starved by the modal's Send-priority pump.
+            Application.Current?.Dispatcher?.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Input,
+                new Action(() =>
                 {
                     receiver.OnControllerButtonPressed(button);
                 }));
-            }
         }
 
         public void HandleButtonReleased(ControllerInput button)
@@ -96,17 +93,12 @@ namespace UniPlaySong.Services.Controller
 
             if (receiver == null) return;
 
-            if (Application.Current?.Dispatcher?.CheckAccess() == true)
-            {
-                receiver.OnControllerButtonReleased(button);
-            }
-            else
-            {
-                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            Application.Current?.Dispatcher?.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Input,
+                new Action(() =>
                 {
                     receiver.OnControllerButtonReleased(button);
                 }));
-            }
         }
     }
 }

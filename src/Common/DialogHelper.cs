@@ -774,6 +774,21 @@ namespace UniPlaySong.Common
                     Margin = new Thickness(0, 10, 0, 20)
                 };
 
+                // Rounded button style — eliminates WPF's default chrome so Background/Border match visually
+                var roundedButtonStyle = new Style(typeof(System.Windows.Controls.Button));
+                var template = new ControlTemplate(typeof(System.Windows.Controls.Button));
+                var borderFactory = new FrameworkElementFactory(typeof(Border));
+                borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+                borderFactory.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+                borderFactory.SetBinding(Border.BorderBrushProperty, new System.Windows.Data.Binding("BorderBrush") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+                borderFactory.SetBinding(Border.BorderThicknessProperty, new System.Windows.Data.Binding("BorderThickness") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+                var contentFactory = new FrameworkElementFactory(typeof(System.Windows.Controls.ContentPresenter));
+                contentFactory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+                contentFactory.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+                borderFactory.AppendChild(contentFactory);
+                template.VisualTree = borderFactory;
+                roundedButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.TemplateProperty, template));
+
                 yesButton = new System.Windows.Controls.Button
                 {
                     Content = "Yes",
@@ -782,9 +797,13 @@ namespace UniPlaySong.Common
                     FontSize = 18,
                     FontWeight = FontWeights.SemiBold,
                     Margin = new Thickness(10, 0, 10, 0),
-                    Foreground = new SolidColorBrush(Colors.White)
+                    Foreground = new SolidColorBrush(Colors.White),
+                    Focusable = true,
+                    IsTabStop = true,
+                    Style = roundedButtonStyle
                 };
                 yesButton.Click += (s, e) => { result = true; window?.Close(); };
+                yesButton.GotFocus += (s, e) => { selectedIndex = 0; updateButtonStyles(); };
 
                 noButton = new System.Windows.Controls.Button
                 {
@@ -794,9 +813,13 @@ namespace UniPlaySong.Common
                     FontSize = 18,
                     FontWeight = FontWeights.SemiBold,
                     Margin = new Thickness(10, 0, 10, 0),
-                    Foreground = new SolidColorBrush(Colors.White)
+                    Foreground = new SolidColorBrush(Colors.White),
+                    Focusable = true,
+                    IsTabStop = true,
+                    Style = roundedButtonStyle
                 };
                 noButton.Click += (s, e) => { result = false; window?.Close(); };
+                noButton.GotFocus += (s, e) => { selectedIndex = 1; updateButtonStyles(); };
 
                 buttonPanel.Children.Add(yesButton);
                 buttonPanel.Children.Add(noButton);
@@ -820,16 +843,16 @@ namespace UniPlaySong.Common
                     SetOwner = true
                 });
 
-                // Handle keyboard input
+                // Focus Yes button on load so D-pad navigation works immediately
+                window.ContentRendered += (s, e) =>
+                {
+                    yesButton.Focus();
+                };
+
+                // Handle keyboard input (Enter to confirm focused button, Escape to cancel)
                 window.KeyDown += (s, e) =>
                 {
-                    if (e.Key == System.Windows.Input.Key.Left || e.Key == System.Windows.Input.Key.Right)
-                    {
-                        selectedIndex = selectedIndex == 0 ? 1 : 0;
-                        updateButtonStyles();
-                        e.Handled = true;
-                    }
-                    else if (e.Key == System.Windows.Input.Key.Enter)
+                    if (e.Key == System.Windows.Input.Key.Enter)
                     {
                         result = selectedIndex == 0;
                         window?.Close();
@@ -841,9 +864,12 @@ namespace UniPlaySong.Common
                         window?.Close();
                         e.Handled = true;
                     }
+                    // D-pad Left/Right is translated to arrow keys by Playnite — WPF focus handles navigation
+                    // GotFocus handlers on buttons update selectedIndex and styles automatically
                 };
 
-                // Register with controller event router for SDK-driven input
+                // Register with controller event router for A/B button handling
+                // D-pad navigation is handled by Playnite's D-pad→keyboard translation + WPF focus
                 ModalControllerReceiver receiver = null;
                 Services.Controller.ControllerEventRouter router = null;
 
@@ -855,21 +881,11 @@ namespace UniPlaySong.Common
                     {
                         receiver = new ModalControllerReceiver(btn =>
                         {
-                            Logger.Debug($"[ConfirmDialog] Button received: {btn}");
-                            // D-pad left/right to toggle selection
-                            if (btn == ControllerInput.DPadLeft || btn == ControllerInput.DPadRight)
-                            {
-                                selectedIndex = selectedIndex == 0 ? 1 : 0;
-                                updateButtonStyles();
-                                Logger.Debug($"[ConfirmDialog] Selection toggled to: {(selectedIndex == 0 ? "Yes" : "No")}");
-                            }
-                            // A button = confirm selection
-                            else if (btn == ControllerInput.A)
+                            if (btn == ControllerInput.A)
                             {
                                 result = selectedIndex == 0;
                                 window?.Close();
                             }
-                            // B button = cancel (No)
                             else if (btn == ControllerInput.B)
                             {
                                 result = false;

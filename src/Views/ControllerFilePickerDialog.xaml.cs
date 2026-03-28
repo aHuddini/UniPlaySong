@@ -25,7 +25,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing - prevents double-input from both controller and WPF processing
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 300; // Minimum ms between D-pad navigations (300ms for reliable single-item navigation)
+        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations (prevents keyboard+controller double-input)
 
         // Dialog state
         private Game _currentGame;

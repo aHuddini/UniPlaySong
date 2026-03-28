@@ -30,7 +30,7 @@ namespace UniPlaySong.Views
 
         // D-pad debouncing for file selection (300ms for reliable single-item navigation)
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
-        private const int DpadDebounceMs = 300;
+        private const int DpadDebounceMs = 150; // Minimum ms between D-pad navigations (prevents keyboard+controller double-input)
 
         // Continuous D-pad repeat for waveform editor
         private DispatcherTimer _repeatTimer;
