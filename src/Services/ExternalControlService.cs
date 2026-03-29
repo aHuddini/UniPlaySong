@@ -1,5 +1,6 @@
 using Playnite.SDK;
 using Playnite.SDK.Events;
+using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
@@ -86,7 +87,7 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _playbackService.SetVolume(volume);
+            _playbackService.SetVolume(volume / Constants.VolumeDivisor);
         }
 
         private void Notify(string message)
