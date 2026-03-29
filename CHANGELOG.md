@@ -22,6 +22,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Modal Dialog Controller Restore** — After a confirmation modal closes, the parent dialog's controller input is properly restored via the receiver stack.
 
 ### Added
+- **Play Only on Game Select [Fullscreen Mode]** — New setting in Playback tab. Default/ambient music plays while browsing the game grid. Game-specific music only plays when you enter a game's detail view (A button). Automatically reverts to default music when returning to the grid. Uses Playnite SDK's `ActiveFullscreenView` (List vs Details) with a 200ms view-change monitor. Desktop mode unaffected. (#75)
 - `IControllerInputReceiver` — interface for dialogs receiving SDK controller events
 - `ControllerEventRouter` — stack-based router with registration cooldown and `DispatcherPriority.Input` dispatch for modal compatibility
 - `OnControllerButtonStateChanged` + `OnDesktopControllerButtonStateChanged` — SDK overrides in UniPlaySong.cs for both Fullscreen and Desktop modes

@@ -93,6 +93,7 @@ namespace UniPlaySong
             s.GamePropFilterSourceIds = new List<Guid>();
             s.FilterModeEnabled = false;
             s.RadioModeEnabled = false;
+            s.PlayOnlyOnGameSelect = false;
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
             s.FadeOutBeforeSongEnd = false;
             s.FadeOutBeforeSongEndDuration = 3.0;

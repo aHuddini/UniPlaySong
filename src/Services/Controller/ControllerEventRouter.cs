@@ -26,6 +26,12 @@ namespace UniPlaySong.Services.Controller
             _fileLogger = fileLogger;
         }
 
+        // True when a dialog is actively receiving controller input (don't intercept A/B for play-on-select)
+        public bool HasActiveReceiver
+        {
+            get { lock (_lock) { return _receiverStack.Count > 0; } }
+        }
+
         public void Register(IControllerInputReceiver receiver)
         {
             lock (_lock)

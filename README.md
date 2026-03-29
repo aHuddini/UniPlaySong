@@ -27,6 +27,7 @@ Built with the help of Claude Code and Cursor IDE
 - **OGG Audio Editing** — Amplify and Trim audio features now fully support .ogg format.
 - **Amplify Playback Fix** — Music continues playing after amplifying a song and closing the dialog.
 - **Delete Dialog Fix** — B button should no longer trigger unwanted delete confirmation.
+- **Play Only on Game Select** — New Fullscreen setting: default music plays while browsing the game grid. Game-specific music only plays when you open a game's detail view. Reverts automatically when returning to the grid.
 
 > **Note:** The controller SDK migration is a major refactor. If you encounter controller input issues in Fullscreen mode, please report them on [GitHub Issues](https://github.com/aHuddini/UniPlaySong/issues).
 

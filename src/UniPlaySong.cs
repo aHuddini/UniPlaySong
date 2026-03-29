@@ -41,6 +41,9 @@ namespace UniPlaySong
         // Xbox controller monitoring for login bypass
         // _isControllerLoginMonitoring flag — set true when login screen active, checked by SDK controller override
         private bool _isControllerLoginMonitoring = false;
+        // "Play Only on Game Select" — monitors ActiveFullscreenView changes to trigger music switches
+        private System.Windows.Threading.DispatcherTimer _fullscreenViewMonitor;
+        private FullscreenView? _lastFullscreenView;
         
         // Assembly resolution handler for Material Design and other dependencies
         static UniPlaySong()
@@ -468,6 +471,39 @@ namespace UniPlaySong
                 // Pause FFT processing — desktop visualizer is not visible in fullscreen.
                 // The provider is created per-song, so also gate at creation time (see NAudioMusicPlayer).
                 PauseFftProcessing(true);
+            }
+
+            // "Play Only on Game Select" — monitor Fullscreen view changes (List ↔ Details)
+            if (IsFullscreen && _settings?.PlayOnlyOnGameSelect == true)
+            {
+                _lastFullscreenView = _api.MainView.ActiveFullscreenView;
+                _fullscreenViewMonitor = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(200)
+                };
+                _fullscreenViewMonitor.Tick += (s, e) =>
+                {
+                    try
+                    {
+                        var currentView = _api.MainView.ActiveFullscreenView;
+                        if (currentView != _lastFullscreenView)
+                        {
+                            _fileLogger?.Debug($"[PlayOnSelect] View changed: {_lastFullscreenView} → {currentView}");
+                            _lastFullscreenView = currentView;
+
+                            var game = SelectedGames?.FirstOrDefault();
+                            if (game != null && _coordinator?.ShouldPlayMusic(game) == true)
+                            {
+                                // PlayGameMusic checks ActiveFullscreenView internally —
+                                // List view clears songs (default music), Details view plays game music
+                                _playbackService?.PlayGameMusic(game, _settings, false);
+                            }
+                        }
+                    }
+                    catch { }
+                };
+                _fullscreenViewMonitor.Start();
+                _fileLogger?.Debug("[PlayOnSelect] Fullscreen view monitor started");
             }
 
             // Subscribe to game collection changes for auto-cleanup of music on game removal
@@ -944,6 +980,8 @@ namespace UniPlaySong
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
+            _fullscreenViewMonitor?.Stop();
+            _fullscreenViewMonitor = null;
             _idlePollTimer?.Stop();
             _idlePollTimer = null;
             _focusVerifyTimer?.Stop();

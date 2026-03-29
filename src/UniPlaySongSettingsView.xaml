@@ -607,6 +607,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Play Only on Game Select -->
+                    <CheckBox Content="Play Only on Game Select [Fullscreen Mode]"
+                              IsChecked="{Binding Settings.PlayOnlyOnGameSelect}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Game-specific music only plays when you explicitly select a game (A button). While browsing with D-pad, default music plays instead. Press B to return to default music."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <!-- Nostalgia Mode -->
                     <CheckBox Content="Nostalgia Mode"
                               IsChecked="{Binding Settings.NostalgiaMode}"

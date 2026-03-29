@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-03-28
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.9/UniPlaySong-1_3_9-Mar28_2026.pext'
     Changelog:
+      - '[New Feature] Play Only on Game Select: In Fullscreen mode, default music plays while browsing. Game music only plays when you open a games detail view. Reverts automatically when returning to the grid.'
       - '[Notice] Controller input has been migrated from XInput to Playnite SDK (SDL2). This is a major refactor. If you experience controller issues in Fullscreen mode, please report them on GitHub.'
       - '[Refactor] Controller SDK Migration: Transitioned from XInput polling to Playnite SDK SDL2 event-driven input. All controllers (Xbox, PlayStation, Switch Pro, generic) are now supported for UPS Fullscreen functionality.'
       - '[Improved] Faster D-Pad Navigation: Reduced debounce from 300ms to 150ms for snappier scrolling in all controller dialogs.'

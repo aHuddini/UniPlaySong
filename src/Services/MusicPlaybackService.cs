@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
@@ -559,6 +560,33 @@ namespace UniPlaySong.Services
             {
                 var gameId = game.Id.ToString();
                 var songs = _fileService.GetAvailableSongs(game);
+
+                // "Play Only on Game Select" — in Fullscreen List view, clear game songs to play default music.
+                // Game music only plays when the user is in the Details view (explicitly selected a game).
+                // Uses ActiveFullscreenView from the Playnite API — no button interception needed.
+                if (songs.Count > 0 && settings?.PlayOnlyOnGameSelect == true)
+                {
+                    try
+                    {
+                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                        {
+                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                            var api = plugin?.PlayniteApi;
+                            var mode = api?.ApplicationInfo?.Mode;
+                            var fsView = mode == ApplicationMode.Fullscreen ? api.MainView.ActiveFullscreenView : (FullscreenView?)null;
+                            _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect check — Mode={mode}, FullscreenView={fsView}, Songs={songs.Count}");
+                            if (mode == ApplicationMode.Fullscreen && fsView == FullscreenView.List)
+                            {
+                                _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect — List view active, clearing {songs.Count} game songs for default music");
+                                songs.Clear();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect check failed: {ex.Message}");
+                    }
+                }
 
                 // Skip game-specific music for uninstalled games — fall through to default music.
                 // forceReload bypasses this (used by Random Picker to preview uninstalled games).

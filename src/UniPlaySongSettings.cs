@@ -844,6 +844,7 @@ namespace UniPlaySong
         private bool gamePropFilterEnabled = false; // Only play game music for games matching selected platforms/genres/sources
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
+        private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
@@ -978,6 +979,14 @@ namespace UniPlaySong
         {
             get => radioModeEnabled;
             set { radioModeEnabled = value; OnPropertyChanged(); }
+        }
+
+        // Fullscreen only: game music plays only on explicit A-button select, not D-pad navigation.
+        // While browsing, default music plays instead.
+        public bool PlayOnlyOnGameSelect
+        {
+            get => playOnlyOnGameSelect;
+            set { playOnlyOnGameSelect = value; OnPropertyChanged(); }
         }
 
         // Which pool Radio Mode draws from when RadioModeEnabled is true.
