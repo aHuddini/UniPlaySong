@@ -22,7 +22,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.10
 
-- **External Control via URI** — Control playback from Stream Deck, AutoHotkey, PowerShell, or desktop shortcuts using `playnite://uniplaysong/` commands (play, pause, skip, restart, stop, volume).
+- **External Control via URI** — External applications, scripts, themes, and automation tools can now control UniPlaySong playback via Playnite's URI protocol. No setup required.
+  - `playnite://uniplaysong/play` — Resume playback
+  - `playnite://uniplaysong/pause` — Pause playback
+  - `playnite://uniplaysong/playpausetoggle` — Toggle play/pause
+  - `playnite://uniplaysong/skip` — Skip to next song
+  - `playnite://uniplaysong/restart` — Restart current song
+  - `playnite://uniplaysong/stop` — Stop playback
+  - `playnite://uniplaysong/volume/{0-100}` — Set volume
 - **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
 
 ### Previous Version
