@@ -263,6 +263,26 @@ Enable debug logging in UniPlaySong settings to see:
 - `[MusicControl] Setting ThemeOverlayActive=true`
 - `HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source`
 
+## External Control via URI (v1.3.10+)
+
+Themes can also control playback using Playnite's `playnite://` URI protocol. This is useful for custom media control buttons embedded in theme layouts.
+
+**URI Format:** `playnite://uniplaysong/{command}`
+
+| Command | URI |
+|---------|-----|
+| Play / Resume | `playnite://uniplaysong/play` |
+| Pause | `playnite://uniplaysong/pause` |
+| Toggle Play/Pause | `playnite://uniplaysong/playpausetoggle` |
+| Skip to Next Song | `playnite://uniplaysong/skip` |
+| Restart Current Song | `playnite://uniplaysong/restart` |
+| Stop Playback | `playnite://uniplaysong/stop` |
+| Set Volume (0-100) | `playnite://uniplaysong/volume/50` |
+
+**When to use URIs vs UPS_MusicControl:**
+- Use `UPS_MusicControl` for overlay/video pause/resume (automatic, state-driven via XAML bindings)
+- Use URIs for explicit user actions like media control buttons (fire-and-forget)
+
 ## Support
 
 - **GitHub Issues**: https://github.com/aHuddini/UniPlaySong/issues

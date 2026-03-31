@@ -23,8 +23,7 @@ UniPlaySong/
 │   │   ├── FileLogger.cs          # File-based logging utility
 │   │   ├── PlayniteThemeHelper.cs # Playnite theme integration helpers
 │   │   ├── PrimarySongManager.cs  # Primary song selection logic
-│   │   ├── RelayCommand.cs        # MVVM command pattern implementation
-│   │   └── XInputWrapper.cs       # Xbox controller input (single source of truth)
+│   │   └── RelayCommand.cs        # MVVM command pattern implementation
 │   │
 │   ├── DeskMediaControl/          # Desktop mode media controls + Music Dashboard
 │   │   ├── MediaControlIcons.cs           # IcoFont icon constants for media buttons
@@ -99,9 +98,10 @@ UniPlaySong/
 │   │   ├── ITrimService.cs                # Trim service interface
 │   │   ├── WaveformTrimService.cs         # Precise waveform-based trimming (NAudio + FFmpeg)
 │   │   ├── IWaveformTrimService.cs        # Waveform trim service interface
+│   │   ├── ExternalControlService.cs      # URI-based external playback control
 │   │   └── Controller/                    # Controller support services
-│   │       ├── ControllerInputService.cs  # Xbox controller input handling
-│   │       ├── ControllerOverlay.cs       # Controller UI overlay
+│   │       ├── IControllerInputReceiver.cs # Interface for SDK controller event receivers
+│   │       ├── ControllerEventRouter.cs   # Stack-based SDK event router
 │   │       ├── ControllerDetectionService.cs # Controller presence detection
 │   │       └── VisualEnhancementService.cs # Visual feedback for controller
 │   │
@@ -561,6 +561,33 @@ When multiple games are selected (Desktop mode only):
 - 🖥️ emoji prefix = Desktop dialog (standard Windows UI)
 - No emoji = Works with both modes
 
+### 12. External Control Service (`ExternalControlService`)
+
+Enables external tools to control playback via Playnite's `playnite://` URI protocol.
+
+**URI Format:** `playnite://uniplaysong/{command}[/{argument}]`
+
+**Command Set:**
+
+| Command | Action |
+|---------|--------|
+| `play` | Resume playback |
+| `pause` | Pause playback |
+| `playpausetoggle` | Toggle play/pause based on `IsPlaying` |
+| `skip` | Skip to next song |
+| `restart` | Restart current song from beginning |
+| `stop` | Stop playback entirely |
+| `volume/{0-100}` | Set volume (divided by `Constants.VolumeDivisor` for 0.0–1.0 range) |
+
+**Lifecycle:**
+- Registered in `OnApplicationStarted()` via `PlayniteApi.UriHandler.RegisterSource("uniplaysong", ...)`
+- Unregistered in `OnApplicationStopped()` via `PlayniteApi.UriHandler.RemoveSource("uniplaysong")`
+- Always on — no settings toggle
+
+**Error Handling:** Invalid commands or out-of-range values show Playnite notifications via `Notifications.Add()`. Valid commands execute silently. Uses a single notification ID (`UniPlaySong_ExtCtrl`) so errors don't stack.
+
+**Integration:** Delegates entirely to `IMusicPlaybackService` — no direct player or state management.
+
 ## Design Patterns
 
 ### 1. Service Locator Pattern
@@ -579,7 +606,7 @@ Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyC
 `GameContextBindingFactory` creates game context bindings for UI integration.
 
 ### 6. Static Helper Pattern
-`DialogHelper` and `XInputWrapper` provide centralized, reusable functionality as static classes. This eliminates code duplication and provides single points of maintenance for cross-cutting concerns (dialog creation, controller input).
+`DialogHelper` provides centralized, reusable functionality as a static class for dialog creation. Controller input is handled by the SDK-based `ControllerEventRouter` (stack-based event dispatch to `IControllerInputReceiver` dialogs).
 
 ## Data Flow
 

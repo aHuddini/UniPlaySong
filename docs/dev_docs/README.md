@@ -57,10 +57,10 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - Independent NAudio player, radio mode, expanded now-playing view
   - Design specs: `docs/superpowers/specs/2026-03-14-music-library-dashboard-design.md`
 
-- **[CONTROLLER_SDK_MIGRATION_ROADMAP.md](CONTROLLER_SDK_MIGRATION_ROADMAP.md)** - Future refactor: XInput polling → SDK 6.15 events
-  - Migrate 5 controller dialogs from XInput P/Invoke to SDK event-driven API
-  - Adds PS4/PS5/Switch controller support via SDL2
-  - 5-phase migration plan with button mapping reference
+- **[CONTROLLER_SDK_MIGRATION_ROADMAP.md](CONTROLLER_SDK_MIGRATION_ROADMAP.md)** - Controller SDK Migration (IMPLEMENTED v1.3.9)
+  - Migrated 5 controller dialogs from XInput P/Invoke to SDK event-driven API
+  - PS4/PS5/Switch controller support via SDL2
+  - Stack-based ControllerEventRouter, IControllerInputReceiver interface
 
 ### Additional Resources
 

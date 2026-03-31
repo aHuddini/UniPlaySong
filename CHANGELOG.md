@@ -4,6 +4,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.10] - 2026-03-29
+
+### Added
+- **External Control via URI Handler** — New `ExternalControlService` enables external tools (Stream Deck, AutoHotkey, PowerShell, desktop shortcuts) to control playback via Playnite's `playnite://uniplaysong/` URI protocol. Supported commands: `play`, `pause`, `playpausetoggle`, `skip`, `restart`, `stop`, `volume/{0-100}`. Invalid commands show Playnite notifications; valid commands execute silently.
+
+### Fixed
+- **NAudio Restart Song** — `NAudioMusicPlayer.Play(TimeSpan.Zero)` silently skipped seeking to position zero because the guard `startFrom > TimeSpan.Zero` excluded `TimeSpan.Zero` (which equals `default(TimeSpan)`). Songs appeared to restart but continued from the current position. Now always sets `_audioFile.CurrentTime` regardless of the `startFrom` value. Affects any code path calling `RestartCurrentSong()` with Live Effects or Visualizer enabled.
+
 ## [1.3.9] - 2026-03-28
 
 ### Changed

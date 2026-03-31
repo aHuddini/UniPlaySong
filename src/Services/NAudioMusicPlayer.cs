@@ -293,7 +293,7 @@ namespace UniPlaySong.Services
         {
             try
             {
-                if (_audioFile != null && startFrom > TimeSpan.Zero)
+                if (_audioFile != null)
                 {
                     _audioFile.CurrentTime = startFrom;
                 }

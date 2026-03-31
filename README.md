@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.9-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.10-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,19 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.9
+## What's New - v1.3.10
 
-- **Controller SDK Migration** — All controller dialogs now use Playnite SDK events instead of XInput polling. Supports Xbox, PlayStation, Switch Pro, and generic controllers. Zero CPU when idle.
-- **Faster D-Pad Navigation** — Snappier scrolling in all file picker dialogs.
-- **OGG Audio Editing** — Amplify and Trim audio features now fully support .ogg format.
-- **Amplify Playback Fix** — Music continues playing after amplifying a song and closing the dialog.
-- **Delete Dialog Fix** — B button should no longer trigger unwanted delete confirmation.
-- **Play Only on Game Select** — New Fullscreen setting: default music plays while browsing the game grid. Game-specific music only plays when you open a game's detail view. Reverts automatically when returning to the grid.
-
-> **Note:** The controller SDK migration is a major refactor. If you encounter controller input issues in Fullscreen mode, please report them on [GitHub Issues](https://github.com/aHuddini/UniPlaySong/issues).
+- **External Control via URI** — Control playback from Stream Deck, AutoHotkey, PowerShell, or desktop shortcuts using `playnite://uniplaysong/` commands (play, pause, skip, restart, stop, volume).
+- **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
 
 ### Previous Version
-- **v1.3.8**: OGG Vorbis support, theme compatibility fix, Wallpaper Engine exclusions, external audio thread safety
+- **v1.3.9**: Controller SDK Migration (XInput → Playnite SDK), Play Only on Game Select, OGG audio editing, D-pad navigation improvements
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

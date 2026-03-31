@@ -111,6 +111,7 @@ namespace UniPlaySong
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
+        private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
@@ -626,6 +627,9 @@ namespace UniPlaySong
                 _playbackService?.StartRadioPlayback(_settings);
             }
 
+            // Register URI handler for external playback control (playnite://uniplaysong/...)
+            _api.UriHandler.RegisterSource("uniplaysong", uriArgs => _externalControlService?.HandleCommand(uriArgs));
+
         }
 
         /// <summary>
@@ -965,6 +969,8 @@ namespace UniPlaySong
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             _playbackService?.Stop();
+            _api.UriHandler.RemoveSource("uniplaysong");
+            _externalControlService = null;
             _dashboardPlaybackService?.Dispose();
             CleanupJinglePlayer();
             _downloadManager?.Cleanup();
@@ -2047,6 +2053,7 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+            _externalControlService = new Services.ExternalControlService(_playbackService, _api);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
