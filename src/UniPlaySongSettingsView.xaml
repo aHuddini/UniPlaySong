@@ -2515,6 +2515,42 @@
                         </StackPanel>
 
                         <Separator Margin="0,15"/>
+                        <TextBlock Text="Format Conversion" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Target Format:" VerticalAlignment="Center" Width="110"/>
+                            <ComboBox Width="80" Margin="0,0,15,0"
+                                      SelectedValue="{Binding Settings.ConversionTargetFormat}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="OGG" Tag="ogg"/>
+                                <ComboBoxItem Content="MP3" Tag="mp3"/>
+                            </ComboBox>
+                            <TextBlock Text="Quality:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <ComboBox Width="100" Margin="0,0,15,0"
+                                      SelectedValue="{Binding Settings.ConversionBitrate}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="128 kbps" Tag="128"/>
+                                <ComboBoxItem Content="192 kbps" Tag="192"/>
+                                <ComboBoxItem Content="256 kbps" Tag="256"/>
+                            </ComboBox>
+                            <CheckBox Content="Keep originals as backup"
+                                      IsChecked="{Binding Settings.ConversionKeepOriginals}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                            <Button Content="Convert All Music Files"
+                                    Width="220"
+                                    Margin="0,0,10,0"
+                                    Command="{Binding ConvertAllMusicCommand}"/>
+                            <TextBlock Text="Convert all music files in your library to the selected format and quality."
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,15"/>
 
                         <TextBlock Text="File Management" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
 

@@ -569,6 +569,19 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand ConvertAllMusicCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    plugin.ConvertAllMusicFiles();
+                },
+                context: "converting all music files",
+                showUserMessage: true
+            );
+        });
+
         public ICommand CreateMissingMusicFoldersCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

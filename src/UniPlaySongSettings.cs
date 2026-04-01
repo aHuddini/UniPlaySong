@@ -1123,6 +1123,11 @@ namespace UniPlaySong
         private bool doNotPreserveOriginals = true;
         private bool autoNormalizeAfterDownload = false;
 
+        // Audio Conversion Settings
+        private string conversionTargetFormat = "ogg";
+        private string conversionBitrate = "192";
+        private bool conversionKeepOriginals = false;
+
         // Audio Trimming Settings
         private string trimSuffix = "-trimmed";
         private string preciseTrimSuffix = "-ptrimmed";
@@ -1212,6 +1217,24 @@ namespace UniPlaySong
         {
             get => autoNormalizeAfterDownload;
             set { autoNormalizeAfterDownload = value; OnPropertyChanged(); }
+        }
+
+        public string ConversionTargetFormat
+        {
+            get => conversionTargetFormat;
+            set { conversionTargetFormat = value ?? "ogg"; OnPropertyChanged(); }
+        }
+
+        public string ConversionBitrate
+        {
+            get => conversionBitrate;
+            set { conversionBitrate = value ?? "192"; OnPropertyChanged(); }
+        }
+
+        public bool ConversionKeepOriginals
+        {
+            get => conversionKeepOriginals;
+            set { conversionKeepOriginals = value; OnPropertyChanged(); }
         }
 
         /// <summary>

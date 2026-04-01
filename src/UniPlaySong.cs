@@ -93,6 +93,7 @@ namespace UniPlaySong
         private MainMenuHandler _mainMenuHandler;
         private Handlers.ControllerDialogHandler _controllerDialogHandler;
         private Handlers.NormalizationDialogHandler _normalizationDialogHandler;
+        private Handlers.ConversionDialogHandler _conversionDialogHandler;
         private Handlers.TrimDialogHandler _trimDialogHandler;
         private Handlers.WaveformTrimDialogHandler _waveformTrimDialogHandler;
         private Services.IWaveformTrimService _waveformTrimService;
@@ -2195,6 +2196,9 @@ namespace UniPlaySong
                 _api, _fileService, _playbackService, _downloadDialogService, _downloadManager);
             _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
+            var conversionService = new Services.AudioConversionService(_fileLogger);
+            _conversionDialogHandler = new Handlers.ConversionDialogHandler(
+                _api, conversionService, _playbackService, _fileService, () => _settings);
             _trimDialogHandler = new Handlers.TrimDialogHandler(
                 _api, _trimService, _playbackService, _fileService, () => _settings);
             _waveformTrimDialogHandler = new Handlers.WaveformTrimDialogHandler(
@@ -2654,6 +2658,11 @@ namespace UniPlaySong
         public void NormalizeAllMusicFiles()
         {
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
+        }
+
+        public void ConvertAllMusicFiles()
+        {
+            _conversionDialogHandler?.ConvertAllMusicFiles();
         }
 
         public string GetGameIndexPath()

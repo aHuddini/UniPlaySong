@@ -218,6 +218,9 @@ namespace UniPlaySong
             s.AutoNormalizeAfterDownload = false;
             s.TrimSuffix = "-trimmed";
             s.PreciseTrimSuffix = "-ptrimmed";
+            s.ConversionTargetFormat = "ogg";
+            s.ConversionBitrate = "192";
+            s.ConversionKeepOriginals = false;
 
             ShowButtonFeedback(sender, "Reset!");
         }
