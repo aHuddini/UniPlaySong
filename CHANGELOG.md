@@ -12,6 +12,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Fixed
 - **NAudio Restart Song** — `NAudioMusicPlayer.Play(TimeSpan.Zero)` silently skipped seeking to position zero because the guard `startFrom > TimeSpan.Zero` excluded `TimeSpan.Zero` (which equals `default(TimeSpan)`). Songs appeared to restart but continued from the current position. Now always sets `_audioFile.CurrentTime` regardless of the `startFrom` value. Affects any code path calling `RestartCurrentSong()` with Live Effects or Visualizer enabled.
+- **NAudio Instant Pause Not Silencing** — `AddPauseSourceImmediate()` called `_musicPlayer.Pause()` without setting volume to 0 first. NAudio's persistent mixer architecture means "logical pause" only sets a flag — the audio chain continues outputting at the last volume level. Now sets `Volume = 0` before logical pause, matching the pattern used by jingle and dashboard pauses. Affects External Audio instant pause when Live Effects or Visualizer is enabled.
+
+### Changed
+- **Fullscreen Performance** — `OnGameSelected` visual effects (dynamic color extraction, icon glow, list hover glow, sidebar glow) now gated behind Desktop mode only. Fullscreen game selection is purely coordinator + playback logic — no unnecessary visual tree walks or SkiaSharp rendering.
+- **External Audio Poll Timer** — Timer no longer starts unconditionally at plugin load. Only starts when `PauseOnExternalAudio` is enabled; dynamically starts/stops when the setting changes. Eliminates ~1 ThreadPool wake per second for users with the setting disabled (default).
+- **Memory Leak Fix** — `Games.ItemUpdated` event now properly unsubscribed in `OnApplicationStopped()`.
 
 ## [1.3.9] - 2026-03-28
 

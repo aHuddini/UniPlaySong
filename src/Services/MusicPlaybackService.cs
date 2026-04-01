@@ -265,7 +265,10 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"Pause (instant): {source}");
                 _fader?.CancelFade();
                 if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
+                {
+                    _musicPlayer.Volume = 0;
                     _musicPlayer.Pause();
+                }
                 OnPlaybackStateChanged?.Invoke();
             }
         }
@@ -558,8 +561,10 @@ namespace UniPlaySong.Services
 
             try
             {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 var gameId = game.Id.ToString();
                 var songs = _fileService.GetAvailableSongs(game);
+                _fileLogger?.Debug(() => $"[Perf] PlayGameMusic: GetAvailableSongs took {sw.ElapsedMilliseconds}ms ({songs.Count} songs for {game.Name})");
 
                 // "Play Only on Game Select" — in Fullscreen List view, clear game songs to play default music.
                 // Game music only plays when the user is in the Details view (explicitly selected a game).
@@ -946,14 +951,15 @@ namespace UniPlaySong.Services
                         },
                         playAction: () =>
                         {
+                            var loadSw = System.Diagnostics.Stopwatch.StartNew();
                             _musicPlayer.Load(newSongPath);
-                            _musicPlayer.Volume = 0; // Ensure volume starts at 0 before fade-in
+                            var loadMs = loadSw.ElapsedMilliseconds;
+                            _musicPlayer.Volume = 0;
                             _currentSongPath = newSongPath;
                             ClearAllPauseSources();
 
                             if (_isPaused)
                             {
-                                // Manual pause is active — load song for metadata/Now Playing but don't play
                                 _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
                                 OnMusicStarted?.Invoke(settings);
                                 return;
@@ -961,7 +967,8 @@ namespace UniPlaySong.Services
 
                             _musicPlayer.Play();
                             MarkSongStart();
-                            _fileLogger?.Debug($"Playing (switched): {Path.GetFileName(newSongPath)}");
+                            loadSw.Stop();
+                            _fileLogger?.Debug(() => $"[Perf] SongSwitch: Load={loadMs}ms, Total={loadSw.ElapsedMilliseconds}ms, File={Path.GetFileName(newSongPath)}");
                             OnMusicStarted?.Invoke(settings);
                         }
                     );

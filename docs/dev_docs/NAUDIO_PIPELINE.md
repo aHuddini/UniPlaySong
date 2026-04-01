@@ -152,6 +152,18 @@ Alphas are scaled by FFT size — larger windows update less frequently, so need
 
 This avoids stale pre-rendered buffer blips that occur with `WaveOutEvent.Pause()`/`Play()`.
 
+### Limitation: Instant Pause Must Set Volume to 0
+
+Because `_logicallyPaused` is only a flag — it does not stop the audio chain from outputting samples — any code path that bypasses the fader must explicitly set `_musicPlayer.Volume = 0` before calling `Pause()`. Without this, audio continues playing at the last volume level despite the "paused" state.
+
+Paths that handle this correctly:
+- **Fader-based pause** (manual, FocusLoss, etc.) — fader ramps to 0 before logical pause
+- **Jingle pause** (`PauseForJingle`) — sets `Volume = 0` explicitly
+- **Dashboard pause** — sets `Volume = 0` explicitly
+- **Instant pause** (`AddPauseSourceImmediate`) — sets `Volume = 0` explicitly (fixed in v1.3.10)
+
+**Rule:** Never call `_musicPlayer.Pause()` on NAudio without ensuring volume is 0 first.
+
 ### Short Track EOF During Pause
 
 If a short song reaches EOF while logically paused (volume = 0, still in mixer), the mixer auto-removes the input on the partial read. `OnSongEnded()` clears both `_isPlaying` and `_logicallyPaused` so `IsActive` returns `false`, enabling the fader's stall detection.

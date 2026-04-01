@@ -204,8 +204,11 @@ namespace UniPlaySong.Services
             }
 
             // Service handles: music file detection, default music fallback, and settings
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             _fileLogger?.Debug($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
             _playbackService?.PlayGameMusic(game, _settings, false);
+            sw.Stop();
+            _fileLogger?.Debug(() => $"[Perf] HandleGameSelected: PlayGameMusic took {sw.ElapsedMilliseconds}ms for {game.Name}");
 
             _firstSelect = false;
         }

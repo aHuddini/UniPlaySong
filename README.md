@@ -22,6 +22,10 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.10
 
+- **Bulk Audio Format Conversion** — Save disk space by converting all music files in your library to OGG or MP3 at 128/192/256 kbps. Settings > Editing > Bulk Actions.
+- **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
+- **NAudio Instant Pause Fix** — External Audio instant pause now properly silences audio when Live Effects or Visualizer is enabled.
+- **Fullscreen Performance** — Visual effects now skipped in Fullscreen mode. External audio poll timer only runs when the setting is enabled.
 - **External Control via URI** — External applications, scripts, themes, and automation tools can now control UniPlaySong playback via Playnite's URI protocol. No setup required.
   - `playnite://uniplaysong/play` — Resume playback
   - `playnite://uniplaysong/pause` — Pause playback
@@ -30,8 +34,6 @@ Built with the help of Claude Code and Cursor IDE
   - `playnite://uniplaysong/restart` — Restart current song
   - `playnite://uniplaysong/stop` — Stop playback
   - `playnite://uniplaysong/volume/{0-100}` — Set volume
-- **Bulk Audio Format Conversion** — Save disk space by converting all music files in your library to OGG or MP3 at 128/192/256 kbps. Settings > Editing > Bulk Actions.
-- **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
 
 ### Previous Version
 - **v1.3.9**: Controller SDK Migration (XInput → Playnite SDK), Play Only on Game Select, OGG audio editing, D-pad navigation improvements

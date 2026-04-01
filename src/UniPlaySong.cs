@@ -327,8 +327,10 @@ namespace UniPlaySong
         /// </summary>
         public override void OnGameSelected(OnGameSelectedEventArgs args)
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
+            var coordinatorMs = sw.ElapsedMilliseconds;
 
             if (IsDesktop)
             {
@@ -337,6 +339,9 @@ namespace UniPlaySong
                 _listHoverGlowManager?.OnGameSelected(game);
                 _sidebarGlowManager?.OnGameSelected(game);
             }
+
+            sw.Stop();
+            _fileLogger?.Debug(() => $"[Perf] OnGameSelected: {sw.ElapsedMilliseconds}ms total (coordinator: {coordinatorMs}ms, mode: {(IsFullscreen ? "FS" : "DT")}, game: {game?.Name ?? "null"})");
         }
 
         // Handles game state changes at the database level.
@@ -1637,6 +1642,7 @@ namespace UniPlaySong
             if (Interlocked.CompareExchange(ref _externalAudioPollRunning, 1, 0) != 0)
                 return;
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 // Adjust poll rate dynamically (0.5s in instant mode, 1.0s otherwise)
@@ -1780,6 +1786,9 @@ namespace UniPlaySong
             }
             finally
             {
+                sw.Stop();
+                if (sw.ElapsedMilliseconds > 50)
+                    _fileLogger?.Debug(() => $"[Perf] ExternalAudioPoll: {sw.ElapsedMilliseconds}ms (slow tick)");
                 Interlocked.Exchange(ref _externalAudioPollRunning, 0);
             }
         }
