@@ -8,6 +8,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 - **External Control via URI Handler** — New `ExternalControlService` enables external tools (Stream Deck, AutoHotkey, PowerShell, desktop shortcuts) to control playback via Playnite's `playnite://uniplaysong/` URI protocol. Supported commands: `play`, `pause`, `playpausetoggle`, `skip`, `restart`, `stop`, `volume/{0-100}`. Invalid commands show Playnite notifications; valid commands execute silently.
+- **Bulk Audio Format Conversion** — New `AudioConversionService` + `ConversionDialogHandler` for converting all music files to OGG or MP3 at selectable bitrate (128/192/256 kbps). Parallel processing (up to 3 workers). Temp file pattern (`.converting`) protects originals during FFmpeg execution. Optional backup with `-preconvert` suffix. Completion report shows converted/failed counts and space saved. Located in Settings > Editing > Bulk Actions > Format Conversion.
 
 ### Fixed
 - **NAudio Restart Song** — `NAudioMusicPlayer.Play(TimeSpan.Zero)` silently skipped seeking to position zero because the guard `startFrom > TimeSpan.Zero` excluded `TimeSpan.Zero` (which equals `default(TimeSpan)`). Songs appeared to restart but continued from the current position. Now always sets `_audioFile.CurrentTime` regardless of the `startFrom` value. Affects any code path calling `RestartCurrentSong()` with Live Effects or Visualizer enabled.

@@ -588,6 +588,20 @@ Enables external tools to control playback via Playnite's `playnite://` URI prot
 
 **Integration:** Delegates entirely to `IMusicPlaybackService` — no direct player or state management.
 
+### 13. Audio Conversion Service (`AudioConversionService` + `ConversionDialogHandler`)
+
+Bulk converts all music files in the library to a target format (OGG or MP3) at selectable bitrate (128/192/256 kbps).
+
+**Flow:** `ConversionDialogHandler` validates FFmpeg, collects files, shows confirmation → `AudioConversionService.ConvertBulkAsync()` processes files in parallel (max 3 workers) → reuses `NormalizationProgressDialog` for progress display.
+
+**Safety:** FFmpeg outputs to a `.converting.{ext}` temp file. Original is only touched after FFmpeg confirms success (exit code 0 + non-empty output). On failure, temp file is cleaned up and original is untouched.
+
+**Backup:** Optional `-preconvert` suffix on originals (off by default). Controlled by `ConversionKeepOriginals` setting.
+
+**Reporting:** Completion dialog shows converted/failed counts, original size, new size, and space saved (or increased) with percentage.
+
+**Settings:** `ConversionTargetFormat` (default: `"ogg"`), `ConversionBitrate` (default: `"192"`), `ConversionKeepOriginals` (default: `false`). UI in Editing tab > Bulk Actions > Format Conversion.
+
 ## Design Patterns
 
 ### 1. Service Locator Pattern

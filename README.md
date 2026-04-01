@@ -30,6 +30,7 @@ Built with the help of Claude Code and Cursor IDE
   - `playnite://uniplaysong/restart` — Restart current song
   - `playnite://uniplaysong/stop` — Stop playback
   - `playnite://uniplaysong/volume/{0-100}` — Set volume
+- **Bulk Audio Format Conversion** — Save disk space by converting all music files in your library to OGG or MP3 at 128/192/256 kbps. Settings > Editing > Bulk Actions.
 - **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
 
 ### Previous Version
