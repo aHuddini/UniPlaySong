@@ -18,6 +18,7 @@ docs/dev_docs/roadmaps/
 CLAUDE.md
 .superpowers/
 docs/superpowers/
+docs/plans/
 
 # Bundled jingle audio files (not distributed in repo due to licensing)
 **/Jingles/*.mp3
