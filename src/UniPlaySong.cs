@@ -329,13 +329,14 @@ namespace UniPlaySong
         {
             var game = args?.NewValue?.FirstOrDefault();
             _coordinator.HandleGameSelected(game, IsFullscreen);
-            UpdateDynamicVisualizerColors(game);
-            if (_iconGlowManager != null && IsDesktop)
+
+            if (IsDesktop)
             {
-                _iconGlowManager.OnGameSelected(game);
+                UpdateDynamicVisualizerColors(game);
+                _iconGlowManager?.OnGameSelected(game);
+                _listHoverGlowManager?.OnGameSelected(game);
+                _sidebarGlowManager?.OnGameSelected(game);
             }
-            _listHoverGlowManager?.OnGameSelected(game);
-            _sidebarGlowManager?.OnGameSelected(game);
         }
 
         // Handles game state changes at the database level.
@@ -524,7 +525,8 @@ namespace UniPlaySong
             _externalAudioPollTimer = new System.Timers.Timer(1500);
             _externalAudioPollTimer.Elapsed += OnExternalAudioPollTick;
             _externalAudioPollTimer.AutoReset = true;
-            _externalAudioPollTimer.Start();
+            if (_settings?.PauseOnExternalAudio == true)
+                _externalAudioPollTimer.Start();
             _idlePollTimer = new System.Windows.Threading.DispatcherTimer(
                 System.Windows.Threading.DispatcherPriority.Background);
             _idlePollTimer.Interval = TimeSpan.FromSeconds(10);
@@ -977,8 +979,9 @@ namespace UniPlaySong
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
 
-            // Unsubscribe from game collection changes
+            // Unsubscribe from game database events
             _api.Database.Games.ItemCollectionChanged -= OnGamesCollectionChanged;
+            _api.Database.Games.ItemUpdated -= OnGameItemUpdated;
 
             // Unsubscribe from focus/minimize/lock events
             Application.Current.Deactivated -= OnApplicationDeactivate;
@@ -1304,6 +1307,15 @@ namespace UniPlaySong
                 {
                     MediaElementsMonitor.Attach(_api, e.NewSettings);
                 }
+            }
+
+            // Start/stop external audio poll timer based on setting
+            if (e.OldSettings?.PauseOnExternalAudio != e.NewSettings?.PauseOnExternalAudio)
+            {
+                if (e.NewSettings?.PauseOnExternalAudio == true)
+                    _externalAudioPollTimer?.Start();
+                else
+                    _externalAudioPollTimer?.Stop();
             }
 
             // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
