@@ -1,0 +1,62 @@
+<UserControl x:Class="UniPlaySong.Settings.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:UniPlaySong.Settings"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=local:SettingsHandler}"
+             d:DesignHeight="400" d:DesignWidth="600">
+
+    <StackPanel Margin="16">
+        <CheckBox Content="Enable Music"
+                  IsChecked="{Binding Settings.EnableMusic}"
+                  Margin="0,0,0,12" />
+
+        <TextBlock Text="Music Volume" Margin="0,0,0,4" />
+        <DockPanel Margin="0,0,0,12">
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding Settings.MusicVolume, StringFormat={}{0}%}"
+                       Width="40" TextAlignment="Right" VerticalAlignment="Center" />
+            <Slider Minimum="0" Maximum="100"
+                    Value="{Binding Settings.MusicVolume}"
+                    TickFrequency="5" IsSnapToTickEnabled="True" />
+        </DockPanel>
+
+        <TextBlock Text="Fade In Duration (ms)" Margin="0,0,0,4" />
+        <DockPanel Margin="0,0,0,12">
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding Settings.FadeInDurationMs, StringFormat={}{0} ms}"
+                       Width="60" TextAlignment="Right" VerticalAlignment="Center" />
+            <Slider Minimum="0" Maximum="5000"
+                    Value="{Binding Settings.FadeInDurationMs}"
+                    TickFrequency="100" IsSnapToTickEnabled="True" />
+        </DockPanel>
+
+        <TextBlock Text="Fade Out Duration (ms)" Margin="0,0,0,4" />
+        <DockPanel Margin="0,0,0,12">
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding Settings.FadeOutDurationMs, StringFormat={}{0} ms}"
+                       Width="60" TextAlignment="Right" VerticalAlignment="Center" />
+            <Slider Minimum="0" Maximum="5000"
+                    Value="{Binding Settings.FadeOutDurationMs}"
+                    TickFrequency="100" IsSnapToTickEnabled="True" />
+        </DockPanel>
+
+        <CheckBox Content="Enable Default Music (when game has no music)"
+                  IsChecked="{Binding Settings.EnableDefaultMusic}"
+                  Margin="0,0,0,4" />
+        <DockPanel Margin="0,0,0,12"
+                   IsEnabled="{Binding Settings.EnableDefaultMusic}">
+            <Button DockPanel.Dock="Right" Content="Browse..."
+                    Click="BrowseDefaultMusic_Click"
+                    Margin="8,0,0,0" Padding="12,4" />
+            <TextBox Text="{Binding Settings.DefaultMusicPath}"
+                     IsReadOnly="True" VerticalContentAlignment="Center" />
+        </DockPanel>
+
+        <CheckBox Content="Radio Mode (shuffle all game music)"
+                  IsChecked="{Binding Settings.RadioModeEnabled}"
+                  Margin="0,0,0,12" />
+    </StackPanel>
+</UserControl>
