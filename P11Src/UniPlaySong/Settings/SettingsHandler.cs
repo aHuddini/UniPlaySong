@@ -22,9 +22,9 @@ partial class SettingsHandler : PluginSettingsHandler
 
     public SettingsHandler(string userDataDir)
     {
-        var pluginDataDir = Path.Combine(userDataDir, "Extensions", UniPlaySongPlugin.Id);
-        Directory.CreateDirectory(pluginDataDir);
-        _settingsFilePath = Path.Combine(pluginDataDir, "settings.json");
+        // P11's UserDataDir is already plugin-scoped (ExtensionsData/{PluginId}/)
+        Directory.CreateDirectory(userDataDir);
+        _settingsFilePath = Path.Combine(userDataDir, "settings.json");
         settings = LoadFromDisk();
     }
 
@@ -35,12 +35,15 @@ partial class SettingsHandler : PluginSettingsHandler
 
     public override async Task BeginEditAsync(BeginEditArgs args)
     {
+        _logger.Info("Settings: BeginEdit — snapshotting current state");
         _editSnapshot = JsonSerializer.Serialize(Settings, _jsonOptions);
+        _logger.Info($"Settings: snapshot = {_editSnapshot}");
         await Task.CompletedTask;
     }
 
     public override async Task EndEditAsync(EndEditArgs args)
     {
+        _logger.Info($"Settings: EndEdit — saving (enabled={Settings.EnableMusic}, vol={Settings.MusicVolume}, fadeIn={Settings.FadeInDurationMs}ms, fadeOut={Settings.FadeOutDurationMs}ms, defaultMusic={Settings.EnableDefaultMusic}, radio={Settings.RadioModeEnabled})");
         SaveToDisk();
         _editSnapshot = null;
         await Task.CompletedTask;
@@ -48,6 +51,7 @@ partial class SettingsHandler : PluginSettingsHandler
 
     public override async Task CancelEditAsync(CancelEditArgs args)
     {
+        _logger.Info("Settings: CancelEdit — restoring snapshot");
         if (_editSnapshot != null)
         {
             var restored = JsonSerializer.Deserialize<UniPlaySongSettings>(_editSnapshot, _jsonOptions);
@@ -85,15 +89,26 @@ partial class SettingsHandler : PluginSettingsHandler
         {
             if (File.Exists(_settingsFilePath))
             {
+                _logger.Info($"Settings: loading from {_settingsFilePath}");
                 var json = File.ReadAllText(_settingsFilePath);
-                return JsonSerializer.Deserialize<UniPlaySongSettings>(json, _jsonOptions) ?? new();
+                var loaded = JsonSerializer.Deserialize<UniPlaySongSettings>(json, _jsonOptions) ?? new();
+                _logger.Info($"Settings: loaded (enabled={loaded.EnableMusic}, vol={loaded.MusicVolume}, fadeIn={loaded.FadeInDurationMs}ms, fadeOut={loaded.FadeOutDurationMs}ms, defaultMusic={loaded.EnableDefaultMusic}, radio={loaded.RadioModeEnabled})");
+                return loaded;
             }
+            _logger.Info("Settings: no settings file found — using defaults");
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to load settings — using defaults");
+            _logger.Error(ex, "Settings: failed to load — using defaults");
         }
         return new();
+    }
+
+    // Call on shutdown to ensure settings are persisted
+    public void SaveIfNeeded()
+    {
+        _logger.Info("Settings: SaveIfNeeded — persisting current state");
+        SaveToDisk();
     }
 
     private void SaveToDisk()
@@ -101,11 +116,13 @@ partial class SettingsHandler : PluginSettingsHandler
         try
         {
             var json = JsonSerializer.Serialize(Settings, _jsonOptions);
+            _logger.Info($"Settings: writing to {_settingsFilePath}:\n{json}");
             File.WriteAllText(_settingsFilePath, json);
+            _logger.Info("Settings: write complete");
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to save settings");
+            _logger.Error(ex, "Settings: failed to save");
         }
     }
 }

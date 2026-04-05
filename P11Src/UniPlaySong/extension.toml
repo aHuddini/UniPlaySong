@@ -1,0 +1,5 @@
+﻿id = "Huddini.UniPlaySong"
+name = "UniPlaySong"
+author = "Huddini"
+version = "1.0"
+module = "UniPlaySong.dll"

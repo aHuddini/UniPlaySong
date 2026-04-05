@@ -24,6 +24,7 @@ class GameMusicFileService : IDisposable
     {
         _baseMusicPath = Path.Combine(userDataDir, Constants.PluginFolderName, Constants.GamesFolderName);
         Directory.CreateDirectory(_baseMusicPath);
+        _logger.Info($"GameMusicFileService: basePath={_baseMusicPath}");
         InitializeWatcher();
     }
 
@@ -107,6 +108,7 @@ class GameMusicFileService : IDisposable
             _watcher.Deleted += OnFileChanged;
             _watcher.Renamed += OnFileRenamed;
             _watcher.Error += OnWatcherError;
+            _logger.Info("GameMusicFileService: FileSystemWatcher active");
         }
         catch (Exception ex)
         {

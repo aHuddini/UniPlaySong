@@ -59,17 +59,19 @@ class NAudioMusicPlayer : IMusicPlayer
     {
         try
         {
+            _logger.Info("Persistent mixer: initializing (44100Hz stereo)");
             _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
             {
                 ReadFully = true
             };
             _outputDevice = new WaveOutEvent();
             _outputDevice.Init(_mixer);
-            _outputDevice.Play(); // mixer runs forever, silence when no inputs
+            _outputDevice.Play();
+            _logger.Info("Persistent mixer: running");
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to initialize persistent mixer");
+            _logger.Error(ex, "Persistent mixer: FAILED to initialize");
             OnError?.Invoke(ex);
         }
     }
@@ -78,19 +80,22 @@ class NAudioMusicPlayer : IMusicPlayer
     {
         lock (_stateLock)
         {
-            // Clean up previous song
             RemoveFromMixer();
             DisposeCurrentReader();
 
             try
             {
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                _logger.Info($"Load: {Path.GetFileName(filePath)} (format={ext})");
                 _currentReader = CreateReader(filePath);
+                _logger.Info($"Load: reader created (sampleRate={_currentReader.WaveFormat.SampleRate}, channels={_currentReader.WaveFormat.Channels}, duration={_currentReader.TotalTime.TotalSeconds:F1}s)");
                 var resampled = EnsureCorrectFormat(_currentReader);
                 _volumeProvider = new SmoothVolumeSampleProvider(resampled);
                 _mixerInput = new EofDetectingSampleProvider(_volumeProvider, () =>
                 {
                     _isPlaying = false;
                     _isInMixer = false;
+                    _logger.Info($"EOF: {Path.GetFileName(filePath)}");
                     OnSongEnded?.Invoke();
                 });
 
@@ -101,7 +106,7 @@ class NAudioMusicPlayer : IMusicPlayer
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to load: {filePath}");
+                _logger.Error(ex, $"Load FAILED: {filePath}");
                 CurrentFilePath = null;
                 _isLoaded = false;
                 OnError?.Invoke(ex);
@@ -114,6 +119,7 @@ class NAudioMusicPlayer : IMusicPlayer
         lock (_stateLock)
         {
             if (!_isLoaded || _mixerInput == null || _mixer == null) return;
+            _logger.Info($"Play: {Path.GetFileName(CurrentFilePath)}");
             AddToMixer();
             _isPlaying = true;
             _isPaused = false;
@@ -125,13 +131,14 @@ class NAudioMusicPlayer : IMusicPlayer
         lock (_stateLock)
         {
             if (!_isLoaded || _currentReader == null) return;
+            _logger.Info($"Play: {Path.GetFileName(CurrentFilePath)} from {startFrom.TotalSeconds:F1}s");
             try
             {
                 _currentReader.CurrentTime = startFrom;
             }
             catch
             {
-                // Some formats don't support seeking — play from start
+                _logger.Warn($"Play: seek to {startFrom.TotalSeconds:F1}s failed — playing from start");
             }
             Play();
         }
@@ -142,6 +149,7 @@ class NAudioMusicPlayer : IMusicPlayer
         lock (_stateLock)
         {
             if (!_isPlaying) return;
+            _logger.Info($"Pause: {Path.GetFileName(CurrentFilePath)} at {CurrentTime.TotalSeconds:F1}s");
             RemoveFromMixer();
             _isPlaying = false;
             _isPaused = true;
@@ -153,6 +161,7 @@ class NAudioMusicPlayer : IMusicPlayer
         lock (_stateLock)
         {
             if (!_isPaused || !_isLoaded) return;
+            _logger.Info($"Resume: {Path.GetFileName(CurrentFilePath)}");
             AddToMixer();
             _isPlaying = true;
             _isPaused = false;
@@ -163,6 +172,7 @@ class NAudioMusicPlayer : IMusicPlayer
     {
         lock (_stateLock)
         {
+            _logger.Info($"Stop: {Path.GetFileName(CurrentFilePath)}");
             RemoveFromMixer();
             _isPlaying = false;
             _isPaused = false;
@@ -173,6 +183,7 @@ class NAudioMusicPlayer : IMusicPlayer
     {
         lock (_stateLock)
         {
+            _logger.Info($"Close: {Path.GetFileName(CurrentFilePath)}");
             RemoveFromMixer();
             DisposeCurrentReader();
             CurrentFilePath = null;

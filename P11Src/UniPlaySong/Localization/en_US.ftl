@@ -1,0 +1,1 @@
+example_string = "Fluent test string"

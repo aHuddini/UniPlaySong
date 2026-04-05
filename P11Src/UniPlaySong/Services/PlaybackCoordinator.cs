@@ -5,6 +5,8 @@ namespace UniPlaySong.Services;
 
 class PlaybackCoordinator
 {
+    private static readonly ILogger _logger = LogManager.GetLogger();
+
     private readonly MusicPlaybackService _playbackService;
     private readonly UniPlaySongSettings _settings;
 
@@ -18,12 +20,14 @@ class PlaybackCoordinator
     {
         if (game == null)
         {
+            _logger.Info("Coordinator: null game — fading out");
             _playbackService.FadeOutAndStop();
             return;
         }
 
         if (!ShouldPlayMusic())
         {
+            _logger.Info($"Coordinator: ShouldPlayMusic=false (enabled={_settings.EnableMusic}, vol={_settings.MusicVolume}) — fading out");
             _playbackService.FadeOutAndStop();
             return;
         }

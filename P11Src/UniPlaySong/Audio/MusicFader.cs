@@ -1,3 +1,4 @@
+using Playnite;
 using UniPlaySong.Common;
 
 namespace UniPlaySong.Audio;
@@ -7,6 +8,8 @@ namespace UniPlaySong.Audio;
 // for ramp completion and execute lifecycle actions.
 class MusicFader : IDisposable
 {
+    private static readonly ILogger _logger = LogManager.GetLogger();
+
     private readonly IMusicPlayer _player;
     private readonly SynchronizationContext _syncContext;
 
@@ -31,6 +34,7 @@ class MusicFader : IDisposable
         TimeSpan fadeOutDuration,
         TimeSpan fadeInDuration)
     {
+        _logger.Info($"Fader.Switch: fadeOut={fadeOutDuration.TotalMilliseconds:F0}ms, fadeIn={fadeInDuration.TotalMilliseconds:F0}ms, targetVol={targetVolume:F2}");
         CancelCurrentFade();
         var cts = new CancellationTokenSource();
         _fadeCts = cts;
@@ -40,30 +44,33 @@ class MusicFader : IDisposable
 
         _ = PollUntilRampCompleteAsync(cts.Token, () =>
         {
-            // Fade out complete — execute switch on UI thread
             _syncContext.Post(_ =>
             {
                 if (cts.IsCancellationRequested) return;
 
+                _logger.Info("Fader.Switch: fade-out complete — executing stop/load/play");
                 stopAction();
                 loadAction();
                 playAction();
 
-                // Start fade in
                 _player.SetVolume(0.0);
                 _player.SetVolumeRamp(targetVolume, fadeInDuration);
 
                 _ = PollUntilRampCompleteAsync(cts.Token, () =>
                 {
-                    _syncContext.Post(_ => IsFading = false, null);
+                    _syncContext.Post(_ =>
+                    {
+                        _logger.Info("Fader.Switch: fade-in complete");
+                        IsFading = false;
+                    }, null);
                 });
             }, null);
         });
     }
 
-    // Standalone fade in
     public void FadeIn(double targetVolume, TimeSpan duration)
     {
+        _logger.Info($"Fader.FadeIn: targetVol={targetVolume:F2}, duration={duration.TotalMilliseconds:F0}ms");
         CancelCurrentFade();
         var cts = new CancellationTokenSource();
         _fadeCts = cts;
@@ -74,13 +81,17 @@ class MusicFader : IDisposable
 
         _ = PollUntilRampCompleteAsync(cts.Token, () =>
         {
-            _syncContext.Post(_ => IsFading = false, null);
+            _syncContext.Post(_ =>
+            {
+                _logger.Info("Fader.FadeIn: complete");
+                IsFading = false;
+            }, null);
         });
     }
 
-    // Standalone fade out with callback
     public void FadeOut(TimeSpan duration, Action? onComplete = null)
     {
+        _logger.Info($"Fader.FadeOut: duration={duration.TotalMilliseconds:F0}ms");
         CancelCurrentFade();
         var cts = new CancellationTokenSource();
         _fadeCts = cts;
@@ -92,6 +103,7 @@ class MusicFader : IDisposable
         {
             _syncContext.Post(_ =>
             {
+                _logger.Info("Fader.FadeOut: complete");
                 IsFading = false;
                 onComplete?.Invoke();
             }, null);
