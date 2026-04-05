@@ -55,7 +55,14 @@ class MusicPlaybackService
 
         if (_settings.RadioModeEnabled)
         {
-            _logger.Info("PlayGameMusic: radio mode active — delegating");
+            // Radio mode ignores game selection — music plays continuously
+            if (_state.IsRadioMode && _player.IsPlaying)
+            {
+                _logger.Info("PlayGameMusic: radio mode active, already playing — ignoring game select");
+                return;
+            }
+            // Not yet playing — start radio
+            _logger.Info("PlayGameMusic: radio mode active — starting radio playback");
             PlayRadioSong();
             return;
         }

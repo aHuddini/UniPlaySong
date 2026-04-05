@@ -18,6 +18,13 @@ class PlaybackCoordinator
 
     public void HandleGameSelected(Game? game)
     {
+        // Radio mode plays continuously — ignore game selection entirely
+        if (_settings.RadioModeEnabled && _playbackService.IsPlaying)
+        {
+            _logger.Info("Coordinator: radio mode active — ignoring game selection");
+            return;
+        }
+
         if (game == null)
         {
             _logger.Info("Coordinator: null game — fading out");
