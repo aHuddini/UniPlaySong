@@ -22,6 +22,7 @@ public class UniPlaySongPlugin : Plugin
     private RadioService? _radioService;
     private MusicPlaybackService? _playbackService;
     private PlaybackCoordinator? _coordinator;
+    private MediaControlService? _controller;
 
     public UniPlaySongPlugin() : base()
     {
@@ -50,6 +51,7 @@ public class UniPlaySongPlugin : Plugin
         _playbackService = new MusicPlaybackService(
             _player, _fader, _fileService, _radioService, _settingsHandler.Settings);
         _coordinator = new PlaybackCoordinator(_playbackService, _settingsHandler.Settings);
+        _controller = new MediaControlService(_playbackService);
 
         _logger.Info("InitializeAsync: all services wired — plugin ready");
     }
@@ -90,11 +92,13 @@ public class UniPlaySongPlugin : Plugin
         _settingsHandler?.SaveIfNeeded();
     }
 
+    // App menu
     public override ICollection<MenuItemDescriptor>? GetAppMenuItemDescriptors(
         GetAppMenuItemDescriptorsArgs args)
     {
         return
         [
+            new MenuItemDescriptor("ups.playpause", "UniPlaySong: Play/Pause"),
             new MenuItemDescriptor("ups.skip", "UniPlaySong: Skip to Next Song"),
             new MenuItemDescriptor("ups.openroot", "UniPlaySong: Open Music Root Folder")
         ];
@@ -102,12 +106,14 @@ public class UniPlaySongPlugin : Plugin
 
     public override ICollection<MenuItemImpl>? GetAppMenuItems(GetAppMenuItemsArgs args)
     {
+        if (args.ItemId == "ups.playpause")
+        {
+            var label = _controller?.IsPlaying == true ? "Pause Music" : "Resume Music";
+            return [new MenuItemImpl(label, () => _controller?.TogglePlayPause())];
+        }
         if (args.ItemId == "ups.skip")
         {
-            return [new MenuItemImpl("Skip to Next Song", () =>
-            {
-                _playbackService?.SkipToNext();
-            })];
+            return [new MenuItemImpl("Skip to Next Song", () => _controller?.SkipToNext())];
         }
         if (args.ItemId == "ups.openroot")
         {
@@ -178,6 +184,7 @@ public class UniPlaySongPlugin : Plugin
 
     public override async ValueTask DisposeAsync()
     {
+        _controller?.Dispose();
         _fader?.Dispose();
         _fileService?.Dispose();
 
