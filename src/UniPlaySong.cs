@@ -241,6 +241,8 @@ namespace UniPlaySong
 
             Properties = new GenericPluginProperties { HasSettings = true };
 
+            Common.PlayniteThemeHelper.Initialize(_api);
+
             _settingsService = new SettingsService(_api, Logger, _fileLogger, this);
             _settingsService.SettingsChanged += OnSettingsServiceChanged;
 

@@ -144,7 +144,8 @@ namespace UniPlaySong
         CustomFolder,   // User-selected directory of audio files
         RandomGame,     // Random song from any game's music library
         CustomRotation,         // Songs from user-selected games
-        CompletionStatusPool    // Songs from games matching selected completion statuses
+        CompletionStatusPool,   // Songs from games matching selected completion statuses
+        ActiveThemeMusic        // Background music from the currently active fullscreen theme
     }
 
     public static class DefaultMusicSourceExtensions

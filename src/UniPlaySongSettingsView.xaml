@@ -494,6 +494,18 @@
                                TextWrapping="Wrap"
                                Margin="40,0,0,10"/>
 
+                    <!-- Default Music Source: Active Theme Music -->
+                    <RadioButton Content="Use active theme's background music"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=ActiveThemeMusic}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="20,5,0,0"/>
+                    <TextBlock Text="Plays the background music bundled with your current fullscreen theme (e.g. Solaris). UPS manages playback with fade-in, volume control, and proper suppression instead of Playnite's native SDL2 player."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
                     <!-- Default Music Source: Random Game -->
                     <RadioButton Content="Pick From Random Game"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"

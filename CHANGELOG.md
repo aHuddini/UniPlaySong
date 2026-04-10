@@ -4,6 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.11] - 2026-04-09
+
+### Added
+- **Active Theme Music Source** — New default music option: "Use active theme's background music." Detects the currently active fullscreen theme (e.g. Solaris, ANIKI REMAKE) and plays its bundled `audio/background.mp3` through UPS's own audio pipeline with fade-in, volume control, and proper suppression. Resolves the conflict where themes with bundled background music fight with UPS over SDL2_mixer — UPS now manages the theme's music file directly. Located in Settings > General > Default Music Source. Theme ID resolved via reflection on `FullscreenSettingsAPI` with fallback to `fullscreenConfig.json` parsing.
+
 ## [1.3.10] - 2026-03-29
 
 ### Added

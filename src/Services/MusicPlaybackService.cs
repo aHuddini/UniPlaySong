@@ -414,6 +414,11 @@ namespace UniPlaySong.Services
                     return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
                            string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
 
+                case DefaultMusicSource.ActiveThemeMusic:
+                    var activeThemePath = Common.PlayniteThemeHelper.FindActiveThemeMusicFile();
+                    return !string.IsNullOrWhiteSpace(activeThemePath) &&
+                           string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
+
                 case DefaultMusicSource.BundledPreset:
                     var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
                     return presetPath != null &&
@@ -668,6 +673,19 @@ namespace UniPlaySong.Services
                             else
                             {
                                 _fileLogger?.Warn($"NativeTheme selected but native music file not found.");
+                            }
+                            break;
+
+                        case DefaultMusicSource.ActiveThemeMusic:
+                            var themeMusicPath = Common.PlayniteThemeHelper.FindActiveThemeMusicFile();
+                            if (!string.IsNullOrWhiteSpace(themeMusicPath) && File.Exists(themeMusicPath))
+                            {
+                                _fileLogger?.Info($"No game music for {game.Name}, using active theme music: {Path.GetFileName(themeMusicPath)}");
+                                songs.Add(themeMusicPath);
+                            }
+                            else
+                            {
+                                _fileLogger?.Warn($"ActiveThemeMusic selected but no background music found in active theme.");
                             }
                             break;
 

@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.10-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.11-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,23 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.10
+## What's New - v1.3.11
 
-- **Bulk Audio Format Conversion** — Save disk space by converting all music files in your library to OGG or MP3 at 128/192/256 kbps. Settings > Editing > Bulk Actions.
-- **NAudio Restart Fix** — Restarting a song now correctly seeks to the beginning when using Live Effects or Visualizer.
-- **NAudio Instant Pause Fix** — External Audio instant pause now properly silences audio when Live Effects or Visualizer is enabled.
-- **Fullscreen Performance** — Visual effects now skipped in Fullscreen mode. External audio poll timer only runs when the setting is enabled.
-- **External Control via URI** — External applications, scripts, themes, and automation tools can now control UniPlaySong playback via Playnite's URI protocol. No setup required.
-  - `playnite://uniplaysong/play` — Resume playback
-  - `playnite://uniplaysong/pause` — Pause playback
-  - `playnite://uniplaysong/playpausetoggle` — Toggle play/pause
-  - `playnite://uniplaysong/skip` — Skip to next song
-  - `playnite://uniplaysong/restart` — Restart current song
-  - `playnite://uniplaysong/stop` — Stop playback
-  - `playnite://uniplaysong/volume/{0-100}` — Set volume
+- **Active Theme Music** — New default music option that plays your fullscreen theme's own background music through UPS. If your theme (like Solaris) includes its own ambient track, UPS can now use it as default music with proper fade-in, volume control, and no audio conflicts. Settings > General > Default Music Source > "Use active theme's background music."
 
 ### Previous Version
-- **v1.3.9**: Controller SDK Migration (XInput → Playnite SDK), Play Only on Game Select, OGG audio editing, D-pad navigation improvements
+- **v1.3.10**: Bulk Audio Format Conversion, External Control via URI, NAudio fixes, Fullscreen performance improvements
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
