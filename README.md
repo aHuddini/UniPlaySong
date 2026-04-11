@@ -22,7 +22,9 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.11
 
-- **Active Theme Music** — New default music option that plays your fullscreen theme's own background music through UPS. If your theme (like Solaris) includes its own ambient track, UPS can now use it as default music with proper fade-in, volume control, and no audio conflicts. Settings > General > Default Music Source > "Use active theme's background music."
+- **Active Theme Music** — New default music option that plays your fullscreen theme's background music through UPS. Themes with a `background.mp3` in their audio directory (e.g. Solaris, Playnite Default) are supported. Settings > General > Default Music Source.
+- **Skip First Selection Fix** — "Do not play music on startup" no longer requires two game selections before music plays.
+- **Playnite 10.52 Support** — Updated to SDK 6.16.0.
 
 ### Previous Version
 - **v1.3.10**: Bulk Audio Format Conversion, External Control via URI, NAudio fixes, Fullscreen performance improvements

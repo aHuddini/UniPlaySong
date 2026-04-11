@@ -86,15 +86,20 @@ namespace UniPlaySong.Common
         {
             try
             {
-                // Get the active fullscreen theme ID.
-                // Not exposed in SDK — read from fullscreenConfig.json or reflect through the settings wrapper.
                 var themeId = GetActiveFullscreenThemeId();
                 if (string.IsNullOrWhiteSpace(themeId)) return null;
 
-                // Search user themes directory first (Roaming), then program themes (Local)
                 var roamingPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
+                // Built-in default theme: ID is "Playnite_builtin_DefaultFullscreen", dir is just "Default"
+                if (themeId == "Playnite_builtin_DefaultFullscreen")
+                {
+                    var result = FindBackgroundMusicInDir(Path.Combine(localPath, "Playnite", "Themes", "Fullscreen", "Default"));
+                    return result;
+                }
+
+                // User-installed themes: directory name matches the theme ID
                 var searchDirs = new[]
                 {
                     Path.Combine(roamingPath, "Playnite", "Themes", "Fullscreen"),
@@ -111,17 +116,8 @@ namespace UniPlaySong.Common
                         if (!string.Equals(dirName, themeId, StringComparison.OrdinalIgnoreCase))
                             continue;
 
-                        var audioDir = Path.Combine(dir, "audio");
-                        if (!Directory.Exists(audioDir)) continue;
-
-                        foreach (var ext in SupportedExtensions)
-                        {
-                            var filePath = Path.Combine(audioDir, $"background{ext}");
-                            if (File.Exists(filePath))
-                            {
-                                return filePath;
-                            }
-                        }
+                        var result = FindBackgroundMusicInDir(dir);
+                        if (result != null) return result;
                     }
                 }
 
@@ -186,6 +182,22 @@ namespace UniPlaySong.Common
             }
             catch { }
 
+            return null;
+        }
+
+        // Checks a theme directory for audio/background.* files
+        private static string FindBackgroundMusicInDir(string themeDir)
+        {
+            if (string.IsNullOrWhiteSpace(themeDir)) return null;
+            var audioDir = Path.Combine(themeDir, "audio");
+            if (!Directory.Exists(audioDir)) return null;
+
+            foreach (var ext in SupportedExtensions)
+            {
+                var filePath = Path.Combine(audioDir, $"background{ext}");
+                if (File.Exists(filePath))
+                    return filePath;
+            }
             return null;
         }
     }

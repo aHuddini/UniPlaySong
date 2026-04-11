@@ -495,12 +495,12 @@
                                Margin="40,0,0,10"/>
 
                     <!-- Default Music Source: Active Theme Music -->
-                    <RadioButton Content="Use active theme's background music"
+                    <RadioButton Content="Use active fullscreen theme's background music (If Available)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=ActiveThemeMusic}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
                                  Margin="20,5,0,0"/>
-                    <TextBlock Text="Plays the background music bundled with your current fullscreen theme (e.g. Solaris). UPS manages playback with fade-in, volume control, and proper suppression instead of Playnite's native SDL2 player."
+                    <TextBlock Text="Plays the background music from your current fullscreen theme through UPS with fade-in and volume control. The theme must have a background.mp3 file in its audio directory for this to work (e.g. Solaris, Playnite Default). Themes that manage audio through other means (e.g. ANIKI REMAKE) are not supported by this option."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
