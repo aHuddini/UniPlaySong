@@ -457,10 +457,10 @@ namespace UniPlaySong
                 _settingsService?.LoadSettings();
             }
 
-            if (IsFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
-            {
-                _coordinator.ResetSkipStateForModeSwitch();
-            }
+            // ResetSkipStateForModeSwitch removed from here — the reset is already handled
+            // inside HandleGameSelected (first-time fullscreen detection). Calling it again
+            // in OnApplicationStarted caused a double-skip: the auto-select consumed the first
+            // skip, then this reset re-armed _firstSelect, forcing users to select twice.
 
             if (_settings?.ThemeCompatibleSilentSkip == true && IsFullscreen)
             {
