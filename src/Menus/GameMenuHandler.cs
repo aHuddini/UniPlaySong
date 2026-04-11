@@ -352,6 +352,57 @@ namespace UniPlaySong.Menus
             }
         }
 
+        public void AddMusicFile(Game game)
+        {
+            if (_errorHandler != null)
+            {
+                _errorHandler.Try(
+                    () =>
+                    {
+                        _logger.Debug($"AddMusicFile called for game: {game?.Name ?? "null"}");
+
+                        var dialog = new Microsoft.Win32.OpenFileDialog
+                        {
+                            Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac|All files|*.*",
+                            Title = $"Add Music File — {game?.Name ?? "Unknown Game"}"
+                        };
+
+                        if (dialog.ShowDialog() != true || string.IsNullOrEmpty(dialog.FileName))
+                            return;
+
+                        var sourcePath = dialog.FileName;
+                        var destDir = _fileService.EnsureGameMusicDirectory(game);
+                        if (string.IsNullOrEmpty(destDir)) return;
+
+                        var fileName = Path.GetFileName(sourcePath);
+                        var destPath = Path.Combine(destDir, fileName);
+
+                        // Handle duplicate file names
+                        if (File.Exists(destPath))
+                        {
+                            var baseName = Path.GetFileNameWithoutExtension(fileName);
+                            var ext = Path.GetExtension(fileName);
+                            var counter = 1;
+                            while (File.Exists(destPath))
+                            {
+                                destPath = Path.Combine(destDir, $"{baseName} ({counter}){ext}");
+                                counter++;
+                            }
+                        }
+
+                        File.Copy(sourcePath, destPath);
+                        _fileService.InvalidateCacheForGame(game);
+                        _logger.Info($"Added music file for {game?.Name}: {Path.GetFileName(destPath)}");
+
+                        _playniteApi.Dialogs.ShowMessage(
+                            $"Added: {Path.GetFileName(destPath)}",
+                            "UniPlaySong");
+                    },
+                    context: $"adding music file for '{game?.Name}'"
+                );
+            }
+        }
+
         public void OpenMusicFolder(Game game)
         {
             if (_errorHandler != null)

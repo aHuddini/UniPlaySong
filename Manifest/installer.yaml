@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.11/UniPlaySong-1_3_11-Apr11_2026.pext'
     Changelog:
       - '[New Feature] Active Theme Music: New default music option that plays your fullscreen themes background.mp3 through UPS with fade-in, volume control, and no audio conflicts. Requires theme to have background.mp3 in its audio directory.'
+      - '[New Feature] Add Music File: Browse and add local audio files to any game from the right-click menu. Controller-friendly file browser in Fullscreen mode.'
       - '[Fix] Skip First Selection: Do not play music on startup no longer requires two game selections before music plays.'
       - '[Improved] Updated to Playnite SDK 6.16.0 (Playnite 10.52).'
   - Version: 1.3.10

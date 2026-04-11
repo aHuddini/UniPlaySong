@@ -23,6 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.3.11
 
 - **Active Theme Music** — New default music option that plays your fullscreen theme's background music through UPS. Themes with a `background.mp3` in their audio directory (e.g. Solaris, Playnite Default) are supported. Settings > General > Default Music Source.
+- **Add Music File** — Browse and add local audio files to any game from the right-click menu. Includes a controller-friendly Material Design file browser in Fullscreen mode.
 - **Skip First Selection Fix** — "Do not play music on startup" no longer requires two game selections before music plays.
 - **Playnite 10.52 Support** — Updated to SDK 6.16.0.
 

@@ -3405,6 +3405,13 @@ namespace UniPlaySong
                 // === Manage Music Submenu (🎮 Mode options) ===
                 items.Add(new GameMenuItem
                 {
+                    Description = "🎮 Add Music File",
+                    MenuSection = manageMusicSection,
+                    Action = _ => _controllerDialogHandler.ShowAddMusicFile(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
                     Description = "🎮 Delete Songs",
                     MenuSection = manageMusicSection,
                     Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
@@ -3467,6 +3474,14 @@ namespace UniPlaySong
                     Description = "Download From URL",
                     MenuSection = menuSection,
                     Action = _ => _gameMenuHandler.DownloadFromUrl(game)
+                });
+
+                // Add Music File - Browse local files to add to game
+                items.Add(new GameMenuItem
+                {
+                    Description = "Add Music File",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.AddMusicFile(game)
                 });
 
                 // Separator before Primary Song section

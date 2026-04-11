@@ -38,6 +38,31 @@ namespace UniPlaySong.Handlers
             _downloadManager = downloadManager;
         }
 
+        // Show controller-friendly file browser for adding a music file to a game
+        public void ShowAddMusicFile(Game game)
+        {
+            try
+            {
+                var addMusicDialog = new Views.ControllerAddMusicDialog();
+                var window = DialogHelper.CreateStandardDialog(
+                    _playniteApi,
+                    $"Add Music File - {game?.Name ?? "Unknown Game"}",
+                    addMusicDialog,
+                    width: 750,
+                    height: 550);
+
+                addMusicDialog.Initialize(game, _playniteApi, _fileService, _playbackService);
+                DialogHelper.AddFocusReturnHandler(window, _playniteApi, "add music dialog close");
+
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error showing controller add music file dialog");
+                _playniteApi.Dialogs.ShowErrorMessage("Failed to open music file browser.", "UniPlaySong");
+            }
+        }
+
         /// <summary>
         /// Show controller-friendly file picker for setting primary song
         /// </summary>
