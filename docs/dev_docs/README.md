@@ -62,6 +62,14 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - PS4/PS5/Switch controller support via SDL2
   - Stack-based ControllerEventRouter, IControllerInputReceiver interface
 
+### Theme Development
+
+- **[THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md)** - Theme developer integration guide
+  - UPS_MusicControl for overlay/intro pause/resume
+  - Active Theme Music: adding `audio/background.mp3` for UPS playback (v1.3.11+)
+  - External Control via URI for custom media control buttons
+  - ANIKI REMAKE integration example
+
 ### Additional Resources
 
 - **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Build and packaging instructions
@@ -164,6 +172,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-03-24
+**Last Updated**: 2026-04-11
 **Documentation Version**: 1.3
 

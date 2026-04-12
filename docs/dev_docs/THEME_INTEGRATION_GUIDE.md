@@ -283,6 +283,54 @@ Themes can also control playback using Playnite's `playnite://` URI protocol. Th
 - Use `UPS_MusicControl` for overlay/video pause/resume (automatic, state-driven via XAML bindings)
 - Use URIs for explicit user actions like media control buttons (fire-and-forget)
 
+## Active Theme Music (v1.3.11+)
+
+UniPlaySong can detect and play your theme's background music through its own audio pipeline — with fade-in, volume control, and no conflicts with Playnite's native SDL2 player. Users enable this via **Settings > General > Default Music Source > "Use active fullscreen theme's background music (If Available)."**
+
+### How to Add Background Music to Your Theme
+
+Place an audio file named `background.mp3` in your theme's `audio/` directory:
+
+```
+YourTheme_GUID/
+├── audio/
+│   ├── background.mp3      ← UPS detects this file
+│   ├── activation.wav       (optional: UI sounds)
+│   └── navigation.wav       (optional: UI sounds)
+├── Views/
+│   └── Main.xaml
+└── theme.yaml
+```
+
+**Requirements:**
+- File must be named `background` with one of these extensions: `.mp3`, `.ogg`, `.wav`, `.flac`
+- File must be in the `audio/` subdirectory of your theme root
+- Works with both user-installed themes (`%AppData%/Roaming/Playnite/Themes/Fullscreen/`) and the built-in default theme
+
+**That's it.** No XAML changes, no plugin references, no code. UPS will automatically find and play the file when the user selects this option.
+
+### How It Works
+
+1. UPS reads the active fullscreen theme ID from Playnite's settings
+2. Scans the theme's directory for `audio/background.*`
+3. Plays the file through UPS's audio pipeline (NAudio or SDL2) with fade-in, volume integration, and proper pause/resume handling
+4. Playnite's native SDL2 playback of the same file is suppressed to avoid overlap
+
+### Supported Active Theme Music
+
+| Theme | Has `background.mp3` | Works with Active Theme Music |
+|-------|----------------------|-------------------------------|
+| Playnite Default | Yes | Yes |
+| Solaris | Yes | Yes |
+| ANIKI REMAKE | No (uses WPF MediaElements) | No — use other default music options |
+| Your theme | Add `audio/background.mp3` | Yes |
+
+### Notes for Theme Developers
+
+- **No conflict with UPS_MusicControl**: The `UPS_MusicControl` pause/resume system works independently. If your theme uses overlays or intros that pause music, those still work as expected.
+- **No conflict with Playnite's native playback**: When Active Theme Music is enabled, UPS suppresses Playnite's native SDL2 playback of `background.mp3` and handles it directly. Users without UPS (or with a different default music option) will hear the file through Playnite's native player as usual.
+- **Login screen audio**: If your theme relies on `background.mp3` as ambient login screen music, note that UPS intially suppresses native playback when transitioning to fullscreen. Users who want theme login audio should not use UPS's suppress option, or the theme should use WPF `MediaElement` for login-specific audio (like ANIKI REMAKE does).
+
 ## Support
 
 - **GitHub Issues**: https://github.com/aHuddini/UniPlaySong/issues
