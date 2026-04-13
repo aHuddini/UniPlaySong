@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-04-13
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.12/UniPlaySong-1_3_12-Apr13_2026.pext'
     Changelog:
+      - '[Critical Fix] External Audio Pause: Fixed detection of other apps audio. Replaced NAudio COM with direct WASAPI interop to resolve InvalidCastException.'
       - '[Fix] Radio Mode: No longer plays over fullscreen theme login/welcome screens. Respects theme overlay pauses.'
       - '[Improved] Theme Compatible Login Skip: Clarified this option is only needed for themes without native UPS support.'
   - Version: 1.3.11

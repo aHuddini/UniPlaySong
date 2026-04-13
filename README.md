@@ -22,8 +22,9 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.12
 
-- **Clearer Theme Login Skip** — The "Theme Compatible Login Skip" option now clarifies it's only needed for themes without native UPS support. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically.
+- **External Audio Pause Fix** — Fixed "Pause on External Audio" not detecting other apps' audio. Replaced NAudio's COM-based session detection with direct WASAPI interop, resolving an InvalidCastException that silently broke the feature.
 - **Radio Mode Login Fix** — Radio Mode no longer plays over fullscreen theme login/welcome screens. Music now correctly waits until the theme overlay is dismissed.
+- **Clearer Theme Login Skip** — The "Theme Compatible Login Skip" option now clarifies it's only needed for themes without native UPS support.
 
 ### Previous Version
 - **v1.3.11**: Active Theme Music, Add Music File, Skip First Selection fix, Playnite 10.52 support

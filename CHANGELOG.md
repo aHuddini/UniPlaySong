@@ -7,6 +7,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.12] - 2026-04-13
 
 ### Fixed
+- **External Audio Pause Detection** — "Pause on External Audio" silently failed due to an `InvalidCastException` when creating NAudio's `MMDeviceEnumerator` on a ThreadPool (MTA) thread. Replaced with `AudioSessionDetector` — a direct WASAPI COM interop implementation (`Type.GetTypeFromCLSID` + raw `IMMDeviceEnumerator`/`IAudioSessionManager2`/`IAudioMeterInformation` interfaces) that bypasses NAudio's COM wrapper entirely. No STA thread requirement, no assembly identity conflicts.
 - **Radio Mode Login/Welcome Screen Bypass** — Radio Mode ignored theme overlay pauses and played immediately on fullscreen startup. Two fixes: (1) `ClearAllPauseSources()` now preserves `ThemeOverlay` so `HandleGameSelected` → `Stop()` doesn't wipe the theme's pause request. (2) The direct `StartRadioPlayback()` call in `OnApplicationStarted` now checks `IsPaused` before starting, respecting active theme overlays.
 
 ### Changed
