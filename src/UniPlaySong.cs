@@ -631,8 +631,9 @@ namespace UniPlaySong
                         new Action(() => _sidebarGlowManager?.Attach())));
             }
 
-            // Radio Mode: kick off playback immediately on startup (no game selection needed)
-            if (_settings?.RadioModeEnabled == true)
+            // Radio Mode: kick off playback on startup, but respect active pause sources
+            // (ThemeOverlay from login screens, Video from intros, etc.)
+            if (_settings?.RadioModeEnabled == true && _playbackService?.IsPaused != true)
             {
                 _playbackService?.StartRadioPlayback(_settings);
             }
@@ -1684,57 +1685,9 @@ namespace UniPlaySong
                         StringComparer.OrdinalIgnoreCase);
                 }
 
-                bool audioFound = false;
-                int selfPid = _selfPid;
-
-                using (var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator())
-                using (var device = enumerator.GetDefaultAudioEndpoint(
-                    NAudio.CoreAudioApi.DataFlow.Render,
-                    NAudio.CoreAudioApi.Role.Multimedia))
-                {
-                    var sessions = device.AudioSessionManager.Sessions;
-                    float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
-
-                    for (int i = 0; i < sessions.Count; i++)
-                    {
-                        try
-                        {
-                            var session = sessions[i];
-                            uint sessionPid = session.GetProcessID;
-
-                            if (sessionPid == selfPid || sessionPid == 0)
-                                continue;
-
-                            if (session.IsSystemSoundsSession)
-                                continue;
-
-                            // Check exclusion list by process name
-                            if (_externalAudioExcludedPids.Count > 0)
-                            {
-                                try
-                                {
-                                    var proc = System.Diagnostics.Process.GetProcessById((int)sessionPid);
-                                    if (_externalAudioExcludedPids.Contains(proc.ProcessName.ToLowerInvariant()))
-                                        continue;
-                                }
-                                catch { }
-                            }
-
-                            float peak = session.AudioMeterInformation.MasterPeakValue;
-                            if (peak > peakThreshold)
-                            {
-                                audioFound = true;
-                                break;
-                            }
-                        }
-                        catch (Exception sessionEx)
-                        {
-                            // Individual session COM errors (bad driver, process exited, etc.)
-                            // Log once per session, don't abort the entire scan
-                            _fileLogger?.Debug($"External audio: session {i} error: {sessionEx.Message}");
-                        }
-                    }
-                }
+                float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
+                bool audioFound = Common.AudioSessionDetector.IsExternalAudioPlaying(
+                    _selfPid, peakThreshold, _externalAudioExcludedPids);
 
                 if (audioFound)
                 {

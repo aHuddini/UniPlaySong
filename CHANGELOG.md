@@ -4,6 +4,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.3.12] - 2026-04-13
+
+### Fixed
+- **Radio Mode Login/Welcome Screen Bypass** — Radio Mode ignored theme overlay pauses and played immediately on fullscreen startup. Two fixes: (1) `ClearAllPauseSources()` now preserves `ThemeOverlay` so `HandleGameSelected` → `Stop()` doesn't wipe the theme's pause request. (2) The direct `StartRadioPlayback()` call in `OnApplicationStarted` now checks `IsPaused` before starting, respecting active theme overlays.
+
+### Changed
+- **Theme Compatible Login Skip** — Updated description to clarify this option is only needed for fullscreen themes that don't natively support UPS via `UPS_MusicControl`. Themes with built-in integration (like ANIKI REMAKE) handle login/welcome screen pausing automatically.
+
 ## [1.3.11] - 2026-04-11
 
 ### Added

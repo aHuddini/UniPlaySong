@@ -73,6 +73,7 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
 ### Additional Resources
 
 - **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Build and packaging instructions
+- **[POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md)** - Known edge cases and deferred fixes
 
 ## Quick Start for Developers
 

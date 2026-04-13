@@ -86,7 +86,7 @@
                               IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
                               IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
                               Margin="0,5"/>
-                    <TextBlock Text="Waits for keyboard or controller input (Enter/Space/Escape/Return) before playing music. When enabled, music will not play until you press a key to dismiss the login screen. Useful for fullscreen themes with login/welcome screens."
+                    <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"

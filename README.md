@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.11-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.15.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.3.12-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,15 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.11
+## What's New - v1.3.12
 
-- **Active Theme Music** — New default music option that plays your fullscreen theme's background music through UPS. Themes with a `background.mp3` in their audio directory (e.g. Solaris, Playnite Default) are supported. Settings > General > Default Music Source.
-- **Add Music File** — Browse and add local audio files to any game from the right-click menu. Includes a controller-friendly Material Design file browser in Fullscreen mode.
-- **Skip First Selection Fix** — "Do not play music on startup" no longer requires two game selections before music plays.
-- **Playnite 10.52 Support** — Updated to SDK 6.16.0.
+- **Clearer Theme Login Skip** — The "Theme Compatible Login Skip" option now clarifies it's only needed for themes without native UPS support. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically.
+- **Radio Mode Login Fix** — Radio Mode no longer plays over fullscreen theme login/welcome screens. Music now correctly waits until the theme overlay is dismissed.
 
 ### Previous Version
-- **v1.3.10**: Bulk Audio Format Conversion, External Control via URI, NAudio fixes, Fullscreen performance improvements
+- **v1.3.11**: Active Theme Music, Add Music File, Skip First Selection fix, Playnite 10.52 support
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
