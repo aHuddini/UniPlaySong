@@ -1118,7 +1118,7 @@ namespace UniPlaySong
         private double normalizationTargetLoudness = -16.0;
         private double normalizationTruePeak = -1.5;
         private double normalizationLoudnessRange = 11.0;
-        private string normalizationCodec = "libmp3lame";
+        private string normalizationCodec = "auto";
         private string normalizationSuffix = "-normalized";
         private bool skipAlreadyNormalized = true;
         private bool doNotPreserveOriginals = true;
@@ -1175,7 +1175,7 @@ namespace UniPlaySong
         public string NormalizationCodec
         {
             get => normalizationCodec;
-            set { normalizationCodec = value ?? "libmp3lame"; OnPropertyChanged(); }
+            set { normalizationCodec = value ?? "auto"; OnPropertyChanged(); }
         }
 
         /// <summary>

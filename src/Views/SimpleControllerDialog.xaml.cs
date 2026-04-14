@@ -40,6 +40,7 @@ namespace UniPlaySong.Views
         private DialogStep _currentStep = DialogStep.SourceSelection;
         private Source? _selectedSource;
         private Album _selectedAlbum;
+        private List<DownloadItemViewModel> _cachedAlbumResults; // Cached album search results for back navigation
 
         // Flag to block input during modal dialogs (e.g., download success message)
         private volatile bool _isShowingModalDialog = false;
@@ -366,18 +367,22 @@ namespace UniPlaySong.Views
                         break;
                         
                     case DialogStep.SongSelection:
-                        // Go back to album selection
-                        Logger.DebugIf(LogPrefix, $"Going back to album selection from song selection - Selected source: {_selectedSource}");
+                        // Go back to album selection — use cached results to avoid re-searching
+                        Logger.DebugIf(LogPrefix, $"Going back to album selection from song selection");
                         try
                         {
-                            if (_selectedSource.HasValue)
+                            if (_cachedAlbumResults != null && _cachedAlbumResults.Count > 0)
                             {
-                                Logger.DebugIf(LogPrefix, $"Loading album selection for source: {_selectedSource.Value}");
+                                _currentStep = DialogStep.AlbumSelection;
+                                PopulateResultsList(_cachedAlbumResults);
+                                UpdateInputFeedback($"🎵 {_cachedAlbumResults.Count} albums - A to select, B to go back");
+                            }
+                            else if (_selectedSource.HasValue)
+                            {
                                 LoadAlbumSelection(_selectedSource.Value);
                             }
                             else
                             {
-                                Logger.DebugIf(LogPrefix, "No selected source, going back to source selection");
                                 LoadSourceSelection();
                             }
                         }
@@ -385,7 +390,7 @@ namespace UniPlaySong.Views
                         {
                             Logger.Error(ex, "Error going back to album selection");
                             UpdateInputFeedback("❌ Error going back - returning to source selection");
-                            LoadSourceSelection(); // Fallback to source selection
+                            LoadSourceSelection();
                         }
                         break;
                         
@@ -1049,6 +1054,7 @@ namespace UniPlaySong.Views
                             {
                                 if (albumViewModels.Count > 0)
                                 {
+                                    _cachedAlbumResults = albumViewModels;
                                     PopulateResultsList(albumViewModels);
                                     UpdateInputFeedback($"🎵 Found {albumViewModels.Count} albums for {gameName} - A to select, B to go back, X/Y to preview");
                                 }

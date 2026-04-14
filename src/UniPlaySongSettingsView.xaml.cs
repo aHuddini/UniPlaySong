@@ -211,7 +211,7 @@ namespace UniPlaySong
             s.NormalizationTargetLoudness = -16.0;
             s.NormalizationTruePeak = -1.5;
             s.NormalizationLoudnessRange = 11.0;
-            s.NormalizationCodec = "libmp3lame";
+            s.NormalizationCodec = "auto";
             s.NormalizationSuffix = "-normalized";
             s.SkipAlreadyNormalized = true;
             s.DoNotPreserveOriginals = true;

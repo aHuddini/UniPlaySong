@@ -396,6 +396,10 @@ namespace UniPlaySong.Services
                 {
                     codecArgs = "-c:a libmp3lame -q:a 0"; // Highest quality MP3
                 }
+                else if (extensionLower == ".ogg")
+                {
+                    codecArgs = "-c:a libvorbis -q:a 6"; // Good quality OGG
+                }
                 else if (extensionLower == ".flac")
                 {
                     codecArgs = "-c:a flac"; // Lossless FLAC
@@ -406,7 +410,6 @@ namespace UniPlaySong.Services
                 }
                 else
                 {
-                    // For other formats, try to copy if possible, otherwise use aac
                     codecArgs = "-c:a copy";
                 }
                 

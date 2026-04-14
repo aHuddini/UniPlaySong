@@ -7,11 +7,17 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.3.12] - 2026-04-13
 
 ### Fixed
-- **External Audio Pause Detection** — "Pause on External Audio" silently failed due to an `InvalidCastException` when creating NAudio's `MMDeviceEnumerator` on a ThreadPool (MTA) thread. Replaced with `AudioSessionDetector` — a direct WASAPI COM interop implementation (`Type.GetTypeFromCLSID` + raw `IMMDeviceEnumerator`/`IAudioSessionManager2`/`IAudioMeterInformation` interfaces) that bypasses NAudio's COM wrapper entirely. No STA thread requirement, no assembly identity conflicts.
+- **Normalization Codec Mismatch** — Normalization always used `libmp3lame` regardless of input format, encoding MP3 data into `.ogg`/`.flac`/`.wav` files. Added `ResolveCodecArgs()` to auto-detect the correct codec from the input file extension. Default changed from `libmp3lame` to `auto`. Added high-quality VBR settings (`-q:a 0` for MP3, `-q:a 6` for OGG) instead of FFmpeg's 128kbps CBR default. Settings UI changed from free-text to dropdown (Auto, MP3, OGG Vorbis, FLAC, WAV).
+- **Silence Trim OGG Support** — `AudioTrimService` was missing OGG codec mapping (fell through to `-c:a copy`). Added `-c:a libvorbis -q:a 6` for `.ogg` files, matching the pattern used by all other audio services.
+- **External Audio Pause Detection** — "Pause on External Audio" silently failed due to an `InvalidCastException` when creating NAudio's `MMDeviceEnumerator` on a ThreadPool (MTA) thread. Replaced with `AudioSessionDetector` — a direct WASAPI COM interop implementation that bypasses NAudio's COM wrapper entirely.
 - **Radio Mode Login/Welcome Screen Bypass** — Radio Mode ignored theme overlay pauses and played immediately on fullscreen startup. Two fixes: (1) `ClearAllPauseSources()` now preserves `ThemeOverlay` so `HandleGameSelected` → `Stop()` doesn't wipe the theme's pause request. (2) The direct `StartRadioPlayback()` call in `OnApplicationStarted` now checks `IsPaused` before starting, respecting active theme overlays.
+- **Radio Mode + Installed Games** — Radio Mode and `MusicOnlyForInstalledGames` now work together properly. Installed games play their own music, uninstalled games resume radio from the full pool. `StartRadioPlayback()` now uses `_fader.Switch()` when music is already playing for smooth transitions.
+
+- **Fullscreen Download Dialog Back Navigation (fix attempt)** — Pressing B to go back from song selection to album selection no longer re-searches the network. Uses cached album results instead, preventing misleading "Invalid album selection" error messages. Minor visual/display fix — download functionality is unaffected.
 
 ### Changed
 - **Theme Compatible Login Skip** — Updated description to clarify this option is only needed for fullscreen themes that don't natively support UPS via `UPS_MusicControl`. Themes with built-in integration (like ANIKI REMAKE) handle login/welcome screen pausing automatically.
+- **Tool Path Validation** — yt-dlp and FFmpeg path settings now show validation status ("✓ Found" / "✗ Not found") on settings open. Descriptions updated to clarify paths must point to the actual `.exe` files. yt-dlp description notes that `deno.exe` should be placed in the same folder for YouTube support.
 
 ## [1.3.11] - 2026-04-11
 

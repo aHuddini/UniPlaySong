@@ -29,6 +29,35 @@ namespace UniPlaySong.Services
             _backupBasePath = backupBasePath;
         }
 
+        // Resolves the FFmpeg codec arguments for a given file extension.
+        // When set to "auto", matches the codec to the input format.
+        // Uses high-quality VBR settings to preserve audio quality.
+        private static string ResolveCodecArgs(string extension, string configuredCodec)
+        {
+            // If user forced a specific codec, use it with quality settings
+            if (!string.Equals(configuredCodec, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                switch (configuredCodec)
+                {
+                    case "libmp3lame": return "-c:a libmp3lame -q:a 0";
+                    case "libvorbis": return "-c:a libvorbis -q:a 6";
+                    case "flac": return "-c:a flac";
+                    case "pcm_s16le": return "-c:a pcm_s16le";
+                    default: return $"-c:a {configuredCodec}";
+                }
+            }
+
+            // Auto: match codec + quality to input format
+            switch (extension.ToLowerInvariant())
+            {
+                case ".mp3": return "-c:a libmp3lame -q:a 0";   // VBR ~245kbps
+                case ".ogg": return "-c:a libvorbis -q:a 6";    // VBR ~192kbps
+                case ".flac": return "-c:a flac";                // Lossless
+                case ".wav": return "-c:a pcm_s16le";            // Uncompressed
+                default: return "-c:a libmp3lame -q:a 0";
+            }
+        }
+
         public bool ValidateFFmpegAvailable(string ffmpegPath)
         {
             return FFmpegHelper.IsAvailable(ffmpegPath);
@@ -792,8 +821,11 @@ namespace UniPlaySong.Services
                                    $"measured_LRA={measurements.MeasuredLRA.ToString("F3", invariantCulture)}:measured_thresh={measurements.MeasuredThreshold.ToString("F3", invariantCulture)}{offsetParam}:" +
                                    "linear=true";
 
+                // Resolve codec + quality from input format when set to "auto"
+                var codecArgs = ResolveCodecArgs(extension, settings.AudioCodec);
+
                 // Use 48kHz sample rate (recommended for loudnorm filter)
-                var args = $"-i \"{filePath}\" -af \"{loudnormFilter}\" -ar 48000 -c:a {settings.AudioCodec} -y \"{tempPath}\"";
+                var args = $"-i \"{filePath}\" -af \"{loudnormFilter}\" -ar 48000 {codecArgs} -y \"{tempPath}\"";
 
                 var processInfo = new ProcessStartInfo
                 {

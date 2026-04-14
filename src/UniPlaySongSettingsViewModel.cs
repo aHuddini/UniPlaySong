@@ -2509,6 +2509,23 @@ namespace UniPlaySong
             UpdateCacheStats();
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();
+            UpdateToolValidation();
+        }
+
+        // Tool path validation — checks if yt-dlp.exe and ffmpeg.exe exist at configured paths
+        private string _ytDlpStatus = "";
+        public string YtDlpStatus { get => _ytDlpStatus; set { _ytDlpStatus = value; OnPropertyChanged(); } }
+
+        private string _ffmpegStatus = "";
+        public string FfmpegStatus { get => _ffmpegStatus; set { _ffmpegStatus = value; OnPropertyChanged(); } }
+
+        public void UpdateToolValidation()
+        {
+            var ytdlp = Settings?.YtDlpPath;
+            YtDlpStatus = !string.IsNullOrWhiteSpace(ytdlp) && File.Exists(ytdlp) ? "✓ Found" : "✗ Not found";
+
+            var ffmpeg = Settings?.FFmpegPath;
+            FfmpegStatus = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg) ? "✓ Found" : "✗ Not found";
         }
 
         public void CancelEdit()

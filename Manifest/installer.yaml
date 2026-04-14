@@ -5,9 +5,14 @@ Packages:
     ReleaseDate: 2026-04-13
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.3.12/UniPlaySong-1_3_12-Apr13_2026.pext'
     Changelog:
+      - '[Critical Fix] Normalization Codec: Now auto-detects correct codec for OGG, FLAC, WAV files. Previously encoded everything as MP3. Quality preserved with high-quality VBR settings.'
       - '[Critical Fix] External Audio Pause: Fixed detection of other apps audio. Replaced NAudio COM with direct WASAPI interop to resolve InvalidCastException.'
       - '[Fix] Radio Mode: No longer plays over fullscreen theme login/welcome screens. Respects theme overlay pauses.'
-      - '[Improved] Theme Compatible Login Skip: Clarified this option is only needed for themes without native UPS support.'
+      - '[Fix] Radio Mode + Installed Games: These options now work together properly with smooth fade transitions.'
+      - '[Fix] Silence Trim: Added OGG codec support for silence trim operations.'
+      - '[Fix Attempt] Fullscreen Download Dialog: Back navigation no longer shows misleading error messages. Visual fix only — download functionality unaffected.'
+      - '[Improved] Tool Path Validation: yt-dlp and FFmpeg paths now show Found/Not Found status. Descriptions clarify .exe path requirement and Deno placement.'
+      - '[GUI] Theme Compatible Login Skip: Clarified this option is only needed for themes without native UPS support.'
   - Version: 1.3.11
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-11

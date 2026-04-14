@@ -22,8 +22,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.3.12
 
-- **External Audio Pause Fix** — Fixed "Pause on External Audio" not detecting other apps' audio. Replaced NAudio's COM-based session detection with direct WASAPI interop, resolving an InvalidCastException that silently broke the feature.
-- **Radio Mode Login Fix** — Radio Mode no longer plays over fullscreen theme login/welcome screens. Music now correctly waits until the theme overlay is dismissed.
+- **Normalization Codec Fix** — Normalization now auto-detects the correct audio codec from the input file format (MP3, OGG, FLAC, WAV). Previously all files were encoded as MP3 regardless of format. Quality is now preserved with high-quality VBR settings instead of defaulting to 128kbps.
+- **External Audio Pause Fix** — Fixed "Pause on External Audio" not detecting other apps' audio. Replaced NAudio's COM-based session detection with direct WASAPI interop.
+- **Radio Mode Login Fix** — Radio Mode no longer plays over fullscreen theme login/welcome screens.
+- **Radio Mode + Installed Games** — Radio Mode and "Music only for installed games" now work together properly with smooth fade transitions.
+- **Fullscreen Download Dialog** — Back navigation no longer shows misleading error messages after downloading a song.
+- **Tool Path Validation** — Settings now show "✓ Found" or "✗ Not found" next to yt-dlp and FFmpeg paths. Descriptions clarify to point to the actual .exe files, and note that deno.exe should be placed alongside yt-dlp.exe.
 - **Clearer Theme Login Skip** — The "Theme Compatible Login Skip" option now clarifies it's only needed for themes without native UPS support.
 
 ### Previous Version

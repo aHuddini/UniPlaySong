@@ -548,16 +548,32 @@ namespace UniPlaySong.Services
                 // But we still respect it for regular game music.
             }
 
-            // Radio Mode: ignore game selection entirely — keep playing the radio pool uninterrupted.
-            // If radio is already playing, do nothing on game switch. If not yet started, kick it off.
+            // Radio Mode: plays from the radio pool, but yields to installed games with their own music.
             if (settings?.RadioModeEnabled == true && !forceReload)
             {
-                if (!_isInRadioMode || !IsPlaying)
+                // Installed game with music overrides radio — fall through to normal playback
+                if (settings?.MusicOnlyForInstalledGames == true && game.IsInstalled == true)
+                {
+                    var gameSongs = _fileService.GetAvailableSongs(game);
+                    if (gameSongs.Count > 0)
+                    {
+                        _fileLogger?.Debug($"RadioMode: yielding to installed game {game.Name} ({gameSongs.Count} songs)");
+                        _isInRadioMode = false;
+                        _lastRadioSongPath = null;
+                        goto playNormal;
+                    }
+                }
+
+                if (_isPaused)
+                    _fileLogger?.Debug($"RadioMode: not starting — paused ({string.Join(", ", _activePauseSources)})");
+                else if (!_isInRadioMode || !IsPlaying)
                     StartRadioPlayback(settings);
                 else
                     _fileLogger?.Debug($"RadioMode: ignoring game switch to {game.Name} — radio continues");
                 return;
             }
+
+            playNormal:
 
             // If we were in radio mode but settings changed, stop radio state
             if (_isInRadioMode)
@@ -1438,16 +1454,52 @@ namespace UniPlaySong.Services
             while (nextSong == _lastRadioSongPath && pool.Count > 1 && attempts < 10);
 
             _fileLogger?.Info($"RadioMode: starting — {System.IO.Path.GetFileName(nextSong)} (source: {settings.RadioMusicSource})");
-            _isInRadioMode = true;
-            _lastRadioSongPath = nextSong;
-            // Mark as default music so Now Playing, skip, and progress bar work correctly
-            _lastDefaultMusicPath = nextSong;
-            _isPlayingDefaultMusic = true;
             _previousSongPath = _currentSongPath;
-            LoadAndPlayFile(nextSong);
-            // Set _currentSongPath AFTER LoadAndPlayFile — triggers OnSongChanged → Now Playing update
-            _currentSongPath = nextSong;
-            MarkSongStart();
+
+            // Smooth transition: if music is currently playing, fade out then fade in the new song
+            if (_musicPlayer?.IsActive == true && !string.Equals(_currentSongPath, nextSong, StringComparison.OrdinalIgnoreCase))
+            {
+                // Set radio state before switch to prevent re-entry during fade
+                _isInRadioMode = true;
+                _lastRadioSongPath = nextSong;
+                OnSongChanged?.Invoke(nextSong);
+
+                _fader.Switch(
+                    stopAction: () =>
+                    {
+                        StopPreviewTimer();
+                        CancelSongEndFade();
+                        _musicPlayer.Close();
+                        _currentSongPath = null;
+                        ClearAllPauseSources();
+                    },
+                    preloadAction: () =>
+                    {
+                        _musicPlayer.PreLoad(nextSong);
+                    },
+                    playAction: () =>
+                    {
+                        _musicPlayer.Load(nextSong);
+                        _musicPlayer.Volume = 0;
+                        _musicPlayer.Play();
+                        _lastDefaultMusicPath = nextSong;
+                        _isPlayingDefaultMusic = true;
+                        _currentSongPath = nextSong;
+                        ClearAllPauseSources();
+                        MarkSongStart();
+                    });
+            }
+            else
+            {
+                // Cold start: no music playing, start immediately
+                _isInRadioMode = true;
+                _lastRadioSongPath = nextSong;
+                _lastDefaultMusicPath = nextSong;
+                _isPlayingDefaultMusic = true;
+                LoadAndPlayFile(nextSong);
+                _currentSongPath = nextSong;
+                MarkSongStart();
+            }
         }
 
         public void StopRadioMode()

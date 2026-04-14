@@ -2366,8 +2366,9 @@
                         <Button Content="Browse..."
                                 Width="80"
                                 Command="{Binding BrowseForFFmpegFile}"/>
+                        <TextBlock Text="{Binding FfmpegStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
                     </StackPanel>
-                    <TextBlock Text="FFmpeg is required for audio normalization, silence trimming, precise trim, and audio repair features. Download from ffmpeg.org if not installed."
+                    <TextBlock Text="Point this to the full path of ffmpeg.exe (e.g. C:\Tools\ffmpeg\ffmpeg.exe). Required for normalization, silence trimming, precise trim, and audio repair. Download from ffmpeg.org if not installed."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -2426,13 +2427,20 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
-                            <TextBox Text="{Binding Settings.NormalizationCodec}" 
-                                     Width="120" 
-                                     Margin="0,0,10,0"/>
+                            <ComboBox SelectedValue="{Binding Settings.NormalizationCodec}"
+                                      SelectedValuePath="Tag"
+                                      Width="220"
+                                      Margin="0,0,10,0">
+                                <ComboBoxItem Content="Auto (match input format)" Tag="auto"/>
+                                <ComboBoxItem Content="MP3 (libmp3lame)" Tag="libmp3lame"/>
+                                <ComboBoxItem Content="OGG Vorbis (libvorbis)" Tag="libvorbis"/>
+                                <ComboBoxItem Content="FLAC (lossless)" Tag="flac"/>
+                                <ComboBoxItem Content="WAV (uncompressed)" Tag="pcm_s16le"/>
+                            </ComboBox>
                         </StackPanel>
-                        <TextBlock Text="Audio codec for output files (default: libmp3lame for MP3)" 
-                                   FontSize="11" 
-                                   Foreground="Gray" 
+                        <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
+                                   FontSize="11"
+                                   Foreground="Gray"
                                    TextWrapping="Wrap"
                                    Margin="20,0,0,10"/>
 
@@ -2495,7 +2503,7 @@
                                     Width="220"
                                     Margin="0,0,10,0"
                                     Command="{Binding NormalizeAllMusicCommand}"/>
-                            <TextBlock Text="Normalize all music in your library to consistent volume."
+                            <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings."
                                        VerticalAlignment="Center"
                                        FontSize="11"
                                        Foreground="Gray"
@@ -2639,7 +2647,13 @@
                         <Button Content="Browse..."
                                 Width="80"
                                 Command="{Binding BrowseForYtDlpFile}"/>
+                        <TextBlock Text="{Binding YtDlpStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
                     </StackPanel>
+                    <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe — yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
 
                     <Separator Margin="0,10"/>
 
