@@ -4,6 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.4.0] - 2026-04-14
+
+### Added
+- **Faster YouTube Previews** — Preview downloads now use `--download-sections "*0:00-0:30"` to download only the first 40 seconds at the protocol level, instead of downloading the full track and trimming with FFmpeg. Reduces bandwidth and wait times.
+
 ## [1.3.12] - 2026-04-13
 
 ### Fixed

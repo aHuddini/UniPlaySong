@@ -228,19 +228,20 @@ namespace UniPlaySong.Downloaders
                 // --sleep-requests: seconds to sleep between requests to YouTube API (prevents 429 errors)
                 // --sleep-interval/--max-sleep-interval: random delay before each download
                 // These help prevent rate limiting during batch downloads
-                var rateLimitOptions = " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
+                var rateLimitOptions = isPreview
+                    ? " --sleep-requests 1 --sleep-interval 1 --max-sleep-interval 2"
+                    : " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
 
                 if (_cookieMode != CookieMode.None)
                 {
                     // Simplified command when using cookies - extract audio to MP3
                     // Post-processor args ensure SDL_mixer compatibility (48kHz stereo, matches normalization)
-                    var cookiesPostArgs = isPreview
-                        ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
-                        : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
+                    var cookiesPostArgs = " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
+                    var cookiesSectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
                     var cookiesArg = _cookieMode == CookieMode.Firefox
                         ? "--cookies-from-browser firefox"
                         : $"--cookies \"{_customCookiesFilePath}\"";
-                    arguments = $"{cookiesArg} -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    arguments = $"{cookiesArg} -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs}{cookiesSectionLimit} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                     Logger.DebugIf(LogPrefix,$"Using simplified yt-dlp command with cookies ({_cookieMode})");
                 }
                 else
@@ -261,16 +262,17 @@ namespace UniPlaySong.Downloaders
                     // -ac 2: Convert to stereo (2 channels)
                     // This fixes issues where unusual sample rates or channel configs cause SDL "Out of memory" errors
                     // For previews: also limit to 30 seconds with -t 30
-                    var postProcessorArgs = isPreview
-                        ? " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2 -t 30\""
-                        : " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
+                    var postProcessorArgs = " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
+
+                    // For previews: download only first 30 seconds instead of full track + trim
+                    var sectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
 
                     // For previews, add optimization flags for faster downloads
                     var previewFlags = isPreview
                         ? " --no-playlist --no-warnings --quiet --no-progress"
                         : " --no-playlist";
 
-                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{postProcessorArgs}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{postProcessorArgs}{sectionLimit}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
 
                 // Check directory permissions before starting download

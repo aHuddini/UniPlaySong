@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.3.12-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,18 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.3.12
+## What's New - v1.4.0
 
-- **Normalization Codec Fix** — Normalization now auto-detects the correct audio codec from the input file format (MP3, OGG, FLAC, WAV). Previously all files were encoded as MP3 regardless of format. Quality is now preserved with high-quality VBR settings instead of defaulting to 128kbps.
-- **External Audio Pause Fix** — Fixed "Pause on External Audio" not detecting other apps' audio. Replaced NAudio's COM-based session detection with direct WASAPI interop.
-- **Radio Mode Login Fix** — Radio Mode no longer plays over fullscreen theme login/welcome screens.
-- **Radio Mode + Installed Games** — Radio Mode and "Music only for installed games" now work together properly with smooth fade transitions.
-- **Fullscreen Download Dialog** — Back navigation no longer shows misleading error messages after downloading a song.
-- **Tool Path Validation** — Settings now show "✓ Found" or "✗ Not found" next to yt-dlp and FFmpeg paths. Descriptions clarify to point to the actual .exe files, and note that deno.exe should be placed alongside yt-dlp.exe.
-- **Clearer Theme Login Skip** — The "Theme Compatible Login Skip" option now clarifies it's only needed for themes without native UPS support.
+- **Faster Previews** — YouTube audio previews now download only the first 40 seconds instead of the full track, reducing bandwidth and wait times.
 
 ### Previous Version
-- **v1.3.11**: Active Theme Music, Add Music File, Skip First Selection fix, Playnite 10.52 support
+- **v1.3.12**: Normalization codec fix, external audio pause fix, radio mode fixes, tool path validation, download dialog improvements
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -54,3 +54,55 @@ if (settings?.RadioModeEnabled == true && !forceReload)
     return;
 }
 ```
+
+---
+
+## yt-dlp Download Command Inconsistencies
+
+**Status:** Partially fixed in v1.3.12
+**Discovered:** v1.3.12
+**Comparison:** PlayniteSound (PNS) uses a simple command that works reliably; UPS adds extra arguments that may cause failures.
+
+### Problem
+
+UPS has two separate yt-dlp command builds in `YouTubeDownloader.cs` — one for cookie mode (line ~243) and one for no-cookie mode (line ~273). They have inconsistencies that may cause download failures:
+
+1. **Post-processor args** (`--postprocessor-args "ffmpeg:-ar 48000 -ac 2"`) — Present in all modes. Forces FFmpeg to resample to 48kHz stereo after download. If FFmpeg encounters format issues during this step, the entire download fails even though audio was downloaded. PNS does not use post-processor args.
+
+2. **Rate limiting** (`--sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5`) — Present in all modes. Adds 2-5 second delays between requests. May contribute to timeouts on slow connections. PNS does not use rate limiting.
+
+3. **Extractor args** (`--extractor-args "youtube:player_client=android,ios,web"`) — Only in no-cookie mode. Forces specific YouTube client APIs. If YouTube blocks these clients, yt-dlp can't fall back to others. PNS lets yt-dlp choose automatically.
+
+### PNS Command (works reliably)
+
+```
+-x --audio-format mp3 --audio-quality 0 --ffmpeg-location="{ffmpeg}" -o "{path}" {url}
+```
+
+### UPS No-Cookie Command
+
+```
+-x --audio-format mp3 --audio-quality 0 --extractor-args "youtube:player_client=android,ios,web" --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5 --postprocessor-args "ffmpeg:-ar 48000 -ac 2" --no-playlist --ffmpeg-location="{ffmpeg}" -o "{path}" {url}
+```
+
+### UPS Cookie Command
+
+```
+{cookiesArg} -x --audio-format mp3 --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5 --postprocessor-args "ffmpeg:-ar 48000 -ac 2" --ffmpeg-location="{ffmpeg}" -o "{path}" {url}
+```
+
+### What's Been Fixed (v1.3.12)
+
+- **`--audio-quality 0`** added to cookie mode — was missing, causing 128kbps downloads instead of best quality
+- **`--no-playlist`** added to cookie mode — was missing, could accidentally download entire playlists
+- **`--extractor-args`** added to cookie mode — consistency across all modes
+
+### What's NOT Fixed (monitoring)
+
+- **Post-processor args** — kept intentionally for SDL_mixer compatibility (48kHz stereo). Could be made optional if users report failures.
+- **Rate limiting** — kept intentionally to reduce rate abuses by users. Could be made optional if users report timeout issues.
+- **`--extractor-args` forcing specific clients** — now consistent across all modes, but may still cause failures if YouTube blocks android/ios/web clients. Consider removing entirely and letting yt-dlp auto-detect if reports continue.
+
+### Future Optimization: Audio-Only Stream for Previews
+
+YouTube serves separate audio-only streams (m4a/AAC, webm/Opus) for nearly all videos. Currently yt-dlp downloads the best available stream (which could include video data) then extracts audio. Using `--format bestaudio[ext=m4a]/bestaudio` would skip video data entirely, reducing download size by 80-90% for typical music videos. Still needs FFmpeg conversion to MP3 for SDL_mixer compatibility. Available on 99%+ of YouTube videos (only very old pre-2012 videos might lack separate audio streams).
