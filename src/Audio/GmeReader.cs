@@ -44,9 +44,8 @@ namespace UniPlaySong.Audio
 
             _totalSamples = (long)SampleRate * _playLengthMs / 1000;
 
-            // Schedule fade-out 1 second before play_length so track ends naturally
-            int fadeStart = Math.Max(0, _playLengthMs - 1000);
-            GmeNative.gme_set_fade(_emu, fadeStart);
+            // Don't use GME's internal fade — let NAudio's SongEndFade and fader handle transitions.
+            // GME's gme_set_fade overlaps with our fader and can cause silent next-track issues.
 
             // Start track 0
             err = GmeNative.GetError(GmeNative.gme_start_track(_emu, 0));
@@ -93,32 +92,37 @@ namespace UniPlaySong.Audio
 
         // ISampleProvider.Read — the hot path used by NAudio's mixer pipeline.
         // Generates int16 samples from GME, converts to float32 in-place.
+        // EOF is signaled by returning 0 when play_length is reached (no GME internal fade).
         public int Read(float[] buffer, int offset, int count)
         {
-            if (_emu == IntPtr.Zero || GmeNative.gme_track_ended(_emu) != 0)
+            if (_emu == IntPtr.Zero)
+                return 0;
+
+            // Check if we've reached the play length
+            int posMs = GmeNative.gme_tell(_emu);
+            if (posMs >= _playLengthMs)
+                return 0;
+
+            // Clamp to remaining samples so we don't overshoot play_length
+            int remainingMs = _playLengthMs - posMs;
+            long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
+            int toRead = (int)Math.Min(count, remainingSamples);
+            if (toRead <= 0)
                 return 0;
 
             // Reuse short buffer if possible
-            if (_shortBuffer == null || _shortBuffer.Length < count)
-                _shortBuffer = new short[count];
+            if (_shortBuffer == null || _shortBuffer.Length < toRead)
+                _shortBuffer = new short[toRead];
 
-            string err = GmeNative.GetError(GmeNative.gme_play(_emu, count, _shortBuffer));
+            string err = GmeNative.GetError(GmeNative.gme_play(_emu, toRead, _shortBuffer));
             if (err != null)
                 return 0;
 
             // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < toRead; i++)
                 buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
 
-            // Signal EOF if track ended during this read
-            if (GmeNative.gme_track_ended(_emu) != 0)
-            {
-                // Find where audio actually ends (last non-silent sample)
-                // For simplicity, return full buffer — SongEndDetector handles partial reads
-                return count;
-            }
-
-            return count;
+            return toRead;
         }
 
         // WaveStream.Read — required by abstract base, not used in ISampleProvider pipeline
