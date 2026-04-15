@@ -115,6 +115,7 @@ namespace UniPlaySong
         private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
+        private bool _needsNAudioForFormat; // True when current song requires NAudio (GME retro formats)
         private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
         private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
         private IconGlow.IconGlowManager _iconGlowManager;
@@ -2034,6 +2035,7 @@ namespace UniPlaySong
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
+            _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
             if (_settings != null)
             {
@@ -2193,7 +2195,7 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false);
+            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || _needsNAudioForFormat;
 
             if (needsNAudio)
             {
@@ -2261,6 +2263,7 @@ namespace UniPlaySong
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
+                _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
@@ -2310,6 +2313,60 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 _errorHandler?.HandleError(ex, "recreating music player for live effects", showUserMessage: false);
+            }
+        }
+
+        // Recreates the player as NAudio when a GME file is encountered on SDL2.
+        private void HandlePlayerSwitchForFormat(string filePath)
+        {
+            try
+            {
+                _fileLogger?.Debug($"Switching to NAudio for GME file: {Path.GetFileName(filePath)}");
+
+                _needsNAudioForFormat = true;
+
+                // Stop current playback
+                _playbackService?.Stop();
+
+                // Dispose old player
+                if (_currentMusicPlayer is IDisposable disposable)
+                    disposable.Dispose();
+
+                // Create NAudio player
+                _currentMusicPlayer = CreateMusicPlayer();
+
+                // Recreate playback service
+                var oldService = _playbackService;
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+                _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
+                _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+                _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
+                _playbackService.MarkInitializationComplete();
+                _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
+
+                if (_settings != null)
+                    _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
+
+                if (IsFullscreen)
+                    _playbackService.SetVolumeMultiplier(_playniteFullscreenVolume);
+
+                _coordinator = new MusicPlaybackCoordinator(
+                    _playbackService, _settingsService, Logger, _fileLogger,
+                    () => IsFullscreen, () => IsDesktop, () => SelectedGames?.FirstOrDefault()
+                );
+
+                _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
+                _libraryViewModel?.ResubscribeToEvents(_playbackService);
+                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+
+                // Now load and play the GME file on the new NAudio player
+                _playbackService.LoadAndPlayFile(filePath);
+
+                _fileLogger?.Debug("Player switched to NAudio for GME format");
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(ex, "switching player for GME format", showUserMessage: false);
             }
         }
 

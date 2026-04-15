@@ -45,6 +45,8 @@ namespace UniPlaySong.Services
 
         public event Action<string> OnSongChanged; // Fired when current song changes (for UI song info display)
 
+        public event Action<string> OnNeedsPlayerSwitch; // Fired when a file requires NAudio but current player is SDL2
+
         // When true, suppresses loop/restart in OnMediaEnded. Set by batch download to take over playback.
         public bool SuppressAutoLoop { get; set; }
 
@@ -1539,6 +1541,15 @@ namespace UniPlaySong.Services
 
             try
             {
+                // GME retro formats require NAudio — SDL2 can't decode them
+                var ext = Path.GetExtension(filePath);
+                if (Audio.GmeNative.IsGmeExtension(ext) && !(_musicPlayer is NAudioMusicPlayer))
+                {
+                    _fileLogger?.Info($"GME file detected ({ext}), requesting NAudio player switch");
+                    OnNeedsPlayerSwitch?.Invoke(filePath);
+                    return;
+                }
+
                 _fileLogger?.Info($"LoadAndPlayFileFrom: {filePath} at {startFrom:mm\\:ss\\.fff}");
                 _musicPlayer.Load(filePath);
                 _musicPlayer.Volume = 0;

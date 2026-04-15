@@ -76,6 +76,7 @@ namespace UniPlaySong.Services
         string CurrentSongPath { get; }
         Game CurrentGame { get; }
         event System.Action<string> OnSongChanged;
+        event System.Action<string> OnNeedsPlayerSwitch;
 
         System.TimeSpan? CurrentTime { get; } // Current playback position (for progress indicator)
 
