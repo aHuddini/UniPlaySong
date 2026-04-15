@@ -2,6 +2,42 @@
 
 Known edge cases and deferred fixes that may need attention in future versions.
 
+## GME Output Gain Boost
+
+**Status:** Active (monitoring)
+**Discovered:** v1.4.x (GME integration)
+**Restore point:** Commit `3a821cd` (before gain change)
+
+### Problem
+
+Retro chip-tune audio from GME (Genesis FM synth, NES pulse waves, etc.) has significantly lower perceived loudness than modern mastered MP3/OGG files. Raw chip output typically peaks at -6dB to -12dB compared to full scale.
+
+### Current fix
+
+A static 1.5x gain multiplier is applied during int16→float32 conversion in `GmeReader.cs`:
+```csharp
+private const float OutputGain = 1.5f;
+buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
+```
+
+### Risks
+
+- Some VGM files with hotter mixes could clip above 1.0f. NAudio's mixer will clamp, but it may sound distorted.
+- The gain is applied before the Effects Chain, so Live Effects (reverb, limiter) process the boosted signal.
+- Different retro formats (SPC vs VGM vs NSF) have different typical loudness levels — a single gain value may not suit all.
+
+### Rollback
+
+Revert `OutputGain` to `1.0f`, or remove the multiplier entirely. The restore point commit has no gain boost.
+
+### Future alternatives
+
+- Per-format gain constants (VGM=1.5, SPC=1.2, NSF=1.8, etc.)
+- Auto-normalize: scan first N seconds for peak, compute gain to reach -1dB
+- User-configurable "Retro Music Volume Boost" slider in settings
+
+---
+
 ## Radio Mode Pause Check in PlayGameMusic
 
 **Status:** Deferred (monitoring)

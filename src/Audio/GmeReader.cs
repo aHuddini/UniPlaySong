@@ -10,6 +10,7 @@ namespace UniPlaySong.Audio
     {
         private const int SampleRate = 44100;
         private const int Channels = 2;
+        private const float OutputGain = 1.5f; // Retro chip output is quieter than modern mastered audio
 
         private IntPtr _emu;
         private readonly WaveFormat _waveFormat;
@@ -105,9 +106,9 @@ namespace UniPlaySong.Audio
             if (err != null)
                 return 0;
 
-            // Convert int16 → float32: divide by 32768 to normalize to [-1.0, 1.0]
+            // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
             for (int i = 0; i < count; i++)
-                buffer[offset + i] = _shortBuffer[i] / 32768f;
+                buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
 
             // Signal EOF if track ended during this read
             if (GmeNative.gme_track_ended(_emu) != 0)
