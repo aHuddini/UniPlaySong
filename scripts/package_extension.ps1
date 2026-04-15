@@ -199,6 +199,28 @@ if ($sdl2Found) {
     Write-Host "    Please copy SDL2.dll and SDL2_mixer.dll to lib\ directory" -ForegroundColor Yellow
 }
 
+# Copy GME native DLLs (required for retro game music playback)
+Write-Host "Copying GME native DLLs..." -ForegroundColor Yellow
+$gmeDlls = @("gme.dll", "z.dll")
+$gmeFound = $false
+
+foreach ($dll in $gmeDlls) {
+    $sourcePath = Join-Path (Join-Path $projectRoot "lib") $dll
+    if (Test-Path $sourcePath) {
+        Copy-Item $sourcePath -Destination $packageDir -Force
+        Write-Host "  Copied: $dll" -ForegroundColor Gray
+        $gmeFound = $true
+    } else {
+        Write-Host "  WARNING: $dll not found in lib\" -ForegroundColor Yellow
+    }
+}
+
+if ($gmeFound) {
+    Write-Host "  GME DLLs copied successfully" -ForegroundColor Green
+} else {
+    Write-Host "  WARNING: GME DLLs not found. Retro game music formats will not work." -ForegroundColor Yellow
+}
+
 # Copy dependencies - Use lib\dll as primary source, fallback to build output
 Write-Host "Copying dependencies..." -ForegroundColor Yellow
 $dllLibDir = Join-Path $projectRoot "lib\dll"
