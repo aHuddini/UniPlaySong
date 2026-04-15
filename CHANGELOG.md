@@ -7,7 +7,11 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.4.0] - 2026-04-14
 
 ### Added
-- **Faster YouTube Previews** — Preview downloads now use `--download-sections "*0:00-0:30"` to download only the first 40 seconds at the protocol level, instead of downloading the full track and trimming with FFmpeg. Reduces bandwidth and wait times.
+- **Faster YouTube Previews** — Preview downloads now use `--download-sections "*0:00-0:40"` to download only the first 40 seconds at the protocol level, instead of downloading the full track and trimming with FFmpeg. Reduces bandwidth and wait times.
+- **Browser Cookie Support** — Added Chrome, Edge, Brave, and Opera as cookie source options alongside Firefox. All use yt-dlp's `--cookies-from-browser` with the corresponding browser name. `CookieMode` enum expanded; `YouTubeDownloader` uses a switch for browser-to-argument mapping.
+
+### Fixed
+- **Source Downloads Consistency** — Cookie mode was missing `--audio-quality 0` (defaulting to 128kbps), `--no-playlist`, and `--extractor-args`. All download modes (no cookies, browser cookies, custom file) now use identical yt-dlp arguments.
 
 ## [1.3.12] - 2026-04-13
 

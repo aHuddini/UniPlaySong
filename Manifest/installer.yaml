@@ -6,6 +6,8 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.0/UniPlaySong-1_4_0-Apr14_2026.pext'
     Changelog:
       - '[Performance] Faster Previews: YouTube audio previews now download only the first 40 seconds instead of the full length. Reduces bandwidth and wait times.'
+      - '[New Feature] Browser Cookies: Added Chrome, Edge, Brave, and Opera cookie support alongside Firefox for YouTube downloads.'
+      - '[Fix] Source Downloads: Cookie mode now uses best audio quality and consistent settings across all download modes.'
   - Version: 1.3.12
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-13

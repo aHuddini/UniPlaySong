@@ -190,6 +190,83 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | **"Calm Down" Mode** | One-click toggle that applies low-pass filter + volume reduction + slow fade. For when a soundtrack is too intense but you don't want silence. Like "night mode" for audio. Uses existing NAudio filter chain. | Low | Medium |
 | **Peak Meter / VU Display** | Real-time audio level meter alongside or instead of spectrum visualizer. Classic VU look. NAudio sample data already available via `VisualizationDataProvider`. Simpler alternative to FFT spectrum. | Low | Low |
 | **Tempo-Aware Shuffle** | When shuffling, avoid jarring tempo jumps by preferring songs with similar BPM to current one. Requires one-time BPM scan stored per file. Smooth listening flow. | Medium | Medium |
+| **vgmstream Game Audio Support** | Play video game audio formats (.adx, .brstm, .hca, .wem, .fsb, .vag, .at3, etc.) with loop point support via [vgmstream](https://vgmstream.org/). See detailed roadmap below. | High | High |
+
+---
+
+## vgmstream Integration Roadmap
+
+Support for 200+ video game audio formats via [vgmstream](https://github.com/vgmstream/vgmstream). Enables users to drop raw game audio rips directly into music folders.
+
+### Why
+
+Many game soundtracks are only available as raw game audio rips (.adx, .brstm, .hca, .wem, etc.) that standard players can't handle. These formats often contain embedded loop points — metadata that tells the player where to seek back for seamless looping, which is essential for game music that's designed to loop indefinitely.
+
+### Integration Tiers
+
+**Tier 1 — CLI Pre-conversion (Easiest)**
+
+Use `vgmstream-cli.exe` as an external tool (like FFmpeg/yt-dlp) to decode game formats to WAV on first play, then cache the result. User provides the path in settings.
+
+| Aspect | Details |
+|--------|---------|
+| Command | `vgmstream-cli -o output.wav input.adx` |
+| Loop support | Bake N loops into WAV via `-l 3.0 -f 5.0` (3 loops, 5s fade) |
+| NAudio | Plays cached WAV through existing pipeline — zero changes needed |
+| SDL2 | Same — plays cached WAV via `Mix_LoadMUS()` |
+| Effort | ~200-300 lines (new `VgmstreamConversionService`, settings, extensions list) |
+| Trade-off | Requires disk space for cached WAVs; no real-time loop control |
+
+**Tier 2 — P/Invoke to libvgmstream (Better)**
+
+Build vgmstream as a DLL and use the C API directly for real-time decoding. Create a custom `VgmstreamReader : WaveStream` for NAudio.
+
+| Aspect | Details |
+|--------|---------|
+| API | `libvgmstream_init()` → `open_stream()` → `render()` → loop via `seek()` → `free()` |
+| Key structs | `libvgmstream_format_t` exposes `channels`, `sample_rate`, `loop_start`, `loop_end`, `loop_flag` |
+| NAudio | Custom `WaveStream` feeds PCM samples from `libvgmstream_render()` into the effects chain |
+| SDL2 | Still needs pre-conversion (SDL2_mixer can't consume raw PCM from a pipe) |
+| Loop points | Read `loop_start`/`loop_end` from format struct, `libvgmstream_seek()` back at loop boundary |
+| Effort | ~500-800 lines + building/bundling vgmstream DLL |
+| Trade-off | Must build and ship the DLL; more complex but enables real-time loop control and effects on game audio |
+
+**Tier 3 — Full Loop Integration (Advanced)**
+
+Build on Tier 2 with intelligent loop handling in the NAudio pipeline.
+
+| Aspect | Details |
+|--------|---------|
+| Behavior | Detect loop end in `VgmstreamReader.Read()`, auto-seek to `loop_start` |
+| Loop count | Configurable: loop N times then fade to silence, or loop forever until game switch |
+| Integration | Works with existing `MusicFader`, `SmoothVolumeSampleProvider`, and visualizer |
+| Effort | ~300 lines on top of Tier 2 |
+
+### SDL2 Considerations
+
+SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM streams. For SDL2 mode:
+- **Tier 1** works natively — cached WAV files play as-is
+- **Tier 2/3** would need a pre-conversion fallback for SDL2 users, or SDL2 mode could auto-convert on first play and cache (same as Tier 1 but triggered automatically)
+- Alternatively, `Mix_LoadMUS_RW()` accepts `SDL_RWops` memory streams — could feed decoded PCM via a memory buffer, but adds complexity
+
+### Common Game Audio Formats
+
+| Platform | Formats | Notes |
+|----------|---------|-------|
+| Nintendo | .brstm, .bcwav, .dsp, .ast, .swav | Wii, 3DS, GameCube |
+| PlayStation | .vag, .at3 | PS1, PSP, PS3 |
+| Xbox | .xwb | Xbox 360 |
+| CRI Middleware | .adx, .ahx, .aax, .hca | Capcom, FromSoftware, many others |
+| FMOD | .fsb | Many modern games |
+| Wwise | .wem | Many modern games |
+
+### Implementation Steps (Tier 1)
+
+1. Add `VgmstreamPath` setting (like `FFmpegPath` / `YtDlpPath`) with validation
+2. Add game audio extensions to `Constants.SupportedAudioExtensions`
+3. Create `VgmstreamConversionService` — decode on first play, cache WAV alongside original
+4. Hook into `PlayGameMusic` / `LoadAndPlayFile` — detect game format, convert if needed
+5. Settings UI: path browser, loop count, fade duration
 
 ---
 

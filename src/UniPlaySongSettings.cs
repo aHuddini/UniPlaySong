@@ -174,6 +174,10 @@ namespace UniPlaySong
     {
         None,       // No cookies
         Firefox,    // Use Firefox browser cookies via --cookies-from-browser firefox
+        Chrome,     // Use Chrome browser cookies via --cookies-from-browser chrome
+        Edge,       // Use Edge browser cookies via --cookies-from-browser edge
+        Brave,      // Use Brave browser cookies via --cookies-from-browser brave
+        Opera,      // Use Opera browser cookies via --cookies-from-browser opera
         CustomFile  // Use a Netscape-format cookies file via --cookies
     }
 

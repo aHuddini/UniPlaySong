@@ -91,18 +91,44 @@ UPS has two separate yt-dlp command builds in `YouTubeDownloader.cs` — one for
 {cookiesArg} -x --audio-format mp3 --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5 --postprocessor-args "ffmpeg:-ar 48000 -ac 2" --ffmpeg-location="{ffmpeg}" -o "{path}" {url}
 ```
 
-### What's Been Fixed (v1.3.12)
+### What's Been Fixed (v1.4.0)
 
 - **`--audio-quality 0`** added to cookie mode — was missing, causing 128kbps downloads instead of best quality
 - **`--no-playlist`** added to cookie mode — was missing, could accidentally download entire playlists
-- **`--extractor-args`** added to cookie mode — consistency across all modes
+- **`--extractor-args`** added to cookie mode — now consistent across all modes
 
 ### What's NOT Fixed (monitoring)
-
 - **Post-processor args** — kept intentionally for SDL_mixer compatibility (48kHz stereo). Could be made optional if users report failures.
 - **Rate limiting** — kept intentionally to reduce rate abuses by users. Could be made optional if users report timeout issues.
-- **`--extractor-args` forcing specific clients** — now consistent across all modes, but may still cause failures if YouTube blocks android/ios/web clients. Consider removing entirely and letting yt-dlp auto-detect if reports continue.
 
 ### Future Optimization: Audio-Only Stream for Previews
 
 YouTube serves separate audio-only streams (m4a/AAC, webm/Opus) for nearly all videos. Currently yt-dlp downloads the best available stream (which could include video data) then extracts audio. Using `--format bestaudio[ext=m4a]/bestaudio` would skip video data entirely, reducing download size by 80-90% for typical music videos. Still needs FFmpeg conversion to MP3 for SDL_mixer compatibility. Available on 99%+ of YouTube videos (only very old pre-2012 videos might lack separate audio streams).
+
+---
+
+## DownloadManager.DownloadSong Duplicate Code Path
+
+**Status:** Low priority (cleanup)
+**Discovered:** v1.4.0
+
+### Problem
+
+`DownloadManager.DownloadSong()` in `DownloadManager.cs` (lines 922-1011) contains the same download logic duplicated in two branches:
+
+- **Path A** (lines 930-968): Wrapped in `_errorHandler.Try()` — the primary path
+- **Path B** (lines 970-1010): Manual `try/catch` — labeled as "fallback to original error handling"
+
+Both paths do identical work: get downloader, set up temp path, create directory, call `downloader.DownloadSong()`, move temp file.
+
+### Why It's Not a Bug
+
+`_errorHandler` is a required constructor parameter (`_errorHandler = errorHandler ?? throw new ArgumentNullException`), so Path B is effectively dead code. It can never execute in normal operation.
+
+### Why It Matters
+
+If a download bug is fixed in Path A, the same fix must be applied to Path B. Easy to forget since Path B never runs. Increases maintenance surface for no benefit.
+
+### Fix If Needed
+
+Remove the `else` block (Path B) entirely since `_errorHandler` is guaranteed non-null.

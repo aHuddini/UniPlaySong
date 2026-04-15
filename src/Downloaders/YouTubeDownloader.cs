@@ -234,15 +234,22 @@ namespace UniPlaySong.Downloaders
 
                 if (_cookieMode != CookieMode.None)
                 {
-                    // Simplified command when using cookies - extract audio to MP3
-                    // Post-processor args ensure SDL_mixer compatibility (48kHz stereo, matches normalization)
+                    var quality = isPreview ? "5" : "0";
+                    var antiBotOptions = " --extractor-args \"youtube:player_client=android,ios,web\"";
                     var cookiesPostArgs = " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
                     var cookiesSectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
-                    var cookiesArg = _cookieMode == CookieMode.Firefox
-                        ? "--cookies-from-browser firefox"
-                        : $"--cookies \"{_customCookiesFilePath}\"";
-                    arguments = $"{cookiesArg} -x --audio-format mp3{rateLimitOptions}{cookiesPostArgs}{cookiesSectionLimit} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
-                    Logger.DebugIf(LogPrefix,$"Using simplified yt-dlp command with cookies ({_cookieMode})");
+                    string cookiesArg;
+                    switch (_cookieMode)
+                    {
+                        case CookieMode.Firefox: cookiesArg = "--cookies-from-browser firefox"; break;
+                        case CookieMode.Chrome:  cookiesArg = "--cookies-from-browser chrome"; break;
+                        case CookieMode.Edge:    cookiesArg = "--cookies-from-browser edge"; break;
+                        case CookieMode.Brave:   cookiesArg = "--cookies-from-browser brave"; break;
+                        case CookieMode.Opera:   cookiesArg = "--cookies-from-browser opera"; break;
+                        default:                 cookiesArg = $"--cookies \"{_customCookiesFilePath}\""; break;
+                    }
+                    arguments = $"{cookiesArg} -x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{cookiesPostArgs}{cookiesSectionLimit} --no-playlist --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    Logger.DebugIf(LogPrefix,$"Using yt-dlp command with cookies ({_cookieMode})");
                 }
                 else
                 {

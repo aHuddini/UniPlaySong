@@ -2649,7 +2649,7 @@
                                 Command="{Binding BrowseForYtDlpFile}"/>
                         <TextBlock Text="{Binding YtDlpStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
                     </StackPanel>
-                    <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe — yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support."
+                    <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe. Yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -2658,7 +2658,7 @@
                     <Separator Margin="0,10"/>
 
                     <TextBlock Text="Cookie Source" FontSize="13" FontWeight="SemiBold" Margin="0,10,0,5"/>
-                    <TextBlock Text="Choose a cookie source to improve yt-dlp and YouTube download reliability."
+                    <TextBlock Text="Choose a cookie source to improve yt-dlp and YouTube download reliability. Browser options require the browser to be installed with an active YouTube login. Some antivirus software may flag cookie access for Chromium-based browsers (Chrome, Edge, Brave, Opera)."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
                     <RadioButton Content="No cookies"
@@ -2670,8 +2670,26 @@
                                  IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Firefox}"
                                  GroupName="CookieMode"
                                  Margin="0,3"/>
-                    <TextBlock Text="Requires Firefox installed with an active YouTube login."
-                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,0,0,3"/>
+
+                    <RadioButton Content="Use cookies from Chrome"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Chrome}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+
+                    <RadioButton Content="Use cookies from Edge"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Edge}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+
+                    <RadioButton Content="Use cookies from Brave"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Brave}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
+
+                    <RadioButton Content="Use cookies from Opera"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Opera}"
+                                 GroupName="CookieMode"
+                                 Margin="0,3"/>
 
                     <RadioButton Content="Use custom cookies file"
                                  IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
@@ -2686,7 +2704,7 @@
                                 Width="80"
                                 Command="{Binding BrowseForCookiesFile}"/>
                     </StackPanel>
-                    <TextBlock Text="Select a Netscape-format cookies.txt file exported from your browser."
+                    <TextBlock Text="Select a cookies.txt file exported from your browser."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,3,0,5"/>
 
                     <Separator Margin="0,15"/>

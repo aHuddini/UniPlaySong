@@ -23,6 +23,8 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.4.0
 
 - **Faster Previews** — YouTube audio previews now download only the first 40 seconds instead of the full track, reducing bandwidth and wait times.
+- **Browser Cookie Support** — Added Chrome, Edge, Brave, and Opera cookie options alongside Firefox. Settings > Downloads > Cookie Source.
+- **Source Downloads Fix** — Cookie mode downloads now use best audio quality and consistent settings across all download modes.
 
 ### Previous Version
 - **v1.3.12**: Normalization codec fix, external audio pause fix, radio mode fixes, tool path validation, download dialog improvements
