@@ -137,11 +137,14 @@ namespace UniPlaySong.Services
         }
 
         // Creates the appropriate WaveStream reader based on file extension.
-        // OGG uses OggFileReader (NVorbis); all others use AudioFileReader (MediaFoundation fallback).
+        // OGG uses OggFileReader (NVorbis); GME formats use GmeReader; all others use AudioFileReader.
         private static WaveStream CreateAudioReader(string filePath)
         {
-            if (Path.GetExtension(filePath).Equals(".ogg", StringComparison.OrdinalIgnoreCase))
+            var ext = Path.GetExtension(filePath);
+            if (ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase))
                 return new OggFileReader(filePath);
+            if (GmeNative.IsGmeExtension(ext))
+                return new GmeReader(filePath);
             return new AudioFileReader(filePath);
         }
 

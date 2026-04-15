@@ -44,13 +44,15 @@ namespace UniPlaySong.Common
 
         public static readonly string[] SupportedAudioExtensions =
         {
-            ".mp3", ".wav", ".ogg", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid"
+            ".mp3", ".wav", ".ogg", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid",
+            ".vgm", ".vgz", ".spc", ".nsf", ".nsfe", ".gbs", ".gym", ".hes", ".kss", ".sap", ".ay"
         };
 
         // Pre-computed lowercase HashSet for O(1) lookups (avoids ToLowerInvariant() allocations)
         public static readonly HashSet<string> SupportedAudioExtensionsLowercase = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".mp3", ".wav", ".ogg", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid"
+            ".mp3", ".wav", ".ogg", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid",
+            ".vgm", ".vgz", ".spc", ".nsf", ".nsfe", ".gbs", ".gym", ".hes", ".kss", ".sap", ".ay"
         };
 
         #endregion
