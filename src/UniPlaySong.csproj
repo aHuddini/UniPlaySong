@@ -48,6 +48,15 @@
         <None Include="..\AutoSearchDatabase\search_hints.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <!-- Retro chiptune native libraries (x86) — loaded via P/Invoke by Audio/GmeNative.cs -->
+        <None Include="Audio\Native\RetroChiptune\gme.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Link>gme.dll</Link>
+        </None>
+        <None Include="Audio\Native\RetroChiptune\z.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Link>z.dll</Link>
+        </None>
     </ItemGroup>
 </Project>
 

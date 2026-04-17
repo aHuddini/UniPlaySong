@@ -27,6 +27,6 @@ Played through [Game Music Emu (GME)](https://github.com/libgme/game-music-emu) 
 ## Implementation
 
 - Extensions registered in [Constants.cs](../../src/Common/Constants.cs)
-- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license) — both x86
+- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license) — both x86, stored in [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/)
 
 See [POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md) for the GME 1.5x gain boost rollback info.

@@ -134,19 +134,21 @@ Native DLLs are required for SDL2 audio playback functionality. They are bundled
 - **Purpose**: Game Music Emu — retro chiptune playback (Sega Genesis `.vgm` verified; SPC/NSF/GBS/HES/KSS/SAP/AY pipeline-ready)
 - **Version**: Built from `libgme/game-music-emu` main (post-0.6.4, commit `1815b97`)
 - **Architecture**: x86 (32-bit, required for Playnite's plugin host)
-- **Location**: `lib/gme.dll` (~221 KB)
+- **Location**: `src/Audio/Native/RetroChiptune/gme.dll` (~221 KB) — folder name documents purpose
 - **Build**: Compiled via CMake with `GME_YM2612_EMU=Nuked` (LGPL-safe core, NOT MAME)
 - **Source repo**: [github.com/libgme/game-music-emu](https://github.com/libgme/game-music-emu)
 - **P/Invoke**: Defined in `Audio/GmeNative.cs`
 - **Implementation**: Used by `Audio/GmeReader.cs`
+- **Copy to build output**: Automatic via `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`
 - **License**: **LGPL v2.1+** — compatible with UniPlaySong (MIT) via dynamic linking. See "License Compatibility" section below.
 
 ### z.dll (v1.4.0+)
 - **Purpose**: zlib decompression — required by GME for VGZ (gzip-compressed VGM) support
 - **Version**: zlib 1.3.2
 - **Architecture**: x86 (32-bit)
-- **Location**: `lib/z.dll` (~77 KB)
+- **Location**: `src/Audio/Native/RetroChiptune/z.dll` (~77 KB)
 - **Source repo**: [github.com/madler/zlib](https://github.com/madler/zlib)
+- **Copy to build output**: Automatic via `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`
 - **License**: zlib license (compatible with commercial use)
 
 ### DLL Loading
