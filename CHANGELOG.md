@@ -4,7 +4,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.4.0] - 2026-04-14
+## [1.4.0] - 2026-04-16
 
 ### Added
 - **Retro Game Music Support (GME)** — UniPlaySong now plays `.vgm` chiptune files (Sega Genesis / Mega Drive) via [Game Music Emu](https://github.com/libgme/game-music-emu). New files: `src/Audio/GmeNative.cs` (P/Invoke layer, 11 `gme_*` functions + helpers), `src/Audio/GmeReader.cs` (WaveStream + ISampleProvider, int16→float32 with 1.5x gain boost). Extension registered in `Constants.cs` and dispatched in `NAudioMusicPlayer.CreateAudioReader()`. Format-aware backend switch: `MusicPlaybackService.LoadAndPlayFileFrom()` raises `OnNeedsPlayerSwitch` when a `.vgm` is encountered on SDL2; `UniPlaySong.HandlePlayerSwitchForFormat()` recreates the player as NAudio using the same pattern as `RecreateMusicPlayerForLiveEffects()`. Native DLLs (`gme.dll` 221 KB LGPL, `z.dll` 77 KB zlib) built as x86 and bundled in `lib/`; `scripts/package_extension.ps1` copies both into the `.pext`. Verified end-to-end on `.vgm` with metadata parsing, YM2612+PSG output, and track transitions.
