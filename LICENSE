@@ -24,22 +24,35 @@ SOFTWARE.
 
 Third-Party Licenses & Acknowledgments:
 
-*Last updated: February 15, 2026 - v1.2.11 codebase*
+*Last updated: April 14, 2026 - v1.4.0 codebase*
 
-All third-party libraries and components are used "as-is" without modifications to their original source code.
+This section covers libraries and components that are BUNDLED with UniPlaySong.
+External tools (yt-dlp, Deno, FFmpeg) are installed separately by the user and
+are not redistributed by this package — their licenses govern the user's
+installation directly and are not listed here.
+
+All bundled third-party libraries are used "as-is" without modifications to
+their original source code. Native libraries (DLLs) are dynamically linked via
+P/Invoke — UniPlaySong does not statically link or incorporate any LGPL code
+into its own binary.
 
 .NET Libraries (MIT License):
 - HtmlAgilityPack: https://github.com/zzzprojects/html-agility-pack
 - Newtonsoft.Json: https://github.com/JamesNK/Newtonsoft.Json
 - NAudio: https://github.com/naudio/NAudio
+- NVorbis: https://github.com/NVorbis/NVorbis
 - FuzzySharp: https://github.com/JakeBayer/FuzzySharp
 - MaterialDesignThemes: https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit
 
 Other Licenses:
 - TagLibSharp: LGPL v2.1 - https://github.com/mono/taglib-sharp
 - SDL2 & SDL2_mixer: zlib License - https://www.libsdl.org/
-- yt-dlp: Unlicense - https://github.com/yt-dlp/yt-dlp
-- FFmpeg: LGPL v2.1/GPL v2+ - https://ffmpeg.org/
+- zlib (z.dll): zlib License - https://github.com/madler/zlib
+- Game Music Emu (gme.dll): LGPL v2.1+ - https://github.com/libgme/game-music-emu
+  Copyright (c) Shay Green. Maintained by Vitaly Novichkov and Michael Pyne.
+  Used via dynamic linking (P/Invoke to gme.dll distributed as a separate file).
+  Built with the Nuked OPN2 YM2612 core (LGPL-safe). The MAME YM2612 core is
+  NOT used, which would otherwise make the library GPL v2+.
 
 Reverb Algorithm:
 The reverb effect implementation is based on the public domain Freeverb algorithm

@@ -130,6 +130,25 @@ Native DLLs are required for SDL2 audio playback functionality. They are bundled
 - **Implementation**: Used by `SDL2MusicPlayer` class
 - **License**: zlib license (compatible with commercial use)
 
+### gme.dll (v1.4.0+)
+- **Purpose**: Game Music Emu — retro chiptune playback (Sega Genesis `.vgm` verified; SPC/NSF/GBS/HES/KSS/SAP/AY pipeline-ready)
+- **Version**: Built from `libgme/game-music-emu` main (post-0.6.4, commit `1815b97`)
+- **Architecture**: x86 (32-bit, required for Playnite's plugin host)
+- **Location**: `lib/gme.dll` (~221 KB)
+- **Build**: Compiled via CMake with `GME_YM2612_EMU=Nuked` (LGPL-safe core, NOT MAME)
+- **Source repo**: [github.com/libgme/game-music-emu](https://github.com/libgme/game-music-emu)
+- **P/Invoke**: Defined in `Audio/GmeNative.cs`
+- **Implementation**: Used by `Audio/GmeReader.cs`
+- **License**: **LGPL v2.1+** — compatible with UniPlaySong (MIT) via dynamic linking. See "License Compatibility" section below.
+
+### z.dll (v1.4.0+)
+- **Purpose**: zlib decompression — required by GME for VGZ (gzip-compressed VGM) support
+- **Version**: zlib 1.3.2
+- **Architecture**: x86 (32-bit)
+- **Location**: `lib/z.dll` (~77 KB)
+- **Source repo**: [github.com/madler/zlib](https://github.com/madler/zlib)
+- **License**: zlib license (compatible with commercial use)
+
 ### DLL Loading
 
 **Assembly Resolution:**
@@ -308,6 +327,8 @@ public bool ValidateFFmpegAvailable(string ffmpegPath)
 | System.ValueTuple | 4.5.0 | Tuple support |
 | SDL2.dll | 2.30.5 | Audio core |
 | SDL2_mixer.dll | 2.8.0 | Audio mixer |
+| gme.dll | main (post-0.6.4) | Retro chiptune decoder (v1.4.0+, x86) |
+| z.dll | 1.3.2 | zlib — VGZ decompression for GME (v1.4.0+, x86) |
 
 ### Version Compatibility
 
@@ -437,7 +458,9 @@ public bool ValidateFFmpegAvailable(string ffmpegPath)
 
 ## License Compatibility
 
-All dependencies are compatible with the MIT license:
+This section covers **bundled** dependencies — libraries we redistribute inside the `.pext` package. External tools (yt-dlp, Deno, FFmpeg) are installed by the user directly and are not listed here because we don't ship them.
+
+All bundled dependencies are compatible with the MIT license under which UniPlaySong is distributed:
 
 - **PlayniteSDK**: MIT license (compatible)
 - **NuGet Packages**: Various licenses (all compatible with MIT)
@@ -445,10 +468,16 @@ All dependencies are compatible with the MIT license:
   - MaterialDesignColors: MIT
   - HtmlAgilityPack: MIT
   - Newtonsoft.Json: MIT
-- **SDL2/SDL2_mixer**: zlib license (compatible with MIT)
-- **External Tools**: Users install independently (not bundled)
-  - yt-dlp: Unlicense
-  - FFmpeg: LGPL/GPL (users install separately)
+  - NAudio: MIT
+  - NVorbis: MIT
+- **SDL2 / SDL2_mixer**: zlib license (compatible with MIT)
+- **zlib (z.dll)**: zlib license (compatible with MIT)
+- **Game Music Emu (gme.dll)** — **LGPL v2.1+** — compatible via **dynamic linking**:
+  - UniPlaySong links to `gme.dll` via P/Invoke (dynamic/runtime) rather than static linking. LGPL explicitly allows proprietary/MIT applications to dynamically link against LGPL libraries without imposing LGPL on the application itself.
+  - The `gme.dll` binary is distributed as a separate file in the `.pext` package, making it user-replaceable (a core LGPL requirement satisfied by the file-based distribution).
+  - Attribution: Game Music Emu is Copyright © Shay Green, maintained by Vitaly Novichkov and Michael Pyne.
+  - The plugin must ship a copy of the LGPL text (or a reference) to satisfy the attribution requirement — see [LICENSE](../../LICENSE) or the GME repo.
+  - **Important:** Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe). The MAME YM2612 core (also available in GME) would make the library GPL v2+ and is explicitly NOT used.
 
 > **Note**: For complete licensing information and attribution requirements, see the [Credits section](../../README.md#-credits) in the main README.
 

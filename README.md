@@ -22,9 +22,11 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.0
 
+- **Retro Game Music Support (NEW)** — UniPlaySong now plays `.vgm` chiptune files from Sega Genesis / Mega Drive. Drop a `.vgm` into any game's music folder and it just works.
 - **Faster Previews** — YouTube audio previews now download only the first 40 seconds instead of the full track, reducing bandwidth and wait times.
 - **Browser Cookie Support** — Added Chrome, Edge, Brave, and Opera cookie options alongside Firefox. Settings > Downloads > Cookie Source.
 - **Source Downloads Fix** — Cookie mode downloads now use best audio quality and consistent settings across all download modes.
+- **License Updates** — Credits and `LICENSE` file now attribute Game Music Emu (LGPL v2.1+, dynamic linking) and zlib (zlib license) for retro music support. Third-party acknowledgments split into "Bundled Libraries" (shipped in the `.pext`) and "External Tools" (yt-dlp, FFmpeg, Deno — installed by the user) for clarity.
 
 ### Previous Version
 - **v1.3.12**: Normalization codec fix, external audio pause fix, radio mode fixes, tool path validation, download dialog improvements
@@ -104,7 +106,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics, icon glow
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
-**Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA
+**Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA — plus VGM (Sega Genesis / Mega Drive chiptune).
 
 ---
 
@@ -123,14 +125,19 @@ See `docs/dev_docs/` for detailed build instructions.
 
 **Inspired by [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)** - Special thanks to the original developer for the foundation that made this project possible.
 
-### Libraries & Dependencies
+### Bundled Libraries
 - **Playnite SDK** - Extension framework
 - **SDL2 & SDL2_mixer** - Audio playback (zlib license)
 - **MaterialDesignThemes** - WPF UI components (MIT)
-- **HtmlAgilityPack, Newtonsoft.Json, NAudio, FuzzySharp** - Core functionality (MIT)
+- **HtmlAgilityPack, Newtonsoft.Json, NAudio, NVorbis, FuzzySharp** - Core functionality (MIT)
 - **TagLibSharp** - Audio metadata (LGPL)
+- **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking)
+- **[zlib](https://github.com/madler/zlib)** - Decompression for VGZ files (zlib license)
+
+### External Tools (installed by user)
 - **yt-dlp** - Media searching and downloading (Unlicense)
 - **FFmpeg** - Audio processing (LGPL/GPL)
+- **Deno** - JavaScript runtime required by yt-dlp (MIT)
 
 ### Third-Party Acknowledgments
 See [LICENSE](LICENSE) file for component licenses and acknowledgments.

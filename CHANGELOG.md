@@ -7,11 +7,19 @@ All notable changes to UniPlaySong will be documented in this file.
 ## [1.4.0] - 2026-04-14
 
 ### Added
+- **Retro Game Music Support (GME)** — UniPlaySong now plays `.vgm` chiptune files (Sega Genesis / Mega Drive) via [Game Music Emu](https://github.com/libgme/game-music-emu). New files: `src/Audio/GmeNative.cs` (P/Invoke layer, 11 `gme_*` functions + helpers), `src/Audio/GmeReader.cs` (WaveStream + ISampleProvider, int16→float32 with 1.5x gain boost). Extension registered in `Constants.cs` and dispatched in `NAudioMusicPlayer.CreateAudioReader()`. Format-aware backend switch: `MusicPlaybackService.LoadAndPlayFileFrom()` raises `OnNeedsPlayerSwitch` when a `.vgm` is encountered on SDL2; `UniPlaySong.HandlePlayerSwitchForFormat()` recreates the player as NAudio using the same pattern as `RecreateMusicPlayerForLiveEffects()`. Native DLLs (`gme.dll` 221 KB LGPL, `z.dll` 77 KB zlib) built as x86 and bundled in `lib/`; `scripts/package_extension.ps1` copies both into the `.pext`. Verified end-to-end on `.vgm` with metadata parsing, YM2612+PSG output, and track transitions.
 - **Faster YouTube Previews** — Preview downloads now use `--download-sections "*0:00-0:40"` to download only the first 40 seconds at the protocol level, instead of downloading the full track and trimming with FFmpeg. Reduces bandwidth and wait times.
 - **Browser Cookie Support** — Added Chrome, Edge, Brave, and Opera as cookie source options alongside Firefox. All use yt-dlp's `--cookies-from-browser` with the corresponding browser name. `CookieMode` enum expanded; `YouTubeDownloader` uses a switch for browser-to-argument mapping.
 
 ### Fixed
+- **GME Silent Next-Track** — Removed GME's internal fade (`gme_set_fade`) which overlapped with NAudio's `ScheduleSongEndFade` fader and could leave the next song stuck at volume 0. `GmeReader.Read()` now signals EOF via position tracking (`gme_tell >= play_length`) and lets NAudio's fader own all fade transitions.
+- **GME x86 Build** — Rebuilt both `gme.dll` and `z.dll` as 32-bit (Win32) after initial x64 build caused `BadImageFormatException` in Playnite (which runs as a 32-bit process).
 - **Source Downloads Consistency** — Cookie mode was missing `--audio-quality 0` (defaulting to 128kbps), `--no-playlist`, and `--extractor-args`. All download modes (no cookies, browser cookies, custom file) now use identical yt-dlp arguments.
+
+### Documentation & Licensing
+- **License Attribution Updated for GME + zlib** — `LICENSE` now credits Game Music Emu (LGPL v2.1+) and zlib (zlib license) as new bundled native libraries. Added an explicit note that GME is used via **dynamic linking** (P/Invoke to a separately-shipped `gme.dll`), the standard LGPL-compliant integration pattern, and clarified that our build uses the Nuked OPN2 YM2612 core (LGPL-safe) rather than the MAME core (which would make the library GPL v2+).
+- **License Doc Scope Cleanup** — `LICENSE`, `README.md` Credits, and `docs/dev_docs/DEPENDENCIES.md` now distinguish between **bundled libraries** (what we redistribute inside the `.pext`) and **external tools** (yt-dlp, FFmpeg, Deno — installed by the user, not redistributed). Removed yt-dlp and FFmpeg from the LICENSE third-party section and the DEPENDENCIES License Compatibility list since they are not shipped; they remain in the README Credits under a new "External Tools (installed by user)" subsection.
+- **New Dev Doc** — Added `docs/dev_docs/SUPPORTED_FILE_FORMATS.md` summarizing all supported audio formats (standard + GME retro chiptune) with verification status per format.
 
 ## [1.3.12] - 2026-04-13
 

@@ -67,6 +67,8 @@ UniPlaySong/
 │   ├── Audio/                     # NAudio audio processing pipeline
 │   │   ├── EffectsChain.cs        # Reverb + echo + EQ pipeline (style presets)
 │   │   ├── OggFileReader.cs       # NVorbis-based OGG Vorbis reader (WaveStream + ISampleProvider)
+│   │   ├── GmeReader.cs           # Game Music Emu retro chiptune reader (WaveStream + ISampleProvider, v1.4.0+)
+│   │   ├── GmeNative.cs           # P/Invoke bindings for gme.dll (v1.4.0+)
 │   │   ├── SmoothVolumeSampleProvider.cs # Per-sample curve ramp (5 fade curves)
 │   │   └── VisualizationDataProvider.cs  # FFT + peak/RMS tap for spectrum visualizer
 │   │
@@ -611,7 +613,7 @@ Services are initialized in `UniPlaySong.cs` and passed to dependent services vi
 `MusicPlaybackCoordinator` centralizes all playback decision logic, preventing scattered conditionals throughout the codebase.
 
 ### 3. Strategy Pattern
-Three music player backends implement `IMusicPlayer`: `SDL2MusicPlayer` (default), `NAudioMusicPlayer` (Live Effects/Visualizer), and `MusicPlayer` (WPF fallback). Selected at runtime based on settings.
+Three music player backends implement `IMusicPlayer`: `SDL2MusicPlayer` (default), `NAudioMusicPlayer` (Live Effects/Visualizer/GME retro formats), and `MusicPlayer` (WPF fallback). Selected at runtime based on settings. Also auto-switches to NAudio when a GME retro format file is loaded — `MusicPlaybackService.LoadAndPlayFileFrom()` detects GME extensions and raises `OnNeedsPlayerSwitch`, which `UniPlaySong.HandlePlayerSwitchForFormat()` handles by recreating the player (see [SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md)).
 
 ### 4. Observer Pattern
 Settings changes are propagated via events (`SettingsChanged`, `SettingPropertyChanged`).

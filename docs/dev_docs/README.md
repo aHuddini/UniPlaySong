@@ -42,6 +42,11 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
    - Logical pause mechanism
    - SDL2 comparison table
 
+6. **[SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md)** - Audio format support reference
+   - Standard formats (MP3, WAV, OGG, FLAC, etc.)
+   - Retro chiptune via GME (v1.4.0+, `.vgm` verified)
+   - Backend auto-switch mechanism for GME
+
 ### Version-Specific Documentation
 
 - **[v1.2.11_TECHNICAL_NOTES.md](v1.2.11_TECHNICAL_NOTES.md)** - v1.2.11 implementation notes
@@ -173,6 +178,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-04-11
-**Documentation Version**: 1.3
+**Last Updated**: 2026-04-14
+**Documentation Version**: 1.4
 
