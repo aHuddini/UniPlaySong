@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-04-16
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.0/UniPlaySong-1_4_0-Apr16_2026.pext'
     Changelog:
-      - '[New Feature] Retro Chiptune Music Support: UniPlaySong now plays .vgm chiptune files from Sega Genesis / Mega Drive! Drop a .vgm into a game''s music folder and it just works. Powered by Game Music Emu (LGPL).'
+      - '[New Feature] Retro Chiptune Music Support: UniPlaySong now plays .vgm chiptune files from Sega Genesis / Mega Drive! Perfect for your ROM / emulated game library — drop authentic soundtrack rips from sites like VGMRips into a game''s music folder and they just work, with full fade, volume, and visualizer support. Powered by Game Music Emu (LGPL).'
       - '[Performance] Faster Previews: YouTube audio previews now download only the first 40 seconds instead of the full length. Reduces bandwidth and wait times.'
       - '[New Feature] Browser Cookies: Added Chrome, Edge, Brave, and Opera cookie support alongside Firefox for YouTube downloads.'
       - '[Fix] Source Downloads: Cookie mode now uses best audio quality and consistent settings across all download modes.'
