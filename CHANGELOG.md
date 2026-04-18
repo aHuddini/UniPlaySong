@@ -13,6 +13,9 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Changed
 - **Play Only on Game Select: Event-Driven Trigger** — Replaced the 200ms polling `DispatcherTimer` with the `OnFullscreenViewChanged` SDK event (Playnite SDK 6.16.0+). Fires instantly on every List ↔ Details toggle instead of waking the UI thread 5×/sec forever. Eliminates a theoretical race window where rapid A/B presses could outpace the polling interval, and removes a chunk of state (`_fullscreenViewMonitor`, `_lastFullscreenView`, timer init/dispose boilerplate). Net −14 lines in `UniPlaySong.cs`.
 
+### Documentation
+- **GME Chip Support Boundary Documented** — Retro chiptune support in v1.4.0 was documented as "Pipeline ready" for a broad range of VGM/VGZ / SPC / NSF / HES / etc. formats. Investigation into a user-reported silent-playback case on a Neo Geo VGZ (King of Fighters '99, from VGMRips) revealed the actual limit: GME only emulates a subset of the sound chips that VGM files can reference. Files using unsupported chips (YM2610 / Neo Geo, YM2151 / arcade, YM2608 / PC-88, QSound / CPS-2, etc.) decode through GME without errors but produce silence because GME has no emulator for those chips. Updated `docs/dev_docs/SUPPORTED_FILE_FORMATS.md` with the full supported/unsupported chip list and a note that most VGMRips packs (arcade / Neo Geo / PC-88) will not play through GME. This is a library limitation, not a UPS bug — broader chip coverage would require integrating `libvgm` (tracked as a future v1.5+ investigation in POTENTIAL_ISSUES.md; sound chip licensing and a C-wrapper DLL would be prerequisite work).
+
 ## [1.4.0] - 2026-04-16
 
 ### Added

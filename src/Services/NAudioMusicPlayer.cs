@@ -314,7 +314,12 @@ namespace UniPlaySong.Services
         public void Pause()
         {
             _pausedPosition = _audioFile?.CurrentTime ?? TimeSpan.Zero;
-            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, vol={_volumeProvider?.Volume:F4}");
+            // Diagnostic: capture position relative to TotalTime so we can detect pauses that
+            // land at/past EOF (the suspected 'silent music after resume' bug).
+            var totalTime = _audioFile?.TotalTime ?? TimeSpan.Zero;
+            var remaining = totalTime - _pausedPosition;
+            bool atOrPastEof = _audioFile != null && remaining <= TimeSpan.FromMilliseconds(500);
+            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={_isInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
             _logicallyPaused = true;
             _isPlaying = false;
         }
@@ -323,7 +328,11 @@ namespace UniPlaySong.Services
         // If the song ended while paused (short track EOF), re-adds to mixer from saved position.
         public void Resume()
         {
-            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={_isInMixer}");
+            // Diagnostic: state BEFORE seek
+            var totalTimeBefore = _audioFile?.TotalTime ?? TimeSpan.Zero;
+            var remainingBefore = totalTimeBefore - _pausedPosition;
+            bool atOrPastEof = _audioFile != null && remainingBefore <= TimeSpan.FromMilliseconds(500);
+            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, total={totalTimeBefore}, remaining={remainingBefore.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={_isInMixer}");
             if (_audioFile != null)
             {
                 _audioFile.CurrentTime = _pausedPosition;
@@ -336,6 +345,10 @@ namespace UniPlaySong.Services
                     _isInMixer = true;
                     _fileLogger?.Debug("[NAudio] Resume() — re-added to mixer after EOF during pause");
                 }
+
+                // Diagnostic: state AFTER seek, to see what the audio file reports post-seek
+                // (near-EOF seeks can be clamped by the reader and leave CurrentTime != requested).
+                _fileLogger?.Debug($"[NAudio] Resume() — after seek: actualPos={_audioFile.CurrentTime}, isInMixer={_isInMixer}");
             }
             _logicallyPaused = false;
             _isPlaying = true;

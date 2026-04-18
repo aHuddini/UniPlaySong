@@ -123,6 +123,20 @@ namespace UniPlaySong
 
         public IPlayniteAPI PlayniteApi => plugin.PlayniteApi;
 
+        // Runtime plugin version, displayed on the About tab. Reads AssemblyInformationalVersion
+        // (set by package_extension.ps1 from version.txt). Falls back to AssemblyVersion if
+        // informational attribute is missing.
+        public string PluginVersion
+        {
+            get
+            {
+                var asm = System.Reflection.Assembly.GetExecutingAssembly();
+                var infoAttr = (System.Reflection.AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+                    asm, typeof(System.Reflection.AssemblyInformationalVersionAttribute));
+                return infoAttr?.InformationalVersion ?? asm.GetName().Version?.ToString() ?? "unknown";
+            }
+        }
+
         // Bundled presets list for the ComboBox in settings UI
         public List<Services.BundledPresetInfo> BundledPresets => Services.BundledPresetService.GetPresets();
 

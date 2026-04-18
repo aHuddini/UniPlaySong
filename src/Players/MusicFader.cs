@@ -250,11 +250,13 @@ namespace UniPlaySong.Players
                 {
                     // Ensure volume is 0 before resuming so the fade-in ramp starts
                     // from silence — prevents a blip at the volume the player was paused at
-                    _fileLogger?.Debug($"[Fader] Resume() — setting vol=0, then calling player.Resume()");
+                    // Diagnostic: capture IsActive at resume entry to spot "resuming after EOF" races
+                    // (suspected 'silent music after resume' bug when paused near song end).
+                    _fileLogger?.Debug($"[Fader] Resume() — setting vol=0, then calling player.Resume() (playerIsActive={_player.IsActive}, playerIsLoaded={_player.IsLoaded})");
                     _player.Volume = 0;
                     _fileLogger?.Debug($"[Fader] Resume() — vol after set: {_player.Volume:F4}");
                     _player.Resume();
-                    _fileLogger?.Debug($"[Fader] Resume() — player resumed, vol now: {_player.Volume:F4}");
+                    _fileLogger?.Debug($"[Fader] Resume() — player resumed, vol now: {_player.Volume:F4}, playerIsActive={_player.IsActive}");
                 }
                 _isPaused = false;
                 _isFadingOut = false;

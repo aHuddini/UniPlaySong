@@ -2,6 +2,98 @@
 
 Known edge cases and deferred fixes that may need attention in future versions.
 
+## Broader Chiptune Support Beyond GME
+
+**Status:** Future investigation (v1.5+)
+**Driver:** GME's chip coverage is limited to home-console FM/PSG/APU chips. Neo Geo (YM2610), arcade (YM2151), PC-88 (YM2608), Saturn (SCSP), CPS-2 (QSound), and most other arcade boards are not emulated by GME — their VGM files play silent. The vast majority of files on VGMRips fall into this unsupported category.
+
+Investigation was triggered by a user report of silent playback on a VGZ file from VGMRips (King of Fighters '99, Neo Geo). Confirmed via our test harness that GME sees the file as "Sega SMS/Genesis" with only 4 PSG voices, producing zero audio — GME has no YM2610 emulator, so the chip writes are discarded.
+
+### Option A — Do nothing further (current state for v1.4.1)
+
+Document the boundary. Users with arcade / Neo Geo music use external tools (e.g. VGMPlay standalone, foobar2000 with foo_input_vgm) to pre-render VGZ → WAV, then drop the WAVs into their game music folders. Zero additional integration work; zero legal risk; broadest format support (because they'd be playing finished WAVs). Limitation is UX — users have to convert.
+
+### Option B — Integrate VGMPlay (C API, broad coverage, MAME-licensed cores)
+
+[VGMPlay](https://github.com/vgmrips/vgmplay) by ValleyBell has a proper C API in `VGMPlay_Intf.h`:
+- `VGMPlay_Init()`, `OpenVGMFile(path)`, `PlayVGM()`, `FillBuffer(buffer, samples)`, `SeekVGM()`, `CloseVGMFile()` — clean lifecycle + pull-based audio rendering that maps naturally to our NAudio `WaveStream + ISampleProvider` pattern (same integration shape as `GmeReader`).
+- Supports every chip GME does, plus YM2610 (Neo Geo), YM2151 (arcade), YM2608 (PC-88), QSound (CPS-2), SegaPCM, Namco C140/C352, Konami K051649/K053260, and more.
+- VGZ support built in (built against zlib like GME).
+
+**Licensing:**
+- VGMPlay ships chip cores from multiple origins. Most arcade-relevant cores (YM2610, YM2151, etc.) are MAME-derived.
+- MAME license clause: *"Redistributions may not be sold, nor may they be used in a commercial product or activity."*
+- In practice, the entire free chiptune ecosystem — VLC, foobar2000 chiptune plugins, ZXTune, Audacious, DeaDBeeF, VGMPlay itself, libvgm — has shipped MAME-derived cores in free software for 20+ years without objection from the MAME team. The license is targeted at commercial MAME ROM sales, not at free plugins that happen to reuse the chip emulation.
+- **UPS's profile fits the "free software" pattern:** MIT-licensed, distributed free through Playnite's add-on database, no monetization, source on GitHub. Shipping MAME-derived cores is consistent with industry practice.
+- **Attribution requirements we'd need to meet:** bundle `mame_license.txt`, preserve MAME copyright headers in vendored source, add attribution to README Credits ("Chip emulation cores from VGMPlay and MAME").
+
+**Scope estimate: ~3-4 days:**
+1. Build VGMPlay as x86 DLL with the C interface exposed (uses CMake + Visual Studio)
+2. `VgmPlayNative.cs` — P/Invoke declarations (mirror of `GmeNative.cs`)
+3. `VgmPlayReader.cs` — `WaveStream + ISampleProvider` wrapper (mirror of `GmeReader.cs`)
+4. Chip-inspection logic to route VGM/VGZ: if file uses only GME-supported chips → route to existing GmeReader; otherwise → VgmPlayReader. Keeps hot path on the simpler / smaller GME engine for common cases.
+5. Bundle VGMPlay DLL + license file alongside GME in `src/Audio/Native/RetroChiptune/`
+6. Update `README.md` Credits and `LICENSE` third-party section
+
+### Option C — Integrate libvgm (C++ API, active rewrite of VGMPlay)
+
+[libvgm](https://github.com/ValleyBell/libvgm) is ValleyBell's ground-up rewrite of VGMPlay, organized into modular sub-libraries (libEmu, libAudio, player). Same chip coverage, cleaner architecture, more active development. **But:**
+- C++ API only (`PlayerA` class). P/Invoke requires `extern "C"` functions, so we'd need to write a ~200-line C wrapper DLL around `PlayerA`.
+- No pre-built binaries; same CMake build-from-source requirement.
+- Same MAME-core licensing as VGMPlay (inherits the chip sources).
+- Higher effort than Option B for marginal API elegance benefit.
+
+Scope estimate: ~4-5 days (vs. ~3-4 for VGMPlay). Not compelling unless we're picking a long-term foundation rather than a quick addition.
+
+### Option D — Integrate VGMPlay/libvgm WITHOUT MAME cores
+
+Technically possible but delivers very little. VGMPlay's build system supports per-chip core selection via `EC_MAME`/`EC_GENS`/`EC_NUKED`/`EC_DBOPL`/`EC_OOTAKE`/`EC_NSFPLAY`/`EC_EMU` tags. We could build VGMPlay with MAME-derived chip source files excluded (e.g. drop `fm.c`, `2610intf.c`, `qsound_intf.c`, `c140.c`, etc., keep only `emu2413.c`, Nuked-OPM, etc.).
+
+**Problem: the motivating chips have no non-MAME implementation available anywhere.**
+
+| Chip | Used by | Non-MAME alternative? |
+|------|---------|----------------------|
+| YM2610 | Neo Geo | **Nuked-OPNB** (WIP, 5 commits, unverified accuracy) |
+| YM2608 | PC-88/PC-98 | **None** |
+| YM2151 | Arcade (Capcom CPS1, early Konami/SEGA) | **Nuked-OPM** (mature) |
+| YMF262 (OPL3) | DOS Sound Blaster 16 | **Nuked-OPL3** or **DBOPL** (both mature) |
+| QSound | Capcom CPS-2/CPS-3 | **None** |
+| Namco C140/C352/C219 | Namco arcade | **None** |
+| K051649/K053260/K054539 | Konami arcade | **None** |
+| SegaPCM | Sega arcade (OutRun, Space Harrier) | **None** |
+| SCSP | Sega Saturn | **None** |
+| YMF271, YMF278B, ES5503, ES5506 | Various | **None** |
+
+A MAME-stripped VGMPlay build would cover: what GME already covers + YM2151 arcade + OPL3 PC. **Not** Neo Geo, **not** PC-88, **not** CPS-2, **not** Namco or Konami arcade. Roughly a ~10-15% upgrade over GME-only coverage, and those are formats the user is less likely to ask about than the ones that would remain silent.
+
+Scope estimate: ~4-5 days (same as Option B, no time saved). Plus potential stability concerns if VGMPlay's runtime assumes chip cores exist that we've stripped out — would need to test each expected code path.
+
+**Verdict:** not a compelling middle ground. The MAME cores ARE the valuable part of VGMPlay/libvgm for our use case. Shipping the library without them is ~Option B with most of the value removed.
+
+### Option E — Clean-room-only custom engine (NukeYKT family)
+
+Cherry-pick individual LGPL v2.1 chip emulators from [nukeykt's repos](https://github.com/nukeykt):
+- **[Nuked-OPN2](https://github.com/nukeykt/Nuked-OPN2)** (YM2612 / Genesis) — already what GME uses. ✓
+- **[Nuked-OPL3](https://github.com/nukeykt/Nuked-OPL3)** (YMF262 / Sound Blaster 16) — mature.
+- **[Nuked-OPM](https://github.com/nukeykt/Nuked-OPM)** (YM2151 / arcade — Capcom CPS1, early Konami/SEGA) — mature.
+- **[Nuked-OPNB](https://github.com/nukeykt/Nuked-OPNB)** (YM2610 / Neo Geo) — WIP, ~5 commits, accuracy uncertain.
+
+Scope estimate: ~5-7 days — build a custom GME fork that pulls in Nuked-OPM and (cautiously) Nuked-OPNB. Unlocks SOME arcade music and maybe Neo Geo. Doesn't approach VGMPlay's coverage (no PC-88, no CPS-2, no Namco, no Konami). Same realistic coverage gain as Option D with less library-level baggage but higher custom-code risk.
+
+### Recommendation
+
+**Option B (VGMPlay, with MAME cores).** Best coverage, cleanest C API, well-matched to existing `GmeReader` integration pattern, and MAME-licensed cores are practically safe to ship in a free MIT plugin based on 20+ years of ecosystem precedent (VLC, foobar2000 plugins, VGMPlay itself, libvgm, ZXTune, Audacious, DeaDBeeF — all free, all ship MAME-derived chip cores). MAME's license targets commercial MAME ROM sales, not free plugins reusing chip code. We'd bundle `mame_license.txt`, preserve copyright headers, credit MAME in README.
+
+**Options D and E exist but are not recommended** — they deliver small coverage gains (OPL3, YM2151) for similar effort, without unlocking the motivating chips (Neo Geo, CPS-2, PC-88). Only worth pursuing if we specifically decide "no MAME-origin code at all" as a hard constraint.
+
+**For v1.4.1 specifically: stay on Option A.** Ship the GME-only support we have, document the boundary clearly (done in `SUPPORTED_FILE_FORMATS.md`), and track Option B as a v1.5+ feature.
+
+### Related
+
+- User-facing docs on current GME boundary: [SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md)
+
+---
+
 ## GME Output Gain Boost
 
 **Status:** Active (monitoring)

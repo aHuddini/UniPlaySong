@@ -3805,5 +3805,97 @@
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
+
+        <!-- About Tab -->
+        <TabItem Header="About">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+
+                    <!-- Header -->
+                    <TextBlock Text="UniPlaySong" FontSize="22" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Version " FontSize="12" Foreground="Gray" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding PluginVersion}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="0,0,0,15">
+                        A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections.
+                    </TextBlock>
+
+                    <!-- Officially Supported Themes -->
+                    <Border BorderBrush="#FF4A9EFF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A4A9EFF">
+                        <StackPanel>
+                            <TextBlock Text="Officially Supported Fullscreen Themes" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
+                                These themes are tested against every UniPlaySong release and use the plugin's theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens, and overlays:
+                            </TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,0">• ANIKI REMAKE</TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Setup Instructions -->
+                    <TextBlock Text="Setup" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                        Most features work out of the box. A few optional features require external tools, which you install yourself:
+                    </TextBlock>
+
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">yt-dlp and Deno (for YouTube music downloads)</TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
+                        Download yt-dlp.exe and deno.exe. Place both in the same folder (Deno is the JavaScript runtime yt-dlp uses for YouTube's player extraction). Then point the plugin to yt-dlp.exe in the Downloads tab.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                        <TextBlock FontSize="11" Foreground="Gray" Text="Downloads: "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://github.com/yt-dlp/yt-dlp/releases" RequestNavigate="AboutHyperlink_RequestNavigate">yt-dlp</Hyperlink>
+                        </TextBlock>
+                        <TextBlock FontSize="11" Foreground="Gray" Text=" | "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://deno.com/" RequestNavigate="AboutHyperlink_RequestNavigate">Deno</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">FFmpeg (for normalization, conversion, and waveform editing)</TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
+                        Download FFmpeg and point the plugin to ffmpeg.exe in the Downloads tab. Required for audio normalization, bulk format conversion, silence trim, and amplify.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                        <TextBlock FontSize="11" Foreground="Gray" Text="Download: "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://ffmpeg.org/download.html" RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,6,0,15">
+                        Both tool paths are set in <Run FontWeight="SemiBold">Settings → Downloads</Run>. A ✓ Found / ✗ Not found indicator next to each path shows whether the plugin can locate the executable.
+                    </TextBlock>
+
+                    <!-- Links -->
+                    <Separator Margin="0,5,0,15"/>
+                    <TextBlock Text="Links" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="GitHub: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong" RequestNavigate="AboutHyperlink_RequestNavigate">github.com/aHuddini/UniPlaySong</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="Report a bug: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/issues" RequestNavigate="AboutHyperlink_RequestNavigate">Open an issue on GitHub</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="Support: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://ko-fi.com/Z8Z11SG2IK" RequestNavigate="AboutHyperlink_RequestNavigate">Ko-fi</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
     </TabControl>
 </UserControl>

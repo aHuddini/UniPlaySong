@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.4.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.4.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,16 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.0
+## What's New - v1.4.1
 
-- **Retro Game Music Support (NEW)** — UniPlaySong now plays `.vgm` chiptune files from Sega Genesis / Mega Drive. Drop a `.vgm` into any game's music folder and it just works.
-- **Faster Previews** — YouTube audio previews now download only the first 40 seconds instead of the full track, reducing bandwidth and wait times.
-- **Browser Cookie Support** — Added Chrome, Edge, Brave, and Opera cookie options alongside Firefox. Settings > Downloads > Cookie Source.
-- **Source Downloads Fix** — Cookie mode downloads now use best audio quality and consistent settings across all download modes.
-- **License Updates** — Credits and `LICENSE` file now attribute Game Music Emu (LGPL v2.1+, dynamic linking) and zlib (zlib license) for retro music support. Third-party acknowledgments split into "Bundled Libraries" (shipped in the `.pext`) and "External Tools" (yt-dlp, FFmpeg, Deno — installed by the user) for clarity.
+- **Play Only on Game Select — Randomization Fix** — Entering a game's Details view now picks a random song every time, instead of always starting with the same alphabetical first track. Previously, repeat entries into the same game would replay the same song until it ended and auto-advance kicked in.
+- **Play Only on Game Select — Faster, Event-Driven** — Reacts instantly to List ↔ Details view changes now. The previous implementation polled every 200ms, which was both slower to respond and a constant CPU tick; switched to the Playnite SDK's native view-change event.
 
 ### Previous Version
-- **v1.3.12**: Normalization codec fix, external audio pause fix, radio mode fixes, tool path validation, download dialog improvements
+- **v1.4.0**: Retro chiptune (`.vgm`) playback, faster YouTube previews, Chrome/Edge/Brave/Opera cookie support, license attribution cleanup
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

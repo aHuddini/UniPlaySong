@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.4.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-04-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.1/UniPlaySong-1_4_1-Apr18_2026.pext'
+    Changelog:
+      - '[Fix] Play Only on Game Select: Randomization now fires on every Details-view entry. Previously the first alphabetical song played every time (repeat entries into the same game would replay that same track until auto-advance kicked in).'
+      - '[Performance] Play Only on Game Select: Reacts instantly to List ↔ Details view changes now via a Playnite SDK 6.16 event. Previous implementation polled every 200ms, consuming unneccesary CPU.'
   - Version: 1.4.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-16
