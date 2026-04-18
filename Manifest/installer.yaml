@@ -8,7 +8,7 @@ Packages:
       - '[New Feature] Fanfare on Beaten: New option to also play the completion fanfare when a game is marked as Beaten (in addition to Completed). Off by default; enable it in Settings -> Playback -> Gamification.'
       - '[New Feature] Abandoned Status Jingle + Toast: Distinct "failure" jingle and muted toast when you mark a game as Abandoned, with its own settings and 10 bundled failure-themed jingles. Off by default.'
       - '[Critical Fix] Retro Chiptune Pause/Resume: Fixed UI freezes, silent music after jingles, and stuck audio when pausing/resuming VGM/VGZ tracks. Resume is now near-instant with a clean fade-in.'
-      - '[Fix] Play Only on Game Select: Randomization now fires on every Details-view entry. Previously the first alphabetical song played every time (repeat entries into the same game would replay that same track until auto-advance kicked in).'
+      - '[Fix] Play Only on Game Select: Randomization now fires on every Details-view entry.'
       - '[Fix] Single-Track Loop Silent: If a game had only one song and "Fade out before song end" was enabled, the song would loop but play silently until manually paused and resumed. Fixed for all audio file formats.'
       - '[Fix] Song-End Fade Silent Gap: "Fade out before song end" now fades the song out over the exact duration you set, ending at the song''s natural end. Previously the fade finished several seconds early, leaving a silent gap before the next song.'
       - '[Performance] Play Only on Game Select: Reacts instantly to List ↔ Details view changes now via a Playnite SDK 6.16 event. Previous implementation polled every 200ms, consuming unneccesary CPU.'
