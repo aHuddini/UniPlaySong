@@ -29,6 +29,7 @@ Built with the help of Claude Code and Cursor IDE
 - **Song-End Fade Geometry** — "Fade out before song end" now actually finishes at the song's end, instead of completing several seconds early and leaving a noticeable silent gap before the next song starts. The fade ramp length now matches the setting you chose.
 - **About Tab Improvements** — Added a Supported Audio Formats section listing the tested formats (MP3, OGG Vorbis, FLAC, WAV) with VGM/VGZ scope clarified as Sega Genesis / Mega Drive / Sega CD.
 - **Fanfare on "Beaten" Status** — New option in Playback settings lets the completion fanfare fire for Playnite's "Beaten" status (main story finished), in addition to "Completed." Off by default, so existing users see no change.
+- **Abandoned Status Jingle + Toast** — Mark a game as "Abandoned" and get a distinct "failure" jingle and a muted toast popup, completely independent from the completion fanfare. Ships with 10 bundled resigned-themed jingles (Mortal Kombat fatalities, Shinobi failure cues, Streets of Rage Game Over, and a toilet flush for the harshest verdict) plus six muted color themes (Tombstone, Dusk Blue, Rust, Ash, Faded Crimson, Shadow). Customize the toast message with your own wording. Off by default.
 
 ### Previous Version
 - **v1.4.0**: Retro chiptune (`.vgm`) playback, faster YouTube previews, Chrome/Edge/Brave/Opera cookie support, license attribution cleanup

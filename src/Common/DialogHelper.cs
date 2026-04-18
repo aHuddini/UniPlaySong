@@ -148,6 +148,10 @@ namespace UniPlaySong.Common
 
             CelebrationToastDurationMs = settings.CelebrationToastDurationSeconds * 1000;
             CelebrationTheme = settings.CelebrationToastTheme;
+
+            AbandonedToastDurationMs = settings.AbandonedToastDurationSeconds * 1000;
+            AbandonedTheme = settings.AbandonedToastTheme;
+            AbandonedMessageTemplate = settings.AbandonedToastMessage;
         }
 
         // ============================================================================
@@ -1253,6 +1257,11 @@ namespace UniPlaySong.Common
         public static int CelebrationToastDurationMs = 6000;
         public static CelebrationToastTheme CelebrationTheme = CelebrationToastTheme.Gold;
 
+        // Abandoned toast settings (synced via SyncToastSettings)
+        public static int AbandonedToastDurationMs = 6000;
+        public static AbandonedToastTheme AbandonedTheme = AbandonedToastTheme.Tombstone;
+        public static string AbandonedMessageTemplate = "Filed away without finishing {gameName}.";
+
         private struct CelebrationColors
         {
             public Color Border;
@@ -1566,6 +1575,317 @@ namespace UniPlaySong.Common
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Error dispatching celebration toast");
+            }
+        }
+
+        private static CelebrationColors GetAbandonedColors(AbandonedToastTheme theme)
+        {
+            switch (theme)
+            {
+                case AbandonedToastTheme.Tombstone:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(107, 111, 118),
+                        Accent = Color.FromRgb(158, 164, 172),
+                        GlowGradientInner = Color.FromArgb(50, 158, 164, 172),
+                        GlowGradientMiddle = Color.FromArgb(25, 107, 111, 118),
+                        GlowGradientOuter = Color.FromArgb(0, 107, 111, 118)
+                    };
+                case AbandonedToastTheme.DuskBlue:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(58, 95, 126),
+                        Accent = Color.FromRgb(91, 137, 171),
+                        GlowGradientInner = Color.FromArgb(50, 91, 137, 171),
+                        GlowGradientMiddle = Color.FromArgb(25, 58, 95, 126),
+                        GlowGradientOuter = Color.FromArgb(0, 58, 95, 126)
+                    };
+                case AbandonedToastTheme.Rust:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(139, 74, 58),
+                        Accent = Color.FromRgb(176, 109, 90),
+                        GlowGradientInner = Color.FromArgb(50, 176, 109, 90),
+                        GlowGradientMiddle = Color.FromArgb(25, 139, 74, 58),
+                        GlowGradientOuter = Color.FromArgb(0, 139, 74, 58)
+                    };
+                case AbandonedToastTheme.Ash:
+                    // Darker, colder, faint violet-blue shift — the "funeral grey" end
+                    // of the palette. Distinctly different from the neutral Tombstone
+                    // default (reported to look identical at the previous brightness).
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(47, 48, 54),
+                        Accent = Color.FromRgb(88, 90, 99),
+                        GlowGradientInner = Color.FromArgb(50, 88, 90, 99),
+                        GlowGradientMiddle = Color.FromArgb(25, 47, 48, 54),
+                        GlowGradientOuter = Color.FromArgb(0, 47, 48, 54)
+                    };
+                case AbandonedToastTheme.FadedCrimson:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(110, 42, 50),
+                        Accent = Color.FromRgb(154, 74, 80),
+                        GlowGradientInner = Color.FromArgb(50, 154, 74, 80),
+                        GlowGradientMiddle = Color.FromArgb(25, 110, 42, 50),
+                        GlowGradientOuter = Color.FromArgb(0, 110, 42, 50)
+                    };
+                case AbandonedToastTheme.Shadow:
+                    return new CelebrationColors
+                    {
+                        Border = Color.FromRgb(44, 45, 58),
+                        Accent = Color.FromRgb(82, 84, 106),
+                        GlowGradientInner = Color.FromArgb(50, 82, 84, 106),
+                        GlowGradientMiddle = Color.FromArgb(25, 44, 45, 58),
+                        GlowGradientOuter = Color.FromArgb(0, 44, 45, 58)
+                    };
+                default:
+                    goto case AbandonedToastTheme.Tombstone;
+            }
+        }
+
+        // Shows the parallel toast for the Abandoned-status trigger. Same layout as the
+        // celebration toast but with a muted palette and the user-customizable message
+        // template. The title uses tombstone icons instead of stars.
+        public static void ShowAbandonedToast(IPlayniteAPI playniteApi, string gameName)
+        {
+            if (playniteApi == null) return;
+
+            try
+            {
+                var app = Application.Current;
+                if (app == null) return;
+
+                app.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        Window toastWindow = null;
+                        System.Windows.Threading.DispatcherTimer closeTimer = null;
+                        var colors = GetAbandonedColors(AbandonedTheme);
+
+                        var contentGrid = new System.Windows.Controls.Grid();
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(4) });
+                        contentGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                        var accentBar = new System.Windows.Shapes.Rectangle
+                        {
+                            Fill = new SolidColorBrush(colors.Border),
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            Margin = new Thickness(0.5, 0.5, 0, 0.5)
+                        };
+                        System.Windows.Controls.Grid.SetColumn(accentBar, 0);
+                        contentGrid.Children.Add(accentBar);
+
+                        var textContainer = new System.Windows.Controls.Grid();
+                        System.Windows.Controls.Grid.SetColumn(textContainer, 1);
+                        contentGrid.Children.Add(textContainer);
+
+                        var glowBrush = new RadialGradientBrush
+                        {
+                            Center = new Point(0.5, 0.5),
+                            GradientOrigin = new Point(0.5, 0.5),
+                            RadiusX = 0.8,
+                            RadiusY = 1.2,
+                            GradientStops = new GradientStopCollection
+                            {
+                                new GradientStop(colors.GlowGradientInner, 0.0),
+                                new GradientStop(colors.GlowGradientMiddle, 0.5),
+                                new GradientStop(colors.GlowGradientOuter, 1.0)
+                            }
+                        };
+                        var glowRect = new System.Windows.Shapes.Rectangle
+                        {
+                            Fill = glowBrush,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            Opacity = 0.0
+                        };
+                        textContainer.Children.Add(glowRect);
+
+                        var textGrid = new System.Windows.Controls.Grid();
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+                        textGrid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                        textContainer.Children.Add(textGrid);
+
+                        var titleBlock = new System.Windows.Controls.TextBlock
+                        {
+                            Text = "\u26B0 GAME ABANDONED \u26B0", // ⚰ coffin (Unicode 5.2, renders in Segoe UI)
+                            FontSize = 24,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = new SolidColorBrush(colors.Accent),
+                            Margin = new Thickness(16, 16, 20, 6),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            TextAlignment = System.Windows.TextAlignment.Center
+                        };
+                        System.Windows.Controls.Grid.SetRow(titleBlock, 0);
+                        textGrid.Children.Add(titleBlock);
+
+                        // Resolve the message template. Blank falls back to the default phrasing.
+                        // The literal "{gameName}" is replaced with the actual game name, and the
+                        // game name segment is rendered in bold for emphasis.
+                        var template = string.IsNullOrWhiteSpace(AbandonedMessageTemplate)
+                            ? "Filed away without finishing {gameName}."
+                            : AbandonedMessageTemplate;
+
+                        var messageBlock = new System.Windows.Controls.TextBlock
+                        {
+                            FontSize = 18,
+                            TextWrapping = TextWrapping.Wrap,
+                            Foreground = new SolidColorBrush(ToastTextColor),
+                            Margin = new Thickness(16, 4, 20, 16),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            TextAlignment = System.Windows.TextAlignment.Center,
+                            LineHeight = 28,
+                            LineStackingStrategy = System.Windows.LineStackingStrategy.BlockLineHeight
+                        };
+
+                        const string placeholder = "{gameName}";
+                        int idx = template.IndexOf(placeholder, StringComparison.Ordinal);
+                        if (idx >= 0)
+                        {
+                            if (idx > 0)
+                                messageBlock.Inlines.Add(new System.Windows.Documents.Run(template.Substring(0, idx)));
+                            messageBlock.Inlines.Add(new System.Windows.Documents.Run(gameName) { FontWeight = FontWeights.Bold });
+                            int tail = idx + placeholder.Length;
+                            if (tail < template.Length)
+                                messageBlock.Inlines.Add(new System.Windows.Documents.Run(template.Substring(tail)));
+                        }
+                        else
+                        {
+                            messageBlock.Inlines.Add(new System.Windows.Documents.Run(template));
+                        }
+
+                        System.Windows.Controls.Grid.SetRow(messageBlock, 1);
+                        textGrid.Children.Add(messageBlock);
+
+                        var outerBorder = new Border
+                        {
+                            BorderBrush = new SolidColorBrush(colors.Border),
+                            BorderThickness = new Thickness(Math.Max(ToastBorderThickness, 1)),
+                            CornerRadius = new CornerRadius(ToastCornerRadius),
+                            Background = new SolidColorBrush(Color.FromArgb(1, 45, 45, 45)),
+                            Padding = new Thickness(0),
+                            Child = contentGrid
+                        };
+
+                        var clipWrapper = new System.Windows.Controls.Grid { ClipToBounds = true };
+                        clipWrapper.Children.Add(outerBorder);
+
+                        toastWindow = new Window
+                        {
+                            Title = "Game Abandoned",
+                            Width = ToastWidth,
+                            SizeToContent = SizeToContent.Height,
+                            MinHeight = ToastMinHeight,
+                            MaxHeight = ToastMaxHeight,
+                            WindowStyle = WindowStyle.None,
+                            AllowsTransparency = true,
+                            Background = Brushes.Transparent,
+                            ResizeMode = ResizeMode.NoResize,
+                            Content = clipWrapper,
+                            Topmost = true,
+                            ShowInTaskbar = false,
+                            ShowActivated = false,
+                            Focusable = false
+                        };
+
+                        clipWrapper.Loaded += (wrapperSender, wrapperArgs) =>
+                        {
+                            try
+                            {
+                                var wrapper = wrapperSender as System.Windows.Controls.Grid;
+                                if (wrapper != null && wrapper.ActualWidth > 0 && wrapper.ActualHeight > 0)
+                                {
+                                    wrapper.Clip = new RectangleGeometry(
+                                        new Rect(0, 0, wrapper.ActualWidth, wrapper.ActualHeight),
+                                        ToastCornerRadius, ToastCornerRadius);
+                                }
+                            }
+                            catch { }
+                        };
+
+                        toastWindow.SourceInitialized += (s, e) =>
+                        {
+                            try { if (EnableToastAcrylicBlur) EnableWindowBlur(toastWindow); }
+                            catch { }
+                        };
+
+                        toastWindow.Loaded += (s, e) =>
+                        {
+                            try
+                            {
+                                toastWindow.Left = (SystemParameters.PrimaryScreenWidth - toastWindow.ActualWidth) / 2;
+                                toastWindow.Top = ToastEdgeMargin;
+                            }
+                            catch
+                            {
+                                toastWindow.Left = (SystemParameters.PrimaryScreenWidth - ToastWidth) / 2;
+                                toastWindow.Top = ToastEdgeMargin;
+                            }
+                        };
+
+                        var pulseAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                        {
+                            From = 0.0,
+                            To = 0.8,
+                            Duration = new Duration(TimeSpan.FromSeconds(0.8)),
+                            AutoReverse = true,
+                            RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+                            EasingFunction = new System.Windows.Media.Animation.SineEase
+                            {
+                                EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut
+                            }
+                        };
+
+                        closeTimer = new System.Windows.Threading.DispatcherTimer
+                        {
+                            Interval = TimeSpan.FromMilliseconds(AbandonedToastDurationMs)
+                        };
+                        closeTimer.Tick += (s, e) =>
+                        {
+                            closeTimer.Stop();
+                            try { toastWindow?.Close(); }
+                            catch { }
+                        };
+
+                        toastWindow.MouseDown += (s, e) =>
+                        {
+                            closeTimer?.Stop();
+                            try { toastWindow?.Close(); }
+                            catch { }
+                        };
+
+                        toastWindow.Closed += (s, e) =>
+                        {
+                            try
+                            {
+                                closeTimer?.Stop();
+                                closeTimer = null;
+                                glowRect.BeginAnimation(System.Windows.UIElement.OpacityProperty, null);
+                                clipWrapper.Children.Clear();
+                                contentGrid.Children.Clear();
+                                textContainer.Children.Clear();
+                                textGrid.Children.Clear();
+                                toastWindow.Content = null;
+                            }
+                            catch { }
+                        };
+
+                        closeTimer.Start();
+                        glowRect.BeginAnimation(System.Windows.UIElement.OpacityProperty, pulseAnimation);
+                        toastWindow.Show();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug(ex, "Error showing abandoned toast");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Error dispatching abandoned toast");
             }
         }
 

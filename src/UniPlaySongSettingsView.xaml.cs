@@ -99,6 +99,14 @@ namespace UniPlaySong
             s.FadeOutBeforeSongEndDuration = 3.0;
             s.EnableCompletionCelebration = true;
             s.CelebrateBeaten = false;
+            s.EnableAbandonedSound = false;
+            s.AbandonedSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedAbandonedJingle = "Abandoned/Shinobi III - Sega Genesis - Round Clear.mp3";
+            s.AbandonedSoundPath = string.Empty;
+            s.ShowAbandonedToast = true;
+            s.AbandonedToastDurationSeconds = 6;
+            s.AbandonedToastTheme = AbandonedToastTheme.Tombstone;
+            s.AbandonedToastMessage = "Filed away without finishing {gameName}.";
             s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
             s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
             s.CelebrationSoundPath = string.Empty;

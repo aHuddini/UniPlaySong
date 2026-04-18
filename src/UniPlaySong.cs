@@ -406,21 +406,37 @@ namespace UniPlaySong
 
                 // Completion celebration: play sound when game marked as "Completed"
                 // (and optionally "Beaten" — Playnite's built-in status for story-finished games)
-                if (_settings?.EnableCompletionCelebration == true &&
-                    update.NewData.CompletionStatusId != update.OldData.CompletionStatusId)
+                // and an independent "Abandoned" trigger with its own sound/toast pipeline.
+                if (update.NewData.CompletionStatusId != update.OldData.CompletionStatusId)
                 {
                     var newStatus = _api.Database.CompletionStatuses?.FirstOrDefault(
                         s => s.Id == update.NewData.CompletionStatusId);
-                    bool isCelebratedStatus = newStatus != null &&
-                        (newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
-                         (_settings.CelebrateBeaten && newStatus.Name.Equals("Beaten", StringComparison.OrdinalIgnoreCase)));
-                    if (isCelebratedStatus)
+                    if (newStatus != null)
                     {
-                        PlayCelebrationSound();
+                        bool isCelebratedStatus = _settings?.EnableCompletionCelebration == true &&
+                            (newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
+                             (_settings.CelebrateBeaten && newStatus.Name.Equals("Beaten", StringComparison.OrdinalIgnoreCase)));
 
-                        if (_settings.ShowCelebrationToast)
+                        bool isAbandonedStatus = _settings?.EnableAbandonedSound == true &&
+                            newStatus.Name.Equals("Abandoned", StringComparison.OrdinalIgnoreCase);
+
+                        if (isCelebratedStatus)
                         {
-                            Common.DialogHelper.ShowCelebrationToast(_api, update.NewData.Name);
+                            PlayCelebrationSound();
+
+                            if (_settings.ShowCelebrationToast)
+                            {
+                                Common.DialogHelper.ShowCelebrationToast(_api, update.NewData.Name);
+                            }
+                        }
+                        else if (isAbandonedStatus)
+                        {
+                            PlayAbandonedSound();
+
+                            if (_settings.ShowAbandonedToast)
+                            {
+                                Common.DialogHelper.ShowAbandonedToast(_api, update.NewData.Name);
+                            }
                         }
                     }
                 }
@@ -4811,6 +4827,36 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 _fileLogger?.Warn($"Celebration sound failed: {ex.Message}");
+            }
+        }
+
+        // Parallel to PlayCelebrationSound but reads the independent Abandoned settings.
+        // Reuses PlayCelebrationFile for the actual playback (jingle player lifecycle is
+        // identical — only the source file differs).
+        private void PlayAbandonedSound()
+        {
+            try
+            {
+                if (_settings.AbandonedSoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                }
+                else if (_settings.AbandonedSoundType == CelebrationSoundType.BundledJingle)
+                {
+                    var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedAbandonedJingle);
+                    if (!string.IsNullOrEmpty(path))
+                        PlayCelebrationFile(path);
+                }
+                else if (_settings.AbandonedSoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(_settings.AbandonedSoundPath)
+                        && File.Exists(_settings.AbandonedSoundPath))
+                        PlayCelebrationFile(_settings.AbandonedSoundPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"Abandoned sound failed: {ex.Message}");
             }
         }
 

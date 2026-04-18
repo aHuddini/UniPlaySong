@@ -18,6 +18,7 @@
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
         <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
         <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
+        <local:AbandonedThemeConverter x:Key="AbandonedThemeConverter"/>
         <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
         <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
     </UserControl.Resources>
@@ -840,6 +841,98 @@
                                 <ComboBoxItem Content="Sunset"/>
                                 <ComboBoxItem Content="Platinum"/>
                             </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Abandoned Status Sound + Toast (parallel pipeline, separate settings) -->
+                    <Separator Margin="0,15,0,10"/>
+                    <CheckBox Content="Play Sound on Abandoned Games"
+                              IsChecked="{Binding Settings.EnableAbandonedSound}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Play a distinct sound (and optional toast) when you mark a game as 'Abandoned' in Playnite. Separate from the Completed/Beaten fanfare so you can pick a resigned / game-over jingle instead."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+
+                    <StackPanel Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.EnableAbandonedSound}">
+                        <RadioButton Content="System beep"
+                                     IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SystemBeep}"
+                                     GroupName="AbandonedSound"
+                                     Margin="0,3"/>
+                        <RadioButton Content="Jingle Preset"
+                                     IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                     GroupName="AbandonedSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <ComboBox ItemsSource="{Binding AbandonedJingles}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="File"
+                                      SelectedValue="{Binding Settings.SelectedAbandonedJingle}"
+                                      Width="300"
+                                      Margin="0,0,8,0"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewAbandonedSoundCommand}"
+                                    Padding="10,4"/>
+                        </StackPanel>
+                        <RadioButton Content="Custom sound file (.wav recommended)"
+                                     IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                     GroupName="AbandonedSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                            <TextBox Text="{Binding Settings.AbandonedSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="350"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                            <Button Content="Browse..."
+                                    Command="{Binding BrowseAbandonedSoundCommand}"
+                                    Padding="10,4"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewAbandonedSoundCommand}"
+                                    Padding="10,4"
+                                    Margin="5,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Abandoned Toast -->
+                        <CheckBox Content="Show abandoned toast notification"
+                                  IsChecked="{Binding Settings.ShowAbandonedToast}"
+                                  Margin="0,10,0,5"/>
+                        <TextBlock Text="Displays a muted toast popup with a graveyard icon when a game is marked abandoned."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                    IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                            <TextBlock Text="Duration:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                            <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                                    Value="{Binding Settings.AbandonedToastDurationSeconds}"
+                                    Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Settings.AbandonedToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                                       VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                    IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                            <TextBlock Text="Color theme:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                            <ComboBox SelectedIndex="{Binding Settings.AbandonedToastTheme, Converter={StaticResource AbandonedThemeConverter}}"
+                                      Margin="8,0,0,0" Width="170">
+                                <ComboBoxItem Content="Tombstone (Default)"/>
+                                <ComboBoxItem Content="Dusk Blue"/>
+                                <ComboBoxItem Content="Rust"/>
+                                <ComboBoxItem Content="Ash"/>
+                                <ComboBoxItem Content="Faded Crimson"/>
+                                <ComboBoxItem Content="Shadow"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Margin="20,8,0,5"
+                                    IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                            <TextBlock Text="Message (use {gameName} as placeholder):" FontSize="11" Foreground="Gray" Margin="0,0,0,3"/>
+                            <TextBox Text="{Binding Settings.AbandonedToastMessage, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="400" HorizontalAlignment="Left"
+                                     VerticalContentAlignment="Center"/>
+                            <TextBlock Text="Examples: &quot;Filed away without finishing {gameName}.&quot;, &quot;{gameName} has been flushed.&quot;, &quot;RIP {gameName}&quot;"
+                                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
                         </StackPanel>
                     </StackPanel>
 

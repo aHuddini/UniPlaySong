@@ -25,6 +25,12 @@ namespace UniPlaySong.Services
         [JsonProperty("license")]
         public string License { get; set; }
 
+        // Optional category tag: "celebration" (default, fanfare for Completed/Beaten)
+        // or "abandoned" (resigned jingles for the Abandoned status trigger).
+        // Missing/empty category is treated as "celebration" for backward compatibility.
+        [JsonProperty("category")]
+        public string Category { get; set; }
+
         // Display: "Game - Song Title (Console)" e.g. "Sonic the Hedgehog 3 - Act Complete (Sega Genesis)"
         [JsonIgnore]
         public string DisplayName
@@ -39,6 +45,9 @@ namespace UniPlaySong.Services
 
     public static class BundledJingleService
     {
+        private const string CategoryCelebration = "celebration";
+        private const string CategoryAbandoned = "abandoned";
+
         private static List<BundledJingleInfo> _jingles;
         private static string _jinglesDirectory;
 
@@ -49,7 +58,27 @@ namespace UniPlaySong.Services
             _jingles = null;
         }
 
+        // Returns all jingles in the "celebration" category (the default — fanfare for
+        // Completed/Beaten). Jingles without an explicit category tag are treated as
+        // celebration for backward compatibility with pre-v1.4.1 manifests.
         public static List<BundledJingleInfo> GetJingles()
+        {
+            return GetAllJingles()
+                .Where(j => string.IsNullOrWhiteSpace(j.Category)
+                         || string.Equals(j.Category, CategoryCelebration, System.StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // Returns jingles tagged as "abandoned" — the parallel set used by the
+        // Abandoned-status trigger (resigned / game-over themed tracks).
+        public static List<BundledJingleInfo> GetAbandonedJingles()
+        {
+            return GetAllJingles()
+                .Where(j => string.Equals(j.Category, CategoryAbandoned, System.StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private static List<BundledJingleInfo> GetAllJingles()
         {
             if (_jingles != null) return _jingles;
 
@@ -92,10 +121,17 @@ namespace UniPlaySong.Services
             return System.IO.File.Exists(path) ? path : null;
         }
 
-        // Gets the first available jingle filename, or empty string if none
+        // Gets the first available celebration jingle filename, or empty string if none
         public static string GetDefaultJingleFilename()
         {
             var jingles = GetJingles();
+            return jingles.Count > 0 ? jingles[0].File : string.Empty;
+        }
+
+        // Gets the first available abandoned jingle filename, or empty string if none
+        public static string GetDefaultAbandonedJingleFilename()
+        {
+            var jingles = GetAbandonedJingles();
             return jingles.Count > 0 ? jingles[0].File : string.Empty;
         }
     }

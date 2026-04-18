@@ -86,5 +86,95 @@
     "console": "Sega Genesis",
     "source": "Sega Genesis",
     "license": "Game Soundtrack"
+  },
+  {
+    "file": "Abandoned/Shinobi III - Sega Genesis - Round Clear.mp3",
+    "title": "Round Clear",
+    "artist": "Shinobi III",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Shinobi III - Sega Genesis - Stage Clear.mp3",
+    "title": "Stage Clear",
+    "artist": "Shinobi III",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Revenge of Shinobi - Sega Genesis - Failure.mp3",
+    "title": "Failure",
+    "artist": "Revenge of Shinobi",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Streets of Rage 1 - Sega Genesis - Game Over.mp3",
+    "title": "Game Over",
+    "artist": "Streets of Rage",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Mortal Kombat 1 - Sega Genesis - Entrance Round Over.mp3",
+    "title": "Entrance Round Over",
+    "artist": "Mortal Kombat",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Mortal Kombat 1 - Sega Genesis - Test Your Might.mp3",
+    "title": "Test Your Might",
+    "artist": "Mortal Kombat",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Mortal Kombat 2 - Sega Genesis - Fatality.mp3",
+    "title": "Fatality",
+    "artist": "Mortal Kombat 2",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Mortal Kombat 3 - Sega Genesis - Soul Chamber - Over.mp3",
+    "title": "Soul Chamber - Over",
+    "artist": "Mortal Kombat 3",
+    "console": "Sega Genesis",
+    "source": "Sega Genesis",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Street Fighter Alpha 3 - Arcade - Boot.mp3",
+    "title": "Boot",
+    "artist": "Street Fighter Alpha 3",
+    "console": "Arcade",
+    "source": "Arcade",
+    "license": "Game Soundtrack",
+    "category": "abandoned"
+  },
+  {
+    "file": "Abandoned/Toilet Flush.mp3",
+    "title": "Toilet Flush",
+    "artist": "",
+    "console": "",
+    "source": "Sound Effect",
+    "license": "Creative Commons",
+    "category": "abandoned"
   }
 ]

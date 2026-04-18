@@ -199,6 +199,18 @@ namespace UniPlaySong
         Platinum         // Silver/white
     }
 
+    // Palette set for the Abandoned-status toast — muted / resigned tones
+    // to sit distinctly apart from the celebratory CelebrationToastTheme set.
+    public enum AbandonedToastTheme
+    {
+        Tombstone = 0,   // Default — stone grey (#6B6F76)
+        DuskBlue,        // Muted slate (#3A5F7E)
+        Rust,            // Faded orange-red (#8B4A3A)
+        Ash,             // Cool charcoal (#4A4A52)
+        FadedCrimson,    // Desaturated dark red (#6E2A32)
+        Shadow           // Deep indigo black (#2C2D3A)
+    }
+
     public enum ProgressBarPosition
     {
         AfterSkipButton,    // Between skip button and visualizer
@@ -324,7 +336,7 @@ namespace UniPlaySong
         private FadeCurveType naudioFadeInCurve = FadeCurveType.Quadratic;
         private FadeCurveType naudioFadeOutCurve = FadeCurveType.Cubic;
 
-        // Gamification
+        // Gamification — Completion celebration (fanfare on Completed / optionally Beaten)
         private bool enableCompletionCelebration = true;
         private bool celebrateBeaten = false;
         private CelebrationSoundType celebrationSoundType = CelebrationSoundType.BundledJingle;
@@ -334,6 +346,16 @@ namespace UniPlaySong
         private int celebrationToastDurationSeconds = 8;
         private CelebrationToastTheme celebrationToastTheme = CelebrationToastTheme.Gold;
         private bool applyLiveEffectsToJingles = true;
+
+        // Gamification — Abandoned status (separate sound/toast from the celebration)
+        private bool enableAbandonedSound = false;
+        private CelebrationSoundType abandonedSoundType = CelebrationSoundType.BundledJingle;
+        private string selectedAbandonedJingle = "Abandoned/Shinobi III - Sega Genesis - Round Clear.mp3";
+        private string abandonedSoundPath = string.Empty;
+        private bool showAbandonedToast = true;
+        private int abandonedToastDurationSeconds = 6;
+        private AbandonedToastTheme abandonedToastTheme = AbandonedToastTheme.Tombstone;
+        private string abandonedToastMessage = "Filed away without finishing {gameName}.";
 
         // Download notifications
         private bool playSoundOnDownloadComplete = false;
@@ -836,6 +858,59 @@ namespace UniPlaySong
         {
             get => applyLiveEffectsToJingles;
             set { applyLiveEffectsToJingles = value; OnPropertyChanged(); }
+        }
+
+        // Fire a sound (and optionally a toast) when a game's completion status changes to "Abandoned".
+        // Independent pipeline from the Completed/Beaten celebration so the user can pick a
+        // resigned / game-over jingle and a muted toast palette that don't read as a fanfare.
+        public bool EnableAbandonedSound
+        {
+            get => enableAbandonedSound;
+            set { enableAbandonedSound = value; OnPropertyChanged(); }
+        }
+
+        public CelebrationSoundType AbandonedSoundType
+        {
+            get => abandonedSoundType;
+            set { abandonedSoundType = value; OnPropertyChanged(); }
+        }
+
+        public string SelectedAbandonedJingle
+        {
+            get => selectedAbandonedJingle;
+            set { selectedAbandonedJingle = value; OnPropertyChanged(); }
+        }
+
+        public string AbandonedSoundPath
+        {
+            get => abandonedSoundPath;
+            set { abandonedSoundPath = value; OnPropertyChanged(); }
+        }
+
+        public bool ShowAbandonedToast
+        {
+            get => showAbandonedToast;
+            set { showAbandonedToast = value; OnPropertyChanged(); }
+        }
+
+        public int AbandonedToastDurationSeconds
+        {
+            get => abandonedToastDurationSeconds;
+            set { abandonedToastDurationSeconds = Math.Max(3, Math.Min(15, value)); OnPropertyChanged(); }
+        }
+
+        public AbandonedToastTheme AbandonedToastTheme
+        {
+            get => abandonedToastTheme;
+            set { abandonedToastTheme = value; OnPropertyChanged(); }
+        }
+
+        // Customizable message template for the abandoned toast. The literal "{gameName}" is
+        // substituted at display time. Empty string falls back to the default template.
+        public string AbandonedToastMessage
+        {
+            get => abandonedToastMessage;
+            set { abandonedToastMessage = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         // Play a system sound when any download completes successfully

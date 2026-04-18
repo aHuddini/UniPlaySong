@@ -143,6 +143,9 @@ namespace UniPlaySong
         // Bundled jingles list for the celebration sound ComboBox
         public List<Services.BundledJingleInfo> CelebrationJingles => Services.BundledJingleService.GetJingles();
 
+        // Parallel list filtered to the "abandoned" category for the Abandoned-status sound picker
+        public List<Services.BundledJingleInfo> AbandonedJingles => Services.BundledJingleService.GetAbandonedJingles();
+
         // Deep-clones current settings via JSON roundtrip, then applies the update.
         // This ensures ALL properties are preserved (previously only ~30 of 180 were copied).
         private UniPlaySongSettings CreateSettingsWithUpdate(Action<UniPlaySongSettings> updateAction)
@@ -779,6 +782,63 @@ namespace UniPlaySong
             {
                 Settings.CelebrationSoundPath = dialog.FileName;
                 Settings.CelebrationSoundType = CelebrationSoundType.CustomFile;
+            }
+        });
+
+        public ICommand BrowseAbandonedSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.ogg;*.flac|WAV Files (recommended)|*.wav|All Files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                Settings.AbandonedSoundPath = dialog.FileName;
+                Settings.AbandonedSoundType = CelebrationSoundType.CustomFile;
+            }
+        });
+
+        public ICommand PreviewAbandonedSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                string fileToPlay = null;
+
+                if (Settings.AbandonedSoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                    return;
+                }
+                else if (Settings.AbandonedSoundType == CelebrationSoundType.BundledJingle)
+                {
+                    fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAbandonedJingle);
+                }
+                else if (Settings.AbandonedSoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(Settings.AbandonedSoundPath)
+                        && File.Exists(Settings.AbandonedSoundPath))
+                        fileToPlay = Settings.AbandonedSoundPath;
+                }
+
+                if (!string.IsNullOrEmpty(fileToPlay))
+                {
+                    _jinglePreviewPlayer?.Stop();
+                    _jinglePreviewPlayer?.Close();
+
+                    _jinglePreviewPlayer = new MediaPlayer();
+                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
+                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
+                    _jinglePreviewPlayer.Play();
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
             }
         });
 
