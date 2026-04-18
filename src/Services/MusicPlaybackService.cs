@@ -594,6 +594,7 @@ namespace UniPlaySong.Services
                 // "Play Only on Game Select" — in Fullscreen List view, clear game songs to play default music.
                 // Game music only plays when the user is in the Details view (explicitly selected a game).
                 // Uses ActiveFullscreenView from the Playnite API — no button interception needed.
+                bool clearedForListView = false;
                 if (songs.Count > 0 && settings?.PlayOnlyOnGameSelect == true)
                 {
                     try
@@ -609,6 +610,7 @@ namespace UniPlaySong.Services
                             {
                                 _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect — List view active, clearing {songs.Count} game songs for default music");
                                 songs.Clear();
+                                clearedForListView = true;
                             }
                         }
                     }
@@ -804,8 +806,16 @@ namespace UniPlaySong.Services
                 var previousGameId = _currentGameId;
                 var isNewGame = previousGameId == null || previousGameId != gameId;
 
-                _currentGameId = gameId;
-                _currentGame = game;
+                // When PlayOnlyOnGameSelect cleared game songs because we're in List view, this call
+                // is a "prep" call that plays default music until the user enters Details view.
+                // Skip updating _currentGameId so the subsequent Details-view call still sees this
+                // game as "new" and the RandomizeOnEverySelect path can fire. Otherwise, the first
+                // alphabetical game song plays every time (no randomization on Details-view entry).
+                if (!clearedForListView)
+                {
+                    _currentGameId = gameId;
+                    _currentGame = game;
+                }
 
                 // Update song count and notify UI for skip button visibility
                 // Fire event if count changed, new game, or forceReload (after download)
