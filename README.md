@@ -28,6 +28,7 @@ Built with the help of Claude Code and Cursor IDE
 - **Retro Chiptune Pause/Resume — Fast and Reliable** — Three overlapping issues with VGM/VGZ playback are fixed: multi-second Playnite UI freezes on resume (sometimes long enough that Windows showed the "not responding" dialog, scaling worse the deeper into the song you were), silent main music after celebration jingles that required a manual Pause → Play to recover, and stuck audio after rapid pause/resume cycles. Resume is now near-instant with a clean fade-in — external audio, focus loss, and jingles all behave correctly.
 - **Song-End Fade Geometry** — "Fade out before song end" now actually finishes at the song's end, instead of completing several seconds early and leaving a noticeable silent gap before the next song starts. The fade ramp length now matches the setting you chose.
 - **About Tab Improvements** — Added a Supported Audio Formats section listing the tested formats (MP3, OGG Vorbis, FLAC, WAV) with VGM/VGZ scope clarified as Sega Genesis / Mega Drive / Sega CD.
+- **Fanfare on "Beaten" Status** — New option in Playback settings lets the completion fanfare fire for Playnite's "Beaten" status (main story finished), in addition to "Completed." Off by default, so existing users see no change.
 
 ### Previous Version
 - **v1.4.0**: Retro chiptune (`.vgm`) playback, faster YouTube previews, Chrome/Edge/Brave/Opera cookie support, license attribution cleanup

@@ -260,3 +260,49 @@ If a download bug is fixed in Path A, the same fix must be applied to Path B. Ea
 ### Fix If Needed
 
 Remove the `else` block (Path B) entirely since `_errorHandler` is guaranteed non-null.
+
+---
+
+## Celebration Trigger: Hardcoded English Completion-Status Names
+
+**Status:** Low priority (silent feature break for non-English users / renamed statuses)
+**Discovered:** v1.4.1 (while adding the `CelebrateBeaten` toggle)
+
+### Problem
+
+`UniPlaySong.OnItemUpdated` fires the completion celebration by comparing `newStatus.Name` against literal English strings:
+
+```csharp
+// src/UniPlaySong.cs, roughly line 413
+newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
+(_settings.CelebrateBeaten && newStatus.Name.Equals("Beaten", StringComparison.OrdinalIgnoreCase))
+```
+
+This silently stops working in three scenarios:
+
+1. **User renamed a built-in status.** Playnite lets users rename completion statuses (Settings → Completion Statuses). If a user renamed "Completed" to, say, "Platinum" or "100%", the trigger matches nothing and the fanfare never plays. No error, no log, no indication — the feature just appears to be broken.
+2. **Non-English Playnite install.** Playnite's UI is localized but the `Name` field on the built-in statuses is stored as whatever label the user sees. A Spanish user with "Completado" / "Superado", a German user with "Abgeschlossen" / "Durchgespielt", a French user with "Terminé" / "Battu" — none of them would ever get the fanfare.
+3. **User deleted the built-in status and created a new one with the same name.** Edge case, but the new status has a different GUID. Name-match still works here, so this isn't actually broken — included for completeness.
+
+### Why we left it as-is for v1.4.1
+
+The name match matches how the feature originally shipped (v1.2.x-ish), and changing the semantic to GUID-match would require schema migration (persist status GUIDs in settings, with a one-time name-based lookup at first load to backfill). For the `CelebrateBeaten` addition I mirrored the existing pattern for consistency — opting not to introduce a partial half-fix for only one of the two matches.
+
+### Proper fix
+
+Match by `CompletionStatusId` GUID, not `Name`. Playnite doesn't expose stable GUIDs for the built-in statuses as constants (they're user-editable, not fixed by the SDK) — but they ARE stable per-database. Approach:
+
+1. Add `CelebrationCompletedStatusId` and `CelebrationBeatenStatusId` settings (`Guid?`).
+2. On first-ever settings load (or when the IDs are null), scan `_api.Database.CompletionStatuses` and match by Name to populate the IDs. This is the one-time name→ID resolution.
+3. Subsequent triggers compare `update.NewData.CompletionStatusId` to the stored GUIDs directly.
+4. Add a settings-UI dropdown under each toggle: "Trigger status: [Completed ▼]" so users can override the detected match (or pick a custom status if they've created one like "Platinum").
+
+Alternative (lighter-weight): use the same `CompletionStatusSelectionDialog` pattern used for Nostalgia Mode — replace the two bools with a single `Guid[] CelebrationStatusIds` setting and a multi-select list. Same correctness win, no hardcoded names anywhere, and lets users celebrate any status they want (e.g. "Abandoned? Sad trombone.").
+
+### Scope
+
+Half a day of work. Requires settings schema bump (old `EnableCompletionCelebration`/`CelebrateBeaten` bools → new `CelebrationStatusIds` array) with a one-shot migration path. UI needs a small multi-select or two dropdowns.
+
+### When to do it
+
+Queue for v1.5 when we next revisit the Playback / Gamification tab. Not urgent — the current behavior is correct for English users who haven't renamed the built-in statuses (the vast majority of the user base based on Playnite's localization adoption).

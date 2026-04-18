@@ -326,6 +326,7 @@ namespace UniPlaySong
 
         // Gamification
         private bool enableCompletionCelebration = true;
+        private bool celebrateBeaten = false;
         private CelebrationSoundType celebrationSoundType = CelebrationSoundType.BundledJingle;
         private string selectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
         private string celebrationSoundPath = string.Empty;
@@ -781,6 +782,14 @@ namespace UniPlaySong
         {
             get => enableCompletionCelebration;
             set { enableCompletionCelebration = value; OnPropertyChanged(); }
+        }
+
+        // Also fire the celebration when a game's completion status changes to "Beaten"
+        // (Playnite's built-in status for "main story finished" — semantically close to Completed)
+        public bool CelebrateBeaten
+        {
+            get => celebrateBeaten;
+            set { celebrateBeaten = value; OnPropertyChanged(); }
         }
 
         public CelebrationSoundType CelebrationSoundType

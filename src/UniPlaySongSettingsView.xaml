@@ -751,6 +751,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
 
+                    <CheckBox Content="Also celebrate when marked as 'Beaten'"
+                              IsChecked="{Binding Settings.CelebrateBeaten}"
+                              IsEnabled="{Binding Settings.EnableCompletionCelebration}"
+                              Margin="20,3,0,2"/>
+                    <TextBlock Text="Fires the same fanfare for Playnite's built-in 'Beaten' status (main story finished), in addition to 'Completed'"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,8"/>
+
                     <StackPanel Margin="20,5,0,10"
                                 IsEnabled="{Binding Settings.EnableCompletionCelebration}">
                         <RadioButton Content="System beep"

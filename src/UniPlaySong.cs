@@ -405,12 +405,16 @@ namespace UniPlaySong
                 }
 
                 // Completion celebration: play sound when game marked as "Completed"
+                // (and optionally "Beaten" — Playnite's built-in status for story-finished games)
                 if (_settings?.EnableCompletionCelebration == true &&
                     update.NewData.CompletionStatusId != update.OldData.CompletionStatusId)
                 {
                     var newStatus = _api.Database.CompletionStatuses?.FirstOrDefault(
                         s => s.Id == update.NewData.CompletionStatusId);
-                    if (newStatus != null && newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                    bool isCelebratedStatus = newStatus != null &&
+                        (newStatus.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
+                         (_settings.CelebrateBeaten && newStatus.Name.Equals("Beaten", StringComparison.OrdinalIgnoreCase)));
+                    if (isCelebratedStatus)
                     {
                         PlayCelebrationSound();
 
