@@ -849,7 +849,19 @@ namespace UniPlaySong.Services
                     _fileLogger?.Debug($"PlayGameMusic: Updated settings (TargetVolume: {_targetVolume}, FadeInDuration: {_fadeInDuration}, FadeOutDuration: {_fadeOutDuration})");
                 }
 
-                string songToPlay = SelectSongToPlay(game, songs, isNewGame);
+                // "Play Only on Game Select" — when the user enters Details view for a game they were
+                // just browsing in List view, we're currently playing default music for THIS game.
+                // Treat that as a fresh selection for randomization purposes: each Details-view entry
+                // is a deliberate act and should pick a new random song, even when the game ID hasn't
+                // changed. Without this, repeat Details-entries for the same game would fall through
+                // to the alphabetical FirstOrDefault() branch in SelectSongToPlay.
+                bool forceRandomizeOnDetailsEntry =
+                    _isPlayingDefaultMusic
+                    && _currentGameId == gameId
+                    && songs.Count > 1
+                    && !clearedForListView;
+
+                string songToPlay = SelectSongToPlay(game, songs, isNewGame, forceRandomizeOnDetailsEntry);
 
                 if (string.IsNullOrWhiteSpace(songToPlay) || !File.Exists(songToPlay))
                 {
@@ -1627,8 +1639,9 @@ namespace UniPlaySong.Services
         /// <param name="game">The game to select a song for.</param>
         /// <param name="songs">List of available songs for the game.</param>
         /// <param name="isNewGame">Whether this is a new game selection.</param>
+        /// <param name="forceRandomize">Force randomization even when isNewGame is false (e.g. Details-view re-entry under PlayOnlyOnGameSelect).</param>
         /// <returns>The path to the song to play, or null if no song available.</returns>
-        private string SelectSongToPlay(Game game, List<string> songs, bool isNewGame)
+        private string SelectSongToPlay(Game game, List<string> songs, bool isNewGame, bool forceRandomize = false)
         {
             if (songs.Count == 0) return null;
 
@@ -1663,7 +1676,7 @@ namespace UniPlaySong.Services
             {
                 bool shouldRandomize = false;
 
-                if (isNewGame && _currentSettings.RandomizeOnEverySelect)
+                if ((isNewGame || forceRandomize) && _currentSettings.RandomizeOnEverySelect)
                 {
                     shouldRandomize = true;
                 }
