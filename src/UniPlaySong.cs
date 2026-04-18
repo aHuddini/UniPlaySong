@@ -421,7 +421,7 @@ namespace UniPlaySong
 
                         if (isCelebratedStatus)
                         {
-                            PlayCelebrationSound();
+                            _jingleService.PlayForEvent(Services.JingleEvent.Completion, _settings);
 
                             if (_settings.ShowCelebrationToast)
                             {
@@ -430,7 +430,7 @@ namespace UniPlaySong
                         }
                         else if (isAbandonedStatus)
                         {
-                            PlayAbandonedSound();
+                            _jingleService.PlayForEvent(Services.JingleEvent.Abandoned, _settings);
 
                             if (_settings.ShowAbandonedToast)
                             {
@@ -4821,63 +4821,6 @@ namespace UniPlaySong
         {
             if (_settings?.PlaySoundOnDownloadComplete == true)
                 Common.NotificationSoundHelper.PlayDownloadComplete(_playbackService);
-        }
-
-        private void PlayCelebrationSound()
-        {
-            try
-            {
-                if (_settings.CelebrationSoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                }
-                else if (_settings.CelebrationSoundType == CelebrationSoundType.BundledJingle)
-                {
-                    var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedCelebrationJingle);
-                    if (!string.IsNullOrEmpty(path))
-                        _jingleService.Play(path, _settings);
-                }
-                else if (_settings.CelebrationSoundType == CelebrationSoundType.CustomFile)
-                {
-                    if (!string.IsNullOrWhiteSpace(_settings.CelebrationSoundPath)
-                        && File.Exists(_settings.CelebrationSoundPath))
-                        _jingleService.Play(_settings.CelebrationSoundPath, _settings);
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Warn($"Celebration sound failed: {ex.Message}");
-            }
-        }
-
-        // Parallel to PlayCelebrationSound but reads the independent Abandoned settings.
-        // Delegates actual playback to _jingleService.Play — jingle player lifecycle is
-        // identical between celebration and abandoned; only the source file differs.
-        private void PlayAbandonedSound()
-        {
-            try
-            {
-                if (_settings.AbandonedSoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                }
-                else if (_settings.AbandonedSoundType == CelebrationSoundType.BundledJingle)
-                {
-                    var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedAbandonedJingle);
-                    if (!string.IsNullOrEmpty(path))
-                        _jingleService.Play(path, _settings);
-                }
-                else if (_settings.AbandonedSoundType == CelebrationSoundType.CustomFile)
-                {
-                    if (!string.IsNullOrWhiteSpace(_settings.AbandonedSoundPath)
-                        && File.Exists(_settings.AbandonedSoundPath))
-                        _jingleService.Play(_settings.AbandonedSoundPath, _settings);
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Warn($"Abandoned sound failed: {ex.Message}");
-            }
         }
 
         private static string FormatFileSize(long bytes)

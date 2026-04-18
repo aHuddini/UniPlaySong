@@ -44,7 +44,77 @@ namespace UniPlaySong.Services
         // toggle is off, the sound type resolves to nothing, or the file is missing.
         public void PlayForEvent(JingleEvent evt, UniPlaySongSettings settings)
         {
-            // Implementation arrives in Milestone 3.
+            try
+            {
+                var maybeConfig = GetConfigForEvent(evt, settings);
+                if (!maybeConfig.HasValue) return;
+                var config = maybeConfig.Value;
+
+                // SystemBeep: doesn't touch jingle player machinery — plays the Windows
+                // system sound directly and returns. Main music is unaffected (no pause).
+                if (config.SoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                    return;
+                }
+
+                string path = null;
+                if (config.SoundType == CelebrationSoundType.BundledJingle)
+                {
+                    path = BundledJingleService.ResolveJinglePath(config.JingleFilename);
+                }
+                else if (config.SoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(config.CustomFilePath)
+                        && System.IO.File.Exists(config.CustomFilePath))
+                    {
+                        path = config.CustomFilePath;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(path)) return;
+
+                Play(path, settings);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"JingleService.PlayForEvent({evt}) failed: {ex.Message}");
+            }
+        }
+
+        private struct JingleSoundConfig
+        {
+            public CelebrationSoundType SoundType;
+            public string JingleFilename;
+            public string CustomFilePath;
+        }
+
+        // Returns null when the feature toggle for this event is off.
+        private JingleSoundConfig? GetConfigForEvent(JingleEvent evt, UniPlaySongSettings settings)
+        {
+            switch (evt)
+            {
+                case JingleEvent.Completion:
+                    if (settings?.EnableCompletionCelebration != true) return null;
+                    return new JingleSoundConfig
+                    {
+                        SoundType = settings.CelebrationSoundType,
+                        JingleFilename = settings.SelectedCelebrationJingle,
+                        CustomFilePath = settings.CelebrationSoundPath
+                    };
+
+                case JingleEvent.Abandoned:
+                    if (settings?.EnableAbandonedSound != true) return null;
+                    return new JingleSoundConfig
+                    {
+                        SoundType = settings.AbandonedSoundType,
+                        JingleFilename = settings.SelectedAbandonedJingle,
+                        CustomFilePath = settings.AbandonedSoundPath
+                    };
+
+                default:
+                    return null;
+            }
         }
 
         private void OnJingleEnded(object sender, EventArgs e)
@@ -57,7 +127,7 @@ namespace UniPlaySong.Services
         // spawns a dedicated player via the factory delegate, saves the viz
         // provider (NAudio case) so it can be restored on cleanup, wires
         // MediaEnded to trigger resume of the main music.
-        internal void Play(string filePath, UniPlaySongSettings settings)
+        private void Play(string filePath, UniPlaySongSettings settings)
         {
             // Stop any previous jingle that might still be playing
             DisposeJinglePlayer();
