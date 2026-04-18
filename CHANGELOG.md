@@ -9,6 +9,9 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Fixed
 - **Play Only on Game Select: No Randomization on First Song** — When both "Play Only on Game Select" and "Randomize on every select" were enabled in Fullscreen mode, the first alphabetical game song played every time a user entered a game's Details view instead of a random song (subsequent auto-advances randomized correctly). Root cause: the view-transition flow invokes `PlayGameMusic` twice — once when the game is highlighted in List view (plays default music), then again when the user enters Details view (should play game music). The List-view "prep" call was updating `_currentGameId` prematurely, so the follow-up Details-view call saw `isNewGame == false` and skipped the `RandomizeOnEverySelect` branch in `SelectSongToPlay`. Fix: when `PlayGameMusic` clears game songs because we're in List view (the prep call), it now skips updating `_currentGameId`/`_currentGame`, letting the real Details-view call see the game as new and randomize properly.
 
+### Changed
+- **Play Only on Game Select: Event-Driven Trigger** — Replaced the 200ms polling `DispatcherTimer` with the `OnFullscreenViewChanged` SDK event (Playnite SDK 6.16.0+). Fires instantly on every List ↔ Details toggle instead of waking the UI thread 5×/sec forever. Eliminates a theoretical race window where rapid A/B presses could outpace the polling interval, and removes a chunk of state (`_fullscreenViewMonitor`, `_lastFullscreenView`, timer init/dispose boilerplate). Net −14 lines in `UniPlaySong.cs`.
+
 ## [1.4.0] - 2026-04-16
 
 ### Added

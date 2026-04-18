@@ -41,9 +41,6 @@ namespace UniPlaySong
         // Xbox controller monitoring for login bypass
         // _isControllerLoginMonitoring flag — set true when login screen active, checked by SDK controller override
         private bool _isControllerLoginMonitoring = false;
-        // "Play Only on Game Select" — monitors ActiveFullscreenView changes to trigger music switches
-        private System.Windows.Threading.DispatcherTimer _fullscreenViewMonitor;
-        private FullscreenView? _lastFullscreenView;
         
         // Assembly resolution handler for Material Design and other dependencies
         static UniPlaySong()
@@ -484,38 +481,8 @@ namespace UniPlaySong
                 PauseFftProcessing(true);
             }
 
-            // "Play Only on Game Select" — monitor Fullscreen view changes (List ↔ Details)
-            if (IsFullscreen && _settings?.PlayOnlyOnGameSelect == true)
-            {
-                _lastFullscreenView = _api.MainView.ActiveFullscreenView;
-                _fullscreenViewMonitor = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromMilliseconds(200)
-                };
-                _fullscreenViewMonitor.Tick += (s, e) =>
-                {
-                    try
-                    {
-                        var currentView = _api.MainView.ActiveFullscreenView;
-                        if (currentView != _lastFullscreenView)
-                        {
-                            _fileLogger?.Debug($"[PlayOnSelect] View changed: {_lastFullscreenView} → {currentView}");
-                            _lastFullscreenView = currentView;
-
-                            var game = SelectedGames?.FirstOrDefault();
-                            if (game != null && _coordinator?.ShouldPlayMusic(game) == true)
-                            {
-                                // PlayGameMusic checks ActiveFullscreenView internally —
-                                // List view clears songs (default music), Details view plays game music
-                                _playbackService?.PlayGameMusic(game, _settings, false);
-                            }
-                        }
-                    }
-                    catch { }
-                };
-                _fullscreenViewMonitor.Start();
-                _fileLogger?.Debug("[PlayOnSelect] Fullscreen view monitor started");
-            }
+            // "Play Only on Game Select" is handled by the OnFullscreenViewChanged SDK override.
+            // See that override for the List ↔ Details transition logic.
 
             // Subscribe to game collection changes for auto-cleanup of music on game removal
             _api.Database.Games.ItemCollectionChanged += OnGamesCollectionChanged;
@@ -999,8 +966,6 @@ namespace UniPlaySong
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
-            _fullscreenViewMonitor?.Stop();
-            _fullscreenViewMonitor = null;
             _idlePollTimer?.Stop();
             _idlePollTimer = null;
             _focusVerifyTimer?.Stop();
@@ -1065,6 +1030,27 @@ namespace UniPlaySong
                 _controllerEventRouter?.HandleButtonPressed(args.Button);
             else if (args.State == ControllerInputState.Released)
                 _controllerEventRouter?.HandleButtonReleased(args.Button);
+        }
+
+        // "Play Only on Game Select" — fires on every Fullscreen List ↔ Details toggle.
+        // Event-driven (SDK 6.16.0+), replaces the previous 200ms polling DispatcherTimer.
+        // Playnite invokes this synchronously from the GameDetailsVisible property setter
+        // (FullscreenAppViewModel), so the work here must stay lightweight — we just call
+        // PlayGameMusic, which does its own async/dispatcher work internally.
+        public override void OnFullscreenViewChanged(OnFullscreenViewChangedArgs args)
+        {
+            if (_settings?.PlayOnlyOnGameSelect != true)
+                return;
+
+            _fileLogger?.Debug($"[PlayOnSelect] View changed: {args.NewView}");
+
+            var game = SelectedGames?.FirstOrDefault();
+            if (game != null && _coordinator?.ShouldPlayMusic(game) == true)
+            {
+                // PlayGameMusic checks ActiveFullscreenView internally —
+                // List view clears game songs (default music), Details view plays game music.
+                _playbackService?.PlayGameMusic(game, _settings, false);
+            }
         }
 
         public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
