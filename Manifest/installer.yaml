@@ -13,6 +13,7 @@ Packages:
       - '[GUI] About Tab: Added a Supported Audio Formats section listing MP3, OGG, FLAC, WAV and clarifying VGM/VGZ scope (Sega Genesis / Mega Drive / Sega CD).'
       - '[New Feature] Fanfare on Beaten: New option to also play the completion fanfare when a game is marked as Beaten (in addition to Completed). Off by default; enable it in Settings -> Playback -> Gamification.'
       - '[New Feature] Abandoned Status Jingle + Toast: New parallel pipeline for the Abandoned completion status with its own sound, its own muted toast palettes (Tombstone / Dusk Blue / Rust / Ash / Faded Crimson / Shadow), and a customizable message. Ships with 10 bundled failure-themed jingles (MK fatalities, Shinobi failure, Streets of Rage Game Over, Toilet Flush, etc.). Off by default.'
+      - '[Dev] Jingle playback internals refactored for maintainability. No user-visible change.'
   - Version: 1.4.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-16
