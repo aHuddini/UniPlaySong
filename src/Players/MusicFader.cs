@@ -249,14 +249,27 @@ namespace UniPlaySong.Players
                 else
                 {
                     // Ensure volume is 0 before resuming so the fade-in ramp starts
-                    // from silence — prevents a blip at the volume the player was paused at
-                    // Diagnostic: capture IsActive at resume entry to spot "resuming after EOF" races
-                    // (suspected 'silent music after resume' bug when paused near song end).
+                    // from silence — prevents a blip at the volume the player was paused at.
                     _fileLogger?.Debug($"[Fader] Resume() — setting vol=0, then calling player.Resume() (playerIsActive={_player.IsActive}, playerIsLoaded={_player.IsLoaded})");
                     _player.Volume = 0;
                     _fileLogger?.Debug($"[Fader] Resume() — vol after set: {_player.Volume:F4}");
-                    _player.Resume();
-                    _fileLogger?.Debug($"[Fader] Resume() — player resumed, vol now: {_player.Volume:F4}, playerIsActive={_player.IsActive}");
+
+                    // Use the player's onReady callback so fade-in starts only once the
+                    // player is actually producing audio. For most backends this is
+                    // synchronous (callback fires before Resume returns). For NAudio+GME
+                    // the callback fires on the UI thread after the background gme_seek
+                    // completes — without this, we'd ramp volume against a silent mixer
+                    // and the user would hear the song snap in at full volume later.
+                    _player.Resume(onReady: () =>
+                    {
+                        _fileLogger?.Debug($"[Fader] Resume() onReady — player producing audio, starting fade-in ramp, vol={_player.Volume:F4}");
+                        _player.Volume = 0;
+                        _isPaused = false;
+                        _isFadingOut = false;
+                        SnapshotFadeParams();
+                        EnsureTimer();
+                    });
+                    return;
                 }
                 _isPaused = false;
                 _isFadingOut = false;
@@ -269,13 +282,18 @@ namespace UniPlaySong.Players
         // Fades volume to zero with no stop/pause action.
         // Used for pre-song-end fade: the player reaches natural EOF at vol=0,
         // then OnMediaEnded fires normally to handle the auto-advance.
-        public void FadeOut()
+        // Optional overrideDurationSeconds lets callers (SongEndFade) set the ramp
+        // length to match the time remaining before EOF, so the fade finishes exactly
+        // at song end rather than much earlier (which would leave a silent tail).
+        public void FadeOut(double? overrideDurationSeconds = null)
         {
             _isFadingOut = true;
             _pauseAction = null;
             _stopAction = null;
             _playAction = null;
             SnapshotFadeParams();
+            if (overrideDurationSeconds.HasValue)
+                _snapDuration = overrideDurationSeconds.Value;
             EnsureTimer();
         }
 

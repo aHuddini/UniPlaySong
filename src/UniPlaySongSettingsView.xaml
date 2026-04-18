@@ -3821,6 +3821,25 @@
                         A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections.
                     </TextBlock>
 
+                    <!-- Supported Audio Formats -->
+                    <Border BorderBrush="#FF888888" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A888888">
+                        <StackPanel>
+                            <TextBlock Text="Supported Audio Formats" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8">
+                                Formats tested against both playback backends (SDL2 and NAudio). Drop files matching these extensions into a game's music folder.
+                            </TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• MP3</Run> — most common; best compatibility</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• OGG Vorbis</Run> — open, high-quality</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• FLAC</Run> — lossless</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,8"><Run FontWeight="SemiBold">• WAV</Run> — uncompressed</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">Retro chiptune (via bundled Game Music Emu):</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
+                                Chiptune files auto-route through the NAudio backend for decoding. Other VGM chip families (arcade boards, Neo Geo, PC Engine CD) are outside GME's scope and will not play.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Officially Supported Themes -->
                     <Border BorderBrush="#FF4A9EFF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A4A9EFF">
                         <StackPanel>

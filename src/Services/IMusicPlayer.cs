@@ -30,7 +30,16 @@ namespace UniPlaySong.Services
 
         void Stop();
         void Pause();
-        void Resume();
+
+        // Resumes playback from the paused position.
+        // The onReady callback (if provided) fires when the player is actually
+        // ready to produce audio. For most players this is synchronous (fires before
+        // Resume returns). For NAudio+GME it can be deferred to a background thread
+        // because gme_seek() on a long track can take many seconds; doing that work
+        // on the UI thread would freeze Playnite. Callers that want to start a
+        // fade-in should do it from onReady, not after Resume returns.
+        void Resume(Action onReady = null);
+
         void Close();
 
         // Sets a volume ramp from current volume to target over the given duration.

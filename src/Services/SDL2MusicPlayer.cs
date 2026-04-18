@@ -244,13 +244,14 @@ namespace UniPlaySong.Services
             }
         }
 
-        public void Resume()
+        public void Resume(Action onReady = null)
         {
             if (!IsActive && _isLoaded)
             {
                 SDL2Mixer.Mix_ResumeMusic();
                 _isActive = true;
             }
+            onReady?.Invoke();
         }
 
         public void Stop()

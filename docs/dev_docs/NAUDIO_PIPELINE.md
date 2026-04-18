@@ -170,6 +170,34 @@ If a short song reaches EOF while logically paused (volume = 0, still in mixer),
 
 On `Resume()`, if the song is no longer in the mixer (`!_isInMixer`), it resets `SongEndDetector` and re-adds to the mixer from the saved position.
 
+## GME Retro Chiptune Reader (v1.4.0+)
+
+`GmeReader` (P/Invoke wrapper around `libgme`) is a drop-in NAudio `WaveStream + ISampleProvider` that slots into `CreateAudioReader()` for `.vgm` / `.vgz` / `.spc` / `.nsf` etc. Unlike `AudioFileReader`, GME has two traits that force special handling:
+
+1. **`libgme` is not thread-safe on a single `emu` handle.** The audio thread's `gme_play()` and any other thread's `gme_seek()` / `gme_tell()` cannot run concurrently. `GmeReader._gmeLock` serializes every native call (`gme_play`, `gme_seek`, `gme_tell`, `gme_delete`). Without this lock, concurrent calls silently corrupt the emulator's internal state and produce silent output.
+
+2. **`gme_seek(target_ms)` is O(target_ms).** GME rewinds to track start and replays emulation forward to the target position at real CPU speed — no "already there" shortcut exists in the C API. Seeking 2 minutes into a track takes several seconds of wall-clock time. Running `gme_seek` synchronously on the UI thread blocks Playnite's entire UI, sometimes triggering Windows' "not responding" dialog.
+
+### Pause-Detach Design
+
+For `GmeReader`, `Pause()` calls `RemoveSongFromMixer()` so the audio thread stops calling `gme_play()`. The emu's position freezes at `_pausedPosition` for the duration of the pause. This differs from the `AudioFileReader` path, where the mixer input stays attached during logical pause (muted at volume 0) — cheap there because advancing a buffer pointer while silent is free, but unacceptable for GME because every `Read()` drives real emulation work that would invalidate the saved position.
+
+### Resume Paths
+
+`IMusicPlayer.Resume(Action onReady = null)` takes an optional callback invoked when the player is actually producing audio (v1.4.1). For `AudioFileReader`-backed songs, Resume seeks synchronously (buffer-pointer update) and invokes `onReady` before returning. For `GmeReader`-backed songs there are three paths:
+
+1. **Coalesce** — if a seek to the same target is already in flight (rare; only triggered by the slow path below), append `onReady` to the existing callback list and return. Prevents duplicate fade-in triggers.
+
+2. **Fast path (common case)** — read the emu's current position. If it's within 100ms of `_pausedPosition`, the Pause-detach froze the emu at the right spot and no seek is needed. Re-add the mixer input, invoke `onReady` synchronously. Near-zero cost; feels instant to the user.
+
+3. **Slow path (genuine seeks)** — the emu isn't where we want it (e.g. a hypothetical user-initiated scrub or seek-to-position). Remove the mixer input, run `gme_seek` on a thread-pool task, dispatch re-add + `onReady` via `Application.Current.Dispatcher.BeginInvoke` when complete. If Pause arrives mid-seek, the seek's completion discards the stale callbacks (the next Resume will kick a fresh cycle) and leaves the player in the paused state.
+
+`MusicFader.Resume` triggers its `EnsureTimer()` fade-in ramp from inside `onReady`, not directly after `_player.Resume()`. For the fast path (synchronous callback) this is identical to the old behavior; for the slow path the fade-in begins only when audio is actually flowing again, preventing silent-ramp-then-snap-in. `ResumeFromJingle` uses the same pattern.
+
+`Pause()` reads `_seekInFlightTarget` before touching `_audioFile.CurrentTime` — during a slow-path seek, that read would block the UI thread on `_gmeLock`. If a seek is in flight, Pause uses the known target as `_pausedPosition` instead. Safe because Pause only needs a position that the next Resume can agree on.
+
+Not all fader-bypass paths use `onReady` (e.g. `ResumeImmediate`): those set volume to target directly and accept a brief silent gap for GME — intentional for instant-resume flows where fade-in is undesired.
+
 ## SDL2 Backend Differences
 
 | Aspect | NAudio | SDL2 |

@@ -7,6 +7,10 @@ Packages:
     Changelog:
       - '[Fix] Play Only on Game Select: Randomization now fires on every Details-view entry. Previously the first alphabetical song played every time (repeat entries into the same game would replay that same track until auto-advance kicked in).'
       - '[Performance] Play Only on Game Select: Reacts instantly to List ↔ Details view changes now via a Playnite SDK 6.16 event. Previous implementation polled every 200ms, consuming unneccesary CPU.'
+      - '[Fix] Single-Track Loop Silent: If a game had only one song and "Fade out before song end" was enabled, the song would loop but play silently until manually paused and resumed. Fixed for all audio file formats.'
+      - '[Critical Fix] Retro Chiptune Pause/Resume: Fixed three overlapping issues with VGM/VGZ playback - multi-second Playnite UI freezes on resume (sometimes long enough to trigger "not responding"), silent main music after celebration jingles, and stuck audio after rapid pause/resume cycles. Resume is now near-instant with a clean fade-in; pause, external audio, focus loss, and jingles all behave correctly.'
+      - '[Fix] Song-End Fade Silent Gap: "Fade out before song end" now fades the song out over the exact duration you set, ending at the song''s natural end. Previously the fade finished several seconds early, leaving a silent gap before the next song.'
+      - '[GUI] About Tab: Added a Supported Audio Formats section listing MP3, OGG, FLAC, WAV and clarifying VGM/VGZ scope (Sega Genesis / Mega Drive / Sega CD).'
   - Version: 1.4.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-16

@@ -272,7 +272,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        public void Resume()
+        public void Resume(Action onReady = null)
         {
             try
             {
@@ -290,6 +290,7 @@ namespace UniPlaySong.Services
                     showUserMessage: false
                 );
             }
+            onReady?.Invoke();
         }
 
         // Exponential-curve volume ramp matching the old fader's behavior.

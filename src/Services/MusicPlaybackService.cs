@@ -1228,14 +1228,17 @@ namespace UniPlaySong.Services
         }
 
         // Resumes music after jingle ends with a smooth fade-in.
+        // For GME, Resume is async (gme_seek can take seconds on a long track); the
+        // onReady callback defers FadeIn until the seek completes and the mixer
+        // input is back, so the fade-in ramp actually corresponds to audible audio
+        // instead of ramping volume against a silent mixer.
         public void ResumeFromJingle()
         {
             _activePauseSources.Remove(PauseSource.Jingle);
             if (!_isPaused && _musicPlayer?.IsLoaded == true)
             {
                 _musicPlayer.Volume = 0;
-                _musicPlayer.Resume();
-                _fader?.FadeIn();
+                _musicPlayer.Resume(onReady: () => _fader?.FadeIn());
             }
         }
 
@@ -1762,8 +1765,13 @@ namespace UniPlaySong.Services
                 _songEndFadeTimer = null;
                 if (_musicPlayer?.IsActive == true && !_isPaused)
                 {
-                    _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} ({fadeDuration}s before end)");
-                    _fader.FadeOut();
+                    // Ramp duration = remaining time to EOF, so the fade finishes AT the
+                    // song's natural end, not several seconds before it. Without the override,
+                    // the fader uses the global FadeOutDuration (for game-switch fades) which
+                    // can be much shorter than FadeOutBeforeSongEndDuration, leaving a silent
+                    // tail — or longer, cutting the ramp off past EOF.
+                    _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} over {fadeDuration}s (ramp ends at song EOF)");
+                    _fader.FadeOut(fadeDuration);
                 }
             };
             _songEndFadeTimer.Start();
@@ -1987,17 +1995,26 @@ namespace UniPlaySong.Services
                         }
                     }
 
+                    // Loop / preview-restart paths below:
+                    // If SongEndFade fired right before natural EOF, the fader is mid-fade-out
+                    // when we hit this branch. The fade-out ramp keeps running on the audio thread
+                    // and parks volume at 0. We must cancel the pending SongEndFade timer AND tell
+                    // the fader to transition back to fade-in, otherwise the restarted song plays
+                    // against a volume provider stuck at 0 (inaudible until Pause→Play recovers).
+                    CancelSongEndFade();
+
                     if (ShouldRestartForPreview())
                     {
                         // Preview mode: Song ended after preview duration - restart from beginning
-                        // No fade needed since song already ended naturally
                         _musicPlayer.Play(TimeSpan.Zero);
+                        _fader.FadeIn();
                         MarkSongStart();
                         _fileLogger?.Info($"Preview mode: Song ended, restarting from beginning: {Path.GetFileName(_currentSongPath)}");
                     }
                     else
                     {
                         _musicPlayer.Play();
+                        _fader.FadeIn();
                         _fileLogger?.Info($"Looping music: {Path.GetFileName(_currentSongPath)}");
                     }
                 }

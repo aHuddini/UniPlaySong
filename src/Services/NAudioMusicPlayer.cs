@@ -55,6 +55,19 @@ namespace UniPlaySong.Services
         private bool _logicallyPaused;
         private TimeSpan _pausedPosition;
 
+        // GME async-resume state. When a background gme_seek is running, _seekInFlightTarget
+        // holds the position it's seeking to so Pause() can save it without blocking on
+        // GmeReader's internal lock (which the seek task owns). _seekCallbacks collects any
+        // onReady callbacks from additional Resume() invocations that arrive while the
+        // seek is in flight at the same target — all of them fire when the seek completes,
+        // unless a Pause arrived during the seek (in which case the callbacks are discarded;
+        // the next Resume will kick a fresh seek and fire its own onReady).
+        // Guarded by _seekStateLock because Pause/Resume run on the UI thread while the
+        // seek's completion dispatch marshals back to the UI thread via BeginInvoke.
+        private readonly object _seekStateLock = new object();
+        private TimeSpan? _seekInFlightTarget;
+        private System.Collections.Generic.List<Action> _seekCallbacks;
+
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
 
@@ -313,31 +326,73 @@ namespace UniPlaySong.Services
         // Position is saved so resume can seek back (song advances at vol=0 otherwise).
         public void Pause()
         {
-            _pausedPosition = _audioFile?.CurrentTime ?? TimeSpan.Zero;
-            // Diagnostic: capture position relative to TotalTime so we can detect pauses that
-            // land at/past EOF (the suspected 'silent music after resume' bug).
-            var totalTime = _audioFile?.TotalTime ?? TimeSpan.Zero;
-            var remaining = totalTime - _pausedPosition;
-            bool atOrPastEof = _audioFile != null && remaining <= TimeSpan.FromMilliseconds(500);
-            _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={_isInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
+            // If a GME background seek is running, reading _audioFile.CurrentTime would
+            // block the UI thread on GmeReader's internal lock until the seek finishes
+            // (hundreds of ms to seconds). Use the known seek target as the paused
+            // position instead — when the seek completes the emu will be there anyway.
+            TimeSpan? inFlightTarget;
+            lock (_seekStateLock)
+            {
+                inFlightTarget = _seekInFlightTarget;
+            }
+
+            if (inFlightTarget.HasValue)
+            {
+                _pausedPosition = inFlightTarget.Value;
+                _fileLogger?.Debug($"[NAudio] Pause() — logical pause (seek in flight), pos={_pausedPosition} (from seek target), isInMixer={_isInMixer}, isActive={IsActive}");
+            }
+            else
+            {
+                _pausedPosition = _audioFile?.CurrentTime ?? TimeSpan.Zero;
+                var totalTime = _audioFile?.TotalTime ?? TimeSpan.Zero;
+                var remaining = totalTime - _pausedPosition;
+                bool atOrPastEof = _audioFile != null && remaining <= TimeSpan.FromMilliseconds(500);
+                _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={_isInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
+            }
+
+            // For GME: detach the mixer input so the audio thread stops calling gme_play().
+            // Without this, the emulator keeps advancing at real-time speed during the
+            // pause, and Resume's gme_seek back to _pausedPosition becomes an expensive
+            // backward-seek (rewind to track start + fast-forward — 6+ seconds on long
+            // tracks). Detaching freezes the emu at _pausedPosition so Resume can re-add
+            // the input with no seek required (or a trivial no-op seek).
+            if (_audioFile is GmeReader)
+            {
+                RemoveSongFromMixer();
+            }
+
             _logicallyPaused = true;
             _isPlaying = false;
         }
 
         // Logical resume — seeks back to saved position, then the fader ramps volume up.
         // If the song ended while paused (short track EOF), re-adds to mixer from saved position.
-        public void Resume()
+        //
+        // For GmeReader the seek is offloaded to a background thread: gme_seek() replays
+        // emulation from track start to the target position and can block the caller for
+        // many seconds on a long track — doing that on the UI thread freezes Playnite.
+        // In that case this method returns immediately; onReady fires on the UI thread
+        // when the seek completes and the mixer input is back in place.
+        public void Resume(Action onReady = null)
         {
-            // Diagnostic: state BEFORE seek
             var totalTimeBefore = _audioFile?.TotalTime ?? TimeSpan.Zero;
             var remainingBefore = totalTimeBefore - _pausedPosition;
             bool atOrPastEof = _audioFile != null && remainingBefore <= TimeSpan.FromMilliseconds(500);
             _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, total={totalTimeBefore}, remaining={remainingBefore.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={_isInMixer}");
-            if (_audioFile != null)
+
+            if (_audioFile == null)
+            {
+                _logicallyPaused = false;
+                _isPlaying = true;
+                onReady?.Invoke();
+                return;
+            }
+
+            // Fast path: non-GME readers seek instantly (buffer pointer update).
+            if (!(_audioFile is GmeReader))
             {
                 _audioFile.CurrentTime = _pausedPosition;
 
-                // Song ended while paused — re-add to mixer so audio flows again
                 if (!_isInMixer && _mixerInput != null && _mixer != null)
                 {
                     _songEndDetector?.Reset();
@@ -346,12 +401,164 @@ namespace UniPlaySong.Services
                     _fileLogger?.Debug("[NAudio] Resume() — re-added to mixer after EOF during pause");
                 }
 
-                // Diagnostic: state AFTER seek, to see what the audio file reports post-seek
-                // (near-EOF seeks can be clamped by the reader and leave CurrentTime != requested).
                 _fileLogger?.Debug($"[NAudio] Resume() — after seek: actualPos={_audioFile.CurrentTime}, isInMixer={_isInMixer}");
+                _logicallyPaused = false;
+                _isPlaying = true;
+                onReady?.Invoke();
+                return;
             }
+
+            // GME path.
+            var gmeReader = (GmeReader)_audioFile;
+            var targetPosition = _pausedPosition;
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+
+            // Coalesce check first: if a seek to the same target is already in flight
+            // (rapid pause-resume-pause-resume while GME is mid-seek), don't kick a
+            // second Task or try the fast-path (reading CurrentTime would block on the
+            // GME lock anyway). Append onReady to the existing callback list.
+            lock (_seekStateLock)
+            {
+                if (_seekInFlightTarget.HasValue && _seekInFlightTarget.Value == targetPosition)
+                {
+                    _logicallyPaused = false;
+                    _isPlaying = true;
+                    if (onReady != null)
+                    {
+                        if (_seekCallbacks == null)
+                            _seekCallbacks = new System.Collections.Generic.List<Action>();
+                        _seekCallbacks.Add(onReady);
+                    }
+                    _fileLogger?.Debug($"[NAudio] Resume() — GME seek to {targetPosition} already in flight, queuing onReady");
+                    return;
+                }
+            }
+
+            // Fast path: the emu is already at (or within 100ms of) the target. This is
+            // the common case now that Pause() detaches the mixer input — the emu was
+            // frozen at _pausedPosition, so no seek is needed. Just re-add to the mixer
+            // and invoke onReady synchronously. No Task.Run, no UI stutter, no fade-in
+            // delay. Non-trivial seeks (user scrub, future seek-to-position APIs) still
+            // fall through to the background path.
+            var currentEmuPosition = gmeReader.CurrentTime;
+            var drift = Math.Abs((currentEmuPosition - targetPosition).TotalMilliseconds);
+            if (drift < 100)
+            {
+                if (!_isInMixer && _mixerInput != null && _mixer != null)
+                {
+                    _songEndDetector?.Reset();
+                    _mixer.AddMixerInput(_mixerInput);
+                    _isInMixer = true;
+                }
+                _logicallyPaused = false;
+                _isPlaying = true;
+                _fileLogger?.Debug($"[NAudio] Resume() — GME fast path: emu already at {currentEmuPosition} (target {targetPosition}, drift {drift:F0}ms), skipping seek");
+                onReady?.Invoke();
+                return;
+            }
+
+            // Slow path: an actual seek is needed (target is not where the emu currently
+            // is). Pull the input out of the mixer, run gme_seek on a thread-pool thread,
+            // then re-add on the UI thread and invoke onReady so the fader can start fade-in.
+            lock (_seekStateLock)
+            {
+                if (_seekInFlightTarget.HasValue && _seekInFlightTarget.Value == targetPosition)
+                {
+                    _logicallyPaused = false;
+                    _isPlaying = true;
+                    if (onReady != null)
+                    {
+                        if (_seekCallbacks == null)
+                            _seekCallbacks = new System.Collections.Generic.List<Action>();
+                        _seekCallbacks.Add(onReady);
+                    }
+                    _fileLogger?.Debug($"[NAudio] Resume() — GME seek to {targetPosition} already in flight, queuing onReady");
+                    return;
+                }
+
+                _seekInFlightTarget = targetPosition;
+                if (_seekCallbacks == null)
+                    _seekCallbacks = new System.Collections.Generic.List<Action>();
+                if (onReady != null)
+                    _seekCallbacks.Add(onReady);
+            }
+
+            var seekSw = Stopwatch.StartNew();
+
+            RemoveSongFromMixer();
             _logicallyPaused = false;
             _isPlaying = true;
+
+            _fileLogger?.Debug($"[NAudio] Resume() — GME detected, starting background seek to {targetPosition}");
+
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    gmeReader.CurrentTime = targetPosition;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"[{LogPrefix}] Background GME seek failed");
+                }
+
+                Action finalize = () =>
+                {
+                    seekSw.Stop();
+                    System.Collections.Generic.List<Action> callbacks;
+                    lock (_seekStateLock)
+                    {
+                        _seekInFlightTarget = null;
+                        callbacks = _seekCallbacks;
+                        _seekCallbacks = null;
+                    }
+
+                    // If a Pause arrived during the seek, the queued onReady callbacks
+                    // are stale — they belong to a Resume intent that has been superseded.
+                    // Firing them would call the fader's FadeIn against a detached mixer
+                    // input (no audio) and, worse, poison the fader's _isPaused state so
+                    // the NEXT Resume takes the "reversing incomplete fade-out" branch and
+                    // never actually re-adds the mixer input. Discard the callbacks and
+                    // leave the player in the paused state — the next Resume will kick a
+                    // fresh seek and its onReady will fire normally.
+                    if (_logicallyPaused)
+                    {
+                        _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms but Pause arrived mid-seek; discarding {callbacks?.Count ?? 0} stale onReady callback(s), waiting for next Resume");
+                        return;
+                    }
+
+                    try
+                    {
+                        if (_mixerInput != null && _mixer != null && !_isInMixer)
+                        {
+                            _songEndDetector?.Reset();
+                            _mixer.AddMixerInput(_mixerInput);
+                            _isInMixer = true;
+                        }
+                        _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms, actualPos={_audioFile?.CurrentTime}, isInMixer={_isInMixer}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"[{LogPrefix}] Error re-adding mixer input after GME seek");
+                    }
+                    finally
+                    {
+                        if (callbacks != null)
+                        {
+                            foreach (var cb in callbacks)
+                            {
+                                try { cb(); }
+                                catch (Exception ex) { Logger.Error(ex, $"[{LogPrefix}] Resume onReady callback failed"); }
+                            }
+                        }
+                    }
+                };
+
+                if (dispatcher != null)
+                    dispatcher.BeginInvoke(finalize);
+                else
+                    finalize();
+            });
         }
 
         public void Stop()

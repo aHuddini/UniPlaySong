@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using NAudio.Wave;
 
 namespace UniPlaySong.Audio
@@ -19,8 +20,35 @@ namespace UniPlaySong.Audio
         private short[] _shortBuffer;
         private bool _disposed;
 
+        // GME's C API is NOT thread-safe on a single emu handle. The audio thread calls
+        // Read() -> gme_play() while the UI thread can call Position/CurrentTime setters
+        // -> gme_seek() (expensive: GME rewinds and fast-forwards from track start, can
+        // take hundreds of milliseconds). Without a lock, concurrent gme_play/gme_seek
+        // on the same handle corrupts emulator state and leaves the reader silent.
+        private readonly object _gmeLock = new object();
+
         public GmeReader(string fileName)
         {
+            // Pre-flight: for .vgm / .vgz, peek the header and reject files whose
+            // chip references GME can't emulate (e.g. YM2610 Neo Geo, YM2151 arcade).
+            // Without this check, GME opens the file successfully but produces silence
+            // because it has no emulator for those chips. Failing fast lets the
+            // playback service log a clear reason and skip the track.
+            var ext = Path.GetExtension(fileName);
+            if (ext != null &&
+                (ext.Equals(".vgm", StringComparison.OrdinalIgnoreCase) ||
+                 ext.Equals(".vgz", StringComparison.OrdinalIgnoreCase)))
+            {
+                var sniff = VgmHeaderSniffer.Inspect(fileName);
+                if (sniff.IsValidVgm && sniff.UnsupportedChip != null)
+                {
+                    throw new InvalidOperationException(
+                        $"GME cannot play this VGM/VGZ file: it uses {sniff.UnsupportedChip}. " +
+                        $"GME only emulates SN76489, YM2413, and YM2612 chips " +
+                        $"(Sega Genesis / Master System / Game Gear). See docs/dev_docs/SUPPORTED_FILE_FORMATS.md.");
+                }
+            }
+
             IntPtr emu;
             string err = GmeNative.GetError(GmeNative.gme_open_file(fileName, out emu, SampleRate));
             if (err != null)
@@ -62,15 +90,21 @@ namespace UniPlaySong.Audio
         {
             get
             {
-                if (_emu == IntPtr.Zero) return 0;
-                int ms = GmeNative.gme_tell(_emu);
-                return (long)ms * SampleRate / 1000 * Channels * sizeof(float);
+                lock (_gmeLock)
+                {
+                    if (_emu == IntPtr.Zero) return 0;
+                    int ms = GmeNative.gme_tell(_emu);
+                    return (long)ms * SampleRate / 1000 * Channels * sizeof(float);
+                }
             }
             set
             {
-                if (_emu == IntPtr.Zero) return;
-                int ms = (int)(value * 1000 / (SampleRate * Channels * sizeof(float)));
-                GmeNative.gme_seek(_emu, ms);
+                lock (_gmeLock)
+                {
+                    if (_emu == IntPtr.Zero) return;
+                    int ms = (int)(value * 1000 / (SampleRate * Channels * sizeof(float)));
+                    GmeNative.gme_seek(_emu, ms);
+                }
             }
         }
 
@@ -80,13 +114,19 @@ namespace UniPlaySong.Audio
         {
             get
             {
-                if (_emu == IntPtr.Zero) return TimeSpan.Zero;
-                return TimeSpan.FromMilliseconds(GmeNative.gme_tell(_emu));
+                lock (_gmeLock)
+                {
+                    if (_emu == IntPtr.Zero) return TimeSpan.Zero;
+                    return TimeSpan.FromMilliseconds(GmeNative.gme_tell(_emu));
+                }
             }
             set
             {
-                if (_emu == IntPtr.Zero) return;
-                GmeNative.gme_seek(_emu, (int)value.TotalMilliseconds);
+                lock (_gmeLock)
+                {
+                    if (_emu == IntPtr.Zero) return;
+                    GmeNative.gme_seek(_emu, (int)value.TotalMilliseconds);
+                }
             }
         }
 
@@ -95,34 +135,37 @@ namespace UniPlaySong.Audio
         // EOF is signaled by returning 0 when play_length is reached (no GME internal fade).
         public int Read(float[] buffer, int offset, int count)
         {
-            if (_emu == IntPtr.Zero)
-                return 0;
+            lock (_gmeLock)
+            {
+                if (_emu == IntPtr.Zero)
+                    return 0;
 
-            // Check if we've reached the play length
-            int posMs = GmeNative.gme_tell(_emu);
-            if (posMs >= _playLengthMs)
-                return 0;
+                // Check if we've reached the play length
+                int posMs = GmeNative.gme_tell(_emu);
+                if (posMs >= _playLengthMs)
+                    return 0;
 
-            // Clamp to remaining samples so we don't overshoot play_length
-            int remainingMs = _playLengthMs - posMs;
-            long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
-            int toRead = (int)Math.Min(count, remainingSamples);
-            if (toRead <= 0)
-                return 0;
+                // Clamp to remaining samples so we don't overshoot play_length
+                int remainingMs = _playLengthMs - posMs;
+                long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
+                int toRead = (int)Math.Min(count, remainingSamples);
+                if (toRead <= 0)
+                    return 0;
 
-            // Reuse short buffer if possible
-            if (_shortBuffer == null || _shortBuffer.Length < toRead)
-                _shortBuffer = new short[toRead];
+                // Reuse short buffer if possible
+                if (_shortBuffer == null || _shortBuffer.Length < toRead)
+                    _shortBuffer = new short[toRead];
 
-            string err = GmeNative.GetError(GmeNative.gme_play(_emu, toRead, _shortBuffer));
-            if (err != null)
-                return 0;
+                string err = GmeNative.GetError(GmeNative.gme_play(_emu, toRead, _shortBuffer));
+                if (err != null)
+                    return 0;
 
-            // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
-            for (int i = 0; i < toRead; i++)
-                buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
+                // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
+                for (int i = 0; i < toRead; i++)
+                    buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
 
-            return toRead;
+                return toRead;
+            }
         }
 
         // WaveStream.Read — required by abstract base, not used in ISampleProvider pipeline
@@ -139,13 +182,16 @@ namespace UniPlaySong.Audio
         {
             if (!_disposed)
             {
-                if (_emu != IntPtr.Zero)
+                lock (_gmeLock)
                 {
-                    GmeNative.gme_delete(_emu);
-                    _emu = IntPtr.Zero;
+                    if (_emu != IntPtr.Zero)
+                    {
+                        GmeNative.gme_delete(_emu);
+                        _emu = IntPtr.Zero;
+                    }
+                    _shortBuffer = null;
+                    _disposed = true;
                 }
-                _shortBuffer = null;
-                _disposed = true;
             }
             base.Dispose(disposing);
         }

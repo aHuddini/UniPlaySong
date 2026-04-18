@@ -22,8 +22,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.1
 
-- **Play Only on Game Select — Randomization Fix** — Entering a game's Details view now picks a random song every time, instead of always starting with the same alphabetical first track. Previously, repeat entries into the same game would replay the same song until it ended and auto-advance kicked in.
+- **Play Only on Game Select — Randomization Fix** — Entering a game's Details view now shuffles a song every time, instead of always starting with the same alphabetical first track. Previously, repeat entries into the same game would replay the same song until it ended and auto-advance kicked in.
 - **Play Only on Game Select — Faster, Event-Driven** — Reacts instantly to List ↔ Details view changes now. The previous implementation polled every 200ms, which was both slower to respond and a constant CPU tick; switched to the Playnite SDK's native view-change event.
+- **Single-Track Loop Silent Fix** — When a game had only one song and "Fade out before song end" was enabled, the track would loop but play silently (Pause → Play was needed to recover). Fixed by ensuring the fader resets cleanly when the song restarts. Affects all audio formats, not just retro chiptune.
+- **Retro Chiptune Pause/Resume — Fast and Reliable** — Three overlapping issues with VGM/VGZ playback are fixed: multi-second Playnite UI freezes on resume (sometimes long enough that Windows showed the "not responding" dialog, scaling worse the deeper into the song you were), silent main music after celebration jingles that required a manual Pause → Play to recover, and stuck audio after rapid pause/resume cycles. Resume is now near-instant with a clean fade-in — external audio, focus loss, and jingles all behave correctly.
+- **Song-End Fade Geometry** — "Fade out before song end" now actually finishes at the song's end, instead of completing several seconds early and leaving a noticeable silent gap before the next song starts. The fade ramp length now matches the setting you chose.
+- **About Tab Improvements** — Added a Supported Audio Formats section listing the tested formats (MP3, OGG Vorbis, FLAC, WAV) with VGM/VGZ scope clarified as Sega Genesis / Mega Drive / Sega CD.
 
 ### Previous Version
 - **v1.4.0**: Retro chiptune (`.vgm`) playback, faster YouTube previews, Chrome/Edge/Brave/Opera cookie support, license attribution cleanup
