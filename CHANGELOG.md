@@ -37,9 +37,9 @@ All notable changes to UniPlaySong will be documented in this file.
 - **Source Downloads Consistency** — Cookie mode was missing `--audio-quality 0` (defaulting to 128kbps), `--no-playlist`, and `--extractor-args`. All download modes (no cookies, browser cookies, custom file) now use identical yt-dlp arguments.
 
 ### Documentation & Licensing
-- **License Attribution Updated for GME + zlib** — `LICENSE` now credits Game Music Emu (LGPL v2.1+) and zlib (zlib license) as new bundled native libraries. Added an explicit note that GME is used via **dynamic linking** (P/Invoke to a separately-shipped `gme.dll`), the standard LGPL-compliant integration pattern, and clarified that our build uses the Nuked OPN2 YM2612 core (LGPL-safe) rather than the MAME core (which would make the library GPL v2+).
-- **License Doc Scope Cleanup** — `LICENSE`, `README.md` Credits, and `docs/dev_docs/DEPENDENCIES.md` now distinguish between **bundled libraries** (what we redistribute inside the `.pext`) and **external tools** (yt-dlp, FFmpeg, Deno — installed by the user, not redistributed). Removed yt-dlp and FFmpeg from the LICENSE third-party section and the DEPENDENCIES License Compatibility list since they are not shipped; they remain in the README Credits under a new "External Tools (installed by user)" subsection.
-- **New Dev Doc** — Added `docs/dev_docs/SUPPORTED_FILE_FORMATS.md` summarizing all supported audio formats (standard + GME retro chiptune) with verification status per format.
+- **License Attribution: GME + zlib** — `LICENSE` updated with Game Music Emu (LGPL v2.1+, dynamic linking via P/Invoke) and zlib attributions for the new bundled native libraries.
+- **Bundled vs External Tools** — `LICENSE`, `README.md` Credits, and `DEPENDENCIES.md` now distinguish redistributed libraries from user-installed tools (yt-dlp, FFmpeg, Deno).
+- **New Dev Doc** — Added `docs/dev_docs/SUPPORTED_FILE_FORMATS.md` summarizing supported audio formats with verification status per format.
 
 ## [1.3.12] - 2026-04-13
 
