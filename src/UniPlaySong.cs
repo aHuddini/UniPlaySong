@@ -113,8 +113,7 @@ namespace UniPlaySong
         private IMusicPlayer _currentMusicPlayer;
         private bool _isUsingLiveEffectsPlayer;
         private bool _needsNAudioForFormat; // True when current song requires NAudio (GME retro formats)
-        private IMusicPlayer _jinglePlayer; // Dedicated player for celebration jingles (separate from main music)
-        private VisualizationDataProvider _savedVizProvider; // Saved during jingle playback to prevent NAudio viz overwrite
+        private Services.JingleService _jingleService;
         private IconGlow.IconGlowManager _iconGlowManager;
         private IconGlow.ListHoverGlowManager _listHoverGlowManager;
         private IconGlow.SidebarGlowManager _sidebarGlowManager;
@@ -971,7 +970,7 @@ namespace UniPlaySong
             _api.UriHandler.RemoveSource("uniplaysong");
             _externalControlService = null;
             _dashboardPlaybackService?.Dispose();
-            CleanupJinglePlayer();
+            _jingleService?.Cleanup();
             _downloadManager?.Cleanup();
             _httpClient?.Dispose();
 
@@ -2042,6 +2041,27 @@ namespace UniPlaySong
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
             _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
+
+            // JingleService owns the jingle playback pipeline. Factory delegate encapsulates
+            // the _isUsingLiveEffectsPlayer save/restore dance so the service stays ignorant
+            // of Live Effects state ownership (that flag is about the MAIN player).
+            _jingleService = new Services.JingleService(
+                _playbackService,
+                () =>
+                {
+                    bool savedFlag = _isUsingLiveEffectsPlayer;
+                    bool useLiveEffects = _isUsingLiveEffectsPlayer
+                        && (_settings?.ApplyLiveEffectsToJingles ?? true);
+                    IMusicPlayer player;
+                    if (useLiveEffects)
+                        player = CreateMusicPlayer();
+                    else
+                        player = new Services.SDL2MusicPlayer(_errorHandler);
+                    _isUsingLiveEffectsPlayer = savedFlag;
+                    return player;
+                },
+                _errorHandler,
+                _fileLogger);
 
             if (_settings != null)
             {
@@ -4815,13 +4835,13 @@ namespace UniPlaySong
                 {
                     var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedCelebrationJingle);
                     if (!string.IsNullOrEmpty(path))
-                        PlayCelebrationFile(path);
+                        _jingleService.Play(path, _settings);
                 }
                 else if (_settings.CelebrationSoundType == CelebrationSoundType.CustomFile)
                 {
                     if (!string.IsNullOrWhiteSpace(_settings.CelebrationSoundPath)
                         && File.Exists(_settings.CelebrationSoundPath))
-                        PlayCelebrationFile(_settings.CelebrationSoundPath);
+                        _jingleService.Play(_settings.CelebrationSoundPath, _settings);
                 }
             }
             catch (Exception ex)
@@ -4831,8 +4851,8 @@ namespace UniPlaySong
         }
 
         // Parallel to PlayCelebrationSound but reads the independent Abandoned settings.
-        // Reuses PlayCelebrationFile for the actual playback (jingle player lifecycle is
-        // identical — only the source file differs).
+        // Delegates actual playback to _jingleService.Play — jingle player lifecycle is
+        // identical between celebration and abandoned; only the source file differs.
         private void PlayAbandonedSound()
         {
             try
@@ -4845,83 +4865,18 @@ namespace UniPlaySong
                 {
                     var path = Services.BundledJingleService.ResolveJinglePath(_settings.SelectedAbandonedJingle);
                     if (!string.IsNullOrEmpty(path))
-                        PlayCelebrationFile(path);
+                        _jingleService.Play(path, _settings);
                 }
                 else if (_settings.AbandonedSoundType == CelebrationSoundType.CustomFile)
                 {
                     if (!string.IsNullOrWhiteSpace(_settings.AbandonedSoundPath)
                         && File.Exists(_settings.AbandonedSoundPath))
-                        PlayCelebrationFile(_settings.AbandonedSoundPath);
+                        _jingleService.Play(_settings.AbandonedSoundPath, _settings);
                 }
             }
             catch (Exception ex)
             {
                 _fileLogger?.Warn($"Abandoned sound failed: {ex.Message}");
-            }
-        }
-
-        private void PlayCelebrationFile(string filePath)
-        {
-            // Stop any previous jingle that might still be playing
-            CleanupJinglePlayer();
-
-            // Pause the main music instantly (dedicated Jingle source, preserves position)
-            _playbackService?.PauseForJingle();
-
-            try
-            {
-                bool useLiveEffects = _isUsingLiveEffectsPlayer
-                    && (_settings?.ApplyLiveEffectsToJingles ?? true);
-
-                if (useLiveEffects)
-                {
-                    // NAudio player: routes jingle through the effects chain (reverb, filters, etc.)
-                    _savedVizProvider = VisualizationDataProvider.Current;
-                    bool savedFlag = _isUsingLiveEffectsPlayer;
-                    _jinglePlayer = CreateMusicPlayer();
-                    _isUsingLiveEffectsPlayer = savedFlag;
-                }
-                else
-                {
-                    // Standard player: plain playback without effects
-                    _jinglePlayer = new Services.SDL2MusicPlayer(_errorHandler);
-                }
-
-                _jinglePlayer.MediaEnded += OnJingleEnded;
-                _jinglePlayer.Load(filePath);
-                _jinglePlayer.Volume = _settings.MusicVolume / 100.0;
-                _jinglePlayer.Play();
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Warn($"Jingle playback failed: {ex.Message}");
-                CleanupJinglePlayer();
-                _playbackService?.ResumeFromJingle();
-            }
-        }
-
-        private void OnJingleEnded(object sender, EventArgs e)
-        {
-            CleanupJinglePlayer();
-            _playbackService?.ResumeFromJingle();
-        }
-
-        private void CleanupJinglePlayer()
-        {
-            if (_jinglePlayer != null)
-            {
-                _jinglePlayer.MediaEnded -= OnJingleEnded;
-                _jinglePlayer.Stop();
-                _jinglePlayer.Close();
-                (_jinglePlayer as IDisposable)?.Dispose();
-                _jinglePlayer = null;
-
-                // Restore the main player's visualization provider
-                if (_savedVizProvider != null)
-                {
-                    VisualizationDataProvider.Current = _savedVizProvider;
-                    _savedVizProvider = null;
-                }
             }
         }
 
