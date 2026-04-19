@@ -36,6 +36,9 @@ namespace UniPlaySong.Common
         public const int MinPreviewDuration = 15;  // seconds
         public const int MaxPreviewDuration = 300; // seconds (5 minutes)
 
+        // Maximum preview duration in seconds for NSF Track Manager dialog
+        public const int NsfPreviewMaxSeconds = 30;
+
         #endregion
 
         #region File Extensions
