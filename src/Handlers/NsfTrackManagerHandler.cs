@@ -61,18 +61,20 @@ namespace UniPlaySong.Handlers
                     return;
                 }
 
-                // Classify each NSF as master (total_songs > 1) or mini (total_songs == 1).
-                var masters = new List<string>();
-                var minis = new List<string>();
+                // Classify each NSF. Splittable masters have total_songs > 1 AND != 255.
+                // The 255 value is a recovery sentinel applied to files where the original
+                // total_songs got lost during earlier buggy splits — practically these are
+                // minis, not splittable. All .nsf files (regardless of total_songs) are
+                // candidates for Edit Loops, since loop overrides are file-agnostic.
+                var splittableMasters = new List<string>();
                 foreach (var path in nsfs)
                 {
                     try
                     {
                         var bytes = File.ReadAllBytes(path);
                         int totalSongs = NsfHeaderPatcher.ReadTotalSongs(bytes);
-                        if (totalSongs > 1) masters.Add(path);
-                        else if (totalSongs == 1) minis.Add(path);
-                        // totalSongs == 0 means invalid header; skip.
+                        if (totalSongs > 1 && totalSongs != 255)
+                            splittableMasters.Add(path);
                     }
                     catch (Exception ex)
                     {
@@ -80,39 +82,16 @@ namespace UniPlaySong.Handlers
                     }
                 }
 
-                if (masters.Count == 0 && minis.Count == 0)
-                {
-                    _playniteApi.Dialogs.ShowMessage(
-                        $"Found .nsf files for '{game.Name}', but none could be read as valid NSF.",
-                        "NSF Track Manager");
-                    return;
-                }
+                // Edit Loops uses ALL .nsf files in the folder — no classification needed.
+                var loopEditable = nsfs;
 
-                // Pick master NSF: direct if one, picker if multiple, null if none.
-                string pickedMaster = null;
-                if (masters.Count == 1)
-                {
-                    pickedMaster = masters[0];
-                }
-                else if (masters.Count > 1)
-                {
-                    var options = masters
-                        .Select(p => new GenericItemOption(Path.GetFileName(p), p))
-                        .ToList();
-                    var choice = _playniteApi.Dialogs.ChooseItemWithSearch(
-                        options,
-                        (s) => options
-                            .Where(o => o.Name.IndexOf(s ?? "", StringComparison.OrdinalIgnoreCase) >= 0)
-                            .ToList<GenericItemOption>(),
-                        defaultSearch: "",
-                        caption: "Select master NSF to split");
-                    if (choice == null && minis.Count == 0) return; // user cancelled and no minis to edit
-                    if (choice != null) pickedMaster = choice.Description;
-                    // If cancelled but minis exist, proceed with Edit-Loops-only dialog.
-                }
+                // Auto-pick the first splittable master (if any). User rarely has multiple
+                // masters in one folder; in that case the first-in-list is a sensible default.
+                // A future in-dialog "Master file:" dropdown could expose switching.
+                string pickedMaster = splittableMasters.FirstOrDefault();
 
                 Logger.DebugIf(LogPrefix,
-                    $"Opening dialog: master={pickedMaster ?? "<none>"}, minis={minis.Count}");
+                    $"Opening dialog: master={pickedMaster ?? "<none>"}, loopEditable={loopEditable.Count}, splittableMasters={splittableMasters.Count}");
 
                 _playbackService?.Stop();
                 _playbackService?.AddPauseSource(PauseSource.NsfPreview);
@@ -120,7 +99,7 @@ namespace UniPlaySong.Handlers
                 NsfTrackManagerViewModel vm = null;
                 try
                 {
-                    vm = new NsfTrackManagerViewModel(pickedMaster, minis, gameFolder, game.Name ?? "Unknown");
+                    vm = new NsfTrackManagerViewModel(pickedMaster, loopEditable, gameFolder, game.Name ?? "Unknown");
                 }
                 catch (Exception ex)
                 {

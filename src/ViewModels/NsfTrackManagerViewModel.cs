@@ -161,10 +161,10 @@ namespace UniPlaySong.ViewModels
 
             SplitTabTooltip = SplitTabEnabled
                 ? string.Empty
-                : "No multi-track NSF in this game's folder.";
+                : "No splittable multi-track NSF in this game's folder.";
             EditLoopsTabTooltip = EditLoopsTabEnabled
                 ? string.Empty
-                : "No mini-NSFs in this game's folder yet. Split a master NSF first.";
+                : "No .nsf files in this game's folder.";
 
             // Initialize Split Tracks state only when a master exists.
             if (SplitTabEnabled)
