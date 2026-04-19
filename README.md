@@ -28,9 +28,12 @@ Built with the help of Claude Code and Cursor IDE
 
   > Right-click a game with an `.nsf` → **Chiptunes → NSF Management**
 
-  Check the tracks you want to keep, uncheck the rest, then Commit. The original file is preserved in a backup folder by default (uncheck to disable). Split music starts playing right after Commit.
+  The dialog has two tabs:
 
-- **How NSF Playback Works** — `.nsf` tracks don't carry length metadata, so by default each song plays up to 2:30 before looping. Short jingles and sound effects are auto-detected and advance to the next track as soon as they finish — no waiting 2:30 for a 3-second touchdown cheer.
+  - **Split Tracks** — preview each track in a master `.nsf`, check the ones you want to keep, and Commit. The original is preserved in a backup folder by default.
+  - **Edit Loops** — set a custom loop length (in seconds) for any individual `.nsf` in the game's folder. Use the − / + buttons or type directly. Empty field = default 2:30. Great for trimming repetitive NES BGM tracks whose actual musical content is only 20–30 seconds long. Previews each track right in the dialog so you can find the right loop length by ear.
+
+- **How NSF Playback Works** — `.nsf` tracks don't carry length metadata, so by default each song plays up to 2:30 before looping. Short jingles and sound effects are auto-detected and advance to the next track as soon as they finish — no waiting 2:30 for a 3-second touchdown cheer. For everything in between, use the Edit Loops tab to dial in a custom length.
 
 ### Previous Version
 - **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
