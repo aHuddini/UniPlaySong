@@ -810,6 +810,15 @@ namespace UniPlaySong.Services
         // Does NOT touch the persistent layer (device/mixer/volume provider).
         private void RemoveCurrentSongChain()
         {
+            // If a crossfade is in progress, tear down the secondary input first so it doesn't
+            // stay orphaned in the mixer after primary is removed. This protects Close(), game-
+            // switch paths (fader.Switch -> stopAction -> Close), and Load-replace paths that all
+            // funnel through here. Skip/Restart paths already call CancelCrossfade explicitly.
+            if (IsCrossfading)
+            {
+                CancelCrossfade();
+            }
+
             RemoveSongFromMixer();
 
             if (_songEndDetector != null)
