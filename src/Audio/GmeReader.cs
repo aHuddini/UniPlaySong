@@ -17,6 +17,9 @@ namespace UniPlaySong.Audio
         private readonly WaveFormat _waveFormat;
         private readonly int _playLengthMs;
         private readonly long _totalSamples;
+        // Lowered below _playLengthMs when GME signals an explicit track end
+        // (short NSFs with end markers). Initialized to _playLengthMs in ctor.
+        private int _effectiveEndMs;
         private short[] _shortBuffer;
         private bool _disposed;
 
@@ -105,6 +108,7 @@ namespace UniPlaySong.Audio
             }
 
             _totalSamples = (long)SampleRate * _playLengthMs / 1000;
+            _effectiveEndMs = _playLengthMs;
 
             // Don't use GME's internal fade — let NAudio's SongEndFade and fader handle transitions.
             // GME's gme_set_fade overlaps with our fader and can cause silent next-track issues.
@@ -165,7 +169,8 @@ namespace UniPlaySong.Audio
 
         // ISampleProvider.Read — the hot path used by NAudio's mixer pipeline.
         // Generates int16 samples from GME, converts to float32 in-place.
-        // EOF is signaled by returning 0 when play_length is reached (no GME internal fade).
+        // EOF is signaled by returning 0 when play_length is reached OR GME reports
+        // an explicit track-end (short NSF jingles, tracks with end markers).
         public int Read(float[] buffer, int offset, int count)
         {
             lock (_gmeLock)
@@ -173,13 +178,14 @@ namespace UniPlaySong.Audio
                 if (_emu == IntPtr.Zero)
                     return 0;
 
-                // Check if we've reached the play length
+                // Check if we've reached the effective end (either play_length or
+                // an earlier boundary set by GME's track-end signal).
                 int posMs = GmeNative.gme_tell(_emu);
-                if (posMs >= _playLengthMs)
+                if (posMs >= _effectiveEndMs)
                     return 0;
 
-                // Clamp to remaining samples so we don't overshoot play_length
-                int remainingMs = _playLengthMs - posMs;
+                // Clamp to remaining samples so we don't overshoot the effective end
+                int remainingMs = _effectiveEndMs - posMs;
                 long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
                 int toRead = (int)Math.Min(count, remainingSamples);
                 if (toRead <= 0)
@@ -196,6 +202,13 @@ namespace UniPlaySong.Audio
                 // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
                 for (int i = 0; i < toRead; i++)
                     buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
+
+                // Honor GME's internal track-end signal for short NSFs with explicit end
+                // markers (jingles, stingers). Guarded by a 2-second minimum to avoid
+                // false EOF at track init when chips emit brief silence. Tracks without
+                // an explicit end marker (looping BGM) never trigger this.
+                if (posMs >= 2000 && GmeNative.gme_track_ended(_emu) != 0)
+                    _effectiveEndMs = posMs;
 
                 return toRead;
             }
