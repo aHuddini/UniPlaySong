@@ -242,7 +242,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="40"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
@@ -263,21 +263,47 @@
                                                 </TextBlock.Foreground>
                                             </TextBlock>
 
-                                            <TextBox Grid.Column="2"
-                                                     Margin="8,0"
-                                                     materialDesign:HintAssist.Hint="seconds"
-                                                     Text="{Binding LoopSecondsInput, UpdateSourceTrigger=PropertyChanged}"
-                                                     ToolTip="{Binding ValidationMessage}">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsValid}" Value="False">
-                                                                <Setter Property="BorderBrush" Value="#E53935"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
+                                            <!-- − / textbox / + composite editor -->
+                                            <StackPanel Grid.Column="2"
+                                                        Orientation="Horizontal"
+                                                        Margin="8,0"
+                                                        VerticalAlignment="Center">
+                                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                                        Width="28" Height="28"
+                                                        ToolTip="Decrease by 5 seconds"
+                                                        Command="{Binding DataContext.StepLoopDownCommand,
+                                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="Minus" Width="16" Height="16"/>
+                                                </Button>
+
+                                                <TextBox Width="80"
+                                                         Margin="4,0"
+                                                         VerticalAlignment="Center"
+                                                         Foreground="White"
+                                                         materialDesign:HintAssist.Hint="seconds"
+                                                         Text="{Binding LoopSecondsInput, UpdateSourceTrigger=PropertyChanged}"
+                                                         ToolTip="{Binding ValidationMessage}">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                                                    <Setter Property="BorderBrush" Value="#E53935"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+
+                                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                                        Width="28" Height="28"
+                                                        ToolTip="Increase by 5 seconds"
+                                                        Command="{Binding DataContext.StepLoopUpCommand,
+                                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="Plus" Width="16" Height="16"/>
+                                                </Button>
+                                            </StackPanel>
 
                                             <Button Grid.Column="3"
                                                     Style="{StaticResource MaterialDesignIconButton}"

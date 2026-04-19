@@ -145,6 +145,8 @@ namespace UniPlaySong.ViewModels
         public System.Windows.Input.ICommand CancelCommand { get; }
         public System.Windows.Input.ICommand ToggleLoopPreviewCommand { get; }
         public System.Windows.Input.ICommand SaveLoopsCommand { get; }
+        public System.Windows.Input.ICommand StepLoopUpCommand { get; }
+        public System.Windows.Input.ICommand StepLoopDownCommand { get; }
 
         // masterNsfPath may be null when the folder has only mini-NSFs (Edit-Loops-only dialog).
         // miniNsfPaths is the list of mini-NSFs in the game folder; empty when only a master exists.
@@ -205,6 +207,37 @@ namespace UniPlaySong.ViewModels
             });
             ToggleLoopPreviewCommand = new RelayCommand<NsfLoopRow>(ToggleLoopPreview);
             SaveLoopsCommand = new RelayCommand(SaveLoops, () => CanSaveLoops);
+            StepLoopUpCommand = new RelayCommand<NsfLoopRow>(row => StepLoop(row, +LoopStepSeconds));
+            StepLoopDownCommand = new RelayCommand<NsfLoopRow>(row => StepLoop(row, -LoopStepSeconds));
+        }
+
+        private const int LoopStepSeconds = 5;
+        private const int DefaultLoopStartSeconds = 30;
+
+        // Adjusts the row's loop seconds by delta, clamped to [MinLoopSeconds, MaxLoopSeconds].
+        // Empty input starts at DefaultLoopStartSeconds before the first step is applied,
+        // so the first click on either button produces a sane value.
+        private void StepLoop(NsfLoopRow row, int delta)
+        {
+            if (row == null) return;
+
+            int current;
+            if (string.IsNullOrWhiteSpace(row.LoopSecondsInput))
+            {
+                current = DefaultLoopStartSeconds;
+            }
+            else if (!int.TryParse(row.LoopSecondsInput.Trim(), out current))
+            {
+                // If the field has invalid text, reset to the default rather than
+                // propagating garbage through arithmetic.
+                current = DefaultLoopStartSeconds;
+            }
+
+            int next = current + delta;
+            if (next < NsfLoopRow.MinLoopSeconds) next = NsfLoopRow.MinLoopSeconds;
+            if (next > NsfLoopRow.MaxLoopSeconds) next = NsfLoopRow.MaxLoopSeconds;
+
+            row.LoopSecondsInput = next.ToString();
         }
 
         private void LoadTrackMetadata()
