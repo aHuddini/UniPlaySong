@@ -816,6 +816,11 @@ namespace UniPlaySong.Services
         // so _isInMixer must be set false here. MediaEnded is marshaled to the UI thread.
         // Also clears _logicallyPaused so IsActive returns false — this lets the fader's
         // stall detection kick in if the song ended during a fade-out pause.
+        //
+        // When a crossfade is in progress (secondary is playing concurrently), this is the
+        // PRIMARY song's EOF. Instead of raising MediaEnded (which would trigger auto-advance
+        // and pick ANOTHER next song), we promote the secondary to primary via Dispatcher
+        // and emit CrossfadePromoted for MusicPlaybackService to refresh its state.
         private void OnSongEnded()
         {
             _isInMixer = false;
@@ -827,10 +832,19 @@ namespace UniPlaySong.Services
                 var dispatcher = Application.Current?.Dispatcher;
                 if (dispatcher != null)
                 {
-                    dispatcher.BeginInvoke(new Action(() =>
+                    if (IsCrossfading)
                     {
-                        MediaEnded?.Invoke(this, EventArgs.Empty);
-                    }));
+                        // Crossfade path: promote secondary to primary on UI thread.
+                        dispatcher.BeginInvoke(new Action(PromoteSecondaryToPrimary));
+                    }
+                    else
+                    {
+                        // Normal path: preserved v1.4.3 behavior.
+                        dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            MediaEnded?.Invoke(this, EventArgs.Empty);
+                        }));
+                    }
                 }
             }
             catch (Exception ex)
@@ -838,6 +852,93 @@ namespace UniPlaySong.Services
                 Logger.Error(ex, $"[{LogPrefix}] Error dispatching MediaEnded from SongEndDetector");
             }
         }
+
+        // UI-thread promotion: secondary becomes the new primary. Called after primary's
+        // SongEndDetector fires (MixingSampleProvider has already auto-removed primary).
+        // Field swaps secondary → primary, re-wires SongEndDetector subscription,
+        // takes over the visualizer slot, and emits CrossfadePromoted for
+        // MusicPlaybackService to refresh its state.
+        private void PromoteSecondaryToPrimary()
+        {
+            try
+            {
+                if (_secondaryAudioFile == null)
+                {
+                    _fileLogger?.Warn($"[{LogPrefix}] PromoteSecondaryToPrimary called but no secondary state — ignoring.");
+                    return;
+                }
+
+                _fileLogger?.Debug($"[{LogPrefix}] Promoting secondary '{System.IO.Path.GetFileName(_secondarySource)}' to primary.");
+
+                // Dispose primary's chain (mixer already auto-removed primary's input on partial read).
+                if (_songEndDetector != null)
+                {
+                    _songEndDetector.SongEnded -= OnSongEnded;
+                }
+                if (_visualizationProvider != null)
+                {
+                    if (VisualizationDataProvider.Current == _visualizationProvider)
+                        VisualizationDataProvider.Current = null;
+                    try { _visualizationProvider.Dispose(); } catch { /* best-effort */ }
+                }
+                _effectsChain = null;  // Mirror RemoveCurrentSongChain: nulled without disposing.
+                if (_audioFile != null)
+                {
+                    try { _audioFile.Dispose(); } catch { /* best-effort */ }
+                }
+
+                // Promote secondary → primary. Field swaps.
+                _audioFile = _secondaryAudioFile;
+                _effectsChain = _secondaryEffectsChain;
+                _visualizationProvider = _secondaryVisualizationProvider;
+                _songEndDetector = _secondarySongEndDetector;
+                _primaryInputVolume = _secondaryInputVolume;
+                _mixerInput = _secondaryMixerInput;
+                Source = _secondarySource;
+
+                // Secondary is already in the mixer from StartCrossfadeIntoNext —
+                // we're just relabeling ownership. Keep _isInMixer accurate.
+                _isInMixer = true;
+                _isPlaying = true;
+
+                // Rewire SongEndDetector for the NEW primary's EOF.
+                if (_songEndDetector != null)
+                {
+                    _songEndDetector.SongEnded += OnSongEnded;
+                }
+
+                // Take over the visualizer slot if we own it normally.
+                if (!SuppressVisualizationProvider && _visualizationProvider != null)
+                {
+                    VisualizationDataProvider.Current = _visualizationProvider;
+                }
+
+                // Clear secondary fields (without removing from mixer — it's the new primary now).
+                _secondaryAudioFile = null;
+                _secondaryEffectsChain = null;
+                _secondaryVisualizationProvider = null;
+                _secondarySongEndDetector = null;
+                _secondaryInputVolume = null;
+                _secondaryMixerInput = null;
+                _secondarySource = null;
+
+                // Notify MusicPlaybackService that the promoted song is now current.
+                CrossfadePromoted?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] PromoteSecondaryToPrimary error");
+            }
+        }
+
+        /// <summary>
+        /// Raised on the UI thread after a crossfade completes and the secondary song
+        /// has been promoted to primary. MusicPlaybackService subscribes to update
+        /// its current-song state and schedule the NEXT crossfade.
+        /// Different from MediaEnded: MediaEnded means "pick next song"; CrossfadePromoted
+        /// means "the already-picked next song has taken over."
+        /// </summary>
+        public event EventHandler CrossfadePromoted;
 
         // Device-level error (hardware disconnect, driver crash, etc.)
         // Tears down persistent layer so next Load() rebuilds it fresh.
