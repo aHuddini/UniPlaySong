@@ -105,6 +105,7 @@ namespace UniPlaySong
         private Services.GameMusicTagService _tagService;
         private Services.AudioAmplifyService _amplifyService;
         private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
+        private Handlers.NsfTrackManagerHandler _nsfTrackManagerHandler;
         private Services.MediaKeyService _mediaKeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
@@ -2258,6 +2259,8 @@ namespace UniPlaySong
             // Initialize amplify dialog handler (service initialized in InitializeServices)
             _amplifyDialogHandler = new Handlers.AmplifyDialogHandler(
                 _api, () => _settings, _fileService, _playbackService, _amplifyService);
+            _nsfTrackManagerHandler = new Handlers.NsfTrackManagerHandler(
+                _api, _fileService, _playbackService);
         }
 
         /// <summary>
@@ -3657,6 +3660,19 @@ namespace UniPlaySong
                     MenuSection = audioEditingSection,
                     Action = _ => _gameMenuHandler.RepairAllAudioFiles(game)
                 });
+
+                // === Chiptunes Submenu (NSF Track Manager) ===
+                var chiptunesSection = $"{menuSection}|Chiptunes";
+                bool hasNsf = songs != null && songs.Any(s => s.EndsWith(".nsf", StringComparison.OrdinalIgnoreCase));
+                if (hasNsf)
+                {
+                    items.Add(new GameMenuItem
+                    {
+                        Description = "NSF Management",
+                        MenuSection = chiptunesSection,
+                        Action = _ => _nsfTrackManagerHandler.ShowForGame(game)
+                    });
+                }
 
                 // Separator before utility options
                 items.Add(new GameMenuItem
