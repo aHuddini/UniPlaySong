@@ -68,7 +68,7 @@
                             <ComboBoxItem Content="Desktop + Fullscreen"/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both. To prevent automatic playback in Desktop mode, set to &quot;Fullscreen Only&quot;."
+                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both. To prevent automatic playback in Desktop mode entirely, set to &quot;Fullscreen Only&quot;. If you want music in Desktop but only after manually pressing Play, uncheck &quot;Auto-play music on first launch (Desktop)&quot; below instead."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
