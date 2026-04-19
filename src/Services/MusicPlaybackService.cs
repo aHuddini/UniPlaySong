@@ -85,6 +85,7 @@ namespace UniPlaySong.Services
         private UniPlaySongSettings _currentSettings;
         private System.Windows.Threading.DispatcherTimer _previewTimer;
         private System.Windows.Threading.DispatcherTimer _songEndFadeTimer;
+        private CrossfadeCoordinator _crossfadeCoordinator;
 
         // v1.4.3+ diagnostic: polls song position every 500ms to surface mismatches
         // between reported TotalTime and actual EOF (especially for GME where
@@ -200,6 +201,15 @@ namespace UniPlaySong.Services
             );
 
             _musicPlayer.MediaEnded += OnMediaEnded;
+
+            _crossfadeCoordinator = new CrossfadeCoordinator(this, () => _currentSettings, _fileLogger);
+
+            // Subscribe to NAudio-only CrossfadePromoted event if the player is NAudio.
+            // SDL2 players don't have this event, so they safely fall through.
+            if (_musicPlayer is NAudioMusicPlayer naudio)
+            {
+                naudio.CrossfadePromoted += OnCrossfadePromoted;
+            }
 
             _previewTimer = new System.Windows.Threading.DispatcherTimer();
             _previewTimer.Interval = TimeSpan.FromSeconds(1);
@@ -1150,6 +1160,7 @@ namespace UniPlaySong.Services
         {
             try
             {
+                _crossfadeCoordinator?.Cancel();
                 StopPreviewTimer();
                 CancelSongEndFade();
                 _musicPlayer?.Stop();
@@ -1314,6 +1325,8 @@ namespace UniPlaySong.Services
 
         public void SkipToNextSong()
         {
+            _crossfadeCoordinator?.Cancel();
+
             // Radio Mode: skip within the radio pool
             if (_isInRadioMode && _currentSettings?.RadioModeEnabled == true && _radioSongPoolProvider != null)
             {
@@ -1447,6 +1460,8 @@ namespace UniPlaySong.Services
         public void RestartCurrentSong()
         {
             if (_musicPlayer?.IsLoaded != true || string.IsNullOrEmpty(_currentSongPath)) return;
+
+            _crossfadeCoordinator?.Cancel();
 
             _fileLogger?.Debug($"RestartCurrentSong: Restarting '{Path.GetFileName(_currentSongPath)}'");
 
@@ -1770,7 +1785,114 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"Preview timer started: {Path.GetFileName(_currentSongPath)} ({_currentSettings.PreviewDuration}s)");
             }
 
-            ScheduleSongEndFade();
+            // Dispatch between legacy sequential fade-out-before-end (existing behavior, used
+            // when EnableTrueCrossfade is off) and true crossfade (new feature). When the
+            // setting is off, the sequential path runs exactly as it did in v1.4.3 — the
+            // isolation contract.
+            if (_currentSettings?.EnableTrueCrossfade == true && _musicPlayer is NAudioMusicPlayer)
+            {
+                _crossfadeCoordinator?.ScheduleCrossfade(PickNextSongForCrossfade);
+            }
+            else
+            {
+                ScheduleSongEndFade();
+            }
+        }
+
+        // Picks the next song for a crossfade transition based on the current auto-advance
+        // context. Returns null if no auto-advance is currently applicable (in which case
+        // crossfade is skipped and normal sequential behavior runs).
+        //
+        // Mirrors the three auto-advance branches that OnMediaEnded uses:
+        //   1. Radio Mode       → _radioSongPoolProvider
+        //   2. Default pool     → _defaultSongPoolProvider (when _isCurrentSongDefaultMusic + RandomizeDefaultMusicOnEnd)
+        //   3. Game-music random → _fileService.GetAvailableSongs (when RandomizeOnMusicEnd + has >=2 songs)
+        private string PickNextSongForCrossfade()
+        {
+            try
+            {
+                if (_isInRadioMode && _currentSettings?.RadioModeEnabled == true && _radioSongPoolProvider != null)
+                {
+                    var pool = _radioSongPoolProvider(_currentSettings.RadioMusicSource, _currentSettings);
+                    if (pool != null && pool.Count > 0)
+                    {
+                        return PickDifferentFromCurrent(pool);
+                    }
+                }
+
+                if (_isCurrentSongDefaultMusic && IsPlayingPoolBasedDefault
+                    && _defaultSongPoolProvider != null
+                    && _currentSettings?.RandomizeDefaultMusicOnEnd == true)
+                {
+                    var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
+                    if (pool != null && pool.Count > 1)
+                    {
+                        return PickDifferentFromCurrent(pool);
+                    }
+                }
+
+                if (_currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null && !_isCurrentSongDefaultMusic)
+                {
+                    var songs = _fileService.GetAvailableSongs(_currentGame);
+                    if (songs != null && songs.Count > 1)
+                    {
+                        return PickDifferentFromCurrent(songs);
+                    }
+                }
+
+                _fileLogger?.Debug("[Crossfade] PickNextSongForCrossfade: no auto-advance applies — returning null.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"[Crossfade] PickNextSongForCrossfade threw: {ex.Message}");
+                return null;
+            }
+        }
+
+        // Picks a random song from the pool that's different from _currentSongPath.
+        // Falls back to any song in the pool if all candidates coincide after 10 attempts.
+        private string PickDifferentFromCurrent(System.Collections.Generic.IList<string> pool)
+        {
+            if (pool == null || pool.Count == 0) return null;
+            if (pool.Count == 1) return pool[0];
+
+            string candidate = null;
+            for (int attempts = 0; attempts < 10; attempts++)
+            {
+                candidate = pool[_random.Next(pool.Count)];
+                if (candidate != _currentSongPath) return candidate;
+            }
+            return candidate;
+        }
+
+        // Fires on the UI thread when a crossfade completes and the secondary song has
+        // taken over as primary. Unlike OnMediaEnded, we don't pick a NEXT song here —
+        // the promoted song IS the "new current." Just update state and schedule the
+        // crossfade for the song AFTER this one.
+        private void OnCrossfadePromoted(object sender, EventArgs e)
+        {
+            try
+            {
+                if (sender != _musicPlayer) return;
+                if (_musicPlayer == null) return;
+
+                _previousSongPath = _currentSongPath;
+
+                if (_musicPlayer is NAudioMusicPlayer naudio && !string.IsNullOrEmpty(naudio.Source))
+                {
+                    _currentSongPath = naudio.Source;
+                }
+
+                _fileLogger?.Info($"[Crossfade] Promoted: now playing {Path.GetFileName(_currentSongPath)}");
+
+                // Schedule the NEXT crossfade for the newly-promoted primary.
+                MarkSongStart();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"[Crossfade] OnCrossfadePromoted error: {ex.Message}");
+            }
         }
 
         private void StopPreviewTimer()

@@ -21,7 +21,7 @@ namespace UniPlaySong.Services
         private const int PollIntervalMs = 500;
 
         private readonly IMusicPlaybackService _playbackService;
-        private readonly SettingsService _settingsService;
+        private readonly Func<UniPlaySongSettings> _settingsGetter;
         private readonly FileLogger _fileLogger;
 
         private DispatcherTimer _pollTimer;
@@ -30,11 +30,11 @@ namespace UniPlaySong.Services
 
         public CrossfadeCoordinator(
             IMusicPlaybackService playbackService,
-            SettingsService settingsService,
+            Func<UniPlaySongSettings> settingsGetter,
             FileLogger fileLogger)
         {
             _playbackService = playbackService ?? throw new ArgumentNullException(nameof(playbackService));
-            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+            _settingsGetter = settingsGetter ?? throw new ArgumentNullException(nameof(settingsGetter));
             _fileLogger = fileLogger;
         }
 
@@ -86,7 +86,7 @@ namespace UniPlaySong.Services
             {
                 if (_hasFired) { Cancel(); return; }
 
-                var settings = _settingsService.Current;
+                var settings = _settingsGetter();
                 if (settings == null || !settings.EnableTrueCrossfade)
                 {
                     _fileLogger?.Debug($"[{LogPrefix}] Setting off mid-poll — cancelling.");
