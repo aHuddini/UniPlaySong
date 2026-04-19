@@ -86,6 +86,15 @@ namespace UniPlaySong.Services
         private System.Windows.Threading.DispatcherTimer _previewTimer;
         private System.Windows.Threading.DispatcherTimer _songEndFadeTimer;
 
+        // v1.4.3+ diagnostic: polls song position every 500ms to surface mismatches
+        // between reported TotalTime and actual EOF (especially for GME where
+        // _effectiveEndMs can shrink mid-playback). Remove once fade reliability
+        // is investigated and fixed.
+        private System.Windows.Threading.DispatcherTimer _songEndFadeDiagnosticTimer;
+        private bool _songEndFadeHasFired;
+        private DateTime _songEndFadeScheduledAt = DateTime.MinValue;
+        private double _songEndFadeExpectedFireSeconds;
+
         private MusicFader _fader;
         private double _targetVolume = Constants.DefaultTargetVolume;
         private double _volumeMultiplier = 1.0;
@@ -1795,12 +1804,53 @@ namespace UniPlaySong.Services
                     // the fader uses the global FadeOutDuration (for game-switch fades) which
                     // can be much shorter than FadeOutBeforeSongEndDuration, leaving a silent
                     // tail — or longer, cutting the ramp off past EOF.
-                    _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} over {fadeDuration}s (ramp ends at song EOF)");
+                    var posNow = _musicPlayer?.CurrentTime?.TotalSeconds ?? -1;
+                    var totalNow = _musicPlayer?.TotalTime?.TotalSeconds ?? -1;
+                    _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} over {fadeDuration}s (ramp ends at song EOF) — timer fired at pos={posNow:F2}s / total={totalNow:F2}s");
+                    _songEndFadeHasFired = true;
                     _fader.FadeOut(fadeDuration);
+                }
+                else
+                {
+                    _fileLogger?.Debug($"[SongEndFade] Timer fired but player inactive or paused — skipping fade (IsActive={_musicPlayer?.IsActive}, IsPaused={_isPaused})");
                 }
             };
             _songEndFadeTimer.Start();
-            _fileLogger?.Debug($"[SongEndFade] Scheduled fade in {delay:F1}s for {Path.GetFileName(_currentSongPath)}");
+            _songEndFadeHasFired = false;
+            _songEndFadeScheduledAt = DateTime.Now;
+            _songEndFadeExpectedFireSeconds = delay;
+            _fileLogger?.Debug($"[SongEndFade] Scheduled fade in {delay:F1}s for {Path.GetFileName(_currentSongPath)} (total={totalTime.Value.TotalSeconds:F2}s, fadeDuration={fadeDuration}s)");
+
+            // Diagnostic poll: every 500ms, log current position vs. reported TotalTime.
+            // Surfaces cases where TotalTime shifts mid-playback (GME _effectiveEndMs)
+            // or where position passes the expected fire-time without the fade firing.
+            _songEndFadeDiagnosticTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _songEndFadeDiagnosticTimer.Tick += OnSongEndFadeDiagnosticTick;
+            _songEndFadeDiagnosticTimer.Start();
+        }
+
+        private void OnSongEndFadeDiagnosticTick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_musicPlayer == null || _currentSongPath == null)
+                    return;
+
+                var pos = _musicPlayer.CurrentTime?.TotalSeconds ?? -1;
+                var total = _musicPlayer.TotalTime?.TotalSeconds ?? -1;
+                var elapsed = (DateTime.Now - _songEndFadeScheduledAt).TotalSeconds;
+                var timerStillPending = _songEndFadeTimer != null;
+                var fileName = Path.GetFileName(_currentSongPath);
+
+                _fileLogger?.Debug($"[SongEndFade/Probe] {fileName}: pos={pos:F2}s, total={total:F2}s, elapsed={elapsed:F2}s, expectedFireAt={_songEndFadeExpectedFireSeconds:F2}s, timerPending={timerStillPending}, fadeFired={_songEndFadeHasFired}, isActive={_musicPlayer.IsActive}, isPaused={_isPaused}");
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error("[SongEndFade/Probe] Exception: " + ex.Message);
+            }
         }
 
         private void CancelSongEndFade()
@@ -1809,6 +1859,12 @@ namespace UniPlaySong.Services
             {
                 _songEndFadeTimer.Stop();
                 _songEndFadeTimer = null;
+            }
+            if (_songEndFadeDiagnosticTimer != null)
+            {
+                _songEndFadeDiagnosticTimer.Stop();
+                _songEndFadeDiagnosticTimer.Tick -= OnSongEndFadeDiagnosticTick;
+                _songEndFadeDiagnosticTimer = null;
             }
         }
 
@@ -1933,6 +1989,14 @@ namespace UniPlaySong.Services
             {
                 try
                 {
+                    // Diagnostic: did the scheduled song-end fade actually fire before EOF?
+                    var posAtEof = _musicPlayer?.CurrentTime?.TotalSeconds ?? -1;
+                    var totalAtEof = _musicPlayer?.TotalTime?.TotalSeconds ?? -1;
+                    var elapsedSinceSchedule = _songEndFadeScheduledAt == DateTime.MinValue
+                        ? -1
+                        : (DateTime.Now - _songEndFadeScheduledAt).TotalSeconds;
+                    _fileLogger?.Debug($"[SongEndFade/EOF] {Path.GetFileName(_currentSongPath)}: EOF fired at pos={posAtEof:F2}s / total={totalAtEof:F2}s, fadeFired={_songEndFadeHasFired}, elapsedSinceSchedule={elapsedSinceSchedule:F2}s, expectedFireAt={_songEndFadeExpectedFireSeconds:F2}s");
+
                     // Fire OnSongEnded event before handling looping/randomization
                     OnSongEnded?.Invoke();
 
