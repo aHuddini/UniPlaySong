@@ -1628,6 +1628,7 @@ namespace UniPlaySong.Services
                     {
                         if (_playbackService.IsPaused)
                         {
+                            _playbackService.NotifyManualStart();
                             _playbackService.Resume();
                         }
                         else
