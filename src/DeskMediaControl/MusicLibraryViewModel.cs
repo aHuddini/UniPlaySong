@@ -562,6 +562,7 @@ namespace UniPlaySong.DeskMediaControl
 
                 if (playbackService.IsPaused)
                 {
+                    playbackService.NotifyManualStart();
                     playbackService.RemovePauseSource(PauseSource.Idle);
                     playbackService.RemovePauseSource(PauseSource.ExternalAudio);
                     playbackService.RemovePauseSource(PauseSource.SystemLock);
@@ -575,7 +576,10 @@ namespace UniPlaySong.DeskMediaControl
                 {
                     var currentGame = _getCurrentGame?.Invoke();
                     if (currentGame != null)
+                    {
+                        playbackService.NotifyManualStart();
                         playbackService.PlayGameMusic(currentGame, _getSettings?.Invoke());
+                    }
                 }
 
                 UpdatePlaybackState();

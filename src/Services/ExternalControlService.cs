@@ -31,6 +31,7 @@ namespace UniPlaySong.Services
             switch (command)
             {
                 case "play":
+                    _playbackService.NotifyManualStart();
                     _playbackService.Resume();
                     break;
 
@@ -42,7 +43,10 @@ namespace UniPlaySong.Services
                     if (_playbackService.IsPlaying)
                         _playbackService.Pause();
                     else
+                    {
+                        _playbackService.NotifyManualStart();
                         _playbackService.Resume();
+                    }
                     break;
 
                 case "skip":
