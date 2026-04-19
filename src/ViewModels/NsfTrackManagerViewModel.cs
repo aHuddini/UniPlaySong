@@ -23,7 +23,10 @@ namespace UniPlaySong.ViewModels
         {
             get
             {
-                if (DurationMs <= 0) return string.Empty;
+                // GME returns 150000 (2:30) as its default when the NSF has no embedded
+                // per-track length metadata. Treat that sentinel as "unknown" rather
+                // than displaying a misleading 2:30 for every track.
+                if (DurationMs <= 0 || DurationMs == 150000) return "—";
                 var ts = TimeSpan.FromMilliseconds(DurationMs);
                 return ts.Minutes + ":" + ts.Seconds.ToString("00");
             }

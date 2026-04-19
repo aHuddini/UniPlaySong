@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.4.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.4.3-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,16 +20,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.2
+## What's New - v1.4.3
 
-- **Fullscreen Volume Boost** — New opt-in slider in Playback settings (0–20%, default 0%) that slightly nudges music volume up in Fullscreen mode to compensate for how Playnite's own Background Volume slider stacks on top of UPS's Music Volume. Only active in Fullscreen; Desktop is unaffected.
-- **Fullscreen Quick Settings Menu** — Menu → Extensions → UniPlaySong in Fullscreen now exposes the most-commonly-tweaked settings as controller-navigable items: Live Effects, Radio Mode, Preview Mode, Play Only on Game Select, Music Only for Installed Games, plus sub-menus for Reverb Preset (32 options) and Default Music Source (8 options). Current value is marked with ●. No more dropping to Desktop to flip a switch.
-- **Fullscreen Exit: No More Stray Music** — When exiting Fullscreen (Switch to Desktop), you'd sometimes briefly hear ~1 second of the currently-selected game's music start up during the transition, then cut off. Fixed — the late-fired theme overlay events that were triggering the unwanted playback are now ignored during shutdown.
-- **Persistent Default Music Backdrop** — When using pool-based default music sources (Random Game, Custom Folder, Custom Rotation, Completion Status Pool), the same track now keeps playing by default as you browse games, instead of re-rolling to a different song on every hover. Combined with a new "Auto-advance Default Music on song end" toggle (disable it for the current song to loop rather than pick a new one), you can now have a truly persistent single-track backdrop while browsing.
-- **Stay Paused After External Audio (Desktop)** — New option in the Pauses tab: when UPS is paused because another app started playing audio (YouTube, Discord, etc.), you can now have UPS stay paused until you manually resume via the top panel play/pause button or your media keys — instead of the music auto-resuming the moment the external audio stops. Desktop mode only.
+- **NSF Track Manager** — Right-click any game with a multi-track NSF file (Nintendo Sound Format) and pick **Chiptunes → NSF Management** (Desktop mode) to split it into individual per-track files. Preview each track with an in-dialog play/stop button, check the ones you want to keep, and Commit. Unwanted tracks are skipped; kept tracks become standalone `.nsf` files named by the track (or numbered fallback `Track NN.nsf` when the NSF has no track names). Original is automatically backed up to the PreservedOriginals folder by default — uncheck the box if you'd rather not. After Commit the split game music starts playing immediately, no need to navigate away and back.
+- **Correct NSF Track Playback** — `GmeReader` now honors the NSF header's `starting_song` byte, so per-track mini-NSFs play the track they were split for. Previously the reader hardcoded track 0, which meant all split files sounded identical.
+- **Short NSF Tracks Auto-Advance** — Jingles, stingers, and short fanfare tracks (e.g. "touchdown" or "game over") in NSF files now advance to the next song at their natural end instead of looping internally for 2:30. Longer looping BGM tracks are unaffected. The dialog also shows "—" instead of a misleading "2:30" for tracks with no embedded length metadata.
+- **Auto-Resume Safety Net for Modal Dialogs** — When UPS dialogs (like the new NSF Track Manager) close via an unusual path — for example the host window being force-closed — any leaked pause source is proactively cleared on the next game switch. Prevents the rare "music won't auto-advance anymore" symptom without requiring an extension reload.
 
 ### Previous Version
-- **v1.4.1**: Retro chiptune pause/resume fixes (UI freezes, silent jingle returns), song-end fade geometry, Fanfare on "Beaten" status, Abandoned status jingle + toast with 10 bundled failure-themed jingles, Play Only on Game Select randomization fixes, internal jingle playback refactor
+- **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -1,5 +1,15 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.4.3
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-04-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.3/UniPlaySong-1_4_3-Apr18_2026.pext'
+    Changelog:
+      - '[New Feature] NSF Track Manager (Desktop): Right-click a game with a multi-track .nsf file and select Chiptunes -> NSF Management to split it into individual per-track files. Preview each track, pick the ones to keep, Commit. Original is preserved in a backup folder by default. After commit the split game music starts playing immediately.'
+      - '[Critical Fix] NSF Per-Track Playback: Split mini-NSF files now play the track they were split for. Previously the GME reader hardcoded track 0 and every mini-NSF sounded identical to the first track.'
+      - '[Fix] Short NSF Tracks Auto-Advance: Short NSF jingles/stingers (touchdown, game over, quarter-end) now advance to the next song at their natural end instead of looping internally for 2:30. Longer looping BGM tracks are unaffected.'
+      - '[Fix] NSF Track Manager Duration Display: Dialog now shows em-dash ("—") for tracks with no embedded length metadata instead of a misleading 2:30 for every row.'
+      - '[Fix] Auto-advance Safety Net: If a UPS modal dialog closes through an unusual path (e.g. host window force-close) and leaves a pause source behind, the next game switch automatically clears it. Prevents rare cases where music would stop auto-advancing until the extension was reloaded.'
   - Version: 1.4.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-18
