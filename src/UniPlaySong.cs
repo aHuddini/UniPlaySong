@@ -1933,9 +1933,14 @@ namespace UniPlaySong
             if (_playbackService == null) return;
 
             if (_playbackService.IsPaused)
+            {
+                _playbackService.NotifyManualStart();
                 _playbackService.RemovePauseSource(Models.PauseSource.Manual);
+            }
             else if (_playbackService.IsPlaying || _playbackService.IsLoaded)
+            {
                 _playbackService.AddPauseSource(Models.PauseSource.Manual);
+            }
 
             _topPanelMediaControl?.UpdateIcons();
         }

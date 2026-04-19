@@ -362,6 +362,7 @@ namespace UniPlaySong.DeskMediaControl
                 if (playbackService.IsPaused)
                 {
                     _log?.Invoke("TopPanel: Resuming playback via manual toggle");
+                    playbackService.NotifyManualStart();
                     // Clear all automatic pause sources — user explicitly wants to play
                     playbackService.RemovePauseSource(PauseSource.Idle);
                     playbackService.RemovePauseSource(PauseSource.ExternalAudio);
@@ -379,6 +380,7 @@ namespace UniPlaySong.DeskMediaControl
                     if (currentGame != null)
                     {
                         _log?.Invoke($"TopPanel: Starting playback for {currentGame.Name}");
+                        playbackService.NotifyManualStart();
                         playbackService.PlayGameMusic(currentGame, _getSettings?.Invoke());
                     }
                     else
