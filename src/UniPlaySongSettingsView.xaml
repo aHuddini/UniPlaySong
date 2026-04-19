@@ -73,7 +73,16 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-                    
+
+                    <CheckBox Content="Auto-play music on first launch (Desktop)"
+                              IsChecked="{Binding Settings.AutoPlayOnFirstLaunchDesktop}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When unchecked, music won't auto-play in Desktop until you manually press Play. After the first manual Play, game switches will auto-play for the rest of the session. Resets on Playnite restart."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <CheckBox Content="Do not play music on startup (Fullscreen)" 
                               IsChecked="{Binding Settings.SkipFirstSelectionAfterModeSwitch}" 
                               Margin="0,5"/>

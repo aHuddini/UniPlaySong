@@ -42,6 +42,7 @@ namespace UniPlaySong
             s.EnableMusic = true;
             s.SuppressPlayniteBackgroundMusic = true;
             s.MusicState = AudioState.Always;
+            s.AutoPlayOnFirstLaunchDesktop = true;
             s.SkipFirstSelectionAfterModeSwitch = false;
             s.ThemeCompatibleSilentSkip = true;
             s.ShowDesktopMediaControls = true;
