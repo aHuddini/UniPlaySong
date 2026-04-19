@@ -395,6 +395,19 @@ namespace UniPlaySong.Services
                 RemoveSongFromMixer();
             }
 
+            // If crossfading and secondary is also a GME reader, detach it too so its
+            // emulator freezes at the current position rather than advancing during pause.
+            // Non-GME secondaries don't need this — NAudio's mixer just stops reading them
+            // when logically paused (they'll resume naturally on Resume).
+            if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+            {
+                try { _mixer.RemoveMixerInput(_secondaryMixerInput); }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"[{LogPrefix}] Pause: failed to detach secondary GME mixer input: {ex.Message}");
+                }
+            }
+
             _logicallyPaused = true;
             _isPlaying = false;
         }
@@ -433,6 +446,16 @@ namespace UniPlaySong.Services
                     _mixer.AddMixerInput(_mixerInput);
                     _isInMixer = true;
                     _fileLogger?.Debug("[NAudio] Resume() — re-added to mixer after EOF during pause");
+                }
+
+                // If crossfading and secondary is GME, it was detached in Pause — re-attach.
+                if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+                {
+                    try { _mixer.AddMixerInput(_secondaryMixerInput); }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"[{LogPrefix}] Resume: failed to re-attach secondary GME mixer input");
+                    }
                 }
 
                 _fileLogger?.Debug($"[NAudio] Resume() — after seek: actualPos={_audioFile.CurrentTime}, isInMixer={_isInMixer}");
@@ -569,6 +592,17 @@ namespace UniPlaySong.Services
                             _mixer.AddMixerInput(_mixerInput);
                             _isInMixer = true;
                         }
+
+                        // If crossfading and secondary is GME, it was detached in Pause — re-attach.
+                        if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+                        {
+                            try { _mixer.AddMixerInput(_secondaryMixerInput); }
+                            catch (Exception ex)
+                            {
+                                Logger.Error(ex, $"[{LogPrefix}] Resume (GME path): failed to re-attach secondary GME mixer input");
+                            }
+                        }
+
                         _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms, actualPos={_audioFile?.CurrentTime}, isInMixer={_isInMixer}");
                     }
                     catch (Exception ex)
@@ -599,6 +633,13 @@ namespace UniPlaySong.Services
         {
             try
             {
+                // If a crossfade is in progress, tear down the secondary input first
+                // so it doesn't stay orphaned in the mixer after primary is removed.
+                if (IsCrossfading)
+                {
+                    CancelCrossfade();
+                }
+
                 RemoveSongFromMixer();
                 _isPlaying = false;
             }
