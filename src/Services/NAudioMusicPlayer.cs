@@ -44,6 +44,23 @@ namespace UniPlaySong.Services
         private VisualizationDataProvider _visualizationProvider;
         private SongEndDetectorSampleProvider _songEndDetector;
         private ISampleProvider _mixerInput; // Final provider added to mixer (after format normalization)
+
+        // Per-input volume provider, wrapped between the song's normalized chain and the mixer.
+        // Only created when EnableTrueCrossfade is true; the mixer-level _volumeProvider handles
+        // master volume otherwise. Enables independent per-song volume ramps during crossfade.
+        private SmoothVolumeSampleProvider _primaryInputVolume;
+
+        // Secondary song state used only during a crossfade (next song overlapping with current).
+        // All null when not crossfading. Populated by StartCrossfadeIntoNext() (Task 4).
+        private SmoothVolumeSampleProvider _secondaryInputVolume;
+        private WaveStream _secondaryAudioFile;
+        private EffectsChain _secondaryEffectsChain;
+        private VisualizationDataProvider _secondaryVisualizationProvider;
+        private SongEndDetectorSampleProvider _secondarySongEndDetector;
+        private ISampleProvider _secondaryMixerInput;
+        private string _secondarySource;
+        public bool IsCrossfading => _secondaryInputVolume != null;
+
         private bool _isInMixer;
 
         // Preloaded file reader — created during fade-out to reduce Load() time
@@ -258,7 +275,24 @@ namespace UniPlaySong.Services
                     normalized = new WdlResamplingSampleProvider(normalized, MixerFormat.SampleRate);
                 }
 
-                _mixerInput = normalized;
+                // When crossfade is enabled, wrap the normalized chain in a per-input volume
+                // provider so this song can be ramped independently of any other mixer input.
+                // When crossfade is OFF this wrap is SKIPPED entirely — pipeline shape matches
+                // v1.4.3 exactly. This is the isolation contract.
+                if (_settingsService.Current?.EnableTrueCrossfade == true)
+                {
+                    _primaryInputVolume = new SmoothVolumeSampleProvider(
+                        normalized,
+                        getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
+                        getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+                    _primaryInputVolume.Volume = 1.0f;  // Full volume — no ramp until crossfade fires.
+                    _mixerInput = _primaryInputVolume;
+                }
+                else
+                {
+                    _primaryInputVolume = null;
+                    _mixerInput = normalized;
+                }
                 long normalizeMs = sw.ElapsedMilliseconds;
 
                 Source = filePath;
@@ -622,6 +656,7 @@ namespace UniPlaySong.Services
             _visualizationProvider = null;
 
             _mixerInput = null;
+            _primaryInputVolume = null;
 
             if (_audioFile != null)
             {
