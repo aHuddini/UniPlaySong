@@ -18,6 +18,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Changed
 - **`NsfPreview` Pause Source: Defensive Sweep on Game Switch** — The NSF Track Manager dialog adds `PauseSource.NsfPreview` for its lifetime via the handler's `try/finally`, but a host-window force-close or exception in the dialog's close path could theoretically leak the source. Leaked pause sources silently block auto-advance via `OnMediaEnded`'s `if (_isPaused) return` early-return. `MusicPlaybackService.PlayGameMusic` now calls `RemovePauseSource(PauseSource.NsfPreview)` before running the normal game-switch flow, so any stale source gets cleared on the next user action. Safe no-op when the source isn't active.
+- **Play Music State Dropdown Clarity** — Cosmetic rewording of `UniPlaySongSettingsView.xaml` only. The `MusicState` ComboBox in Settings → General had items labeled `Desktop` and `Fullscreen`, which didn't clearly communicate that these are *exclusive* modes (auto-play in that mode, nothing in the other). Renamed to `Desktop Only` / `Fullscreen Only` to match user mental model. Existing `AudioState` enum values are unchanged — converter still maps combo index 1→`Desktop`, 2→`Fullscreen`. Description under the dropdown extended to guide users on how to disable auto-playback in Desktop mode: *"To prevent automatic playback in Desktop mode, set to 'Fullscreen Only'."* Motivated by a user question about enabling auto-playback only in Fullscreen — the feature already existed but was under-discoverable.
 
 ## [1.4.2] - 2026-04-18
 

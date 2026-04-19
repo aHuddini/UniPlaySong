@@ -6,9 +6,10 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.3/UniPlaySong-1_4_3-Apr18_2026.pext'
     Changelog:
       - '[New Format] NES Music (.nsf): NES / Famicom soundtracks are officially supported. Drop an .nsf file into a game''s music folder and it plays alongside MP3s, FLACs, and other chiptune formats. Sound effects and game-over jingles bundled inside the .nsf work too.'
-      - '[New Feature] NSF Manager: .nsf files are album-like — a single file holds every song AND sound effect from the game. Right-click a game -> Chiptunes -> NSF Management (Desktop) to open a master .nsf like a playlist, preview each track, and split the ones you want into individual mini-.nsf files. Discard songs you do not want.'
-      - '[New Feature] NSF Manager - Edit Loops tab: Set a custom loop length (in seconds) for any individual .nsf in a game''s folder. Use the -/+ buttons or type directly. Empty field = default 2:30. Great for trimming repetitive NES BGM tracks whose actual musical content is only 20-30 seconds long. Preview each track right in the dialog.'
+      - '[New Feature] NSF Manager: .nsf files are album-like — a single file holds every song AND sound effect from the game. Right-click a game -> Chiptunes -> NSF Management (Desktop) to open a master .nsf like a playlist, preview each track, and split the ones you want into individual mini-.nsf files.'
+      - '[New Feature] NSF Loop Editor: Edit Loops tab: Set a custom loop length (in seconds) for any individual .nsf in a game''s folder. Use the -/+ buttons or type directly. Empty field = default 2:30. Great for trimming repetitive NES BGM tracks whose actual musical content is only 20-30 seconds long. Preview each track right in the dialog.'
       - '[Note] NSF Track Lengths: Songs inside .nsf files don''t carry length metadata, so they play for up to 2:30 before looping. Short jingles and stingers are auto-detected and advance as soon as they finish. For everything in between, use the Edit Loops tab to dial in a custom length.'
+      - '[Improved] Play Music State dropdown (Settings -> General): Desktop and Fullscreen options renamed to "Desktop Only" and "Fullscreen Only" for clarity. Description updated to guide users on how to disable auto-playback in Desktop mode (set to "Fullscreen Only"). No behavior change.'
   - Version: 1.4.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-18
