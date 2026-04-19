@@ -281,10 +281,16 @@ namespace UniPlaySong.Services
                 // v1.4.3 exactly. This is the isolation contract.
                 if (_settingsService.Current?.EnableTrueCrossfade == true)
                 {
+                    // Crossfade uses Linear ramps, NOT the user's fade-in/out curves.
+                    // The user's curves are tuned for song start/end transitions where
+                    // you want a gentle ease. DJ-style crossfade needs equal-volume
+                    // overlap throughout the window, which Linear delivers. Cubic/Quadratic
+                    // would keep primary near-full for most of the ramp and make the
+                    // overlap inaudible until the last couple of seconds.
                     _primaryInputVolume = new SmoothVolumeSampleProvider(
                         normalized,
-                        getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
-                        getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+                        getFadeInCurve: () => FadeCurveType.Linear,
+                        getFadeOutCurve: () => FadeCurveType.Linear);
                     _primaryInputVolume.Volume = 1.0f;  // Full volume — no ramp until crossfade fires.
                     _mixerInput = _primaryInputVolume;
                 }
@@ -735,10 +741,12 @@ namespace UniPlaySong.Services
                 if (secNormalized.WaveFormat.SampleRate != MixerFormat.SampleRate)
                     secNormalized = new WdlResamplingSampleProvider(secNormalized, MixerFormat.SampleRate);
 
+                // Linear ramps for crossfade — see Load() for reasoning. User's fade curves
+                // are deliberately ignored here so the overlap is audibly parallel.
                 _secondaryInputVolume = new SmoothVolumeSampleProvider(
                     secNormalized,
-                    getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
-                    getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+                    getFadeInCurve: () => FadeCurveType.Linear,
+                    getFadeOutCurve: () => FadeCurveType.Linear);
                 _secondaryInputVolume.Volume = 0.0f;  // Start silent — ramp will fade in.
                 _secondaryMixerInput = _secondaryInputVolume;
                 _secondarySource = nextPath;
