@@ -3,54 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d"
-             d:DesignHeight="500" d:DesignWidth="720"
-             Background="#1e1e1e">
+             d:DesignHeight="500" d:DesignWidth="720">
     <UserControl.Resources>
-        <Style x:Key="NsfButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#3d3d3d"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#555"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#4d4d4d"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#2d2d2d"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="NsfPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource NsfButtonStyle}">
-            <Setter Property="Background" Value="#2a5a9e"/>
-            <Setter Property="BorderBrush" Value="#4078c8"/>
-        </Style>
-
-        <Style x:Key="NsfPreviewButtonStyle" TargetType="Button" BasedOn="{StaticResource NsfButtonStyle}">
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="MinWidth" Value="36"/>
-            <Setter Property="MinHeight" Value="26"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="14">
@@ -61,12 +23,20 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Foreground="White" FontSize="17" FontWeight="Bold">
+            <TextBlock Style="{StaticResource MaterialDesignHeadline6TextBlock}">
+                <TextBlock.Foreground>
+                    <SolidColorBrush Color="White" Opacity="0.87"/>
+                </TextBlock.Foreground>
                 <Run Text="NSF Track Manager &#x2014; "/>
                 <Run Text="{Binding GameName, Mode=OneWay}"/>
             </TextBlock>
-            <TextBlock Foreground="#B8B8B8" FontSize="12" Margin="0,3,0,0">
+            <TextBlock Style="{StaticResource MaterialDesignBody2TextBlock}"
+                       Margin="0,3,0,0">
+                <TextBlock.Foreground>
+                    <SolidColorBrush Color="White" Opacity="0.60"/>
+                </TextBlock.Foreground>
                 <Run Text="{Binding FileName, Mode=OneWay}"/>
                 <Run Text=" &#x2014; "/>
                 <Run Text="{Binding Tracks.Count, Mode=OneWay}"/>
@@ -74,22 +44,42 @@
             </TextBlock>
         </StackPanel>
 
+        <!-- Selection toolbar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button Content="Select All" Margin="0,0,6,0" Style="{StaticResource NsfButtonStyle}"
+            <Button Content="SELECT ALL"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    FontSize="11"
+                    Padding="12,6"
+                    MinHeight="32"
+                    Margin="0,0,6,0"
                     Command="{Binding SelectAllCommand}"/>
-            <Button Content="Select None" Margin="0,0,6,0" Style="{StaticResource NsfButtonStyle}"
+            <Button Content="SELECT NONE"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    FontSize="11"
+                    Padding="12,6"
+                    MinHeight="32"
+                    Margin="0,0,6,0"
                     Command="{Binding SelectNoneCommand}"/>
-            <Button Content="Invert" Style="{StaticResource NsfButtonStyle}"
+            <Button Content="INVERT"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    FontSize="11"
+                    Padding="12,6"
+                    MinHeight="32"
                     Command="{Binding InvertCommand}"/>
         </StackPanel>
 
-        <Border Grid.Row="2" BorderBrush="#3a3a3a" BorderThickness="1" CornerRadius="3"
-                Background="#161616">
+        <!-- Track list -->
+        <Border Grid.Row="2"
+                BorderThickness="1"
+                CornerRadius="3"
+                BorderBrush="{DynamicResource MaterialDesignDivider}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Tracks}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="8,4" BorderBrush="#262626" BorderThickness="0,0,0,1">
+                            <Border Padding="8,4"
+                                    BorderThickness="0,0,0,1"
+                                    BorderBrush="{DynamicResource MaterialDesignDivider}">
                                 <Grid VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -98,33 +88,64 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" VerticalAlignment="Center" Foreground="White"
+
+                                    <CheckBox Grid.Column="0"
+                                              VerticalAlignment="Center"
                                               IsChecked="{Binding IsKept, Mode=TwoWay}"/>
-                                    <TextBlock Grid.Column="1" Margin="10,0" Foreground="#A8A8A8"
+
+                                    <TextBlock Grid.Column="1"
+                                               Margin="10,0"
                                                VerticalAlignment="Center"
-                                               Text="{Binding DisplayNumber}"/>
-                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="White"
+                                               Text="{Binding DisplayNumber}">
+                                        <TextBlock.Foreground>
+                                            <SolidColorBrush Color="White" Opacity="0.60"/>
+                                        </TextBlock.Foreground>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="2"
+                                               VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="{Binding Name}"/>
-                                    <TextBlock Grid.Column="3" Margin="10,0" Foreground="#A8A8A8"
+                                               Text="{Binding Name}">
+                                        <TextBlock.Foreground>
+                                            <SolidColorBrush Color="White" Opacity="0.87"/>
+                                        </TextBlock.Foreground>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="3"
+                                               Margin="10,0"
                                                VerticalAlignment="Center"
-                                               Text="{Binding DurationDisplay}"/>
-                                    <Button Grid.Column="4" Style="{StaticResource NsfPreviewButtonStyle}"
+                                               Text="{Binding DurationDisplay}">
+                                        <TextBlock.Foreground>
+                                            <SolidColorBrush Color="White" Opacity="0.60"/>
+                                        </TextBlock.Foreground>
+                                    </TextBlock>
+
+                                    <!-- Preview toggle button -->
+                                    <Button Grid.Column="4"
+                                            Width="32"
+                                            Height="32"
+                                            ToolTip="Preview"
                                             Command="{Binding DataContext.TogglePreviewCommand,
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}">
-                                        <TextBlock>
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Text" Value="&#x25B6;"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                                            <Setter Property="Text" Value="&#x25A0;"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+                                                <Setter Property="Content">
+                                                    <Setter.Value>
+                                                        <materialDesign:PackIcon Kind="Play" Width="16" Height="16"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                        <Setter Property="Content">
+                                                            <Setter.Value>
+                                                                <materialDesign:PackIcon Kind="Stop" Width="16" Height="16"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
                                     </Button>
                                 </Grid>
                             </Border>
@@ -134,19 +155,37 @@
             </ScrollViewer>
         </Border>
 
+        <!-- Footer -->
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#C8C8C8"
-                       Text="{Binding SelectionSummary}"/>
+
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                       Text="{Binding SelectionSummary}">
+                <TextBlock.Foreground>
+                    <SolidColorBrush Color="White" Opacity="0.87"/>
+                </TextBlock.Foreground>
+            </TextBlock>
+
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Content="Commit" Margin="0,0,8,0" MinWidth="90"
-                        Style="{StaticResource NsfPrimaryButtonStyle}"
+                <Button Content="COMMIT"
+                        Margin="0,0,8,0"
+                        MinWidth="90"
+                        FontSize="11"
+                        Padding="12,6"
+                        MinHeight="32"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
                         Command="{Binding CommitCommand}"/>
-                <Button Content="Cancel" MinWidth="90"
-                        Style="{StaticResource NsfButtonStyle}"
+                <Button Content="CANCEL"
+                        MinWidth="90"
+                        FontSize="11"
+                        Padding="12,6"
+                        MinHeight="32"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
                         Command="{Binding CancelCommand}"/>
             </StackPanel>
         </Grid>
