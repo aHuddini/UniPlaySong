@@ -145,10 +145,6 @@ namespace UniPlaySong.Handlers
                         $"NSF Manager: changes saved for {game.Name}",
                         NotificationType.Info));
                     Logger.DebugIf(LogPrefix, "Commit path: song cache invalidated");
-
-                    // Start playing the updated game music so the user hears results
-                    // (especially relevant after loop-save: GmeReader reads the fresh manifest).
-                    _playbackService?.PlayGameMusic(game);
                 }
             }
             catch (Exception ex)
@@ -160,7 +156,16 @@ namespace UniPlaySong.Handlers
             }
             finally
             {
+                // Always restore the game's music — the handler called Stop() at dialog-open
+                // to silence the main player, so simply removing the pause source isn't enough
+                // to resume playback (no song is loaded). Calling PlayGameMusic is safe on
+                // both commit and cancel paths: it reloads the folder and starts playing,
+                // picking up any freshly-split mini-NSFs or updated loop overrides on commit,
+                // or just restoring the prior state on cancel. PlayGameMusic also sweeps any
+                // stale NsfPreview pause source itself (defensive path added earlier).
                 _playbackService?.RemovePauseSource(PauseSource.NsfPreview);
+                if (game != null)
+                    _playbackService?.PlayGameMusic(game);
             }
         }
     }
