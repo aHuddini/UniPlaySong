@@ -6,6 +6,76 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 ---
 
+## Shipped in v1.4.3
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~NES Music Support (.nsf)~~ | Audio & Effects | v1.4.3 |
+| ~~NSF Track Manager (split master NSF → mini-NSFs)~~ | Library Management | v1.4.3 |
+| ~~NSF Loop Editor (per-track loop length override via `nsf-loops.json`)~~ | Audio & Effects | v1.4.3 |
+| ~~`Play Music State` Dropdown Clarity (Desktop Only / Fullscreen Only labels)~~ | Settings / UX | v1.4.3 |
+| ~~yt-dlp Python DLL Failure Diagnostic~~ | Downloads | v1.4.3 |
+| ~~GME `starting_song` Honored + Short-Track Auto-Advance via `gme_track_ended`~~ | Audio & Effects (Fix) | v1.4.3 |
+
+## Shipped in v1.4.2
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Fullscreen Quick Settings Menu~~ | Controller Mode / UX | v1.4.2 |
+| ~~Fullscreen Volume Boost Slider~~ | Audio & Effects | v1.4.2 |
+| ~~Stay Paused After External Audio (Desktop)~~ | Playback / Pauses | v1.4.2 |
+| ~~Persistent Default Music Backdrop (Keep-Same-Track on Game Switch default ON)~~ | Playback | v1.4.2 |
+| ~~Auto-advance Default Music on Song End (toggle)~~ | Playback | v1.4.2 |
+| ~~Fullscreen Exit Stray Music Fix~~ | Playback (Fix) | v1.4.2 |
+
+## Shipped in v1.4.1
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Fanfare on "Beaten" Status (in addition to Completed)~~ | Gamification | v1.4.1 |
+| ~~Abandoned Status Jingle + Toast (with 10 bundled failure jingles)~~ | Gamification | v1.4.1 |
+| ~~GME Pause/Resume Fixes (UI freeze, silent jingle returns, race conditions)~~ | Audio & Effects (Fix) | v1.4.1 |
+| ~~Song-End Fade Geometry (matches configured duration exactly)~~ | Audio & Effects (Fix) | v1.4.1 |
+| ~~Single-Track Loop Silent Fix (FadeOutBeforeSongEnd + one-song folders)~~ | Audio & Effects (Fix) | v1.4.1 |
+| ~~`Play Only On Game Select` Randomization Fixes~~ | Playback (Fix) | v1.4.1 |
+| ~~JingleService Extraction (internal refactor)~~ | Architecture | v1.4.1 |
+| ~~About Tab: Supported Audio Formats Section~~ | Visual & UI | v1.4.1 |
+
+## Shipped in v1.4.0
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Retro Chiptune Music Support (.vgm / .vgz via GME)~~ | Audio & Effects | v1.4.0 |
+| ~~Faster YouTube Previews (40s section downloads)~~ | Downloads | v1.4.0 |
+| ~~Browser Cookie Support (Chrome / Edge / Brave / Opera alongside Firefox)~~ | Downloads | v1.4.0 |
+| ~~Cookie Mode Quality + Args Consistency~~ | Downloads (Fix) | v1.4.0 |
+
+## Shipped in v1.3.11 / v1.3.12
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Active Theme Music (play Fullscreen theme's `background.mp3` through UPS)~~ | Playback | v1.3.11 |
+| ~~Add Music File (Desktop right-click menu + controller-friendly browser)~~ | Library Management | v1.3.11 |
+| ~~Skip First Selection Fix (music plays on first game select)~~ | Playback (Fix) | v1.3.11 |
+| ~~Normalization Codec Auto-detection (MP3/OGG/FLAC/WAV)~~ | Library Management (Fix) | v1.3.12 |
+| ~~External Audio Pause Detection (direct WASAPI)~~ | Playback (Fix) | v1.3.12 |
+| ~~Radio Mode + Theme Overlay Respect~~ | Playback (Fix) | v1.3.12 |
+| ~~Silence Trim: OGG Codec Support~~ | Library Management (Fix) | v1.3.12 |
+| ~~Tool Path Validation (yt-dlp/FFmpeg Found/Not Found status)~~ | Settings / UX | v1.3.12 |
+
+## Shipped in v1.3.6 – v1.3.10
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Music Library Dashboard (Experimental)~~ | Dashboard & Statistics | v1.3.6 |
+| ~~Dashboard Player Decoupling~~ | Architecture | v1.3.6 |
+| ~~Icon Glow (Dynamic game-art driven)~~ | Visual & UI | v1.3.6 |
+| ~~Hover Glow~~ | Visual & UI | v1.3.6 |
+| ~~Taskbar Color Driven by Game Cover~~ | Visual & UI | v1.3.6 |
+| ~~External Control API (localhost REST-ish for StreamDeck / scripts)~~ | Integration & Streaming | v1.3.7–v1.3.10 |
+| ~~Bulk Audio Conversion~~ | Library Management | v1.3.7–v1.3.10 |
+| ~~Play-On-Select Event-Driven Refactor~~ | Playback (Perf) | v1.3.7–v1.3.10 |
+
 ## Shipped in v1.3.5
 
 | Feature | Category | Version |
@@ -82,7 +152,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
-| **Music Dashboard** | Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. A single place to explore your music library. Every modern music player has this (Spotify Home, iTunes Library). WPF UserControl in settings or standalone window. `_game-index.txt` and breadcrumb files could feed this without scanning folders at startup. | Medium | High |
+| ~~**Music Dashboard**~~ ✅ | ~~Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. Tabbed interface (Games, Tracks, Artists, Genres, Stats). Game card grid, game detail view, Radio Mode, expanded Now Playing, audio-reactive cards. Own decoupled `DashboardPlaybackService`.~~ **Shipped v1.3.6** (Experimental) | Medium | High |
 | **Personal Top Charts** | "Top 10 Most Played Games", "Top 25 Songs", filterable by week/month/all-time. Requires play count tracking. Surface in dashboard. | Low | Medium |
 | ~~**Library Statistics Page**~~ ✅ | ~~Detailed breakdown: file format distribution (MP3 vs FLAC %), bitrate stats, total duration, storage analysis. "50 GB of FLAC could be 12 GB as 320kbps MP3." Like foobar2000's aggregate Properties.~~ **Shipped v1.3.0** (**Enhanced v1.3.1:** avg song length, total playtime, ID3 tag count, bitrate distribution card, reducible track size card) | Low | Medium |
 | **Listening Trends Graph** | Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round. | Medium | Medium |
@@ -190,7 +260,9 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | **"Calm Down" Mode** | One-click toggle that applies low-pass filter + volume reduction + slow fade. For when a soundtrack is too intense but you don't want silence. Like "night mode" for audio. Uses existing NAudio filter chain. | Low | Medium |
 | **Peak Meter / VU Display** | Real-time audio level meter alongside or instead of spectrum visualizer. Classic VU look. NAudio sample data already available via `VisualizationDataProvider`. Simpler alternative to FFT spectrum. | Low | Low |
 | **Tempo-Aware Shuffle** | When shuffling, avoid jarring tempo jumps by preferring songs with similar BPM to current one. Requires one-time BPM scan stored per file. Smooth listening flow. | Medium | Medium |
-| **vgmstream Game Audio Support** | Play video game audio formats (.adx, .brstm, .hca, .wem, .fsb, .vag, .at3, etc.) with loop point support via [vgmstream](https://vgmstream.org/). See detailed roadmap below. | High | High |
+| **vgmstream Game Audio Support** | Play video game audio formats (.adx, .brstm, .hca, .wem, .fsb, .vag, .at3, etc.) with loop point support via [vgmstream](https://vgmstream.org/). Complements the GME-backed chiptune support (v1.4.0: VGM/VGZ; v1.4.3: NSF). See detailed roadmap below. | High | High |
+| **GME Expansion: GBS / SPC / HES / KSS / SAP / AY Track Managers** | NSF Track Manager (v1.4.3) pattern extended to sibling formats with multiple tracks per file. `.gbs` (Game Boy), `.spc` (SNES), `.hes` (PC Engine / TurboGrafx), `.kss` (MSX), `.sap` (Atari), `.ay` (ZX Spectrum). Shared `MultiTrackChiptuneManagerViewModel` with per-format header patchers. User drops a single master file, splits into mini-files, overrides loop lengths via same JSON manifest as NSF. 80% of the code is already in place — this is largely a matter of writing small per-format header patchers (each ~50 lines). | Medium | Medium |
+| **Per-File Loop Override for Non-NSF Chiptune Formats** | Extend `nsf-loops.json` pattern to `.vgm`, `.vgz`, `.spc`, `.gbs`, etc. Rename manifest to `chiptune-loops.json`, keyed by filename. `GmeReader` already checks a manifest for `.nsf` — generalize the check to any GME-supported extension. Lets users trim any looping chiptune track, not just NSF. | Low | Medium |
 
 ---
 
@@ -277,7 +349,7 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | **OBS Text File Export** | Write `now_playing.txt` on each song change for OBS stream overlays. ~10 lines of code. | Low | Medium |
 | **Discord Rich Presence** | Show "Listening to: Battle Theme - Final Fantasy VII" in Discord status. Simple named pipe RPC. | Low | Medium |
 | **Windows SMTC (System Media Transport Controls)** | Integrate with Windows media overlay (Win+G, volume flyout, Bluetooth controls). ~~Media keys work when Playnite unfocused.~~ Media keys addressed via RegisterHotKey in v1.3.2; SMTC would add Win+G overlay integration and Bluetooth headphone controls. | Medium | Medium |
-| **Hotkey/StreamDeck Local API** | Expose controls via localhost REST API. StreamDeck, Touch Portal, AutoHotkey can query/control UPS. | Medium | High |
+| ~~**Hotkey/StreamDeck Local API**~~ ✅ | ~~Expose controls via localhost REST API. StreamDeck, Touch Portal, AutoHotkey can query/control UPS. See [docs/EXTERNAL_CONTROL.md](../EXTERNAL_CONTROL.md).~~ **Shipped v1.3.7–v1.3.10** as External Control Service | Medium | High |
 | **Twitch Chat Integration** | `!song` shows current track, `!skip` votes to skip, `!request GameName` queues music. Twitch IRC connection. | Medium | Medium |
 | **DMCA-Safe Mode** | Flag/skip DMCA-problematic songs. Tag as "stream-safe" or "DMCA risk." Only play safe tracks in this mode. | Low | High |
 | **Scrobbling (Last.fm)** | Submit played tracks to Last.fm. Track listening habits. Simple HTTP API. | Low | Medium |
@@ -367,6 +439,76 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | **Music Discovery Challenge** | Weekly suggestion: "Listen to music from a game you haven't played in 6+ months." Re-engage with forgotten library. | Low | Low |
 | **Total Listening Time Tracker** | Increment counter on `OnSongEnded`. Display "Total listening time: 42 hours" in settings or dashboard. One TimeSpan field. | Low | Low |
 | ~~**Notification Sound on Download Complete**~~ | ~~Play system sound when batch downloads finish. `SystemSounds.Asterisk.Play()`.~~ | ~~Low~~ | ~~Low~~ | **Shipped v1.3.0** |
+
+---
+
+## v1.4+ Opportunities Identified
+
+New ideas surfaced during v1.4.x development or flagged by users. Most are Low effort / High fit because they extend infrastructure we just built.
+
+### Chiptune & Retro Follow-Ups (v1.4.3-native)
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **Session Auto-Play Lock (Desktop)** | When Play Music State = Fullscreen Only, Desktop is fully silent. User request: start music manually once via top panel, and THEN have game switches auto-play for the rest of the session (until Playnite closes). New setting: `AutoPlayOnFirstLaunchDesktop` (default ON). When OFF, `_userHasManuallyStartedThisSession` flag gates `ShouldPlayMusic` in Desktop mode. See detailed deferred design in [POTENTIAL_ISSUES.md](../POTENTIAL_ISSUES.md#session-scoped-manual-start-unlocks-auto-play-for-desktop). | Low | Medium |
+| **Multi-Track Manager Generalization** | NSF Track Manager (`src/Views/NsfTrackManagerDialog.xaml` + VM) is a near-perfect template for any multi-track chiptune format. Generalize to `ChiptuneTrackManagerDialog` accepting per-format header patcher delegates; register `.gbs`/`.spc`/`.hes`/`.kss` etc. patchers. Same dialog, different menu labels per format. | Medium | Medium |
+| **Combined Chiptune Loop Manifest** | Instead of `nsf-loops.json`, use `chiptune-loops.json` so all GME-playable formats share the override mechanism. Trivial extension of the existing `NsfLoopManifest` lookup in `GmeReader`. | Low | Low |
+| **Diagnose Corrupt Chiptune Files on Load** | When `GmeReader` fails to open a file, surface a clear log line distinguishing: file corruption vs. unsupported chip (already documented for VGM/VGZ via `VgmHeaderSniffer`) vs. missing GME native DLL. Mirrors the yt-dlp DLL-diagnostic pattern. | Low | Low |
+
+### UX Polish
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **`Play Music State` Auto-Hint for New Users** | First-launch banner or tooltip on the Play Music State dropdown: *"New to UPS? Check this first to choose when music auto-plays."* Dismissible. Reduces the exact discoverability gap that prompted the v1.4.3 label fix. | Low | Low |
+| **Top Panel Tooltip Shows Current Auto-Play Mode** | Hover the Play button → tooltip includes the active MusicState ("Auto-play: Fullscreen Only"). Helps users remember what's configured without opening settings. | Low | Low |
+| **Settings Search Box** | With 10 tabs and ~150 settings, a search box at the top of the Settings dialog (filters visible settings across all tabs as you type) would be a huge UX win. No storage change — purely visibility-filtering. | Medium | High |
+| **Onboarding Welcome Tour** | First run of v1.5+: brief multi-step popover tour through core settings. Linked to existing settings sections. Dismissible forever. | Medium | Medium |
+| **"What's New" Popup on First Launch After Update** | Parse the release notes for the current version and show a modal with highlights. Keeps users informed without requiring README reading. | Medium | Medium |
+
+### Integration Deepening
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **ListenBrainz Scrobbling** | Open-source alternative to Last.fm, MIT-friendly, no OAuth complications. Submit played tracks via simple HTTP `POST /1/submit-listens`. Complements the existing Last.fm idea (still open). Most practical scrobbling integration for UPS because game music often isn't in Last.fm's catalog but can be freely logged to ListenBrainz. | Low | Medium |
+| **Extension Script Action API** | Register UPS commands as Playnite script actions so other extensions / user scripts can `playbackService.Play()`, `Skip()`, etc. from their own code. `IPlayniteAPI` supports this via `AddPluginSettings`. Complements External Control REST API (shipped) with in-process hooks. | Low | Medium |
+| **Game State Push Notifications** | Optional POST-webhook when song changes, game switches, etc. For Discord bots, home automation, smart lights. URL configured in settings; POST payload is JSON (game, song, timestamps). | Low | Low |
+| **MQTT Output** | For home-automation folks: UPS publishes song/game state to an MQTT broker. Trigger Hue lights, stream deck, etc. Uses `MQTTnet` NuGet. | Medium | Low |
+
+### Settings Architecture
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **Settings Import/Export (JSON)** | Export all UPS settings (excluding tool paths which are machine-specific) to a shareable JSON file. Import on new machine or backup. Uses existing `JsonConvert.SerializeObject` from global-reset path. Users keep asking for this when migrating Playnite installs. | Low | High |
+| **Settings Profiles** | Save named settings snapshots, switch between them. "Streaming", "Casual browsing", "Late night". One-click profile swap. Built on export/import. | Medium | Medium |
+| **Per-Settings Help Tooltips** | Tooltip `?` icon next to each setting showing a richer description than the inline one-liner. For settings with subtle effects (RandomizeOnMusicEnd, DefaultMusicContinueSameSong). | Low | Low |
+
+### Performance / Architecture
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **Split `UniPlaySong.cs` (5088 lines)** | Plugin entry point has grown past the "reason about in context" threshold. Extract menu construction (`GetGameMenuItems` is ~500 lines alone), Fullscreen quick-settings handlers, event subscriptions into dedicated files. Follows the JingleService extraction pattern from v1.4.1. | Medium | Medium |
+| **Split `UniPlaySongSettings.cs` (3628 lines) by Tab** | Partial classes keyed by settings tab (`.General.cs`, `.Playback.cs`, `.Pauses.cs`, etc.). Single logical class at runtime, but each file is browsable. Reset handlers follow the same split in `UniPlaySongSettingsView.xaml.cs`. | Medium | Medium |
+| **Split `UniPlaySongSettingsView.xaml` (4059 lines)** | Use `<ContentControl>` with per-tab UserControls (`GeneralTab.xaml`, `PlaybackTab.xaml`, etc.) instead of inlining everything in one file. Improves designer load times and makes each tab self-contained. | Medium | Medium |
+| **MusicPlaybackService Split** | At 2048 lines it's mixing pause sources, game-selection, preview timer, song-end fade, radio, default music. Candidates: extract `DefaultMusicScheduler`, `RadioModeService`, `PauseSourceRegistry`. | High | Medium |
+| **Adopt CommunityToolkit.Mvvm** | Source generators for `[ObservableProperty]` / `[RelayCommand]` would collapse hundreds of manual `OnPropertyChanged` calls in Settings + dashboard VMs. Already listed in Architecture Ideas (Tier 1). Incremental — no big-bang migration needed. | Medium | Medium |
+| **Reduce Startup Scan Cost for Large Libraries** | Users with 500+ games hit a visible pause at Playnite start when UPS scans music folders. Already have breadcrumb files and `_game-index.txt` — expand them to skip per-folder enumeration when the index is fresh. Check mtime of each folder against last-index-build. Falls back to a scan if dirty. | Medium | Medium |
+| **Lazy-Load Library Dashboard Data** | Dashboard loads all games + songs + metadata up front. For 500+ game libraries, virtualize the Game Card grid and load song metadata on-demand when a card scrolls into view. | Medium | Medium |
+| **Warm Up NAudio Mixer At Startup** | First-song load has a ~400ms `EnsurePersistentLayer` cost (observed in logs). Initialize the persistent layer in a background task immediately after plugin load so first game-select is instant. | Low | Medium |
+
+### Creative / Niche
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **Favorite Songs List (cross-game)** | Star songs (checkbox in dashboard or context menu). Saved as a flat JSON manifest `favorites.json`. "Favorites" appears as a new pool-based default music source (alongside Custom Folder, Random Game, etc.). Users build their personal greatest-hits playlist without leaving UPS. | Low | High |
+| **Cross-Game Music Symlinks / Shared Folder** | For game series where the same soundtrack fits multiple entries (e.g. Dark Souls 1/2/3 trilogy). User designates a shared folder; multiple games reference it instead of duplicating MP3s. UPS presents the folder as if it were each game's music. Storage win + consistency. | Medium | Medium |
+| **Playlist-as-Game Mode** | Let users create virtual "games" in UPS (not in Playnite) that are just playlists. Shows up in Library Dashboard. Doesn't touch Playnite's game database. | Medium | Low |
+| **Now-Playing Badge on Game Card** | When a song is playing, the game card for that game (in Playnite's own library grid) shows a small pulsing "♪" indicator. Uses `IGameDetailsPlugin` or `PluginUserControl` overlay via theme integration. | Medium | Medium |
+| **"Music Only" Game Filter Button** | One-click Playnite filter: "games that have UPS music downloaded". Uses the existing tagging system — auto-tag games with `.ups:has-music` on first song download, filter via Playnite's native filter UI. | Low | Medium |
+| **Loop Boundary Detection** | Auto-detect natural loop points in audio files using autocorrelation over the waveform. For chiptune files specifically, reduce the need for manual loop editing. Could also apply to MP3/FLAC. | High | Medium |
+| **"DJ Mode" Callsign Between Songs** | Optional: between songs, play a ~3-second randomized stinger ("UniPlaySong Radio — now playing…") with TTS. Makes radio mode feel more like a real station. Windows SAPI, zero dependencies. | Low | Low |
+| **Visualizer in Fullscreen as Screensaver** | If no game selected for N minutes in Fullscreen, switch to a full-screen visualizer display ("ambient mode"). Returns to normal Fullscreen on any input. Turns idle Playnite into a music-visualizer piece. | Medium | Medium |
+| **Game Cover Reactive Wallpaper** | UPS writes a dynamic image (current game's cover + subtle visualizer overlay) to a file that Wallpaper Engine / Lively Wallpaper can consume. Zero injection, standard file-watch workflow. | Medium | Medium |
+| **"Tracklist" Export to Markdown / PDF** | Per-game markdown file listing all songs with their durations + any custom loop overrides. Useful for sharing setups or documenting your collection. | Low | Low |
 
 ---
 
@@ -463,104 +605,80 @@ Technical improvements and library integrations identified through research. The
 
 ## Priority Recommendations
 
-### Quick Wins (Low effort, ship fast)
-1. Gapless playback
-2. Per-game effects presets
-3. OBS text file export
-4. Sleep timer
-5. Fade to pause
-6. Don't Play This Song skip list
-7. "Surprise Me" button
-8. Playback memory across sessions
-9. Community download lists (JSON export/import)
-10. Quick mute toggle
-11. Copy song info to clipboard
-12. ~~Open on KHInsider context menu~~ ❌ N/A — KHInsider source removed in v1.3.4
-13. Total listening time tracker
-14. Personal top charts (most-played games/songs)
-15. Auto-skip short files
-16. "Calm Down" mode
-17. Audio ducking during game selection
-18. Per-game visualizer theme
-19. Now playing game cover
-20. Song preview on hover
-21. ~~Completion-status music filter~~ ✅ Shipped v1.3.4 as Nostalgia Mode + Nostalgia Playlist Mode
-22. Series/franchise playlist
-23. Era-based playlists
-24. Auto-reverb by genre
-25. Playtime-weighted shuffle
-26. Playnite URI handler
-27. Default music randomization
-28. Shuffle indicator in Now Playing
-29. Volume percentage in tooltip
-30. No Music tag auto-apply after failed downloads
-31. Replay current song
-32. Song intro skip
-33. Listening session recap
-34. Auto-pause on battery saver
+### Quick Wins (Low effort, ship fast) — Top Picks Post-v1.4.3
 
-### Shipped Quick Wins (v1.3.4)
-- ~~Radio Station mode (Full Library, Custom Folder, Custom Game Rotation, Completion Status Pool)~~
-- ~~Game Property Filter (Platform / Genre / Source)~~
-- ~~Filter Mode (play game music only when Playnite filter active)~~
-- ~~Nostalgia Mode (Completion-status music filter)~~
-- ~~Nostalgia Playlist Mode (Completion Status Pool default music source)~~
-
-### Shipped in v1.3.3
-- ~~Configurable fade curves (5 styles: Linear, Quadratic, Cubic, S-Curve, Logarithmic)~~
-
-### Shipped Quick Wins (v1.3.2)
-- ~~Global media key control~~
-- ~~Taskbar thumbnail media controls (graduated)~~
-- ~~Auto-cleanup empty folders~~
-- ~~Playlist export (M3U)~~
-- ~~Extended default music sources (Custom Folder, Random Game, Custom Game Rotation)~~
-- ~~PS2 Menu Ambience bundled preset~~
-- ~~Custom cookies file for yt-dlp~~
-- ~~Per-tab reset buttons (settings quick reset per section)~~
-- ~~Graduated 6 experimental features to stable~~
-- ~~Improved default settings~~
-- ~~Settings reorganization (dedicated Pauses tab)~~
-- ~~Style preset tuning~~
-- ~~Global settings reset rewrite~~
-
-### Shipped Quick Wins (v1.3.1)
-- ~~Install-aware auto-download~~
-- ~~Auto-pause on idle/AFK~~
-- ~~Auto-pause on another audio source~~
-- ~~Stay paused on focus restore (#69)~~
-- ~~Ignore brief focus loss (alt-tab)~~
-- ~~Enhanced library statistics~~
-- ~~Settings UI reorganization~~
-
-### Shipped Quick Wins (v1.3.0)
-- ~~Completion celebration~~
-- ~~Song count badge in game menu~~
-- ~~Notification sound on download complete~~
-- ~~Default music indicator~~
-- ~~Music folder size in game menu~~
-- ~~Celebration toast notification~~
-- ~~Auto-pause on system lock~~
-- ~~Song progress indicator~~
-- ~~Library statistics page~~
+1. **Settings Import/Export (JSON)** — often-requested, tiny code, users love it
+2. **Favorite Songs List** — cross-game starring via flat JSON manifest, pairs with existing default-music-source picker
+3. **Session Auto-Play Lock (Desktop)** — already designed in [POTENTIAL_ISSUES.md](../POTENTIAL_ISSUES.md)
+4. **Per-File Loop Override for non-NSF chiptune formats** — trivial `GmeReader` extension of existing manifest
+5. **Top Panel Tooltip Shows Current Auto-Play Mode** — 2-line change, big discoverability win
+6. **ListenBrainz Scrobbling** — simple HTTP POST, MIT-friendly scrobbling without Last.fm baggage
+7. Gapless playback
+8. Per-game effects presets
+9. OBS text file export
+10. Sleep timer
+11. Fade to pause
+12. Don't Play This Song skip list
+13. "Surprise Me" button
+14. Playback memory across sessions
+15. Quick mute toggle
+16. Copy song info to clipboard
+17. Total listening time tracker
+18. Personal top charts (most-played games/songs)
+19. Auto-skip short files
+20. "Calm Down" mode
+21. Audio ducking during game selection
+22. Per-game visualizer theme
+23. Now playing game cover
+24. Song preview on hover
+25. Series/franchise playlist
+26. Era-based playlists
+27. Auto-reverb by genre
+28. Playtime-weighted shuffle
+29. Playnite URI handler
+30. Default music randomization
+31. Shuffle indicator in Now Playing
+32. Volume percentage in tooltip
+33. No Music tag auto-apply after failed downloads
+34. Replay current song
+35. Song intro skip
+36. Listening session recap
+37. Auto-pause on battery saver
+38. "Music Only" game filter button
+39. Diagnose corrupt chiptune files on load
 
 ### High-Value Features (Medium effort, big impact)
-1. Music Dashboard (central stats/library hub)
-2. Windows SMTC (Win+G overlay + Bluetooth — media keys already shipped v1.3.2)
-3. Per-game effects presets (Low effort but High impact)
-4. Crossfade between games
-5. ~~Radio Station mode~~ ✅ Shipped v1.3.4
-6. Context-aware playlists from game metadata
-7. DMCA-safe mode
-8. Hotkey/StreamDeck local API
+
+1. **Settings Search Box** — with 10 tabs, this is the biggest UX win remaining
+2. **GME Expansion: GBS / SPC / HES / KSS / SAP / AY Track Managers** — leverage NSF Track Manager infrastructure
+3. **Multi-Track Manager Generalization** — refactor NsfTrackManager → ChiptuneTrackManager for format-agnostic reuse
+4. Windows SMTC (Win+G overlay + Bluetooth — media keys already shipped v1.3.2)
+5. Per-game effects presets (Low effort, High impact)
+6. Crossfade between games
+7. Context-aware playlists from game metadata
+8. DMCA-safe mode
 9. Discord Rich Presence
 10. Cross-game volume normalization
 11. Category-based default music
 12. Developer/publisher playlist
 13. Auto-pause on game audio detected
 14. Auto-pause on screen off/display sleep
+15. Reduce startup scan cost for large libraries
+16. Warm up NAudio mixer at startup
+17. Onboarding Welcome Tour
+18. "What's New" popup on first launch after update
+
+### Architecture / Technical Debt
+
+1. **Split `UniPlaySong.cs`** (5088 lines) — extract menu construction, event handlers, quick-settings into dedicated files
+2. **Split `UniPlaySongSettings.cs`** (3628 lines) — partial classes per tab
+3. **Split `UniPlaySongSettingsView.xaml`** (4059 lines) — per-tab UserControls
+4. **MusicPlaybackService split** (2048 lines) — extract DefaultMusicScheduler, RadioModeService, PauseSourceRegistry
+5. **Adopt CommunityToolkit.Mvvm** — source generators, incremental migration
+6. **vgmstream integration** — enables 200+ game audio formats with loop point support
 
 ### Ambitious Differentiators (High effort, unique positioning)
+
 1. Soundtrack matching for games without music
 2. Multi-track layering per game
 3. Ambient sound layers
@@ -568,3 +686,15 @@ Technical improvements and library integrations identified through research. The
 5. Sound effects pack system
 6. Mood detection via audio analysis
 7. AI playlist generation
+8. Loop boundary detection (autocorrelation)
+9. Visualizer as Fullscreen screensaver
+10. Game cover reactive wallpaper
+
+### Recently Shipped (v1.4 series — see full Shipped tables above)
+
+- **v1.4.3:** NES music support, NSF Track Manager (split + loop editor), MusicState label clarity, yt-dlp DLL diagnostic
+- **v1.4.2:** Fullscreen quick settings menu, Fullscreen volume boost, Stay-paused-after-external-audio, Persistent default music backdrop
+- **v1.4.1:** Beaten fanfare, Abandoned jingle+toast, GME pause/resume reliability, song-end fade geometry, JingleService extraction
+- **v1.4.0:** Retro chiptune music (VGM/VGZ via GME), faster YouTube previews, browser cookie support
+- **v1.3.11 / v1.3.12:** Active theme music, Add Music File, normalization codec fix, external audio pause rewrite
+- **v1.3.6–v1.3.10:** Music Library Dashboard, External Control REST API, Bulk audio conversion, Icon/Hover Glow, Taskbar color

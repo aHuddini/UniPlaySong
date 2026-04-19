@@ -324,14 +324,11 @@ Add a new setting in Settings → General, paired with the existing Play Music S
 - **Scope:** Desktop only. Fullscreen has no manual-start affordance, so gating it there would leave users unable to start music at all.
 - **Reset on:** Playnite restart (in-memory session flag, not persisted).
 
-### Open question (tabled during brainstorming)
+### Pause semantics (user-confirmed: sticky-on)
 
-**Pause semantics mid-session.** After the first manual Play, game switches auto-play. But what if user then pauses? Two options:
+After the first manual Play, game switches auto-play for the rest of the session. Manual Pause does NOT re-lock the session — the next game switch will auto-play again. User quote: *"If I press play I would expect to auto play from now on, yes!"*
 
-1. **Sticky-on:** once unlocked, stays unlocked regardless of pause state. Game switches always auto-play (effectively overriding any manual pause via game-switch).
-2. **Follows pause state:** the session flag stays true but an additional "user wants silence now" flag from a manual pause gates the NEXT auto-play until another manual Play.
-
-Leaning toward sticky-on — matches the user's complaint directly ("game switches should work after I've pressed Play") and avoids a second implicit state. But the trade-off is that a user who pauses and then switches games gets unpause-by-side-effect, which some users may find surprising.
+Rationale: simplest model that matches the user's mental model. No second implicit "user wants silence now" flag. If the user wants silence after a manual pause, they can simply not switch games (or close Playnite to reset the session).
 
 ### Technical hook points
 
