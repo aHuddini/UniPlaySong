@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -7,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using UniPlaySong.Audio;
 using UniPlaySong.Common;
+using UniPlaySong.Models;
 
 namespace UniPlaySong.ViewModels
 {
@@ -63,6 +65,8 @@ namespace UniPlaySong.ViewModels
         private bool _isCommitting;
         private bool _disposed;
         private bool _preserveOriginal = true;
+        private NsfManagerTab _activeTab = NsfManagerTab.SplitTracks;
+        private NsfLoopRow _currentLoopPreview;
 
         public bool PreserveOriginal
         {
@@ -94,6 +98,42 @@ namespace UniPlaySong.ViewModels
             get { return !_isCommitting && Tracks.Any(t => t.IsKept); }
         }
 
+        public ObservableCollection<NsfLoopRow> LoopRows { get; }
+
+        public NsfManagerTab ActiveTab
+        {
+            get { return _activeTab; }
+            set { _activeTab = value; OnPropertyChanged(); }
+        }
+
+        public bool SplitTabEnabled { get; private set; }
+        public bool EditLoopsTabEnabled { get; private set; }
+        public string SplitTabTooltip { get; private set; }
+        public string EditLoopsTabTooltip { get; private set; }
+
+        public string LoopsSummary
+        {
+            get
+            {
+                int total = LoopRows.Count;
+                int customCount = 0;
+                foreach (var r in LoopRows)
+                    if (r.HasOverride) customCount++;
+                return total + " tracks · " + customCount + " have custom loops";
+            }
+        }
+
+        public bool CanSaveLoops
+        {
+            get
+            {
+                if (LoopRows.Count == 0) return false;
+                foreach (var r in LoopRows)
+                    if (!r.IsValid) return false;
+                return true;
+            }
+        }
+
         // Bound to window. Action invoked to close dialog with result.
         public Action<bool> CloseRequested;
 
@@ -103,23 +143,55 @@ namespace UniPlaySong.ViewModels
         public System.Windows.Input.ICommand TogglePreviewCommand { get; }
         public System.Windows.Input.ICommand CommitCommand { get; }
         public System.Windows.Input.ICommand CancelCommand { get; }
+        public System.Windows.Input.ICommand ToggleLoopPreviewCommand { get; }
+        public System.Windows.Input.ICommand SaveLoopsCommand { get; }
 
-        public NsfTrackManagerViewModel(string nsfPath, string gameName)
+        // masterNsfPath may be null when the folder has only mini-NSFs (Edit-Loops-only dialog).
+        // miniNsfPaths is the list of mini-NSFs in the game folder; empty when only a master exists.
+        public NsfTrackManagerViewModel(string masterNsfPath, List<string> miniNsfPaths, string gameFolder, string gameName)
         {
-            _nsfPath = nsfPath;
-            _gameMusicDir = Path.GetDirectoryName(nsfPath);
-            _originalBaseName = Path.GetFileNameWithoutExtension(nsfPath);
             GameName = gameName;
-            FileName = Path.GetFileName(nsfPath);
+            _gameMusicDir = gameFolder;
             Tracks = new ObservableCollection<NsfTrackRow>();
+            LoopRows = new ObservableCollection<NsfLoopRow>();
 
-            _originalBytes = File.ReadAllBytes(nsfPath);
-            if (!NsfHeaderPatcher.IsValidNsfHeader(_originalBytes))
-                throw new InvalidDataException("File is not a valid NSF.");
+            // Classify tab enablement from inputs.
+            SplitTabEnabled = !string.IsNullOrEmpty(masterNsfPath);
+            EditLoopsTabEnabled = miniNsfPaths != null && miniNsfPaths.Count > 0;
 
-            LoadTrackMetadata();
+            SplitTabTooltip = SplitTabEnabled
+                ? string.Empty
+                : "No multi-track NSF in this game's folder.";
+            EditLoopsTabTooltip = EditLoopsTabEnabled
+                ? string.Empty
+                : "No mini-NSFs in this game's folder yet. Split a master NSF first.";
 
-            foreach (var t in Tracks) t.PropertyChanged += OnTrackPropertyChanged;
+            // Initialize Split Tracks state only when a master exists.
+            if (SplitTabEnabled)
+            {
+                _nsfPath = masterNsfPath;
+                _originalBaseName = Path.GetFileNameWithoutExtension(masterNsfPath);
+                FileName = Path.GetFileName(masterNsfPath);
+
+                _originalBytes = File.ReadAllBytes(masterNsfPath);
+                if (!NsfHeaderPatcher.IsValidNsfHeader(_originalBytes))
+                    throw new InvalidDataException("File is not a valid NSF.");
+
+                LoadTrackMetadata();
+                foreach (var t in Tracks) t.PropertyChanged += OnTrackPropertyChanged;
+            }
+
+            // Initialize Edit Loops rows when mini-NSFs exist.
+            if (EditLoopsTabEnabled)
+            {
+                LoadLoopRows(miniNsfPaths);
+                foreach (var r in LoopRows) r.PropertyChanged += OnLoopRowPropertyChanged;
+            }
+
+            // Default tab: prefer Split Tracks when both are enabled (most common
+            // first-time flow). Otherwise pick whichever is enabled.
+            if (SplitTabEnabled) ActiveTab = NsfManagerTab.SplitTracks;
+            else if (EditLoopsTabEnabled) ActiveTab = NsfManagerTab.EditLoops;
 
             SelectAllCommand = new RelayCommand(() => SetAllKept(true));
             SelectNoneCommand = new RelayCommand(() => SetAllKept(false));
@@ -131,6 +203,8 @@ namespace UniPlaySong.ViewModels
                 StopPreview();
                 var h = CloseRequested; if (h != null) h(false);
             });
+            ToggleLoopPreviewCommand = new RelayCommand<NsfLoopRow>(ToggleLoopPreview);
+            SaveLoopsCommand = new RelayCommand(SaveLoops, () => CanSaveLoops);
         }
 
         private void LoadTrackMetadata()
@@ -174,6 +248,27 @@ namespace UniPlaySong.ViewModels
             finally
             {
                 GmeNative.gme_delete(emu);
+            }
+        }
+
+        private void LoadLoopRows(List<string> miniNsfPaths)
+        {
+            int i = 1;
+            foreach (var path in miniNsfPaths)
+            {
+                var row = new NsfLoopRow
+                {
+                    DisplayNumber = i++,
+                    FileName = Path.GetFileName(path),
+                    FilePath = path
+                };
+
+                // Seed from existing manifest.
+                int? existingMs = NsfLoopManifest.ReadMillisecondsFor(path);
+                if (existingMs.HasValue)
+                    row.LoopSecondsInput = (existingMs.Value / 1000).ToString();
+
+                LoopRows.Add(row);
             }
         }
 
@@ -230,7 +325,11 @@ namespace UniPlaySong.ViewModels
 
         private void OnPreviewEnded(object sender, EventArgs e)
         {
-            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(StopPreview));
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                StopPreview();
+                StopLoopPreview();
+            }));
         }
 
         private void StopPreview()
@@ -241,6 +340,83 @@ namespace UniPlaySong.ViewModels
                 _currentPreview = null;
             }
             if (_previewPlayer != null) _previewPlayer.Stop();
+        }
+
+        private void ToggleLoopPreview(NsfLoopRow row)
+        {
+            if (row == null) return;
+
+            if (_currentLoopPreview == row && row.IsPreviewing)
+            {
+                StopLoopPreview();
+                return;
+            }
+
+            StopLoopPreview();
+            StopPreview(); // also stop any Split Tracks preview
+
+            try
+            {
+                if (_previewPlayer == null)
+                {
+                    _previewPlayer = new GmePreviewPlayer();
+                    _previewPlayer.TrackEnded += OnPreviewEnded;
+                }
+
+                _previewPlayer.Load(row.FilePath);
+                // Mini-NSF's GME track index is always 0 after the header patch.
+                _previewPlayer.Play(0, Constants.NsfPreviewMaxSeconds);
+                row.IsPreviewing = true;
+                _currentLoopPreview = row;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Preview failed: " + ex.Message, "NSF Track Manager",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            }
+        }
+
+        private void StopLoopPreview()
+        {
+            if (_currentLoopPreview != null)
+            {
+                _currentLoopPreview.IsPreviewing = false;
+                _currentLoopPreview = null;
+            }
+            if (_previewPlayer != null) _previewPlayer.Stop();
+        }
+
+        private void OnLoopRowPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(NsfLoopRow.LoopSecondsInput)
+                || e.PropertyName == nameof(NsfLoopRow.HasOverride)
+                || e.PropertyName == nameof(NsfLoopRow.IsValid))
+            {
+                OnPropertyChanged(nameof(LoopsSummary));
+                OnPropertyChanged(nameof(CanSaveLoops));
+            }
+        }
+
+        private void SaveLoops()
+        {
+            try
+            {
+                var overrides = new Dictionary<string, int>();
+                foreach (var row in LoopRows)
+                {
+                    if (row.HasOverride)
+                        overrides[row.FileName] = row.LoopSecondsValue;
+                }
+
+                NsfLoopManifest.Save(_gameMusicDir, overrides);
+
+                var h = CloseRequested; if (h != null) h(true);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Save failed: " + ex.Message, "NSF Track Manager",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         private void Commit()
@@ -348,6 +524,10 @@ namespace UniPlaySong.ViewModels
             if (_disposed) return;
             _disposed = true;
             StopPreview();
+            StopLoopPreview();
+
+            foreach (var r in LoopRows) r.PropertyChanged -= OnLoopRowPropertyChanged;
+
             if (_previewPlayer != null)
             {
                 _previewPlayer.TrackEnded -= OnPreviewEnded;
