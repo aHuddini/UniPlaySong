@@ -217,7 +217,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | **Mood Detection via Audio Analysis** | Analyze tempo, key, energy, spectral centroid to auto-tag moods. NAudio FFT provides raw data. Local Spotify-like audio features. | High | Medium |
 | **Intelligent Auto-Download Priority** | Bulk download prioritizes most-played games (Playnite play time data), recently added, or favorited. Smart ordering. | Low | Medium |
 | ~~**Multi-Source Fallback Downloads**~~ | ~~If YouTube fails, auto-try KHInsider, then Zophar. Cascading fallback with configurable priority.~~ ❌ N/A — KHInsider and Zophar removed in v1.3.4 | ~~Medium~~ | ~~Medium~~ |
-| **No Music Tag Auto-Apply** | After a failed download attempt (all sources return nothing), automatically tag the game with "No Music" tag. Tagging infrastructure already exists. | Low | Low |
+| ~~**No Music Tag Auto-Apply**~~ ✅ | ~~After a failed download attempt (all sources return nothing), automatically tag the game with "No Music" tag. Tagging infrastructure already exists.~~ **Shipped — `GameMusicTagService.UpdateGameMusicTag` continuously applies `Has Music` / `No Music` tags based on whether a game's folder actually contains music files. Better than the original spec (state-driven rather than failure-event-driven).** | Low | Low |
 | **Auto-Reverb by Genre** | Auto-apply reverb/effects presets based on Playnite game genre. Horror → Cathedral, Racing → Clean/Bright, RPG → Dreamy/Warm. Uses existing 18 reverb presets + `game.Genres` metadata. | Low | Medium |
 | ~~**Completion-Status Music Filter**~~ | ~~Only play music from games matching a completion status: "Unfinished games only" or "Completed games only." Nostalgia mode for beaten games, motivation mode for backlog. `game.CompletionStatusId` already accessed.~~ **Shipped v1.3.4 as Nostalgia Mode + Nostalgia Playlist Mode** | Low | Medium |
 | **Playtime-Weighted Shuffle** | In Radio Station mode, weight shuffle toward games with more playtime (games you care about). `game.Playtime` available but unused. Simple weighted random. | Low | Medium |
@@ -372,7 +372,7 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | **Mini Player Mode** | Small floating window with play/pause, skip, song info, visualizer. Like Spotify mini player. WPF `Topmost=true` window. | Medium | Medium |
 | **Waveform Progress Bar** | SoundCloud-style waveform as progress indicator. NAudio waveform data generation. | Medium | Medium |
 | **Fullscreen Now Playing Overlay** | Brief toast showing what song started in Fullscreen mode. Like Xbox achievement notifications. Auto-dismissing timed overlay. | Medium | Medium |
-| **Reactive Visualizer Auto-Theme** | Visualizer auto-switches color palette based on game cover art. DynamicColor extraction exists — just needs auto-triggering on game change. | Low | Medium |
+| ~~**Reactive Visualizer Auto-Theme**~~ ✅ | ~~Visualizer auto-switches color palette based on game cover art. DynamicColor extraction exists — just needs auto-triggering on game change.~~ **Shipped — Spectrum Visualizer's "Dynamic (Game Art)" color theme pulls colors from the current game's cover via `GameColorExtractor` + `DynamicColorCache`. Listed as one of the 22 visualizer themes.** | Low | Medium |
 | ~~**Song Count Badge in Game Menu**~~ | ~~Right-click menu shows "UniPlaySong (3 songs)" instead of just "UniPlaySong". Data already available via `GetAvailableSongs`.~~ | ~~Low~~ | ~~Low~~ | **Shipped v1.3.0** |
 | ~~**Music Folder Size in Game Menu**~~ | ~~Show folder size next to song count: "UniPlaySong (3 songs, 12.4 MB)". Quick `FileInfo.Length` sum.~~ | ~~Low~~ | ~~Low~~ | **Shipped v1.3.0** |
 | **Volume Percentage in Tooltip** | Show "Volume: 72%" in the top panel play/pause button tooltip. Already updating `_playPauseItem.Title` dynamically. | Low | Low |
@@ -633,8 +633,7 @@ Technical improvements and library integrations identified through research. The
 30. Default music randomization
 31. Shuffle indicator in Now Playing
 32. Volume percentage in tooltip
-33. No Music tag auto-apply after failed downloads
-34. Replay current song
+33. Replay current song
 35. Song intro skip
 36. Listening session recap
 37. Auto-pause on battery saver
