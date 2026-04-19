@@ -59,18 +59,18 @@
 
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Play Music State: " VerticalAlignment="Center" Width="150"/>
-                        <ComboBox SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}" 
-                                  Width="200" 
+                        <ComboBox SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}"
+                                  Width="200"
                                   Margin="0,0,0,0">
                             <ComboBoxItem Content="Never"/>
-                            <ComboBoxItem Content="Desktop"/>
-                            <ComboBoxItem Content="Fullscreen"/>
+                            <ComboBoxItem Content="Desktop Only"/>
+                            <ComboBoxItem Content="Fullscreen Only"/>
                             <ComboBoxItem Content="Desktop + Fullscreen"/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both" 
-                               FontSize="11" 
-                               Foreground="Gray" 
+                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both. To prevent automatic playback in Desktop mode, set to &quot;Fullscreen Only&quot;."
+                               FontSize="11"
+                               Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
                     
