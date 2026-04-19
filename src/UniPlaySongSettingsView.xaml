@@ -372,6 +372,34 @@
                                    VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
 
+                    <!-- True Crossfade Mode (opt-in) -->
+                    <CheckBox Content="Enable True Crossfade (DJ-style overlap)"
+                              IsChecked="{Binding Settings.EnableTrueCrossfade}"
+                              Margin="0,12,0,4"
+                              ToolTip="When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd / pool-based default music) the next song starts playing simultaneously with the current song fading out. Forces NAudio backend. Takes effect on the next song transition — enabling mid-playback does NOT retrofit the currently-playing song."/>
+                    <TextBlock Text="When on, replaces the sequential fade-out above with a parallel overlap for auto-advance transitions only. Manual song changes still use instant switching. Forces NAudio backend."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,6"/>
+                    <StackPanel Orientation="Horizontal"
+                                Margin="20,0,0,0"
+                                IsEnabled="{Binding Settings.EnableTrueCrossfade}">
+                        <TextBlock Text="Crossfade duration:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Slider Minimum="1" Maximum="10"
+                                Value="{Binding Settings.CrossfadeDurationSeconds}"
+                                Width="200" TickFrequency="1" IsSnapToTickEnabled="True"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Settings.CrossfadeDurationSeconds, StringFormat='{}{0}s'}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                    <TextBlock Text="Songs shorter than the crossfade duration + 2 seconds fall back to the sequential fade above."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,4,0,0"
+                               IsEnabled="{Binding Settings.EnableTrueCrossfade}"/>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Preview Mode -->
