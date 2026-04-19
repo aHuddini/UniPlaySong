@@ -11,6 +11,7 @@ Packages:
       - '[Note] NSF Track Lengths: Songs inside .nsf files don''t carry length metadata, so they play for up to 2:30 before looping. Short jingles and stingers are auto-detected and advance as soon as they finish. For everything in between, use the Edit Loops tab to dial in a custom length.'
       - '[Improved] Play Music State dropdown (Settings -> General): Desktop and Fullscreen options renamed to "Desktop Only" and "Fullscreen Only" for clarity. Description updated to guide users on how to disable auto-playback in Desktop mode (set to "Fullscreen Only"). No behavior change.'
       - '[Improved] YouTube download error diagnosis: If yt-dlp.exe fails to launch due to a corrupted install (missing or mismatched Python DLL from a zip-distributed release), UPS now logs a clear fix — re-download the single-file yt-dlp.exe from the official releases page.'
+      - '[New Feature] Auto-play music on first launch (Desktop): New Settings -> General checkbox, ON by default. When unchecked, music won''t auto-play in Desktop mode until you manually press Play. After the first manual Play, game switches auto-play for the rest of the session. Resets on Playnite restart.'
   - Version: 1.4.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-18

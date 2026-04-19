@@ -3983,6 +3983,7 @@
                             <TextBlock FontSize="12" Margin="0,0,0,8"><Run FontWeight="SemiBold">• WAV</Run> — uncompressed</TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">Retro chiptune (via bundled Game Music Emu):</TextBlock>
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
                                 Chiptune files auto-route through the NAudio backend for decoding. Other VGM chip families (arcade boards, Neo Geo, PC Engine CD) are outside GME's scope and will not play.
                             </TextBlock>
