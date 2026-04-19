@@ -3,10 +3,11 @@ using System.IO;
 
 namespace UniPlaySong.Audio
 {
-    // Splits a multi-track NSF into valid single-track mini-NSFs by patching
-    // bytes 6 (total_songs) and 7 (starting_song) in the 128-byte NSF header.
-    // The 6502 program code blob (offset 0x80+) is shared verbatim across all
-    // mini-NSFs — only the header differs.
+    // Generates per-track mini-NSFs that each select a single song from the
+    // original multi-track NSF by patching byte 7 (starting_song) in the
+    // 128-byte header. total_songs is LEFT UNCHANGED so the 6502 program
+    // code blob's internal track indices remain valid — GME still sees N
+    // tracks, but GmeReader picks the one identified by starting_song.
     internal static class NsfHeaderPatcher
     {
         // NSF magic: "NESM" + 0x1A
@@ -32,8 +33,9 @@ namespace UniPlaySong.Audio
             return bytes[TotalSongsOffset];
         }
 
-        // Returns a new byte array containing a single-track NSF for the given
-        // 0-based track index. Original bytes are not modified.
+        // Returns a new byte array tagged to play only the requested track.
+        // total_songs is preserved so GME's track index space stays valid;
+        // only starting_song is changed. Original bytes are not modified.
         public static byte[] PatchForTrack(byte[] originalBytes, int trackIndex0Based)
         {
             if (!IsValidNsfHeader(originalBytes))
@@ -46,7 +48,6 @@ namespace UniPlaySong.Audio
 
             var patched = new byte[originalBytes.Length];
             Buffer.BlockCopy(originalBytes, 0, patched, 0, originalBytes.Length);
-            patched[TotalSongsOffset] = 1;
             patched[StartingSongOffset] = (byte)(trackIndex0Based + 1);
             return patched;
         }
