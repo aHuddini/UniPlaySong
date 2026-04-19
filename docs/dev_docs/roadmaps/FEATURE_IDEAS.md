@@ -167,7 +167,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | **Crossfade Between Games** | Overlap fade-out/fade-in when switching games instead of silence gap. PS Store and Spotify do this. Existing MusicFader infrastructure supports this. | Medium | High |
 | **Sleep Timer** | Auto-stop music after configurable minutes. Common in Spotify/podcasts. Simple countdown calling `Stop()`. | Low | Medium |
 | **Playback Queue / Up Next** | Queue specific songs across games. "Add to queue" from right-click or dashboard. Persists across game selection. | Medium | High |
-| **Song Bookmarking / Favorites** | Star songs across your library. "Favorites" playlist as default music or browsable list. Like FFXIV's jukebox. | Medium | Medium |
+| **Song Bookmarking / Favorites** | Star songs across your library. Saved as a flat JSON manifest `favorites.json` (cross-game, filename-keyed). "Favorites" appears as a new pool-based default music source alongside Custom Folder / Random Game. Users build their personal greatest-hits playlist without leaving UPS. Context menu on any song row. Like FFXIV's jukebox. | Low | High |
 | **Playback History / Recently Played** | Track songs played and when. "Recently Played" list in dashboard. | Low | Medium |
 | **Play Count Tracking** | Track per-song play counts. Surface "Most Played" stats. Standard in every music player. | Low | Medium |
 | ~~**Radio Station Mode**~~ | ~~Continuous shuffle across entire library regardless of game selection. Like GTA radio for your collection. Transforms UPS from per-game to library-wide player.~~ | ~~Medium~~ | ~~High~~ |
@@ -352,8 +352,8 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | ~~**Hotkey/StreamDeck Local API**~~ ✅ | ~~Expose controls via localhost REST API. StreamDeck, Touch Portal, AutoHotkey can query/control UPS. See [docs/EXTERNAL_CONTROL.md](../EXTERNAL_CONTROL.md).~~ **Shipped v1.3.7–v1.3.10** as External Control Service | Medium | High |
 | **Twitch Chat Integration** | `!song` shows current track, `!skip` votes to skip, `!request GameName` queues music. Twitch IRC connection. | Medium | Medium |
 | **DMCA-Safe Mode** | Flag/skip DMCA-problematic songs. Tag as "stream-safe" or "DMCA risk." Only play safe tracks in this mode. | Low | High |
-| **Scrobbling (Last.fm)** | Submit played tracks to Last.fm. Track listening habits. Simple HTTP API. | Low | Medium |
-| **Music-Reactive Desktop Wallpaper** | Pipe FFT data to Wallpaper Engine/Lively Wallpaper. Audio-reactive desktop backgrounds. Uses existing VisualizationDataProvider. | Medium | Medium |
+| **Scrobbling (Last.fm / ListenBrainz)** | Submit played tracks to a scrobbling service. Two destinations to consider: **Last.fm** — broadest user base, OAuth handshake, but game-music tracks often aren't in their catalog and get rejected. **ListenBrainz** — open-source MIT-friendly alternative, no OAuth complications, simple `POST /1/submit-listens`, accepts any track metadata. ListenBrainz is the more practical target for game music; Last.fm for users who already use it. | Low | Medium |
+| **Music-Reactive Desktop Wallpaper** | Pipe FFT data to Wallpaper Engine / Lively Wallpaper. Audio-reactive desktop backgrounds. Uses existing `VisualizationDataProvider`. Could also write a dynamic image (current game's cover + subtle visualizer overlay) that wallpaper engines watch via file-watch, avoiding any injection/interop. | Medium | Medium |
 | **Network Streaming Output** | Stream audio via HTTP/Icecast. Listen on phone while PC plays Playnite on TV. NAudio output duplication. | High | Low |
 | **Headphone Detection Auto-Pause** | Auto-pause on headphone unplug, resume on plug. Like smartphones. `MMDeviceEnumerator` device change events. | Medium | Medium |
 | **Audio Output Device Selection** | Choose audio output device independent of Windows default. Game music through speakers, game through headphones. NAudio `WaveOutEvent(deviceNumber)`. | Medium | Medium |
@@ -385,7 +385,7 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | **Music Map Visualization** | Interactive graph: games as nodes, sized by songs, colored by genre, connected by composer. Like "Every Noise at Once" for your library. | High | Low |
 | **Song Preview on Hover** | In a song list/dashboard context, hovering over a song plays a 10-second preview clip. Like Spotify's track preview. Uses existing `PlayPreview()` with short duration. | Low | Medium |
 | **Now Playing Game Cover** | Show the currently-playing game's cover art thumbnail next to the Now Playing ticker in top panel. `_api.Database.GetFullFilePath(game.CoverImage)`. Instant visual context. | Low | Medium |
-| **Fullscreen Visualizer Mode** | Full-window spectrum visualizer for fullscreen mode. Currently desktop-only. Reuse existing `SpectrumVisualizerControl` in fullscreen overlay. Screensaver-like ambient display. | Medium | Medium |
+| **Fullscreen Visualizer Mode** | Full-window spectrum visualizer for fullscreen mode. Currently desktop-only. Reuse existing `SpectrumVisualizerControl` in fullscreen overlay. Optional "screensaver mode": after N minutes of no game selection in Fullscreen, switch to the full-screen visualizer automatically; return to normal on any input. Turns idle Playnite into a music-visualizer piece. | Medium | Medium |
 
 ---
 
@@ -469,7 +469,6 @@ New ideas surfaced during v1.4.x development or flagged by users. Most are Low e
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
-| **ListenBrainz Scrobbling** | Open-source alternative to Last.fm, MIT-friendly, no OAuth complications. Submit played tracks via simple HTTP `POST /1/submit-listens`. Complements the existing Last.fm idea (still open). Most practical scrobbling integration for UPS because game music often isn't in Last.fm's catalog but can be freely logged to ListenBrainz. | Low | Medium |
 | **Extension Script Action API** | Register UPS commands as Playnite script actions so other extensions / user scripts can `playbackService.Play()`, `Skip()`, etc. from their own code. `IPlayniteAPI` supports this via `AddPluginSettings`. Complements External Control REST API (shipped) with in-process hooks. | Low | Medium |
 | **Game State Push Notifications** | Optional POST-webhook when song changes, game switches, etc. For Discord bots, home automation, smart lights. URL configured in settings; POST payload is JSON (game, song, timestamps). | Low | Low |
 | **MQTT Output** | For home-automation folks: UPS publishes song/game state to an MQTT broker. Trigger Hue lights, stream deck, etc. Uses `MQTTnet` NuGet. | Medium | Low |
@@ -490,7 +489,6 @@ New ideas surfaced during v1.4.x development or flagged by users. Most are Low e
 | **Split `UniPlaySongSettings.cs` (3628 lines) by Tab** | Partial classes keyed by settings tab (`.General.cs`, `.Playback.cs`, `.Pauses.cs`, etc.). Single logical class at runtime, but each file is browsable. Reset handlers follow the same split in `UniPlaySongSettingsView.xaml.cs`. | Medium | Medium |
 | **Split `UniPlaySongSettingsView.xaml` (4059 lines)** | Use `<ContentControl>` with per-tab UserControls (`GeneralTab.xaml`, `PlaybackTab.xaml`, etc.) instead of inlining everything in one file. Improves designer load times and makes each tab self-contained. | Medium | Medium |
 | **MusicPlaybackService Split** | At 2048 lines it's mixing pause sources, game-selection, preview timer, song-end fade, radio, default music. Candidates: extract `DefaultMusicScheduler`, `RadioModeService`, `PauseSourceRegistry`. | High | Medium |
-| **Adopt CommunityToolkit.Mvvm** | Source generators for `[ObservableProperty]` / `[RelayCommand]` would collapse hundreds of manual `OnPropertyChanged` calls in Settings + dashboard VMs. Already listed in Architecture Ideas (Tier 1). Incremental — no big-bang migration needed. | Medium | Medium |
 | **Reduce Startup Scan Cost for Large Libraries** | Users with 500+ games hit a visible pause at Playnite start when UPS scans music folders. Already have breadcrumb files and `_game-index.txt` — expand them to skip per-folder enumeration when the index is fresh. Check mtime of each folder against last-index-build. Falls back to a scan if dirty. | Medium | Medium |
 | **Lazy-Load Library Dashboard Data** | Dashboard loads all games + songs + metadata up front. For 500+ game libraries, virtualize the Game Card grid and load song metadata on-demand when a card scrolls into view. | Medium | Medium |
 | **Warm Up NAudio Mixer At Startup** | First-song load has a ~400ms `EnsurePersistentLayer` cost (observed in logs). Initialize the persistent layer in a background task immediately after plugin load so first game-select is instant. | Low | Medium |
@@ -499,16 +497,12 @@ New ideas surfaced during v1.4.x development or flagged by users. Most are Low e
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
-| **Favorite Songs List (cross-game)** | Star songs (checkbox in dashboard or context menu). Saved as a flat JSON manifest `favorites.json`. "Favorites" appears as a new pool-based default music source (alongside Custom Folder, Random Game, etc.). Users build their personal greatest-hits playlist without leaving UPS. | Low | High |
 | **Cross-Game Music Symlinks / Shared Folder** | For game series where the same soundtrack fits multiple entries (e.g. Dark Souls 1/2/3 trilogy). User designates a shared folder; multiple games reference it instead of duplicating MP3s. UPS presents the folder as if it were each game's music. Storage win + consistency. | Medium | Medium |
 | **Playlist-as-Game Mode** | Let users create virtual "games" in UPS (not in Playnite) that are just playlists. Shows up in Library Dashboard. Doesn't touch Playnite's game database. | Medium | Low |
 | **Now-Playing Badge on Game Card** | When a song is playing, the game card for that game (in Playnite's own library grid) shows a small pulsing "♪" indicator. Uses `IGameDetailsPlugin` or `PluginUserControl` overlay via theme integration. | Medium | Medium |
 | **"Music Only" Game Filter Button** | One-click Playnite filter: "games that have UPS music downloaded". Uses the existing tagging system — auto-tag games with `.ups:has-music` on first song download, filter via Playnite's native filter UI. | Low | Medium |
 | **Loop Boundary Detection** | Auto-detect natural loop points in audio files using autocorrelation over the waveform. For chiptune files specifically, reduce the need for manual loop editing. Could also apply to MP3/FLAC. | High | Medium |
-| **"DJ Mode" Callsign Between Songs** | Optional: between songs, play a ~3-second randomized stinger ("UniPlaySong Radio — now playing…") with TTS. Makes radio mode feel more like a real station. Windows SAPI, zero dependencies. | Low | Low |
-| **Visualizer in Fullscreen as Screensaver** | If no game selected for N minutes in Fullscreen, switch to a full-screen visualizer display ("ambient mode"). Returns to normal Fullscreen on any input. Turns idle Playnite into a music-visualizer piece. | Medium | Medium |
-| **Game Cover Reactive Wallpaper** | UPS writes a dynamic image (current game's cover + subtle visualizer overlay) to a file that Wallpaper Engine / Lively Wallpaper can consume. Zero injection, standard file-watch workflow. | Medium | Medium |
-| **"Tracklist" Export to Markdown / PDF** | Per-game markdown file listing all songs with their durations + any custom loop overrides. Useful for sharing setups or documenting your collection. | Low | Low |
+| **"Tracklist" Export to Markdown / PDF** | Per-game markdown file listing all songs with their durations + any custom loop overrides. Useful for sharing setups or documenting your collection. Distinct from the plain-text "Export Song List" idea — structured output with metadata. | Low | Low |
 
 ---
 
@@ -608,11 +602,11 @@ Technical improvements and library integrations identified through research. The
 ### Quick Wins (Low effort, ship fast) — Top Picks Post-v1.4.3
 
 1. **Settings Import/Export (JSON)** — often-requested, tiny code, users love it
-2. **Favorite Songs List** — cross-game starring via flat JSON manifest, pairs with existing default-music-source picker
+2. **Song Bookmarking / Favorites** — cross-game starring via flat JSON manifest, pairs with existing default-music-source picker
 3. **Session Auto-Play Lock (Desktop)** — already designed in [POTENTIAL_ISSUES.md](../POTENTIAL_ISSUES.md)
 4. **Per-File Loop Override for non-NSF chiptune formats** — trivial `GmeReader` extension of existing manifest
 5. **Top Panel Tooltip Shows Current Auto-Play Mode** — 2-line change, big discoverability win
-6. **ListenBrainz Scrobbling** — simple HTTP POST, MIT-friendly scrobbling without Last.fm baggage
+6. **Scrobbling (Last.fm / ListenBrainz)** — simple HTTP POST, ListenBrainz is MIT-friendly and accepts game music metadata
 7. Gapless playback
 8. Per-game effects presets
 9. OBS text file export
