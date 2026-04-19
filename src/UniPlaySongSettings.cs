@@ -291,6 +291,7 @@ namespace UniPlaySong
     {
         private bool enableMusic = true;
         private AudioState musicState = AudioState.Always;
+        private bool autoPlayOnFirstLaunchDesktop = true;
         private bool skipFirstSelectionAfterModeSwitch = false;
         private bool themeCompatibleSilentSkip = true;
         private bool pauseOnTrailer = true;
@@ -375,6 +376,15 @@ namespace UniPlaySong
         {
             get => musicState;
             set { musicState = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Auto-play music on first launch in desktop mode
+        /// </summary>
+        public bool AutoPlayOnFirstLaunchDesktop
+        {
+            get => autoPlayOnFirstLaunchDesktop;
+            set { autoPlayOnFirstLaunchDesktop = value; OnPropertyChanged(); }
         }
 
         /// <summary>
