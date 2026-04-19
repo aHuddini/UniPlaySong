@@ -2056,6 +2056,9 @@ namespace UniPlaySong.Services
                             _lastDefaultMusicPath = nextPoolSong;
                             LoadAndPlayFile(nextPoolSong);
                             _currentSongPath = nextPoolSong;
+                            // Re-arm song-end fade + preview timer for the newly-loaded track.
+                            // Without this, auto-advanced songs never get their fade-before-end scheduled.
+                            MarkSongStart();
                             _fileLogger?.Info($"Auto-advanced default pool: {Path.GetFileName(nextPoolSong)}");
                             return;
                         }
@@ -2083,6 +2086,9 @@ namespace UniPlaySong.Services
                                 _previousSongPath = _currentSongPath;
                                 LoadAndPlayFile(nextSong);
                                 _currentSongPath = nextSong; // Set after LoadAndPlayFile so IsPlaying is true when OnSongChanged fires
+                                // Re-arm song-end fade + preview timer for the newly-loaded track.
+                                // Without this, auto-advanced songs never get their fade-before-end scheduled.
+                                MarkSongStart();
                                 _fileLogger?.Info($"Randomized to next song on end: {Path.GetFileName(nextSong)} (RandomizeOnMusicEnd)");
                                 return;
                             }
