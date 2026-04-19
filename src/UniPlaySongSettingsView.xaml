@@ -250,6 +250,22 @@
                                    Width="30"/>
                     </StackPanel>
 
+                    <!-- Fullscreen volume boost -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,2">
+                        <TextBlock Text="Fullscreen Boost: " VerticalAlignment="Center" Width="120"/>
+                        <Slider Minimum="0" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.FullscreenVolumeBoostPercent}"
+                                Width="200" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding Settings.FullscreenVolumeBoostPercent, StringFormat='+{0}%'}"
+                                   VerticalAlignment="Center"
+                                   Width="40"/>
+                    </StackPanel>
+                    <TextBlock Text="Slightly nudges music volume up in Fullscreen mode to compensate for Playnite's built-in Background Volume reduction. Only active in Fullscreen; Desktop mode is unaffected. Default 0%."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="120,0,0,10"/>
+
                     <CheckBox Content="Lower Volume When Idle (To 25%)"
                               IsChecked="{Binding Settings.LowerVolumeOnIdle}"
                               Margin="0,10,0,5"/>
@@ -433,6 +449,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <CheckBox Content="Auto-advance Default Music on song end"
+                              IsChecked="{Binding Settings.RandomizeDefaultMusicOnEnd}"
+                              IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only affects pool-based sources (Random Game, Custom Folder, Custom Rotation, Completion Status Pool). When enabled (default), default music rotates to a new random track when the current one ends — radio-style. When disabled, the current track loops instead. For fully persistent single-track behavior, also enable 'Keep Same Default Track On Game Switch' below — otherwise game hovers still re-roll the pool. Independent from the 'Randomize on Music End' setting above, which only affects game music."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <!-- Default Music Source: Bundled Preset -->
                     <RadioButton Content="Use bundled preset"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledPreset}"
@@ -599,7 +625,7 @@
                               IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
                               IsEnabled="{Binding Settings.EnableDefaultMusic}"
                               Margin="0,10,0,5"/>
-                    <TextBlock Text="Applies to Custom Folder, Random Game, and Custom Rotation sources. When enabled, the same default song keeps playing as you browse games instead of picking a new random song each time."
+                    <TextBlock Text="Applies to Random Game, Custom Folder, Custom Rotation, and Completion Status Pool sources. When enabled, the same default song keeps playing as you browse games instead of picking a new random song each time. Pair with 'Auto-advance Default Music on song end' above (disable it) for a fully persistent single-track backdrop."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -1057,6 +1083,17 @@
                                Foreground="Orange"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Stay paused after external audio stops (Desktop only)"
+                              IsChecked="{Binding Settings.KeepPausedAfterExternalAudio}"
+                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"
+                              Margin="20,5,0,5"/>
+                    <TextBlock Text="When enabled, UPS does NOT auto-resume when the external audio stops. Manually resume via the top panel play/pause button or media keys. Only affects Desktop mode; Fullscreen always auto-resumes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
                     <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                                 IsEnabled="{Binding Settings.PauseOnExternalAudio}">
                         <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>

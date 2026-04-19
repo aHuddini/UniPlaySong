@@ -114,6 +114,16 @@ namespace UniPlaySong
         private bool _isUsingLiveEffectsPlayer;
         private bool _needsNAudioForFormat; // True when current song requires NAudio (GME retro formats)
         private Services.JingleService _jingleService;
+
+        // Gate for events that could start music during or after OnApplicationStopped.
+        // Playnite's teardown sequence can fire late events (theme overlay changes from
+        // a dismiss-animation, video state from an unloading MediaElement, etc.) AFTER
+        // OnApplicationStopped has run. Without this gate, those events call through
+        // to the coordinator which loads a new song — audibly, for ~1s before the
+        // process terminates. Repro: user in Fullscreen on a game with default music,
+        // exits to Desktop; theme's exit animation clears its overlay post-shutdown,
+        // UPS loads the game's music and plays the fade-in intro during process exit.
+        private volatile bool _isShuttingDown;
         private IconGlow.IconGlowManager _iconGlowManager;
         private IconGlow.ListHoverGlowManager _listHoverGlowManager;
         private IconGlow.SidebarGlowManager _sidebarGlowManager;
@@ -493,7 +503,7 @@ namespace UniPlaySong
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
                 InitializeFullscreenSettingsRef();
                 SubscribeToFullscreenVolumeChanges();
-                _playbackService?.SetVolumeMultiplier(_playniteFullscreenVolume);
+                _playbackService?.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
 
                 // Pause FFT processing — desktop visualizer is not visible in fullscreen.
                 // The provider is created per-song, so also gate at creation time (see NAudioMusicPlayer).
@@ -966,6 +976,11 @@ namespace UniPlaySong
         /// </summary>
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
+            // Set BEFORE any teardown work — late events (theme overlay dismiss, video
+            // unload, deferred playback) can still fire after this method starts, and
+            // they must be prevented from loading/starting music during process exit.
+            _isShuttingDown = true;
+
             _playbackService?.Stop();
             _api.UriHandler.RemoveSource("uniplaysong");
             _externalControlService = null;
@@ -1058,6 +1073,10 @@ namespace UniPlaySong
         // PlayGameMusic, which does its own async/dispatcher work internally.
         public override void OnFullscreenViewChanged(OnFullscreenViewChangedArgs args)
         {
+            // Same defense as OnSettingsServicePropertyChanged: don't start music from a
+            // late SDK event fired during teardown.
+            if (_isShuttingDown) return;
+
             if (_settings?.PlayOnlyOnGameSelect != true)
                 return;
 
@@ -1251,6 +1270,14 @@ namespace UniPlaySong
             // VideoIsPlaying and ThemeOverlayActive are handled by OnSettingsServicePropertyChanged
             // (via SettingsService relay) — not here, to avoid double-firing HandleVideoStateChange
             // and HandleThemeOverlayChange which causes inconsistent pause state.
+
+            // Reapply the fullscreen volume multiplier so the boost slider responds live
+            // when the user drags it in Settings (instead of waiting for the next game
+            // select or Playnite BackgroundVolume change to pick it up).
+            if (e.PropertyName == nameof(UniPlaySongSettings.FullscreenVolumeBoostPercent) && IsFullscreen)
+            {
+                _playbackService?.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
+            }
         }
 
         /// <summary>
@@ -1259,6 +1286,11 @@ namespace UniPlaySong
         /// </summary>
         private void OnSettingsServicePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            // Ignore late theme-overlay / video-state events fired during Playnite's
+            // teardown after OnApplicationStopped. Otherwise UPS loads a new song and
+            // plays the first second of its fade-in audibly while the process is dying.
+            if (_isShuttingDown) return;
+
             if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
             {
                 _coordinator?.HandleVideoStateChange(_settings.VideoIsPlaying);
@@ -1724,8 +1756,23 @@ namespace UniPlaySong
                     {
                         _externalAudioDetected = false;
                         var wasInstant = _externalAudioPausedInstantly;
-                        _fileLogger?.Debug($"External audio stopped, resuming{(wasInstant ? " (instant)" : "")}");
                         _externalAudioPausedInstantly = false;
+
+                        // Desktop-only: honor "keep paused after external audio" — when on,
+                        // UPS stays paused until the user manually resumes (media keys,
+                        // top panel toggle). In Fullscreen, we always auto-resume regardless
+                        // of this setting since there's no persistent on-screen unpause
+                        // control in Fullscreen. Note: manual resume paths (TopPanelMediaControl,
+                        // MusicLibrary) explicitly call RemovePauseSource(ExternalAudio) as part
+                        // of their play action, so resume still works — just not automatically.
+                        bool stayPaused = IsDesktop && _settings?.KeepPausedAfterExternalAudio == true;
+                        if (stayPaused)
+                        {
+                            _fileLogger?.Debug("External audio stopped, staying paused (KeepPausedAfterExternalAudio)");
+                            return;
+                        }
+
+                        _fileLogger?.Debug($"External audio stopped, resuming{(wasInstant ? " (instant)" : "")}");
                         DispatchPauseAction(() =>
                         {
                             if (wasInstant)
@@ -2306,7 +2353,7 @@ namespace UniPlaySong
                 // Reapply fullscreen volume multiplier to the new service
                 if (IsFullscreen)
                 {
-                    _playbackService.SetVolumeMultiplier(_playniteFullscreenVolume);
+                    _playbackService.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
                 }
 
                 // Update coordinator with new playback service
@@ -2374,7 +2421,7 @@ namespace UniPlaySong
                     _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
 
                 if (IsFullscreen)
-                    _playbackService.SetVolumeMultiplier(_playniteFullscreenVolume);
+                    _playbackService.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
 
                 _coordinator = new MusicPlaybackCoordinator(
                     _playbackService, _settingsService, Logger, _fileLogger,
@@ -2498,6 +2545,16 @@ namespace UniPlaySong
             }
         }
 
+        // Returns the multiplier to pass to SetVolumeMultiplier, combining Playnite's
+        // BackgroundVolume slider with the user's optional FullscreenVolumeBoostPercent.
+        // Clamped to [0.0, 1.0] so it can never exceed 100%. Boost of 0 (default) gives
+        // back the raw Playnite value — behavior identical to pre-v1.4.2.
+        private double GetFullscreenVolumeMultiplier()
+        {
+            double boost = 1.0 + ((_settings?.FullscreenVolumeBoostPercent ?? 0) / 100.0);
+            return Math.Max(0.0, Math.Min(1.0, _playniteFullscreenVolume * boost));
+        }
+
         /// <summary>
         /// Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference.
         /// Returns 1.0 if not in fullscreen or reflection fails (graceful degradation).
@@ -2615,7 +2672,7 @@ namespace UniPlaySong
             {
                 _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
                 _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
-                _playbackService?.SetVolumeMultiplier(IsFullscreen ? _playniteFullscreenVolume : 1.0);
+                _playbackService?.SetVolumeMultiplier(IsFullscreen ? GetFullscreenVolumeMultiplier() : 1.0);
             }
         }
 
@@ -3674,14 +3731,20 @@ namespace UniPlaySong
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
-            var items = new List<MainMenuItem>
+            var items = new List<MainMenuItem>();
+
+            // "UniPlaySong Settings" opens the WPF settings dialog — that works in
+            // Desktop but isn't meaningful in Fullscreen (no keyboard/mouse, no WPF
+            // dialog rendering). Hide it in Fullscreen; the quick-settings sub-menu
+            // below replaces it for Fullscreen users.
+            if (IsDesktop)
             {
-                new MainMenuItem
+                items.Add(new MainMenuItem
                 {
                     Description = "UniPlaySong Settings",
                     Action = _ => _mainMenuHandler.OpenSettings()
-                }
-            };
+                });
+            }
 
             // Export entire music library as M3U playlist
             items.Add(new MainMenuItem
@@ -3700,7 +3763,179 @@ namespace UniPlaySong
                 });
             }
 
+            // Fullscreen-only quick settings: the full WPF settings dialog isn't
+            // controller-navigable, so we surface the most-commonly-changed toggles
+            // and picker menus directly under Menu > Extensions > UniPlaySong.
+            if (IsFullscreen)
+            {
+                items.AddRange(BuildFullscreenQuickSettings());
+            }
+
             return items;
+        }
+
+        // Builds the Fullscreen-only quick-settings menu items. Each boolean setting
+        // becomes a toggle item with state embedded in its description ("ON"/"OFF");
+        // each enum becomes a parent item with the current value shown, plus a
+        // sub-menu of value items tagged with MenuSection.
+        private IEnumerable<MainMenuItem> BuildFullscreenQuickSettings()
+        {
+            var items = new List<MainMenuItem>();
+            if (_settings == null) return items;
+
+            // --- Boolean toggles -------------------------------------------------
+            // Each setter receives the new value and applies it via UpdateSettingsFromMenu,
+            // which clones the current settings, mutates the clone, and pushes it through
+            // SettingsService.UpdateSettings — this fires the diff-based SettingsChanged
+            // event that downstream handlers (player-backend recreation for Live Effects,
+            // coordinator reconciliation for mode changes) depend on. Directly mutating
+            // _settings would fire PropertyChanged but NOT the diff event, so side effects
+            // like backend switching wouldn't run.
+
+            items.Add(BuildToggle(
+                label: "Live Effects",
+                isOn: _settings.LiveEffectsEnabled,
+                setter: v => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = v)));
+
+            items.Add(BuildToggle(
+                label: "Radio Mode",
+                isOn: _settings.RadioModeEnabled,
+                setter: v => UpdateSettingsFromMenu(s => s.RadioModeEnabled = v)));
+
+            items.Add(BuildToggle(
+                label: "Preview Mode",
+                isOn: _settings.EnablePreviewMode,
+                setter: v => UpdateSettingsFromMenu(s => s.EnablePreviewMode = v)));
+
+            items.Add(BuildToggle(
+                label: "Play Only on Game Select",
+                isOn: _settings.PlayOnlyOnGameSelect,
+                setter: v => UpdateSettingsFromMenu(s => s.PlayOnlyOnGameSelect = v)));
+
+            items.Add(BuildToggle(
+                label: "Music Only for Installed Games",
+                isOn: _settings.MusicOnlyForInstalledGames,
+                setter: v => UpdateSettingsFromMenu(s => s.MusicOnlyForInstalledGames = v)));
+
+            // Parent placeholders for the sub-menus. These live at the same level
+            // as the toggles (under Extensions > UniPlaySong via MenuSection = "@").
+
+            // --- Reverb preset sub-menu -----------------------------------------
+            // Parent item shows current preset. Sub-menu items live under
+            // MenuSection "UniPlaySong|Reverb Preset" so Playnite renders them
+            // nested. Selecting a sub-item sets the preset and closes the menu;
+            // the parent's label refreshes the next time the menu is opened.
+
+            var currentReverb = _settings.SelectedReverbPreset;
+            // The sub-menu's items use MenuSection "@|Reverb Preset", so Playnite
+            // auto-creates the "Reverb Preset" parent node. We don't add a parent
+            // placeholder ourselves — that would double-render the header.
+
+            foreach (ReverbPreset preset in Enum.GetValues(typeof(ReverbPreset)))
+            {
+                var capturedPreset = preset;
+                string marker = (preset == currentReverb) ? " \u25CF" : string.Empty;
+                items.Add(new MainMenuItem
+                {
+                    Description = $"{capturedPreset}{marker}",
+                    // MenuSection suffix AFTER "@|" becomes the sub-menu parent label
+                    // rendered by Playnite. "[UPS] Reverb Preset" puts the prefix
+                    // on the auto-generated parent row at the UniPlaySong level.
+                    MenuSection = "@|[UPS] Reverb Preset",
+                    Action = _ => UpdateSettingsFromMenu(s => s.SelectedReverbPreset = capturedPreset)
+                });
+            }
+
+            // --- Default music source sub-menu ----------------------------------
+
+            var currentSource = _settings.DefaultMusicSourceOption;
+            // Sub-menu items use MenuSection "@|Default Music Source" — Playnite
+            // auto-creates the parent "Default Music Source" node from the path.
+
+            foreach (DefaultMusicSource source in Enum.GetValues(typeof(DefaultMusicSource)))
+            {
+                var capturedSource = source;
+                string marker = (source == currentSource) ? " \u25CF" : string.Empty;
+                items.Add(new MainMenuItem
+                {
+                    Description = $"{FormatDefaultMusicSource(capturedSource)}{marker}",
+                    MenuSection = "@|[UPS] Default Music Source",
+                    Action = _ => UpdateSettingsFromMenu(s => s.DefaultMusicSourceOption = capturedSource)
+                });
+            }
+
+            return items;
+        }
+
+        // Toggle menu item builder. State is embedded in the description so the
+        // next menu open shows the new value. Action mutates the setting; the
+        // settings PropertyChanged handler propagates any side-effects.
+        // MenuSection "@" anchors the item inside Extensions > UniPlaySong.
+        // [UPS] prefix is user-requested so the items read as UniPlaySong items
+        // at-a-glance in Playnite's Fullscreen Extensions list.
+        private MainMenuItem BuildToggle(string label, bool isOn, Action<bool> setter)
+        {
+            return new MainMenuItem
+            {
+                Description = $"[UPS] {label}: {(isOn ? "ON" : "OFF")}",
+                MenuSection = "@",
+                Action = _ => setter(!isOn)
+            };
+        }
+
+        // Applies a settings change from the Fullscreen quick-settings menu via the
+        // SettingsService's diff-based UpdateSettings path. Clones the current settings
+        // (JSON roundtrip — same pattern as UniPlaySongSettingsViewModel), applies the
+        // mutation, pushes through the service. This fires SettingsChanged (the diff
+        // event), which is what downstream handlers like RecreateMusicPlayerForLiveEffects
+        // listen for. Direct _settings mutation would skip that event and leave the
+        // player backend out of sync when Live Effects is toggled from the menu.
+        private void UpdateSettingsFromMenu(Action<UniPlaySongSettings> mutate)
+        {
+            try
+            {
+                if (_settings == null || _settingsService == null) return;
+
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_settings);
+                var clone = Newtonsoft.Json.JsonConvert.DeserializeObject<UniPlaySongSettings>(json);
+                mutate(clone);
+
+                // Push the clone through SettingsService so the diff-based SettingsChanged
+                // event fires (downstream handlers like RecreateMusicPlayerForLiveEffects
+                // and the default-music reload logic depend on it).
+                _settingsService.UpdateSettings(clone, source: "FullscreenQuickMenu");
+
+                // Also persist to disk — the settings dialog's EndEdit does this via
+                // plugin.SavePluginSettings, but there's no EndEdit gate from the
+                // Fullscreen menu. Without this, the change propagates in-memory but
+                // is lost on next Playnite restart.
+                SavePluginSettings(clone);
+                _fileLogger?.Debug("UpdateSettingsFromMenu: settings saved to disk");
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"UpdateSettingsFromMenu failed: {ex.Message}");
+            }
+        }
+
+        // Readable label for the DefaultMusicSource enum — the raw enum values
+        // (CustomFile, NativeTheme, etc.) are less friendly than what the
+        // Settings dropdown shows. Kept local to this method set; if we ever
+        // need these in the settings UI dropdown itself, promote to a shared helper.
+        private static string FormatDefaultMusicSource(DefaultMusicSource source)
+        {
+            switch (source)
+            {
+                case DefaultMusicSource.CustomFile:           return "Custom File";
+                case DefaultMusicSource.NativeTheme:          return "Playnite Theme Music";
+                case DefaultMusicSource.BundledPreset:        return "Bundled Ambient";
+                case DefaultMusicSource.CustomFolder:         return "Custom Folder";
+                case DefaultMusicSource.RandomGame:           return "Random Game";
+                case DefaultMusicSource.CustomRotation:       return "Custom Rotation";
+                case DefaultMusicSource.CompletionStatusPool: return "Completion Status Pool";
+                case DefaultMusicSource.ActiveThemeMusic:     return "Active Theme Music";
+                default:                                      return source.ToString();
+            }
         }
 
         /// <summary>

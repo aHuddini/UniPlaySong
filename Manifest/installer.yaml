@@ -1,5 +1,15 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.4.2
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-04-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.2/UniPlaySong-1_4_2-Apr18_2026.pext'
+    Changelog:
+      - '[New Feature] Fullscreen Quick Settings Menu: Menu -> Extensions now exposes Live Effects, Radio Mode, Preview Mode, Play Only on Game Select, Music Only for Installed Games as controller-navigable toggles, plus sub-menus for Reverb Preset (32 options) and Default Music Source (8 options).'
+      - '[New Feature] Fullscreen Volume Boost: New opt-in slider (0-20%) to slightly raise music volume in Fullscreen mode, compensating for Playnite Background Volume stacking with UPS Music Volume. Off by default. Settings -> Playback.'
+      - '[New Feature] Stay Paused After External Audio (Desktop): New Pauses-tab option — when another app finishes playing audio, UPS stays paused instead of auto-resuming. Resume manually via the top panel play button or media keys. Off by default.'
+      - '[Fix] Fullscreen Exit Stray Music: Brief game music no longer plays during the Fullscreen-to-Desktop transition. Late theme overlay events fired during teardown are now ignored.'
+      - '[Changed] Default Music Persistence: Pool-based default music (Random Game / Custom Folder / Custom Rotation / Completion Status Pool) now keeps the same track across game switches by default, instead of re-rolling on every hover. Plus a new toggle to disable auto-advance on song end for fully persistent single-track behavior.'
   - Version: 1.4.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-18

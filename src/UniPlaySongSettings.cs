@@ -295,6 +295,7 @@ namespace UniPlaySong
         private bool themeCompatibleSilentSkip = true;
         private bool pauseOnTrailer = true;
         private int musicVolume = Constants.DefaultMusicVolume;
+        private int fullscreenVolumeBoostPercent = 0;
         private double fadeInDuration = Constants.DefaultFadeInDuration;
         private double fadeOutDuration = Constants.DefaultFadeOutDuration;
         private string ytDlpPath = string.Empty;
@@ -310,6 +311,7 @@ namespace UniPlaySong
         private bool pauseOnGameStart = true;
         private bool pauseOnSystemLock = false;
         private bool pauseOnExternalAudio = false;
+        private bool keepPausedAfterExternalAudio = false;
         private int externalAudioDebounceSeconds = 0;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32";
@@ -436,6 +438,16 @@ namespace UniPlaySong
         {
             get => musicVolume;
             set { musicVolume = Math.Max(Constants.MinMusicVolume, Math.Min(Constants.MaxMusicVolume, value)); OnPropertyChanged(); }
+        }
+
+        // Small perceptual boost applied on top of Playnite's Fullscreen BackgroundVolume
+        // multiplier (which otherwise stacks multiplicatively with MusicVolume and feels
+        // noticeably quieter than desktop mode). Range 0–20 percent. Default 0 = no change.
+        // Only active in Fullscreen mode; Desktop mode ignores this setting.
+        public int FullscreenVolumeBoostPercent
+        {
+            get => fullscreenVolumeBoostPercent;
+            set { fullscreenVolumeBoostPercent = Math.Max(0, Math.Min(20, value)); OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -624,6 +636,17 @@ namespace UniPlaySong
         {
             get => pauseOnExternalAudio;
             set { pauseOnExternalAudio = value; OnPropertyChanged(); }
+        }
+
+        // When enabled, external audio stopping does NOT auto-resume UPS music — the user
+        // manually resumes via media keys, top panel toggle, or the Fullscreen extensions
+        // menu. Desktop-only: the external-audio poll ignores this setting in Fullscreen
+        // mode (Fullscreen always auto-resumes). Default false preserves the existing
+        // two-way auto-toggle behavior.
+        public bool KeepPausedAfterExternalAudio
+        {
+            get => keepPausedAfterExternalAudio;
+            set { keepPausedAfterExternalAudio = value; OnPropertyChanged(); }
         }
 
         // How many seconds external audio must persist before pausing, and silence before resuming (0-10). 0 = instant (no debounce).
@@ -943,7 +966,7 @@ namespace UniPlaySong
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
-        private bool defaultMusicContinueSameSong = false; // Keep playing same song across game switches
+        private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true as of v1.4.2 — most users want a persistent backdrop)
 
         /// <summary>
         /// Enable default music fallback when no game music is found
@@ -1349,6 +1372,7 @@ namespace UniPlaySong
         // Song Playback Behavior
         private bool randomizeOnEverySelect = true;
         private bool randomizeOnMusicEnd = true;
+        private bool randomizeDefaultMusicOnEnd = true;
         private bool stopAfterSongEnds = false;
         private bool fadeOutBeforeSongEnd = false;
         private double fadeOutBeforeSongEndDuration = 3.0;
@@ -1371,6 +1395,20 @@ namespace UniPlaySong
         {
             get => randomizeOnMusicEnd;
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
+        }
+
+        // Controls whether pool-based default music sources (RandomGame, CustomFolder,
+        // CustomRotation, CompletionStatusPool) auto-advance to a new random track when
+        // the current one ends. Default true preserves existing "radio-like" behavior.
+        // When false, the initial track loops indefinitely — matches the user's persistent
+        // default-music intent when pairing RandomGame with MusicOnlyForInstalledGames:
+        // one track is picked as the browsing backdrop and stays put until the user
+        // navigates to an installed game (which triggers game music naturally).
+        // Orthogonal to RandomizeOnMusicEnd, which only affects GAME music auto-advance.
+        public bool RandomizeDefaultMusicOnEnd
+        {
+            get => randomizeDefaultMusicOnEnd;
+            set { randomizeDefaultMusicOnEnd = value; OnPropertyChanged(); }
         }
 
         // Fade out the ending song N seconds before it finishes during auto-advance (Radio Mode or RandomizeOnMusicEnd).

@@ -65,6 +65,7 @@ namespace UniPlaySong
             if (s == null) return;
 
             s.MusicVolume = Constants.DefaultMusicVolume;
+            s.FullscreenVolumeBoostPercent = 0;
             s.LowerVolumeOnIdle = false;
             s.IdleVolumeTimeoutMinutes = 15;
             s.FadeInDuration = Constants.DefaultFadeInDuration;
@@ -74,6 +75,7 @@ namespace UniPlaySong
             s.PauseOnTrailer = true;
             s.RandomizeOnEverySelect = true;
             s.RandomizeOnMusicEnd = true;
+            s.RandomizeDefaultMusicOnEnd = true;
             s.StopAfterSongEnds = false;
             s.EnableDefaultMusic = true;
             s.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
@@ -81,7 +83,7 @@ namespace UniPlaySong
             s.DefaultMusicPath = string.Empty;
             s.DefaultMusicFolderPath = string.Empty;
             s.CustomRotationGameIds = new List<Guid>();
-            s.DefaultMusicContinueSameSong = false;
+            s.DefaultMusicContinueSameSong = true;
             s.BackupCustomMusicPath = string.Empty;
             s.MusicOnlyForInstalledGames = false;
             s.NostalgiaMode = false;
@@ -133,6 +135,7 @@ namespace UniPlaySong
             s.PauseOnMinimize = true;
             s.PauseWhenInSystemTray = true;
             s.PauseOnExternalAudio = false;
+            s.KeepPausedAfterExternalAudio = false;
             s.ExternalAudioDebounceSeconds = 0;
             s.ExternalAudioInstantPause = false;
             s.ExternalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32";

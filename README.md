@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.4.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.4.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,19 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.1
+## What's New - v1.4.2
 
-- **Play Only on Game Select — Randomization Fix** — Entering a game's Details view now shuffles a song every time, instead of always starting with the same alphabetical first track. Previously, repeat entries into the same game would replay the same song until it ended and auto-advance kicked in.
-- **Play Only on Game Select — Faster, Event-Driven** — Reacts instantly to List ↔ Details view changes now. The previous implementation polled every 200ms, which was both slower to respond and a constant CPU tick; switched to the Playnite SDK's native view-change event.
-- **Single-Track Loop Silent Fix** — When a game had only one song and "Fade out before song end" was enabled, the track would loop but play silently (Pause → Play was needed to recover). Fixed by ensuring the fader resets cleanly when the song restarts. Affects all audio formats, not just retro chiptune.
-- **Retro Chiptune Pause/Resume — Fast and Reliable** — Three overlapping issues with VGM/VGZ playback are fixed: multi-second Playnite UI freezes on resume (sometimes long enough that Windows showed the "not responding" dialog, scaling worse the deeper into the song you were), silent main music after celebration jingles that required a manual Pause → Play to recover, and stuck audio after rapid pause/resume cycles. Resume is now near-instant with a clean fade-in — external audio, focus loss, and jingles all behave correctly.
-- **Song-End Fade Geometry** — "Fade out before song end" now actually finishes at the song's end, instead of completing several seconds early and leaving a noticeable silent gap before the next song starts. The fade ramp length now matches the setting you chose.
-- **About Tab Improvements** — Added a Supported Audio Formats section listing the tested formats (MP3, OGG Vorbis, FLAC, WAV) with VGM/VGZ scope clarified as Sega Genesis / Mega Drive / Sega CD.
-- **Fanfare on "Beaten" Status** — New option in Playback settings lets the completion fanfare fire for Playnite's "Beaten" status (main story finished), in addition to "Completed." Off by default, so existing users see no change.
-- **Abandoned Status Jingle + Toast** — Mark a game as "Abandoned" and get a distinct "failure" jingle and a muted toast popup, completely independent from the completion fanfare. Ships with 10 bundled resigned-themed jingles (Mortal Kombat fatalities, Shinobi failure cues, Streets of Rage Game Over, and a toilet flush for the harshest verdict) plus six muted color themes (Tombstone, Dusk Blue, Rust, Ash, Faded Crimson, Shadow). Customize the toast message with your own wording. Off by default.
+- **Fullscreen Volume Boost** — New opt-in slider in Playback settings (0–20%, default 0%) that slightly nudges music volume up in Fullscreen mode to compensate for how Playnite's own Background Volume slider stacks on top of UPS's Music Volume. Only active in Fullscreen; Desktop is unaffected.
+- **Fullscreen Quick Settings Menu** — Menu → Extensions → UniPlaySong in Fullscreen now exposes the most-commonly-tweaked settings as controller-navigable items: Live Effects, Radio Mode, Preview Mode, Play Only on Game Select, Music Only for Installed Games, plus sub-menus for Reverb Preset (32 options) and Default Music Source (8 options). Current value is marked with ●. No more dropping to Desktop to flip a switch.
+- **Fullscreen Exit: No More Stray Music** — When exiting Fullscreen (Switch to Desktop), you'd sometimes briefly hear ~1 second of the currently-selected game's music start up during the transition, then cut off. Fixed — the late-fired theme overlay events that were triggering the unwanted playback are now ignored during shutdown.
+- **Persistent Default Music Backdrop** — When using pool-based default music sources (Random Game, Custom Folder, Custom Rotation, Completion Status Pool), the same track now keeps playing by default as you browse games, instead of re-rolling to a different song on every hover. Combined with a new "Auto-advance Default Music on song end" toggle (disable it for the current song to loop rather than pick a new one), you can now have a truly persistent single-track backdrop while browsing.
+- **Stay Paused After External Audio (Desktop)** — New option in the Pauses tab: when UPS is paused because another app started playing audio (YouTube, Discord, etc.), you can now have UPS stay paused until you manually resume via the top panel play/pause button or your media keys — instead of the music auto-resuming the moment the external audio stops. Desktop mode only.
 
 ### Previous Version
-- **v1.4.0**: Retro chiptune (`.vgm`) playback, faster YouTube previews, Chrome/Edge/Brave/Opera cookie support, license attribution cleanup
+- **v1.4.1**: Retro chiptune pause/resume fixes (UI freezes, silent jingle returns), song-end fade geometry, Fanfare on "Beaten" status, Abandoned status jingle + toast with 10 bundled failure-themed jingles, Play Only on Game Select randomization fixes, internal jingle playback refactor
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

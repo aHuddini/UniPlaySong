@@ -1943,8 +1943,13 @@ namespace UniPlaySong.Services
                         return;
                     }
 
-                    // Auto-advance for pool-based default music (radio mode)
-                    if (_isCurrentSongDefaultMusic && IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null)
+                    // Auto-advance for pool-based default music (radio mode).
+                    // Gated on RandomizeDefaultMusicOnEnd — when false, the user wants
+                    // the initially-picked default track to persist (loop) instead of
+                    // hopping between games on every song end. Falls through to the
+                    // loop path below, which restarts the current track.
+                    if (_isCurrentSongDefaultMusic && IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null
+                        && _currentSettings?.RandomizeDefaultMusicOnEnd == true)
                     {
                         var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
                         if (pool.Count > 1)
