@@ -2341,11 +2341,19 @@ namespace UniPlaySong
 
                 // Recreate playback service with new player
                 var oldService = _playbackService;
+                bool preserveManualStart = oldService?.UserHasManuallyStartedThisSession == true;
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
                 _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
+
+                // Preserve session auto-play lock state across backend recreation so toggling
+                // Live Effects / Visualizer / Crossfade mid-session doesn't re-lock playback.
+                if (preserveManualStart)
+                {
+                    _playbackService.NotifyManualStart();
+                }
 
                 // Mark initialization complete — app is already running, skip deferred-playback gate
                 _playbackService.MarkInitializationComplete();
