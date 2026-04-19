@@ -5,11 +5,9 @@ Packages:
     ReleaseDate: 2026-04-18
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.3/UniPlaySong-1_4_3-Apr18_2026.pext'
     Changelog:
-      - '[New Feature] NSF Track Manager (Desktop): Right-click a game with a multi-track .nsf file and select Chiptunes -> NSF Management to split it into individual per-track files. Preview each track, pick the ones to keep, Commit. Original is preserved in a backup folder by default. After commit the split game music starts playing immediately.'
-      - '[Critical Fix] NSF Per-Track Playback: Split mini-NSF files now play the track they were split for. Previously the GME reader hardcoded track 0 and every mini-NSF sounded identical to the first track.'
-      - '[Fix] Short NSF Tracks Auto-Advance: Short NSF jingles/stingers (touchdown, game over, quarter-end) now advance to the next song at their natural end instead of looping internally for 2:30. Longer looping BGM tracks are unaffected.'
-      - '[Fix] NSF Track Manager Duration Display: Dialog now shows em-dash ("—") for tracks with no embedded length metadata instead of a misleading 2:30 for every row.'
-      - '[Fix] Auto-advance Safety Net: If a UPS modal dialog closes through an unusual path (e.g. host window force-close) and leaves a pause source behind, the next game switch automatically clears it. Prevents rare cases where music would stop auto-advancing until the extension was reloaded.'
+      - '[New Format] NES Music (.nsf): NES / Famicom soundtracks are officially supported. Drop an .nsf file into a game''s music folder and it plays alongside MP3s, FLACs, and other chiptune formats. Sound effects and game-over jingles bundled inside the .nsf work too.'
+      - '[New Feature] NSF Manager: .nsf files are album-like — a single file holds every song AND sound effect from the game. Right-click a game -> Chiptunes -> NSF Management (Desktop) to open a master .nsf like a playlist, preview each track, and split the ones you want into individual mini-.nsf files. Discard the rest. Original is backed up by default.'
+      - '[Note] NSF Track Lengths: Songs inside .nsf files don''t carry length metadata, so they play for up to 2:30 before looping. Short jingles and stingers are auto-detected and advance as soon as they finish, so you don''t wait 2:30 for a 3-second sound effect.'
   - Version: 1.4.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-18

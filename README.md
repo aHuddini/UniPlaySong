@@ -22,10 +22,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.3
 
-- **NSF Track Manager** — Right-click any game with a multi-track NSF file (Nintendo Sound Format) and pick **Chiptunes → NSF Management** (Desktop mode) to split it into individual per-track files. Preview each track with an in-dialog play/stop button, check the ones you want to keep, and Commit. Unwanted tracks are skipped; kept tracks become standalone `.nsf` files named by the track (or numbered fallback `Track NN.nsf` when the NSF has no track names). Original is automatically backed up to the PreservedOriginals folder by default — uncheck the box if you'd rather not. After Commit the split game music starts playing immediately, no need to navigate away and back.
-- **Correct NSF Track Playback** — `GmeReader` now honors the NSF header's `starting_song` byte, so per-track mini-NSFs play the track they were split for. Previously the reader hardcoded track 0, which meant all split files sounded identical.
-- **Short NSF Tracks Auto-Advance** — Jingles, stingers, and short fanfare tracks (e.g. "touchdown" or "game over") in NSF files now advance to the next song at their natural end instead of looping internally for 2:30. Longer looping BGM tracks are unaffected. The dialog also shows "—" instead of a misleading "2:30" for tracks with no embedded length metadata.
-- **Auto-Resume Safety Net for Modal Dialogs** — When UPS dialogs (like the new NSF Track Manager) close via an unusual path — for example the host window being force-closed — any leaked pause source is proactively cleared on the next game switch. Prevents the rare "music won't auto-advance anymore" symptom without requiring an extension reload.
+- **NES Music Support (.nsf)** — Nintendo / Famicom soundtracks are officially supported. Drop an `.nsf` file into a game's music folder alongside your MP3s and FLACs and it plays just like any other format. Sound effects and game-over jingles bundled inside the NSF are available too — the whole audio "ROM" of an NES game is playable through UPS.
+
+- **NSF Manager** — Most `.nsf` files are album-like: a single file holds every song and sound effect from a whole NES game. The new NSF Manager lets you open a master `.nsf` like a playlist, preview each track, and split the ones you want into individual mini-`.nsf` files saved in your game's music folder. Discard the tracks you don't want to keep. Access it from the **Desktop game menu:**
+
+  > Right-click a game with an `.nsf` → **Chiptunes → NSF Management**
+
+  Check the tracks you want to keep, uncheck the rest, then Commit. The original file is preserved in a backup folder by default (uncheck to disable). Split music starts playing right after Commit.
+
+- **How NSF Playback Works** — `.nsf` tracks don't carry length metadata, so by default each song plays up to 2:30 before looping. Short jingles and sound effects are auto-detected and advance to the next track as soon as they finish — no waiting 2:30 for a 3-second touchdown cheer.
 
 ### Previous Version
 - **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
