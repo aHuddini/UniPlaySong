@@ -306,3 +306,44 @@ Half a day of work. Requires settings schema bump (old `EnableCompletionCelebrat
 ### When to do it
 
 Queue for v1.5 when we next revisit the Playback / Gamification tab. Not urgent — the current behavior is correct for English users who haven't renamed the built-in statuses (the vast majority of the user base based on Playnite's localization adoption).
+
+## Session-Scoped "Manual Start Unlocks Auto-Play" for Desktop
+
+**Status:** Deferred design (v1.5+)
+**Driver:** User feedback on v1.4.3's `Play Music State = Fullscreen Only` setting. Current behavior: auto-playback is fully suppressed in Desktop. Manual top-panel Play works once, but every subsequent game switch re-blocks auto-play because `ShouldPlayMusic` unconditionally returns false for Desktop when state is `Fullscreen`. User has to press Play on every game switch.
+
+User's mental model: *"I don't want music to auto-start when I first launch Playnite in Desktop. But once I've explicitly clicked Play, game switches should auto-play like they normally do until I close Playnite."*
+
+### Design direction (brainstormed, not yet specified)
+
+Add a new setting in Settings → General, paired with the existing Play Music State dropdown:
+
+- **Label concept:** "Automatic playback on first launch (Desktop)" — framed positively around what the toggle controls.
+- **Default:** on (preserves current behavior — auto-play on startup in Desktop).
+- **When off AND in Desktop mode:** first launch + first game-select produces no auto-playback. A session-scoped flag in `MusicPlaybackService` (e.g. `_userHasManuallyStartedThisSession`) is set to true the first time the user explicitly invokes playback via top panel Play, media key, or Music Library play button. Once true, `ShouldPlayMusic` no longer suppresses auto-play for the remainder of the Playnite session.
+- **Scope:** Desktop only. Fullscreen has no manual-start affordance, so gating it there would leave users unable to start music at all.
+- **Reset on:** Playnite restart (in-memory session flag, not persisted).
+
+### Open question (tabled during brainstorming)
+
+**Pause semantics mid-session.** After the first manual Play, game switches auto-play. But what if user then pauses? Two options:
+
+1. **Sticky-on:** once unlocked, stays unlocked regardless of pause state. Game switches always auto-play (effectively overriding any manual pause via game-switch).
+2. **Follows pause state:** the session flag stays true but an additional "user wants silence now" flag from a manual pause gates the NEXT auto-play until another manual Play.
+
+Leaning toward sticky-on — matches the user's complaint directly ("game switches should work after I've pressed Play") and avoids a second implicit state. But the trade-off is that a user who pauses and then switches games gets unpause-by-side-effect, which some users may find surprising.
+
+### Technical hook points
+
+- New `UniPlaySongSettings` property: `AutoPlayOnFirstLaunchDesktop` (bool, default true).
+- New private field in `MusicPlaybackService` (or `MusicPlaybackCoordinator`): `_userHasManuallyStartedThisSession` (bool, default false, set true in `TopPanelMediaControlViewModel.OnPlayPauseActivated` success path and any other explicit manual-play path).
+- New branch in `MusicPlaybackCoordinator.ShouldPlayMusic`: if state is `Desktop` or `Always`, AND in Desktop mode, AND the new setting is off, AND `_userHasManuallyStartedThisSession == false` → return false.
+- XAML: checkbox under the Play Music State dropdown in `UniPlaySongSettingsView.xaml`, positive framing on the description ("When unchecked, music won't auto-play in Desktop until you manually press Play. Game switches will auto-play after the first manual Play, until you close Playnite.").
+
+### Scope estimate
+
+Half a day. One setting, one state flag, one `ShouldPlayMusic` branch, one XAML checkbox, docs.
+
+### When to do it
+
+Queue for v1.5 — not urgent because the v1.4.3 Fullscreen Only option already solves the "no auto-play in Desktop" case for users who are OK with fully manual control there. This feature serves users who want *partial* control: silent-on-first-launch but auto-playback thereafter.
