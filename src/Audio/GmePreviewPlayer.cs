@@ -25,7 +25,10 @@ namespace UniPlaySong.Audio
             set
             {
                 _volume = Math.Max(0f, Math.Min(1f, value));
-                if (_waveOut != null) _waveOut.Volume = _volume;
+                lock (_lock)
+                {
+                    if (_waveOut != null) _waveOut.Volume = _volume;
+                }
             }
         }
 
@@ -112,6 +115,10 @@ namespace UniPlaySong.Audio
 
         private void OnSampleProviderEnded(object sender, EventArgs e)
         {
+            lock (_lock)
+            {
+                if (_disposed) return;
+            }
             var handler = TrackEnded;
             if (handler != null) handler(this, EventArgs.Empty);
         }
