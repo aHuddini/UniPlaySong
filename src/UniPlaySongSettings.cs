@@ -1436,6 +1436,47 @@ namespace UniPlaySong
             set { fadeOutBeforeSongEndDuration = Math.Max(0.2, Math.Min(5.0, value)); OnPropertyChanged(); }
         }
 
+        private bool enableTrueCrossfade = false;
+        /// <summary>
+        /// When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd /
+        /// pool-based default music) the next song starts playing simultaneously with the
+        /// current song fading out, for a DJ-style overlap. Replaces the sequential
+        /// FadeOutBeforeSongEnd behavior. NAudio-only; enabling forces NAudio backend.
+        /// </summary>
+        public bool EnableTrueCrossfade
+        {
+            get => enableTrueCrossfade;
+            set
+            {
+                if (enableTrueCrossfade != value)
+                {
+                    enableTrueCrossfade = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private int crossfadeDurationSeconds = 3;
+        /// <summary>
+        /// Duration of the crossfade overlap in seconds (1–10). Only applies when
+        /// EnableTrueCrossfade is true. Song must be at least CrossfadeDurationSeconds + 2
+        /// seconds long for crossfade to fire; otherwise the transition falls back to
+        /// the sequential behavior.
+        /// </summary>
+        public int CrossfadeDurationSeconds
+        {
+            get => crossfadeDurationSeconds;
+            set
+            {
+                var clamped = Math.Max(1, Math.Min(10, value));
+                if (crossfadeDurationSeconds != clamped)
+                {
+                    crossfadeDurationSeconds = clamped;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         // Stop playback after current song finishes instead of looping or randomizing
         public bool StopAfterSongEnds
         {
