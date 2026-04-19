@@ -15,7 +15,7 @@ namespace UniPlaySong.Audio
 
         private IntPtr _emu;
         private readonly WaveFormat _waveFormat;
-        private readonly int _playLengthMs;
+        private int _playLengthMs;
         private readonly long _totalSamples;
         // Lowered below _playLengthMs when GME signals an explicit track end
         // (short NSFs with end markers). Initialized to _playLengthMs in ctor.
@@ -105,6 +105,16 @@ namespace UniPlaySong.Audio
             else
             {
                 _playLengthMs = 150000; // GME default: 2.5 minutes
+            }
+
+            // For NSF files, check nsf-loops.json in the containing folder for a
+            // per-file override. Applies only when the user has explicitly saved one
+            // via the NSF Manager's Edit Loops tab. Silent fallback on any error.
+            if (ext != null && ext.Equals(".nsf", StringComparison.OrdinalIgnoreCase))
+            {
+                int? overrideMs = NsfLoopManifest.ReadMillisecondsFor(fileName);
+                if (overrideMs.HasValue)
+                    _playLengthMs = overrideMs.Value;
             }
 
             _totalSamples = (long)SampleRate * _playLengthMs / 1000;
