@@ -536,10 +536,30 @@ public bool ShouldPlayMusic(Game game)
         return false;
     if (_isDesktop() && state != AudioState.Desktop && state != AudioState.Always)
         return false;
-    
+
+    // Session auto-play lock (Desktop) — v1.4.3+
+    // Even when MusicState allows Desktop, suppress auto-play until the user
+    // has manually started music at least once this session (sticky-on).
+    if (_isDesktop()
+        && !_settings.AutoPlayOnFirstLaunchDesktop
+        && !_playbackService.UserHasManuallyStartedThisSession)
+        return false;
+
     return true;
 }
 ```
+
+**Session Auto-Play Lock (v1.4.3+):**
+
+A session-scoped flag on `MusicPlaybackService` (`_userHasManuallyStartedThisSession`, exposed via `IMusicPlaybackService.UserHasManuallyStartedThisSession`) gates Desktop auto-play when `Settings.AutoPlayOnFirstLaunchDesktop` is `false`. The flag is set `true` by `NotifyManualStart()` calls placed at every manual-play UI path:
+
+- `TopPanelMediaControlViewModel.OnPlayPauseActivated` — Resume + Start-from-Stopped branches
+- `UniPlaySong.OnMediaKeyPlayPause` — Resume branch (taskbar thumbnail shares this handler)
+- `ExternalControlService` — `play` and `playpausetoggle` (Resume branch)
+- `MusicLibraryViewModel.OnPlayPause` — Resume + Start-from-Stopped branches (main playback service only)
+- `DownloadDialogService.OnMusicPausePlayRequested` — Resume branch
+
+Automatic paths (coordinator, `HandleGameSelected`, Radio auto-advance, pause-source removal timers, post-download restores, NSF Track Manager post-commit, theme events) deliberately do NOT call `NotifyManualStart()`. Flag resets only on `MusicPlaybackService` disposal (Playnite restart). Sticky-on: manual Pause does NOT re-lock.
 
 **HandleGameSelected() Processing:**
 ```csharp
