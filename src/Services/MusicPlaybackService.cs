@@ -515,6 +515,17 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // Defensive sweep: NsfPreview is a modal-dialog pause source that must not
+            // survive a game switch. If the dialog closed via an unusual path (e.g. host
+            // window force-close), the source can leak and silently block all future
+            // auto-advance via OnMediaEnded's _isPaused early-return. Clearing here on
+            // every game switch acts as a safety net without affecting normal flow.
+            if (_activePauseSources.Contains(PauseSource.NsfPreview))
+            {
+                _fileLogger?.Debug("PlayGameMusic: clearing leaked NsfPreview pause source");
+                RemovePauseSource(PauseSource.NsfPreview);
+            }
+
             // Wait for initialization to complete before playing music
             // This ensures CheckInitialWindowState has run and added any necessary pause sources
             if (!_initializationComplete)

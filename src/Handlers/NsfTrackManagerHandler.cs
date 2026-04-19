@@ -134,6 +134,11 @@ namespace UniPlaySong.Handlers
                         $"NSF split complete for {game.Name}",
                         NotificationType.Info));
                     Logger.DebugIf(LogPrefix, "Commit path: song cache invalidated");
+
+                    // Start playing the freshly-split game music so the user hears
+                    // the result immediately instead of having to switch games.
+                    // PlayGameMusic sweeps leaked NsfPreview itself before starting.
+                    _playbackService?.PlayGameMusic(game);
                 }
             }
             catch (Exception ex)
