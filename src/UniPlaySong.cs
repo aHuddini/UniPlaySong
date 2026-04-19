@@ -1382,13 +1382,14 @@ namespace UniPlaySong
                         e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
                 }
 
-                // Check if player backend needs switching (Live Effects or Visualizer require NAudio)
+                // Check if player backend needs switching (Live Effects, Visualizer, Peak Meter, or True Crossfade require NAudio)
                 bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
                 bool vizToggled = e.OldSettings.ShowSpectrumVisualizer != e.NewSettings.ShowSpectrumVisualizer;
                 bool peakMeterToggled = e.OldSettings.ShowPeakMeter != e.NewSettings.ShowPeakMeter;
-                if (liveEffectsChanged || vizToggled || peakMeterToggled)
+                bool crossfadeToggled = e.OldSettings.EnableTrueCrossfade != e.NewSettings.EnableTrueCrossfade;
+                if (liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled)
                 {
-                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter} - recreating music player");
+                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
                 }
             }
@@ -2276,7 +2277,7 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || _needsNAudioForFormat;
+            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || _needsNAudioForFormat;
 
             if (needsNAudio)
             {
