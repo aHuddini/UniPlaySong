@@ -68,16 +68,16 @@
                             <ComboBoxItem Content="Desktop + Fullscreen"/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both. To prevent automatic playback in Desktop mode entirely, set to &quot;Fullscreen Only&quot;. If you want music in Desktop but only after manually pressing Play, uncheck &quot;Auto-play music on first launch (Desktop)&quot; below instead."
+                    <TextBlock Text="Controls when music plays: Never, Desktop only, Fullscreen only, or Both. To prevent automatic playback in Desktop mode entirely, set to &quot;Fullscreen Only&quot;. For more granular automatic playback control in Desktop, see the &quot;Automatic Playback&quot; option below."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <CheckBox Content="Auto-play music on first launch (Desktop)"
+                    <CheckBox Content="Automatic Playback on First Launch (Desktop)"
                               IsChecked="{Binding Settings.AutoPlayOnFirstLaunchDesktop}"
                               Margin="0,5"/>
-                    <TextBlock Text="When unchecked, music won't auto-play in Desktop until you manually press Play. After the first manual Play, game switches will auto-play for the rest of the session. Resets on Playnite restart."
+                    <TextBlock Text="When unchecked, automatic playback is disabled in Desktop until you manually press Play. After the first manual Play, game switches will automatically play music for the rest of the session. Resets on Playnite restart."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
