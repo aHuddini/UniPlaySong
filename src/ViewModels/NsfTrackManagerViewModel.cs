@@ -237,9 +237,9 @@ namespace UniPlaySong.ViewModels
         {
             StopPreview();
             IsCommitting = true;
+            var writtenPaths = new System.Collections.Generic.List<string>();
             try
             {
-                int written = 0;
                 var kept = Tracks.Where(t => t.IsKept).ToList();
                 foreach (var row in kept)
                 {
@@ -247,18 +247,25 @@ namespace UniPlaySong.ViewModels
                     var safe = SanitizeFileName(row.Name);
                     var target = ResolveTargetPath(safe);
                     File.WriteAllBytes(target, patched);
-                    written++;
+                    writtenPaths.Add(target);
                 }
 
-                if (written > 0) File.Delete(_nsfPath);
+                if (writtenPaths.Count > 0) File.Delete(_nsfPath);
 
                 var h = CloseRequested; if (h != null) h(true);
             }
             catch (Exception ex)
             {
+                // Best-effort rollback of any mini-NSFs written this run.
+                foreach (var p in writtenPaths)
+                {
+                    try { File.Delete(p); } catch { /* ignore — rollback is best-effort */ }
+                }
+
                 System.Windows.MessageBox.Show("Commit failed: " + ex.Message, "NSF Track Manager",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 IsCommitting = false;
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
             }
         }
 
