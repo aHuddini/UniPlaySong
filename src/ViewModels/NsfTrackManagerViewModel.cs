@@ -59,6 +59,13 @@ namespace UniPlaySong.ViewModels
         private NsfTrackRow _currentPreview;
         private bool _isCommitting;
         private bool _disposed;
+        private bool _preserveOriginal = true;
+
+        public bool PreserveOriginal
+        {
+            get { return _preserveOriginal; }
+            set { _preserveOriginal = value; OnPropertyChanged(); }
+        }
 
         public string GameName { get; set; }
         public string FileName { get; set; }
@@ -238,6 +245,7 @@ namespace UniPlaySong.ViewModels
             StopPreview();
             IsCommitting = true;
             var writtenPaths = new System.Collections.Generic.List<string>();
+            string preservedPath = null;
             try
             {
                 var kept = Tracks.Where(t => t.IsKept).ToList();
@@ -250,16 +258,25 @@ namespace UniPlaySong.ViewModels
                     writtenPaths.Add(target);
                 }
 
-                if (writtenPaths.Count > 0) File.Delete(_nsfPath);
+                if (writtenPaths.Count > 0)
+                {
+                    if (_preserveOriginal)
+                        preservedPath = PreserveOriginalFile();
+                    File.Delete(_nsfPath);
+                }
 
                 var h = CloseRequested; if (h != null) h(true);
             }
             catch (Exception ex)
             {
-                // Best-effort rollback of any mini-NSFs written this run.
+                // Best-effort rollback: mini-NSFs written this run + any preservation copy.
                 foreach (var p in writtenPaths)
                 {
                     try { File.Delete(p); } catch { /* ignore — rollback is best-effort */ }
+                }
+                if (preservedPath != null)
+                {
+                    try { File.Delete(preservedPath); } catch { /* ignore */ }
                 }
 
                 System.Windows.MessageBox.Show("Commit failed: " + ex.Message, "NSF Track Manager",
@@ -267,6 +284,32 @@ namespace UniPlaySong.ViewModels
                 IsCommitting = false;
                 System.Windows.Input.CommandManager.InvalidateRequerySuggested();
             }
+        }
+
+        // Copies the original NSF to <parentDir>/PreservedOriginals/<gameFolderName>/<filename>
+        // matching the convention used by AudioAmplifyService/AudioTrimService.
+        private string PreserveOriginalFile()
+        {
+            var parentDir = Directory.GetParent(_gameMusicDir)?.FullName ?? _gameMusicDir;
+            var preservedOriginalsDir = Path.Combine(parentDir, Constants.PreservedOriginalsFolderName);
+            var gameFolderName = Path.GetFileName(_gameMusicDir);
+            var gamePreservedDir = Path.Combine(preservedOriginalsDir, gameFolderName);
+            Directory.CreateDirectory(gamePreservedDir);
+
+            var target = Path.Combine(gamePreservedDir, Path.GetFileName(_nsfPath));
+            if (File.Exists(target))
+            {
+                var baseName = Path.GetFileNameWithoutExtension(_nsfPath);
+                var ext = Path.GetExtension(_nsfPath);
+                for (int n = 2; n < 1000; n++)
+                {
+                    var alt = Path.Combine(gamePreservedDir, baseName + " (" + n + ")" + ext);
+                    if (!File.Exists(alt)) { target = alt; break; }
+                }
+            }
+
+            File.Copy(_nsfPath, target, false);
+            return target;
         }
 
         private string ResolveTargetPath(string baseName)

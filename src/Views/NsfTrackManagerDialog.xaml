@@ -162,14 +162,22 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0"
-                       VerticalAlignment="Center"
-                       Style="{StaticResource MaterialDesignBody2TextBlock}"
-                       Text="{Binding SelectionSummary}">
-                <TextBlock.Foreground>
-                    <SolidColorBrush Color="White" Opacity="0.87"/>
-                </TextBlock.Foreground>
-            </TextBlock>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource MaterialDesignBody2TextBlock}"
+                           Text="{Binding SelectionSummary}">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="White" Opacity="0.87"/>
+                    </TextBlock.Foreground>
+                </TextBlock>
+                <CheckBox Margin="0,4,0,0"
+                          IsChecked="{Binding PreserveOriginal, Mode=TwoWay}"
+                          Content="Preserve original NSF in backup folder"
+                          FontSize="12">
+                    <CheckBox.Foreground>
+                        <SolidColorBrush Color="White" Opacity="0.75"/>
+                    </CheckBox.Foreground>
+                </CheckBox>
+            </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button Content="COMMIT"
