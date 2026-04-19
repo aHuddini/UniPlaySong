@@ -308,10 +308,12 @@ namespace UniPlaySong.ViewModels
                 if (_previewPlayer == null)
                 {
                     _previewPlayer = new GmePreviewPlayer();
-                    _previewPlayer.Load(_nsfPath);
                     _previewPlayer.TrackEnded += OnPreviewEnded;
                 }
 
+                // Re-load the master NSF every time — the user may have previewed a
+                // mini-NSF in the Edit Loops tab, which replaced _previewPlayer's file.
+                _previewPlayer.Load(_nsfPath);
                 _previewPlayer.Play(row.Index, Constants.NsfPreviewMaxSeconds);
                 row.IsPreviewing = true;
                 _currentPreview = row;
