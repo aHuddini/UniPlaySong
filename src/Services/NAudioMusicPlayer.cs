@@ -636,6 +636,135 @@ namespace UniPlaySong.Services
             _volumeProvider?.SetTargetWithRamp((float)targetVolume, (float)durationSeconds);
         }
 
+        /// <summary>
+        /// Starts a crossfade from the currently-playing song into a new song.
+        /// Builds the next song's full chain, attaches it to the mixer, and starts
+        /// opposite volume ramps on both inputs. Primary (current) fades to 0;
+        /// secondary (next) fades from 0 to full volume. Called by CrossfadeCoordinator
+        /// when the overlap window begins. Idempotent — if already crossfading, no-op.
+        /// </summary>
+        public void StartCrossfadeIntoNext(string nextPath, double durationSeconds)
+        {
+            if (_settingsService.Current?.EnableTrueCrossfade != true)
+            {
+                _fileLogger?.Warn($"[{LogPrefix}] StartCrossfadeIntoNext called but EnableTrueCrossfade is off — ignoring.");
+                return;
+            }
+
+            if (IsCrossfading)
+            {
+                _fileLogger?.Debug($"[{LogPrefix}] Already crossfading — ignoring redundant start.");
+                return;
+            }
+
+            if (_primaryInputVolume == null)
+            {
+                _fileLogger?.Warn($"[{LogPrefix}] Primary has no volume provider — cannot crossfade. Setting was likely toggled on after current song loaded.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(nextPath) || !System.IO.File.Exists(nextPath))
+            {
+                _fileLogger?.Warn($"[{LogPrefix}] Cannot start crossfade: next path invalid ({nextPath}).");
+                return;
+            }
+
+            try
+            {
+                var sw = Stopwatch.StartNew();
+
+                // Build the secondary song chain — mirrors Load() structure but stores
+                // in _secondary* fields instead of primary.
+                _secondaryAudioFile = CreateAudioReader(nextPath);
+
+                _secondaryEffectsChain = new EffectsChain((ISampleProvider)_secondaryAudioFile, _settingsService);
+
+                int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
+                _secondaryVisualizationProvider = new VisualizationDataProvider(_secondaryEffectsChain, fftSize, _settingsService.Current);
+                // Do NOT set VisualizationDataProvider.Current here — primary owns that slot
+                // until promotion. Viz still gets combined audio via post-mix read on primary.
+
+                _secondarySongEndDetector = new SongEndDetectorSampleProvider(_secondaryVisualizationProvider);
+                // Do NOT subscribe to SongEnded on secondary — secondary's EOF is handled by
+                // normal mixer auto-remove; promotion is triggered by PRIMARY's EOF (Task 5).
+
+                ISampleProvider secNormalized = _secondarySongEndDetector;
+                if (secNormalized.WaveFormat.Channels == 1)
+                    secNormalized = new MonoToStereoSampleProvider(secNormalized);
+                if (secNormalized.WaveFormat.SampleRate != MixerFormat.SampleRate)
+                    secNormalized = new WdlResamplingSampleProvider(secNormalized, MixerFormat.SampleRate);
+
+                _secondaryInputVolume = new SmoothVolumeSampleProvider(
+                    secNormalized,
+                    getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
+                    getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+                _secondaryInputVolume.Volume = 0.0f;  // Start silent — ramp will fade in.
+                _secondaryMixerInput = _secondaryInputVolume;
+                _secondarySource = nextPath;
+
+                // Attach secondary to mixer FIRST — it's silent so it can't be heard yet.
+                _mixer.AddMixerInput(_secondaryMixerInput);
+
+                // Kick off the opposite ramps simultaneously.
+                _primaryInputVolume.SetTargetWithRamp(0.0f, (float)durationSeconds);
+                _secondaryInputVolume.SetTargetWithRamp(1.0f, (float)durationSeconds);
+
+                sw.Stop();
+                _fileLogger?.Debug($"[{LogPrefix}] Started crossfade into {System.IO.Path.GetFileName(nextPath)} over {durationSeconds}s ({sw.ElapsedMilliseconds}ms setup)");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] StartCrossfadeIntoNext failed for {nextPath}");
+                // Clean up any partial state — don't leave orphans in the mixer.
+                CleanupSecondaryState(keepMixerReference: false);
+            }
+        }
+
+        // Removes secondary state and disposes resources. Used by CancelCrossfade(),
+        // StartCrossfadeIntoNext() failure path, and later by promotion (Task 5) where
+        // the mixer has already auto-removed the secondary input.
+        private void CleanupSecondaryState(bool keepMixerReference)
+        {
+            try
+            {
+                if (!keepMixerReference && _secondaryMixerInput != null)
+                {
+                    try { _mixer?.RemoveMixerInput(_secondaryMixerInput); } catch { /* mixer may have auto-removed */ }
+                }
+                if (_secondaryVisualizationProvider != null)
+                {
+                    _secondaryVisualizationProvider.Dispose();
+                    _secondaryVisualizationProvider = null;
+                }
+                _secondaryEffectsChain = null;
+                if (_secondaryAudioFile != null)
+                {
+                    _secondaryAudioFile.Dispose();
+                    _secondaryAudioFile = null;
+                }
+                _secondarySongEndDetector = null;
+                _secondaryInputVolume = null;
+                _secondaryMixerInput = null;
+                _secondarySource = null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"[{LogPrefix}] CleanupSecondaryState error");
+            }
+        }
+
+        /// <summary>
+        /// Cancels an in-progress crossfade by removing the secondary input from the mixer
+        /// and disposing its chain. Primary song keeps playing unchanged. No-op if not
+        /// currently crossfading. Called by manual-skip, game-switch, and Stop() paths.
+        /// </summary>
+        public void CancelCrossfade()
+        {
+            if (!IsCrossfading) return;
+            _fileLogger?.Debug($"[{LogPrefix}] Cancelling in-progress crossfade.");
+            CleanupSecondaryState(keepMixerReference: false);
+        }
+
         // Removes current song chain from mixer and disposes per-song resources.
         // Does NOT touch the persistent layer (device/mixer/volume provider).
         private void RemoveCurrentSongChain()
