@@ -56,6 +56,17 @@ namespace UniPlaySong.Services
         bool IsPaused { get; }
         bool IsLoaded { get; }
 
+        // True when the user has explicitly started music at least once in the
+        // current Playnite session via any manual-play path (top panel, media
+        // key, dashboard, external control). Resets on Playnite restart.
+        // Used by MusicPlaybackCoordinator to gate the Desktop session auto-play lock.
+        bool UserHasManuallyStartedThisSession { get; }
+
+        // Marks the session-flag true. Call from manual-play UI paths ONLY.
+        // Must NOT be called from automatic paths (coordinator → PlayGameMusic).
+        // Idempotent — calling when already true is a no-op.
+        void NotifyManualStart();
+
         void LoadAndPlayFile(string filePath);
         void LoadAndPlayFileFrom(string filePath, System.TimeSpan startFrom);
 
