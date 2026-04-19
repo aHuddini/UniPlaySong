@@ -100,6 +100,8 @@ namespace UniPlaySong
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
             s.FadeOutBeforeSongEnd = false;
             s.FadeOutBeforeSongEndDuration = 3.0;
+            s.EnableTrueCrossfade = false;
+            s.CrossfadeDurationSeconds = 3;
             s.EnableCompletionCelebration = true;
             s.CelebrateBeaten = false;
             s.EnableAbandonedSound = false;
