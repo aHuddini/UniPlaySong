@@ -91,6 +91,20 @@ namespace UniPlaySong.Services
 
         System.TimeSpan? CurrentTime { get; } // Current playback position (for progress indicator)
 
+        // Returns the currently-playing song's total duration, or null if no song is loaded.
+        // Used by CrossfadeCoordinator to compute remaining time.
+        System.TimeSpan? GetCurrentSongTotalTime();
+
+        // Returns the currently-playing song's elapsed position, or null if no song is loaded.
+        // Used by CrossfadeCoordinator to compute remaining time.
+        System.TimeSpan? GetCurrentSongCurrentTime();
+
+        // Starts a crossfade from the currently-playing song into the next song, with both
+        // audible simultaneously over the crossfade duration. No-op if the current backend
+        // doesn't support crossfade (SDL2) or if already crossfading. Called by
+        // CrossfadeCoordinator only; user-facing code should not call this directly.
+        void StartCrossfadeIntoNext(string nextPath, double durationSeconds);
+
         bool IsPlayingDefaultMusic { get; } // true if playing default/fallback music
         bool IsPlayingBundledPreset { get; } // true if the current default music is a bundled preset (show metadata)
         bool IsPlayingPoolBasedDefault { get; } // true if default music is from a pool source (enables radio-mode UI)

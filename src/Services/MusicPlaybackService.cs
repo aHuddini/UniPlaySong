@@ -148,6 +148,22 @@ namespace UniPlaySong.Services
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
         public TimeSpan? CurrentTime => _musicPlayer?.CurrentTime;
+
+        public TimeSpan? GetCurrentSongTotalTime() => _musicPlayer?.TotalTime;
+
+        public TimeSpan? GetCurrentSongCurrentTime() => _musicPlayer?.CurrentTime;
+
+        public void StartCrossfadeIntoNext(string nextPath, double durationSeconds)
+        {
+            if (_musicPlayer is NAudioMusicPlayer naudio)
+            {
+                naudio.StartCrossfadeIntoNext(nextPath, durationSeconds);
+            }
+            else
+            {
+                _fileLogger?.Warn("[Crossfade] StartCrossfadeIntoNext called but current backend is not NAudio — ignoring.");
+            }
+        }
         public bool IsPlayingDefaultMusic => _isPlayingDefaultMusic;
         public bool IsInRadioMode => _isInRadioMode;
         public bool IsPlayingBundledPreset => _isPlayingDefaultMusic && !_isInRadioMode &&
