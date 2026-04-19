@@ -426,7 +426,25 @@ namespace UniPlaySong.Downloaders
                             
                             // Parse common error patterns and provide helpful diagnostics
                             var errorLower = error.ToLowerInvariant();
-                            if (errorLower.Contains("sign in to confirm") || errorLower.Contains("not a bot") || errorLower.Contains("bot"))
+                            if (errorLower.Contains("failed to load python dll") || errorLower.Contains("pyi-") || errorLower.Contains("_internal"))
+                            {
+                                Logger.Error("Diagnosis: yt-dlp.exe appears corrupted or incomplete (Python DLL load failed).");
+                                Logger.Error("");
+                                Logger.Error("This usually means the wrong yt-dlp release was downloaded:");
+                                Logger.Error("  - The folder/zip distribution (yt-dlp.zip, yt-dlp_min.zip) contains an _internal folder");
+                                Logger.Error("    that can become corrupted, mismatched across updates, or quarantined by antivirus.");
+                                Logger.Error("");
+                                Logger.Error("Fix: Download the SINGLE-FILE yt-dlp.exe asset:");
+                                Logger.Error("  1. Delete the current yt-dlp.exe AND any _internal folder next to it");
+                                Logger.Error("  2. Go to: https://github.com/yt-dlp/yt-dlp/releases/latest");
+                                Logger.Error("  3. Download the file named 'yt-dlp.exe' (~17 MB, NOT the .zip archives)");
+                                Logger.Error("  4. Place it at the same path you had before");
+                                Logger.Error("  5. Retry the download");
+                                Logger.Error("");
+                                Logger.Error("If the error persists, check Windows Defender for quarantined yt-dlp files,");
+                                Logger.Error("and ensure the Visual C++ 2015-2022 Redistributable (x64) is installed.");
+                            }
+                            else if (errorLower.Contains("sign in to confirm") || errorLower.Contains("not a bot") || errorLower.Contains("bot"))
                             {
                                 Logger.Error("Diagnosis: YouTube bot detection - YouTube is blocking the download");
                                 
