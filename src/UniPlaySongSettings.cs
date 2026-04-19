@@ -1456,7 +1456,7 @@ namespace UniPlaySong
             }
         }
 
-        private int crossfadeDurationSeconds = 3;
+        private int crossfadeDurationSeconds = 9;
         /// <summary>
         /// Duration of the crossfade overlap in seconds (1–10). Only applies when
         /// EnableTrueCrossfade is true. Song must be at least CrossfadeDurationSeconds + 2

@@ -101,7 +101,7 @@ namespace UniPlaySong
             s.FadeOutBeforeSongEnd = false;
             s.FadeOutBeforeSongEndDuration = 3.0;
             s.EnableTrueCrossfade = false;
-            s.CrossfadeDurationSeconds = 3;
+            s.CrossfadeDurationSeconds = 9;
             s.EnableCompletionCelebration = true;
             s.CelebrateBeaten = false;
             s.EnableAbandonedSound = false;

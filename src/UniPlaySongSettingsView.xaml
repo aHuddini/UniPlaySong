@@ -377,7 +377,7 @@
                               IsChecked="{Binding Settings.EnableTrueCrossfade}"
                               Margin="0,12,0,4"
                               ToolTip="When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd / pool-based default music) the next song starts playing simultaneously with the current song fading out. Forces NAudio backend. Takes effect on the next song transition — enabling mid-playback does NOT retrofit the currently-playing song."/>
-                    <TextBlock Text="When on, replaces the sequential fade-out above with a parallel overlap for auto-advance transitions only. Manual song changes still use instant switching. Forces NAudio backend."
+                    <TextBlock Text="When on, replaces the sequential fade-out above with a parallel overlap for auto-advance transitions only. Manual song changes still use instant switching. Forces NAudio backend. Default 9s is recommended for natural-sounding transitions; shorter values feel abrupt."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
