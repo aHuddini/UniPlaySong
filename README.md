@@ -39,6 +39,8 @@ Built with the help of Claude Code and Cursor IDE
 
 - **True Crossfade (DJ-Style Overlap)** — New opt-in setting in Settings → Playback. When enabled, auto-advance transitions (Radio Mode, Randomize on Song End, pool-based default music) overlap the current and next song in parallel — both audible simultaneously — instead of the sequential fade-out-then-fade-in. Configurable duration 1–10 seconds, default 9s for natural-sounding crossfades. Manual song changes still switch instantly. Songs shorter than the crossfade duration + 2 seconds fall back to the regular sequential fade. Takes effect on the next song transition; enabling mid-playback doesn't retrofit the currently-playing song.
 
+- **Fix: Auto-Play Setting Stays Honored After Toggling Backend Settings** — If Automatic Playback on First Launch was off and you had already pressed Play once, changing Live Effects, Visualizer, or True Crossfade used to cause UPS to stop auto-playing music on future game selections until you pressed Play again. Now playback continues as expected.
+
 ### Previous Version
 - **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
 
