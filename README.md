@@ -22,24 +22,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.3
 
-- **NES Music Support (.nsf)** — Nintendo / Famicom .nsf soundtracks are officially supported. Drop an `.nsf` file into a game's music folder alongside your MP3s and FLACs and it plays just like any other format. Sound effects and game-over jingles bundled inside the NSF are available too — the whole audio "ROM" of an NES game is playable through UPS.
+- **NES Music Support (.nsf)** — Drop an `.nsf` file into a game's music folder and it plays alongside MP3s and FLACs. Sound effects and game-over jingles bundled inside the NSF are available too.
 
-- **NSF Manager** — Most `.nsf` files are album-like: a single file holds every song and sound effect from a whole NES game. The new NSF Manager lets you open a master `.nsf` like a playlist, preview each track, and split the ones you want into individual mini-`.nsf` files saved in your game's music folder. Discard the tracks you don't want to keep. Access it from the **Desktop game menu:**
+- **NSF Manager** (Desktop) — Right-click a game with an `.nsf` → **Chiptunes → NSF Management**. Two tabs:
+  - **Split Tracks** — preview each track in a master `.nsf`, check the ones to keep, Commit. Original preserved in a backup folder by default.
+  - **Edit Loops** — set a custom loop length (seconds) for any individual `.nsf`. Empty field = default 2:30. Short jingles auto-advance as soon as they finish.
 
-  > Right-click a game with an `.nsf` → **Chiptunes → NSF Management**
+- **Automatic Playback on First Launch (Desktop)** — New Settings → General checkbox (on by default). When off, music stays silent in Desktop until you press Play once; after that, game switches auto-play for the rest of the session. Resets on Playnite restart.
 
-  The dialog has two tabs:
+- **True Crossfade (DJ-Style Overlap)** — New opt-in Settings → Playback toggle with a 1–10s duration slider (default 9s). Auto-advance transitions (Radio Mode, Randomize on Song End, pool-based default music) overlap the next song in parallel instead of the sequential fade-out. Manual song changes still switch instantly.
 
-  - **Split Tracks** — preview each track in a master `.nsf`, check the ones you want to keep, and Commit. The original is preserved in a backup folder by default.
-  - **Edit Loops** — set a custom loop length (in seconds) for any individual `.nsf` in the game's folder. Use the − / + buttons or type directly. Empty field = default 2:30. Great for trimming repetitive NES BGM tracks whose actual musical content is only 20–30 seconds long. Previews each track right in the dialog so you can find the right loop length by ear.
-
-- **How NSF Playback Works** — `.nsf` tracks don't carry length metadata, so by default each song plays up to 2:30 before looping. Short jingles and sound effects are auto-detected and advance to the next track as soon as they finish — no waiting 2:30 for a 3-second touchdown cheer. For everything in between, use the Edit Loops tab to dial in a custom length.
-
-- **Automatic Playback on First Launch (Desktop)** — New checkbox in Settings → General (on by default, existing behavior unchanged). When unchecked, automatic playback is disabled in Desktop until you manually press Play. After the first manual Play, game switches automatically play music for the rest of the session — resets on Playnite restart. Perfect for quiet Desktop browsing that still "wakes up" properly once you decide to start music. The existing Play Music State dropdown (for full per-mode on/off control) and the new checkbox now cross-reference each other in their descriptions so users see both options together.
-
-- **True Crossfade (DJ-Style Overlap)** — New opt-in setting in Settings → Playback. When enabled, auto-advance transitions (Radio Mode, Randomize on Song End, pool-based default music) overlap the current and next song in parallel — both audible simultaneously — instead of the sequential fade-out-then-fade-in. Configurable duration 1–10 seconds, default 9s for natural-sounding crossfades. Manual song changes still switch instantly. Songs shorter than the crossfade duration + 2 seconds fall back to the regular sequential fade. Takes effect on the next song transition; enabling mid-playback doesn't retrofit the currently-playing song.
-
-- **Fix: Auto-Play Setting Stays Honored After Toggling Backend Settings** — If Automatic Playback on First Launch was off and you had already pressed Play once, changing Live Effects, Visualizer, or True Crossfade used to cause UPS to stop auto-playing music on future game selections until you pressed Play again. Now playback continues as expected.
+- **Fix: Auto-Play Setting No Longer Breaks When Toggling Backend Options** — Previously, toggling Live Effects, Visualizer, or True Crossfade after enabling auto-play could require pressing Play again to resume auto-play on game switches. Fixed.
 
 ### Previous Version
 - **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
