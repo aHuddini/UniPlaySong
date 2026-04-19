@@ -130,6 +130,11 @@ namespace UniPlaySong.Services
         private readonly HashSet<PauseSource> _activePauseSources = new HashSet<PauseSource>();
         private bool _isPaused => _activePauseSources.Count > 0;
 
+        // Session-scoped flag: set true on first manual-play action (top panel,
+        // media key, dashboard, external control). Reset only by service disposal
+        // (Playnite restart). Used by MusicPlaybackCoordinator's Desktop auto-play lock.
+        private bool _userHasManuallyStartedThisSession = false;
+
         public bool IsPlaying => _musicPlayer?.IsActive ?? false;
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
@@ -140,6 +145,15 @@ namespace UniPlaySong.Services
             _currentSettings?.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset;
         public bool IsPlayingPoolBasedDefault => _isPlayingDefaultMusic &&
             (_currentSettings?.DefaultMusicSourceOption.IsPoolBased() == true || _isInRadioMode);
+
+        public bool UserHasManuallyStartedThisSession => _userHasManuallyStartedThisSession;
+
+        public void NotifyManualStart()
+        {
+            if (_userHasManuallyStartedThisSession) return;
+            _userHasManuallyStartedThisSession = true;
+            _fileLogger?.Debug("NotifyManualStart: session auto-play lock unlocked");
+        }
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
         {
