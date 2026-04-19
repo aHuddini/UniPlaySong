@@ -1327,6 +1327,15 @@ namespace UniPlaySong.Services
         {
             _crossfadeCoordinator?.Cancel();
 
+            // Also tear down any in-flight crossfade on the player side. The coordinator
+            // cancel above only stops polling; if the crossfade has already fired, the
+            // secondary input is live in the mixer and needs explicit cleanup before we
+            // load a new song — otherwise the secondary keeps ramping over the new song.
+            if (_musicPlayer is NAudioMusicPlayer naudioForSkip)
+            {
+                naudioForSkip.CancelCrossfade();
+            }
+
             // Radio Mode: skip within the radio pool
             if (_isInRadioMode && _currentSettings?.RadioModeEnabled == true && _radioSongPoolProvider != null)
             {
@@ -1462,6 +1471,15 @@ namespace UniPlaySong.Services
             if (_musicPlayer?.IsLoaded != true || string.IsNullOrEmpty(_currentSongPath)) return;
 
             _crossfadeCoordinator?.Cancel();
+
+            // Also tear down any in-flight crossfade on the player side. The coordinator
+            // cancel above only stops polling; if the crossfade has already fired, the
+            // secondary input is live in the mixer and needs explicit cleanup before we
+            // load a new song — otherwise the secondary keeps ramping over the new song.
+            if (_musicPlayer is NAudioMusicPlayer naudioForRestart)
+            {
+                naudioForRestart.CancelCrossfade();
+            }
 
             _fileLogger?.Debug($"RestartCurrentSong: Restarting '{Path.GetFileName(_currentSongPath)}'");
 
