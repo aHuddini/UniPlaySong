@@ -118,6 +118,19 @@ namespace UniPlaySong.Services
                 return false;
             }
 
+            // Session auto-play lock (Desktop).
+            // When AutoPlayOnFirstLaunchDesktop is OFF and we're in Desktop mode,
+            // suppress auto-play until the user has manually pressed Play at least
+            // once this session. After that the flag stays true (sticky-on) — manual
+            // Pause does NOT re-lock, per user-confirmed design.
+            if (_isDesktop()
+                && !_settings.AutoPlayOnFirstLaunchDesktop
+                && !_playbackService.UserHasManuallyStartedThisSession)
+            {
+                _fileLogger?.Debug("ShouldPlayMusic: Returning false - Desktop auto-play lock active (no manual start yet this session)");
+                return false;
+            }
+
             _fileLogger?.Debug($"ShouldPlayMusic: Returning true - all checks passed (Game: {game.Name})");
             return true;
         }
