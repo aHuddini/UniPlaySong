@@ -49,6 +49,40 @@ namespace UniPlaySong.Audio
                 }
             }
 
+            // For NSF files, honor the header's starting_song byte (offset 7, 1-based).
+            // This is how single-track mini-NSFs produced by NsfHeaderPatcher signal
+            // which song in the shared 6502 code blob to play. GME's gme_start_track
+            // overrides the header default, so we must explicitly pass the patched index.
+            // Other chiptune formats (VGM, SPC, GBS, HES, KSS, SAP, AY, NSFE, GYM) always
+            // start at track 0.
+            int trackIndex = 0;
+            if (ext != null && ext.Equals(".nsf", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var headerBytes = new byte[8];
+                    using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        int read = fs.Read(headerBytes, 0, 8);
+                        if (read == 8 &&
+                            headerBytes[0] == 0x4E && headerBytes[1] == 0x45 &&
+                            headerBytes[2] == 0x53 && headerBytes[3] == 0x4D &&
+                            headerBytes[4] == 0x1A)
+                        {
+                            int startingSong = headerBytes[7]; // 1-based in NSF header
+                            if (startingSong >= 1)
+                                trackIndex = startingSong - 1;
+                        }
+                    }
+                }
+                catch
+                {
+                    // If the header read fails, fall through to track 0 — GME will either
+                    // open and play track 0 successfully, or gme_open_file below will fail
+                    // with a clearer error.
+                }
+            }
+
             IntPtr emu;
             string err = GmeNative.GetError(GmeNative.gme_open_file(fileName, out emu, SampleRate));
             if (err != null)
@@ -57,9 +91,9 @@ namespace UniPlaySong.Audio
 
             _waveFormat = WaveFormat.CreateIeeeFloatWaveFormat(SampleRate, Channels);
 
-            // Get track duration from metadata
+            // Get track duration from metadata for the actual track we'll play.
             IntPtr info;
-            err = GmeNative.GetError(GmeNative.gme_track_info(_emu, out info, 0));
+            err = GmeNative.GetError(GmeNative.gme_track_info(_emu, out info, trackIndex));
             if (err == null && info != IntPtr.Zero)
             {
                 _playLengthMs = GmeNative.GetPlayLength(info);
@@ -75,8 +109,7 @@ namespace UniPlaySong.Audio
             // Don't use GME's internal fade — let NAudio's SongEndFade and fader handle transitions.
             // GME's gme_set_fade overlaps with our fader and can cause silent next-track issues.
 
-            // Start track 0
-            err = GmeNative.GetError(GmeNative.gme_start_track(_emu, 0));
+            err = GmeNative.GetError(GmeNative.gme_start_track(_emu, trackIndex));
             if (err != null)
                 throw new InvalidOperationException($"GME failed to start track: {err}");
         }
