@@ -35,6 +35,8 @@ Built with the help of Claude Code and Cursor IDE
 
 - **How NSF Playback Works** — `.nsf` tracks don't carry length metadata, so by default each song plays up to 2:30 before looping. Short jingles and sound effects are auto-detected and advance to the next track as soon as they finish — no waiting 2:30 for a 3-second touchdown cheer. For everything in between, use the Edit Loops tab to dial in a custom length.
 
+- **Automatic Playback on First Launch (Desktop)** — New checkbox in Settings → General (on by default, existing behavior unchanged). When unchecked, automatic playback is disabled in Desktop until you manually press Play. After the first manual Play, game switches automatically play music for the rest of the session — resets on Playnite restart. Perfect for quiet Desktop browsing that still "wakes up" properly once you decide to start music. The existing Play Music State dropdown (for full per-mode on/off control) and the new checkbox now cross-reference each other in their descriptions so users see both options together.
+
 ### Previous Version
 - **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
 
