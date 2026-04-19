@@ -2,8 +2,8 @@ AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.4.3
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-04-18
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.3/UniPlaySong-1_4_3-Apr18_2026.pext'
+    ReleaseDate: 2026-04-19
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.3/UniPlaySong-1_4_3-Apr19_2026.pext'
     Changelog:
       - '[New Format] NES Music (.nsf): NES / Famicom soundtracks are officially supported! Drop an .nsf file into a game''s music folder and it plays alongside MP3s, FLACs, and other chiptune formats. Sound effects and other jingles bundled inside the .nsf work too.'
       - '[New Feature] NSF Manager: .nsf files are album-like — a single file holds every song AND sound effect from the game. Right-click a game -> Chiptunes -> NSF Management (Desktop) to open a master .nsf like a playlist, preview each track, and split the ones you want into individual mini-.nsf files.'
