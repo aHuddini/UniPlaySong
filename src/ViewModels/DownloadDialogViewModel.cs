@@ -569,7 +569,7 @@ namespace UniPlaySong.ViewModels
                                     else
                                     {
                                         Logger.Error($"Preview download failed for {song.Name} - file does not exist at {tempPath}");
-                                        _playniteApi.Dialogs.ShowErrorMessage($"Failed to download preview for {song.Name}. Check logs for details.", "UniPlaySong");
+                                        _playniteApi.Dialogs.ShowErrorMessage($"Failed to download preview for {song.Name}. See %AppData%\\Playnite\\extensions.log for yt-dlp error details (network / bot detection / missing JS runtime are the usual causes).", "UniPlaySong");
                                     }
                                 });
                             }
@@ -741,10 +741,13 @@ namespace UniPlaySong.ViewModels
 
         private string GetTempPathForPreview(Song song)
         {
+            // Use the Playnite ExtraMetadata location (same as Fullscreen SimpleControllerDialog)
+            // rather than Windows %TEMP%. Windows Defender real-time scanning of %TEMP% has been
+            // observed to interrupt yt-dlp's intermediate .part files, causing silent download
+            // failures on some user systems. The Roaming path is less aggressively scanned.
             var tempDir = System.IO.Path.Combine(
-                System.IO.Path.GetTempPath(),
-                "UniPlaySong",
-                "Preview");
+                _playniteApi.Paths.ConfigurationPath,
+                "ExtraMetadata", "UniPlaySong", "temp");
             System.IO.Directory.CreateDirectory(tempDir);
 
             // Create hash from song ID and source to ensure unique temporary filenames

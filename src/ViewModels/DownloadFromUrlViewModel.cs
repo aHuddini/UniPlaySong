@@ -440,7 +440,11 @@ namespace UniPlaySong.ViewModels
                 _currentCts?.Cancel();
                 _currentCts = new CancellationTokenSource();
 
-                var tempDir = Path.Combine(Path.GetTempPath(), "UniPlaySong", "Preview");
+                // Roaming AppData location — same as SimpleControllerDialog (Fullscreen).
+                // Avoids Windows Defender interference with %TEMP% during yt-dlp downloads.
+                var tempDir = Path.Combine(
+                    _playniteApi.Paths.ConfigurationPath,
+                    "ExtraMetadata", "UniPlaySong", "temp");
                 Directory.CreateDirectory(tempDir);
                 _previewFilePath = Path.Combine(tempDir, $"{_extractedVideoId}_preview.mp3");
 
@@ -461,7 +465,7 @@ namespace UniPlaySong.ViewModels
                         UpdateOnUIThread(() =>
                         {
                             ShowProgress = false;
-                            _playniteApi.Dialogs.ShowErrorMessage("Failed to download preview. Check logs for details.", "UniPlaySong");
+                            _playniteApi.Dialogs.ShowErrorMessage("Failed to download preview. See %AppData%\\Playnite\\extensions.log for yt-dlp error details (network / bot detection / missing JS runtime are the usual causes).", "UniPlaySong");
                         });
                         return;
                     }

@@ -274,10 +274,13 @@ namespace UniPlaySong.Downloaders
                     // For previews: download only first 30 seconds instead of full track + trim
                     var sectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
 
-                    // For previews, add optimization flags for faster downloads
-                    var previewFlags = isPreview
-                        ? " --no-playlist --no-warnings --quiet --no-progress"
-                        : " --no-playlist";
+                    // Keep stderr diagnostics visible even for previews — prior --no-warnings
+                    // --quiet --no-progress combo silenced all output, so when YouTube bot
+                    // detection / cookie / JS-runtime failures hit on preview-only flows
+                    // (most common user interaction), there was nothing in the log to diagnose.
+                    // --no-playlist prevents an entire channel being downloaded when the URL
+                    // happens to be a playlist URL for a game soundtrack.
+                    var previewFlags = " --no-playlist";
 
                     arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{postProcessorArgs}{sectionLimit}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
