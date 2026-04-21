@@ -57,6 +57,18 @@ namespace UniPlaySong.Downloaders
             Cleanup();
         }
 
+        // Live-updates the YouTube + SoundCloud downloader configs (yt-dlp path, ffmpeg path,
+        // cookie mode, custom cookies file) without replacing this DownloadManager instance.
+        // Called from UniPlaySong.OnSettingsChanged when any of those settings change, so
+        // downstream services (DownloadDialogService, ControllerDialogHandler) that hold a
+        // reference to THIS DownloadManager keep working with the new settings — no stale
+        // reference problem.
+        public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
+        {
+            (_ytDownloader as YouTubeDownloader)?.UpdateSettings(ytDlpPath, ffmpegPath, cookieMode, customCookiesFilePath);
+            (_soundCloudDownloader as SoundCloudDownloader)?.UpdateSettings(ytDlpPath, ffmpegPath);
+        }
+
         public IEnumerable<Album> GetAlbumsForGame(string gameName, Source source, CancellationToken cancellationToken, bool auto = false, bool skipCache = false)
         {
             if (_errorHandler != null)

@@ -48,6 +48,12 @@ namespace UniPlaySong.Downloaders
         /// <param name="gameName">Name of the game to check for hints</param>
         /// <returns>List of albums from hints, or empty list if no hints exist</returns>
         List<Album> GetHintAlbums(string gameName);
+
+        // Live-updates the YouTube + SoundCloud downloader configs without replacing
+        // this IDownloadManager instance. Avoids stale-reference bugs in downstream
+        // services (DownloadDialogService, ControllerDialogHandler) that capture
+        // _downloadManager at construction time.
+        void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath);
     }
 }
 

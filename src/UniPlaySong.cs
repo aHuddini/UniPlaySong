@@ -1376,10 +1376,17 @@ namespace UniPlaySong
 
                 if (downloadSettingsChanged && _downloadManager != null)
                 {
-                    var tempPath = Path.Combine(_api.Paths.ExtensionsDataPath, "UniPlaySong", "temp");
-                    _downloadManager = new DownloadManager(
-                        _httpClient, _htmlWeb, tempPath,
-                        e.NewSettings?.YtDlpPath, e.NewSettings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, e.NewSettings);
+                    // Live-update the existing DownloadManager instead of recreating it.
+                    // Dialog handlers (DownloadDialogService, ControllerDialogHandler) hold
+                    // a reference to THIS _downloadManager instance, so replacing it would
+                    // leave those handlers with a stale config — the actual bug we hit when
+                    // a user changed YtDlpPath / cookie settings mid-session and YouTube
+                    // downloads kept using the old settings.
+                    _downloadManager.UpdateSettings(
+                        e.NewSettings?.YtDlpPath,
+                        e.NewSettings?.FFmpegPath,
+                        e.NewSettings?.CookieMode ?? CookieMode.None,
+                        e.NewSettings?.CustomCookiesFilePath ?? string.Empty);
                 }
 
                 // Check if player backend needs switching (Live Effects, Visualizer, Peak Meter, or True Crossfade require NAudio)

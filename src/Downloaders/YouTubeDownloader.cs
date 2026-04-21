@@ -20,10 +20,10 @@ namespace UniPlaySong.Downloaders
         private const string YouTubeBaseUrl = "https://www.youtube.com";
 
         private readonly HttpClient _httpClient;
-        private readonly string _ytDlpPath;
-        private readonly string _ffmpegPath;
-        private readonly CookieMode _cookieMode;
-        private readonly string _customCookiesFilePath;
+        private string _ytDlpPath;
+        private string _ffmpegPath;
+        private CookieMode _cookieMode;
+        private string _customCookiesFilePath;
         private readonly ErrorHandlerService _errorHandler;
 
         public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath, ErrorHandlerService errorHandler)
@@ -34,6 +34,21 @@ namespace UniPlaySong.Downloaders
             _cookieMode = cookieMode;
             _customCookiesFilePath = customCookiesFilePath ?? string.Empty;
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
+        }
+
+        // Live-updates the settings-driven fields without recreating the downloader.
+        // Called by DownloadManager.UpdateSettings when the user changes yt-dlp path /
+        // ffmpeg path / cookie mode / custom cookies file in settings. Fixes a stale-reference
+        // bug where dialog code paths (DownloadDialogService, ControllerDialogHandler) held
+        // the old DownloadManager instance when settings changed, so new YouTube download
+        // attempts went through the OLD cookie/path config even after the user fixed their
+        // configuration.
+        public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
+        {
+            _ytDlpPath = ytDlpPath;
+            _ffmpegPath = ffmpegPath;
+            _cookieMode = cookieMode;
+            _customCookiesFilePath = customCookiesFilePath ?? string.Empty;
         }
 
         public string BaseUrl() => YouTubeBaseUrl;

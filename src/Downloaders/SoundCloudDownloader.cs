@@ -19,8 +19,8 @@ namespace UniPlaySong.Downloaders
         private const string LogPrefix = "SoundCloudDownloader";
         private const string SoundCloudBaseUrl = "https://soundcloud.com/";
 
-        private readonly string _ytDlpPath;
-        private readonly string _ffmpegPath;
+        private string _ytDlpPath;
+        private string _ffmpegPath;
         private readonly ErrorHandlerService _errorHandler;
 
         public SoundCloudDownloader(string ytDlpPath, string ffmpegPath, ErrorHandlerService errorHandler)
@@ -28,6 +28,14 @@ namespace UniPlaySong.Downloaders
             _ytDlpPath = ytDlpPath;
             _ffmpegPath = ffmpegPath;
             _errorHandler = errorHandler;
+        }
+
+        // Live-updates the tool paths without recreating the downloader.
+        // See YouTubeDownloader.UpdateSettings for the stale-reference context.
+        public void UpdateSettings(string ytDlpPath, string ffmpegPath)
+        {
+            _ytDlpPath = ytDlpPath;
+            _ffmpegPath = ffmpegPath;
         }
 
         public string BaseUrl() => SoundCloudBaseUrl;
