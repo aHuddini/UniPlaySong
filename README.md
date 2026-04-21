@@ -20,22 +20,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.3
+## What's New - v1.4.4
 
-- **NES Music Support (.nsf)** — Drop an `.nsf` file into a game's music folder and it plays alongside MP3s and FLACs. Sound effects and game-over jingles bundled inside the NSF are available too.
+- **Fix: Desktop YouTube previews failing on some systems** — If YouTube previews/downloads were working in Fullscreen but not Desktop on your machine, this release should fix it. Previews now use the same AppData location as Fullscreen, avoiding interference from aggressive Windows Defender scanning on `%TEMP%` that was silently interrupting yt-dlp mid-download.
 
-- **NSF Manager** (Desktop) — Right-click a game with an `.nsf` → **Chiptunes → NSF Management**. Two tabs:
-  - **Split Tracks** — preview each track in a master `.nsf`, check the ones to keep, Commit. Original preserved in a backup folder by default.
-  - **Edit Loops** — set a custom loop length (seconds) for any individual `.nsf`. Empty field = default 2:30. Short jingles auto-advance as soon as they finish.
-
-- **Automatic Playback on First Launch (Desktop)** — New Settings → General checkbox (on by default). When off, music stays silent in Desktop until you press Play once; after that, game switches auto-play for the rest of the session. Resets on Playnite restart.
-
-- **True Crossfade (DJ-Style Overlap)** — New opt-in Settings → Playback toggle with a 1–10s duration slider (default 9s). Auto-advance transitions (Radio Mode, Randomize on Song End, pool-based default music) overlap the next song in parallel instead of the sequential fade-out. Manual song changes still switch instantly.
-
-- **Fix: Auto-Play Setting No Longer Breaks When Toggling Backend Options** — Previously, toggling Live Effects, Visualizer, or True Crossfade after enabling auto-play could require pressing Play again to resume auto-play on game switches. Fixed.
+- **Fix: yt-dlp errors no longer silently suppressed for previews** — When a YouTube preview fails, the underlying yt-dlp error (bot detection, missing JS runtime, corrupted install, etc.) now appears in `extensions.log`. The download-failure dialog also points at the correct log file.
 
 ### Previous Version
-- **v1.4.2**: Fullscreen Quick Settings Menu (controller-navigable Live Effects / Radio Mode / Preview Mode / Reverb Preset / Default Music Source toggles), Fullscreen Volume Boost, Stay Paused After External Audio option, Persistent Default Music Backdrop across game switches, Fullscreen exit stray-music fix
+- **v1.4.3**: NES Music (.nsf) support, NSF Manager (Split Tracks + Edit Loops tabs), True Crossfade (DJ-style overlap), Automatic Playback on First Launch (Desktop) checkbox, auto-play setting preservation across backend toggles.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
