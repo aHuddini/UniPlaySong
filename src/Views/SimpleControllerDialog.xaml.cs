@@ -1351,6 +1351,19 @@ namespace UniPlaySong.Views
                                             // (StopCurrentPreview would have tried to Resume, but we want a fresh start)
                                             _wasGameMusicPlaying = false;
 
+                                            // Clear any pause sources that accumulated during the download subprocess.
+                                            // yt-dlp / ffmpeg subprocesses can briefly steal focus from Playnite on
+                                            // some systems in Fullscreen, which triggers OnApplicationDeactivate →
+                                            // PauseSource.FocusLoss. If FocusLossStayPaused is on (v1.4.2 feature),
+                                            // the FocusLoss source is then converted to Manual on focus return —
+                                            // which ClearAllPauseSources preserves and auto-resume paths don't clear.
+                                            // The net effect is that after a Fullscreen download, music stays silent
+                                            // for every subsequent game switch until the user manually presses Play.
+                                            // Post-download we're explicitly starting music on the user's behalf, so
+                                            // clear those transient sources before PlayGameMusic runs.
+                                            _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
+                                            _playbackService.Resume(); // clears PauseSource.Manual if present
+
                                             Logger.DebugIf(LogPrefix, $"Download complete - triggering music refresh for game: {_currentGame.Name}");
                                             // Use forceReload: true to ensure newly downloaded song plays
                                             // Pass null settings - playback service uses its cached _currentSettings
