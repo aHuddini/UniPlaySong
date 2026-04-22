@@ -155,10 +155,12 @@ namespace UniPlaySong.Views
                 
                 _sourceOptions = new List<GenericItemOption>
                 {
-                    new GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
-                    new GenericItemOption("YouTube", 
-                        youtubeConfigured 
-                            ? "Download from YouTube (Playlists and videos)" 
+                    // DISABLED: KHInsider source temporarily removed (GitHub TOS review).
+                    // Matches the Desktop dialog's source list (DownloadDialogService.cs ~line 118).
+                    // new GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
+                    new GenericItemOption("YouTube",
+                        youtubeConfigured
+                            ? "Download from YouTube (Playlists and videos)"
                             : "Download from YouTube (Playlists and videos) - yt-dlp/ffmpeg required")
                 };
 
