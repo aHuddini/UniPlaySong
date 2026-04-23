@@ -5,8 +5,9 @@ Packages:
     ReleaseDate: 2026-04-20
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.4/UniPlaySong-1_4_4-Apr20_2026.pext'
     Changelog:
-      - '[Fix] Desktop YouTube previews failing on some systems: Previews and downloads from YouTube now use the same AppData location as Fullscreen does, which avoids interference from aggressive Windows Defender scanning on %TEMP% that was silently interrupting yt-dlp mid-download. If YouTube previews were working in Fullscreen but not Desktop on your system, this should fix it.'
-      - '[Fix] yt-dlp errors no longer silently suppressed for previews: When a YouTube preview fails, the underlying yt-dlp error (bot detection, missing JS runtime, corrupted install, etc.) is now visible in extensions.log. The download-failure dialog also points at the right log file explicitly.'
+      - '[New Format] SNES music (.spc): Confirmed working and now advertised in the About tab and README. Drop a .spc file into a game''s music folder and it plays alongside MP3s, FLACs, and other chiptune formats.'
+      - '[Fix] Desktop YouTube previews failing on some systems: Previews and downloads from YouTube now use the same AppData location as Fullscreen does, ensuring consistent, safe behavior.'
+      - '[Fix] yt-dlp errors no longer silently suppressed for previews under no-cookie mode: When using no-cookie mode and a YouTube preview fails, the underlying yt-dlp error (bot detection, missing JS runtime, corrupted install, etc.) is now visible in extensions.log. The download-failure dialog also points at the right log file explicitly.'
   - Version: 1.4.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-19

@@ -4003,17 +4003,17 @@
                         <StackPanel>
                             <TextBlock Text="Supported Audio Formats" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8">
-                                Formats tested against both playback backends (SDL2 and NAudio). Drop files matching these extensions into a game's music folder.
+                                Formats tested with UPS's audio system. Drop files matching these extensions into a game's music folder.
                             </TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• MP3</Run> — most common; best compatibility</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• OGG Vorbis</Run> — open, high-quality</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• FLAC</Run> — lossless</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,8"><Run FontWeight="SemiBold">• WAV</Run> — uncompressed</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• MP3</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• OGG Vorbis</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• FLAC</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• WAV</TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">Retro chiptune (via bundled Game Music Emu):</TextBlock>
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .spc</Run> — SNES / Super Famicom</TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
-                                Chiptune files auto-route through the NAudio backend for decoding. Other VGM chip families (arcade boards, Neo Geo, PC Engine CD) are outside GME's scope and will not play.
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -4053,7 +4053,7 @@
 
                     <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">FFmpeg (for normalization, conversion, and waveform editing)</TextBlock>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
-                        Download FFmpeg and point the plugin to ffmpeg.exe in the Downloads tab. Required for audio normalization, bulk format conversion, silence trim, and amplify.
+                        Download FFmpeg and point the plugin to ffmpeg.exe in the Editing tab. Required for audio normalization, bulk format conversion, silence trim, and amplify.
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
                         <TextBlock FontSize="11" Foreground="Gray" Text="Download: "/>
@@ -4061,10 +4061,6 @@
                             <Hyperlink NavigateUri="https://ffmpeg.org/download.html" RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org</Hyperlink>
                         </TextBlock>
                     </StackPanel>
-
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,6,0,15">
-                        Both tool paths are set in <Run FontWeight="SemiBold">Settings → Downloads</Run>. A ✓ Found / ✗ Not found indicator next to each path shows whether the plugin can locate the executable.
-                    </TextBlock>
 
                     <!-- Links -->
                     <Separator Margin="0,5,0,15"/>
