@@ -22,7 +22,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.4
 
-- **SNES Music Support (.spc)** — Drop a `.spc` file into a game's music folder and it plays alongside MP3s, FLACs, and other chiptune formats. Confirmed working with libgme.
+- **SNES Music Support (.spc)** — Drop a `.spc` file into a game's music folder and it plays alongside MP3s, FLACs, and other chiptune formats.
 
 - **Fix: Desktop YouTube previews failing on some systems** — If YouTube previews/downloads were working in Fullscreen but not Desktop on your machine, this release should fix it. Previews now use the same AppData location as Fullscreen, avoiding interference from aggressive Windows Defender scanning on `%TEMP%` that was silently interrupting yt-dlp mid-download.
 
