@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.4.3-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.4.5-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,16 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.4
+## What's New - v1.4.5
 
-- **SNES Music Support (.spc)** — Drop a `.spc` file into a game's music folder and it plays alongside MP3s, FLACs, and other chiptune formats.
+- **Faster YouTube Search Results** — Music searches now return in ~1 second instead of 3-5 seconds. UPS used to fetch 100 results from YouTube (which required 5-6 page-fetches); now it fetches just the top 20, which is plenty for picking the right playlist.
 
-- **Fix: Desktop YouTube previews failing on some systems** — If YouTube previews/downloads were working in Fullscreen but not Desktop on your machine, this release should fix it. Previews now use the same AppData location as Fullscreen, avoiding interference from aggressive Windows Defender scanning on `%TEMP%` that was silently interrupting yt-dlp mid-download.
+- **Back button no longer cancels your download** — In the Desktop download dialog, pressing BACK while a download was running would close the dialog mid-download. BACK is now disabled during an active download and re-enables when it finishes.
 
-- **Fix: yt-dlp errors no longer silently suppressed for previews** — When a YouTube preview fails, the underlying yt-dlp error (bot detection, missing JS runtime, corrupted install, etc.) now appears in `extensions.log`. The download-failure dialog also points at the correct log file.
+- **New FINISH button in download dialog** — After downloading, a new FINISH button appears so you can close the dialog cleanly. No more wondering if CANCEL will discard your download.
 
 ### Previous Version
-- **v1.4.3**: NES Music (.nsf) support, NSF Manager (Split Tracks + Edit Loops tabs), True Crossfade (DJ-style overlap), Automatic Playback on First Launch (Desktop) checkbox, auto-play setting preservation across backend toggles.
+- **v1.4.4**: SNES Music (.spc) support, Desktop YouTube preview fixes (temp path + stderr visibility), stale-reference fix when changing yt-dlp / cookie settings mid-session.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

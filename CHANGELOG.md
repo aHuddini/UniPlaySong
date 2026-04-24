@@ -4,6 +4,15 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.4.5] - In development
+
+### Performance
+- **YouTube Search Results 3-5× Faster** — `YouTubeDownloader.GetAlbumsForGame` was requesting `Search(query, maxResults: 100)`, which forced `YouTubeClient.Search` to page through 5-6 continuation tokens on YouTube's backend (each round-trip adding ~500ms-1s of latency). Dropped to `maxResults: 20` — one page from YouTube, ~1s total for the whole search. Users rarely scroll past the top few playlists and `BestAlbumPick`'s scoring strongly favors top-ranked results anyway, so the UX change is an unambiguous win.
+
+### Fixed
+- **Back Button Cancels In-Progress Downloads** — In the Desktop song-selection dialog, pressing BACK during an active download closed the dialog with `BackWasPressed = true`, which from the user's perspective looked like the download got "cancelled" (UI disappears). The `Task.Run` download loop kept going internally with its own `CancellationTokenSource`, but the user saw the dialog disappear and had no way to check on the download. Fix: BACK is now disabled (`CanPressBack = !IsDownloading`) while a download is in progress. It re-enables after the download completes, so users can still return to album selection for more downloads.
+- **No Clean Exit After Download** — Once a download completed, the dialog stayed open on the song-selection list. The only exits were CANCEL (which semantically implies "discard", confusing) or the window X (which also implied cancellation). Added a FINISH button that appears only after at least one successful download (`ShowFinishButton = DownloadCompleted`). It closes the dialog with `DialogResult = true` — clean exit, no "cancel" framing. CANCEL still exists for the "I want to discard this whole operation" case.
+
 ## [1.4.4] - In development
 
 ### Added

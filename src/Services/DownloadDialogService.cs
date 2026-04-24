@@ -739,6 +739,16 @@ namespace UniPlaySong.Services
                 window.Close();
             });
 
+            // FINISH command — appears after at least one successful download. Closes the
+            // dialog cleanly without the "discard" implication of CANCEL or the "go back"
+            // semantics of BACK. Same close behavior as CANCEL but different user intent.
+            viewModel.FinishCommand = new Common.RelayCommand(() =>
+            {
+                viewModel.CleanupPreviewFiles();
+                window.DialogResult = true;
+                window.Close();
+            });
+
             // Clean up preview files when window closes
             window.Closing += (s, e) =>
             {

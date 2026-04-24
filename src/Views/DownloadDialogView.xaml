@@ -232,24 +232,39 @@
         </Grid>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <!-- Back Button (only shown when ShowBackButton is true) -->
-            <Button Content="BACK" 
-                    Command="{Binding BackCommand}" 
+            <!-- Back Button (only shown when ShowBackButton is true; disabled during download) -->
+            <Button Content="BACK"
+                    Command="{Binding BackCommand}"
+                    IsEnabled="{Binding CanPressBack}"
                     Style="{StaticResource MaterialDesignOutlinedButton}"
                     FontSize="11"
-                    Padding="12,6" 
-                    MinWidth="70" 
+                    Padding="12,6"
+                    MinWidth="70"
                     Margin="0,0,8,0"
                     MinHeight="32"
-                    Visibility="{Binding ShowBackButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Button Content="CANCEL" 
-                    Command="{Binding CancelCommand}" 
+                    Visibility="{Binding ShowBackButton, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    ToolTip="Return to album selection. Disabled while a download is in progress."/>
+            <Button Content="CANCEL"
+                    Command="{Binding CancelCommand}"
                     Style="{StaticResource MaterialDesignOutlinedButton}"
                     FontSize="11"
-                    Padding="12,6" 
-                    MinWidth="70" 
+                    Padding="12,6"
+                    MinWidth="70"
                     Margin="0,0,8,0"
-                    MinHeight="32"/>
+                    MinHeight="32"
+                    ToolTip="Close the dialog without downloading anything else."/>
+            <!-- Finish Button — appears after a successful download. Closes the dialog
+                 cleanly (no cancel/discard semantics). -->
+            <Button Content="FINISH"
+                    Command="{Binding FinishCommand}"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    FontSize="11"
+                    Padding="12,6"
+                    MinWidth="70"
+                    Margin="0,0,8,0"
+                    MinHeight="32"
+                    Visibility="{Binding ShowFinishButton, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    ToolTip="Close the dialog — you've finished downloading."/>
             <Button Content="{Binding ConfirmButtonText}" 
                     Command="{Binding ConfirmCommand}" 
                     FontSize="11"

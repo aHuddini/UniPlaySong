@@ -140,6 +140,7 @@ namespace UniPlaySong.ViewModels
                 _isDownloading = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(ShowProgress));
+                OnPropertyChanged(nameof(CanPressBack));
             }
         }
 
@@ -148,6 +149,30 @@ namespace UniPlaySong.ViewModels
         {
             get => IsSearching || IsDownloading;
         }
+
+        // True when at least one download has completed successfully in this dialog session.
+        // Drives the FINISH button's visibility so the user can close the dialog cleanly
+        // after downloading (vs. clicking CANCEL which implies "discard").
+        private bool _downloadCompleted = false;
+        public bool DownloadCompleted
+        {
+            get => _downloadCompleted;
+            set
+            {
+                _downloadCompleted = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowFinishButton));
+            }
+        }
+
+        // FINISH button shows ONLY after a successful download — it's the "clean exit" action
+        // that distinguishes from CANCEL ("discard") and BACK ("go back a step").
+        public bool ShowFinishButton => _downloadCompleted;
+
+        // BACK is disabled during an in-progress download to prevent users from accidentally
+        // killing the download by clicking the wrong button. After the download finishes,
+        // BACK becomes available again so they can return to album selection for more downloads.
+        public bool CanPressBack => !_isDownloading;
 
         private string _confirmButtonText = "CONFIRM";
         public string ConfirmButtonText
@@ -211,6 +236,7 @@ namespace UniPlaySong.ViewModels
         public ICommand ConfirmCommand { get; set; }
         public ICommand CancelCommand { get; set; }
         public ICommand BackCommand { get; set; }
+        public ICommand FinishCommand { get; set; }
         
         // Action to call when download completes (set by dialog service)
         public Action<bool> OnDownloadComplete { get; set; }
@@ -1046,6 +1072,13 @@ namespace UniPlaySong.ViewModels
                                     {
                                         IsDownloading = false;
                                         ProgressText = string.Empty;
+
+                                        // Flag that a download completed so FINISH button appears.
+                                        // Re-enables BACK (disabled while IsDownloading=true).
+                                        if (downloaded > 0)
+                                        {
+                                            DownloadCompleted = true;
+                                        }
 
                                         // Re-enable confirm button
                                         if (ConfirmCommand is Common.RelayCommand confirmCmd)

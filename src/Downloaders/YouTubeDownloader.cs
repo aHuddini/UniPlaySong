@@ -73,7 +73,10 @@ namespace UniPlaySong.Downloaders
                 Logger.DebugIf(LogPrefix,$"Searching YouTube for: {searchQuery}");
 
                 var client = new YouTubeClient(_httpClient, _errorHandler);
-                var results = client.Search(searchQuery, 100, cancellationToken);
+                // 20 results = ~1 page from YouTube; previously was 100 which paged 5-6 times
+                // and added 3-5s of latency. Users rarely scroll past the top few playlists
+                // anyway, and the plugin's BestAlbumPick scoring strongly favors top results.
+                var results = client.Search(searchQuery, 20, cancellationToken);
 
                 if (results == null)
                 {
