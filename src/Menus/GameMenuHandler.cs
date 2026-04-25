@@ -415,7 +415,7 @@ namespace UniPlaySong.Menus
                         if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                         {
                             _fileService.WriteBreadcrumb(game, musicDir);
-                            Process.Start("explorer.exe", musicDir);
+                            ShellHelper.OpenFolderInExplorer(musicDir);
                         }
                         else if (!string.IsNullOrEmpty(musicDir))
                         {
@@ -426,7 +426,7 @@ namespace UniPlaySong.Menus
                             if (result == System.Windows.MessageBoxResult.Yes)
                             {
                                 _fileService.EnsureGameMusicDirectory(game);
-                                Process.Start("explorer.exe", musicDir);
+                                ShellHelper.OpenFolderInExplorer(musicDir);
                             }
                         }
                     },
@@ -444,7 +444,7 @@ namespace UniPlaySong.Menus
                     if (!string.IsNullOrEmpty(musicDir) && Directory.Exists(musicDir))
                     {
                         _fileService.WriteBreadcrumb(game, musicDir);
-                        Process.Start("explorer.exe", musicDir);
+                        ShellHelper.OpenFolderInExplorer(musicDir);
                     }
                     else if (!string.IsNullOrEmpty(musicDir))
                     {
@@ -455,7 +455,7 @@ namespace UniPlaySong.Menus
                         if (result == System.Windows.MessageBoxResult.Yes)
                         {
                             _fileService.EnsureGameMusicDirectory(game);
-                            Process.Start("explorer.exe", musicDir);
+                            ShellHelper.OpenFolderInExplorer(musicDir);
                         }
                     }
                 }

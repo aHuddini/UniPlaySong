@@ -42,6 +42,12 @@ namespace UniPlaySong.Views
         private Album _selectedAlbum;
         private List<DownloadItemViewModel> _cachedAlbumResults; // Cached album search results for back navigation
 
+        // Search-variant state (v1.4.5): persists which source + keyword was last searched so
+        // the variant buttons know what to re-run. null variant = default YouTubeDownloader
+        // auto-OST-append behavior.
+        private Source _lastAlbumSource = Source.YouTube;
+        private string _lastSearchVariant = null;
+
         // Flag to block input during modal dialogs (e.g., download success message)
         private volatile bool _isShowingModalDialog = false;
 
@@ -149,7 +155,8 @@ namespace UniPlaySong.Views
             try
             {
                 _currentStep = DialogStep.SourceSelection;
-                
+                HideSearchVariantPanel();
+
                 // Create source options (same logic as DownloadDialogService)
                 var youtubeConfigured = CheckYouTubeConfiguration();
                 
@@ -987,26 +994,47 @@ namespace UniPlaySong.Views
         }
 
         /// <summary>
-        /// Load album selection for the chosen source
+        /// Load album selection for the chosen source.
         /// </summary>
-        private void LoadAlbumSelection(Source source)
+        /// <param name="source">Download source to search.</param>
+        /// <param name="searchVariant">Optional keyword to append to the game name
+        /// (e.g., "OST", "soundtrack", "music", "theme"). Null = default behavior
+        /// (YouTubeDownloader auto-appends "OST" if no keyword present).</param>
+        private void LoadAlbumSelection(Source source, string searchVariant = null)
         {
             try
             {
                 _currentStep = DialogStep.AlbumSelection;
-                UpdateInputFeedback($"🔍 Searching {source} for: {_currentGame?.Name}...");
-                
+                _lastAlbumSource = source;
+                _lastSearchVariant = searchVariant;
+
+                // Show variant buttons at the bottom-left so the user can re-run the
+                // search with different keywords without leaving the dialog. Visible
+                // only on this step — hidden on SourceSelection / SongSelection / Downloading.
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SearchVariantPanel.Visibility = System.Windows.Visibility.Visible;
+                    // Highlight the active variant so the user sees which one produced these results.
+                    UpdateVariantButtonHighlights(searchVariant);
+                }));
+
+                var gameName = _currentGame?.Name ?? "Unknown Game";
+                var searchQuery = string.IsNullOrEmpty(searchVariant)
+                    ? gameName
+                    : $"{gameName} {searchVariant}";
+                UpdateInputFeedback($"🔍 Searching {source} for: {searchQuery}...");
+
                 // Perform real search using the download manager
                 Task.Run(() =>
                 {
                     try
                     {
                         var cancellationToken = new CancellationTokenSource().Token;
-                        var gameName = _currentGame?.Name ?? "Unknown Game";
 
-                        Logger.DebugIf(LogPrefix, $"Searching for albums: Game='{gameName}', Source={source}");
+                        Logger.DebugIf(LogPrefix, $"Searching for albums: Query='{searchQuery}', Source={source}");
 
-                        // First, get hint albums for this game (prioritized at top)
+                        // First, get hint albums for this game (prioritized at top) — always by
+                        // raw game name regardless of variant, since hints are game-keyed not query-keyed.
                         var hintAlbums = _downloadManager?.GetHintAlbums(gameName);
                         var hintViewModels = new List<DownloadItemViewModel>();
 
@@ -1028,8 +1056,10 @@ namespace UniPlaySong.Views
                             Logger.DebugIf(LogPrefix, $"Found {sourceHints.Count} hint album(s) for '{gameName}' from {source}");
                         }
 
-                        // Search for real albums using the download manager
-                        var albums = _downloadManager?.GetAlbumsForGame(gameName, source, cancellationToken, auto: false);
+                        // Search for real albums using the download manager.
+                        // Pass the pre-suffixed searchQuery so YouTubeDownloader's auto-OST-append
+                        // is bypassed (its keyword check covers OST/soundtrack/music/theme).
+                        var albums = _downloadManager?.GetAlbumsForGame(searchQuery, source, cancellationToken, auto: false);
                         var albumsList = albums?.ToList() ?? new List<Album>();
 
                         Logger.DebugIf(LogPrefix, $"Found {albumsList.Count} albums for '{gameName}' from {source}");
@@ -1058,7 +1088,7 @@ namespace UniPlaySong.Views
                                 {
                                     _cachedAlbumResults = albumViewModels;
                                     PopulateResultsList(albumViewModels);
-                                    UpdateInputFeedback($"🎵 Found {albumViewModels.Count} albums for {gameName} - A to select, B to go back, X/Y to preview");
+                                    UpdateInputFeedback($"🎵 Found {albumViewModels.Count} albums for '{searchQuery}' - A to select, B to go back, X/Y to preview, ←/→ to change search term");
                                 }
                                 else
                                 {
@@ -1155,6 +1185,7 @@ namespace UniPlaySong.Views
             try
             {
                 _currentStep = DialogStep.SongSelection;
+                HideSearchVariantPanel();
                 UpdateInputFeedback($"🎵 Loading songs from: {album.Name}...");
                 
                 // Load real songs using the download manager
@@ -1617,6 +1648,18 @@ namespace UniPlaySong.Views
                     case ControllerInput.DPadDown:
                         if (TryDpadNavigation()) NavigateList(1);
                         break;
+                    case ControllerInput.DPadLeft:
+                        // On album selection, DPadLeft cycles BACKWARD through variant
+                        // keywords (OST → Soundtrack → Music → Theme) and immediately
+                        // re-runs the search with the newly selected variant. No-op on
+                        // other steps so controller input for other screens is unaffected.
+                        if (TryDpadNavigation() && _currentStep == DialogStep.AlbumSelection)
+                            CycleSearchVariant(-1);
+                        break;
+                    case ControllerInput.DPadRight:
+                        if (TryDpadNavigation() && _currentStep == DialogStep.AlbumSelection)
+                            CycleSearchVariant(1);
+                        break;
                     case ControllerInput.LeftShoulder:
                         NavigateList(-5);
                         break;
@@ -1688,6 +1731,120 @@ namespace UniPlaySong.Views
             }
 
             return "";
+        }
+
+        #endregion
+
+        #region Search Variant Buttons (v1.4.5)
+
+        // User clicked one of OST / Soundtrack / Music / Theme at the bottom-left of the dialog.
+        // Re-runs the album search against the same source but with the clicked suffix appended
+        // to the game name. No keyboard needed — controller users can refine their search with
+        // a single A-press on any variant button.
+        private void VariantButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as System.Windows.Controls.Button;
+                var variant = button?.Tag as string;
+                if (string.IsNullOrEmpty(variant)) return;
+
+                // Already on this variant? Ignore — avoids a redundant network call and
+                // keeps the highlight state stable if the user double-clicks.
+                if (string.Equals(_lastSearchVariant, variant, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                Logger.DebugIf(LogPrefix, $"Variant button clicked: {variant} (source={_lastAlbumSource})");
+                LoadAlbumSelection(_lastAlbumSource, variant);
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Error(ex, "Error handling variant button click");
+            }
+        }
+
+        // Visually distinguishes the active variant so the user can tell which keyword
+        // produced the current results. Uses the same Raised/Outlined style swap that
+        // MaterialDesign applies to toggle buttons elsewhere in the app.
+        private void UpdateVariantButtonHighlights(string activeVariant)
+        {
+            var buttons = new (System.Windows.Controls.Button Btn, string Tag)[]
+            {
+                (VariantOstButton, "OST"),
+                (VariantSoundtrackButton, "soundtrack"),
+                (VariantMusicButton, "music"),
+                (VariantThemeButton, "theme"),
+            };
+
+            var raised = (System.Windows.Style)FindResource("MaterialDesignRaisedButton");
+            var outlined = (System.Windows.Style)FindResource("MaterialDesignOutlinedButton");
+
+            foreach (var (btn, tag) in buttons)
+            {
+                bool isActive = string.Equals(activeVariant, tag, System.StringComparison.OrdinalIgnoreCase);
+                btn.Style = isActive ? raised : outlined;
+            }
+        }
+
+        // Ordered list of variants the controller cycles through via DPadLeft/DPadRight.
+        // Matches the left-to-right order of the buttons in the XAML bottom-left panel so
+        // the visual highlight moves in sync with the directional input.
+        private static readonly string[] VariantOrder = { "OST", "soundtrack", "music", "theme" };
+
+        // DPadLeft/DPadRight handler: cycles the search variant by the given step and
+        // immediately re-runs the album search with the new keyword. Wraps around at both
+        // ends. Does nothing if the variant panel isn't currently visible.
+        //
+        // direction: -1 for previous (DPadLeft), +1 for next (DPadRight).
+        private void CycleSearchVariant(int direction)
+        {
+            try
+            {
+                if (SearchVariantPanel.Visibility != System.Windows.Visibility.Visible) return;
+
+                // Find current index. null _lastSearchVariant (first search uses default
+                // auto-OST-append) is treated as "OST" for cycling purposes.
+                var current = _lastSearchVariant ?? "OST";
+                int idx = System.Array.FindIndex(VariantOrder, v =>
+                    string.Equals(v, current, System.StringComparison.OrdinalIgnoreCase));
+                if (idx < 0) idx = 0;
+
+                int next = (idx + direction + VariantOrder.Length) % VariantOrder.Length;
+                var nextVariant = VariantOrder[next];
+
+                Logger.DebugIf(LogPrefix, $"DPad variant cycle: {current} → {nextVariant} (direction={direction})");
+                LoadAlbumSelection(_lastAlbumSource, nextVariant);
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Error(ex, "Error cycling search variant");
+            }
+        }
+
+        // Hides the variant button panel when leaving album-selection step.
+        // Safe to call off the UI thread — dispatches internally.
+        private void HideSearchVariantPanel()
+        {
+            try
+            {
+                if (Dispatcher.CheckAccess())
+                {
+                    SearchVariantPanel.Visibility = System.Windows.Visibility.Collapsed;
+                }
+                else
+                {
+                    Dispatcher.BeginInvoke(new System.Action(() =>
+                    {
+                        SearchVariantPanel.Visibility = System.Windows.Visibility.Collapsed;
+                    }));
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Error(ex, "Error hiding search variant panel");
+            }
         }
 
         #endregion

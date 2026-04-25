@@ -5,7 +5,9 @@ Packages:
     ReleaseDate: 2026-04-23
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.5/UniPlaySong-1_4_5-Apr23_2026.pext'
     Changelog:
-      - '[Performance] Faster YouTube search results: Music searches now return in ~1 second instead of 3-5 seconds. Previously UPS fetched 100 results from YouTube (paging through continuation tokens 5-6 times); now it fetches just the top 20, which is plenty for the BestAlbumPick scoring and is what users actually scroll through.'
+      - '[New Feature] Fullscreen search-term buttons: New OST / Soundtrack / Music / Theme buttons at the bottom-left of the Fullscreen download dialog. Click (or press D-Pad Left/Right on a controller) to immediately re-run the album search with that keyword. Active term is highlighted. No keyboard needed.'
+      - '[Performance] Faster YouTube search results: UPS now fetches the top 20 results from YouTube instead of 100, cutting out the extra page-fetches. UPS already favors top-ranked results when picking the best album, so search quality is unchanged.'
+      - '[Fix] "Open Music Folder" no longer leaks explorer.exe processes on each click. Same fix applied to Open log / preserved originals / hints database folders.'
       - '[Fix] Back button no longer cancels in-progress downloads: In the Desktop song-selection dialog, pressing Back while a download was running closed the dialog mid-download, which looked like cancellation. Back is now disabled while downloading and re-enables once the download completes — so you can still go back to album selection for more downloads afterward.'
       - '[New] Finish button in download dialog: After downloading at least one song, a new FINISH button appears. Closes the dialog cleanly — no more wondering if clicking CANCEL will discard your download.'
   - Version: 1.4.4

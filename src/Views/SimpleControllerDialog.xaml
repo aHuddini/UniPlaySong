@@ -86,9 +86,9 @@
                            Foreground="#1976D2"
                            TextAlignment="Center"
                            TextWrapping="Wrap">
-                    <Run Text="🎮 A: Select/Download • B: Back/Cancel • X/Y: Preview • D-Pad: Navigate"/>
+                    <Run Text="🎮 A: Select/Download • B: Back/Cancel • X/Y: Preview • D-Pad Up/Down: Navigate list"/>
                     <LineBreak/>
-                    <Run Text="🎮 LB/RB: Page through • LT/RT: Jump to top/bottom"/>
+                    <Run Text="🎮 LB/RB: Page through • LT/RT: Jump to top/bottom • D-Pad Left/Right: Cycle search term (on album screen)"/>
                     <LineBreak/>
                     <Run Text="⌨️ Keyboard: Arrow keys, Enter, Escape, F1 for preview"/>
                 </TextBlock>
@@ -116,18 +116,73 @@
             <!-- Items will be populated dynamically -->
         </ListBox>
 
-        <!-- Action Buttons -->
-        <StackPanel Grid.Row="3" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center">
-            <Button Name="CancelButton"
-                    Content="Back / Cancel"
-                    Style="{StaticResource ControllerButtonStyle}"
-                    Click="CancelButton_Click"/>
-            <Button Name="ConfirmButton"
-                    Content="Select / Download"
-                    Style="{StaticResource ControllerButtonStyle}"
-                    Click="ConfirmButton_Click"/>
-        </StackPanel>
+        <!-- Action Buttons Row — left = search variant buttons (album-selection step only);
+             right = back / confirm. -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Bottom-left: search-variant buttons — re-run the search with a different suffix.
+                 Visibility collapsed by default; shown only during album-selection step via code-behind. -->
+            <StackPanel Name="SearchVariantPanel"
+                        Grid.Column="0"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                <TextBlock Text="Try: "
+                           VerticalAlignment="Center"
+                           Foreground="#BBBBBB"
+                           FontSize="12"
+                           Margin="4,0,8,0"/>
+                <Button Name="VariantOstButton"
+                        Content="OST"
+                        Click="VariantButton_Click"
+                        Tag="OST"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        MinWidth="70" Height="36" FontSize="12"
+                        Margin="0,0,4,0"
+                        ToolTip="Search for '{Game} OST'"/>
+                <Button Name="VariantSoundtrackButton"
+                        Content="Soundtrack"
+                        Click="VariantButton_Click"
+                        Tag="soundtrack"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        MinWidth="92" Height="36" FontSize="12"
+                        Margin="0,0,4,0"
+                        ToolTip="Search for '{Game} soundtrack'"/>
+                <Button Name="VariantMusicButton"
+                        Content="Music"
+                        Click="VariantButton_Click"
+                        Tag="music"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        MinWidth="70" Height="36" FontSize="12"
+                        Margin="0,0,4,0"
+                        ToolTip="Search for '{Game} music'"/>
+                <Button Name="VariantThemeButton"
+                        Content="Theme"
+                        Click="VariantButton_Click"
+                        Tag="theme"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        MinWidth="70" Height="36" FontSize="12"
+                        ToolTip="Search for '{Game} theme'"/>
+            </StackPanel>
+
+            <!-- Bottom-right: existing back/confirm controller buttons (unchanged behavior). -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Name="CancelButton"
+                        Content="Back / Cancel"
+                        Style="{StaticResource ControllerButtonStyle}"
+                        Click="CancelButton_Click"/>
+                <Button Name="ConfirmButton"
+                        Content="Select / Download"
+                        Style="{StaticResource ControllerButtonStyle}"
+                        Click="ConfirmButton_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

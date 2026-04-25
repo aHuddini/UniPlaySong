@@ -7,6 +7,7 @@ using System.Windows.Media;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
+using UniPlaySong.Common;
 using UniPlaySong.Models;
 using UniPlaySong.Services;
 
@@ -99,7 +100,7 @@ namespace UniPlaySong.DeskMediaControl
 
         private void InitializeTopPanelItems()
         {
-            var icoFont = ResourceProvider.GetResource("FontIcoFont") as FontFamily;
+            var icoFont = Playnite.SDK.ResourceProvider.GetResource("FontIcoFont") as FontFamily;
 
             // Play/Pause button — 18pt, no bold, theme-adaptive margins
             _playPauseIcon = new TextBlock
@@ -300,7 +301,7 @@ namespace UniPlaySong.DeskMediaControl
                     var folder = Path.GetDirectoryName(currentSongPath);
                     if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", folder);
+                        ShellHelper.OpenFolderInExplorer(folder);
                         _log?.Invoke($"TopPanel: Opening music folder: {folder}");
                     }
                 }

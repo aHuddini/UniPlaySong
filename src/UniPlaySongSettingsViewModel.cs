@@ -725,7 +725,7 @@ namespace UniPlaySong
                         Directory.CreateDirectory(preservedOriginalsPath);
                     }
 
-                    System.Diagnostics.Process.Start("explorer.exe", preservedOriginalsPath);
+                    Common.ShellHelper.OpenFolderInExplorer(preservedOriginalsPath);
                 },
                 context: "opening preserved originals folder",
                 showUserMessage: true
@@ -741,7 +741,7 @@ namespace UniPlaySong
                     var extensionFolder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
                     if (!string.IsNullOrEmpty(extensionFolder) && Directory.Exists(extensionFolder))
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", extensionFolder);
+                        Common.ShellHelper.OpenFolderInExplorer(extensionFolder);
                     }
                     else
                     {
@@ -1100,7 +1100,7 @@ namespace UniPlaySong
                         System.IO.Directory.CreateDirectory(folderPath);
                     }
 
-                    System.Diagnostics.Process.Start("explorer.exe", folderPath);
+                    Common.ShellHelper.OpenFolderInExplorer(folderPath);
                 },
                 context: "opening hints database folder",
                 showUserMessage: true

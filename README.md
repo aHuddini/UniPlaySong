@@ -22,7 +22,11 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.4.5
 
-- **Faster YouTube Search Results** — Music searches now return in ~1 second instead of 3-5 seconds. UPS used to fetch 100 results from YouTube (which required 5-6 page-fetches); now it fetches just the top 20, which is plenty for picking the right playlist.
+- **Fullscreen search-term buttons** — Four new buttons at the bottom-left of the Fullscreen download dialog (**OST**, **Soundtrack**, **Music**, **Theme**) let you re-run the search with a different keyword without typing. On a controller, **D-Pad Left/Right** cycles through them and immediately refreshes the results. The active term is highlighted so you can tell which one produced what you're seeing.
+
+- **Faster YouTube Search Results** — UPS now fetches the top 20 results from YouTube instead of 100, cutting out the extra page-fetches that added the most search latency. UPS already favors top-ranked results when picking the best album, so quality is unchanged.
+
+- **"Open Music Folder" no longer leaks explorer.exe processes** on each click. Same fix applied to Open log / preserved originals / hints database folders.
 
 - **Back button no longer cancels your download** — In the Desktop download dialog, pressing BACK while a download was running would close the dialog mid-download. BACK is now disabled during an active download and re-enables when it finishes.
 
