@@ -6,88 +6,96 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.4.5] - In development
 
+> Detailed release notes (full context, benchmark numbers, before/after logs) live in `docs/release_notes/v1.4.5-beta1.md`.
+
 ### Added
-- **Fullscreen Search-Variant Buttons (Controller-Friendly)** — Without keyboard input, Fullscreen users were stuck with whatever the auto-search returned. Added 4 keyword buttons at the bottom-left of the Fullscreen download dialog (`SimpleControllerDialog`): **OST** / **Soundtrack** / **Music** / **Theme**. Buttons are visible only on the album-selection step. Clicking re-runs `GetAlbumsForGame` with the variant appended to the game name (`{Game} OST`, `{Game} soundtrack`, `{Game} music`, `{Game} theme`). The active variant is rendered in `MaterialDesignRaisedButton` style; others use `MaterialDesignOutlinedButton` so the user can see which keyword produced the current results. **Controller binding:** D-Pad Left/Right cycles backward/forward through the variant order with wraparound (`VariantOrder = { "OST", "soundtrack", "music", "theme" }`), and immediately re-runs the search — the user doesn't have to navigate to the buttons. D-Pad Up/Down still drives the album list. `YouTubeDownloader`'s auto-OST-append keyword check was extended to also recognize "music" and "theme" so pre-suffixed queries don't get a stray "OST" tacked on. Desktop dialog unchanged — it already has a free-text search box for the same purpose.
+- **yt-dlp version display in Settings → Downloads** — passive readout next to the path field (e.g. `✓ Found · v2025.12.08`), cached by `(path, mtime)` so in-place yt-dlp updates re-probe correctly.
+- **Fullscreen search-variant buttons** — OST / Soundtrack / Music / Theme buttons in `SimpleControllerDialog`'s album-selection step, controller-navigable via D-Pad Left/Right.
 
 ### Performance
-- **YouTube Search Results: Top 20 Instead of Top 100** — `YouTubeDownloader.GetAlbumsForGame` was requesting `Search(query, maxResults: 100)`, which forced `YouTubeClient.Search` to page through multiple continuation tokens on YouTube's backend. Dropped to `maxResults: 20` — one page from YouTube. `BestAlbumPick`'s scoring strongly favors top-ranked results and users rarely scroll past the top few playlists anyway, so quality is unchanged.
+- **YouTube downloads ~30-50% faster on average.** Bundle of changes: `--sleep-requests` reduced 1.0s → 0.3s on full downloads, `--sleep-interval 1-3` removed entirely (yt-dlp source verification confirmed no automatic fallback), single-pass MP3 encoding promoted to default (was experimental), `--no-progress` + `--no-mtime` always-on, `--concurrent-fragments` bumped 3 → 4, and pre-flight `.writetest` probe removed. Savings stack to ~5s on a typical full song.
+- **Previews ~3s faster.** Dropped `--sleep-requests` and `--prefer-free-formats` on the preview path; bundled into the always-on improvements above.
+- **Cookie mode produces audio-only streams (~2x faster downloads).** With Firefox/Chrome cookies + Deno installed, yt-dlp negotiates to fmt 251 (opus audio-only DASH) instead of fmt 18 (mp4 video+audio fallback). Setting tooltip updated to mention the speedup and account-activity tradeoff.
+- **YouTube search top 20 instead of top 100.** `YouTubeClient.Search` no longer pages through continuation tokens; quality unchanged because `BestAlbumPick` favors top-ranked results.
+- **FFmpeg version-check cached per session.** Was running per-download; now once per binary mtime. Saves ~30-50ms/song after the first.
+- **Dropped per-song log noise from extensions.log.** ~70% reduction in YouTube-download log volume per song. New format suffix `[fmt N]` on the success line for diagnostic visibility.
+- **Removed dead `DownloaderLogger` infrastructure.** ~200 lines deleted across DownloadManager / YouTubeDownloader / UniPlaySong / Constants. The `downloader.log` file was never being created on user systems.
+- **Removed experimental "Faster YouTube previews" setting.** Shipped briefly; removed after confirming cookie mode + Deno gives users the same architectural win automatically. Net deletion of plumbing across 7 files.
 
 ### Fixed
-- **"Open Music Folder" Spawned a New explorer.exe Per Click + Leaked Process Handles** — `Process.Start("explorer.exe", path)` (8 call sites across `GameMenuHandler`, `UniPlaySongSettingsViewModel`, `TopPanelMediaControlViewModel`) was both spawning a fresh `explorer.exe` worker process per call AND returning a `Process` object that was never `Dispose()`'d, leaking the .NET-side process handle. New `Common/ShellHelper.OpenFolderInExplorer` centralizes the call: routes through `ProcessStartInfo { UseShellExecute = true }` (lets `ShellExecuteEx` reuse the existing Explorer shell host where possible — same path File Explorer's address bar uses), wraps the `Process.Start` return in a `using` block to dispose the handle immediately. Affects every "Open Music Folder", "Open preserved originals folder", "Open log folder", and "Open hints database folder" entry point. Same root-cause class as the bug Playnite themselves fixed in their core "Open Game Folder" command — was a known antipattern, just hadn't been audited in the UPS codebase.
-- **Back Button Cancels In-Progress Downloads** — In the Desktop song-selection dialog, pressing BACK during an active download closed the dialog with `BackWasPressed = true`, which from the user's perspective looked like the download got "cancelled" (UI disappears). The `Task.Run` download loop kept going internally with its own `CancellationTokenSource`, but the user saw the dialog disappear and had no way to check on the download. Fix: BACK is now disabled (`CanPressBack = !IsDownloading`) while a download is in progress. It re-enables after the download completes, so users can still return to album selection for more downloads.
-- **No Clean Exit After Download** — Once a download completed, the dialog stayed open on the song-selection list. The only exits were CANCEL (which semantically implies "discard", confusing) or the window X (which also implied cancellation). Added a FINISH button that appears only after at least one successful download (`ShowFinishButton = DownloadCompleted`). It closes the dialog with `DialogResult = true` — clean exit, no "cancel" framing. CANCEL still exists for the "I want to discard this whole operation" case.
+- **Duplicate `PerformSearch` calls (5x network requests per album selection)** — re-entry guard added in `DownloadDialogViewModel.PerformSearch` (`if (IsSearching) return`). Cause unclear; symptom-fixed via idempotency.
+- **Cookie mode + forced `player_client` override broke downloads for users without Deno.** yt-dlp auto-skips android/ios when cookies are present, collapsing to web-only which needs nsig. Fix: drop the `player_client` override entirely on cookie path; yt-dlp picks its own cookie-compatible defaults (web_safari etc.).
+- **yt-dlp version label stale after in-place update.** Cache key extended to `(path, mtime)` so replacing `yt-dlp.exe` and re-Browsing the same path triggers a fresh `--version` probe.
+- **Rename-fallback's pattern-match pass deleted the file the explicit-extension pass just moved into place.** Surfaced as `FileNotFoundException` whenever yt-dlp produced an extension other than `.mp3`. Guard added so the second pass only runs if the first didn't already produce `path`.
+- **"Open Music Folder" spawned a new explorer.exe per click and leaked process handles.** New `Common/ShellHelper.OpenFolderInExplorer` centralizes the 8 call sites; uses `ShellExecuteEx` and disposes the `Process` handle immediately.
+- **Back button closed the download dialog mid-download.** BACK now disabled while `IsDownloading`; re-enables on completion.
+- **No clean exit after download.** New FINISH button appears once a download succeeds; closes with `DialogResult = true`.
 
 ## [1.4.4] - In development
 
 ### Added
-- **SNES `.spc` Music Advertised in Supported Formats** — `.spc` (SNES / Super Famicom) already worked end-to-end because it was in `Constants.SupportedAudioExtensions` and `GmeReader` handles it via libgme, but it was never listed in the About tab or README as a supported format. Added to the About tab's "Retro chiptune (via bundled Game Music Emu)" section and to the README's one-line format summary. No behavior change — files with a `.spc` extension in a game's music folder were already being picked up and played.
+- **SNES `.spc` advertised as a supported format** — already worked end-to-end via `GmeReader`/libgme; About tab and README now list it.
 
 ### Fixed
-- **Desktop YouTube Preview Fails on Machines with Aggressive %TEMP% Scanning** — User report: "I've been completely unable to download music from YouTube on Desktop, but Fullscreen works fine. I don't see anything in the log file." Root cause: `DownloadDialogViewModel.GetTempPathForPreview` and `DownloadFromUrlViewModel.PreviewAsync` wrote yt-dlp intermediate `.part` files into `%TEMP%\UniPlaySong\Preview`, while the Fullscreen `SimpleControllerDialog.GetTempPathForPreview` used `%AppData%\Roaming\Playnite\ExtraMetadata\UniPlaySong\temp`. On affected systems (Windows Defender real-time scanning, aggressive AV config) the `%TEMP%` path is scanned far more aggressively than the Roaming path, and yt-dlp's `.part` intermediate files get quarantined / interrupted mid-download, causing silent failures. Both Desktop preview call sites now use the same Roaming path as Fullscreen.
-- **yt-dlp Preview Downloads Silently Suppressed Diagnostic Output** — The no-cookie preview path in `YouTubeDownloader` appended `--no-warnings --quiet --no-progress` when `isPreview == true`, which silenced yt-dlp's stderr — including the bot-detection, Python DLL load failure, and JS-runtime-missing messages that the error-classification block downstream parses for user-friendly diagnostics. When a preview download failed, the user got "Check logs for details" but the logs were empty. Removed the preview-only silencing flags so stderr surfaces normally for both preview and full-download paths. `--no-playlist` is kept (it's protective, not a diagnostic suppressor).
-- **Download Error Dialog Pointed to the Wrong Log** — The error messages from `DownloadDialogViewModel` and `DownloadFromUrlViewModel` said "Check logs for details" without specifying which log. `YouTubeDownloader` logs via the Playnite SDK `Logger` (→ `%AppData%\Playnite\extensions.log`), not the FileLogger (→ `UniPlaySong.log`). Both error dialogs now explicitly point at `extensions.log` and mention the three usual causes (network / bot detection / missing JS runtime) so users know what to look for.
+- **Desktop YouTube preview failed on machines with aggressive `%TEMP%` scanning** — Desktop preview path was writing yt-dlp `.part` files to `%TEMP%`, where Defender quarantined them mid-download. Switched to the same `%AppData%\Roaming\Playnite\ExtraMetadata\UniPlaySong\temp` path Fullscreen already used.
+- **yt-dlp preview errors silently suppressed** — preview path was passing `--no-warnings --quiet --no-progress`, hiding bot-detection / missing-JS-runtime / DLL-load errors. Flags removed so stderr surfaces for the error-classification block downstream.
+- **Download error dialog pointed to the wrong log** — now explicitly directs users to `%AppData%\Playnite\extensions.log` (where `YouTubeDownloader` actually logs) and lists the three usual failure causes.
 
 ## [1.4.3] - 2026-04-19
 
 ### Added
-- **NSF Track Manager (Desktop)** — New per-game dialog that splits a multi-track NSF file into individual single-track `.nsf` files. Entry point: right-click game → `Chiptunes → NSF Management`, visible only when the game's music folder contains at least one `.nsf`. Three-layer architecture: (1) `NsfHeaderPatcher` (pure byte-level header manipulation — generates per-track mini-NSFs by patching `starting_song` at offset 7, preserving `total_songs` at offset 6 so GME's track index space matches the original file), (2) `GmePreviewPlayer` (dedicated `libgme` + `WaveOutEvent` preview pipeline that runs alongside main playback via `PauseSource.NsfPreview`), (3) `NsfTrackManagerDialog` (MaterialDesign `UserControl` hosted via `DialogHelper.CreateStandardDialog`). ViewModel owns an `ObservableCollection<NsfTrackRow>` populated from `gme_track_info`; track name falls back to `{OriginalBaseName} - Track NN` (zero-padded, `i+1` 1-based) when metadata is absent. Commit writes mini-NSFs with best-effort rollback on partial-write failure, optional preservation to `PreservedOriginals/<GameId>/` (checkbox default `true` — matches `AudioAmplifyService.PreserveOriginalAsync` convention), then fires `InvalidateCacheForGame` + `PlayGameMusic(game)` so the split music starts playing immediately. Files: `src/Audio/NsfHeaderPatcher.cs`, `src/Audio/GmePreviewPlayer.cs`, `src/ViewModels/NsfTrackManagerViewModel.cs`, `src/Views/NsfTrackManagerDialog.xaml`+`.cs`, `src/Handlers/NsfTrackManagerHandler.cs`, new `PauseSource.NsfPreview` enum value, new `Constants.NsfPreviewMaxSeconds = 30`. Menu wiring in `UniPlaySong.cs` Desktop branch of `GetGameMenuItems`. Design/plan: `docs/superpowers/specs/2026-04-18-nsf-track-manager-design.md`, `docs/superpowers/plans/2026-04-18-nsf-track-manager.md`.
-- **NSF Track Manager: Edit Loops Tab** — Second tab in the NSF Manager dialog for setting per-file loop-length overrides. Motivation: NSF tracks don't carry length metadata, and the 150s fallback in `GmeReader` means short musical content (20–30s BGM phrases) loops internally 5–6 times before UPS advances to the next song. The Edit Loops tab lets users set a per-`.nsf` override in seconds (5–600), persisted as `nsf-loops.json` in the game's music folder. `GmeReader` reads the manifest at load time and replaces `_playLengthMs` with the override if present. Dialog architecture: the existing dialog was wrapped in a MaterialDesign `TabControl` with tab enablement driven by folder contents — Split Tracks requires at least one `.nsf` with `total_songs > 1 && != 0xFF` (excluding the 0xFF recovery sentinel from pre-fix split files), Edit Loops requires any `.nsf` (master or mini). New files: `src/Models/NsfManagerTab.cs` (enum), `src/Audio/NsfLoopManifest.cs` (JSON read/write with silent corruption fallback + atomic temp-file rename), `src/ViewModels/NsfLoopRow.cs` (per-row INPC with live validation), `src/Views/NsfManagerTabToIndexConverter.cs` (enum ↔ SelectedIndex). Modified files: `GmeReader.cs` (manifest lookup after the 150s fallback), `NsfTrackManagerViewModel.cs` (tab state, LoopRows collection, SaveLoopsCommand, ToggleLoopPreviewCommand, StepLoopUp/Down commands, cross-tab preview player Load fix), `NsfTrackManagerDialog.xaml` (tab structure, row template with −/+ step buttons and white-foreground textbox), `NsfTrackManagerHandler.cs` (classification + auto-pick first splittable master, dropped the pre-dialog master picker). Handler's `finally` block now always calls `PlayGameMusic(game)` so music resumes on both commit and cancel paths — previously only the commit path restarted, leaving cancel in a stopped state that required a game switch to recover. Design/plan: `docs/superpowers/specs/2026-04-19-nsf-loop-override-design.md`, `docs/superpowers/plans/2026-04-19-nsf-loop-override.md`.
+- **NSF Track Manager (Desktop)** — right-click game → `Chiptunes → NSF Management`. Splits a multi-track `.nsf` into individual mini-NSFs, with optional preservation to `PreservedOriginals/`. Includes a per-track preview player.
+- **NSF Track Manager: Edit Loops tab** — set a per-`.nsf` loop-length override (5–600s) when GME's 150s fallback loops short BGM tracks too many times. Persisted as `nsf-loops.json` in the game's music folder.
+- **True Crossfade Mode** — opt-in DJ-style overlap on auto-advance transitions (Radio / pool-based default / RandomizeOnMusicEnd). 1–10s window, default 9s. Forces NAudio backend (SDL2's single music channel can't overlap).
+- **Automatic Playback on First Launch (Desktop) setting** — when off, music waits for the user's first manual Play. Once unlocked, stays unlocked for the session (resets on Playnite restart).
+- **About tab: `.nsf` listed under supported chiptune formats.**
 
 ### Fixed
-- **NSF Per-Track Playback: `GmeReader` Honors `starting_song` Header Byte** — Previously hardcoded `gme_start_track(emu, 0)` at `GmeReader.cs:79`, so every mini-NSF produced by the NSF Track Manager played track 0 of the original file regardless of which track it was split for. Fix: NSF files now read byte 7 of the header (`starting_song`, 1-based per NSF spec) after magic-byte validation, then pass `startingSong - 1` to both `gme_track_info` (for per-track duration metadata) and `gme_start_track`. Non-NSF GME formats (`.vgm`, `.vgz`, `.spc`, `.gbs`, etc.) still default to track 0 — no behavior change. Defensive `try/catch` around the 8-byte header read so a malformed NSF falls back to track 0 rather than throwing before `gme_open_file`.
-- **Short NSF Tracks Loop Internally for 2:30 Instead of Advancing** — Short musical content in NSF files (jingles, stingers, "touchdown" or "game over" sound effects) played for the full 2:30 fallback duration because NSFs rarely embed per-track `play_length` metadata, and `GmeReader` only signaled EOF when `gme_tell >= _playLengthMs`. Fix: `Read()` now also checks `gme_track_ended(_emu)` after each successful `gme_play` call; when non-zero (explicit end marker, silence detection, or chip emulator end signal), lowers `_effectiveEndMs` to the current position so the next `Read` returns 0 and propagates through `SongEndDetector → OnMediaEnded → auto-advance`. Guarded by a 2-second minimum playback time to avoid false-EOF during chip-init silence. Looping BGM tracks (no explicit end marker) are unaffected and continue to use the 150000ms fallback.
-- **Dialog Duration Display Shows "2:30" for Every Track** — GME returns 150000ms as its *own* default when a track has no embedded length, so the dialog's `DurationDisplay` formatted every row as "2:30" — misleading given the actual track length is unknown. Fix: `NsfTrackRow.DurationDisplay` treats `DurationMs == 150000` as the "unknown" sentinel and shows an em-dash ("—") instead, matching the existing `<= 0` branch. Playback behavior is unchanged — `GmeReader` still uses 150000 as the ceiling (combined with the `gme_track_ended` short-circuit above).
-- **Patched Mini-NSFs Played Only Track 0** — Initial NSF splitter patched BOTH `total_songs=1` AND `starting_song=N+1` in the mini-NSF header. `total_songs=1` caused GME's `gme_track_count` to report only one valid track, making `gme_start_track(emu, 24)` for Track 25 fail silently and fall back to track 0 — all mini-NSFs sounded identical to track 1. Fix: `NsfHeaderPatcher.PatchForTrack` now preserves the original `total_songs` byte verbatim, only patches `starting_song`. This keeps GME's internal track index space aligned with the shared 6502 code blob so `gme_start_track` accepts the intended index.
-- **Session Auto-Play Lock Re-Engaged After Backend Recreation** — User-visible symptom: with `AutoPlayOnFirstLaunchDesktop` off, after the user had pressed Play once to unlock playback, toggling Live Effects / Visualizer / True Crossfade caused UPS to refuse auto-playing music on subsequent game selections — the user had to press Play again to "re-unlock" it. Root cause: toggling any of those three settings triggers `RecreateMusicPlayerForLiveEffects` which spins up a fresh `MusicPlaybackService`, and the new service's `_userHasManuallyStartedThisSession` defaulted to `false`, re-engaging the Desktop auto-play lock. Fix in `UniPlaySong.cs`: snapshot the old service's `UserHasManuallyStartedThisSession`, then call `NotifyManualStart()` on the new service when the flag was set. Applies to all three `CreateMusicPlayer` recreation sites.
-- **Song-End Fade Didn't Re-Arm After Auto-Advance** — `FadeOutBeforeSongEnd` fired correctly for the first song but never for auto-advanced songs because `OnMediaEnded`'s `RandomizeOnMusicEnd` and pool-based default-music branches called `LoadAndPlayFile` directly without the matching `MarkSongStart()` call that schedules the fade timer. Fix: call `MarkSongStart()` after `LoadAndPlayFile` in both auto-advance branches of `OnMediaEnded` so subsequent songs also get their end-fade timer armed.
+- **NSF mini-files all played track 0** — `GmeReader` now honors the `starting_song` byte at offset 7 of the NSF header. `NsfHeaderPatcher` preserves the original `total_songs` byte (was being overwritten to 1, breaking GME's track index).
+- **Short NSF tracks looped for 2:30 instead of advancing** — `GmeReader.Read()` now checks `gme_track_ended()` and short-circuits EOF when the chip emulator signals end. 2-second minimum guards against false-EOF during chip init.
+- **Dialog showed "2:30" for every NSF track** — GME returns 150000ms as its own default for unknown lengths; `NsfTrackRow.DurationDisplay` now shows "—" for that sentinel.
+- **Auto-play lock re-engaged after toggling Live Effects / Visualizer / True Crossfade** — `RecreateMusicPlayerForLiveEffects` now snapshots the old service's `UserHasManuallyStartedThisSession` flag onto the new service.
+- **Song-end fade didn't re-arm after auto-advance** — `OnMediaEnded`'s auto-advance branches now call `MarkSongStart()` after `LoadAndPlayFile` so the fade timer is rescheduled.
 
 ### Changed
-- **`NsfPreview` Pause Source: Defensive Sweep on Game Switch** — The NSF Track Manager dialog adds `PauseSource.NsfPreview` for its lifetime via the handler's `try/finally`, but a host-window force-close or exception in the dialog's close path could theoretically leak the source. Leaked pause sources silently block auto-advance via `OnMediaEnded`'s `if (_isPaused) return` early-return. `MusicPlaybackService.PlayGameMusic` now calls `RemovePauseSource(PauseSource.NsfPreview)` before running the normal game-switch flow, so any stale source gets cleared on the next user action. Safe no-op when the source isn't active.
-- **Play Music State Dropdown Clarity** — Cosmetic rewording of `UniPlaySongSettingsView.xaml` only. The `MusicState` ComboBox in Settings → General had items labeled `Desktop` and `Fullscreen`, which didn't clearly communicate that these are *exclusive* modes (auto-play in that mode, nothing in the other). Renamed to `Desktop Only` / `Fullscreen Only` to match user mental model. Existing `AudioState` enum values are unchanged — converter still maps combo index 1→`Desktop`, 2→`Fullscreen`. Description under the dropdown extended to guide users on how to disable auto-playback in Desktop mode: *"To prevent automatic playback in Desktop mode, set to 'Fullscreen Only'."* Motivated by a user question about enabling auto-playback only in Fullscreen — the feature already existed but was under-discoverable.
-- **`YouTubeDownloader` Friendly Diagnosis for PyInstaller DLL Load Failures** — Added a new pattern-matching branch in `YouTubeDownloader.cs` at the top of the existing stderr-classification block (before the bot-detection branch — different signature: empty stdout, exit code -1, and `[PYI-*:ERROR] Failed to load Python DLL '...\_internal\python310.dll'` in stderr). Matches any of `failed to load python dll`, `pyi-`, or `_internal` in the error string. Logs a clear fix: delete the current `yt-dlp.exe` AND any `_internal` folder next to it, re-download the SINGLE-FILE `yt-dlp.exe` asset from the yt-dlp releases page (not the `.zip` distributions, which ship `_internal/` folders that can become corrupted, bitness-mismatched, or quarantined by antivirus). Root cause analysis: the zip releases are folder-mode PyInstaller bundles; when they get partially extracted, stale across auto-update runs, or AV-scrubbed, `python310.dll` fails to load. The single-file exe self-extracts on each launch and sidesteps the issue entirely. Motivated by a user-reported failure (`PYI-2876:ERROR` log line) where the diagnosis walked them to the right asset.
-- **About Tab: `.nsf` Added to Supported Audio Formats** — One-line addition in `UniPlaySongSettingsView.xaml` under the Retro chiptune (via bundled Game Music Emu) section, listed alongside `.vgm` / `.vgz`. Labeled as "NES / Famicom". Keeps the About tab consistent with the actual supported-format list after NSF landed as a first-class format in this release.
-
-### Added (v1.4.3, continued)
-- **True Crossfade Mode (DJ-Style Overlap)** — New opt-in `EnableTrueCrossfade` bool setting + `CrossfadeDurationSeconds` int (1–10, default 9) in Settings → Playback. When enabled, auto-advance transitions (Radio Mode / pool-based default music / RandomizeOnMusicEnd) play the next song in parallel with the current one fading out — both audible simultaneously across the crossfade window — rather than the sequential fade-out-then-fade-in of the existing `FadeOutBeforeSongEnd`. Architecture: gated per-input `SmoothVolumeSampleProvider` wrap in `NAudioMusicPlayer.Load` (isolation contract — OFF path is byte-identical to v1.4.3 pipeline), new `CrossfadeCoordinator` polling orchestrator (500ms `DispatcherTimer`, fires once when `remaining <= crossfadeDuration + 2.0`), `StartCrossfadeIntoNext` / `CancelCrossfade` / `IsCrossfading` public API on `NAudioMusicPlayer`, two-phase EOF promotion (audio thread → `Dispatcher.BeginInvoke` UI thread) via `CrossfadePromoted` event with field swap of secondary → primary state. Forces NAudio backend when enabled (SDL2's single music channel cannot overlap). Linear ramp curves overriding the user's fade-in/out curve settings inside the crossfade providers — Cubic/Quadratic keeps primary near-full for most of the window and would make the overlap inaudible. Cancel sites in `SkipToNextSong`, `RestartCurrentSong`, and `RemoveCurrentSongChain` ensure the secondary input is torn down on manual skip, restart, or game-switch mid-crossfade. Dispatch point: `MusicPlaybackService.MarkSongStart` branches between `_crossfadeCoordinator.ScheduleCrossfade(PickNextSongForCrossfade)` (when on) and the existing `ScheduleSongEndFade` (when off). Picker replicates the three `OnMediaEnded` auto-advance branches (Radio pool / pool-based default / game-music random) and falls back to null (skip crossfade) for unsupported contexts. Files: new `src/Services/CrossfadeCoordinator.cs`, modifications in `src/Services/NAudioMusicPlayer.cs` + `src/Services/MusicPlaybackService.cs` + `src/Services/IMusicPlaybackService.cs` + `src/UniPlaySongSettings.cs` + `src/UniPlaySongSettingsView.xaml`+`.xaml.cs` + `src/UniPlaySong.cs`. Design/plan: `docs/superpowers/specs/2026-04-19-true-crossfade-design.md`, `docs/superpowers/plans/2026-04-19-true-crossfade.md`.
-- **Automatic Playback on First Launch (Desktop) Setting** — New `AutoPlayOnFirstLaunchDesktop` bool setting in `UniPlaySongSettings` (default `true`, preserving existing behavior). When disabled, music is suppressed in Desktop mode until the user manually starts playback via any explicit UI path — top panel Play, global media key Play/Pause (Resume branch), external REST API `play` / `playpausetoggle`, Music Library Dashboard transport-bar Play, or the batch-download progress dialog Play button. Once unlocked, the flag stays `true` for the session (sticky-on — manual Pause does NOT re-lock, per user-confirmed design). Resets on Playnite restart. Architecture: new session-scoped `_userHasManuallyStartedThisSession` flag on `MusicPlaybackService`, exposed via `IMusicPlaybackService.UserHasManuallyStartedThisSession` and set by idempotent `NotifyManualStart()` calls at every manual-play UI path. New gate branch in `MusicPlaybackCoordinator.ShouldPlayMusic` at line 121, positioned AFTER the existing Desktop MusicState check (so `MusicState = Fullscreen Only` still wins). Automatic paths (coordinator, game-switch, pause-source removal timers, post-download restores, NSF Track Manager post-commit, theme events) deliberately do NOT call `NotifyManualStart()` — they would defeat the feature. UI uses the term "Automatic Playback" consistently in the checkbox label and description, and the Play Music State dropdown description cross-references the new option. Design/plan: `docs/superpowers/specs/2026-04-19-session-autoplay-lock-design.md`, `docs/superpowers/plans/2026-04-19-session-autoplay-lock.md`.
+- **`NsfPreview` pause source defensively cleared on game switch** — guards against the dialog leaking the source on host-window force-close.
+- **Play Music State dropdown** renamed `Desktop`/`Fullscreen` → `Desktop Only`/`Fullscreen Only` for clarity. Description now guides users to disable Desktop auto-playback by selecting "Fullscreen Only".
+- **YouTube download diagnostic for PyInstaller DLL load failures** — `YouTubeDownloader` now recognizes `[PYI-*:ERROR] Failed to load Python DLL` and logs the fix: delete the `_internal` folder and re-download the SINGLE-FILE `yt-dlp.exe` (not the zip distribution).
 
 ## [1.4.2] - 2026-04-18
 
 ### Added
-- **Fullscreen Volume Boost** — New opt-in `FullscreenVolumeBoostPercent` setting (0–20%, default 0) that nudges music volume up in Fullscreen mode to compensate for Playnite's built-in `BackgroundVolume` slider stacking multiplicatively with `MusicVolume`. At Playnite default (~0.75) and UPS default (0.70), combined output is ~2 dB quieter than Desktop at identical UPS settings; the boost lets users reclaim that loss without over-driving (multiplier is clamped to 1.0). Applied in `GetFullscreenVolumeMultiplier()` which four call sites in `UniPlaySong.cs` now use in place of raw `_playniteFullscreenVolume`. Live reactivity: `OnSettingsChanged` reapplies the multiplier when the slider moves in Settings. Desktop mode unaffected.
-- **Fullscreen Quick Settings Menu** — Menu → Extensions → UniPlaySong now surfaces the most-commonly-changed UPS settings as controller-navigable items in Fullscreen mode. Gated to `IsFullscreen`; Desktop users see the standard "UniPlaySong Settings" dialog entry. Five toggles (Live Effects, Radio Mode, Preview Mode, Play Only on Game Select, Music Only for Installed Games) render with inline state (`"Live Effects: ON/OFF"`); two enum sub-menus (Reverb Preset with 32 entries, Default Music Source with 8) nest under the plugin branch via `MenuSection = "@|..."` per the Playnite SDK's `ExtensionsMenuViewModels` conventions; current value marked with `●`. Settings mutations route through `UpdateSettingsFromMenu` — a JSON-clone helper that calls `SettingsService.UpdateSettings(clone)` to fire the diff-based `SettingsChanged` event, ensuring Live Effects toggles correctly trigger `RecreateMusicPlayerForLiveEffects`. Direct `_settings.X = Y` mutation would only fire `PropertyChanged` and miss the backend-swap side effect.
-- **Stay Paused After External Audio (Desktop)** — New `KeepPausedAfterExternalAudio` setting (bool, default `false`, preserves existing two-way auto-toggle behavior). When enabled, the external-audio poll's silence-detection branch early-returns instead of calling `RemovePauseSource(ExternalAudio)`, keeping UPS paused until the user manually resumes via top panel toggle, media keys, or dashboard. Gated to `IsDesktop` only — Fullscreen always auto-resumes because there's no persistent on-screen unpause control there. Existing manual-resume paths ([TopPanelMediaControlViewModel.cs:367](src/DeskMediaControl/TopPanelMediaControlViewModel.cs#L367), [MusicLibraryViewModel.cs:566](src/DeskMediaControl/MusicLibraryViewModel.cs#L566)) already clear `PauseSource.ExternalAudio` as part of their play action, so no new wiring required. UI lives under the "Pause on External Audio" section in the Pauses tab, `IsEnabled`-bound to the parent toggle.
+- **Fullscreen Volume Boost setting** — opt-in 0–20% nudge to compensate for Playnite's `BackgroundVolume` slider stacking multiplicatively with `MusicVolume` in Fullscreen. Desktop unaffected.
+- **Fullscreen Quick Settings Menu** — Menu → Extensions → UniPlaySong surfaces 5 toggles (Live Effects, Radio Mode, Preview Mode, Play Only on Game Select, Music Only for Installed Games) and 2 sub-menus (Reverb Preset, Default Music Source) as controller-navigable items in Fullscreen.
+- **Stay Paused After External Audio (Desktop) setting** — when enabled, UPS won't auto-resume after silence is detected; user must manually resume.
 
 ### Fixed
-- **Fullscreen Exit: Brief Game Music Plays During Process Teardown** — When exiting Fullscreen (e.g. Switch to Desktop), users heard ~1 second of the currently-selected game's music before the Fullscreen process fully terminated. Root cause: Playnite's Fullscreen teardown fires late theme-state events AFTER `OnApplicationStopped` runs — specifically the ANIKI REMAKE theme's exit animation clears its overlay post-shutdown, raising `ThemeOverlayActive=false`. UPS's `OnSettingsServicePropertyChanged` handler routed this to `HandleThemeOverlayChange` which called `PlayGameMusic` → loaded the game's mp3 (461ms `NAudio.Load`) → kicked off fade-in. For the ~1s between load-start and process termination, the fade-in was audible. Fix: added `_isShuttingDown` volatile flag set as the first line of `OnApplicationStopped` (before `_playbackService?.Stop()`); `OnSettingsServicePropertyChanged` and `OnFullscreenViewChanged` early-return when the flag is set. Late theme-state and view-change events during teardown are now ignored. Evidence: reproducible in user-supplied log at timestamp 18:11:55.234 where `HandleThemeOverlayChange` fired 79ms after `Application stopped`.
+- **~1s of game music played during Fullscreen exit** — late theme-state events fired after `OnApplicationStopped` were routed through `HandleThemeOverlayChange` and started a fresh fade-in. Added `_isShuttingDown` flag; teardown-time events now early-return.
 
 ### Changed
-- **Default Music: Persistent Track on Game Switch Is Now Default** — Flipped `DefaultMusicContinueSameSong` backing-field default from `false` to `true`. When pool-based default music is enabled (Random Game / Custom Folder / Custom Rotation / Completion Status Pool), fresh installs now keep the same default track playing as users browse games, instead of re-rolling a random pool pick on every `HandleGameSelected`. Existing user configs retain their saved value (no migration) — users who want the new behavior check "Keep Same Default Track On Game Switch" in Settings → Playback.
-- **Default Music: Auto-advance on Song End Is Now User-Controllable** — New `RandomizeDefaultMusicOnEnd` setting (default `true`, preserves existing radio-style rotation). When disabled, the code path at [MusicPlaybackService.cs:1947](src/Services/MusicPlaybackService.cs#L1947) skips the pool auto-advance branch and falls through to the loop/restart path, so the current default track naturally loops at EOF. Orthogonal to `RandomizeOnMusicEnd` (which only gates game-music auto-advance). Pairs with `DefaultMusicContinueSameSong` for fully persistent single-track default music behavior.
-- **Fullscreen Quick Settings Menu: Labels Prefixed with `[UPS]`** — All 5 top-level toggles and both sub-menu parent entries now show `[UPS] Live Effects: ON`, `[UPS] Reverb Preset ▸`, etc. Achieved by embedding the prefix directly in toggle descriptions and in the `MenuSection` suffix (`"@|[UPS] Reverb Preset"`), which Playnite uses to auto-label nested sub-menu parents.
-- **Fullscreen Quick Settings Menu: Settings Now Persist to Disk** — `UpdateSettingsFromMenu` helper now calls `SavePluginSettings(clone)` after `SettingsService.UpdateSettings(clone)`. Previously the mutation propagated in-memory (firing `SettingsChanged` for downstream reloads) but was lost on Playnite restart because the Settings dialog's `EndEdit → SavePluginSettings` path never ran. Fixes reports of Fullscreen menu changes appearing to "not apply" across sessions.
+- **Persistent default-music track on game switch is now the default** for fresh installs (`DefaultMusicContinueSameSong = true`). Existing configs preserved.
+- **New `RandomizeDefaultMusicOnEnd` setting** — when disabled, the current default track loops at EOF instead of rolling a new pool pick. Orthogonal to game-music's auto-advance.
+- **Fullscreen Quick Settings Menu** items prefixed with `[UPS]` for clarity, and settings now persist to disk via `SavePluginSettings(clone)` (was in-memory only).
 
 ## [1.4.1] - 2026-04-18
 
 ### Fixed
-- **Play Only on Game Select: No Randomization on First Song** — When both "Play Only on Game Select" and "Randomize on every select" were enabled in Fullscreen mode, the first alphabetical game song played every time a user entered a game's Details view instead of a random song (subsequent auto-advances randomized correctly). Root cause: the view-transition flow invokes `PlayGameMusic` twice — once when the game is highlighted in List view (plays default music), then again when the user enters Details view (should play game music). The List-view "prep" call was updating `_currentGameId` prematurely, so the follow-up Details-view call saw `isNewGame == false` and skipped the `RandomizeOnEverySelect` branch in `SelectSongToPlay`. Fix: when `PlayGameMusic` clears game songs because we're in List view (the prep call), it now skips updating `_currentGameId`/`_currentGame`, letting the real Details-view call see the game as new and randomize properly.
-- **Play Only on Game Select: Same Song on Repeat Details-Entry** — Follow-up fix to the above. Even with `_currentGameId` preserved on the List-view prep call, repeat Details-view entries for the SAME game (Details → List → Details on the same title) still played the first alphabetical song every time because the second Details-view call saw `_currentGameId == gameId` (correctly, from the first Details-view call), evaluated `isNewGame == false`, and fell through to `FirstOrDefault()` instead of randomizing. Fix: `SelectSongToPlay` now takes a `forceRandomize` flag; `PlayGameMusic` sets it true when transitioning from default music to game music for the same game (`_isPlayingDefaultMusic && _currentGameId == gameId && songs.Count > 1 && !clearedForListView`) — exactly the List → Details transition under PlayOnlyOnGameSelect. Each Details-view entry is a deliberate user act and is now treated as a fresh selection for randomization, matching user intent.
-- **Single-Track Looping Goes Silent With FadeOutBeforeSongEnd Enabled** — When a game had only one track in its music folder and `FadeOutBeforeSongEnd` was enabled, the song would loop successfully but play silently; user had to manually Pause → Play to recover. Affected every audio format, not just retro chiptune (MP3, OGG, VGM all exhibited the bug). Root cause: `SongEndFade` schedules a fade-out some seconds before natural EOF, but the fade-out duration (`_getFadeOutDuration()`, typically 0.7s) can run longer than the fade-out-before-end offset. When the song hits natural EOF mid-fade, `OnSongEnded` fires, `MediaEnded` dispatches to the UI thread, and the Looping branch calls `_musicPlayer.Play()` to restart the same track from position 0. But the fader's in-flight fade-out ramp continues running on the audio thread, parks volume at 0, then stops — leaving `SmoothVolumeSampleProvider` stuck at 0 with no fade-in scheduled. Fix: the Looping and Preview-restart branches in `OnMediaEnded` now call `CancelSongEndFade()` before `_musicPlayer.Play()` and `_fader.FadeIn()` after — cleanly cancels the stale fade-out, restarts the song at full volume with a fresh fade-in ramp.
-- **GME Pause/Resume: UI Freezes, Silent Music, and Stuck Audio After Jingles** — Pausing a VGM/VGZ track (external audio detection, focus loss, jingle) and resuming it had three overlapping failure modes: the main song could return silent after a jingle, the UI could freeze for several seconds on resume (measured 6.5–8.5s late in a track), and rapid pause/resume cycles could leave audio permanently muted. Root cause is architectural: the "logical pause" design kept the mixer input attached with volume 0 so the audio thread kept pulling samples. For `AudioFileReader` that's free — advancing a buffer pointer while muted costs nothing. For `GmeReader` every `Read()` drives real emulation work, so the emu kept advancing during pause. On resume, `gme_seek()` back to the captured position triggered `libgme`'s full rewind-and-fast-forward (no "already there" shortcut in the C API), which scales with the target position and runs at real CPU emulation speed — hence the multi-second UI blocks. A separate thread-safety issue compounded this: `libgme` is not thread-safe on a single emu handle, so the audio thread's `gme_play()` could race the UI thread's `gme_seek()` and corrupt emulator state, producing silence. Fix (three layers): (1) `GmeReader._gmeLock` serializes all native calls (`gme_play`, `gme_seek`, `gme_tell`, `gme_delete`) — single-threaded GME is the library's documented assumption. (2) `NAudioMusicPlayer.Pause()` detaches the mixer input when the reader is a `GmeReader`, freezing the emu at `_pausedPosition` so Resume doesn't need to seek. (3) `Resume()` has a fast-path that reads the current emu position and skips the seek entirely when it's within 100ms of the target (the common case now that Pause freezes the emu). A background-seek slow path and coalescing state (`_seekInFlightTarget`, `_seekCallbacks`) remain for edge cases (mid-seek pause, genuine seek-to-position) but are rarely hit. Supporting API change: `IMusicPlayer.Resume(Action onReady = null)` gained an optional callback so the fader can defer `FadeIn()` until audio is actually flowing — synchronous for non-GME and the GME fast-path, deferred for the GME slow-path. SDL2MusicPlayer, MusicPlayer (legacy), and DashboardPlaybackService invoke `onReady` synchronously at the end of their Resume methods; `MusicPlaybackService.ResumeFromJingle` uses the callback pattern for the same correctness guarantees as the fader.
-- **Song-End Fade Leaves Silent Gap Before Next Song** — `SongEndFade` schedules a timer to fire `FadeOutBeforeSongEndDuration` seconds before natural EOF, then calls `_fader.FadeOut()`. The fader's ramp duration defaulted to the global `FadeOutDuration` (the game-switch fade setting, default 0.3s), which is independent of and much shorter than `FadeOutBeforeSongEndDuration` (default 3s). Result: volume ramped to zero in 0.3s, then the song played silent at volume 0 for the remaining 2.7 seconds before EOF fired and the next song was loaded — a noticeable dead-air gap. Fix: `MusicFader.FadeOut(double? overrideDurationSeconds = null)` accepts an optional ramp-length override; `ScheduleSongEndFade` passes its own `FadeOutBeforeSongEndDuration` so the ramp length exactly matches the pre-EOF delay. The fade now finishes at the song's natural end, not seconds before it.
+- **Play Only on Game Select didn't randomize on first song** — `PlayGameMusic` was updating `_currentGameId` during the List-view prep call, so the follow-up Details-view call saw `isNewGame == false` and skipped randomization. Prep call now skips the gameId update; repeat Details-view entries also force-randomize via a new `forceRandomize` flag.
+- **Single-track looping went silent with FadeOutBeforeSongEnd enabled** — fade-out ramp continued running on the audio thread after the loop restart, parking volume at 0. Looping branch now cancels the stale fade and applies a fresh fade-in.
+- **GME Pause/Resume: UI freezes, silent music, and stuck audio after jingles** — `libgme` isn't thread-safe; the muted-keep-pulling-samples pause approach forced `gme_seek` on resume, blocking the UI for 6–8s. Three-layer fix: `_gmeLock` serializes native calls, `Pause()` detaches the mixer input for `GmeReader` (freezing the emu in place), `Resume()` has a fast-path skipping the seek when within 100ms. `IMusicPlayer.Resume` gained an `onReady` callback so the fader defers `FadeIn` until audio is actually flowing.
+- **Song-end fade leaves silent gap before next song** — fade-out ramp duration defaulted to the 0.3s game-switch fade rather than the 3s pre-EOF window, so volume hit 0 with 2.7s of silence remaining. `MusicFader.FadeOut` now accepts a ramp-length override; `ScheduleSongEndFade` passes its own duration.
 
 ### Added
-- **Fanfare Trigger: Also Celebrate "Beaten" Status** — New `CelebrateBeaten` toggle in the Playback tab (Gamification section) lets the completion fanfare fire on Playnite's built-in "Beaten" status ("main story finished") in addition to "Completed." Default: off, so existing users see no behavior change. UI is a sub-checkbox under the parent "Play Fanfare on Completed Games" toggle, `IsEnabled`-bound to the parent so it greys out when the feature is off. Trigger logic in `UniPlaySong.OnItemUpdated` extended from a single-string match to `Completed OR (CelebrateBeaten && Beaten)`. Per-tab reset handler updated; global reset auto-covered via JSON deep-clone from backing field default.
-- **Abandoned Status Jingle + Toast** — New parallel pipeline for Playnite's built-in "Abandoned" completion status, independent from the Completed/Beaten celebration. Separate sound settings (system beep / jingle preset / custom file), 10 new bundled "abandoned" category jingles (Mortal Kombat fatalities, Shinobi failure themes, Streets of Rage Game Over, Toilet Flush, etc.) in `src/Jingles/Abandoned/`, separate toast with six muted palettes (`AbandonedToastTheme` enum: Tombstone / DuskBlue / Rust / Ash / FadedCrimson / Shadow) distinct from the celebration's seven bright themes, and a customizable message template with `{gameName}` placeholder (bold-wrapped at render time). Title uses ⚰ coffin glyph (U+26B0) for reliable rendering in basic Segoe UI — 🪦 tombstone (U+1FAA6) was tried first but only renders with explicit `FontFamily="Segoe UI Emoji"`. Default: feature off. `BundledJingleInfo` gained a `category` field; `BundledJingleService.GetJingles()` now filters to celebration-only (missing category treated as celebration for backward compatibility), new `GetAbandonedJingles()` returns the parallel set. `PlayAbandonedSound()` reuses `PlayCelebrationFile()` for playback (jingle lifecycle is identical, only source file differs). UI block lives below the celebration section in the Gamification group; per-tab Reset updated with 8 new defaults. Trigger in `OnItemUpdated` is a separate `else if` branch so Completed and Abandoned are mutually exclusive per status change.
+- **Fanfare also celebrates "Beaten" status** — new `CelebrateBeaten` toggle (off by default) lets the completion fanfare fire on "Beaten" in addition to "Completed."
+- **Abandoned status jingle + toast** — parallel pipeline to the celebration one, with 10 bundled abandoned-category jingles (Mortal Kombat fatalities, Streets of Rage Game Over, etc.), a muted-palette toast (Tombstone / DuskBlue / Rust / etc.), and a customizable message template.
 
 ### Changed
-- **Play Only on Game Select: Event-Driven Trigger** — Replaced the 200ms polling `DispatcherTimer` with the `OnFullscreenViewChanged` SDK event (Playnite SDK 6.16.0+). Fires instantly on every List ↔ Details toggle instead of waking the UI thread 5×/sec forever. Eliminates a theoretical race window where rapid A/B presses could outpace the polling interval, and removes a chunk of state (`_fullscreenViewMonitor`, `_lastFullscreenView`, timer init/dispose boilerplate). Net −14 lines in `UniPlaySong.cs`.
-- **Jingle Playback Extracted to Dedicated Service** — Playback mechanics for completion/abandoned jingles (player lifecycle, visualization-provider save/restore, file resolution, SystemBeep shortcut) moved out of `UniPlaySong.cs` into a new `src/Services/JingleService.cs` with a two-method public API (`PlayForEvent(JingleEvent, settings)` and `Cleanup()`). The two near-duplicate `PlayCelebrationSound` and `PlayAbandonedSound` methods collapsed into a single event-driven dispatcher; a future trigger is one enum value + one switch case instead of four parallel copies. `UniPlaySong.cs` shrinks by ~100 lines. Behavior is identical — no bug fixes or feature changes bundled. Design/plan docs: `docs/superpowers/specs/2026-04-18-jingle-service-extraction-design.md`, `docs/superpowers/plans/2026-04-18-jingle-service-extraction.md`.
+- **Play Only on Game Select uses `OnFullscreenViewChanged` event** instead of a 200ms polling DispatcherTimer. Net −14 lines.
+- **Jingle playback extracted to `JingleService`** — `PlayCelebrationSound` and `PlayAbandonedSound` collapsed into a single event-driven dispatcher. `UniPlaySong.cs` shrinks ~100 lines.
 
 ### Documentation
-- **Celebration Trigger: String-Match Tradeoff** — Tracked in `POTENTIAL_ISSUES.md`: completion-status names are matched as string literals, which silently breaks for renamed statuses or non-English locales. Deferred to v1.5.
-- **About Tab: Supported Formats Section** — Added a "Supported Audio Formats" box to the About settings tab listing MP3, OGG Vorbis, FLAC, WAV plus VGM/VGZ scoped to Sega Genesis / Mega Drive / Sega CD.
-- **GME Chip Support Boundary** — Documented in `SUPPORTED_FILE_FORMATS.md`: GME only emulates a subset of VGM chips, so most VGMRips packs (Neo Geo, arcade, PC-88, CPS-2) decode to silence. Broader coverage tracked as a v1.5+ investigation in `POTENTIAL_ISSUES.md`.
+- **About Tab: Supported Formats section** added.
+- **GME chip-support boundary** documented in `SUPPORTED_FILE_FORMATS.md` (most VGMRips packs decode to silence; broader coverage deferred).
 
 ## [1.4.0] - 2026-04-16
 
@@ -269,146 +277,67 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.3.2] - 2026-02-20
 
 ### Added
-- **Global Media Key Control** (Experimental) - Control music playback using keyboard media keys (Play/Pause, Next Track, Previous Track, Stop)
-  - Uses Win32 `RegisterHotKey` with a hidden `HwndSource` message window for zero per-keystroke overhead
-  - Works globally even when Playnite is not focused
-  - Play/Pause toggles manual pause, Next skips to a random different song, Previous restarts current song, Stop acts as Play/Pause
-  - Graceful degradation: if another app has claimed a media key, that key is skipped (logged in debug log)
-  - Toggle in Settings → Experimental (disabled by default, requires Playnite restart)
-- **Taskbar Thumbnail Media Controls** (Experimental) - Previous/Play-Pause/Next buttons in Windows taskbar preview pane
-  - Uses WPF's built-in `TaskbarItemInfo` (wraps `ITaskbarList3` COM) — no external dependencies
-  - Play/Pause icon dynamically updates to reflect current playback state
-  - Vector-rendered 32x32 icons generated at runtime (no external image files)
-  - Desktop mode only; guarded against overwriting Playnite's own `TaskbarItemInfo` if set
-  - Toggle in Settings → Experimental (disabled by default, requires Playnite restart)
-- **Auto-Cleanup Empty Folders** - Automatically removes empty game music directories after song deletion
-  - Triggers after all deletion paths: Delete All Music, Delete Long Songs, and controller single-song deletion
-  - Checks for remaining audio files before removal (cleans up `.primarysong.json` and other non-audio leftovers)
-  - Matches existing cleanup pattern used by game removal and orphan cleanup
-- **M3U Playlist Export** - Export music as M3U playlists for external players (VLC, foobar2000, MPC)
-  - Per-game export: right-click game → "Export M3U Playlist"
-  - Multi-game export: select multiple games → "Export M3U Playlist (N games)"
-  - Library-wide export: main menu → "Export Music Library Playlist (UPS)" with progress dialog
-  - Extended M3U format with `#EXTINF` duration/title entries and absolute file paths
-- **Extended Default Music Sources** - Three new default music source options in Settings → Playback → Default Music:
-  - **Custom Folder**: Point to any directory of audio files — UPS randomly picks from it when no game music is available
-  - **Random Game**: Randomly selects a song from any game in your music library
-  - **Custom Game Rotation**: Select specific games whose music serves as the default rotation pool, with a searchable multi-select game picker dialog
-  - **Continue Same Song**: Optional toggle to keep the same default song playing across game switches instead of re-rolling on each selection
-  - All three sources integrate with existing skip behavior (skip picks a new random song from the pool)
+- **Global Media Key Control** (Experimental) — Win32 `RegisterHotKey` for global Play/Pause / Next / Previous / Stop. Works when Playnite isn't focused.
+- **Taskbar Thumbnail Media Controls** (Experimental) — Previous/Play-Pause/Next buttons in the Windows taskbar preview pane via WPF `TaskbarItemInfo`. Desktop only.
+- **Auto-Cleanup Empty Folders** — empty game music directories removed after deletion (also cleans up `.primarysong.json` leftovers).
+- **M3U Playlist Export** — per-game / multi-game / library-wide export to extended M3U with `#EXTINF` entries and absolute paths.
+- **Extended Default Music Sources** — Custom Folder, Random Game, Custom Game Rotation. New "Continue Same Song" toggle keeps the same default track across game switches.
 
 ### Changed
-- **Settings Reorganization** - General settings reorganization to improve navigation experience. Pause scenarios moved to dedicated "Pauses" tab, "Audio Editing" tab renamed to "Editing", fullscreen-only options labeled accordingly.
-- **Graduated from Experimental** - Taskbar Thumbnail Media Controls (→ General), Random Game Picker Music (→ Playback, now uses instant song switching for snappy browsing), Celebration Toast (→ Playback), External Audio Detection (→ Pauses), Idle/AFK Pause (→ Pauses), System Lock Pause (→ Pauses).
-- **Per-Tab Reset Buttons** - Each settings tab now has a "Reset to Defaults" button in the tab header. Tool paths (FFmpeg) are preserved on reset.
-- **Improved Default Settings** - New installs now ship with a better out-of-box experience: media controls, now playing display, auto-tagging, song randomization, bundled default music preset, live effects with Rehearsal style, spectrum visualizer, external audio pausing, and completion celebration all enabled by default.
-- **Settings UI Polish** - Horizontal checkbox grouping for compact layout, italic tab subtitles in sage/seafoam accent, collapsible Dynamic Color Tuning section, streamlined button descriptions.
-- **Bundled Default Music** - Renamed bundled preset files for cleaner filenames. Added PS2 Menu Ambience as a fourth bundled preset option.
-- **Style Preset Tuning** - Rehearsal preset updated to Reverb-first effect chain with -1dB makeup gain. All style presets capped at 1dB maximum makeup gain to prevent audio clipping.
-- **Global Settings Reset Rewritten** - Cleanup menu's "Reset Settings to Defaults" now uses JSON deep clone instead of incomplete manual property copying, ensuring all 180+ properties are properly reset.
+- **Settings tabs reorganized** — pauses moved to dedicated "Pauses" tab, "Audio Editing" → "Editing".
+- **Several features graduated from Experimental** — Taskbar Thumbnail Media Controls, Random Game Picker Music, Celebration Toast, External Audio Detection, Idle/AFK Pause, System Lock Pause.
+- **Per-Tab Reset Buttons** — each settings tab has a "Reset to Defaults" button. Tool paths preserved on reset.
+- **Better out-of-box defaults** — fresh installs now ship with media controls, now playing display, auto-tagging, song randomization, default music preset, live effects (Rehearsal), spectrum visualizer, external-audio pausing, and completion celebration enabled.
+- **Bundled Default Music** — preset files renamed; PS2 Menu Ambience added as a fourth option.
+- **Style preset tuning** — Rehearsal updated to Reverb-first chain with -1dB makeup gain; all presets capped at 1dB max to prevent clipping.
+- **Global Settings Reset rewritten** to use JSON deep clone instead of manual property copying (was missing properties).
 
 ### Fixed
-- **Play Button Clears Stale Pause Sources** - Play button now clears automatic pause sources (Idle, ExternalAudio, SystemLock) when resuming. Previously, stale sources could remain active after long idle or lock/unlock cycles, causing music to stay paused even after clicking play.
-- **System Unlock Clears Idle State** - Unlocking Windows now properly clears the idle pause source and restores idle volume. Fixes music not resuming after lock/unlock when idle detection or idle volume lowering was active before locking.
-- **Random Picker music not stopping on close (SDL2 mode)** - Deferred playback via `BeginInvoke` could race with the picker's close handler, causing the last previewed song to keep playing after the dialog was dismissed. Fixed with an `IsActive` guard on the deferred action.
-- **Default music skipped for uninstalled games after live effects toggle** - Player recreation used `forceReload: true` which bypassed the `MusicOnlyForInstalledGames` filter, causing game-specific music to play instead of falling through to default music. Changed to `forceReload: false`.
-- **Settings silently resetting on dialog interactions** - `CreateSettingsWithUpdate` only cloned ~30 of 180 properties. Clicking Browse/Select buttons in settings would silently reset all un-mapped properties (live effects, visualizer, normalization, etc.) to defaults. Replaced with JSON deep clone that preserves all properties automatically.
+- **Play button clears stale pause sources** (Idle, ExternalAudio, SystemLock) on resume. Stale sources previously could persist after long idle or lock/unlock cycles.
+- **System Unlock clears idle state** — fixes music not resuming after lock/unlock when idle detection was active.
+- **Random Picker music kept playing on close (SDL2 mode)** — deferred playback raced with the close handler. Added `IsActive` guard.
+- **Default music skipped for uninstalled games after Live Effects toggle** — player recreation used `forceReload: true` which bypassed the `MusicOnlyForInstalledGames` filter. Changed to `forceReload: false`.
+- **Settings silently reset on dialog interactions** — `CreateSettingsWithUpdate` only cloned ~30 of 180 properties; Browse/Select buttons silently zeroed everything else. Now uses JSON deep clone.
 
 ## [1.3.1] - 2026-02-18
 
 ### Added
-- **Auto-Pause on External Audio** (Experimental) - Automatically pauses music when another application produces audio
-  - Detects any app playing audio through Windows via NAudio CoreAudioApi session enumeration
-  - Configurable debounce slider (0–10 seconds, default 0 "Instant") — controls how long external audio must persist before pausing. Default is instant (reacts on first detection poll)
-  - Instant pause toggle — bypasses fade transitions for immediate pause/resume (off by default, faded transitions used)
-  - Adaptive polling: 500ms in instant mode, 1000ms in normal mode. Lower peak threshold (0.005) in instant mode for higher sensitivity
-  - App exclusion list — comma-separated process names to ignore (OBS excluded by default)
-  - Known limitation: Screen recorders/streaming apps that capture desktop audio may cause false detections
-  - New `AddPauseSourceImmediate`/`RemovePauseSourceImmediate` methods in MusicPlaybackService for fade-free pause/resume with proper source tracking
-- **Auto-Pause on Idle / AFK** (Experimental) - Pauses music after no keyboard/mouse input for a configurable duration
-  - Win32 `GetLastInputInfo()` P/Invoke with 10-second polling timer
-  - Configurable timeout slider (1–60 minutes, default 15 min)
-  - Music resumes automatically when any keyboard or mouse input is detected
-  - Known limitation: Does not detect gamepad input
-  - Preserved across game switches (user is still AFK regardless of which game is selected)
-- **Stay Paused on Focus Restore** ([#69](https://github.com/aHuddini/UniPlaySong/issues/69)) - Option to keep music paused after Playnite regains focus
-  - When enabled, music stays paused after alt-tabbing back — press play to resume manually
-  - Uses atomic `ConvertPauseSource(FocusLoss → Manual)` to avoid audible resume blip
-  - Play and skip buttons work naturally (they clear Manual pause source)
-  - Sub-option under "Pause on focus loss" in General → Pause Scenarios
-- **Random Game Picker Music** (Experimental) - Plays music for each game shown in Playnite's random game picker dialog
-  - Hooks into the picker's ViewModel via `INotifyPropertyChanged` to detect game changes as you click "Pick Another"
-  - Restores previous game's music when the dialog is cancelled or closed with Escape
-  - Commits naturally when using "Play" or "Navigate to Game" (normal `OnGameSelected` flow takes over)
-  - Toggle in Settings → Experimental (disabled by default)
-- **Ignore Brief Focus Loss (Alt-Tab)** - Detects the alt-tab overlay and only pauses if you actually switch apps
-  - Uses Win32 `GetForegroundWindow()` + `GetClassName()` to identify the task switcher window (`ForegroundStaging` on Windows 11)
-  - Polls until the overlay resolves: aborted alt-tabs are ignored, completed switches pause normally
-  - Skips P/Invoke work entirely when music is already paused (game running, idle, etc.)
-  - Sub-option under "Pause on focus loss" in General → Pause Scenarios
+- **Auto-Pause on External Audio** (Experimental) — pauses when another app produces audio (NAudio CoreAudioApi session enumeration). Configurable debounce, instant-pause toggle, and exclusion list (OBS excluded by default).
+- **Auto-Pause on Idle / AFK** (Experimental) — pauses after no keyboard/mouse input for a configurable timeout (1–60 min, default 15). Win32 `GetLastInputInfo` polling. Doesn't detect gamepad input.
+- **Stay Paused on Focus Restore** ([#69](https://github.com/aHuddini/UniPlaySong/issues/69)) — when enabled, music stays paused after alt-tabbing back; press Play to resume. Atomic `ConvertPauseSource(FocusLoss → Manual)` avoids resume blip.
+- **Random Game Picker Music** (Experimental) — plays music for each game shown in Playnite's random picker dialog. Restores previous game's music on cancel.
+- **Ignore Brief Focus Loss (Alt-Tab)** — only pauses if you actually switch apps. Detects the task-switcher window (`ForegroundStaging` on Win11) and waits for the overlay to resolve.
 
 ### Improved
-- **Enhanced Library Statistics** (Experimental) - Expanded the stats panel with background audio-level metrics powered by TagLib#
-  - New audio metrics row: Average Song Length, Total Playtime, Songs With ID3 Tags (auto-populated via background scan)
-  - Song Bitrate Distribution card showing exact counts per standard bitrate (320/256/192/160/128/96/64/32 kbps) with non-standard VBR values grouped as "Other"
-  - Reducible Track Size card with teal accent showing count of songs above 128 kbps and estimated space recoverable if downsampled
-  - Reorganized card layout: Total Songs → Total Size → Games with Music → Avg Songs/Game → Avg Song Length → Total Playtime → ID3 Tags → Top Games → Format Distribution → Bitrate Distribution → Reducible Track Size
-  - Improved card labels for clarity (e.g., "Games in Library with Music", "Total Size of Songs", "Average #Songs / Game")
-  - "Scanning...[Please Wait]" placeholder shown during background audio scan
-- **Settings UI Reorganization** - General tab now has clearly separated sections
-  - New "Pause Scenarios" section groups all pause-related options with a header and description
-  - New "Top Panel Display" section groups Now Playing and Media Controls options
+- **Enhanced Library Statistics** (Experimental) — added Average Song Length, Total Playtime, ID3 Tag count, Bitrate Distribution, and Reducible Track Size cards (TagLib# background scan).
+- **Settings UI** — General tab gets dedicated "Pause Scenarios" and "Top Panel Display" sections.
 
 ### Fixed
-- **Focus Loss Fade Artifact** - Fixed echo/doppler audio artifact when music pauses and resumes during brief focus loss
-  - Root cause: reversing a mid-fade-out (e.g., quick alt-tab back) used the old fade-out start time for the fade-in calculation, causing a sudden volume jump
-  - Fix: calculates the equivalent fade-in progress from the current player volume and backdates the start time so the fade-in continues smoothly from where the fade-out left off
+- **Focus-loss fade artifact** — reversing a mid-fade-out (quick alt-tab back) caused a volume jump because the fade-in calculation used the old fade-out start time. Fix: backdate the start time so the fade-in continues smoothly from current volume.
 
 ## [1.3.0] - 2026-02-16
 
 ### Added
-- **Completion Fanfare** - Play a celebration jingle when marking a game as "Completed"
-  - Ships with 11 retro jingle presets (Sonic, Streets of Rage, Mortal Kombat, and more)
-  - Three sound source options: System beep, Jingle preset, or Custom audio file
-  - Jingle presets selectable via dropdown with preview button
-  - Enabled by default with Streets of Rage - Level Clear preset
-  - Toggle in Settings → Playback → Gamification
-- **Jingle Live Effects** - Celebration jingles play through a dedicated NAudio player, so live effects (reverb, filters, stereo width, etc.) are applied when Live Effects mode is enabled
-  - Main music pauses during the jingle and resumes automatically when it finishes
-  - Toggleable via "Apply live effects to jingles" in Gamification settings
-- **Song Count Badge in Menu** - Right-click context menu header now shows song count for single-game selection (e.g., "UniPlaySong (3 songs)")
-  - Info line at the top of the submenu displays song count and total folder size (e.g., `[ 3 songs | 12.4 MB ]`)
-  - Multi-game selection retains the plain "UniPlaySong" header
-- **Default Music Indicator** - Optional `[Default]` prefix in the Now Playing ticker when default/fallback music is playing
-  - Shows `[Default]` alone for non-bundled default music, `[Default] Song Title - Artist` for bundled presets
-  - Toggle in Settings → General (disabled by default, requires "Show Now Playing" to be enabled)
-- **Experimental Settings Tab** - New settings tab for features under active development
-- **Celebration Toast Notification** (Experimental) - Visual gold-glow toast popup when a game is marked completed, complementing the fanfare sound
-  - Smooth pulsing glow animation with gold accent theme
-  - Auto-dismisses after 6 seconds, click to dismiss early
-  - Toggle in Settings → Experimental
-- **Auto-Pause on System Lock** (Experimental) - Music pauses when you lock your PC (Win+L) and resumes on unlock
-  - Uses `SystemEvents.SessionSwitch` with `PauseSource.SystemLock` in the multi-source pause system
-  - Toggle in Settings → Experimental (disabled by default)
-- **Song Progress Indicator** (Experimental) - Thin progress bar in the Desktop top panel showing playback position
-  - Four configurable positions: After skip button, After visualizer, After now playing, or embedded below now playing text
-  - Uses a lightweight 1-second timer instead of per-frame rendering
-  - Toggle and position selector in Settings → Experimental (requires Playnite restart for position changes)
-- **Enhanced Library Statistics** (Experimental) - Upgraded the library stats panel in Experimental settings from a single line to a structured card grid layout
-  - Primary metrics: games with music (with percentage), total songs, total storage, average songs per game
-  - Format distribution breakdown showing all audio formats
-  - Top 5 games ranked by song count
+- **Completion Fanfare** — celebration jingle on "Completed" status. 11 retro presets, system-beep / preset / custom-file source options. Enabled by default with Streets of Rage Level Clear.
+- **Jingle Live Effects** — jingles play through NAudio when Live Effects mode is on, so reverb/filters apply. Main music pauses during the jingle and auto-resumes.
+- **Song Count Badge in Menu** — single-game right-click header shows `(N songs)`; submenu has `[ N songs | size ]` info line.
+- **Default Music Indicator** — optional `[Default]` prefix in Now Playing when default/fallback music is playing.
+- **Experimental Settings Tab.**
+- **Celebration Toast Notification** (Experimental) — gold-glow popup on game completion. Auto-dismisses after 6s.
+- **Auto-Pause on System Lock** (Experimental) — pauses on Win+L (SessionSwitch event), resumes on unlock.
+- **Song Progress Indicator** (Experimental) — thin progress bar in the Desktop top panel. Four configurable positions; 1s timer (not per-frame).
+- **Enhanced Library Statistics** (Experimental) — card-grid layout with games-with-music, total songs/storage, format distribution, top-5 games.
 
 ### Fixed
-- **Play/Pause Icon Flicker on Song Transition** - Play button briefly showed "paused" state when songs changed (randomize on end, skip to next). Root cause: `OnSongChanged` fired before the new song started playing, so `IsPlaying` was false during the event
-- **Skip While Paused** - Pressing skip while music was paused left the play button in paused state even though the new song was playing. `PauseSource.Manual` was preserved by `ClearAllPauseSources()` by design; skip now explicitly removes it
-- **Skip Delay When Paused** - Skipping while paused triggered a full fade-out on silence, causing a noticeable delay before the next song loaded. Now loads immediately when already paused
-- **Now Playing Text Delay on Skip** - Song title, visualizer, and progress bar didn't update until after the crossfade completed. Now fires `OnSongChanged` immediately on skip (matching game-selection behavior) so UI updates are instant
-- **Skip Crossfade Improved** - Skip now uses `Switch()` (with preloading) instead of `FadeOutAndStop()` for smoother transitions when playing
+- **Play/Pause icon flicker on song transition** — `OnSongChanged` fired before the new song started playing.
+- **Skip while paused left play button stuck in paused state** — `PauseSource.Manual` was preserved by `ClearAllPauseSources()`; skip now explicitly removes it.
+- **Skip delay when paused** — was running a full fade-out on silence; now loads immediately when already paused.
+- **Now Playing text delay on skip** — `OnSongChanged` now fires immediately on skip so title/visualizer/progress update instantly.
+- **Skip crossfade smoother** — uses `Switch()` (with preloading) instead of `FadeOutAndStop()` when playing.
 
 ### Performance
-- **Song Progress Bar** - Uses `DispatcherTimer` at 1-second intervals instead of `CompositionTarget.Rendering` (60fps). A 50px bar on a 3-minute song moves ~0.28px/sec, making per-frame updates wasteful
-- **NowPlayingPanel Render Loop** - Embedded progress bar no longer keeps the 60fps render loop alive when text scrolling/fading has finished. Uses its own 1-second timer, piggybacking on the render loop only when it's already running for animations
+- **Song progress bar uses 1-second `DispatcherTimer`** instead of `CompositionTarget.Rendering` 60fps loop.
+- **NowPlayingPanel** embedded progress bar no longer keeps the 60fps render loop alive when not scrolling/fading.
 
 ## [1.2.11] - 2026-02-15
 
@@ -435,18 +364,16 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.2.9] - 2026-02-13
 
 ### Added
-- **Stop After Song Ends** - New toggle to play songs once without looping ([#67](https://github.com/aHuddini/UniPlaySong/issues/67))
-  - When enabled, music stops after the current song finishes instead of looping or advancing
-  - Works in both regular and preview mode
+- **Stop After Song Ends** ([#67](https://github.com/aHuddini/UniPlaySong/issues/67)) — toggle to play songs once without looping or advancing.
 
 ### Fixed
-- **Fullscreen Performance** - Eliminated native music suppression polling timer that caused UI lag with themes like ANIKI Remake. Suppression now fires once at startup, matching the PlayniteSounds approach.
+- **Fullscreen lag with themes like ANIKI Remake** — eliminated the native-music-suppression polling timer; suppression now fires once at startup.
 
 ### Backend
-- **Visualizer FFT** - Spectrum FFT processing is now paused in fullscreen mode via `VisualizationDataProvider.GlobalPaused` (desktop visualizer is not visible in fullscreen; groundwork for future fullscreen visualizer support)
+- **Visualizer FFT paused in fullscreen** via `VisualizationDataProvider.GlobalPaused`.
 
 ### Removed
-- Removed one-time migration code for suppress native music setting (v1.2.8 migration — all users migrated)
+- One-time migration code for suppress-native-music setting (v1.2.8 migration; all users migrated).
 
 ## [1.2.8] - 2026-02-09
 
@@ -470,62 +397,30 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.2.6] - 2026-02-08
 
 ### Added
-- **Pause on Play (Splash Screen Compatibility)** - New setting to pause music immediately when clicking Play on a game ([#61](https://github.com/aHuddini/UniPlaySong/issues/61))
-  - Music fades out before the splash screen appears and resumes when the game closes
-  - Works independently of plugin load order by using database-level game state detection
-  - Enable in settings: "Compatibility: Pause on Play (Splash Screen Mode)"
+- **Pause on Play (Splash Screen Compatibility)** ([#61](https://github.com/aHuddini/UniPlaySong/issues/61)) — pauses music when clicking Play before the splash screen appears; resumes when the game closes. Database-level game-state detection so it's plugin-load-order independent.
 
 ### Fixed
-- **Top Panel Media Controls** - Fixed button styling to match native Playnite icons and adapt to different desktop themes
-  - Corrected font size and removed bold weight that distorted IcoFont symbols
-  - Theme-adaptive margin trimming groups play/pause and skip buttons closer together across all themes
+- **Top panel media-control button styling** — corrected font size, removed bold weight that distorted IcoFont symbols, theme-adaptive margins.
 
 ### Improved
-- **Settings Reorganization** - Restructured add-on settings for better discoverability
-  - New "Playback" tab with volume, fade effects, preview mode, and song randomization
-  - Renamed tabs: "Audio Normalization" → "Audio Editing", "Search Cache" → "Search"
-  - Added "Open Log Folder" button in Troubleshooting section
-  - Spectrum Visualizer no longer labeled as "Experimental"
-- **Now Playing Display** - Cleaner display showing only song title and artist (removed duration/timestamp)
-- **Now Playing Performance** - Reduced GPU usage on high refresh rate monitors by capping the ticker animation at 60fps ([#55](https://github.com/aHuddini/UniPlaySong/issues/55))
-- **Spectrum Visualizer** - Major overhaul with new defaults and 22 color themes
-  - Now enabled by default with Punchy preset and Dynamic (Game Art) colors
-  - 12 new static color themes: Synthwave, Ember, Abyss, Solar, Vapor, Frost, Aurora, Coral, Plasma, Toxic, Cherry, Midnight
-  - 3 Dynamic themes that sample colors from game artwork:
-    - **Dynamic (Game Art V1)**: Natural tones with user-configurable brightness/saturation sliders
-    - **Dynamic (Alt Algo)**: Advanced extraction with center-weighted sampling and color diversity bonus
-    - **Dynamic (Vibrant Vibes)**: Vivid mode with aggressive color separation for creative gradients
-  - Decoupled color themes from visualizer presets — presets only control tuning parameters
-  - Improved opacity curve (sqrt) for better dynamic range
-  - Replaced Terminal (duplicate of Matrix) with Vapor (mint → lavender)
+- **Settings reorganized** — new "Playback" tab; "Audio Normalization" → "Audio Editing", "Search Cache" → "Search". "Open Log Folder" button added under Troubleshooting. Spectrum Visualizer no longer labeled Experimental.
+- **Now Playing display** simplified to song title + artist (removed duration/timestamp).
+- **Now Playing performance** ([#55](https://github.com/aHuddini/UniPlaySong/issues/55)) — ticker animation capped at 60fps, reducing GPU usage on high-refresh monitors.
+- **Spectrum Visualizer overhaul** — enabled by default with Punchy preset + Dynamic (Game Art) colors. 12 new static themes (Synthwave / Ember / Abyss / Solar / Vapor / Frost / Aurora / Coral / Plasma / Toxic / Cherry / Midnight) and 3 Dynamic themes that sample colors from game artwork (Game Art V1, Alt Algo with center-weighted sampling, Vibrant Vibes). Color themes decoupled from presets. Replaced duplicate Terminal theme with Vapor.
 
 ## [1.2.5] - 2026-02-07
 
 ### Added
-- **Audio-Reactive Spectrum Visualizer (Desktop Mode)** - New real-time frequency spectrum visualizer that reacts to your game music
-  - 6 gradient color themes: Classic (white), Neon (cyan→magenta), Sunset (orange→pink), Ocean (blue→teal), Fire (red→yellow), Ice (white→blue)
-  - Best viewed in Harmony and Vanilla desktop themes
-  - Toggle between smooth gradient bars and solid color rendering
-  - 5 tuning presets (Default, Dynamic, Smooth, Energetic, Minimal) plus Custom mode
-  - Advanced tuning controls: FFT size, smoothing, rise/fall speeds, frequency-dependent behavior
-  - Creates vibrant visual feedback that responds to music energy and frequency in real-time
-- **Style Presets** - 15+ one-click audio effect combinations for different listening moods
-  - Huddini Styles: Rehearsal, Bright Room, Retro Radio, Lo-Bit, Slowed Dream, Cave Lake, Honey Room (signature creative effects)
-  - Clean presets: Clean Boost, Warm FM Radio, Bright Airy, Concert Live (no slow effect)
-  - Character presets: Telephone, Muffled Next Room, Lo-Fi Chill, Slowed Reverb (unique audio textures)
-  - Combines reverb, filters, stereo width, bitcrushing, and slow effects into cohesive sonic profiles
+- **Audio-Reactive Spectrum Visualizer (Desktop)** — real-time FFT bars with 6 color themes (Classic, Neon, Sunset, Ocean, Fire, Ice), 5 tuning presets, and per-band controls. Best in Harmony / Vanilla themes.
+- **Style Presets** — 15+ one-click effect combinations: Huddini styles (Rehearsal, Bright Room, Retro Radio, Lo-Bit, Slowed Dream, Cave Lake, Honey Room), clean presets (Clean Boost, Warm FM Radio, Bright Airy, Concert Live), and character presets (Telephone, Muffled Next Room, Lo-Fi Chill, Slowed Reverb).
 
 ### Improved
-- **Logging Cleanup** - Removed 234 debug logs (89% reduction) that cluttered extension.log during normal operation
-- **Desktop Media Controls** - Tighter button spacing for more compact top panel layout (24px closer)
-- **Code Quality** - Consolidated duplicate code and eliminated magic strings for improved maintainability
+- **Logging cleanup** — 234 debug logs removed from `extension.log` (89% reduction) during normal operation.
+- **Desktop media controls** — tighter button spacing (~24px closer).
 
 ### Fixed
-- **Settings Integration with other Plugins** - Fixed music and video audio playing simultaneously after opening/closing settings
-  - MediaElementsMonitor now properly updates settings reference when settings are saved
-  - Runtime state properties (`VideoIsPlaying`, `ThemeOverlayActive`) no longer persisted to disk, preventing startup playback issues
-  - Eliminated double-fire property change handlers that caused inconsistent pause states
-- **Pause-on-X Settings Behavior** - Fixed stuck pause when disabling "Pause on Minimize/Focus Loss/System Tray" settings while their pause source is active
+- **Music + video audio playing simultaneously after opening/closing settings** — `MediaElementsMonitor` now updates the settings reference; runtime state (`VideoIsPlaying`, `ThemeOverlayActive`) no longer persisted; double-fire property handlers eliminated.
+- **Stuck pause** when disabling "Pause on Minimize / Focus Loss / System Tray" while their pause source was active.
 
 ## [1.2.4] - 2026-01-30
 
@@ -546,19 +441,13 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.2.3] - 2026-01-18
 
 ### Added
-- **Bulk Delete Music (Multi-Select)** - Delete music for multiple games at once
-  - Select 2+ games → Right-click → UniPlaySong → "Delete Music (All)"
-  - Confirmation dialog shows game count before proceeding
-  - Automatically stops playback if currently playing game is in selection
-  - Shows summary of deleted files when complete
+- **Bulk Delete Music (Multi-Select)** — select 2+ games → right-click → UniPlaySong → "Delete Music (All)". Auto-stops playback if a currently-playing game is in the selection.
 
 ### Improved
-- **Safer Playnite Restart Handling** - Settings requiring restart now use Playnite's built-in mechanism
+- **Safer Playnite restart handling** — settings requiring restart now use Playnite's built-in mechanism.
 
 ### Fixed
-- **Window State Pause Settings** - Fixed issues with pause settings at startup ([#51](https://github.com/aHuddini/UniPlaySong/issues/51), [#27](https://github.com/aHuddini/UniPlaySong/issues/27))
-  - Music no longer plays briefly when Playnite launches minimized or in system tray
-  - Music now correctly auto-plays when window is restored after starting minimized
+- **Window-state pause settings at startup** ([#51](https://github.com/aHuddini/UniPlaySong/issues/51), [#27](https://github.com/aHuddini/UniPlaySong/issues/27)) — music no longer plays briefly when Playnite launches minimized / in tray; correctly auto-plays when restored.
 
 ## [1.2.2] - 2026-01-17
 
@@ -568,55 +457,34 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.2.1] - 2026-01-17
 
 ### Added
-- **Now Playing Display** - Shows current song title, artist, and duration in Desktop top panel
-  - Scrolling text animation for long titles
-  - Click to open the music folder in Explorer
-- **New Add-on Settings Options** (Settings → General)
-  - **Show Now Playing (Desktop mode)** - Toggle the Now Playing song info display
-  - **Show Media Controls (Desktop mode)** - Toggle the Play/Pause and Skip buttons
-  - Both options are disabled by default; changing requires Playnite restart
+- **Now Playing Display (Desktop)** — current song title/artist/duration in the top panel with scrolling text for long titles. Click to open the music folder.
+- **Show Now Playing / Show Media Controls toggles** in Settings → General (both off by default; requires Playnite restart).
 
 ## [1.2.0] - 2026-01-15
 
 ### Added
-- **Desktop Top Panel Media Controls** - Play/Pause and Skip buttons in Playnite's top panel bar ([#5](https://github.com/aHuddini/UniPlaySong/issues/5))
-  - **Play/Pause button** - Always visible, toggles music playback with standard media player conventions
-  - **Skip/Next button** - Skip to a random different song from the current game's music folder
-    - Greyed out (30% opacity) when only one song is available
-    - Full opacity and functional when 2+ songs are available
-  - Uses IcoFont icons for visual consistency with Playnite's native UI
+- **Desktop Top Panel Media Controls** ([#5](https://github.com/aHuddini/UniPlaySong/issues/5)) — Play/Pause + Skip buttons in Playnite's top panel. Skip greys out at 30% opacity when only one song is available.
 
 ## [1.1.9] - 2026-01-13
 
 ### Added
-- **Theme Integration (UPS_MusicControl)** - PluginControl support for theme developers ([#43](https://github.com/aHuddini/UniPlaySong/issues/43))
-  - Allows themes to pause/resume music via XAML Tag bindings
-  - Control name: `UPS_MusicControl` (follows PlayniteSound pattern for compatibility)
-  - Multi-source pause system prevents conflicts with other pause reasons (focus loss, video detection, etc.)
-  - Smooth fade-out when pausing, fade-in when resuming
-  - New `PauseSource.ThemeOverlay` and `PauseSource.Video` for independent pause tracking
-  - Designed to provide future support to themes like ANIKI REMAKE
-  - See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md) for usage examples
+- **Theme Integration (UPS_MusicControl)** ([#43](https://github.com/aHuddini/UniPlaySong/issues/43)) — `PluginControl` for theme developers to pause/resume music via XAML Tag bindings. New `PauseSource.ThemeOverlay` and `PauseSource.Video` for independent pause tracking. See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md). Designed for ANIKI REMAKE compatibility.
 
 ### Credits
-- **Special thanks to Mike Aniki** for his guidance and extensive testing help with getting this plugin to work with ANIKI REMAKE in mind!
+- Thanks to **Mike Aniki** for guidance and ANIKI REMAKE testing.
 
 ## [1.1.8] - 2026-01-11
 
 ### Added
-- **Toast Notifications** - New lightweight notification system for controller-mode operations
-  - Custom Windows API blur effects
-  - Color-coded accent bars: green for success, red for errors, blue for info
-  - Non-intrusive positioning with smooth fade animations
-  - Specifically designed for controller-mode features
+- **Toast Notifications** for controller-mode operations — custom Windows API blur, color-coded accent bars (green/red/blue), smooth fade animations.
 
 ### Changed
-- **Controller-Mode Dialog System** - Replaced problematic confirmation dialogs with toast notifications in controller mode
+- **Controller-Mode dialogs** replaced with toast notifications.
 
 ### Fixed
-- **Settings Persistence** - Fixed critical bug where settings changes were not being saved
-- **Controller Mode Dialog Windows** - Fixed dialog handling in Fullscreen/Controller mode
-- **NAudio Default Music Crash** - Fixed crash when live effects are enabled with default music playback
+- **Settings persistence** — critical bug where settings changes weren't saved.
+- **Controller-mode dialog handling** in Fullscreen.
+- **NAudio default music crash** with live effects enabled.
 
 ## [1.1.7] - 2026-01-10
 
@@ -626,37 +494,26 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.1.6] - 2026-01-10
 
 ### Added
-- **Search Hints Database** - New settings section for managing the bundled search hints database
-  - Hints are stored in AutoSearchDatabase folder in extension data
-  - Open Database Folder button for easy access
+- **Search Hints Database** management section in Settings; hints stored in `AutoSearchDatabase` folder in extension data.
 
 ### Changed
-- Renamed "User Hint" to "UPS Hint" throughout the UI for better branding
-- Added "GOG Cut" to game name suffix stripping
+- Renamed "User Hint" → "UPS Hint" throughout the UI.
+- Added "GOG Cut" to game-name suffix stripping.
 
 ## [1.1.5] - 2026-01-09
 
 ### Added
-- **Search Hints Backend** - Intelligent game name resolution system
-  - Dual-source system: bundled curated hints + user-editable custom hints
-  - Provides direct album/playlist links for problematic games that cause search issues
-  - Supports fuzzy matching, base name matching, and exact lookups
-- **Delete Long Songs** cleanup tool - Scans music library and deletes songs longer than 10 minutes
-  - Helps remove accidentally added full albums, podcasts, or corrupted files
-  - Shows preview of files to be deleted with duration and total size before confirmation
-- **Import from PlayniteSound & Delete** migration option - Clean migration that imports music then removes PlayniteSound originals
+- **Search Hints Backend** — dual-source (bundled curated + user-editable) game-name resolution. Provides direct album/playlist links for problematic games. Supports fuzzy / base-name / exact lookups.
+- **Delete Long Songs** cleanup tool — finds and removes songs longer than 10 minutes (catches accidentally added full albums or podcasts).
+- **Import from PlayniteSound & Delete** — clean migration that imports music then removes PlayniteSound originals.
 
 ## [1.1.4] - 2026-01-07
 
 ### Added
-- **Live Effects: Audacity-Compatible Reverb** - Professional-grade reverb using libSoX/Freeverb algorithm
-  - 18 Audacity factory presets: Acoustic, Ambience, Artificial, Clean, Modern, Vocal I/II, Dance Vocal, Modern Vocal, Voice Tail, Bathroom, Small Room Bright/Dark, Medium Room, Large Room, Church Hall, Cathedral, Big Cave
-  - 7 UniPlaySong environment presets: Living Room, Home Theater, Late Night TV, Lounge/Cafe, Jazz Club, Night Club, Concert Hall
-  - New parameters: Reverberance (tail length), Tone Low/High (post-reverb EQ), Stereo Width
-  - Extended Wet Gain range to +10 dB for more pronounced effects
-- **Live Effects: Effect Chain Ordering** - Configurable processing order with 6 preset orderings
-- **Live Effects: Advanced Reverb Tuning** - Expert-mode controls for algorithm parameters
-- **Amplify Audio** feature with waveform-based gain adjustment editor
+- **Live Effects: Audacity-Compatible Reverb** — libSoX/Freeverb algorithm. Ships 18 Audacity presets (Acoustic, Ambience, Vocal I/II, Bathroom, Cathedral, Big Cave, etc.) + 7 UniPlaySong environment presets (Living Room, Home Theater, Jazz Club, Night Club, Concert Hall, etc.). New parameters: Reverberance, Tone Low/High, Stereo Width. Wet Gain range extended to +10 dB.
+- **Live Effects: Effect Chain Ordering** — 6 preset orderings.
+- **Live Effects: Advanced Reverb Tuning** — expert-mode algorithm controls.
+- **Amplify Audio** — waveform-based gain adjustment editor.
 - Repair Music Folder option in Fullscreen mode context menu
 - Music status tags: Games are now tagged with "[UPS] Has Music" or "[UPS] No Music" for easy filtering in Playnite ([#18](https://github.com/aHuddini/UniPlaySong/issues/18))
 

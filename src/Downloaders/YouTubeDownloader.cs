@@ -26,6 +26,14 @@ namespace UniPlaySong.Downloaders
         private string _customCookiesFilePath;
         private readonly ErrorHandlerService _errorHandler;
 
+        // FFmpeg version-check cache. Probing ffmpeg -version on every DownloadSong call
+        // adds ~30-50ms per song; for a 50-track preview session that's 1.5-2.5s of
+        // redundant work probing the same binary. Cache by (path, last-write-time) so
+        // an in-place ffmpeg update busts the cache. Reset on UpdateSettings when the
+        // user picks a different ffmpeg path.
+        private string _ffmpegProbedPath = null;
+        private long _ffmpegProbedMtimeTicks = 0;
+
         public YouTubeDownloader(HttpClient httpClient, string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath, ErrorHandlerService errorHandler)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -38,13 +46,22 @@ namespace UniPlaySong.Downloaders
 
         // Live-updates the settings-driven fields without recreating the downloader.
         // Called by DownloadManager.UpdateSettings when the user changes yt-dlp path /
-        // ffmpeg path / cookie mode / custom cookies file in settings. Fixes a stale-reference
-        // bug where dialog code paths (DownloadDialogService, ControllerDialogHandler) held
-        // the old DownloadManager instance when settings changed, so new YouTube download
-        // attempts went through the OLD cookie/path config even after the user fixed their
-        // configuration.
+        // ffmpeg path / cookie mode / custom cookies file in settings. Fixes a
+        // stale-reference bug where dialog code paths (DownloadDialogService,
+        // ControllerDialogHandler) held the old DownloadManager instance when settings
+        // changed, so new YouTube download attempts went through the OLD config even after
+        // the user fixed their configuration.
         public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
         {
+            // Bust the ffmpeg version-check cache when the path changes so the new binary
+            // gets probed on next download. mtime-based cache check inside the probe
+            // handles the "user updated ffmpeg in place" case automatically.
+            if (!string.Equals(_ffmpegPath, ffmpegPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _ffmpegProbedPath = null;
+                _ffmpegProbedMtimeTicks = 0;
+            }
+
             _ytDlpPath = ytDlpPath;
             _ffmpegPath = ffmpegPath;
             _cookieMode = cookieMode;
@@ -183,51 +200,66 @@ namespace UniPlaySong.Downloaders
                 return false;
             }
 
-            // Log diagnostic information
-            Logger.DebugIf(LogPrefix,$"Download diagnostic - Song: {song?.Name}, Video ID: {song?.Id}, Target path: {path}");
-            Logger.DebugIf(LogPrefix,$"Download diagnostic - yt-dlp path: {_ytDlpPath}, FFmpeg path: {_ffmpegPath}");
+            Logger.DebugIf(LogPrefix, $"Downloading {song?.Name} (id={song?.Id})");
             
             // Check for JavaScript runtime (required for yt-dlp 2025.11.12+)
             // yt-dlp will automatically detect Deno, Node.js, QuickJS, etc. if installed
             // We'll check yt-dlp output for hints about JS runtime usage
             // Reference: https://github.com/yt-dlp/yt-dlp/issues/15012
             
-            // Validate FFmpeg is accessible
-            try
+            // Validate FFmpeg is accessible. Cached by (path, mtime) so we only probe once
+            // per binary per session — running ffmpeg -version on every DownloadSong call
+            // was ~30-50ms of waste per song. mtime check catches in-place updates.
+            long ffmpegMtimeTicks = 0;
+            try { ffmpegMtimeTicks = File.GetLastWriteTimeUtc(_ffmpegPath).Ticks; } catch { }
+
+            bool ffmpegAlreadyProbed =
+                string.Equals(_ffmpegProbedPath, _ffmpegPath, StringComparison.OrdinalIgnoreCase)
+                && _ffmpegProbedMtimeTicks == ffmpegMtimeTicks
+                && ffmpegMtimeTicks != 0;
+
+            if (!ffmpegAlreadyProbed)
             {
-                var ffmpegInfo = new System.Diagnostics.ProcessStartInfo
+                try
                 {
-                    FileName = _ffmpegPath,
-                    Arguments = "-version",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                using (var ffmpegCheck = System.Diagnostics.Process.Start(ffmpegInfo))
-                {
-                    if (ffmpegCheck != null)
+                    var ffmpegInfo = new System.Diagnostics.ProcessStartInfo
                     {
-                        ffmpegCheck.WaitForExit(3000);
-                        if (ffmpegCheck.ExitCode == 0)
+                        FileName = _ffmpegPath,
+                        Arguments = "-version",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
+                    using (var ffmpegCheck = System.Diagnostics.Process.Start(ffmpegInfo))
+                    {
+                        if (ffmpegCheck != null)
                         {
-                            var versionOutput = ffmpegCheck.StandardOutput.ReadToEnd();
-                            var firstLine = versionOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                            if (!string.IsNullOrWhiteSpace(firstLine))
+                            ffmpegCheck.WaitForExit(3000);
+                            if (ffmpegCheck.ExitCode == 0)
                             {
-                                Logger.DebugIf(LogPrefix,$"FFmpeg version check: {firstLine.Trim()}");
+                                var versionOutput = ffmpegCheck.StandardOutput.ReadToEnd();
+                                var firstLine = versionOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                                if (!string.IsNullOrWhiteSpace(firstLine))
+                                {
+                                    Logger.DebugIf(LogPrefix,$"FFmpeg version check: {firstLine.Trim()}");
+                                }
+
+                                // Mark the cache only on success; failed probes should retry next time.
+                                _ffmpegProbedPath = _ffmpegPath;
+                                _ffmpegProbedMtimeTicks = ffmpegMtimeTicks;
                             }
-                        }
-                        else
-                        {
-                            Logger.Warn($"FFmpeg version check failed with exit code {ffmpegCheck.ExitCode}");
+                            else
+                            {
+                                Logger.Warn($"FFmpeg version check failed with exit code {ffmpegCheck.ExitCode}");
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn($"Could not verify FFmpeg version: {ex.Message}");
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Could not verify FFmpeg version: {ex.Message}");
+                }
             }
 
             try
@@ -241,20 +273,80 @@ namespace UniPlaySong.Downloaders
 
                 var pathWithoutExt = Path.ChangeExtension(path, null);
                 string arguments;
-                
-                // Rate limiting options to avoid YouTube's aggressive bot detection
-                // --sleep-requests: seconds to sleep between requests to YouTube API (prevents 429 errors)
-                // --sleep-interval/--max-sleep-interval: random delay before each download
-                // These help prevent rate limiting during batch downloads
+
+                // Rate limiting:
+                //   --sleep-requests 0.3: pauses 300ms between API calls within a single
+                //     video extraction. Was 1.0s; reduced after observing zero 429s across
+                //     multi-user testing. yt-dlp issue #7143 documents a user running
+                //     --sleep-requests 0.5 for hours-long archive runs without 429s, so
+                //     0.3s on user-paced downloads keeps comfortable margin while saving
+                //     ~2.8s per full download (4 inter-call sleeps × 0.7s shaved each).
+                //     yt-dlp does NOT inject automatic per-request sleeps when this flag
+                //     is absent (verified in source: extractor/common.py _request_webpage
+                //     uses `sleep_interval_requests or 0`).
+                //   --sleep-interval / --max-sleep-interval: removed (was a random 1-3s
+                //     pre-download delay; each yt-dlp process had its own sleep window so
+                //     parallel processes didn't aggregate into a global rate-limit
+                //     accumulator — pure overhead).
+                //   PREVIEWS: no rate-limit flags. Each preview is 3 API calls; user-paced
+                //     bursts are far under the documented guest-session ceiling.
                 var rateLimitOptions = isPreview
-                    ? " --sleep-requests 1 --sleep-interval 1 --max-sleep-interval 2"
-                    : " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
+                    ? string.Empty
+                    : " --sleep-requests 0.3";
+
+                // Concurrent fragments: YouTube serves audio in DASH fragments (~5s chunks).
+                // -N 4 fetches up to 4 in parallel. Only meaningful for FULL downloads where
+                // multi-minute audio is fragmented; previews are 40-second single-segment
+                // HTTP range requests that don't fragment, so the flag is a no-op for them.
+                // Bumped from 3 to 4 to test if the extra parallelism helps on full songs.
+                // Combined with BatchDownloadService.MaxConcurrentDownloads=3, upper bound is
+                // 3*4=12 simultaneous HTTPS connections — still well within reasonable.
+                var concurrentFragments = isPreview ? string.Empty : " --concurrent-fragments 4";
+
+                // Prefer free formats (opus/webm over m4a/aac at same quality). Affects
+                // source-format selection BEFORE the --audio-format mp3 conversion; on
+                // previews the source-format choice doesn't impact wall-clock meaningfully
+                // (40-second clip), so dropped on the preview path. Kept on full downloads
+                // where the slightly smaller container/decode does add up across an album.
+                var preferFreeFormats = isPreview ? string.Empty : " --prefer-free-formats";
+
+                // Anti-bot detection: player_client selection.
+                //
+                // COOKIE MODE: leave player_client unset entirely. yt-dlp auto-skips
+                // android/ios when cookies are present (those clients don't carry cookies),
+                // so forcing `android,ios,web` collapses to web-only and triggers the nsig JS
+                // challenge — which fails outright for users without a JS runtime (Deno).
+                // yt-dlp's own default rotation includes cookie-compatible clients
+                // (web_safari etc.) and adapts as YouTube changes faster than we ship; trust it.
+                //
+                // NO-COOKIE MODE: explicitly select clients because yt-dlp's 2026 defaults
+                // (android_vr,web,web_safari) were observed hitting 403/SABR walls in the
+                // wild. The `android,ios,web` triple still produces working URLs without
+                // cookies. Applied to both previews and full downloads — preview floor of
+                // ~5-6s on this path is the architectural limit yt-dlp imposes (multi-client
+                // negotiation + JS challenge solve), not something flag tweaks can lower.
+                // Tracked: https://github.com/yt-dlp/yt-dlp/issues/12482
+                string antiBotOptions = (_cookieMode != CookieMode.None)
+                    ? string.Empty
+                    : " --extractor-args \"youtube:player_client=android,ios,web\"";
+
+                // Post-processor args ensure SDL_mixer / NAudio compatibility (-ar 48000 -ac 2).
+                // Single-pass MP3 postprocessor: folds the SDL/NAudio compatibility resample
+                // (-ar 48000 -ac 2) into yt-dlp's first encode pass. Saves ~1-2s per song
+                // on full downloads versus the prior two-pass form (`ffmpeg:-ar 48000 -ac 2`,
+                // which re-encoded the already-encoded mp3). Promoted to always-on after
+                // shipping behind the experimental setting in this release with no bug
+                // reports — the syntax is well-formed, ffmpeg accepts it, output plays.
+                var postProcessorArgs = " --postprocessor-args \"ExtractAudio+ffmpeg_o:-ar 48000 -ac 2\"";
+
+                // Always-on performance flags (no quality / compatibility impact):
+                //   --no-progress: skip terminal progress rendering UPS doesn't read (~50-100ms).
+                //   --no-mtime:    skip applying YouTube upload date as file mtime (~50ms).
+                var performanceFlags = " --no-progress --no-mtime";
 
                 if (_cookieMode != CookieMode.None)
                 {
                     var quality = isPreview ? "5" : "0";
-                    var antiBotOptions = " --extractor-args \"youtube:player_client=android,ios,web\"";
-                    var cookiesPostArgs = " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
                     var cookiesSectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
                     string cookiesArg;
                     switch (_cookieMode)
@@ -266,8 +358,7 @@ namespace UniPlaySong.Downloaders
                         case CookieMode.Opera:   cookiesArg = "--cookies-from-browser opera"; break;
                         default:                 cookiesArg = $"--cookies \"{_customCookiesFilePath}\""; break;
                     }
-                    arguments = $"{cookiesArg} -x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{cookiesPostArgs}{cookiesSectionLimit} --no-playlist --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
-                    Logger.DebugIf(LogPrefix,$"Using yt-dlp command with cookies ({_cookieMode})");
+                    arguments = $"{cookiesArg} -x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{concurrentFragments}{preferFreeFormats}{postProcessorArgs}{performanceFlags}{cookiesSectionLimit} --no-playlist --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
                 else
                 {
@@ -276,18 +367,6 @@ namespace UniPlaySong.Downloaders
                     // For previews: use lower quality (5 = ~128kbps), limit to 30 seconds, and optimize for speed
                     // For full downloads: use best quality (0 = best available)
                     var quality = isPreview ? "5" : "0"; // 5 = ~128kbps, 0 = best
-
-                    // Anti-bot detection options to help bypass YouTube's bot checks
-                    // Try multiple clients in order: android (best), ios (good), web (fallback)
-                    // This helps bypass YouTube's aggressive bot detection, especially in regions like Germany
-                    var antiBotOptions = " --extractor-args \"youtube:player_client=android,ios,web\"";
-
-                    // Post-processor args to ensure SDL_mixer compatibility
-                    // -ar 48000: Resample to 48kHz (matches normalization settings for consistency)
-                    // -ac 2: Convert to stereo (2 channels)
-                    // This fixes issues where unusual sample rates or channel configs cause SDL "Out of memory" errors
-                    // For previews: also limit to 30 seconds with -t 30
-                    var postProcessorArgs = " --postprocessor-args \"ffmpeg:-ar 48000 -ac 2\"";
 
                     // For previews: download only first 30 seconds instead of full track + trim
                     var sectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
@@ -300,10 +379,14 @@ namespace UniPlaySong.Downloaders
                     // happens to be a playlist URL for a game soundtrack.
                     var previewFlags = " --no-playlist";
 
-                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{postProcessorArgs}{sectionLimit}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
+                    arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{concurrentFragments}{preferFreeFormats}{postProcessorArgs}{performanceFlags}{sectionLimit}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
 
-                // Check directory permissions before starting download
+                // Ensure the target directory exists before yt-dlp tries to write to it.
+                // The previous .writetest probe (write a sentinel, delete it, log result) was
+                // dropped — yt-dlp itself surfaces a clear error if the directory is unwritable,
+                // so the probe was duplicating disk I/O and AV-scanner work for no diagnostic
+                // value the failed download wouldn't already provide.
                 var targetDir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(targetDir))
                 {
@@ -314,19 +397,6 @@ namespace UniPlaySong.Downloaders
                             Directory.CreateDirectory(targetDir);
                             Logger.DebugIf(LogPrefix,$"Created target directory: {targetDir}");
                         }
-                        
-                        // Test write permissions
-                        var testFile = Path.Combine(targetDir, ".writetest");
-                        try
-                        {
-                            File.WriteAllText(testFile, "test");
-                            File.Delete(testFile);
-                            Logger.DebugIf(LogPrefix,$"Directory write permissions verified: {targetDir}");
-                        }
-                        catch (Exception permEx)
-                        {
-                            Logger.Error($"Directory write permission check failed for {targetDir}: {permEx.Message}");
-                        }
                     }
                     catch (Exception dirEx)
                     {
@@ -335,9 +405,6 @@ namespace UniPlaySong.Downloaders
                 }
 
                 var workingDir = Path.GetDirectoryName(_ytDlpPath) ?? Directory.GetCurrentDirectory();
-                Logger.DebugIf(LogPrefix,$"Downloading song with yt-dlp: {song.Name} to {path}");
-                Logger.DebugIf(LogPrefix,$"yt-dlp command: {_ytDlpPath} {arguments}");
-                Logger.DebugIf(LogPrefix,$"Working directory: {workingDir}");
 
                 var processInfo = new System.Diagnostics.ProcessStartInfo
                 {
@@ -424,16 +491,7 @@ namespace UniPlaySong.Downloaders
                             Logger.Warn("⚠ yt-dlp appears to be running without JavaScript runtime - downloads may be limited or fail");
                             Logger.Warn("Install Deno for best results: https://deno.com/");
                         }
-                        else
-                        {
-                            // Log a sample of output to help debug
-                            var firstLines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Take(3);
-                            Logger.DebugIf(LogPrefix,$"yt-dlp output preview: {string.Join(" | ", firstLines)}");
-                        }
-                    }
-                    else
-                    {
-                        Logger.DebugIf(LogPrefix,"yt-dlp produced no standard output (this is normal for some operations)");
+                        // Non-error output dropped — verbose noise per song with no diagnostic value.
                     }
 
                     if (process.ExitCode != 0)
@@ -532,19 +590,17 @@ namespace UniPlaySong.Downloaders
                         return false;
                     }
                     
-                    // Log successful completion details
-                    if (!string.IsNullOrWhiteSpace(output))
-                    {
-                        Logger.DebugIf(LogPrefix,$"yt-dlp output: {output}");
-                    }
                 }
 
-                // yt-dlp may add extension, check if file exists with various extensions
+                // yt-dlp may add extension, check if file exists with various extensions.
+                // .mp4 and .aac added for the fast-preview path (audio-format=m4a may yield
+                // either depending on source format; .mp4 specifically when source is format
+                // 18 and yt-dlp's audio-only extract didn't fully demux).
                 if (!File.Exists(path))
                 {
                     var pathWithoutExt2 = Path.ChangeExtension(path, null);
-                    var possibleExtensions = new[] { ".mp3", ".m4a", ".webm", ".opus" };
-                    
+                    var possibleExtensions = new[] { ".mp3", ".m4a", ".mp4", ".aac", ".webm", ".opus" };
+
                     foreach (var ext in possibleExtensions)
                     {
                         var testPath = pathWithoutExt2 + ext;
@@ -555,21 +611,31 @@ namespace UniPlaySong.Downloaders
                             break;
                         }
                     }
-                    
-                    // Also check if yt-dlp created a file with the video ID in the name
-                    var downloadDirectory = Path.GetDirectoryName(path);
-                    if (!string.IsNullOrEmpty(downloadDirectory))
+
+                    // Pattern-match fallback for unusual yt-dlp output filenames.
+                    // ONLY runs if the explicit-extensions loop above didn't already move
+                    // a file into place. Without this guard, the pattern match found the
+                    // freshly-moved <hash>.mp3 from the loop above, deleted it as a "stale
+                    // duplicate", then tried to move it from the (now-deleted) source path
+                    // — surfacing as FileNotFoundException. Bug exposed by the v1.4.5
+                    // preview-fast-path change which routinely produces .m4a output that
+                    // exercises the rename fallback for the first time.
+                    if (!File.Exists(path))
                     {
-                        var files = Directory.GetFiles(downloadDirectory, $"{Path.GetFileNameWithoutExtension(pathWithoutExt2)}*");
-                        if (files.Length > 0)
+                        var downloadDirectory = Path.GetDirectoryName(path);
+                        if (!string.IsNullOrEmpty(downloadDirectory))
                         {
-                            var foundFile = files[0];
-                            Logger.DebugIf(LogPrefix,$"Found file with pattern match: {foundFile}, moving to {path}");
-                            if (File.Exists(path))
+                            var files = Directory.GetFiles(downloadDirectory, $"{Path.GetFileNameWithoutExtension(pathWithoutExt2)}*");
+                            if (files.Length > 0)
                             {
-                                File.Delete(path);
+                                var foundFile = files[0];
+                                Logger.DebugIf(LogPrefix,$"Found file with pattern match: {foundFile}, moving to {path}");
+                                if (File.Exists(path))
+                                {
+                                    File.Delete(path);
+                                }
+                                File.Move(foundFile, path);
                             }
-                            File.Move(foundFile, path);
                         }
                     }
                 }
@@ -577,53 +643,26 @@ namespace UniPlaySong.Downloaders
                 if (File.Exists(path))
                 {
                     var fileInfo = new FileInfo(path);
-                    var successMessage = $"Successfully downloaded: {song.Name} to {path} ({fileInfo.Length} bytes)";
-                    
-                    // Add context about what helped the download succeed
-                    var successDetails = new List<string>();
-                    if (!string.IsNullOrWhiteSpace(output) && output.ToLowerInvariant().Contains("using") && 
-                        (output.ToLowerInvariant().Contains("deno") || output.ToLowerInvariant().Contains("node") || 
-                         output.ToLowerInvariant().Contains("quickjs") || output.ToLowerInvariant().Contains("bun")))
+                    // Parse yt-dlp's "Downloading 1 format(s): <N>" line so we know which
+                    // format yt-dlp picked (18=mp4 video+audio, 140=m4a audio-only,
+                    // 251=opus audio-only, etc). Useful when diagnosing PO Token issues
+                    // or when YouTube changes default format selection.
+                    string format = null;
+                    if (!string.IsNullOrEmpty(output))
                     {
-                        successDetails.Add("JavaScript runtime active");
+                        var match = System.Text.RegularExpressions.Regex.Match(output, @"Downloading\s+\d+\s+format\(s\):\s+(\S+)");
+                        if (match.Success) format = match.Groups[1].Value;
                     }
-                    
-                    if (successDetails.Any())
-                    {
-                        successMessage += $" ({string.Join(", ", successDetails)})";
-                    }
-
-                    Logger.DebugIf(LogPrefix,successMessage);
+                    var formatTag = string.IsNullOrEmpty(format) ? "" : $" [fmt {format}]";
+                    Logger.DebugIf(LogPrefix, $"Downloaded {song.Name} ({fileInfo.Length} bytes){formatTag}");
                     return true;
                 }
                 
                 Logger.Error($"Download failed: File not found at {path} after yt-dlp completed successfully");
                 Logger.Error($"This may indicate yt-dlp created the file with a different name or extension");
                 
-                // List files in directory for debugging
                 var debugDir = Path.GetDirectoryName(path);
-                if (Directory.Exists(debugDir))
-                {
-                    var files = Directory.GetFiles(debugDir);
-                    Logger.DebugIf(LogPrefix,$"Files in directory ({files.Length} total): {string.Join(", ", files.Select(f => Path.GetFileName(f)))}");
-                    
-                    // Check for files created around the same time (within last 2 minutes)
-                    var recentFiles = files.Where(f => 
-                    {
-                        try
-                        {
-                            var fileTime = File.GetLastWriteTime(f);
-                            return (DateTime.Now - fileTime).TotalMinutes < 2;
-                        }
-                        catch { return false; }
-                    }).ToList();
-                    
-                    if (recentFiles.Any())
-                    {
-                        Logger.DebugIf(LogPrefix,$"Recently created files (last 2 minutes): {string.Join(", ", recentFiles.Select(f => Path.GetFileName(f)))}");
-                    }
-                }
-                else
+                if (!Directory.Exists(debugDir))
                 {
                     Logger.Error($"Target directory does not exist: {debugDir}");
                 }

@@ -337,11 +337,26 @@ namespace UniPlaySong.ViewModels
 
         public void PerformSearch()
         {
+            // Re-entry guard. Without this, the song-selection dialog flow has been
+            // observed firing PerformSearch up to 5 times for one album selection in
+            // user logs (cause unclear — likely a WPF event-handler / template-init
+            // quirk that re-routes through one of the 5 PerformSearch call sites in
+            // DownloadDialogService). Each duplicate fires its own Task.Run + network
+            // call, wasting bandwidth and doing 4x redundant work per album. The
+            // guard makes the function idempotent regardless of trigger source —
+            // legitimate user-initiated re-searches still work because IsSearching
+            // resets to false on completion / error inside the dispatcher invoke.
+            if (IsSearching)
+            {
+                Logger.DebugIf(LogPrefix, "PerformSearch called while already in flight - ignoring duplicate request");
+                return;
+            }
+
             // Use inline progress bar instead of overlay
             // Use SearchTerm if provided, otherwise use game name
             // For default music, SearchTerm should be provided by user
             var searchKeyword = !string.IsNullOrWhiteSpace(SearchTerm) ? SearchTerm : (_game?.Name ?? string.Empty);
-            
+
             // Don't search if keyword is empty (user needs to type something)
             if (string.IsNullOrWhiteSpace(searchKeyword) && !_isSongSelection)
             {

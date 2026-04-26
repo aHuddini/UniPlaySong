@@ -2824,7 +2824,7 @@
                         <Button Content="Browse..."
                                 Width="80"
                                 Command="{Binding BrowseForYtDlpFile}"/>
-                        <TextBlock Text="{Binding YtDlpStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding YtDlpStatus}" Foreground="{Binding YtDlpStatusBrush}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
                     </StackPanel>
                     <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe. Yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support."
                                FontSize="11"
@@ -2835,7 +2835,7 @@
                     <Separator Margin="0,10"/>
 
                     <TextBlock Text="Cookie Source" FontSize="13" FontWeight="SemiBold" Margin="0,10,0,5"/>
-                    <TextBlock Text="Choose a cookie source to improve yt-dlp and YouTube download reliability. Browser options require the browser to be installed with an active YouTube login. Some antivirus software may flag cookie access for Chromium-based browsers (Chrome, Edge, Brave, Opera)."
+                    <TextBlock Text="Uses your browser's YouTube login to speed up previews/downloads (~2x faster) via audio-only streams. Counts toward your account's activity. Requires the browser signed into YouTube; antivirus may flag Chromium browsers (Chrome, Edge, Brave, Opera)."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
                     <RadioButton Content="No cookies"

@@ -228,9 +228,6 @@ namespace UniPlaySong
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 _fileLogger.Info($"=== UniPlaySong v{version} Starting ===");
 
-                // Initialize dedicated downloader logger
-                Downloaders.DownloaderLogger.Initialize(extensionPath);
-
                 // Initialize bundled preset and jingle services
                 Services.BundledPresetService.Initialize(extensionPath);
                 Services.BundledJingleService.Initialize(extensionPath);

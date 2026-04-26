@@ -172,6 +172,8 @@ namespace UniPlaySong
                     if (!string.IsNullOrWhiteSpace(filePath))
                     {
                         Settings = CreateSettingsWithUpdate(s => s.YtDlpPath = filePath);
+                        // Re-run validation so the new path gets the version-probe + status update.
+                        UpdateToolValidation();
                     }
                 },
                 context: "selecting yt-dlp file",
@@ -189,6 +191,7 @@ namespace UniPlaySong
                     if (!string.IsNullOrWhiteSpace(filePath))
                     {
                         Settings = CreateSettingsWithUpdate(s => s.FFmpegPath = filePath);
+                        UpdateToolValidation();
                     }
                 },
                 context: "selecting FFmpeg file",
@@ -2590,17 +2593,125 @@ namespace UniPlaySong
         private string _ytDlpStatus = "";
         public string YtDlpStatus { get => _ytDlpStatus; set { _ytDlpStatus = value; OnPropertyChanged(); } }
 
+        private Brush _ytDlpStatusBrush = Brushes.Gray;
+        public Brush YtDlpStatusBrush { get => _ytDlpStatusBrush; set { _ytDlpStatusBrush = value; OnPropertyChanged(); } }
+
         private string _ffmpegStatus = "";
         public string FfmpegStatus { get => _ffmpegStatus; set { _ffmpegStatus = value; OnPropertyChanged(); } }
+
+        // Cached version probe — avoids re-running yt-dlp.exe --version on every settings open.
+        // Keyed by (path, last-write-time). Path-only caching missed in-place updates: when a
+        // user replaces yt-dlp.exe with a newer binary at the same path, the cache returned the
+        // stale version. Adding mtime to the key catches both Browse-to-same-path and
+        // "user updated yt-dlp without re-Browsing" cases. File.GetLastWriteTimeUtc is a cheap
+        // syscall — doesn't trigger AV scans the way reading the file would.
+        private string _cachedYtDlpVersionPath = null;
+        private long _cachedYtDlpVersionMtimeTicks = 0;
+        private string _cachedYtDlpVersion = null;
 
         public void UpdateToolValidation()
         {
             var ytdlp = Settings?.YtDlpPath;
-            YtDlpStatus = !string.IsNullOrWhiteSpace(ytdlp) && File.Exists(ytdlp) ? "✓ Found" : "✗ Not found";
+            var ytdlpExists = !string.IsNullOrWhiteSpace(ytdlp) && File.Exists(ytdlp);
+
+            if (!ytdlpExists)
+            {
+                YtDlpStatus = "✗ Not found";
+                YtDlpStatusBrush = Brushes.IndianRed;
+            }
+            else
+            {
+                // Probe version. Async-fire-and-update so the settings dialog opens instantly
+                // even if yt-dlp.exe is slow to respond. Synchronous would block the UI thread
+                // for ~50-200ms per open which is noticeable.
+                YtDlpStatus = "✓ Found · checking version…";
+                YtDlpStatusBrush = Brushes.Gray;
+
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    var (status, brush) = ResolveYtDlpVersionStatus(ytdlp);
+                    System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        YtDlpStatus = status;
+                        YtDlpStatusBrush = brush;
+                    });
+                });
+            }
 
             var ffmpeg = Settings?.FFmpegPath;
             FfmpegStatus = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg) ? "✓ Found" : "✗ Not found";
         }
+
+        // Runs `yt-dlp.exe --version` and returns "✓ Found · v<version>". Caches the version
+        // per-path so repeated settings opens don't re-shell. Failure modes (process won't
+        // start, output unparseable) fall back to "✓ Found" without a version label.
+        private (string status, Brush brush) ResolveYtDlpVersionStatus(string ytDlpPath)
+        {
+            try
+            {
+                string version;
+                long mtimeTicks = 0;
+                try { mtimeTicks = File.GetLastWriteTimeUtc(ytDlpPath).Ticks; } catch { }
+
+                if (string.Equals(_cachedYtDlpVersionPath, ytDlpPath, System.StringComparison.OrdinalIgnoreCase)
+                    && _cachedYtDlpVersionMtimeTicks == mtimeTicks
+                    && mtimeTicks != 0
+                    && !string.IsNullOrEmpty(_cachedYtDlpVersion))
+                {
+                    version = _cachedYtDlpVersion;
+                }
+                else
+                {
+                    version = QueryYtDlpVersion(ytDlpPath);
+                    if (!string.IsNullOrEmpty(version))
+                    {
+                        _cachedYtDlpVersionPath = ytDlpPath;
+                        _cachedYtDlpVersionMtimeTicks = mtimeTicks;
+                        _cachedYtDlpVersion = version;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(version))
+                {
+                    return ("✓ Found", Brushes.MediumSeaGreen);
+                }
+
+                return ($"✓ Found · v{version}", Brushes.MediumSeaGreen);
+            }
+            catch
+            {
+                return ("✓ Found", Brushes.MediumSeaGreen);
+            }
+        }
+
+        // Spawns `yt-dlp.exe --version` and returns the trimmed stdout (a single line like
+        // "2025.12.08"). Returns null on any failure — caller treats null as "version unknown."
+        private static string QueryYtDlpVersion(string ytDlpPath)
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo(ytDlpPath, "--version")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                };
+                using (var proc = System.Diagnostics.Process.Start(psi))
+                {
+                    if (proc == null) return null;
+                    var stdout = proc.StandardOutput.ReadToEnd();
+                    if (!proc.WaitForExit(3000)) { try { proc.Kill(); } catch { } return null; }
+                    if (proc.ExitCode != 0) return null;
+                    return stdout?.Trim();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
         public void CancelEdit()
         {

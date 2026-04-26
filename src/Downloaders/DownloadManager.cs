@@ -18,7 +18,6 @@ namespace UniPlaySong.Downloaders
     public class DownloadManager : IDownloadManager
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        private static DownloaderLogger DLog => DownloaderLogger.Instance;
         private const string LogPrefix = "DownloadManager";
         private static readonly TimeSpan MaxSongLength = new TimeSpan(0, Constants.MaxPreviewSongLengthMinutes, 0);
         private static readonly TimeSpan MaxAllowedDuration = new TimeSpan(0, Constants.MaxAllowedSongDurationMinutes, 0);
@@ -58,11 +57,11 @@ namespace UniPlaySong.Downloaders
         }
 
         // Live-updates the YouTube + SoundCloud downloader configs (yt-dlp path, ffmpeg path,
-        // cookie mode, custom cookies file) without replacing this DownloadManager instance.
-        // Called from UniPlaySong.OnSettingsChanged when any of those settings change, so
-        // downstream services (DownloadDialogService, ControllerDialogHandler) that hold a
-        // reference to THIS DownloadManager keep working with the new settings — no stale
-        // reference problem.
+        // cookie mode, custom cookies file, encoding mode) without replacing this
+        // DownloadManager instance. Called from UniPlaySong.OnSettingsChanged when any of
+        // those settings change, so downstream services (DownloadDialogService,
+        // ControllerDialogHandler) that hold a reference to THIS DownloadManager keep
+        // working with the new settings — no stale reference problem.
         public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
         {
             (_ytDownloader as YouTubeDownloader)?.UpdateSettings(ytDlpPath, ffmpegPath, cookieMode, customCookiesFilePath);
@@ -98,9 +97,6 @@ namespace UniPlaySong.Downloaders
             // For Source.All: Fetch from all sources (KHInsider → Zophar → YouTube), let BestAlbumPick decide
             if (source == Source.All)
             {
-                // Detailed logging goes to downloader.log
-                DLog.Debug($"Search '{gameName}' (auto={auto})");
-
                 var allAlbums = new List<Album>();
 
                 // === PRIORITY 0: Hint albums (SoundCloud, YouTube playlist, KHInsider from search_hints.json) ===
@@ -108,7 +104,6 @@ namespace UniPlaySong.Downloaders
                 var hintAlbums = GetHintAlbums(gameName);
                 if (hintAlbums != null && hintAlbums.Count > 0)
                 {
-                    DLog.Debug($"  Hints: {hintAlbums.Count} (from search_hints.json)");
                     allAlbums.AddRange(hintAlbums);
                 }
 
@@ -120,7 +115,6 @@ namespace UniPlaySong.Downloaders
                     // Check cache only if not skipping
                     if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.KHInsider, out khAlbums))
                     {
-                        DLog.Debug($"  KHInsider: {khAlbums.Count} (cached)");
                     }
                     else
                     {
@@ -131,7 +125,6 @@ namespace UniPlaySong.Downloaders
                         {
                             _cacheService.CacheSearchResult(gameName, Source.KHInsider, khAlbums);
                         }
-                        DLog.Debug($"  KHInsider: {khAlbums?.Count ?? 0}");
                     }
 
                     if (khAlbums != null && khAlbums.Count > 0)
@@ -147,7 +140,6 @@ namespace UniPlaySong.Downloaders
 
                     if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.Zophar, out zopharAlbums))
                     {
-                        DLog.Debug($"  Zophar: {zopharAlbums.Count} (cached)");
                     }
                     else
                     {
@@ -158,7 +150,6 @@ namespace UniPlaySong.Downloaders
                         {
                             _cacheService.CacheSearchResult(gameName, Source.Zophar, zopharAlbums);
                         }
-                        DLog.Debug($"  Zophar: {zopharAlbums.Count}");
                     }
 
                     if (zopharAlbums != null && zopharAlbums.Count > 0)
@@ -172,11 +163,9 @@ namespace UniPlaySong.Downloaders
 
                 if (ytAlbums != null && ytAlbums.Count > 0)
                 {
-                    DLog.Debug($"  YouTube: {ytAlbums.Count}");
                     allAlbums.AddRange(ytAlbums);
                 }
 
-                DLog.Debug($"  → Total: {allAlbums.Count} albums");
                 return allAlbums;
             }
 
@@ -230,7 +219,6 @@ namespace UniPlaySong.Downloaders
             var normalizedName = StringHelper.NormalizeSearchQuery(gameName);
             if (!normalizedName.Equals(originalName, StringComparison.Ordinal))
             {
-                DLog.Debug($"KHInsider: Normalized '{originalName}' -> '{normalizedName}'");
             }
 
             // Check for KHInsider album hint FIRST (user-provided override)
@@ -238,7 +226,6 @@ namespace UniPlaySong.Downloaders
             gameName = normalizedName;
             if (hint != null && !string.IsNullOrWhiteSpace(hint.KHInsiderAlbum))
             {
-                DLog.Debug($"KHInsider: Using hint '{hint.KHInsiderAlbum}' for '{gameName}'");
                 var hintAlbum = CreateAlbumFromKHInsiderSlug(hint.KHInsiderAlbum, gameName);
                 if (hintAlbum != null)
                 {
@@ -254,7 +241,6 @@ namespace UniPlaySong.Downloaders
 
             if (khAlbums.Count > 0)
             {
-                DLog.Debug($"KHInsider: Found {khAlbums.Count} with exact name");
                 return khAlbums;
             }
 
@@ -270,7 +256,6 @@ namespace UniPlaySong.Downloaders
 
                 if (khAlbums.Count > 0)
                 {
-                    DLog.Debug($"KHInsider: Found {khAlbums.Count} with cleaned name");
                     return khAlbums;
                 }
             }
@@ -287,7 +272,6 @@ namespace UniPlaySong.Downloaders
 
                 if (khAlbums.Count > 0)
                 {
-                    DLog.Debug($"KHInsider: Found {khAlbums.Count} with simplified name");
                     return khAlbums;
                 }
 
@@ -318,7 +302,6 @@ namespace UniPlaySong.Downloaders
             var normalizedName = StringHelper.NormalizeSearchQuery(gameName);
             if (!normalizedName.Equals(originalName, StringComparison.Ordinal))
             {
-                DLog.Debug($"YouTube: Normalized '{originalName}' -> '{normalizedName}'");
             }
 
             // Check for search hints FIRST (user-provided overrides)
@@ -329,7 +312,6 @@ namespace UniPlaySong.Downloaders
                 // If direct playlist ID is provided, use it (highest priority)
                 if (!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId))
                 {
-                    DLog.Debug($"YouTube: Using hint playlist '{hint.YouTubePlaylistId}' for '{gameName}'");
                     var playlistAlbum = CreateAlbumFromPlaylistId(hint.YouTubePlaylistId, gameName);
                     if (playlistAlbum != null)
                     {
@@ -342,7 +324,6 @@ namespace UniPlaySong.Downloaders
                 // If custom search terms are provided, use those instead of default
                 if (hint.SearchTerms != null && hint.SearchTerms.Count > 0)
                 {
-                    DLog.Debug($"YouTube: Using hint search terms for '{gameName}'");
                     foreach (var query in hint.SearchTerms)
                     {
                         if (cancellationToken.IsCancellationRequested) break;
@@ -364,7 +345,6 @@ namespace UniPlaySong.Downloaders
             // Check cache for default searches (only if no hint was used)
             if (!skipCache && _cacheService != null && _cacheService.TryGetCachedAlbums(gameName, Source.YouTube, out var cachedAlbums))
             {
-                DLog.Debug($"YouTube: {cachedAlbums.Count} cached for '{gameName}'");
                 return cachedAlbums;
             }
 
@@ -391,7 +371,6 @@ namespace UniPlaySong.Downloaders
                 if (!string.IsNullOrEmpty(album.Id) && seenIds.Add(album.Id))
                     albums.Add(album);
             }
-            DLog.Debug($"YouTube: '{query}' -> {results.Count} results");
         }
 
         private void CacheAndReturn(string gameName, List<Album> albums, bool skipCache)
@@ -467,14 +446,10 @@ namespace UniPlaySong.Downloaders
             var albumsList = albums?.ToList() ?? new List<Album>();
             if (albumsList.Count == 0) return null;
 
-            // Log to downloader.log for debugging
-            DLog.Debug($"BestAlbumPick: '{game.Name}' - {albumsList.Count} albums");
-
             // Priority 0: Hint albums from search_hints.json (highest priority - user-defined overrides)
             var hintAlbum = albumsList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Debug($"  → Hint: '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -482,7 +457,6 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumsList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Debug($"  → HintSearch: '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -519,7 +493,6 @@ namespace UniPlaySong.Downloaders
             result = FindBestFuzzy(ytAlbums, gameName, seriesNumbers, YouTubeFuzzyFallback, "YT");
             if (result != null) return result;
 
-            DLog.Warn($"  → No match for '{game.Name}'");
             return null;
         }
 
@@ -533,7 +506,6 @@ namespace UniPlaySong.Downloaders
             var hintAlbum = albumList.FirstOrDefault(a => a.Type == "Hint");
             if (hintAlbum != null)
             {
-                DLog.Debug($"BroaderPick: Hint '{hintAlbum.Name}'");
                 return hintAlbum;
             }
 
@@ -541,7 +513,6 @@ namespace UniPlaySong.Downloaders
             var hintSearchAlbum = albumList.FirstOrDefault(a => a.Type == "HintSearch");
             if (hintSearchAlbum != null)
             {
-                DLog.Debug($"BroaderPick: HintSearch '{hintSearchAlbum.Name}'");
                 return hintSearchAlbum;
             }
 
@@ -560,7 +531,6 @@ namespace UniPlaySong.Downloaders
 
             if (best != null)
             {
-                DLog.Debug($"BroaderPick: '{best.Album.Name}' (score {best.Score})");
                 return best.Album;
             }
 
@@ -579,7 +549,6 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null && matches.Score >= minScore)
             {
-                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
@@ -597,7 +566,6 @@ namespace UniPlaySong.Downloaders
 
             if (matches != null)
             {
-                DLog.Debug($"  → [{tag}] '{matches.Album.Name}' (score {matches.Score})");
                 return matches.Album;
             }
             return null;
@@ -694,7 +662,6 @@ namespace UniPlaySong.Downloaders
                 var score = Fuzz.TokenSetRatio(normalizedGame, cleanedAlbum);
                 if (score < MinFuzzyScoreYouTube)
                 {
-                    DLog.Debug($"YouTube: REJECT '{album.Name}' (score {score})");
                     return false;
                 }
             }
@@ -725,7 +692,6 @@ namespace UniPlaySong.Downloaders
             {
                 // All songs exceeded duration limit - this is likely a gameplay video album
                 var maxDuration = songsList.Where(s => s.Length.HasValue).Max(s => s.Length.Value.TotalMinutes);
-                DLog.Warn($"All {songsList.Count} songs for '{gameName}' exceed {Constants.MaxAllowedSongDurationMinutes}min limit (longest: {maxDuration:F1}min). Album likely contains gameplay videos.");
                 Logger.Warn($"[{LogPrefix}] No valid songs for '{gameName}' - all exceed {Constants.MaxAllowedSongDurationMinutes}min duration limit");
                 return new List<Song>();
             }
@@ -734,7 +700,6 @@ namespace UniPlaySong.Downloaders
 
             if (result.Any())
             {
-                DLog.Debug($"Song pick for '{gameName}': '{result[0].Name}'");
             }
 
             return result;
@@ -767,7 +732,6 @@ namespace UniPlaySong.Downloaders
                 var longestSong = songsList.Where(s => s.Length.HasValue).OrderByDescending(s => s.Length.Value).FirstOrDefault();
                 var durationInfo = longestSong != null ? $" (longest: {longestSong.Length.Value.TotalMinutes:F0}min)" : "";
                 var reason = $"All {rejectedDueToDuration} songs exceed {Constants.MaxAllowedSongDurationMinutes}min limit{durationInfo}. Album likely contains gameplay videos.";
-                DLog.Warn($"Duration filter: {reason}");
                 return (new List<Song>(), reason);
             }
 
@@ -778,7 +742,6 @@ namespace UniPlaySong.Downloaders
 
             if (result.Any())
             {
-                DLog.Debug($"Song pick for '{gameName}': '{result[0].Name}'");
             }
 
             return (result, null);
@@ -792,7 +755,6 @@ namespace UniPlaySong.Downloaders
             // HARD FILTER: Reject songs over 30 minutes (likely gameplay videos, streams, or compilations)
             if (song.Length.HasValue && song.Length.Value > MaxAllowedDuration)
             {
-                DLog.Debug($"Rejecting '{song.Name}' - duration {song.Length.Value.TotalMinutes:F1}min exceeds {MaxAllowedDuration.TotalMinutes}min limit");
                 return int.MinValue;
             }
 
@@ -1081,7 +1043,6 @@ namespace UniPlaySong.Downloaders
                 return hintAlbums;
             }
 
-            DLog.Debug($"Hint found for '{gameName}': KH={!string.IsNullOrWhiteSpace(hint.KHInsiderAlbum)}, SC={!string.IsNullOrWhiteSpace(hint.SoundCloudUrl)}, YT={!string.IsNullOrWhiteSpace(hint.YouTubePlaylistId)}");
 
             // Priority order: KHInsider (best quality) → SoundCloud → YouTube (last resort)
 
@@ -1096,7 +1057,6 @@ namespace UniPlaySong.Downloaders
                     Source = Source.KHInsider,
                     Type = "Hint"
                 });
-                DLog.Debug($"Hint: KHInsider album for '{gameName}'");
             }
 
             // Add SoundCloud track/playlist if available
@@ -1109,7 +1069,6 @@ namespace UniPlaySong.Downloaders
                     Source = Source.SoundCloud,
                     Type = "Hint"
                 });
-                DLog.Debug($"Hint: SoundCloud URL for '{gameName}'");
             }
 
             // Add YouTube playlist album if available (lowest priority)
@@ -1122,7 +1081,6 @@ namespace UniPlaySong.Downloaders
                     Source = Source.YouTube,
                     Type = "Hint"
                 });
-                DLog.Debug($"Hint: YouTube playlist for '{gameName}'");
             }
 
             return hintAlbums;
@@ -1143,7 +1101,6 @@ namespace UniPlaySong.Downloaders
                 case Source.All:
                     return _ytDownloader;
                 default:
-                    DLog.Warn($"Unknown source: {source}");
                     return null;
             }
         }

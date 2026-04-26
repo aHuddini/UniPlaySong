@@ -5,11 +5,16 @@ Packages:
     ReleaseDate: 2026-04-23
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.5/UniPlaySong-1_4_5-Apr23_2026.pext'
     Changelog:
-      - '[New Feature] Fullscreen search-term buttons: New OST / Soundtrack / Music / Theme buttons at the bottom-left of the Fullscreen download dialog. Click (or press D-Pad Left/Right on a controller) to immediately re-run the album search with that keyword. Active term is highlighted. No keyboard needed.'
-      - '[Performance] Faster YouTube search results: UPS now fetches the top 20 results from YouTube instead of 100, cutting out the extra page-fetches. UPS already favors top-ranked results when picking the best album, so search quality is unchanged.'
-      - '[Fix] "Open Music Folder" no longer leaks explorer.exe processes on each click. Same fix applied to Open log / preserved originals / hints database folders.'
-      - '[Fix] Back button no longer cancels in-progress downloads: In the Desktop song-selection dialog, pressing Back while a download was running closed the dialog mid-download, which looked like cancellation. Back is now disabled while downloading and re-enables once the download completes — so you can still go back to album selection for more downloads afterward.'
-      - '[New] Finish button in download dialog: After downloading at least one song, a new FINISH button appears. Closes the dialog cleanly — no more wondering if clicking CANCEL will discard your download.'
+      - '[New] yt-dlp version display in Settings -> Downloads (e.g. "✓ Found · v2025.12.08").'
+      - '[New] Fullscreen search-term buttons (OST / Soundtrack / Music / Theme) on the album-selection step. Click or press D-Pad Left/Right.'
+      - '[New] Finish button in the download dialog — closes cleanly after a successful download.'
+      - '[Performance] Faster YouTube previews (~3s saved/click) and full downloads (~20% faster). Tip: enable browser cookies + install Deno to get audio-only streams (~2x faster downloads).'
+      - '[Performance] Faster YouTube search — fetches top 20 results instead of top 100. Quality unchanged.'
+      - '[Critical Fix] "Open Music Folder" no longer leaks explorer.exe processes. Applies to Open log / preserved originals / hints database folders too.'
+      - '[Critical Fix] Cookie mode no longer breaks downloads for users without Deno. UPS now defers to yt-dlp''s cookie-compatible defaults instead of forcing an incompatible client list.'
+      - '[Fix] Album selection no longer triggers 5 redundant network requests.'
+      - '[Fix] Download no longer fails with "file not found" after extension rename (rename-fallback double-pass bug).'
+      - '[Fix] Back button no longer cancels in-progress downloads — disabled during downloads, re-enables on completion.'
   - Version: 1.4.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-20

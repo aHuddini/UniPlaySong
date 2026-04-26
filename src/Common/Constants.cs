@@ -77,7 +77,6 @@ namespace UniPlaySong.Common
         #region File Names
         
         public const string LogFileName = "UniPlaySong.log";
-        public const string DownloaderLogFileName = "downloader.log";
         
         #endregion
         
