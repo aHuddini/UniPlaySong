@@ -234,8 +234,14 @@ namespace UniPlaySong.Audio
         // Generates int16 samples from GME, converts to float32 in-place.
         // EOF is signaled by returning 0 when play_length is reached OR GME reports
         // an explicit track-end (short NSF jingles, tracks with end markers).
-        // For multi-track HES with an M3U sidecar, advances to the next M3U track
-        // instead of returning 0; only signals EOF after the last track ends.
+        //
+        // CRITICAL: NAudio's MixingSampleProvider auto-removes any input that returns
+        // fewer samples than requested (`read < count`), assuming it has hit EOF.
+        // For multi-track HES we MUST keep filling the buffer across track boundaries
+        // — never return a partial read while more tracks remain in the M3U. The loop
+        // below advances to the next M3U track inside the same Read() call and continues
+        // filling, so the mixer always sees a fully-populated buffer until the very last
+        // track ends.
         public int Read(float[] buffer, int offset, int count)
         {
             lock (_gmeLock)
@@ -243,47 +249,60 @@ namespace UniPlaySong.Audio
                 if (_emu == IntPtr.Zero)
                     return 0;
 
-                // Check if we've reached the effective end (either play_length or
-                // an earlier boundary set by GME's track-end signal).
-                int posMs = GmeNative.gme_tell(_emu);
-                if (posMs >= _effectiveEndMs)
+                int totalProduced = 0;
+
+                while (totalProduced < count)
                 {
-                    // Multi-track HES: advance to the next M3U track and keep going.
-                    // Only signal real EOF after the last track. Returns 0 from this
-                    // call so NAudio's buffer boundary stays clean; the next Read()
-                    // call will start producing samples from the new track.
-                    if (TryAdvanceHesTrack())
-                        return 0;
-                    return 0;
+                    int posMs = GmeNative.gme_tell(_emu);
+
+                    // Reached the end of the current segment (per-track for HES, or
+                    // play_length for everything else)?
+                    if (posMs >= _effectiveEndMs)
+                    {
+                        // Try to advance to the next HES track inside the same Read call
+                        // so the mixer sees a continuous stream. If TryAdvance returns
+                        // false, the file is genuinely done — break and return whatever
+                        // we've already produced (which may be a partial read; that's
+                        // the real EOF signal).
+                        if (!TryAdvanceHesTrack())
+                            break;
+
+                        // After advancing, gme_tell on the new track is 0; loop continues
+                        // and the next iteration will fill from the new track.
+                        continue;
+                    }
+
+                    // How many samples we can read without overshooting the current
+                    // segment's effective end.
+                    int remainingMs = _effectiveEndMs - posMs;
+                    long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
+                    int sampleSpace = count - totalProduced;
+                    int toRead = (int)Math.Min(sampleSpace, remainingSamples);
+                    if (toRead <= 0) break;
+
+                    // Reuse short buffer if possible
+                    if (_shortBuffer == null || _shortBuffer.Length < toRead)
+                        _shortBuffer = new short[toRead];
+
+                    string err = GmeNative.GetError(GmeNative.gme_play(_emu, toRead, _shortBuffer));
+                    if (err != null)
+                        break;
+
+                    // Convert int16 → float32 with gain boost
+                    for (int i = 0; i < toRead; i++)
+                        buffer[offset + totalProduced + i] = _shortBuffer[i] / 32768f * OutputGain;
+
+                    totalProduced += toRead;
+
+                    // Honor GME's internal track-end signal for short NSFs with explicit
+                    // end markers. Guarded by a 2-second minimum to avoid false EOF during
+                    // chip-init silence. For HES this collapses _effectiveEndMs early so
+                    // the next loop iteration triggers the auto-advance branch above.
+                    if (posMs >= 2000 && GmeNative.gme_track_ended(_emu) != 0)
+                        _effectiveEndMs = GmeNative.gme_tell(_emu);
                 }
 
-                // Clamp to remaining samples so we don't overshoot the effective end
-                int remainingMs = _effectiveEndMs - posMs;
-                long remainingSamples = (long)remainingMs * SampleRate * Channels / 1000;
-                int toRead = (int)Math.Min(count, remainingSamples);
-                if (toRead <= 0)
-                    return 0;
-
-                // Reuse short buffer if possible
-                if (_shortBuffer == null || _shortBuffer.Length < toRead)
-                    _shortBuffer = new short[toRead];
-
-                string err = GmeNative.GetError(GmeNative.gme_play(_emu, toRead, _shortBuffer));
-                if (err != null)
-                    return 0;
-
-                // Convert int16 → float32 with gain boost (retro chips are quieter than modern audio)
-                for (int i = 0; i < toRead; i++)
-                    buffer[offset + i] = _shortBuffer[i] / 32768f * OutputGain;
-
-                // Honor GME's internal track-end signal for short NSFs with explicit end
-                // markers (jingles, stingers). Guarded by a 2-second minimum to avoid
-                // false EOF at track init when chips emit brief silence. Tracks without
-                // an explicit end marker (looping BGM) never trigger this.
-                if (posMs >= 2000 && GmeNative.gme_track_ended(_emu) != 0)
-                    _effectiveEndMs = posMs;
-
-                return toRead;
+                return totalProduced;
             }
         }
 
