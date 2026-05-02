@@ -466,24 +466,14 @@ This section covers **bundled** dependencies — libraries we redistribute insid
 
 All bundled dependencies are compatible with the MIT license under which UniPlaySong is distributed:
 
-- **PlayniteSDK**: MIT license (compatible)
-- **NuGet Packages**: Various licenses (all compatible with MIT)
-  - MaterialDesignThemes: MIT
-  - MaterialDesignColors: MIT
-  - HtmlAgilityPack: MIT
-  - Newtonsoft.Json: MIT
-  - NAudio: MIT
-  - NVorbis: MIT
-- **SDL2 / SDL2_mixer**: zlib license (compatible with MIT)
-- **zlib (z.dll)**: zlib license (compatible with MIT)
-- **Game Music Emu (gme.dll)** — **LGPL v2.1+** — compatible via **dynamic linking**:
-  - UniPlaySong links to `gme.dll` via P/Invoke (dynamic/runtime) rather than static linking. LGPL explicitly allows proprietary/MIT applications to dynamically link against LGPL libraries without imposing LGPL on the application itself.
-  - The `gme.dll` binary is distributed as a separate file in the `.pext` package, making it user-replaceable (a core LGPL requirement satisfied by the file-based distribution).
-  - Attribution: Game Music Emu is Copyright © Shay Green, maintained by Vitaly Novichkov and Michael Pyne.
-  - The plugin must ship a copy of the LGPL text (or a reference) to satisfy the attribution requirement — see [LICENSE](../../LICENSE) or the GME repo.
-  - **Important:** Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe). The MAME YM2612 core (also available in GME) would make the library GPL v2+ and is explicitly NOT used.
+- **PlayniteSDK**: MIT
+- **NuGet packages** (all MIT-compatible): MaterialDesignThemes, MaterialDesignColors, HtmlAgilityPack, Newtonsoft.Json, NAudio, NVorbis, FuzzySharp
+- **SDL2 / SDL2_mixer**: zlib license
+- **zlib (z.dll)**: zlib license
+- **TagLibSharp**: LGPL v2.1 — compatible via dynamic linking (NuGet-distributed DLL alongside `UniPlaySong.dll`).
+- **Game Music Emu (gme.dll)**: **LGPL v2.1+** — compatible via dynamic linking. UniPlaySong links via P/Invoke; `gme.dll` is a separate file in the `.pext`, making it user-replaceable. Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe); the MAME YM2612 core (GPL v2+) is explicitly NOT used. Source pin and reproduction in [`GME_BUILD.md`](GME_BUILD.md).
 
-> **Note**: For complete licensing information and attribution requirements, see the [Credits section](../../README.md#-credits) in the main README.
+> **Per-component upstream URLs, license texts, and LGPL §6 source-availability pointers live in [`NOTICES.txt`](../../NOTICES.txt).** That file is also bundled in the `.pext` so end users have it.
 
 ## Security Considerations
 

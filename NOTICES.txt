@@ -145,4 +145,4 @@ Questions or Compliance Concerns
 ================================
 
 Open an issue at https://github.com/aHuddini/UniPlaySong/issues with the
-"licensing" label, or for sensitive matters email asad2kuddin@outlook.com.
+"licensing" label.

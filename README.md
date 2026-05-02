@@ -129,7 +129,7 @@ See `docs/dev_docs/` for detailed build instructions.
 - **MaterialDesignThemes** - WPF UI components (MIT)
 - **HtmlAgilityPack, Newtonsoft.Json, NAudio, NVorbis, FuzzySharp** - Core functionality (MIT)
 - **TagLibSharp** - Audio metadata (LGPL)
-- **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking)
+- **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking — see [`docs/dev_docs/GME_BUILD.md`](docs/dev_docs/GME_BUILD.md) for the source pin and reproducible build)
 - **[zlib](https://github.com/madler/zlib)** - Decompression for VGZ files (zlib license)
 
 ### External Tools (installed by user)
@@ -138,13 +138,14 @@ See `docs/dev_docs/` for detailed build instructions.
 - **Deno** - JavaScript runtime required by yt-dlp (MIT)
 
 ### Third-Party Acknowledgments
-See [LICENSE](LICENSE) file for component licenses and acknowledgments.
+Full per-component notices, upstream URLs, license text, and LGPL §6 source-availability pointers live in [`NOTICES.txt`](NOTICES.txt) (also bundled in the `.pext`).
 
 ---
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file
+UniPlaySong is **MIT** — see [`LICENSE`](LICENSE).
+Bundled third-party components ship under their own licenses — see [`NOTICES.txt`](NOTICES.txt).
 
 ## 🔗 Links
 
