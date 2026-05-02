@@ -6,6 +6,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.4.6] - In development
 
+### Added
+- **HES (PC Engine / TurboGrafx-16) multi-track support via M3U sidecars** — when an `.hes` file has a sibling `.m3u` in the GME extended format (the standard convention used by Zophar's Domain, VGMRips, etc.), `GmeReader` now plays through all tracks listed in the sidecar instead of stopping after the first. Track order, durations, and titles all come from the M3U. No UI changes — drop the `.m3u` next to the `.hes` and UPS does the rest. New file: `src/Audio/HesM3uParser.cs`. HES files without a sidecar continue to play their default first track unchanged.
+
 ## [1.4.5] - 2026-04-23
 
 > Detailed release notes (full context, benchmark numbers, before/after logs) live in `docs/release_notes/v1.4.5-beta1.md`.
