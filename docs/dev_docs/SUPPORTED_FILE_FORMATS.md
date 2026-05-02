@@ -15,6 +15,28 @@ Played through [Game Music Emu (GME)](https://github.com/libgme/game-music-emu) 
 | Extension | System | Status |
 |-----------|--------|--------|
 | `.vgm` | Sega Genesis / Mega Drive | **Tested** |
+| `.nsf` | Nintendo NES / Famicom | **Tested** (multi-track NSF Manager + per-track loop overrides, v1.4.3+) |
+| `.spc` | SNES / Super Famicom | **Tested** (v1.4.4+) |
+| `.hes` | NEC TurboGrafx-16 / PC Engine | **Tested** (v1.4.6+, requires `.m3u` sidecar — see below) |
+
+### HES Track Discovery Requires an M3U Sidecar
+
+HES files do **not** store a track count in their header — only a single `first_track` byte (offset 5). Tracks can be scattered across the 0–255 index space (e.g. Bomberman TG-16's 26 tracks live at indices `$00..$02, $05..$09, $0D..$11, $13..$19`, with gaps). Without external metadata, GME has no way to enumerate them.
+
+The standard convention used by Zophar's Domain, VGMRips, and other rippers is a sibling `.m3u` playlist file with the same basename, in GME's extended format:
+
+```
+HC90036.hes::HES,$00,BGM #01,0:18,,1
+HC90036.hes::HES,$05,BGM #04,2:33,,10
+HC90036.hes::HES,$19,Jingle #09,0:02,,1
+```
+
+UPS supports two playback modes for multi-track HES files:
+
+1. **Auto-advance through the M3U** (default when `.m3u` is present): `GmeReader` plays each listed track in order, treating the file as one continuous song stream.
+2. **Split into mini-HES files** (right-click game → Chiptunes → Split HES Tracks): produces N independent `.hes` files, each with `first_track` patched to a single index. Each appears as its own song in UPS, enabling per-track shuffle / skip / pause via the existing playback paths.
+
+HES files **without** a sidecar play only the single track defined by the file's `first_track` byte — UPS has no way to discover the others. If a user reports "only one song plays from my HES," the first thing to check is whether they have the M3U sidecar in the same folder.
 
 ### Pipeline-Ready (code path works; individual test files not yet verified)
 
@@ -22,10 +44,8 @@ Played through [Game Music Emu (GME)](https://github.com/libgme/game-music-emu) 
 |-----------|--------|
 | `.vgm` `.vgz` | Sega Master System / Game Gear |
 | `.vgz` `.gym` | Sega Genesis / Mega Drive (compressed / alt formats) |
-| `.spc` | Super Nintendo |
-| `.nsf` `.nsfe` | Nintendo NES / Famicom |
+| `.nsfe` | Nintendo NES / Famicom (extended NSF) |
 | `.gbs` | Nintendo Game Boy |
-| `.hes` | NEC TurboGrafx-16 / PC Engine |
 | `.kss` | MSX |
 | `.sap` | Atari (POKEY) |
 | `.ay` | ZX Spectrum / Amstrad CPC |

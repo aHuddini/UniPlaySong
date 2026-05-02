@@ -20,24 +20,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.5
+## What's New - v1.4.6
 
-- **yt-dlp version shown in Settings** — Settings → Downloads displays the installed yt-dlp version next to the path field (e.g. `✓ Found · v2025.12.08`), so you can quickly check which build is in use.
+- **NEC TurboGrafx-16 / PC Engine music support (.hes)** — drop a `.hes` file plus its sibling `.m3u` playlist into a game's music folder and UPS will play through every track listed in the playlist instead of stopping after the first. The `.m3u` is **required** to identify which tracks exist (the HES format itself doesn't store a track count); standard ripped `.hes` packs from Zophar's Domain and VGMRips already include one.
 
-- **Fullscreen search-term buttons** — Four new buttons at the bottom-left of the Fullscreen download dialog (**OST**, **Soundtrack**, **Music**, **Theme**) let you re-run the search with a different keyword without typing. On a controller, **D-Pad Left/Right** cycles through them and immediately refreshes the results. The active term is highlighted so you can tell which one produced what you're seeing.
-
-- **Faster YouTube previews and downloads** — pipeline tweaks save ~3s per preview and ~30-50% on full downloads. **Tip:** enabling browser cookies (Firefox/Chrome) with Deno installed roughly halves download time again.
-
-- **Faster YouTube search** — top 20 results instead of top 100. Quality unchanged (UPS already favored top-ranked albums).
-
-- **"Open Music Folder" no longer leaks explorer.exe processes** on each click. Same fix applied to Open log / preserved originals / hints database folders.
-
-- **Back button no longer cancels your download** — In the Desktop download dialog, pressing BACK while a download was running would close the dialog mid-download. BACK is now disabled during an active download and re-enables when it finishes.
-
-- **New FINISH button in download dialog** — After downloading, a new FINISH button appears so you can close the dialog cleanly. No more wondering if CANCEL will discard your download.
+- **"Split HES Tracks" menu action** — right-click a game with a multi-track `.hes` and pick **Chiptunes → Split HES Tracks** to break it into individual mini-HES files (one per track in the M3U). After splitting, each track shows up as its own song in UPS, so skip / shuffle / pause / random-pick all work track-by-track. Originals are preserved to `PreservedOriginals/<GameId>/` so you can roll back.
 
 ### Previous Version
-- **v1.4.4**: SNES Music (.spc) support, Desktop YouTube preview fixes (temp path + stderr visibility), stale-reference fix when changing yt-dlp / cookie settings mid-session.
+- **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -114,7 +104,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics, icon glow
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
-**Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA — plus chiptune: VGM/VGZ (Sega Genesis / Mega Drive), NSF (NES / Famicom), SPC (SNES / Super Famicom).
+**Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA — plus chiptune: VGM/VGZ (Sega Genesis / Mega Drive), NSF (NES / Famicom), SPC (SNES / Super Famicom), HES (NEC TurboGrafx-16 / PC Engine — requires sibling `.m3u` for multi-track playback or splitting).
 
 ---
 

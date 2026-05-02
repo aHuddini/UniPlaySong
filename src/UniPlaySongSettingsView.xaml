@@ -4013,6 +4013,7 @@
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
                             <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .spc</Run> — SNES / Super Famicom</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .hes</Run> — NEC TurboGrafx-16 / PC Engine (requires sibling .m3u for multi-track playback or splitting)</TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
                             </TextBlock>
                         </StackPanel>

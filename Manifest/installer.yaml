@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.4.6
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-05-02
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.4.6/UniPlaySong-1_4_6-May02_2026.pext'
+    Changelog:
+      - '[New Format] HES (NEC TurboGrafx-16 / PC Engine) chiptune support — drop a .hes file plus its sibling .m3u into a game''s music folder and UPS plays through every track in the playlist. The .m3u sidecar (standard with Zophar / VGMRips packs) is REQUIRED because the HES format itself doesn''t store a track count.'
+      - '[New Feature] "Split HES Tracks" menu action (right-click game -> Chiptunes -> Split HES Tracks) — splits a multi-track .hes into individual mini-HES files, one per track in the M3U. Each mini-HES becomes its own song in UPS, so skip / shuffle / pause / random-pick work track-by-track. Originals preserved to PreservedOriginals\<GameId>\.'
   - Version: 1.4.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-23
