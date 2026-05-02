@@ -1,0 +1,148 @@
+UniPlaySong — Third-Party Component Notices
+=============================================
+
+UniPlaySong itself is licensed under the MIT License. See LICENSE for the
+UPS source license. The .pext distribution bundles the following third-party
+components, each under its own license:
+
+
+Game Music Emu (gme.dll)
+------------------------
+Purpose:    Retro chiptune playback (.vgm, .vgz, .nsf, .spc, .hes, .gbs, .kss, .sap, .ay, etc.)
+License:    GNU Lesser General Public License v2.1 or later (LGPL-2.1-or-later)
+Upstream:   https://github.com/libgme/game-music-emu
+Pinned at:  commit 1815b97e01e68b16a8f07daef8c71bd52f36d307
+            (last code commit before the 0.6.5 release tag)
+Linkage:    Dynamic — gme.dll is loaded via P/Invoke at runtime; it is NOT
+            statically linked into UniPlaySong.dll. Recipients can replace
+            this DLL with their own modified build of GME provided it
+            exposes the same gme_* exported symbols (see src/Audio/GmeNative.cs).
+
+Source code availability (LGPL §6):
+
+  The corresponding source code for the gme.dll bundled with this .pext is
+  archived at:
+
+      lib/source/gme-source-1815b97.tar.gz
+      SHA-256: db3aa7842fa8a7b738b8b04acb37327c3daedaa55dcb36a5096205f048b91cc9
+
+  in the UniPlaySong source repository (https://github.com/aHuddini/UniPlaySong).
+  The same source is available upstream at:
+
+      https://github.com/libgme/game-music-emu/tree/1815b97e01e68b16a8f07daef8c71bd52f36d307
+
+  Reproduction instructions are documented in docs/dev_docs/GME_BUILD.md.
+
+Modifications: NONE. The bundled gme.dll is built unmodified from the source
+referenced above. UniPlaySong does not maintain a fork of GME and does not
+apply any patches. The build configuration (x86, Nuked YM2612 emulator,
+BUILD_SHARED_LIBS=ON) is the only deviation from a vanilla "git clone +
+cmake build". See docs/dev_docs/GME_BUILD.md for build configuration.
+
+Written offer: Anyone who has received a UniPlaySong .pext containing this
+gme.dll may obtain the corresponding LGPL source by:
+  (a) downloading the tarball above from the UniPlaySong repository, OR
+  (b) cloning https://github.com/libgme/game-music-emu and checking out
+      commit 1815b97, OR
+  (c) opening an issue at https://github.com/aHuddini/UniPlaySong/issues
+      requesting the source archive.
+
+
+zlib (z.dll)
+-------------
+Purpose:    Decompression library used by GME for .vgz files (gzip-compressed VGM)
+License:    zlib License (permissive; compatible with both MIT and LGPL)
+Upstream:   https://github.com/madler/zlib
+Version:    1.3.2
+Linkage:    Dynamic (DLL alongside gme.dll)
+Modifications: NONE.
+
+
+SDL2 / SDL2_mixer (SDL2.dll, SDL2_mixer.dll)
+---------------------------------------------
+Purpose:    Default audio playback backend
+License:    zlib License
+Upstream:   https://www.libsdl.org/
+Linkage:    Dynamic
+Modifications: NONE.
+
+
+NAudio (NAudio.dll)
+-------------------
+Purpose:    Audio playback backend for Live Effects, Visualizer, Crossfade modes
+License:    MIT
+Upstream:   https://github.com/naudio/NAudio
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+NVorbis (NVorbis.dll)
+---------------------
+Purpose:    Pure-managed Ogg Vorbis decoder for NAudio backend
+License:    MIT
+Upstream:   https://github.com/NVorbis/NVorbis
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+TagLibSharp (taglib-sharp.dll)
+-------------------------------
+Purpose:    Audio file metadata reading/writing
+License:    GNU Lesser General Public License v2.1 (LGPL-2.1)
+Upstream:   https://github.com/mono/taglib-sharp
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+HtmlAgilityPack (HtmlAgilityPack.dll)
+--------------------------------------
+Purpose:    HTML parsing for download-source web scraping
+License:    MIT
+Upstream:   https://github.com/zzzprojects/html-agility-pack
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+Newtonsoft.Json (Newtonsoft.Json.dll)
+--------------------------------------
+Purpose:    JSON serialization
+License:    MIT
+Upstream:   https://github.com/JamesNK/Newtonsoft.Json
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+FuzzySharp (FuzzySharp.dll)
+----------------------------
+Purpose:    Fuzzy string matching for game-name search hints
+License:    MIT
+Upstream:   https://github.com/JakeBayer/FuzzySharp
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+MaterialDesignThemes (MaterialDesignThemes.Wpf.dll, etc.)
+----------------------------------------------------------
+Purpose:    WPF UI components and themes
+License:    MIT
+Upstream:   https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+External Tools (Not Bundled — Installed Separately by User)
+============================================================
+
+The following are required at runtime for some UniPlaySong features but are
+NOT distributed in the .pext. The user installs them themselves:
+
+- yt-dlp     (Unlicense)        — YouTube/SoundCloud searching and downloading
+- FFmpeg     (LGPL/GPL)         — Audio post-processing
+- Deno       (MIT)              — JavaScript runtime required by yt-dlp 2025.11.12+
+
+
+Questions or Compliance Concerns
+================================
+
+Open an issue at https://github.com/aHuddini/UniPlaySong/issues with the
+"licensing" label, or for sensitive matters email asad2kuddin@outlook.com.

@@ -6,6 +6,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.4.6] - In development
 
+### Documentation / Compliance
+- **LGPL §6 compliance for bundled GME** — added `NOTICES.txt` (third-party component notices, bundled into the `.pext`), `docs/dev_docs/GME_BUILD.md` (pinned commit, build configuration, reproduction steps), and committed the GME source tarball at `lib/source/gme-source-1815b97.tar.gz` (SHA-256 pinned in `GME_BUILD.md`) so source remains available even if upstream becomes unreachable. No code change. We do **not** maintain a fork — bundled `gme.dll` is the unmodified upstream binary at commit `1815b97`. `DEPENDENCIES.md` updated to cross-reference the new artifacts.
+
 ### Added
 - **HES (NEC TurboGrafx-16 / PC Engine) chiptune support — verified working.** Two playback paths, both requiring a sibling `.m3u` sidecar in GME's extended format (the standard convention used by Zophar's Domain and VGMRips packs). The HES format itself stores no track count, so the M3U is the only way to enumerate tracks — without it, only the file's default `first_track` byte plays and the rest of the songs are invisible.
   - **Auto-advance through the M3U** (default when sidecar is present): `GmeReader` plays every track listed in the M3U as one continuous stream. New file: `src/Audio/HesM3uParser.cs`. HES files without a sidecar play their single header-defined track unchanged.
