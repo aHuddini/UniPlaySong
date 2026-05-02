@@ -4,7 +4,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.4.5] - In development
+## [1.4.6] - In development
+
+## [1.4.5] - 2026-04-23
 
 > Detailed release notes (full context, benchmark numbers, before/after logs) live in `docs/release_notes/v1.4.5-beta1.md`.
 
