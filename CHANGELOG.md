@@ -8,6 +8,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 - **HES (PC Engine / TurboGrafx-16) multi-track support via M3U sidecars** — when an `.hes` file has a sibling `.m3u` in the GME extended format (the standard convention used by Zophar's Domain, VGMRips, etc.), `GmeReader` now plays through all tracks listed in the sidecar instead of stopping after the first. Track order, durations, and titles all come from the M3U. No UI changes — drop the `.m3u` next to the `.hes` and UPS does the rest. New file: `src/Audio/HesM3uParser.cs`. HES files without a sidecar continue to play their default first track unchanged.
+- **"Split HES Tracks" menu action** (right-click → Chiptunes → Split HES Tracks) — splits a multi-track `.hes` file into N mini-HES files, one per M3U-listed track, each playing a single song when loaded. Mirrors the NSF Manager's split-tracks pattern (`HesHeaderPatcher` patches header byte 5 / `first_track` per copy). Original `.hes` and `.m3u` are preserved to `PreservedOriginals/<GameId>/`. After splitting, UPS sees N independent `.hes` files in the music folder, so all existing skip / shuffle / pause / per-song UX paths Just Work. Menu item only appears when the music folder contains a splittable HES (sidecar present, ≥2 tracks). New files: `src/Audio/HesHeaderPatcher.cs`, `src/Handlers/HesSplitHandler.cs`. `GmeReader` extended to honor HES `first_track` (byte 5) on single-track mini files, parallel to its existing NSF `starting_song` handling.
 
 ## [1.4.5] - 2026-04-23
 

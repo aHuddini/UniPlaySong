@@ -70,11 +70,16 @@ namespace UniPlaySong.Audio
             // which song in the shared 6502 code blob to play. GME's gme_start_track
             // overrides the header default, so we must explicitly pass the patched index.
             //
-            // For HES files, look for a sibling .m3u sidecar. If found, parse it into
-            // an ordered track list and start at the first M3U entry (NOT the header's
-            // first_track, which is often "$00" but the M3U may legitimately re-order).
-            // Read() then auto-advances through the M3U so all 26+ scattered tracks
-            // play sequentially as one logical song. See docs/dev_docs/HES_FORMAT.md.
+            // For HES files, two sub-cases:
+            //   1) Multi-track mode: a sibling .m3u sidecar exists. Parse it into an
+            //      ordered track list and start at the first M3U entry. Read() then
+            //      auto-advances through the M3U so all 26+ scattered tracks play
+            //      sequentially as one logical song.
+            //   2) Single-track mini-HES: no sidecar, but the header's first_track
+            //      byte (offset 5) was patched by HesHeaderPatcher to point at a
+            //      specific song. Honor that byte the same way we honor NSF's
+            //      starting_song. Without this, GME would default to track 0 and
+            //      every mini-HES would sound identical.
             //
             // Other chiptune formats (VGM, SPC, GBS, KSS, SAP, AY, NSFE, GYM) always
             // start at track 0.
@@ -87,6 +92,29 @@ namespace UniPlaySong.Audio
                     _hesCurrentIndex = 0;
                     _hesPriorTracksMs = 0;
                     trackIndex = _hesTracks[0].TrackIndex;
+                }
+                else
+                {
+                    // Single-track mini-HES path: read first_track from header byte 5.
+                    try
+                    {
+                        var hesHeader = new byte[6];
+                        using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            int read = fs.Read(hesHeader, 0, 6);
+                            if (read == 6 &&
+                                hesHeader[0] == 0x48 && hesHeader[1] == 0x45 &&
+                                hesHeader[2] == 0x53 && hesHeader[3] == 0x4D)
+                            {
+                                trackIndex = hesHeader[5]; // first_track is 0-based for HES
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Header read failed; fall through to track 0. GME will either
+                        // open the file successfully or report a clearer error below.
+                    }
                 }
             }
             if (ext != null && ext.Equals(".nsf", StringComparison.OrdinalIgnoreCase))

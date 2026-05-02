@@ -106,6 +106,7 @@ namespace UniPlaySong
         private Services.AudioAmplifyService _amplifyService;
         private Handlers.AmplifyDialogHandler _amplifyDialogHandler;
         private Handlers.NsfTrackManagerHandler _nsfTrackManagerHandler;
+        private Handlers.HesSplitHandler _hesSplitHandler;
         private Services.MediaKeyService _mediaKeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
@@ -2271,6 +2272,8 @@ namespace UniPlaySong
                 _api, () => _settings, _fileService, _playbackService, _amplifyService);
             _nsfTrackManagerHandler = new Handlers.NsfTrackManagerHandler(
                 _api, _fileService, _playbackService);
+            _hesSplitHandler = new Handlers.HesSplitHandler(
+                _api, _fileService, _playbackService);
         }
 
         /// <summary>
@@ -3679,7 +3682,7 @@ namespace UniPlaySong
                     Action = _ => _gameMenuHandler.RepairAllAudioFiles(game)
                 });
 
-                // === Chiptunes Submenu (NSF Track Manager) ===
+                // === Chiptunes Submenu (NSF Track Manager + HES Splitter) ===
                 var chiptunesSection = $"{menuSection}|Chiptunes";
                 bool hasNsf = songs != null && songs.Any(s => s.EndsWith(".nsf", StringComparison.OrdinalIgnoreCase));
                 if (hasNsf)
@@ -3689,6 +3692,19 @@ namespace UniPlaySong
                         Description = "NSF Management",
                         MenuSection = chiptunesSection,
                         Action = _ => _nsfTrackManagerHandler.ShowForGame(game)
+                    });
+                }
+
+                // HES splitter: only visible when at least one .hes file in the
+                // game's music folder has a sibling .m3u with 2+ tracks. Cheap
+                // discovery — file enumeration + small sidecar parse.
+                if (_hesSplitHandler != null && _hesSplitHandler.FindSplittable(game).Count > 0)
+                {
+                    items.Add(new GameMenuItem
+                    {
+                        Description = "Split HES Tracks",
+                        MenuSection = chiptunesSection,
+                        Action = _ => _hesSplitHandler.RunForGame(game)
                     });
                 }
 
