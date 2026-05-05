@@ -26,7 +26,12 @@ docs/plans/
 **/Jingles/*.ogg
 **/Jingles/*.flac
 
-# Bundled default music with unclear licensing
+# Bundled default music — files ship in the .pext (packaging script copies
+# the whole DefaultMusic folder regardless of git status) but kept out of
+# public source. PS2 Menu has unclear licensing; ANIKI REMAKE tracks are
+# bundled with explicit permission from Mike Aniki but kept local-only.
 **/DefaultMusic/PS2 Menu - Ambience.mp3
+**/DefaultMusic/ANIKI REMAKE - Hub OST.mp3
+**/DefaultMusic/ANIKI REMAKE - Login OST.mp3
 
 nul

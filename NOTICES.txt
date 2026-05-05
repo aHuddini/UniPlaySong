@@ -130,6 +130,49 @@ Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
 
 
+Bundled Default Music
+=====================
+
+UniPlaySong ships a small set of default ambient music tracks in
+src/DefaultMusic/, used as the optional "Bundled Ambient" default-music
+source. Each track is included under its own license:
+
+ANIKI REMAKE - Hub OST.mp3
+ANIKI REMAKE - Login OST.mp3
+--------------------------
+Composer / Source: Mike Aniki — author of the Aniki ReMake Playnite theme
+                   https://github.com/Mike-Aniki/Aniki-ReMake
+License:           Used with explicit permission from Mike Aniki for
+                   inclusion as default-music bundles within UniPlaySong
+                   (v1.4.6+). The .mp3 files ship inside the .pext
+                   distribution but are NOT committed to the public
+                   source repository (excluded via .gitignore).
+Original filenames: WelcomeOST.mp3 (renamed Hub OST), AcceuilOST.mp3
+                   (renamed Login OST). Renaming was suggested by the
+                   composer to reflect current usage in the Aniki ReMake
+                   theme's Hub view.
+
+tunetank-dark-ambient-soundscape-music.mp3
+tunetank-dark-space-ambient.mp3
+------------------------------
+Composer:  Tunetank
+License:   Pixabay Content License
+Source:    https://pixabay.com/music/
+
+delosound-ambient-background-2.mp3
+----------------------------------
+Composer:  DELOSound (Roman Dolmatov)
+License:   Pixabay Content License
+Source:    https://pixabay.com/music/
+
+PS2 Menu - Ambience.mp3
+-----------------------
+Source:    Sony PlayStation 2 system menu (uncertain redistribution status).
+           NOT committed to the source repository; bundled into the .pext
+           from the developer's local copy. Excluded from public source
+           distribution per .gitignore.
+
+
 External Tools (Not Bundled — Installed Separately by User)
 ============================================================
 
