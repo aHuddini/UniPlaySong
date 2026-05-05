@@ -30,13 +30,16 @@ Then use XAML triggers to set `Tag="True"` (pause music) or `Tag="False"` (resum
 
 ### User-setting toggles (v1.4.6+)
 
-Three of UPS's most-toggled persistent settings are exposed as **two-way** bindable properties so themes can wire `CheckBox` / `ToggleButton` `IsChecked` directly to them. Setter assignments flow through the existing `UniPlaySongSettings` PropertyChanged → settings-service → playback-coordinator pipeline, so a theme toggle has the same effect — and persistence — as flipping the corresponding setting in the desktop UPS settings dialog.
+Four of UPS's most-toggled persistent settings are exposed as **two-way** bindable properties so themes can wire `CheckBox` / `ToggleButton` `IsChecked` directly to them. Setter assignments flow through the existing `UniPlaySongSettings` PropertyChanged → settings-service → playback-coordinator pipeline, so a theme toggle has the same effect — and persistence — as flipping the corresponding setting in the desktop UPS settings dialog.
 
 | Property | Type | Direction | Description |
 |---|---|---|---|
-| `EnableMusic` | bool | TwoWay | Master music switch. False = no game music plays (default music still plays as a fallback) |
-| `RadioModeEnabled` | bool | TwoWay | Radio Mode — pool-based continuous playback that auto-advances through random games' songs |
-| `PlayOnlyOnGameSelect` | bool | TwoWay | Play music only when the user actively selects a game (suppresses ambient music in list view) |
+| `EnableGameMusic` | bool | TwoWay | Game music enable/disable. False = no game-specific music plays. **Default music still plays as a fallback** unless `EnableDefaultMusic` is also false. |
+| `EnableDefaultMusic` | bool | TwoWay | Default music enable/disable. False = no fallback ambient music plays when a game has no music of its own. Pair with `EnableGameMusic` for independent control of both audio layers. |
+| `RadioModeEnabled` | bool | TwoWay | Radio Mode — pool-based continuous playback that auto-advances through random games' songs. |
+| `PlayOnlyOnGameSelect` | bool | TwoWay | Play music only when the user actively selects a game (suppresses ambient music in list view). |
+
+> **Note on `EnableGameMusic` naming:** the theme-facing property is named `EnableGameMusic` for clarity, but maps to the underlying C# settings field `_settings.EnableMusic` (the legacy name, preserved on the settings type for backward-compat with existing user `config.ini` files). The behavior is unchanged from previous versions — toggling `EnableGameMusic` to false suppresses game music while letting default music continue if `EnableDefaultMusic` is on. To fully silence UPS, toggle both off.
 
 `INotifyPropertyChanged` keeps theme widgets in sync if the user changes the same setting via the UPS desktop settings dialog (or the Fullscreen Extensions menu).
 
@@ -200,9 +203,13 @@ Bind theme `CheckBox` / `ToggleButton` widgets directly to UPS settings — usef
 
     <!-- Toggles bind to UPS settings via TwoWay binding. -->
     <StackPanel>
-        <CheckBox Content="Enable Music"
+        <CheckBox Content="Enable Game Music"
                   IsChecked="{Binding ElementName=upsAudio,
-                                      Path=EnableMusic, Mode=TwoWay}"/>
+                                      Path=EnableGameMusic, Mode=TwoWay}"/>
+
+        <CheckBox Content="Enable Default (Ambient) Music"
+                  IsChecked="{Binding ElementName=upsAudio,
+                                      Path=EnableDefaultMusic, Mode=TwoWay}"/>
 
         <CheckBox Content="Radio Mode"
                   IsChecked="{Binding ElementName=upsAudio,
@@ -216,9 +223,11 @@ Bind theme `CheckBox` / `ToggleButton` widgets directly to UPS settings — usef
 ```
 
 **Behavior:**
-- User clicks a checkbox → UPS setting flips → setting persists across restarts → music engine reacts mid-playback (e.g., stops if `EnableMusic` flipped off).
+- User clicks a checkbox → UPS setting flips → setting persists across restarts → music engine reacts mid-playback (e.g., game music stops if `EnableGameMusic` flipped off).
 - User flips the same setting in the UPS desktop settings dialog or the Fullscreen Extensions menu → the theme's checkbox state updates live.
 - If `UPS_MusicControl` isn't loaded (UPS not installed, theme outside Fullscreen), bindings silently no-op — no crash, the checkboxes just won't do anything. Standard Playnite custom-element fallback.
+
+**Tip — full silence:** toggling only `EnableGameMusic` to false leaves default ambient music playing as a fallback. To fully silence UPS, also toggle `EnableDefaultMusic` off. This split lets a theme offer "music while browsing" toggles separately from "any music at all" toggles.
 
 ## How It Works
 

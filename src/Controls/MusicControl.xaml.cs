@@ -148,16 +148,25 @@ namespace UniPlaySong.Controls
         // These mirror the most-requested fullscreen-toggleable UPS settings
         // so theme authors can wire CheckBox / ToggleButton IsChecked directly
         // to UPS's persistent settings via standard WPF two-way binding:
-        //   IsChecked="{Binding ElementName=upsAudio, Path=EnableMusic, Mode=TwoWay}"
+        //   IsChecked="{Binding ElementName=upsAudio, Path=EnableGameMusic, Mode=TwoWay}"
         //
         // Setter assignments go through UniPlaySongSettings's existing
         // PropertyChanged → settings-service → playback-coordinator pipeline,
         // so flipping a theme toggle has the same effect as toggling the
         // corresponding setting in the UPS desktop settings dialog.
 
-        // Master music enable/disable. False = no game music plays
-        // (default music still plays as a fallback per existing UPS behavior).
-        public bool EnableMusic
+        // Game music enable/disable. False = no game-specific music plays.
+        // Default music still plays as a fallback when EnableDefaultMusic is
+        // true — that's the longstanding UPS architectural choice and is
+        // preserved unchanged. Toggle EnableDefaultMusic separately to silence
+        // the fallback layer.
+        //
+        // The theme-side property is named "EnableGameMusic" for clarity even
+        // though the underlying C# settings field is _settings.EnableMusic;
+        // the field predates the EnableDefaultMusic split and the legacy name
+        // is preserved on the settings type for backward-compat with existing
+        // user config.ini files.
+        public bool EnableGameMusic
         {
             get => _settings?.EnableMusic ?? true;
             set
@@ -165,6 +174,22 @@ namespace UniPlaySong.Controls
                 if (_settings != null && _settings.EnableMusic != value)
                 {
                     _settings.EnableMusic = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // Default music enable/disable. False = no fallback ambient music
+        // plays when a game has no music of its own. Pair with EnableGameMusic
+        // to give themes independent control of both audio layers.
+        public bool EnableDefaultMusic
+        {
+            get => _settings?.EnableDefaultMusic ?? true;
+            set
+            {
+                if (_settings != null && _settings.EnableDefaultMusic != value)
+                {
+                    _settings.EnableDefaultMusic = value;
                     OnPropertyChanged();
                 }
             }
@@ -211,7 +236,11 @@ namespace UniPlaySong.Controls
             }
             else if (e.PropertyName == nameof(UniPlaySongSettings.EnableMusic))
             {
-                OnPropertyChanged(nameof(EnableMusic));
+                OnPropertyChanged(nameof(EnableGameMusic));
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.EnableDefaultMusic))
+            {
+                OnPropertyChanged(nameof(EnableDefaultMusic));
             }
             else if (e.PropertyName == nameof(UniPlaySongSettings.RadioModeEnabled))
             {
@@ -255,7 +284,14 @@ namespace UniPlaySong.Controls
             {
                 foreach (var control in _musicControls)
                 {
-                    control.OnPropertyChanged(nameof(EnableMusic));
+                    control.OnPropertyChanged(nameof(EnableGameMusic));
+                }
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.EnableDefaultMusic))
+            {
+                foreach (var control in _musicControls)
+                {
+                    control.OnPropertyChanged(nameof(EnableDefaultMusic));
                 }
             }
             else if (e.PropertyName == nameof(UniPlaySongSettings.RadioModeEnabled))
