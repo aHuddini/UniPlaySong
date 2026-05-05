@@ -20,11 +20,25 @@ Then use XAML triggers to set `Tag="True"` (pause music) or `Tag="False"` (resum
 
 ## Control Reference
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `Tag` | object | Set to `"True"` to pause music, `"False"` to resume |
-| `VideoIsPlaying` | bool | Read-only, reflects pause state (for binding) |
-| `ThemeOverlayActive` | bool | Read-only, reflects pause state (for binding) |
+### Pause/resume control (original surface)
+
+| Property | Type | Direction | Description |
+|---|---|---|---|
+| `Tag` | object | Theme → UPS | Set to `"True"` to pause music, `"False"` to resume |
+| `VideoIsPlaying` | bool | UPS → Theme | Read-only, reflects pause state (for binding) |
+| `ThemeOverlayActive` | bool | UPS → Theme | Read-only, reflects pause state (for binding) |
+
+### User-setting toggles (v1.4.6+)
+
+Three of UPS's most-toggled persistent settings are exposed as **two-way** bindable properties so themes can wire `CheckBox` / `ToggleButton` `IsChecked` directly to them. Setter assignments flow through the existing `UniPlaySongSettings` PropertyChanged → settings-service → playback-coordinator pipeline, so a theme toggle has the same effect — and persistence — as flipping the corresponding setting in the desktop UPS settings dialog.
+
+| Property | Type | Direction | Description |
+|---|---|---|---|
+| `EnableMusic` | bool | TwoWay | Master music switch. False = no game music plays (default music still plays as a fallback) |
+| `RadioModeEnabled` | bool | TwoWay | Radio Mode — pool-based continuous playback that auto-advances through random games' songs |
+| `PlayOnlyOnGameSelect` | bool | TwoWay | Play music only when the user actively selects a game (suppresses ambient music in list view) |
+
+`INotifyPropertyChanged` keeps theme widgets in sync if the user changes the same setting via the UPS desktop settings dialog (or the Fullscreen Extensions menu).
 
 ## Usage Examples
 
@@ -171,6 +185,40 @@ Here is how UPS_MusicControl can be used to support a theme like ANIKI REMAKE:
     </ContentControl.Style>
 </ContentControl>
 ```
+
+### Example 6: Quick Audio Settings Menu (v1.4.6+)
+
+Bind theme `CheckBox` / `ToggleButton` widgets directly to UPS settings — useful for an in-theme audio quick-settings menu like the one in Aniki ReMake. A single hidden `UPS_MusicControl` element acts as the binding source; place it once anywhere in the visual tree.
+
+```xml
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:UPS="clr-namespace:UniPlaySong.Controls;assembly=UniPlaySong">
+
+    <!-- Hidden binding source. Place once in the tree. -->
+    <UPS:MusicControl x:Name="upsAudio" Visibility="Collapsed"/>
+
+    <!-- Toggles bind to UPS settings via TwoWay binding. -->
+    <StackPanel>
+        <CheckBox Content="Enable Music"
+                  IsChecked="{Binding ElementName=upsAudio,
+                                      Path=EnableMusic, Mode=TwoWay}"/>
+
+        <CheckBox Content="Radio Mode"
+                  IsChecked="{Binding ElementName=upsAudio,
+                                      Path=RadioModeEnabled, Mode=TwoWay}"/>
+
+        <CheckBox Content="Play Only on Game Select"
+                  IsChecked="{Binding ElementName=upsAudio,
+                                      Path=PlayOnlyOnGameSelect, Mode=TwoWay}"/>
+    </StackPanel>
+</UserControl>
+```
+
+**Behavior:**
+- User clicks a checkbox → UPS setting flips → setting persists across restarts → music engine reacts mid-playback (e.g., stops if `EnableMusic` flipped off).
+- User flips the same setting in the UPS desktop settings dialog or the Fullscreen Extensions menu → the theme's checkbox state updates live.
+- If `UPS_MusicControl` isn't loaded (UPS not installed, theme outside Fullscreen), bindings silently no-op — no crash, the checkboxes just won't do anything. Standard Playnite custom-element fallback.
 
 ## How It Works
 
