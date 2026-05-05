@@ -1231,6 +1231,23 @@ public bool VideoIsPlaying { get; set; }      // Set by MediaElementsMonitor
 public bool ThemeOverlayActive { get; set; }  // Set by MusicControl
 ```
 
+### v1.4.6+ User-Setting Toggles
+
+In addition to the original pause/resume surface, `MusicControl` exposes four of UPS's most-toggled persistent settings as **two-way** WPF bindable properties so themes can wire `CheckBox` / `ToggleButton` `IsChecked` directly to them:
+
+| Theme property (on `MusicControl`) | Underlying field (on `UniPlaySongSettings`) | Notes |
+|---|---|---|
+| `EnableGameMusic` | `_settings.EnableMusic` | Theme name diverges from the legacy field name for clarity (the field name predates the EnableDefaultMusic split). Setting to false suppresses game-specific music; default music continues if `EnableDefaultMusic` is true (UPS's longstanding fallback behavior, intentionally preserved). |
+| `EnableDefaultMusic` | `_settings.EnableDefaultMusic` | Direct mapping. Setting to false disables the default-music fallback layer. Toggle both off for full silence. |
+| `RadioModeEnabled` | `_settings.RadioModeEnabled` | Direct mapping. |
+| `PlayOnlyOnGameSelect` | `_settings.PlayOnlyOnGameSelect` | Direct mapping. |
+
+**Setter pipeline:** assignments go through `_settings.Foo = value` → `UniPlaySongSettings` raises `PropertyChanged` → settings-service-changed handler in `UniPlaySong.cs` → `MusicPlaybackCoordinator` reconciles. Identical effect to flipping the same setting in the desktop UPS settings dialog or the Fullscreen Extensions menu.
+
+**Live theme-side updates:** `MusicControl.OnSettingsChanged` (instance) and `OnSettingsChangedStatic` (broadcast across all loaded instances) listen for the underlying field's `PropertyChanged` and re-fire `OnPropertyChanged(nameof(EnableGameMusic))` etc. so theme widgets stay in sync if the user changes the same setting from the desktop dialog or fullscreen menu.
+
+For full theme-author docs (Control Reference table, example XAML for a quick-audio-settings menu), see [`THEME_INTEGRATION_GUIDE.md`](THEME_INTEGRATION_GUIDE.md).
+
 ### Data Flow
 
 **Theme sets Tag="True"**:
