@@ -475,20 +475,3 @@ All bundled dependencies are compatible with the MIT license under which UniPlay
 
 > **Per-component upstream URLs, license texts, and LGPL §6 source-availability pointers live in [`NOTICES.txt`](../../NOTICES.txt).** That file is also bundled in the `.pext` so end users have it.
 
-## Security Considerations
-
-### NuGet Packages
-- All packages from official NuGet.org source
-- No custom package sources
-- Versions pinned for reproducibility
-
-### Native DLLs
-- Official SDL2 releases from GitHub
-- No modifications to DLLs
-- Checksums can be verified from GitHub releases
-
-### External Tools
-- Users download tools independently
-- Extension validates tool paths
-- No code execution without user configuration
-
