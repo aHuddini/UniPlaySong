@@ -74,7 +74,6 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - Active Theme Music: adding `audio/background.mp3` for UPS playback (v1.3.11+)
   - External Control via URI for custom media control buttons
   - ANIKI REMAKE integration example
-  - **v1.4.6+ user-setting toggles** — bind themes' CheckBox / ToggleButton IsChecked directly to `EnableGameMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect` via two-way WPF binding, plus an example "quick audio settings menu" XAML
 
 ### Additional Resources
 
@@ -179,6 +178,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-05-04
-**Documentation Version**: 1.4.6
+**Last Updated**: 2026-04-19
+**Documentation Version**: 1.4.3
 

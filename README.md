@@ -26,10 +26,6 @@ Built with the help of Claude Code and Cursor IDE
 
 - **"Split HES Tracks" menu action** — right-click a game with a multi-track `.hes` and pick **Chiptunes → Split HES Tracks** to break it into individual mini-HES files (one per track in the M3U). After splitting, each track shows up as its own song in UPS, so skip / shuffle / pause / random-pick all work track-by-track. Originals are preserved to `PreservedOriginals/<GameId>/` so you can roll back.
 
-- **Two new Bundled Ambient default-music tracks from Mike Aniki** (composer of the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) Playnite theme) — Hub OST and Login OST, included with the composer's permission. Pick them from Settings → Playback → Default Music Source → Bundled Ambient.
-
-- **Theme integration — fullscreen quick toggles.** Theme authors can now bind `<CheckBox>` / `<ToggleButton>` `IsChecked` directly to four core UPS settings via the `UPS_MusicControl` element: `EnableGameMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`. Same as toggling them in the UPS desktop settings dialog. The `EnableGameMusic` / `EnableDefaultMusic` split lets a theme offer independent control of game-specific music vs. fallback ambient music — toggling only `EnableGameMusic` off leaves default music playing as a fallback (UPS's longstanding behavior); toggle both off for full silence. Designed for the Aniki ReMake theme's quick audio settings menu but available to any theme. The same settings also appear as toggles in the standard Fullscreen **Menu → Extensions → UniPlaySong** path for users on themes that don't ship a custom audio menu. See [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md) for the full property reference and example XAML.
-
 ### Previous Version
 - **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.
 
@@ -135,10 +131,6 @@ See `docs/dev_docs/` for detailed build instructions.
 - **TagLibSharp** - Audio metadata (LGPL)
 - **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking — see [`docs/dev_docs/GME_BUILD.md`](docs/dev_docs/GME_BUILD.md) for the source pin and reproducible build)
 - **[zlib](https://github.com/madler/zlib)** - Decompression for VGZ files (zlib license)
-
-### Bundled Default Music
-- **Mike Aniki** (composer of the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) Playnite theme) — *Hub OST* and *Login OST*, used with the composer's explicit permission as Bundled Ambient default-music presets.
-- **Tunetank, DELOSound** — additional Bundled Ambient tracks under the Pixabay Content License.
 
 ### External Tools (installed by user)
 - **yt-dlp** - Media searching and downloading (Unlicense)

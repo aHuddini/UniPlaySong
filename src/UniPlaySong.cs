@@ -3842,14 +3842,6 @@ namespace UniPlaySong
             // _settings would fire PropertyChanged but NOT the diff event, so side effects
             // like backend switching wouldn't run.
 
-            // Enable Music is the master switch — most useful when a Fullscreen
-            // user wants to silence game music without leaving the controller-
-            // friendly menu flow. Listed first so it's the most-prominent toggle.
-            items.Add(BuildToggle(
-                label: "Enable Music",
-                isOn: _settings.EnableMusic,
-                setter: v => UpdateSettingsFromMenu(s => s.EnableMusic = v)));
-
             items.Add(BuildToggle(
                 label: "Live Effects",
                 isOn: _settings.LiveEffectsEnabled,
