@@ -28,9 +28,9 @@ Built with the help of Claude Code and Cursor IDE
 
 - **Two new Bundled Ambient tracks from [Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — Hub OST and Login OST from the Aniki ReMake theme are now available as Bundled Ambient defaults. Pick from **Settings → Playback → Default Music Source → Bundled Ambient**.
 
-- **Theme integration for Fullscreen** — themes can now wire toggles like "Enable Music" or "Radio Mode" directly to UPS using Playnite's standard `{PluginSettings}` XAML markup. No extra setup needed for users; theme authors get a clean, crash-safe binding that gracefully no-ops when UPS isn't installed. Theme authors: see [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
+- **Theme integration for Fullscreen** — themes can now wire toggles like "Enable Game Music" or "Radio Mode" directly to UPS using Playnite's standard `{PluginSettings}` XAML markup. Validated end-to-end against the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) theme. No extra setup needed for users; theme authors get a clean, crash-safe binding that gracefully no-ops when UPS isn't installed. Theme authors: see [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
 
-- **"Enable Music" toggle** added to the Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) so you can flip music on/off with a controller from any theme.
+- **"Enable Game Music" and "Enable Default Music" toggles** added to the Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) so you can flip music layers on/off with a controller from any theme. Toggle only Game Music off to leave ambient music playing as a fallback; toggle both off for full silence.
 
 ### Previous Version
 - **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.

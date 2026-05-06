@@ -208,11 +208,11 @@ Here is how UPS_MusicControl can be used to support a theme like ANIKI REMAKE:
 
 ### Example 6: Quick Audio Settings Menu (v1.4.6+) — `{PluginSettings}` Markup
 
-For an in-theme audio quick-settings menu (toggles for "Enable Music," "Radio Mode," etc.), use Playnite's `{PluginSettings}` markup extension. **No `<UPS:MusicControl>` element is required** — the theme binds directly to UPS's settings by name, and the binding gracefully no-ops if UPS isn't installed.
+For an in-theme audio quick-settings menu (toggles for "Enable Game Music," "Radio Mode," etc.), use Playnite's `{PluginSettings}` markup extension. **No `<UPS:MusicControl>` element is required** — the theme binds directly to UPS's settings by name, and the binding gracefully no-ops if UPS isn't installed.
 
 ```xml
 <StackPanel>
-    <CheckBox Content="Enable Music"
+    <CheckBox Content="Enable Game Music"
               IsChecked="{PluginSettings Plugin=UniPlaySong,
                                          Path=EnableMusic, Mode=TwoWay}"/>
 
@@ -230,12 +230,58 @@ For an in-theme audio quick-settings menu (toggles for "Enable Music," "Radio Mo
 </StackPanel>
 ```
 
+> **Label vs. property name:** the underlying setting is `EnableMusic` (kept stable for binding compatibility), but UPS's own Fullscreen Extensions menu surfaces it as `Enable Game Music` to make the layer split obvious next to `Enable Default Music`. Themes are free to use either label — pick whichever fits the theme's wording. The `Path=EnableMusic` part is what matters for the binding.
+
 **Behavior:**
 - Two-way sync — user clicks the checkbox → setting flips → setting persists across restart → music engine reacts mid-playback. Conversely, flipping the same setting from the UPS desktop dialog or the Fullscreen Extensions menu updates the theme's checkbox state live.
 - If UPS is uninstalled or older than v1.4.6: `{PluginSettings}` silently no-ops. The theme's checkboxes appear unchecked and clicking them does nothing — no crash, no error.
 - Pattern matches what Aniki Helper and other Playnite plugins use for theme-bindable settings.
 
 **Tip — full silence:** toggling only `EnableMusic` to false leaves default ambient music playing as a fallback (UPS's longstanding behavior; intentional). To fully silence UPS, also toggle `EnableDefaultMusic` off. Themes can offer "music while browsing" toggles (just `EnableMusic`) separately from "any music at all" toggles (both).
+
+#### Aniki ReMake — verified integration (v1.4.6 reference)
+
+This is the exact paste-in used for the Aniki ReMake theme's audio quick-settings panel. Drop these four `<CheckBoxEx>` elements into `Views/AdditionalViews/QuickOptionsView.xaml`, inside the existing **Audio ControlCenter** `<Grid x:Name="Volume">`, immediately after the `Fullscreen.BackgroundVolume` slider's closing `</Grid>` and before the panel's closing `</StackPanel>`. Reusing the theme's own `SettingsSectionCheckbox` resource keeps the new toggles visually consistent with Mike's existing volume controls:
+
+```xml
+<!-- UniPlaySong audio toggles — bind via {PluginSettings}.        -->
+<!-- Plugin=UniPlaySong is registered via AddSettingsSupport       -->
+<!-- with SettingsRoot=Settings; Path is the property name only.   -->
+<!-- Gracefully no-ops if UPS isn't installed (no crash).          -->
+<CheckBoxEx Margin="0,30,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Style="{DynamicResource SettingsSectionCheckbox}"
+            Content="Enable Game Music"
+            IsChecked="{PluginSettings Plugin=UniPlaySong, Path=EnableMusic, Mode=TwoWay}" />
+
+<CheckBoxEx Margin="0,10,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Style="{DynamicResource SettingsSectionCheckbox}"
+            Content="Enable Default Music"
+            IsChecked="{PluginSettings Plugin=UniPlaySong, Path=EnableDefaultMusic, Mode=TwoWay}" />
+
+<CheckBoxEx Margin="0,10,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Style="{DynamicResource SettingsSectionCheckbox}"
+            Content="Radio Mode"
+            IsChecked="{PluginSettings Plugin=UniPlaySong, Path=RadioModeEnabled, Mode=TwoWay}" />
+
+<CheckBoxEx Margin="0,10,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Style="{DynamicResource SettingsSectionCheckbox}"
+            Content="Play Only on Game Select"
+            IsChecked="{PluginSettings Plugin=UniPlaySong, Path=PlayOnlyOnGameSelect, Mode=TwoWay}" />
+```
+
+Notes for adapting this to other themes:
+
+- **`CheckBoxEx` vs `CheckBox`**: `CheckBoxEx` is Playnite's controller-friendly variant (focus traversal works with D-Pad). Most Fullscreen themes use it. If your theme uses plain `CheckBox`, swap the element name — the `IsChecked` binding is identical.
+- **`Style="{DynamicResource ...}"`**: substitute whatever checkbox style your theme exposes (Aniki ReMake calls it `SettingsSectionCheckbox`; other themes may name it differently). The `{PluginSettings}` binding doesn't care about the visual style.
+- **Restart Playnite** after editing theme XAML — Fullscreen XAML is parsed at startup, so structural changes don't pick up via live-reload.
 
 ## How It Works
 

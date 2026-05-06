@@ -3876,9 +3876,18 @@ namespace UniPlaySong
             // user wants to silence game music without leaving the controller-
             // friendly menu flow. Listed first so it's the most-prominent toggle.
             items.Add(BuildToggle(
-                label: "Enable Music",
+                label: "Enable Game Music",
                 isOn: _settings.EnableMusic,
                 setter: v => UpdateSettingsFromMenu(s => s.EnableMusic = v)));
+
+            // Default Music is the fallback layer — when on (default), UPS plays
+            // ambient/preset music for games that have no music folder. Pairing
+            // this toggle next to "Enable Game Music" exposes the layer split:
+            // both off = full silence, only Game off = ambient continues.
+            items.Add(BuildToggle(
+                label: "Enable Default Music",
+                isOn: _settings.EnableDefaultMusic,
+                setter: v => UpdateSettingsFromMenu(s => s.EnableDefaultMusic = v)));
 
             items.Add(BuildToggle(
                 label: "Live Effects",
