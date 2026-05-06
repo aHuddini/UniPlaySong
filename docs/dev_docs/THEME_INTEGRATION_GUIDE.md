@@ -20,11 +20,45 @@ Then use XAML triggers to set `Tag="True"` (pause music) or `Tag="False"` (resum
 
 ## Control Reference
 
+### Pause/resume control (UPS_MusicControl element)
+
 | Property | Type | Description |
-|----------|------|-------------|
+|---|---|---|
 | `Tag` | object | Set to `"True"` to pause music, `"False"` to resume |
 | `VideoIsPlaying` | bool | Read-only, reflects pause state (for binding) |
 | `ThemeOverlayActive` | bool | Read-only, reflects pause state (for binding) |
+
+These bind via the custom `<ContentControl x:Name="UPS_MusicControl"/>` element a theme places in its visual tree (see Examples 1–5 below). They drive the multi-source pause stack inside UPS to silence music while a theme overlay is active.
+
+### Bindable settings via Playnite's `{PluginSettings}` markup (v1.4.6+)
+
+For toggleable user settings (enable/disable music, radio mode, etc.), Playnite's first-class `{PluginSettings}` markup extension is the preferred approach — themes don't need any custom UPS element in their visual tree, the binding is deferred until plugins load (so themes don't crash when UPS isn't installed), and the syntax matches the pattern used by other Playnite plugins like Aniki Helper, Theme Options, and ExtraMetadataLoader.
+
+**Markup syntax:**
+```xml
+<CheckBox IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                     Path=EnableMusic, Mode=TwoWay}"/>
+```
+
+UPS exposes its settings object under `Plugin=UniPlaySong, SettingsRoot=Settings`, so any property on `UniPlaySongSettings` is bindable directly via `Path=<PropertyName>`. The four most-toggled settings:
+
+| `Path=` value | Type | Behavior when set false |
+|---|---|---|
+| `EnableMusic` | bool | Game-specific music stops. Default music continues if `EnableDefaultMusic` is true (UPS's longstanding fallback behavior — toggle both off for full silence). |
+| `EnableDefaultMusic` | bool | Fallback ambient music stops. |
+| `RadioModeEnabled` | bool | Disables continuous pool-based playback. |
+| `PlayOnlyOnGameSelect` | bool | Music plays whenever browsing, not just on game selection. |
+
+Other `UniPlaySongSettings` properties are also bindable via this mechanism — these four are simply the most useful ones for an audio quick-settings menu. See `src/UniPlaySongSettings.cs` for the full list.
+
+**Why prefer this over a custom element:**
+
+1. **No theme crash on missing UPS.** `{PluginSettings}` defers resolution until `ExtensionsLoaded` fires; if UPS isn't installed or is an older version that doesn't register settings support, bindings silently no-op. Themes that placed `<UPS:MusicControl>` directly with `xmlns:UPS=clr-namespace:UniPlaySong.Controls;assembly=UniPlaySong` would crash at theme-parse time because plugin assemblies load AFTER theme XAML.
+2. **No xmlns boilerplate or assembly references** in theme XAML.
+3. **Two-way sync** with the desktop UPS settings dialog — flipping a setting from one updates the other live (`UniPlaySongSettings` raises `INotifyPropertyChanged`).
+4. **Persistence handled by UPS automatically** — assignments flow through UPS's existing PropertyChanged → settings-service → playback-coordinator pipeline.
+
+See Example 6 below for a complete quick-audio-settings menu.
 
 ## Usage Examples
 
@@ -171,6 +205,37 @@ Here is how UPS_MusicControl can be used to support a theme like ANIKI REMAKE:
     </ContentControl.Style>
 </ContentControl>
 ```
+
+### Example 6: Quick Audio Settings Menu (v1.4.6+) — `{PluginSettings}` Markup
+
+For an in-theme audio quick-settings menu (toggles for "Enable Music," "Radio Mode," etc.), use Playnite's `{PluginSettings}` markup extension. **No `<UPS:MusicControl>` element is required** — the theme binds directly to UPS's settings by name, and the binding gracefully no-ops if UPS isn't installed.
+
+```xml
+<StackPanel>
+    <CheckBox Content="Enable Music"
+              IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                         Path=EnableMusic, Mode=TwoWay}"/>
+
+    <CheckBox Content="Enable Default Music"
+              IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                         Path=EnableDefaultMusic, Mode=TwoWay}"/>
+
+    <CheckBox Content="Radio Mode"
+              IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                         Path=RadioModeEnabled, Mode=TwoWay}"/>
+
+    <CheckBox Content="Play Only on Game Select"
+              IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                         Path=PlayOnlyOnGameSelect, Mode=TwoWay}"/>
+</StackPanel>
+```
+
+**Behavior:**
+- Two-way sync — user clicks the checkbox → setting flips → setting persists across restart → music engine reacts mid-playback. Conversely, flipping the same setting from the UPS desktop dialog or the Fullscreen Extensions menu updates the theme's checkbox state live.
+- If UPS is uninstalled or older than v1.4.6: `{PluginSettings}` silently no-ops. The theme's checkboxes appear unchecked and clicking them does nothing — no crash, no error.
+- Pattern matches what Aniki Helper and other Playnite plugins use for theme-bindable settings.
+
+**Tip — full silence:** toggling only `EnableMusic` to false leaves default ambient music playing as a fallback (UPS's longstanding behavior; intentional). To fully silence UPS, also toggle `EnableDefaultMusic` off. Themes can offer "music while browsing" toggles (just `EnableMusic`) separately from "any music at all" toggles (both).
 
 ## How It Works
 

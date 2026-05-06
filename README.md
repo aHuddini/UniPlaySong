@@ -26,6 +26,12 @@ Built with the help of Claude Code and Cursor IDE
 
 - **"Split HES Tracks" menu action** — right-click a game with a multi-track `.hes` and pick **Chiptunes → Split HES Tracks** to break it into individual mini-HES files (one per track in the M3U). After splitting, each track shows up as its own song in UPS, so skip / shuffle / pause / random-pick all work track-by-track. Originals are preserved to `PreservedOriginals/<GameId>/` so you can roll back.
 
+- **Two new Bundled Ambient tracks from [Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — Hub OST and Login OST from the Aniki ReMake theme are now available as Bundled Ambient defaults. Pick from **Settings → Playback → Default Music Source → Bundled Ambient**.
+
+- **Theme integration for Fullscreen** — themes can now wire toggles like "Enable Music" or "Radio Mode" directly to UPS using Playnite's standard `{PluginSettings}` XAML markup. No extra setup needed for users; theme authors get a clean, crash-safe binding that gracefully no-ops when UPS isn't installed. Theme authors: see [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
+
+- **"Enable Music" toggle** added to the Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) so you can flip music on/off with a controller from any theme.
+
 ### Previous Version
 - **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.
 

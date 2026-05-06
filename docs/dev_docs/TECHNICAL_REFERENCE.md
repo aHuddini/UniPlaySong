@@ -17,7 +17,7 @@ This document provides detailed technical references for key variables, logic, a
 9. [Controller Input Handling](#controller-input-handling)
 10. [Audio Normalization](#audio-normalization)
 11. [Download Manager](#download-manager)
-12. [Theme Integration (UPS_MusicControl)](#theme-integration-ups_musiccontrol)
+12. [Theme Integration](#theme-integration)
 
 ---
 
@@ -1182,6 +1182,84 @@ public const string GamesFolderName = "Games";
 public const string TempFolderName = "Temp";
 public const string PreservedOriginalsFolderName = "PreservedOriginals";
 ```
+
+---
+
+## Theme Integration
+
+UPS supports two complementary theme-integration mechanisms:
+
+| Mechanism | Use case | Added in |
+|---|---|---|
+| `{PluginSettings}` markup (preferred for settings) | Bind theme CheckBox/ToggleButton state to UPS settings (`EnableMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`). No element required in the visual tree. | v1.4.6 |
+| `UPS_MusicControl` element (preferred for pause/resume) | Pause/resume music while a theme overlay is active (intro video, login screen, modal panel). Driven by `Tag` binding to the overlay's visibility. | v1.0.0 |
+
+Themes can use either or both. The two paths are independent.
+
+### `{PluginSettings}` Markup (v1.4.6+)
+
+#### Overview
+
+Themes bind directly to `UniPlaySongSettings` properties from XAML using Playnite's first-class `{PluginSettings}` markup extension. No custom UPS element is needed in the theme's visual tree, the binding is deferred until plugins load (theme XAML parses cleanly even when UPS isn't installed), and the syntax matches the pattern used by `AnikiHelper`, `ExtraMetadataLoader`, `Theme Options`, etc.
+
+#### Architecture
+
+**Plugin-side registration** (in `UniPlaySong.cs`, `InitializeServices`):
+```csharp
+AddSettingsSupport(new AddSettingsSupportArgs
+{
+    SourceName = "UniPlaySong",
+    SettingsRoot = nameof(Settings)
+});
+```
+
+**Public Settings property** (top of the `UniPlaySong` class):
+```csharp
+public UniPlaySongSettings Settings => _settings;
+```
+
+This is a thin alias of the private `_settings => _settingsService?.Current` field. Themes never reassign the whole object — only individual properties on it. PropertyChanged comes from `UniPlaySongSettings`'s own `INotifyPropertyChanged` implementation.
+
+**Theme-side binding**:
+```xml
+<CheckBox IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                     Path=EnableMusic,
+                                     Mode=TwoWay}"/>
+```
+
+#### How Playnite resolves `{PluginSettings}`
+
+Implementation: `source/Playnite/Extensions/Markup/PluginSettings.cs`. Sequence:
+
+1. Playnite reads `Plugin=UniPlaySong` and looks up the `SettingsSupportList` entry where `SourceName == "UniPlaySong"`.
+2. It prepends `pSource.SettingsRoot + "."` to the user's `Path` — so `Path=EnableMusic` becomes effective path `Settings.EnableMusic` against the plugin instance.
+3. It returns a normal WPF `Binding` against the plugin object, with `Mode` and other parameters passed through.
+4. If the plugin isn't loaded yet (theme XAML parses before plugin DLLs), the markup hooks `ExtensionsLoaded` and rebinds when the plugin appears. If the plugin never loads (uninstalled), the binding silently no-ops.
+
+This is the load-order safety net that `<UPS:MusicControl xmlns:UPS=clr-namespace:UniPlaySong.Controls;assembly=UniPlaySong>` doesn't have — that pattern crashes themes with `Cannot create unknown type` because WPF resolves `clr-namespace` before plugin assemblies are loaded.
+
+#### Recommended bindable settings
+
+| Property | Type | Behavior when set false |
+|---|---|---|
+| `EnableMusic` | bool | Game-specific music stops; default music continues if `EnableDefaultMusic` is true |
+| `EnableDefaultMusic` | bool | Fallback ambient/Bundled Ambient music stops |
+| `RadioModeEnabled` | bool | Disables continuous pool-based playback |
+| `PlayOnlyOnGameSelect` | bool | Music plays whenever browsing, not just on game selection |
+
+`EnableMusic` and `EnableDefaultMusic` are deliberately separate layers. Toggle only `EnableMusic` off → game music stops, default ambient continues (UPS's longstanding fallback). Toggle both off → full silence. Themes can offer "music while browsing" toggles independently from "any music at all" toggles.
+
+Any other public property on `UniPlaySongSettings` is also bindable, but the four above are the canonical theme-integration surface.
+
+#### Debugging
+
+If a theme's `{PluginSettings}` binding doesn't work:
+
+1. **Check plugin source name**: theme must use `Plugin=UniPlaySong` (matches `SourceName` in `AddSettingsSupport`). Case-sensitive.
+2. **Check path**: must be the property name only (`EnableMusic`), no `Settings.` prefix — Playnite prepends `SettingsRoot` automatically.
+3. **Check UPS version**: `AddSettingsSupport` was added in v1.4.6. Older UPS won't expose any settings.
+4. **Check binding mode**: theme toggles need `Mode=TwoWay` to write back; one-way bindings only read.
+5. **WPF binding diagnostics**: enable PresentationTraceSources in the theme XAML (`<CheckBox PresentationTraceSources.TraceLevel="High" .../>`) and check Playnite's `extensions.log` for `BindingExpression path error`.
 
 ---
 

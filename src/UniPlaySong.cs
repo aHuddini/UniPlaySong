@@ -206,7 +206,14 @@ namespace UniPlaySong
         private UniPlaySongSettingsViewModel _settingsViewModel;
 
         private UniPlaySongSettings _settings => _settingsService?.Current;
-        
+
+        // Public alias of _settings exposed for Playnite's {PluginSettings Plugin=UniPlaySong, Path=...}
+        // markup extension. Themes bind against plugin.Settings.<Property> via the SettingsRoot prefix
+        // configured in AddSettingsSupport (see InitializeServices). Read-only — themes never reassign
+        // the whole object, only individual properties on it. Setter not needed; the property itself
+        // raises PropertyChanged via UniPlaySongSettings's INotifyPropertyChanged.
+        public UniPlaySongSettings Settings => _settings;
+
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
 
@@ -290,6 +297,29 @@ namespace UniPlaySong
             {
                 SourceName = "UPS",
                 ElementList = new List<string> { "MusicControl", "SpectrumVisualizer" }
+            });
+
+            // Register settings support for theme integration via Playnite's
+            // {PluginSettings} markup extension (v1.4.6+). Themes bind any
+            // UniPlaySongSettings property directly without needing a custom
+            // <UPS:MusicControl> element in the visual tree:
+            //
+            //   <CheckBox IsChecked="{PluginSettings Plugin=UniPlaySong,
+            //                                       Path=EnableMusic,
+            //                                       Mode=TwoWay}"/>
+            //
+            // Playnite resolves Plugin=UniPlaySong against SourceName below,
+            // prepends SettingsRoot ("Settings") to the Path, then binds to
+            // plugin.Settings.<Path> on this plugin instance. The public
+            // Settings property is declared at the top of this class. Same
+            // pattern as Mike Aniki's AnikiHelper plugin, ExtraMetadataLoader,
+            // and Theme Options — works deferred (theme XAML loads before
+            // plugins, but PluginSettings re-binds when ExtensionsLoaded fires)
+            // and gracefully no-ops if UPS isn't installed.
+            AddSettingsSupport(new AddSettingsSupportArgs
+            {
+                SourceName = "UniPlaySong",
+                SettingsRoot = nameof(Settings)
             });
 
             // Initialize MusicControl static services
@@ -3841,6 +3871,14 @@ namespace UniPlaySong
             // coordinator reconciliation for mode changes) depend on. Directly mutating
             // _settings would fire PropertyChanged but NOT the diff event, so side effects
             // like backend switching wouldn't run.
+
+            // Enable Music is the master switch — most useful when a Fullscreen
+            // user wants to silence game music without leaving the controller-
+            // friendly menu flow. Listed first so it's the most-prominent toggle.
+            items.Add(BuildToggle(
+                label: "Enable Music",
+                isOn: _settings.EnableMusic,
+                setter: v => UpdateSettingsFromMenu(s => s.EnableMusic = v)));
 
             items.Add(BuildToggle(
                 label: "Live Effects",
