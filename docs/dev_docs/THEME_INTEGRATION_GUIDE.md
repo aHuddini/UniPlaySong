@@ -236,8 +236,23 @@ For an in-theme audio quick-settings menu (toggles for "Enable Game Music," "Rad
 - Two-way sync — user clicks the checkbox → setting flips → setting persists across restart → music engine reacts mid-playback. Conversely, flipping the same setting from the UPS desktop dialog or the Fullscreen Extensions menu updates the theme's checkbox state live.
 - If UPS is uninstalled or older than v1.4.6: `{PluginSettings}` silently no-ops. The theme's checkboxes appear unchecked and clicking them does nothing — no crash, no error.
 - Pattern matches what Aniki Helper and other Playnite plugins use for theme-bindable settings.
+- Toggles work even when no game card is focused (welcome hub, search overlay, filter pages, the home view between filters). UPS falls back to "the most-recently played game" for context, so the toggle reacts immediately rather than waiting for the user to navigate to a game.
 
 **Tip — full silence:** toggling only `EnableMusic` to false leaves default ambient music playing as a fallback (UPS's longstanding behavior; intentional). To fully silence UPS, also toggle `EnableDefaultMusic` off. Themes can offer "music while browsing" toggles (just `EnableMusic`) separately from "any music at all" toggles (both).
+
+#### Two settings-write paths inside UPS (developer note)
+
+UPS receives setting updates through two distinct event lanes, and `{PluginSettings}` writes use a different lane than the desktop settings dialog:
+
+| Trigger | Mechanism | Event |
+|---|---|---|
+| Desktop dialog (Settings → UniPlaySong) | `BeginEdit` → mutate clone → `EndEdit` → `SettingsService.UpdateSettings(newClone)` | `SettingsChanged` (whole-settings replaced, exposes `OldSettings` + `NewSettings` for diffing) |
+| Theme `{PluginSettings}` markup | Direct property setter on the live settings instance via `INotifyPropertyChanged` | `SettingPropertyChanged` (per-property, just `PropertyName`) |
+| Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) | `UpdateSettingsFromMenu` clones → mutates → calls `UpdateSettings` (same as desktop dialog) | `SettingsChanged` (same as desktop) |
+
+**Why this matters:** until v1.4.6, only `VideoIsPlaying` and `ThemeOverlayActive` were routed through the per-property lane. Every other property write from a theme `{PluginSettings}` binding flipped the value successfully (the property setter ran, two-way sync worked) but no playback handler reacted, because the dialog-side handler only fires on the `SettingsChanged` event. v1.4.6 added explicit per-property handlers in `OnSettingsServicePropertyChanged` for the four bindable settings (`EnableMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`) so theme writes now trigger the same playback decisions the dialog path does.
+
+**For theme authors:** you don't need to do anything different — both lanes converge on the same playback behavior. This note is here so plugin authors who fork UPS or build similar plugins understand the dual-event-lane architecture and add per-property handlers when they expose new settings to themes.
 
 #### Aniki ReMake — verified integration (v1.4.6 reference)
 

@@ -49,6 +49,11 @@ namespace UniPlaySong.Services
         // Stops Radio Mode playback and clears radio state
         void StopRadioMode();
 
+        // True when Radio Mode is actively running (radio pool selected and playing).
+        // Distinct from settings.RadioModeEnabled (the user preference) — this reflects
+        // whether the player is currently in a radio playback state.
+        bool IsInRadioMode { get; }
+
         // Clears the cached default music path so the next fallback picks a fresh song
         void ClearLastDefaultMusicPath();
 

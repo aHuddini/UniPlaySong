@@ -738,6 +738,19 @@ namespace UniPlaySong.Services
                     }
                 }
 
+                // EnableMusic=off + EnableDefaultMusic=on: skip game music so the default-
+                // music fallback below can fire. Without this, a game with its own music
+                // folder swallows the EnableDefaultMusic toggle entirely — game music is
+                // suppressed by the EnableMusic check at line 850 (no default added to
+                // songs, so hasDefaultMusic=false, so we stop), and bundled/native/pool
+                // sources never get a chance to add their fallback. Clearing here lets
+                // the default-music block at line 744 add the configured ambient source.
+                if (songs.Count > 0 && settings?.EnableMusic == false && settings?.EnableDefaultMusic == true)
+                {
+                    _fileLogger?.Info($"PlayGameMusic: {game.Name} — EnableMusic=off, falling through to default music");
+                    songs.Clear();
+                }
+
                 // Default music fallback when no game music found.
                 // Six sources driven by DefaultMusicSourceOption.
                 // UseNativeMusicAsDefault kept in sync for backward compatibility.

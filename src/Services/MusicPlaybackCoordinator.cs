@@ -21,6 +21,14 @@ namespace UniPlaySong.Services
         private bool _firstSelect = true;
         private bool _loginSkipActive = false;
         private bool _skipFirstSelectActive = false;
+
+        // Game stashed when HandleGameSelected was forced to Stop() because
+        // ThemeOverlayActive was true (typical Aniki ReMake login → welcome hub flow).
+        // Consumed by HandleThemeOverlayChange(false) so music resumes for the right
+        // game when the overlay finally clears, even if Playnite's SelectedGames is
+        // empty at that moment (user navigated to a non-game view, e.g. the welcome
+        // hub itself, between block and overlay-clear).
+        private Game _gameBlockedByOverlay;
         private bool _hasSeenFullscreen = false;
         private Game _currentGame;
         
@@ -147,13 +155,29 @@ namespace UniPlaySong.Services
                 _hasSeenFullscreen = true;
             }
             
-            if (game == null || _settings?.EnableMusic != true)
+            if (game == null)
             {
-                // Use PlayGameMusic(null) to handle fade-out properly
-                _fileLogger?.Debug("HandleGameSelected: No game or music disabled - fading out playback");
+                // No game selected: fade out (PlayGameMusic with null handles fade-out)
+                _fileLogger?.Debug("HandleGameSelected: No game - fading out playback");
                 _playbackService?.PlayGameMusic(null, _settings, false);
                 _firstSelect = false;
                 _currentGame = null;
+                return;
+            }
+
+            // EnableMusic=off + game present: route through PlayGameMusic so the
+            // EnableMusic-off + EnableDefaultMusic-on fallback path can fire (cleared
+            // game songs → default-music block at MusicPlaybackService.cs:744). Without
+            // this branch, switching games while Game Music is off used to fade the
+            // currently-playing default ambient instead of letting it persist for the
+            // new game. Now PlayGameMusic decides: default music if EnableDefaultMusic=on,
+            // silence if both Game and Default are off.
+            if (_settings?.EnableMusic != true)
+            {
+                _fileLogger?.Debug($"HandleGameSelected: EnableMusic=off, routing through PlayGameMusic for default-music fallback (Game: {game.Name})");
+                _currentGame = game;
+                _playbackService?.PlayGameMusic(game, _settings, false);
+                _firstSelect = false;
                 return;
             }
             
@@ -202,6 +226,17 @@ namespace UniPlaySong.Services
             if (!ShouldPlayMusic(game))
             {
                 _fileLogger?.Debug($"HandleGameSelected: ShouldPlayMusic returned false for {game.Name} - stopping all music");
+
+                // If the block reason was theme overlay (Aniki welcome hub etc.), stash
+                // the game so HandleThemeOverlayChange(false) can resume music for it
+                // when overlay clears. Other block reasons (EnableMusic=false, MusicState
+                // mismatch, theme/login skip) don't get auto-resumed by overlay clear.
+                if (_settings?.ThemeOverlayActive == true)
+                {
+                    _gameBlockedByOverlay = game;
+                    _fileLogger?.Debug($"HandleGameSelected: Stashing {game.Name} as overlay-blocked — will resume on overlay clear");
+                }
+
                 // Stop any currently playing music (including default music)
                 _playbackService?.Stop();
                 _firstSelect = false;
@@ -352,16 +387,45 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=false - removing ThemeOverlay pause source");
                 _playbackService?.RemovePauseSource(Models.PauseSource.ThemeOverlay);
 
-                // If music wasn't loaded or paused music didn't resume, try to start it
-                // This handles cases where music was stopped completely during the overlay
-                if (_playbackService?.IsPlaying != true && _playbackService?.IsPaused != true)
+                // Recovery: if music isn't loaded (e.g. HandleGameSelected called Stop()
+                // because ShouldPlayMusic was false while the overlay was active —
+                // typical Aniki ReMake login → welcome hub → game card flow), try to
+                // start it. We test IsLoaded rather than IsPlaying/IsPaused because
+                // other pause sources (Video from theme intros, FocusLoss, etc.) may
+                // legitimately be active while we're trying to recover from a Stop().
+                // If IsLoaded is true, the multi-source pause stack already handled the
+                // resume correctly via RemovePauseSource above.
+                if (_playbackService?.IsLoaded != true)
                 {
-                    var game = _getSelectedGame();
+                    // Resolution order:
+                    //   1. Playnite's currently-selected game (most common — user is
+                    //      sitting on a game card when overlay clears)
+                    //   2. Game stashed by HandleGameSelected when it was overlay-blocked
+                    //      (covers Aniki's "select game → welcome hub appears → user
+                    //      drifts away to hub → overlay clears" path, where SelectedGames
+                    //      is empty by the time we recover)
+                    var selected = _getSelectedGame();
+                    var game = selected ?? _gameBlockedByOverlay;
+                    var consumedFromStash = (selected == null && _gameBlockedByOverlay != null);
+
+                    // Single-shot: clear after read, even if we don't end up playing it.
+                    // Stale stash could otherwise resurface in a future unrelated overlay
+                    // clear (theme reopens a video modal weeks later, etc.).
+                    _gameBlockedByOverlay = null;
+
                     if (game != null && ShouldPlayMusic(game))
                     {
-                        _fileLogger?.Debug($"HandleThemeOverlayChange: Starting music for {game.Name}");
+                        _fileLogger?.Debug($"HandleThemeOverlayChange: Starting music for {game.Name}{(consumedFromStash ? " (from overlay-blocked stash)" : string.Empty)}");
                         _playbackService?.PlayGameMusic(game, _settings, false);
                     }
+                    else
+                    {
+                        _fileLogger?.Debug($"HandleThemeOverlayChange: Not starting music — game={(game?.Name ?? "null")}, ShouldPlayMusic={(game != null && ShouldPlayMusic(game))}, IsLoaded={_playbackService?.IsLoaded}");
+                    }
+                }
+                else
+                {
+                    _fileLogger?.Debug("HandleThemeOverlayChange: Music already loaded, multi-source pause stack handled resume");
                 }
             }
         }

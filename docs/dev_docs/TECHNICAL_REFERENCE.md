@@ -1261,6 +1261,72 @@ If a theme's `{PluginSettings}` binding doesn't work:
 4. **Check binding mode**: theme toggles need `Mode=TwoWay` to write back; one-way bindings only read.
 5. **WPF binding diagnostics**: enable PresentationTraceSources in the theme XAML (`<CheckBox PresentationTraceSources.TraceLevel="High" .../>`) and check Playnite's `extensions.log` for `BindingExpression path error`.
 
+#### `PlayGameMusic` Decision Matrix (v1.4.6+)
+
+`MusicPlaybackService.PlayGameMusic` is the canonical entry point for all playback decisions. After v1.4.6's settings-routing fixes, every settings-change handler routes through `PlayGameMusic` (rather than calling `Stop()` directly), letting it decide what should play based on the full settings state:
+
+| `EnableMusic` | `EnableDefaultMusic` | Game has music? | Result |
+|---|---|---|---|
+| ✓ | ✓ | yes | Game music plays |
+| ✓ | ✓ | no  | Default music (Bundled / Native / Pool / CustomFile) plays |
+| ✓ | ✗ | yes | Game music plays |
+| ✓ | ✗ | no  | Silence (no fallback configured) |
+| ✗ | ✓ | yes | **Default music plays** (game songs cleared in pre-default block, line ~745) |
+| ✗ | ✓ | no  | Default music plays |
+| ✗ | ✗ | yes | Silence |
+| ✗ | ✗ | no  | Silence |
+
+**Critical line**: `MusicPlaybackService.cs:744` — the pre-default-fallback `songs.Clear()` block. Without this, a game with its own music folder would swallow `EnableMusic=off` (the EnableMusic check at line ~850 sees `songs` non-empty + `hasDefaultMusic=false` → stops). The clear lets the default-source switch (Bundled / Native / Pool / CustomFile) populate `songs` with the right fallback.
+
+**Don't call `Stop()` directly from settings or game-selection handlers** — always go through `PlayGameMusic`. `Stop()` is for "no playback should be happening at all" (e.g., MusicState=Never, theme overlay active, `EnableMusic + EnableDefaultMusic` both off with no game music). The handler doesn't know that combination of facts; only `PlayGameMusic` does.
+
+**Same rule applies to `HandleGameSelected`**: don't branch on `EnableMusic` to decide whether to play. The `EnableMusic=off` case should still call `PlayGameMusic(game, ...)` so the default-music fallback can fire — game music being off doesn't mean no audio should play. Only the `game == null` case justifies a direct fade-out path.
+
+#### Overlay-Blocked Game Stash (v1.4.6+)
+
+When `HandleGameSelected` fires while `ThemeOverlayActive=true`, `ShouldPlayMusic` returns false and music gets stopped. The user later dismisses the overlay, but by that time `SelectedGames` may be empty (Aniki ReMake's welcome hub flow: user navigates the hub, no game card has focus). Recovery silently no-ops because `_getSelectedGame()` returns null.
+
+**Mechanism** (`MusicPlaybackCoordinator.cs`):
+
+```csharp
+private Game _gameBlockedByOverlay;
+
+// In HandleGameSelected:
+if (!ShouldPlayMusic(game))
+{
+    if (_settings?.ThemeOverlayActive == true)
+    {
+        _gameBlockedByOverlay = game;  // stash for later
+    }
+    _playbackService?.Stop();
+    return;
+}
+
+// In HandleThemeOverlayChange(false):
+if (_playbackService?.IsLoaded != true)
+{
+    var selected = _getSelectedGame();
+    var game = selected ?? _gameBlockedByOverlay;
+    var consumedFromStash = (selected == null && _gameBlockedByOverlay != null);
+    _gameBlockedByOverlay = null;  // single-shot consumption
+    if (game != null && ShouldPlayMusic(game))
+    {
+        _playbackService?.PlayGameMusic(game, _settings, false);
+    }
+}
+```
+
+**Properties of the stash**:
+- **Single-shot**: cleared after read, even if not consumed. Prevents stale stash from leaking into a future unrelated overlay-clear.
+- **Gated by `ThemeOverlayActive`**: only stashes when the block reason was specifically the overlay. Other block reasons (`EnableMusic=false`, `MusicState` mismatch, login skip) shouldn't auto-resume on overlay clear.
+- **Defense in depth**: even when the upstream theme fixes its timing (e.g. Aniki's `IsWelcomeHubOpen=false` at hub-start-close instead of fully-closed), the stash still handles edge cases like interrupted transitions or future timing regressions.
+
+#### `IsLoaded` vs `IsPaused`/`IsPlaying` for Recovery Guards
+
+`HandleThemeOverlayChange(false)` and `HandleVideoStateChange(false)` need to decide whether to start music after their pause source is removed. The right question is **"is there no song open?"** (`IsLoaded == false`), not "is the player not currently playing?" (`IsPlaying == false && IsPaused == false`).
+
+Why: the multi-source pause stack often holds unrelated pause sources when overlay/video clears. If `Video` pause is still active when `ThemeOverlay` is removed, `IsPaused == true` and the recovery would skip — but the music could still be loaded fine and just need the multi-source stack to drain naturally. `IsLoaded == false` correctly identifies "no song open, fresh start needed" without conflating it with pause state.
+
 ---
 
 ## Theme Integration (UPS_MusicControl)

@@ -32,6 +32,8 @@ Built with the help of Claude Code and Cursor IDE
 
 - **"Enable Game Music" and "Enable Default Music" toggles** added to the Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) so you can flip music layers on/off with a controller from any theme. Toggle only Game Music off to leave ambient music playing as a fallback; toggle both off for full silence.
 
+- **New PluginSettings quick-options framework, validated with Aniki ReMake** — the four bindable audio toggles (Enable Game Music, Enable Default Music, Radio Mode, Play Only on Game Select) now react reliably in real time when flipped from a theme's quick-options panel, including across game switches and after a theme overlay clears.
+
 ### Previous Version
 - **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.
 

@@ -10,6 +10,7 @@ Packages:
       - '[New Feature] Two new Bundled Ambient tracks from Mike Aniki (composer of the Aniki ReMake theme): Hub OST and Login OST. Pick from Settings -> Playback -> Default Music Source -> Bundled Ambient.'
       - '[Theme Integration] UPS settings (EnableMusic, EnableDefaultMusic, RadioModeEnabled, PlayOnlyOnGameSelect) are now bindable from theme XAML via Playnite''s {PluginSettings Plugin=UniPlaySong, Path=..., Mode=TwoWay} markup extension. No custom UPS element required in the theme; bindings gracefully no-op when UPS isn''t installed. See docs/dev_docs/THEME_INTEGRATION_GUIDE.md.'
       - '[New Feature] "Enable Game Music" and "Enable Default Music" toggles added to the Fullscreen Extensions menu (Menu -> Extensions -> UniPlaySong). Toggle only Game Music off to leave ambient music playing as a fallback; toggle both off for full silence.'
+      - '[Theme Integration] New {PluginSettings} quick-options framework hardened end-to-end against the Aniki ReMake theme. Audio toggles bound from a theme (Enable Game Music, Enable Default Music, Radio Mode, Play Only on Game Select) now react reliably mid-playback, including when no game card is focused, when an overlay clears, or across game switches.'
   - Version: 1.4.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-04-23

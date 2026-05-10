@@ -1323,10 +1323,117 @@ namespace UniPlaySong
             if (e.PropertyName == nameof(UniPlaySongSettings.VideoIsPlaying))
             {
                 _coordinator?.HandleVideoStateChange(_settings.VideoIsPlaying);
+                return;
             }
-            else if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
+            if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
             {
                 _coordinator?.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
+                return;
+            }
+
+            // Per-property writes from theme {PluginSettings} markup bypass UpdateSettings()
+            // entirely — they mutate _currentSettings.<Prop> directly via INotifyPropertyChanged,
+            // so OnSettingsServiceChanged (the whole-settings-replaced diff event) never fires
+            // and its handlers for EnableMusic/RadioMode/etc. are unreachable from theme
+            // toggles. Mirror the relevant diff-event logic here for the four settings the
+            // {PluginSettings} integration exposes (EnableMusic, EnableDefaultMusic,
+            // RadioModeEnabled, PlayOnlyOnGameSelect) so theme checkboxes round-trip
+            // correctly.
+            //
+            // The desktop settings dialog still flows through OnSettingsServiceChanged
+            // (BeginEdit + EndEdit + UpdateSettings), so this code path is theme-only —
+            // there's no double-firing.
+            if (_playbackService == null) return;
+            var game = SelectedGames?.FirstOrDefault() ?? _playbackService.CurrentGame;
+
+            if (e.PropertyName == nameof(UniPlaySongSettings.EnableMusic))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: EnableMusic={_settings.EnableMusic} (theme write)");
+                if (_settings.EnableMusic)
+                {
+                    // OFF -> ON: re-react. ShouldPlayMusic re-checks state with new flag.
+                    if (game != null && _coordinator?.ShouldPlayMusic(game) == true && _playbackService.IsLoaded != true)
+                    {
+                        _playbackService.PlayGameMusic(game, _settings, true);
+                    }
+                }
+                else
+                {
+                    // ON -> OFF: route through PlayGameMusic so the default-music
+                    // fallback can fire (when EnableDefaultMusic=true). PlayGameMusic's
+                    // EnableMusic=off branch (MusicPlaybackService line ~740) clears
+                    // game songs and adds the configured default source. If both
+                    // EnableMusic and EnableDefaultMusic are off, PlayGameMusic stops
+                    // playback on its own (line 850). Just calling Stop() here would
+                    // skip the default fallback entirely — that was the v1.4.6 beta1
+                    // bug where toggling Game Music off silenced ambient too.
+                    if (game != null)
+                    {
+                        _playbackService.PlayGameMusic(game, _settings, true);
+                    }
+                    else
+                    {
+                        _playbackService.Stop();
+                    }
+                }
+                return;
+            }
+
+            if (e.PropertyName == nameof(UniPlaySongSettings.EnableDefaultMusic))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: EnableDefaultMusic={_settings.EnableDefaultMusic} (theme write)");
+                _playbackService.ClearLastDefaultMusicPath();
+                if (game != null)
+                {
+                    _playbackService.PlayGameMusic(game, _settings, true);
+                }
+                return;
+            }
+
+            if (e.PropertyName == nameof(UniPlaySongSettings.RadioModeEnabled))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: RadioModeEnabled={_settings.RadioModeEnabled} (theme write)");
+                if (_settings.RadioModeEnabled)
+                {
+                    // OFF -> ON: enter radio directly. PlayGameMusic with forceReload=true
+                    // would skip the radio branch entirely (line 614: `&& !forceReload`),
+                    // so we'd just reload game music and never enter the pool. Calling
+                    // StartRadioPlayback bypasses that conflict and matches what game-
+                    // switch entry does internally.
+                    //
+                    // Honor MusicOnlyForInstalledGames yield: if the user is on an
+                    // installed game with its own music, radio should defer to game music
+                    // (same rule as the game-switch path at PlayGameMusic line 617).
+                    bool yieldToGameMusic = false;
+                    if (game != null && _settings.MusicOnlyForInstalledGames && game.IsInstalled)
+                    {
+                        var songCount = _playbackService.CurrentGameSongCount;
+                        if (songCount > 0)
+                        {
+                            yieldToGameMusic = true;
+                            _fileLogger?.Debug($"RadioMode toggled ON, but yielding to {game.Name} ({songCount} songs)");
+                        }
+                    }
+                    if (!yieldToGameMusic)
+                    {
+                        _playbackService.StartRadioPlayback(_settings);
+                    }
+                }
+                else
+                {
+                    // ON -> OFF: leave radio, fall back to whatever fits the current game.
+                    if (_playbackService.IsInRadioMode) _playbackService.StopRadioMode();
+                    if (game != null) _playbackService.PlayGameMusic(game, _settings, true);
+                }
+                return;
+            }
+
+            if (e.PropertyName == nameof(UniPlaySongSettings.PlayOnlyOnGameSelect))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: PlayOnlyOnGameSelect={_settings.PlayOnlyOnGameSelect} (theme write)");
+                // Replay so the new flag's List/Details view gating is applied.
+                if (game != null) _playbackService.PlayGameMusic(game, _settings, true);
+                return;
             }
         }
 
@@ -1339,22 +1446,42 @@ namespace UniPlaySong
         {
             // Coordinator subscribes directly to SettingsService - no manual update needed
 
-            // Check if MusicState or EnableMusic changed - if so, re-evaluate playback
+            // Resolve the game to re-react against. Prefer Playnite's current selection
+            // (covers the typical "user is browsing the library" case), but fall back to
+            // whatever game UPS is currently playing music for. Without the fallback, every
+            // settings flip silently no-ops in Fullscreen until the user manually focuses a
+            // game card — which made the new theme {PluginSettings} toggles feel broken
+            // (toggle did nothing on the home view, only "woke up" after the user navigated
+            // to a game). _playbackService.CurrentGame is the most recent game music was
+            // started for, so it's a sensible substitute when SelectedGames is empty.
+            Game ResolveContextGame()
+            {
+                var sel = SelectedGames?.FirstOrDefault();
+                if (sel != null) return sel;
+                return _playbackService?.CurrentGame;
+            }
+
+            // Check if MusicState or EnableMusic changed - if so, re-react against playback
             bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
                 (e.OldSettings.MusicState != e.NewSettings.MusicState ||
                  e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
 
             if (musicSettingsChanged)
             {
-                var game = SelectedGames?.FirstOrDefault();
+                var game = ResolveContextGame();
                 if (game != null && _coordinator != null)
                 {
-                    // Re-evaluate if music should be playing with new settings
-                    if (!_coordinator.ShouldPlayMusic(game))
-                    {
-                        _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - stopping music (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic})");
-                        _playbackService?.Stop();
-                    }
+                    // Route through PlayGameMusic so the default-music fallback can fire
+                    // when EnableMusic=off + EnableDefaultMusic=on. PlayGameMusic handles
+                    // all matrix cases internally:
+                    //   EnableMusic=on  → game music (or default if no game music)
+                    //   EnableMusic=off + EnableDefaultMusic=on  → default music
+                    //   EnableMusic=off + EnableDefaultMusic=off → stop
+                    // Calling Stop() directly here would silence ambient when only Game
+                    // Music was disabled. ShouldPlayMusic specifically gates game music;
+                    // default music has independent gating inside PlayGameMusic.
+                    _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - replaying for {game.Name} (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic}, ShouldPlay: {_coordinator.ShouldPlayMusic(game)})");
+                    _playbackService?.PlayGameMusic(game, e.NewSettings, true);
                 }
                 else if (e.NewSettings?.EnableMusic == false || e.NewSettings?.MusicState == AudioState.Never)
                 {
@@ -1445,11 +1572,60 @@ namespace UniPlaySong
                     _fileLogger?.Debug($"Default music settings changed (source: {e.OldSettings.DefaultMusicSourceOption} → {e.NewSettings.DefaultMusicSourceOption}), reloading");
                     // Clear cached default song so a fresh pick happens
                     _playbackService.ClearLastDefaultMusicPath();
-                    // Replay for current game with new settings
-                    var game = SelectedGames?.FirstOrDefault();
+                    // Replay for current/last-played game with new settings
+                    var game = ResolveContextGame();
                     if (game != null)
                     {
                         _playbackService.PlayGameMusic(game, e.NewSettings, true);
+                    }
+                }
+
+                // Radio Mode toggle handler — when flipped mid-playback (theme {PluginSettings}
+                // binding or Fullscreen Extensions menu), the player must react. Without this,
+                // the current track keeps playing until natural end, then silence (no auto-
+                // advance because _isInRadioMode was never set true). PlayGameMusic only
+                // enters the radio branch on game switch, so settings-driven flips need their
+                // own kick. Mirrors the radio entry/exit logic from PlayGameMusic.
+                bool radioModeChanged = e.OldSettings.RadioModeEnabled != e.NewSettings.RadioModeEnabled;
+                if (radioModeChanged && _playbackService != null)
+                {
+                    var game = ResolveContextGame();
+                    if (e.NewSettings.RadioModeEnabled)
+                    {
+                        // false → true: enter radio directly. PlayGameMusic with
+                        // forceReload=true skips the radio branch (its check is
+                        // `RadioModeEnabled && !forceReload`), so we'd reload game
+                        // music instead of starting radio. Call StartRadioPlayback
+                        // directly, honoring the MusicOnlyForInstalledGames yield rule.
+                        bool yieldToGameMusic = false;
+                        if (game != null && e.NewSettings.MusicOnlyForInstalledGames && game.IsInstalled)
+                        {
+                            var songCount = _playbackService.CurrentGameSongCount;
+                            if (songCount > 0)
+                            {
+                                yieldToGameMusic = true;
+                                _fileLogger?.Debug($"RadioMode toggled ON via dialog, yielding to {game.Name} ({songCount} songs)");
+                            }
+                        }
+                        if (!yieldToGameMusic)
+                        {
+                            _fileLogger?.Debug("RadioMode toggled ON via dialog — starting radio");
+                            _playbackService.StartRadioPlayback(e.NewSettings);
+                        }
+                    }
+                    else
+                    {
+                        // true → false: stop radio if active, then fall back to whatever
+                        // would normally play for the current game (game music or default).
+                        _fileLogger?.Debug("RadioMode toggled OFF mid-playback — leaving radio");
+                        if (_playbackService.IsInRadioMode)
+                        {
+                            _playbackService.StopRadioMode();
+                        }
+                        if (game != null)
+                        {
+                            _playbackService.PlayGameMusic(game, e.NewSettings, true);
+                        }
                     }
                 }
             }
@@ -2169,7 +2345,15 @@ namespace UniPlaySong
                 _fileLogger,
                 () => IsFullscreen,
                 () => IsDesktop,
-                () => SelectedGames?.FirstOrDefault()
+                // Selected-game resolver with fallback. SelectedGames is empty when the
+                // user is on Aniki's Welcome Hub, on the home view between filter changes,
+                // or any other "no game card focused" state. Without the fallback,
+                // recovery handlers (HandleThemeOverlayChange, HandleLoginDismiss,
+                // HandleViewChange, HandleVideoStateChange) silently bail when the
+                // overlay/video clears, leaving the user in silence until they manually
+                // focus a game. _playbackService.CurrentGame is the most-recent game
+                // music was playing for, so it's a sensible substitute.
+                () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
             );
             _fileLogger?.Debug("MusicPlaybackCoordinator initialized");
 
@@ -2418,7 +2602,7 @@ namespace UniPlaySong
                     _fileLogger,
                     () => IsFullscreen,
                     () => IsDesktop,
-                    () => SelectedGames?.FirstOrDefault()
+                    () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
                 );
 
                 _fileLogger?.Debug($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
@@ -2479,7 +2663,8 @@ namespace UniPlaySong
 
                 _coordinator = new MusicPlaybackCoordinator(
                     _playbackService, _settingsService, Logger, _fileLogger,
-                    () => IsFullscreen, () => IsDesktop, () => SelectedGames?.FirstOrDefault()
+                    () => IsFullscreen, () => IsDesktop,
+                    () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
                 );
 
                 _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
