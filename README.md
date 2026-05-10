@@ -26,7 +26,7 @@ Built with the help of Claude Code and Cursor IDE
 
 - **"Split HES Tracks" menu action** — right-click a game with a multi-track `.hes` and pick **Chiptunes → Split HES Tracks** to break it into individual mini-HES files (one per track in the M3U). After splitting, each track shows up as its own song in UPS, so skip / shuffle / pause / random-pick all work track-by-track. Originals are preserved to `PreservedOriginals/<GameId>/` so you can roll back.
 
-- **Two new Bundled Ambient tracks from [Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — Hub OST and Login OST from the Aniki ReMake theme are now available as Bundled Ambient defaults. Pick from **Settings → Playback → Default Music Source → Bundled Ambient**.
+- **Two new Bundled Ambient tracks from [Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — Hub OST and Login OST from the Aniki ReMake theme are now available as Bundled Ambient defaults, included **with explicit permission from Mike Aniki** for distribution inside UniPlaySong. Pick from **Settings → Playback → Default Music Source → Bundled Ambient**. Full attribution in [`NOTICES.txt`](NOTICES.txt).
 
 - **Theme integration for Fullscreen** — themes can now wire toggles like "Enable Game Music" or "Radio Mode" directly to UPS using Playnite's standard `{PluginSettings}` XAML markup. Validated end-to-end against the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) theme. No extra setup needed for users; theme authors get a clean, crash-safe binding that gracefully no-ops when UPS isn't installed. Theme authors: see [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
 
