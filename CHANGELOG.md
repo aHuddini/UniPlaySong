@@ -4,7 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.4.6] - In development
+## [1.5.0] - In development
+
+Quality-of-life and integration release. Tracking against the v1.5.0 plan in `docs/dev_docs/roadmaps/FEATURE_IDEAS.md`. Detailed release notes will live in `docs/release_notes/v1.5.0-beta1.md` once the first beta ships.
+
+## [1.4.6] - 2026-05-09
 
 > Detailed release notes (test scenarios, full bug context) live in `docs/release_notes/v1.4.6-beta1.md`. Theme integration deep-dive in `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` and `docs/dev_docs/TECHNICAL_REFERENCE.md`.
 
