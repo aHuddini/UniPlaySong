@@ -405,10 +405,53 @@
 <p class="subtitle">Comprehensive collection of potential features, ranging from basic QoL improvements to ambitious experimental concepts. Check features you want to explore, then copy your selection to clipboard.</p>
 
 <div class="stats">
-  <div class="stat-card"><div class="number">175+</div><div class="label">Total Ideas</div></div>
-  <div class="stat-card"><div class="number" style="color: var(--low);">62+</div><div class="label">Shipped</div></div>
+  <div class="stat-card"><div class="number">187+</div><div class="label">Total Ideas</div></div>
+  <div class="stat-card"><div class="number" style="color: var(--low);">84+</div><div class="label">Shipped</div></div>
   <div class="stat-card"><div class="number">37</div><div class="label">Quick Wins Left</div></div>
   <div class="stat-card"><div class="number">18</div><div class="label">High Value</div></div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.5.0 (in development)</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Settings Backup tab (JSON Import/Export + Markdown Snapshot) <span class="version">v1.5.0</span></span>
+    <span class="shipped-chip">Randomize bundled track every startup (Default Music Randomization) <span class="version">v1.5.0</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.4.6</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">PC Engine / TurboGrafx-16 (.hes) chiptune support <span class="version">v1.4.6</span></span>
+    <span class="shipped-chip">"Split HES Tracks" menu action <span class="version">v1.4.6</span></span>
+    <span class="shipped-chip">{PluginSettings} quick-options framework (Aniki ReMake validated) <span class="version">v1.4.6</span></span>
+    <span class="shipped-chip">Two Bundled Ambient tracks from Mike Aniki (Hub OST + Login OST) <span class="version">v1.4.6</span></span>
+    <span class="shipped-chip">Enable Game Music + Enable Default Music toggles in Fullscreen Extensions menu <span class="version">v1.4.6</span></span>
+    <span class="shipped-chip">LGPL §6 paperwork for bundled GME <span class="version">v1.4.6</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.4.5</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">yt-dlp version display in Settings → Downloads <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">Fullscreen search-variant buttons (OST/Soundtrack/Music/Theme) <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">FINISH button in download dialog <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">YouTube downloads ~30-50% faster <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">Cookie mode + Deno = audio-only (~2x faster) <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">"Open Music Folder" handle leak fix <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">Cookie mode no longer breaks downloads without Deno <span class="version">v1.4.5</span></span>
+    <span class="shipped-chip">Album selection no longer triggers 5x network requests <span class="version">v1.4.5</span></span>
+  </div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.4.4</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">SNES (.spc) advertised as supported <span class="version">v1.4.4</span></span>
+    <span class="shipped-chip">Desktop YouTube preview fix (%TEMP% scanning) <span class="version">v1.4.4</span></span>
+    <span class="shipped-chip">yt-dlp preview error visibility <span class="version">v1.4.4</span></span>
+  </div>
 </div>
 
 <div class="shipped-section">
@@ -572,7 +615,7 @@
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Gapless Playback</td><td class="feature-desc">Eliminate silence between tracks for continuous-mix soundtracks. Pre-buffer next track via <code>PreLoad()</code> infrastructure that already exists. Industry standard.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Crossfade Between Games</td><td class="feature-desc">Overlap fade-out/fade-in when switching games instead of silence gap. PS Store and Spotify do this. Existing MusicFader infrastructure supports this.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Crossfade Between Games</s> <span class="badge badge-shipped">Shipped v1.4.3</span></td><td class="feature-desc"><s>Overlap fade-out/fade-in when switching games instead of silence gap.</s> <strong>Shipped v1.4.3 — <code>EnableTrueCrossfade</code> setting + dedicated <code>CrossfadeCoordinator</code> service in <code>src/Services/CrossfadeCoordinator.cs</code>.</strong></td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Sleep Timer</td><td class="feature-desc">Auto-stop music after configurable minutes. Common in Spotify/podcasts. Simple countdown calling <code>Stop()</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback Queue / Up Next</td><td class="feature-desc">Queue specific songs across games. "Add to queue" from right-click or dashboard. Persists across game selection.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Bookmarking / Favorites</td><td class="feature-desc">Star songs across your library. Saved as a flat JSON manifest <code>favorites.json</code> (cross-game, filename-keyed). "Favorites" appears as a new pool-based default music source alongside Custom Folder / Random Game. Context menu on any song row. Like FFXIV's jukebox.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
@@ -588,11 +631,11 @@
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Startup Delay Option</td><td class="feature-desc">Configurable delay before music starts after Playnite launch.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Non-Destructive Trim Presets</td><td class="feature-desc">Save start/end points per song without modifying the file. Playback respects trim points via <code>LoadAndPlayFileFrom()</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Skip Short Files</td><td class="feature-desc">Skip files under a configurable duration (e.g., &lt;5s). Catches jingles/sound effects that accidentally got downloaded.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Default Music Randomization</td><td class="feature-desc">When using bundled presets, randomly pick which preset plays instead of always the same one.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Default Music Randomization</s> <span class="badge badge-shipped">Shipped v1.5.0</span></td><td class="feature-desc"><s>When using bundled presets, randomly pick which preset plays instead of always the same one.</s> <strong>Shipped v1.5.0 as "Randomize bundled track every startup" — once-per-session pick (consistent across game switches).</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Configurable Now Playing Format</td><td class="feature-desc">Let users choose display format: "Title - Artist", "Artist: Title", "Title (Game)", "Title only". Dropdown in settings.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">A-B Repeat / Loop Section</td><td class="feature-desc">Set loop points within a song to repeat a specific section. Useful for enjoying specific parts of long tracks. Common in foobar2000, Winamp.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Replay Current Song</td><td class="feature-desc">One-click "play again from start" without navigating menus. Standard back-skip-to-restart behavior.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Fade to Pause</td><td class="feature-desc">Instead of instant pause, fade out over ~0.5s then pause. Fade back in on resume. Uses existing <code>MusicFader</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Fade to Pause</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>Instead of instant pause, fade out over ~0.5s then pause. Fade back in on resume.</s> <strong>Shipped — <code>MusicFader.Pause()</code> ramps volume to 0 over <code>FadeOutDuration</code>, then triggers underlying player's <code>Pause()</code>. Symmetric resume. Default since pre-v1.3.x.</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Song Intro Skip</td><td class="feature-desc">Auto-skip the first N seconds of songs (configurable). Many game OST rips have long silent intros.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Ducking During Selection</td><td class="feature-desc">Briefly lower music volume when rapidly browsing games. Restore when user stops on a game. Prevents audio chaos.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Playback Memory Across Sessions</td><td class="feature-desc">Remember which song was playing when Playnite closed. Resume exact state on next launch. Like Spotify session restore.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
@@ -777,7 +820,7 @@
 <table data-category="v1.4+ Chiptune Follow-Ups">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Session Auto-Play Lock (Desktop)</td><td class="feature-desc">User manually starts music once via top panel → game switches auto-play for the rest of the session (until Playnite closes). New <code>AutoPlayOnFirstLaunchDesktop</code> setting gates <code>ShouldPlayMusic</code> via a session flag. Design deferred to v1.5 in <code>POTENTIAL_ISSUES.md</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Session Auto-Play Lock (Desktop)</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>User manually starts music once via top panel → game switches auto-play for the rest of the session (until Playnite closes).</s> <strong>Shipped — <code>AutoPlayOnFirstLaunchDesktop</code> setting + <code>UserHasManuallyStartedThisSession</code> flag on the playback service gate <code>ShouldPlayMusic</code> in Desktop mode exactly as designed. Sticky-on after first manual press; resets on Playnite restart.</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Multi-Track Manager Generalization</td><td class="feature-desc">NSF Track Manager dialog is a near-perfect template for any multi-track chiptune format. Generalize to <code>ChiptuneTrackManagerDialog</code> accepting per-format header patcher delegates. Same dialog for <code>.gbs</code>, <code>.spc</code>, <code>.hes</code>, <code>.kss</code>, <code>.sap</code>, <code>.ay</code>.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Combined Chiptune Loop Manifest</td><td class="feature-desc">Generalize <code>nsf-loops.json</code> to <code>chiptune-loops.json</code> so all GME-playable formats share the override mechanism. Trivial extension of the existing <code>NsfLoopManifest</code> lookup in <code>GmeReader</code>.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Diagnose Corrupt Chiptune Files on Load</td><td class="feature-desc">When <code>GmeReader</code> fails to open a file, surface a clear log line distinguishing file corruption vs. unsupported chip vs. missing GME native DLL. Mirrors the yt-dlp DLL-diagnostic pattern from v1.4.3.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
@@ -810,7 +853,7 @@
 <table data-category="v1.4+ Settings">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Settings Import/Export (JSON)</td><td class="feature-desc">Export all UPS settings (excluding machine-specific tool paths) to a shareable JSON file. Import on new machine or backup. Uses existing <code>JsonConvert.SerializeObject</code> from global-reset path. Users keep asking for this when migrating Playnite installs.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Settings Import/Export (JSON)</s> <span class="badge badge-shipped">Shipped v1.5.0</span></td><td class="feature-desc"><s>Export all UPS settings (excluding machine-specific tool paths) to a shareable JSON file. Import on new machine or backup.</s> <strong>Shipped v1.5.0 as Settings Backup tab — includes both JSON export/import AND a Markdown human-readable snapshot for sharing in support requests. Path-sanitized for safe sharing.</strong></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Settings Profiles</td><td class="feature-desc">Save named settings snapshots, switch between them. "Streaming", "Casual browsing", "Late night". One-click profile swap. Built on export/import.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Per-Settings Help Tooltips</td><td class="feature-desc">Tooltip <em>?</em> icon next to each setting showing a richer description than the inline one-liner. For settings with subtle effects.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 </tbody>
@@ -840,6 +883,44 @@
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">"Music Only" Game Filter Button</td><td class="feature-desc">One-click Playnite filter: "games that have UPS music downloaded". Auto-tag games on first download, filter via Playnite's native filter UI.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Loop Boundary Detection</td><td class="feature-desc">Auto-detect natural loop points using autocorrelation over the waveform. Reduces need for manual loop editing. Applies to chiptune + MP3/FLAC.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Tracklist Export to Markdown / PDF</td><td class="feature-desc">Per-game markdown file listing all songs with durations + any custom loop overrides. Useful for sharing setups or documenting your collection.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="category-icon">&#10024;</span> v1.5+ Opportunities <span class="count">(12 ideas)</span></h2>
+<p class="subtitle" style="margin-top: -1rem; margin-bottom: 1rem;">Brainstormed during the v1.4.6 cycle and audited against the live codebase to confirm none duplicate existing functionality. Categorized by flavor.</p>
+
+<h3 style="margin-top: 1.5rem;">&#127881; Creative / Fun</h3>
+<table data-category="v1.5+ Creative">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Boot Stinger Per Console / Decade</td><td class="feature-desc">Generation-appropriate "console boot" sound when selecting a game from a specific platform (Sega Genesis cry, SNES Mode 7 swoosh, PSX diamond chime). Plays before the game's music fades in. Toggle off by default; sub-menu to opt platforms in. Uses existing JingleService framework + <code>game.Platforms</code> metadata.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Now Playing Marquee Themed by Game Era</td><td class="feature-desc">Now Playing ticker visual style adapts to currently-playing game's era. 80s arcade → CRT scanlines + neon glow. 90s console → pixel font + cyan-on-black. Modern AAA → clean Helvetica. PS1 → wobbly low-poly text. Driven by <code>game.ReleaseYear</code>. Ships as small set of WPF resource dictionaries.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Game Music DJ Mix Export</td><td class="feature-desc">After a Playnite session, export a continuous MP3/M4A "DJ mix" of every song UPS played, with crossfades, in chronological order. Saved to <code>Mixes/</code>. Built on existing FFmpeg integration (concat + crossfade filter) + <code>OnSongChanged</code> tracking. Auto-trim or session-end "Save?" prompt to avoid bloat.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top: 1.5rem;">&#128736; Basic / Quality-of-Life</h3>
+<table data-category="v1.5+ QoL">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Right-click song → "Lock as #1 in Custom Rotation"</td><td class="feature-desc">Discoverability fix for the existing Custom Rotation default-music source. Right-click any song row → one-click adds parent game to Custom Rotation pool, with optional "pin to top". Pairs with Drag-Drop Reorder.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Drag-Drop Reorder for Custom Rotation Pool</td><td class="feature-desc">WPF <code>ListBox</code> drag-drop attached properties + ↑/↓ row buttons on the existing CustomRotationGameIds setting. Lets users pin favorites to the top of the rotation cycle. Pure UI tweak, no backend change.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Per-Song Skip Memory (opt-in)</td><td class="feature-desc">When user manually skips a song mid-playback, remember it in a session-scoped HashSet. UPS won't re-pick that song until restart. <strong>Opt-in</strong>; off by default. <strong>Visible</strong> via small <code>(N skipped)</code> counter in top panel — click to see list and un-skip. Auto-clears at restart; "Clear skip memory" button available. Distinct from the permanent per-game "Don't Play This Song" idea.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">"Queue Next Game's Music" in Radio Mode</td><td class="feature-desc">Single-slot queue for Radio Mode only. Right-click a game → "Queue this game next in radio." When current radio song ends, UPS plays from the queued game's pool for one cycle, then resumes radio. Standard playback uses game-selection as the queue, so this only makes sense in radio mode.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Restore Last Volume on Restart</td><td class="feature-desc">Close the gap where live volume slider changes (during playback) don't always persist back to settings on shutdown. Write current player volume back at <code>OnApplicationStopped</code>, or every N seconds while idle. Small but high-frequency annoyance fix.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top: 1.5rem;">&#128268; Novel / Functional</h3>
+<table data-category="v1.5+ Novel">
+<thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
+<tbody>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Now Playing as a Browser Window / Web Endpoint</td><td class="feature-desc">UPS optionally serves a tiny HTML page on <code>localhost:&lt;port&gt;/now-playing</code> showing current song, game cover, and a CSS-only visualizer, auto-refreshed via server-sent events. Drop the URL into OBS as a Browser Source. Open in a browser tab as second-screen "always visible" playback view. Builds on the External Control Service (shipped v1.3.7-v1.3.10). Subsumes the OBS Text File Export idea.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">MIDI Controller Input for Playback</td><td class="feature-desc">Map a MIDI controller's transport buttons (play/pause/skip) and rotary encoder (volume, scrub) to UPS playback via MIDI input. Any cheap USB MIDI controller becomes a tactile UPS remote. <code>NAudio.Midi</code> (already a dependency) handles input enumeration; ~50 lines to listen for control-change/note-on events. Niche audience but unique to UPS.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Auto-Generate <code>.m3u</code> Playlists per Custom Filter</td><td class="feature-desc">When user creates a Playnite filter (e.g. "Genre = RPG, Era = 90s"), UPS detects it and writes a corresponding <code>.m3u</code> to a configurable folder. Re-writes as filter changes. Outputs are usable in foobar2000, VLC, Winamp. Combines existing Filter Mode detection + M3U Export (shipped v1.3.2). User never opens UPS to manage these.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">System Tray Mini-Mode</td><td class="feature-desc">Optionally minimize Playnite to the tray and run UPS as a tray-only audio process. Right-click menu has play/pause/skip/volume/now-playing-song. Useful for users who want UPS as their everyday music player. Built on Music Library Dashboard (shipped) + <code>H.NotifyIcon</code> NuGet. Existing top-panel media controls already implement most of the menu logic.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Game-Aware Hue / Razer Chroma Lighting Sync</td><td class="feature-desc">Map UPS's <code>VisualizationDataProvider</code> FFT output to peripheral RGB lighting via Philips Hue Sync API or Razer Chroma SDK. Bass hits = red flash on keyboard. Treble shimmer = blue ripple on mousepad. Game cover dominant color (<code>GameColorExtractor</code>, already exists for Dynamic visualizer) sets base hue when no audio plays. HTTP APIs, no DLL loading.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 </tbody>
 </table>
 
@@ -936,13 +1017,23 @@
 <h2 style="border-bottom-color: var(--low);">&#9733; Priority Recommendations</h2>
 
 <div class="priority-section quick-wins">
-<h3>&#9889; Quick Wins (Low effort, ship fast) &mdash; 31 remaining</h3>
+<h3>&#9889; Quick Wins (Low effort, ship fast) &mdash; 37 remaining</h3>
 <ol>
+<li><s>Settings Import/Export (JSON)</s> <span class="badge badge-shipped">Shipped v1.5.0</span> — as Settings Backup tab with both JSON + Markdown export</li>
+<li>Song Bookmarking / Favorites (cross-game starring)</li>
+<li>Per-File Loop Override for non-NSF chiptune formats</li>
+<li>Top Panel Tooltip Shows Current Auto-Play Mode</li>
+<li>Scrobbling (Last.fm / ListenBrainz)</li>
+<li>Restore Last Volume on Restart <span style="color: var(--accent2);">(v1.5+)</span></li>
+<li>Right-click song → "Lock as #1 in Custom Rotation" <span style="color: var(--accent2);">(v1.5+)</span></li>
+<li>"Queue Next Game's Music" in Radio Mode <span style="color: var(--accent2);">(v1.5+)</span></li>
+<li>Drag-Drop Reorder for Custom Rotation Pool <span style="color: var(--accent2);">(v1.5+)</span></li>
+<li>Per-Song Skip Memory (opt-in, with visible counter) <span style="color: var(--accent2);">(v1.5+)</span></li>
+<li>Auto-Generate <code>.m3u</code> Playlists per Custom Filter <span style="color: var(--accent2);">(v1.5+)</span></li>
 <li>Gapless playback</li>
 <li>Per-game effects presets</li>
 <li>OBS text file export</li>
 <li>Sleep timer</li>
-<li>Fade to pause</li>
 <li>Don't Play This Song skip list</li>
 <li>"Surprise Me" button</li>
 <li>Playback memory across sessions</li>

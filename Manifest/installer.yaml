@@ -7,7 +7,8 @@ Packages:
     Changelog:
       - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS configuration to a portable JSON file for backup or migration to another machine. Re-import on the new machine and your audio settings are restored.'
       - '[New Feature] Markdown snapshot export — generate a human-readable .md file of your UPS configuration for sharing in GitHub issues / Discord support requests / personal notes. Includes game-count / music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths sanitized to %AppData%-style placeholders for safe sharing.'
-      - '[New Feature] Randomize bundled track every startup (Settings -> Playback) — when enabled, UPS picks a random bundled ambient preset at each Playnite startup. Stays consistent across game switches within the session; each new session rolls a fresh pick.'
+      - '[New Feature] Randomize bundled track every startup (Settings -> Playback) — when enabled, UPS picks a random bundled ambient preset at each Playnite startup. Stays consistent across game switches within the session; each new session rolls a fresh pick. Anti-repeat: avoids picking the same preset two sessions in a row.'
+      - '[New Feature] Calm Down Mode (Fullscreen Extensions menu) — applies a low-pass filter + volume drop with a smooth 1.5s S-curve fade, useful for late-night browsing. Bindable from theme XAML via {PluginSettings Plugin=UniPlaySong, Path=CalmDownModeEnabled, Mode=TwoWay}. Auto-promotes the player backend to NAudio when toggled on so SDL2 users don''t need to enable Live Effects first.'
   - Version: 1.4.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-05-09

@@ -22,6 +22,10 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.5.0 (in development)
 
+- **Calm Down Mode** — new toggle in the Fullscreen Extensions menu (and now bindable from any theme that supports the `{PluginSettings}` markup) that gradually muffles + dims the music with a low-pass filter and volume drop, fading over ~1.5 seconds. Use it for late-night browsing when you want the music gently dialed back without stopping it. Auto-switches the audio backend if needed; no song restart, no glitches.
+
+- **Randomize bundled track every startup** — new checkbox in Settings → Playback (under the Bundled Ambient picker). When enabled, UPS picks a random bundled preset at each Playnite startup, keeps it consistent across game switches during the session, and rolls a fresh pick next session. Won't pick the same preset two sessions in a row.
+
 - **Settings Backup tab** — new Settings → Backup tab with two export modes. **JSON export** creates a portable backup of your UPS configuration that you can re-import on another machine or after a Playnite reinstall (machine-specific paths like yt-dlp / FFmpeg are excluded so they don't overwrite your local config). **Markdown snapshot** generates a human-readable summary you can paste into GitHub issues, Discord support requests, or save for personal reference — includes game count, music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths in the Markdown are automatically sanitized (`%AppData%`, `%UserProfile%`, etc.) so you can safely share without leaking your Windows username.
 
 ### Previous Version
