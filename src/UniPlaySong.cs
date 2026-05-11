@@ -238,6 +238,7 @@ namespace UniPlaySong
 
                 // Initialize bundled preset and jingle services
                 Services.BundledPresetService.Initialize(extensionPath);
+                Services.BundledPresetService.SetPersistSettingsCallback(s => SavePluginSettings(s));
                 Services.BundledJingleService.Initialize(extensionPath);
             }
             catch
@@ -1564,12 +1565,20 @@ namespace UniPlaySong
                     e.OldSettings.DefaultMusicPath != e.NewSettings.DefaultMusicPath ||
                     e.OldSettings.DefaultMusicFolderPath != e.NewSettings.DefaultMusicFolderPath ||
                     e.OldSettings.SelectedBundledPreset != e.NewSettings.SelectedBundledPreset ||
+                    e.OldSettings.RandomizeBundledTrackOnStartup != e.NewSettings.RandomizeBundledTrackOnStartup ||
                     e.OldSettings.EnableDefaultMusic != e.NewSettings.EnableDefaultMusic ||
                     !RotationIdsEqual(e.OldSettings.CustomRotationGameIds, e.NewSettings.CustomRotationGameIds);
 
                 if (defaultMusicChanged && _playbackService != null)
                 {
                     _fileLogger?.Debug($"Default music settings changed (source: {e.OldSettings.DefaultMusicSourceOption} → {e.NewSettings.DefaultMusicSourceOption}), reloading");
+                    // v1.5.0: if the randomize flag changed, clear the session pick so a fresh
+                    // roll happens on the next GetEffectivePresetFilename call. Without this,
+                    // toggling OFF then ON would re-use the stale cached random pick.
+                    if (e.OldSettings.RandomizeBundledTrackOnStartup != e.NewSettings.RandomizeBundledTrackOnStartup)
+                    {
+                        Services.BundledPresetService.ResetSessionRandomPick();
+                    }
                     // Clear cached default song so a fresh pick happens
                     _playbackService.ClearLastDefaultMusicPath();
                     // Replay for current/last-played game with new settings

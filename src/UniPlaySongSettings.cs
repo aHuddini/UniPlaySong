@@ -975,6 +975,7 @@ namespace UniPlaySong
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
         private bool randomizeBundledTrackOnStartup = false; // v1.5.0: pick a random bundled preset once at Playnite startup
+        private string lastRandomizedBundledPreset = string.Empty; // v1.5.0: tracks the last session's random pick so the next session can avoid repeating it
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
         private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true as of v1.4.2 — most users want a persistent backdrop)
@@ -1160,6 +1161,19 @@ namespace UniPlaySong
                 randomizeBundledTrackOnStartup = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
+            }
+        }
+
+        // v1.5.0: remembers the last session's random pick so the next session can
+        // avoid repeating it. Persisted across sessions; only updated when the random
+        // picker actually rolls (not when the user manually picks).
+        public string LastRandomizedBundledPreset
+        {
+            get => lastRandomizedBundledPreset;
+            set
+            {
+                lastRandomizedBundledPreset = value ?? string.Empty;
+                OnPropertyChanged();
             }
         }
 

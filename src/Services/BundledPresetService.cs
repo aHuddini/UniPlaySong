@@ -38,7 +38,20 @@ namespace UniPlaySong.Services
         // across game switches so the ambient track stays consistent. Cleared on
         // Initialize() — i.e. on Playnite startup — so each new session re-randomizes.
         private static string _sessionRandomPresetFilename;
-        private static readonly Random _random = new Random();
+        // Seed from Guid so consecutive Playnite restarts (which can happen within the
+        // same Environment.TickCount window) don't roll the same seed and pick the same
+        // preset. new Random() defaults to TickCount which collides on fast restarts.
+        private static readonly Random _random = new Random(Guid.NewGuid().GetHashCode());
+
+        // Callback for persisting settings after a fresh random pick. Wired up by
+        // UniPlaySong during construction so the service stays decoupled from the
+        // plugin/Playnite SDK. Without persistence, LastRandomizedBundledPreset
+        // wouldn't survive Playnite restart, defeating the anti-repeat logic.
+        private static Action<UniPlaySongSettings> _persistSettingsCallback;
+        public static void SetPersistSettingsCallback(Action<UniPlaySongSettings> callback)
+        {
+            _persistSettingsCallback = callback;
+        }
 
         // Loads presets from the DefaultMusic folder inside the extension install directory.
         // Call once at startup with the extension install path.
@@ -131,8 +144,37 @@ namespace UniPlaySong.Services
                 return settings.SelectedBundledPreset;
             }
 
-            _sessionRandomPresetFilename = presets[_random.Next(presets.Count)].File;
+            // Avoid repeating the previous session's pick when more than one preset
+            // is available. This makes "random" feel actually random to the user —
+            // without it, a 6-preset pool has ~17% chance of repeat each session.
+            string previousPick = settings.LastRandomizedBundledPreset;
+            List<BundledPresetInfo> candidates;
+            if (!string.IsNullOrEmpty(previousPick) && presets.Count > 1)
+            {
+                candidates = presets.Where(p => !string.Equals(p.File, previousPick, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (candidates.Count == 0) candidates = presets; // Shouldn't happen but be safe
+            }
+            else
+            {
+                candidates = presets;
+            }
+
+            _sessionRandomPresetFilename = candidates[_random.Next(candidates.Count)].File;
+            // Persist for next session's repeat-avoidance. Setter fires PropertyChanged
+            // but the change isn't user-meaningful so the diff handler ignores it.
+            settings.LastRandomizedBundledPreset = _sessionRandomPresetFilename;
+            try { _persistSettingsCallback?.Invoke(settings); } catch { /* persistence best-effort */ }
             return _sessionRandomPresetFilename;
+        }
+
+        // v1.5.0: clears the cached session random pick so the next call to
+        // GetEffectivePresetFilename re-rolls. Called by the settings-change handler
+        // when RandomizeBundledTrackOnStartup is toggled so each toggle ON gets a
+        // fresh roll (instead of reusing a stale cached pick from earlier in the
+        // session).
+        public static void ResetSessionRandomPick()
+        {
+            _sessionRandomPresetFilename = null;
         }
     }
 }
