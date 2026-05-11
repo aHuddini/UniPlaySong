@@ -173,7 +173,7 @@ namespace UniPlaySong.Services
             sb.AppendLine($"- Total games tracked: {totalGamesTracked}");
             sb.AppendLine($"- Games with music: {gamesWithMusic}");
             sb.AppendLine($"- Total music storage: {FormatBytes(totalMusicStorageBytes)}");
-            sb.AppendLine($"- Music folder: `{musicFolderPath ?? "(not set)"}`");
+            sb.AppendLine($"- Music folder: `{SanitizePath(musicFolderPath)}`");
             sb.AppendLine();
 
             // --- Music Playback ---
@@ -234,11 +234,11 @@ namespace UniPlaySong.Services
 
             // --- Tool Paths ---
             sb.AppendLine("## Tool Paths (this machine)");
-            sb.AppendLine($"- yt-dlp: `{settings.YtDlpPath ?? "(not set)"}` {ValidatePath(settings.YtDlpPath)}");
-            sb.AppendLine($"- FFmpeg: `{settings.FFmpegPath ?? "(not set)"}` {ValidatePath(settings.FFmpegPath)}");
+            sb.AppendLine($"- yt-dlp: `{SanitizePath(settings.YtDlpPath)}` {ValidatePath(settings.YtDlpPath)}");
+            sb.AppendLine($"- FFmpeg: `{SanitizePath(settings.FFmpegPath)}` {ValidatePath(settings.FFmpegPath)}");
             if (!string.IsNullOrWhiteSpace(settings.CustomCookiesFilePath))
             {
-                sb.AppendLine($"- Cookies file: `{settings.CustomCookiesFilePath}` {ValidatePath(settings.CustomCookiesFilePath)}");
+                sb.AppendLine($"- Cookies file: `{SanitizePath(settings.CustomCookiesFilePath)}` {ValidatePath(settings.CustomCookiesFilePath)}");
             }
             sb.AppendLine();
 
@@ -313,6 +313,60 @@ namespace UniPlaySong.Services
         {
             if (string.IsNullOrWhiteSpace(path)) return "(not set)";
             return File.Exists(path) ? "✓ Found" : "✗ Not Found";
+        }
+
+        // Sanitize a path for human-readable Markdown export: replace user-specific
+        // prefixes with environment variable placeholders so users can safely share
+        // the snapshot without leaking their Windows username or custom install
+        // location. The placeholders are conventional (%AppData%, %UserProfile%) and
+        // recognizable to anyone reading a support request.
+        //
+        // Replacement order matters — longest prefix first so we match the most
+        // specific known path before falling back to a shorter prefix.
+        private static string SanitizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return "(not set)";
+
+            try
+            {
+                var roamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+                // Most specific replacements first (longer paths) to avoid partial-match
+                // surprises (e.g. UserProfile is a prefix of AppData; if we replaced
+                // UserProfile first we'd never get the more-specific %AppData% token).
+                var replacements = new[]
+                {
+                    (roamingAppData, "%AppData%"),
+                    (localAppData, "%LocalAppData%"),
+                    (programFilesX86, "%ProgramFiles(x86)%"),
+                    (programFiles, "%ProgramFiles%"),
+                    (userProfile, "%UserProfile%"),
+                };
+
+                foreach (var (prefix, token) in replacements)
+                {
+                    if (string.IsNullOrEmpty(prefix)) continue;
+                    if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return token + path.Substring(prefix.Length);
+                    }
+                }
+
+                // Path doesn't match a known user-specific prefix (e.g. it's on D:\Tools\)
+                // — return as-is. Drives like D:\Games\ don't leak the username.
+                return path;
+            }
+            catch
+            {
+                // If anything goes wrong (rare — only Environment.GetFolderPath can throw),
+                // fall back to returning the path unchanged. Better to show a slightly
+                // un-sanitized path than crash the Markdown export.
+                return path;
+            }
         }
 
         private static string FormatBytes(long bytes)
