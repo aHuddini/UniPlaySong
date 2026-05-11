@@ -8,6 +8,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 Quality-of-life and integration release. Tracking against the v1.5.0 plan in `docs/dev_docs/roadmaps/FEATURE_IDEAS.md`. Detailed release notes will live in `docs/release_notes/v1.5.0-beta1.md` once the first beta ships.
 
+### Added
+
+- **Settings Backup tab** (Settings → Backup) — export your UPS configuration to a portable file and re-import on another machine or after a Playnite reinstall. Two formats:
+  - **JSON Export / Import** — portable, re-importable backup. Excludes machine-specific values (tool paths for yt-dlp / FFmpeg, custom default music file/folder paths, custom cookies file, Custom Rotation game IDs) so imports don't overwrite your local-only configuration. Includes a `_meta` header with the source UPS version; imports from a different version prompt a confirm dialog. Same `JsonConvert.SerializeObject` + `PopulateObject` round-trip used by the existing global-reset path.
+  - **Markdown Snapshot** — one-way human-readable snapshot for sharing in GitHub issues, Discord support channels, or personal notes. Includes derived stats (total games tracked, games with music, total music storage), tool-path validation status (✓ Found / ✗ Not Found), and a "Diff from defaults" table built via reflection. User-specific path prefixes sanitized to environment placeholders (`%AppData%`, `%UserProfile%`, etc.) so snapshots can be pasted into public discussions without leaking the user's Windows username. Sensitive fields like API keys would be redacted as `*****` (mechanism in place, list grows as features land).
+  - Both exports use Playnite SDK file dialogs (`Dialogs.SaveFile`, `Dialogs.SelectFile`) for consistent UI theming.
+  - New `src/Services/SettingsBackupService.cs` (static class, ~400 lines) + new Backup tab in `UniPlaySongSettingsView.xaml` + click handlers in the code-behind. Two new public methods on the plugin (`ApplyImportedSettings`, `GetSnapshotStats`).
+
 ## [1.4.6] - 2026-05-09
 
 > Detailed release notes (test scenarios, full bug context) live in `docs/release_notes/v1.4.6-beta1.md`. Theme integration deep-dive in `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` and `docs/dev_docs/TECHNICAL_REFERENCE.md`.

@@ -20,22 +20,12 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.4.6
+## What's New - v1.5.0 (in development)
 
-- **NEC TurboGrafx-16 / PC Engine music support (.hes)** — drop a `.hes` file plus its sibling `.m3u` playlist into a game's music folder and UPS will play through every track listed in the playlist instead of stopping after the first. The `.m3u` is **required** to identify which tracks exist (the HES format itself doesn't store a track count); standard ripped `.hes` packs from Zophar's Domain and VGMRips already include one.
-
-- **"Split HES Tracks" menu action** — right-click a game with a multi-track `.hes` and pick **Chiptunes → Split HES Tracks** to break it into individual mini-HES files (one per track in the M3U). After splitting, each track shows up as its own song in UPS, so skip / shuffle / pause / random-pick all work track-by-track. Originals are preserved to `PreservedOriginals/<GameId>/` so you can roll back.
-
-- **Two new Bundled Ambient tracks from [Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — Hub OST and Login OST from the Aniki ReMake theme are now available as Bundled Ambient defaults, included **with explicit permission from Mike Aniki** for distribution inside UniPlaySong. Pick from **Settings → Playback → Default Music Source → Bundled Ambient**. Full attribution in [`NOTICES.txt`](NOTICES.txt).
-
-- **Theme integration for Fullscreen** — themes can now wire toggles like "Enable Game Music" or "Radio Mode" directly to UPS using Playnite's standard `{PluginSettings}` XAML markup. Validated end-to-end against the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) theme. No extra setup needed for users; theme authors get a clean, crash-safe binding that gracefully no-ops when UPS isn't installed. Theme authors: see [`docs/dev_docs/THEME_INTEGRATION_GUIDE.md`](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
-
-- **"Enable Game Music" and "Enable Default Music" toggles** added to the Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) so you can flip music layers on/off with a controller from any theme. Toggle only Game Music off to leave ambient music playing as a fallback; toggle both off for full silence.
-
-- **New PluginSettings quick-options framework, validated with Aniki ReMake** — the four bindable audio toggles (Enable Game Music, Enable Default Music, Radio Mode, Play Only on Game Select) now react reliably in real time when flipped from a theme's quick-options panel, including across game switches and after a theme overlay clears.
+- **Settings Backup tab** — new Settings → Backup tab with two export modes. **JSON export** creates a portable backup of your UPS configuration that you can re-import on another machine or after a Playnite reinstall (machine-specific paths like yt-dlp / FFmpeg are excluded so they don't overwrite your local config). **Markdown snapshot** generates a human-readable summary you can paste into GitHub issues, Discord support requests, or save for personal reference — includes game count, music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths in the Markdown are automatically sanitized (`%AppData%`, `%UserProfile%`, etc.) so you can safely share without leaking your Windows username.
 
 ### Previous Version
-- **v1.4.5**: Faster YouTube previews and downloads (~30-50%), cookie-mode tip for ~2x faster downloads with audio-only streams, yt-dlp version display in Settings, Fullscreen search-term buttons, FINISH button in download dialog, several download-dialog and process-handle fixes.
+- **v1.4.6**: NEC TurboGrafx-16 / PC Engine (.hes) chiptune support, "Split HES Tracks" menu action, two new Bundled Ambient tracks from Mike Aniki (Hub OST + Login OST, included with composer's explicit permission), `{PluginSettings}` theme integration framework validated against Aniki ReMake, paired `Enable Game Music` + `Enable Default Music` toggles in the Fullscreen Extensions menu, LGPL §6 paperwork for the bundled GME chiptune library.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

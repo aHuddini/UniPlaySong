@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-05-10
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.0/UniPlaySong-1_5_0-May10_2026.pext'
+    Changelog:
+      - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS configuration to a portable JSON file for backup or migration to another machine. Re-import on the new machine and your audio settings are restored.'
+      - '[New Feature] Markdown snapshot export — generate a human-readable .md file of your UPS configuration for sharing in GitHub issues / Discord support requests / personal notes. Includes game-count / music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths sanitized to %AppData%-style placeholders for safe sharing.'
   - Version: 1.4.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-05-09
