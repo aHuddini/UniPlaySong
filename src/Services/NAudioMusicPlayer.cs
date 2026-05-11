@@ -34,6 +34,7 @@ namespace UniPlaySong.Services
         // Persistent infrastructure (created once on first Load, never stopped until Dispose)
         private WaveOutEvent _outputDevice;
         private MixingSampleProvider _mixer;
+        private CalmDownProcessor _calmDownProcessor;
         private SmoothVolumeSampleProvider _volumeProvider;
         private bool _persistentLayerInitialized;
 
@@ -127,8 +128,14 @@ namespace UniPlaySong.Services
 
             _mixer = new MixingSampleProvider(MixerFormat) { ReadFully = true };
 
+            // v1.5.0: CalmDownProcessor sits post-mixer, pre-volume. It applies a
+            // low-pass + volume attenuation when CalmDownModeEnabled is set, with
+            // an internal S-curve ramp on toggle. Independent of LiveEffectsEnabled —
+            // works whether or not the per-song EffectsChain is doing anything.
+            _calmDownProcessor = new CalmDownProcessor(_mixer, _settingsService);
+
             _volumeProvider = new SmoothVolumeSampleProvider(
-                _mixer,
+                _calmDownProcessor,
                 getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
                 getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
 
@@ -156,6 +163,7 @@ namespace UniPlaySong.Services
                     _outputDevice = null;
                 }
                 _mixer = null;
+                _calmDownProcessor = null;
                 _volumeProvider = null;
                 _persistentLayerInitialized = false;
                 _fileLogger?.Debug("[NAudio] TearDownPersistentLayer complete");

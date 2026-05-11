@@ -40,16 +40,17 @@ For toggleable user settings (enable/disable music, radio mode, etc.), Playnite'
                                      Path=EnableMusic, Mode=TwoWay}"/>
 ```
 
-UPS exposes its settings object under `Plugin=UniPlaySong, SettingsRoot=Settings`, so any property on `UniPlaySongSettings` is bindable directly via `Path=<PropertyName>`. The four most-toggled settings:
+UPS exposes its settings object under `Plugin=UniPlaySong, SettingsRoot=Settings`, so any property on `UniPlaySongSettings` is bindable directly via `Path=<PropertyName>`. The five most-toggled settings:
 
-| `Path=` value | Type | Behavior when set false |
+| `Path=` value | Type | Behavior when set true (or false) |
 |---|---|---|
-| `EnableMusic` | bool | Game-specific music stops. Default music continues if `EnableDefaultMusic` is true (UPS's longstanding fallback behavior — toggle both off for full silence). |
-| `EnableDefaultMusic` | bool | Fallback ambient music stops. |
-| `RadioModeEnabled` | bool | Disables continuous pool-based playback. |
-| `PlayOnlyOnGameSelect` | bool | Music plays whenever browsing, not just on game selection. |
+| `EnableMusic` | bool | Game-specific music stops when false. Default music continues if `EnableDefaultMusic` is true (UPS's longstanding fallback behavior — toggle both off for full silence). |
+| `EnableDefaultMusic` | bool | Fallback ambient music stops when false. |
+| `RadioModeEnabled` | bool | Disables continuous pool-based playback when false. |
+| `PlayOnlyOnGameSelect` | bool | Music plays whenever browsing when false, not just on game selection. |
+| `CalmDownModeEnabled` | bool | When true (v1.5.0+), applies a post-mixer low-pass filter + volume attenuation over a 1.5s S-curve fade. Useful for late-night browsing toggles. Auto-switches the player backend to NAudio when enabled; no song-restart needed (the processor lives on the persistent mixer chain). |
 
-Other `UniPlaySongSettings` properties are also bindable via this mechanism — these four are simply the most useful ones for an audio quick-settings menu. See `src/UniPlaySongSettings.cs` for the full list.
+Other `UniPlaySongSettings` properties are also bindable via this mechanism — these five are simply the most useful ones for an audio quick-settings menu. See `src/UniPlaySongSettings.cs` for the full list.
 
 **Why prefer this over a custom element:**
 
@@ -227,6 +228,11 @@ For an in-theme audio quick-settings menu (toggles for "Enable Game Music," "Rad
     <CheckBox Content="Play Only on Game Select"
               IsChecked="{PluginSettings Plugin=UniPlaySong,
                                          Path=PlayOnlyOnGameSelect, Mode=TwoWay}"/>
+
+    <!-- v1.5.0+ — low-pass + volume attenuation w/ 1.5s S-curve fade -->
+    <CheckBox Content="Calm Down Mode"
+              IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                         Path=CalmDownModeEnabled, Mode=TwoWay}"/>
 </StackPanel>
 ```
 
@@ -250,7 +256,7 @@ UPS receives setting updates through two distinct event lanes, and `{PluginSetti
 | Theme `{PluginSettings}` markup | Direct property setter on the live settings instance via `INotifyPropertyChanged` | `SettingPropertyChanged` (per-property, just `PropertyName`) |
 | Fullscreen Extensions menu (Menu → Extensions → UniPlaySong) | `UpdateSettingsFromMenu` clones → mutates → calls `UpdateSettings` (same as desktop dialog) | `SettingsChanged` (same as desktop) |
 
-**Why this matters:** until v1.4.6, only `VideoIsPlaying` and `ThemeOverlayActive` were routed through the per-property lane. Every other property write from a theme `{PluginSettings}` binding flipped the value successfully (the property setter ran, two-way sync worked) but no playback handler reacted, because the dialog-side handler only fires on the `SettingsChanged` event. v1.4.6 added explicit per-property handlers in `OnSettingsServicePropertyChanged` for the four bindable settings (`EnableMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`) so theme writes now trigger the same playback decisions the dialog path does.
+**Why this matters:** until v1.4.6, only `VideoIsPlaying` and `ThemeOverlayActive` were routed through the per-property lane. Every other property write from a theme `{PluginSettings}` binding flipped the value successfully (the property setter ran, two-way sync worked) but no playback handler reacted, because the dialog-side handler only fires on the `SettingsChanged` event. v1.4.6 added explicit per-property handlers in `OnSettingsServicePropertyChanged` for four bindable settings (`EnableMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`); v1.5.0 extended this to `CalmDownModeEnabled` (which can require a SDL2→NAudio backend swap when toggled ON). Theme writes now trigger the same playback decisions the dialog path does.
 
 **For theme authors:** you don't need to do anything different — both lanes converge on the same playback behavior. This note is here so plugin authors who fork UPS or build similar plugins understand the dual-event-lane architecture and add per-property handlers when they expose new settings to themes.
 
@@ -290,6 +296,14 @@ This is the exact paste-in used for the Aniki ReMake theme's audio quick-setting
             Style="{DynamicResource SettingsSectionCheckbox}"
             Content="Play Only on Game Select"
             IsChecked="{PluginSettings Plugin=UniPlaySong, Path=PlayOnlyOnGameSelect, Mode=TwoWay}" />
+
+<!-- v1.5.0+ — low-pass filter + volume drop w/ smooth 1.5s S-curve fade -->
+<CheckBoxEx Margin="0,10,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Style="{DynamicResource SettingsSectionCheckbox}"
+            Content="Calm Down Mode"
+            IsChecked="{PluginSettings Plugin=UniPlaySong, Path=CalmDownModeEnabled, Mode=TwoWay}" />
 ```
 
 Notes for adapting this to other themes:

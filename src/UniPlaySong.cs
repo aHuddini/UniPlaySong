@@ -1436,6 +1436,27 @@ namespace UniPlaySong
                 if (game != null) _playbackService.PlayGameMusic(game, _settings, true);
                 return;
             }
+
+            // v1.5.0: Calm Down Mode theme binding. The CalmDownProcessor self-reacts
+            // to setting changes by reading CalmDownModeEnabled in its audio Read() —
+            // so the per-song chain doesn't need rebuilding. But if Calm Down is being
+            // turned ON while the player is currently SDL2 (no Live Effects, no Viz,
+            // no Peak Meter, no Crossfade), we must rebuild as NAudio so the processor
+            // can be hosted. Mirrors the diff-event logic in OnSettingsServiceChanged
+            // for backend swaps.
+            if (e.PropertyName == nameof(UniPlaySongSettings.CalmDownModeEnabled))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: CalmDownModeEnabled={_settings.CalmDownModeEnabled} (theme write)");
+                bool needsBackendSwap = !_settings.LiveEffectsEnabled
+                    && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter
+                    && !_settings.EnableTrueCrossfade;
+                if (needsBackendSwap)
+                {
+                    _fileLogger?.Debug("OnSettingsServicePropertyChanged: CalmDownMode toggle requires backend swap, recreating player");
+                    RecreateMusicPlayerForLiveEffects();
+                }
+                return;
+            }
         }
 
         /// <summary>
@@ -1545,14 +1566,23 @@ namespace UniPlaySong
                         e.NewSettings?.CustomCookiesFilePath ?? string.Empty);
                 }
 
-                // Check if player backend needs switching (Live Effects, Visualizer, Peak Meter, or True Crossfade require NAudio)
+                // Check if player backend needs switching (Live Effects, Visualizer, Peak Meter, True Crossfade, or Calm Down require NAudio)
                 bool liveEffectsChanged = e.OldSettings.LiveEffectsEnabled != e.NewSettings.LiveEffectsEnabled;
                 bool vizToggled = e.OldSettings.ShowSpectrumVisualizer != e.NewSettings.ShowSpectrumVisualizer;
                 bool peakMeterToggled = e.OldSettings.ShowPeakMeter != e.NewSettings.ShowPeakMeter;
                 bool crossfadeToggled = e.OldSettings.EnableTrueCrossfade != e.NewSettings.EnableTrueCrossfade;
-                if (liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled)
+                // v1.5.0: Calm Down forces NAudio (SDL2 has no post-mixer hook). Only trigger
+                // backend swap when the toggle would actually flip the SDL2/NAudio choice —
+                // i.e. when no other NAudio-requiring feature is already on. If Live Effects
+                // is already on, the player is already NAudio and the processor activates
+                // simply by reading CalmDownModeEnabled in its Read() — no rebuild needed.
+                bool calmDownChanged = e.OldSettings.CalmDownModeEnabled != e.NewSettings.CalmDownModeEnabled;
+                bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
+                    && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
+                    && !e.NewSettings.EnableTrueCrossfade;
+                if (liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap)
                 {
-                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade} - recreating music player");
+                    _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade}, CalmDown={e.NewSettings.CalmDownModeEnabled} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
                 }
             }
@@ -2507,7 +2537,8 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            bool needsNAudio = useLiveEffects || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || _needsNAudioForFormat;
+            bool useCalmDown = _settings?.CalmDownModeEnabled ?? false;
+            bool needsNAudio = useLiveEffects || useCalmDown || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || _needsNAudioForFormat;
 
             if (needsNAudio)
             {
@@ -4087,6 +4118,14 @@ namespace UniPlaySong
                 label: "Live Effects",
                 isOn: _settings.LiveEffectsEnabled,
                 setter: v => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = v)));
+
+            // v1.5.0: Calm Down Mode — a low-pass + volume attenuation applied
+            // post-mixer with a gradual S-curve fade on toggle. Useful for late-night
+            // browsing when the user wants ambient music dialed back.
+            items.Add(BuildToggle(
+                label: "Calm Down Mode",
+                isOn: _settings.CalmDownModeEnabled,
+                setter: v => UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = v)));
 
             items.Add(BuildToggle(
                 label: "Radio Mode",

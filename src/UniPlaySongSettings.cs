@@ -1625,6 +1625,15 @@ namespace UniPlaySong
         }
 
         // Live Effects Settings
+        // v1.5.0: Calm Down Mode — post-mixer low-pass + volume attenuation, gradual
+        // S-curve transition. Independent of LiveEffectsEnabled (sits downstream).
+        // Forces NAudio backend like Live Effects does.
+        private bool calmDownModeEnabled = false;
+        private float calmDownLowPassCutoffHz = 1500f;
+        private float calmDownVolumeMultiplier = 0.5f;
+        private float calmDownFadeLengthMultiplier = 2.0f;
+        private float calmDownTransitionDurationSeconds = 1.5f;
+
         private bool liveEffectsEnabled = true;
         private bool lowPassEnabled = false;
         private bool highPassEnabled = false;
@@ -1676,6 +1685,43 @@ namespace UniPlaySong
         private int reverbAllpassFeedback = 50;     // 30-70 (displayed as 0.30-0.70)
         private int reverbHfDampingMin = 20;        // 10-40 (displayed as 0.10-0.40)
         private int reverbHfDampingMax = 50;        // 30-70 (displayed as 0.30-0.70)
+
+        // v1.5.0: Calm Down Mode. When on, the post-mixer CalmDownProcessor applies
+        // a low-pass filter (CalmDownLowPassCutoffHz) and volume attenuation
+        // (CalmDownVolumeMultiplier) with an S-curve crossfade over
+        // CalmDownTransitionDurationSeconds so toggling sounds gradual. The four
+        // tuning params are not exposed in the UI — they're tweakable via settings
+        // file for power users. Fullscreen-only toggle lives in the Quick Settings
+        // menu; setting also forces the NAudio backend (SDL2 can't host the processor).
+        public bool CalmDownModeEnabled
+        {
+            get => calmDownModeEnabled;
+            set { calmDownModeEnabled = value; OnPropertyChanged(); }
+        }
+
+        public float CalmDownLowPassCutoffHz
+        {
+            get => calmDownLowPassCutoffHz;
+            set { calmDownLowPassCutoffHz = value; OnPropertyChanged(); }
+        }
+
+        public float CalmDownVolumeMultiplier
+        {
+            get => calmDownVolumeMultiplier;
+            set { calmDownVolumeMultiplier = value; OnPropertyChanged(); }
+        }
+
+        public float CalmDownFadeLengthMultiplier
+        {
+            get => calmDownFadeLengthMultiplier;
+            set { calmDownFadeLengthMultiplier = value; OnPropertyChanged(); }
+        }
+
+        public float CalmDownTransitionDurationSeconds
+        {
+            get => calmDownTransitionDurationSeconds;
+            set { calmDownTransitionDurationSeconds = value; OnPropertyChanged(); }
+        }
 
         /// <summary>
         /// Enable live audio effects processing.
