@@ -473,7 +473,10 @@ namespace UniPlaySong.Services
                            string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
 
                 case DefaultMusicSource.BundledPreset:
-                    var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
+                    // v1.5.0: honor RandomizeBundledTrackOnStartup — the effective preset
+                    // is either the session-random pick or the manual SelectedBundledPreset.
+                    var presetPath = BundledPresetService.ResolvePresetPath(
+                        BundledPresetService.GetEffectivePresetFilename(settings));
                     return presetPath != null &&
                            string.Equals(path, presetPath, StringComparison.OrdinalIgnoreCase);
 
@@ -785,15 +788,19 @@ namespace UniPlaySong.Services
                             break;
 
                         case DefaultMusicSource.BundledPreset:
-                            var presetPath = BundledPresetService.ResolvePresetPath(settings.SelectedBundledPreset);
+                            // v1.5.0: GetEffectivePresetFilename returns session-random pick
+                            // if RandomizeBundledTrackOnStartup is on, otherwise the manual pick.
+                            var effectivePreset = BundledPresetService.GetEffectivePresetFilename(settings);
+                            var presetPath = BundledPresetService.ResolvePresetPath(effectivePreset);
                             if (presetPath != null)
                             {
-                                _fileLogger?.Info($"No game music for {game.Name}, using bundled preset: {Path.GetFileName(presetPath)}");
+                                var pickSource = settings.RandomizeBundledTrackOnStartup ? "random session pick" : "user selection";
+                                _fileLogger?.Info($"No game music for {game.Name}, using bundled preset ({pickSource}): {Path.GetFileName(presetPath)}");
                                 songs.Add(presetPath);
                             }
                             else
                             {
-                                _fileLogger?.Warn($"BundledPreset selected but preset file not found: {settings.SelectedBundledPreset}");
+                                _fileLogger?.Warn($"BundledPreset selected but preset file not found: {effectivePreset}");
                             }
                             break;
 

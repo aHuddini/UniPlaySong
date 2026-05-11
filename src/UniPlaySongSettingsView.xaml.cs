@@ -85,6 +85,7 @@ namespace UniPlaySong
             s.EnableDefaultMusic = true;
             s.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
             s.SelectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3";
+            s.RandomizeBundledTrackOnStartup = false;
             s.DefaultMusicPath = string.Empty;
             s.DefaultMusicFolderPath = string.Empty;
             s.CustomRotationGameIds = new List<Guid>();

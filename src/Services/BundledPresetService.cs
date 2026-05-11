@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,12 +33,20 @@ namespace UniPlaySong.Services
         private static List<BundledPresetInfo> _presets;
         private static string _presetsDirectory;
 
+        // v1.5.0: session-scoped random pick used when RandomizeBundledTrackOnStartup
+        // is enabled. Picked once at first access (per Playnite session) and held
+        // across game switches so the ambient track stays consistent. Cleared on
+        // Initialize() — i.e. on Playnite startup — so each new session re-randomizes.
+        private static string _sessionRandomPresetFilename;
+        private static readonly Random _random = new Random();
+
         // Loads presets from the DefaultMusic folder inside the extension install directory.
         // Call once at startup with the extension install path.
         public static void Initialize(string extensionInstallPath)
         {
             _presetsDirectory = Path.Combine(extensionInstallPath, "DefaultMusic");
             _presets = null; // Reset cache so next access reloads
+            _sessionRandomPresetFilename = null; // Reset session random pick — new session, fresh roll
         }
 
         public static List<BundledPresetInfo> GetPresets()
@@ -89,6 +98,41 @@ namespace UniPlaySong.Services
         {
             var presets = GetPresets();
             return presets.Count > 0 ? presets[0].File : string.Empty;
+        }
+
+        // v1.5.0: returns the effective preset filename for the current session.
+        // When RandomizeBundledTrackOnStartup is on, picks one preset randomly the
+        // FIRST time this is called per session and caches it for the rest of the
+        // session — so the user gets variety across Playnite restarts but consistent
+        // ambient music within a single session. When the flag is off, returns the
+        // user's manually-picked SelectedBundledPreset.
+        //
+        // Falls back to SelectedBundledPreset if the random pool is empty or the
+        // pick fails for any reason — defensive default.
+        public static string GetEffectivePresetFilename(UniPlaySongSettings settings)
+        {
+            if (settings == null) return null;
+
+            if (!settings.RandomizeBundledTrackOnStartup)
+            {
+                return settings.SelectedBundledPreset;
+            }
+
+            // Random mode is on. Lazily pick once per session.
+            if (_sessionRandomPresetFilename != null)
+            {
+                return _sessionRandomPresetFilename;
+            }
+
+            var presets = GetPresets();
+            if (presets.Count == 0)
+            {
+                // No presets available — fall back to the manual pick (which may also be empty).
+                return settings.SelectedBundledPreset;
+            }
+
+            _sessionRandomPresetFilename = presets[_random.Next(presets.Count)].File;
+            return _sessionRandomPresetFilename;
         }
     }
 }

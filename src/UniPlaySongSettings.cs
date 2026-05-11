@@ -974,6 +974,7 @@ namespace UniPlaySong
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
+        private bool randomizeBundledTrackOnStartup = false; // v1.5.0: pick a random bundled preset once at Playnite startup
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
         private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true as of v1.4.2 — most users want a persistent backdrop)
@@ -984,12 +985,14 @@ namespace UniPlaySong
         public bool EnableDefaultMusic
         {
             get => enableDefaultMusic;
-            set 
-            { 
-                enableDefaultMusic = value; 
+            set
+            {
+                enableDefaultMusic = value;
                 OnPropertyChanged();
                 // Notify that UseNativeMusicAsDefault enabled state may have changed
                 OnPropertyChanged(nameof(IsUseNativeMusicAsDefaultEnabled));
+                // v1.5.0: bundled preset picker's IsEnabled also depends on this
+                OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
             }
         }
 
@@ -1139,8 +1142,34 @@ namespace UniPlaySong
             {
                 selectedBundledPreset = value ?? string.Empty;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
             }
         }
+
+        // v1.5.0: when true, BundledPresetService picks a random bundled preset once
+        // at Playnite startup and uses it for the whole session — the SelectedBundledPreset
+        // value above is ignored while this flag is on (UI greys it out via
+        // IsBundledPresetPickerEnabled). Single pick per session so the ambient track
+        // stays consistent across game switches; users get variety across sessions
+        // without the chaos of per-game-switch re-randomization.
+        public bool RandomizeBundledTrackOnStartup
+        {
+            get => randomizeBundledTrackOnStartup;
+            set
+            {
+                randomizeBundledTrackOnStartup = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
+            }
+        }
+
+        // Drives IsEnabled for the manual preset picker in Settings → Playback.
+        // Picker is interactive only when default music is enabled AND the user has
+        // NOT switched to random-pick mode. When randomization is on, the manual
+        // pick is irrelevant — picker greys out so the user understands their
+        // selection is being ignored.
+        [JsonIgnore]
+        public bool IsBundledPresetPickerEnabled => enableDefaultMusic && !randomizeBundledTrackOnStartup;
 
         // Directory path for CustomFolder default music source
         public string DefaultMusicFolderPath

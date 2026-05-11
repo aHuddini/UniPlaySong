@@ -508,7 +508,7 @@
                                   SelectedValue="{Binding Settings.SelectedBundledPreset}"
                                   SelectedValuePath="File"
                                   DisplayMemberPath="DisplayName"
-                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                  IsEnabled="{Binding Settings.IsBundledPresetPickerEnabled}"
                                   Width="350"
                                   Margin="5,0,0,0"/>
                     </StackPanel>
@@ -516,7 +516,18 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="40,3,0,10"/>
+                               Margin="40,3,0,5"/>
+
+                    <!-- v1.5.0: Randomize bundled track across sessions -->
+                    <CheckBox Content="Randomize bundled track every startup"
+                              IsChecked="{Binding Settings.RandomizeBundledTrackOnStartup}"
+                              IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                              Margin="40,3,0,0"/>
+                    <TextBlock Text="When on, UPS picks one bundled preset at random each time Playnite starts and uses it for the whole session. The manual preset picker above is ignored while this is enabled."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="60,3,0,10"/>
 
                     <!-- Default Music Source: Custom File -->
                     <RadioButton Content="Use custom music file"
