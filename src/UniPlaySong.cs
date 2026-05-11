@@ -5225,6 +5225,70 @@ namespace UniPlaySong
             }
         }
 
+        // Apply settings imported from a JSON file (Backup tab → Import Settings).
+        // The settings object passed in has already been merged by SettingsBackupService
+        // (machine-specific paths preserved from current settings, imported values merged
+        // on top). This method pushes the merged object through SettingsService so all
+        // downstream subscribers react and persists to disk.
+        public void ApplyImportedSettings(UniPlaySongSettings imported)
+        {
+            if (imported == null) return;
+            _settingsService.UpdateSettings(imported, source: "SettingsImport");
+            SavePluginSettings(imported);
+            _fileLogger?.Info("ApplyImportedSettings: settings imported and persisted");
+        }
+
+        // Gather derived stats for the Markdown snapshot (Backup tab → Export Snapshot).
+        // Reads library state, file system, and runtime info. Returned as a tuple to
+        // avoid creating a one-off DTO for a single caller.
+        public (int totalGamesTracked, int gamesWithMusic, long totalMusicStorageBytes,
+                string musicFolderPath, string upsVersion, string osInfo, string modeAtExport)
+            GetSnapshotStats()
+        {
+            int totalGamesTracked = 0;
+            int gamesWithMusic = 0;
+            long totalMusicStorageBytes = 0;
+            string musicFolderPath = null;
+
+            try
+            {
+                if (_api?.Database?.Games != null)
+                {
+                    totalGamesTracked = _api.Database.Games.Count;
+                }
+                if (_fileService != null && !string.IsNullOrWhiteSpace(_gamesPath))
+                {
+                    musicFolderPath = _gamesPath;
+                    if (_api?.Database?.Games != null)
+                    {
+                        foreach (var game in _api.Database.Games)
+                        {
+                            var dir = _fileService.GetGameMusicDirectory(game);
+                            if (string.IsNullOrWhiteSpace(dir) || !System.IO.Directory.Exists(dir)) continue;
+                            var files = System.IO.Directory.GetFiles(dir);
+                            if (files.Length == 0) continue;
+                            gamesWithMusic++;
+                            foreach (var f in files)
+                            {
+                                try { totalMusicStorageBytes += new System.IO.FileInfo(f).Length; } catch { }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"GetSnapshotStats: partial failure — {ex.Message}");
+            }
+
+            var upsVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
+            var osInfo = $"{Environment.OSVersion.Platform} {Environment.OSVersion.Version}";
+            var modeAtExport = IsFullscreen ? "Fullscreen" : "Desktop";
+
+            return (totalGamesTracked, gamesWithMusic, totalMusicStorageBytes,
+                    musicFolderPath, upsVersion, osInfo, modeAtExport);
+        }
+
         /// <summary>
         /// Resets all settings to their default values.
         /// </summary>

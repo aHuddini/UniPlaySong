@@ -3616,6 +3616,80 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Backup Tab -->
+        <TabItem Header="Backup">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Settings Backup &amp; Migration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests."
+                               FontSize="11"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,20"/>
+
+                    <!-- JSON Export / Import (portable, re-importable) -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Portable JSON Backup" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded — those stay machine-specific."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Export Settings (JSON)..."
+                                        Click="ExportSettingsJson_Click"
+                                        Padding="15,8"
+                                        Margin="0,0,10,0"
+                                        Background="#2D5A87"
+                                        Foreground="White"/>
+                                <Button Content="Import Settings (JSON)..."
+                                        Click="ImportSettingsJson_Click"
+                                        Padding="15,8"
+                                        Background="#2D5A87"
+                                        Foreground="White"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Markdown Snapshot (human-readable, one-way) -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Human-Readable Snapshot" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. One-way — not re-importable."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
+
+                            <Button Content="Export Snapshot (Markdown)..."
+                                    Click="ExportSettingsMarkdown_Click"
+                                    Padding="15,8"
+                                    HorizontalAlignment="Left"
+                                    Background="#447755"
+                                    Foreground="White"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Notes -->
+                    <Border Background="#1A2A3A" BorderBrush="#3A5A7A" BorderThickness="1" CornerRadius="4" Padding="15">
+                        <StackPanel>
+                            <TextBlock Text="What gets included?" FontSize="12" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,8"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#BBCCDD">
+                                <Run Text="• "/><Run Text="JSON Export:" FontWeight="SemiBold"/><Run Text=" Playback / Pauses / Live Effects / Visualizer / all toggles. Excludes tool paths (yt-dlp, FFmpeg, custom default music file/folder paths, cookies file) and Custom Rotation game IDs."/>
+                                <LineBreak/>
+                                <Run Text="• "/><Run Text="JSON Import:" FontWeight="SemiBold"/><Run Text=" Restores included settings; preserves your local tool paths and Custom Rotation. You'll see a notification listing what stayed local."/>
+                                <LineBreak/>
+                                <Run Text="• "/><Run Text="Markdown Snapshot:" FontWeight="SemiBold"/><Run Text=" Everything visible (sensitive values like Last.fm session keys redacted as *****). Includes a 'Diff from defaults' table at the bottom."/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- Experimental Tab -->
         <TabItem Header="Experimental">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
