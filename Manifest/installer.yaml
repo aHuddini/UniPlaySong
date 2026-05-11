@@ -7,6 +7,7 @@ Packages:
     Changelog:
       - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS configuration to a portable JSON file for backup or migration to another machine. Re-import on the new machine and your audio settings are restored.'
       - '[New Feature] Markdown snapshot export — generate a human-readable .md file of your UPS configuration for sharing in GitHub issues / Discord support requests / personal notes. Includes game-count / music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths sanitized to %AppData%-style placeholders for safe sharing.'
+      - '[New Feature] Randomize bundled track every startup (Settings -> Playback) — when enabled, UPS picks a random bundled ambient preset at each Playnite startup. Stays consistent across game switches within the session; each new session rolls a fresh pick.'
   - Version: 1.4.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-05-09
