@@ -13,6 +13,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | ~~Settings Backup tab (JSON Import/Export + Markdown Snapshot)~~ | Settings / UX | v1.5.0 |
 | ~~Randomize bundled track every startup (Default Music Randomization)~~ | Playback | v1.5.0 |
 | ~~Calm Down Mode (Fullscreen)~~ | Playback / Theme Integration | v1.5.0 |
+| ~~Music Info Card (per-game stats dialog)~~ | UX / Library Inspection | v1.5.0 |
 
 ## Shipped in v1.4.6
 
@@ -277,7 +278,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | **Per-Game Visualizer Theme** | Save spectrum visualizer color theme per game ID. Auto-switch on game selection. Uses existing 22 color themes + Dynamic. | Low | Medium |
 | **Mood Transition Bridge** | When switching from intense game (Dark Souls) to calm game (Stardew Valley), play a brief neutral transition sound to bridge the mood shift. Detect mood from genre metadata. | Medium | Low |
 | **Game Launch Countdown Hype** | Instead of immediate pause on game start, build a brief crescendo/hype fade (3-5s) before pausing. Like a DJ build-up to game launch. Uses `MusicFader` + volume ramp. | Low | Low |
-| **Soundtrack Score Card** | Per-game overlay showing: song count, total duration, storage, format quality, avg bitrate. Right-click menu "Music Info" option. Quick data from existing file service. | Low | Low |
+| ~~**Soundtrack Score Card**~~ ✅ | ~~Per-game overlay showing: song count, total duration, storage, format quality, avg bitrate.~~ **Shipped v1.5.0 as "Music Info Card"** — per-game stats dialog with song count, total duration, on-disk size, longest/shortest track, avg bitrate, format breakdown, scrollable alphabetical song list. Playlist-aware. Visual polish: blurred game background art + per-game icon-derived accent colors. Right-click menu entry in both Desktop and Fullscreen. Self-contained module at `src/Features/MusicInfoCard/`. | Low | Low |
 | ~~**Install-Aware Auto-Download**~~ ✅ | ~~Automatically download music when a game changes to Installed status. `OnGameInstalled` event available but unused. Zero-effort library building.~~ **Shipped v1.3.1** | Low | Medium |
 | **Uninstall Cleanup Prompt** | When a game is uninstalled, offer to delete its music files too. `OnGameUninstalled` event. Optional — some users keep music for uninstalled games. | Low | Low |
 | **Developer/Publisher Playlist** | "Play all music from games by FromSoftware." Uses `game.Developers`/`game.Publishers`. Discover studio music patterns. | Low | Medium |

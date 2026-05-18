@@ -22,11 +22,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.5.0 (in development)
 
-- **Calm Down Mode** — new toggle in the Fullscreen Extensions menu (and now bindable from any theme that supports the `{PluginSettings}` markup) that gradually muffles + dims the music with a low-pass filter and volume drop, fading over ~1.5 seconds. Use it for late-night browsing when you want the music gently dialed back without stopping it. Auto-switches the audio backend if needed; no song restart, no glitches.
+- **Music Info Card** — right-click any game → "Music Info Card" for a stylized per-game music summary (counts, duration, song list, format breakdown). The card picks up each game's art and accent colors so it feels native to that game.
 
-- **Randomize bundled track every startup** — new checkbox in Settings → Playback (under the Bundled Ambient picker). When enabled, UPS picks a random bundled preset at each Playnite startup, keeps it consistent across game switches during the session, and rolls a fresh pick next session. Won't pick the same preset two sessions in a row.
+- **Calm Down Mode** — Fullscreen toggle that gently muffles and dims the music over ~1.5 seconds. Perfect for late-night browsing. Theme authors can bind it via `{PluginSettings}`.
 
-- **Settings Backup tab** — new Settings → Backup tab with two export modes. **JSON export** creates a portable backup of your UPS configuration that you can re-import on another machine or after a Playnite reinstall (machine-specific paths like yt-dlp / FFmpeg are excluded so they don't overwrite your local config). **Markdown snapshot** generates a human-readable summary you can paste into GitHub issues, Discord support requests, or save for personal reference — includes game count, music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths in the Markdown are automatically sanitized (`%AppData%`, `%UserProfile%`, etc.) so you can safely share without leaking your Windows username.
+- **Randomize bundled track every startup** — new Settings → Playback checkbox. Rolls a fresh bundled preset each Playnite session and won't pick the same one twice in a row.
+
+- **Settings Backup tab** — new Settings → Backup tab. Export your UPS configuration as portable JSON for re-import on another machine, or as a Markdown snapshot you can paste into a GitHub issue or Discord support thread (paths are auto-sanitized so you don't leak your Windows username).
 
 ### Previous Version
 - **v1.4.6**: NEC TurboGrafx-16 / PC Engine (.hes) chiptune support, "Split HES Tracks" menu action, two new Bundled Ambient tracks from Mike Aniki (Hub OST + Login OST, included with composer's explicit permission), `{PluginSettings}` theme integration framework validated against Aniki ReMake, paired `Enable Game Music` + `Enable Default Music` toggles in the Fullscreen Extensions menu, LGPL §6 paperwork for the bundled GME chiptune library.
@@ -53,6 +55,29 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Tagging & Filters** - Tag games with music/no music for better music management
 
 <img src="docs/assets/DEMOScreen1.png" alt="Demo Screenshot" width="600">
+
+### Music Info Card (v1.5.0+)
+
+Right-click any game → **Music Info Card** for a stylized per-game music dashboard. Each card picks up the game's art and accent colors so it feels native to that title.
+
+<img src="docs/assets/MusicInfoCard.png" alt="Music Info Card example" width="600">
+
+---
+
+## 🎵 Supported Audio Formats
+
+| Category | Format | Notes |
+|----------|--------|-------|
+| **Standard** | `.mp3` | The default UPS uses for downloads and conversions |
+| **Standard** | `.ogg` | Ogg Vorbis |
+| **Standard** | `.flac` | Lossless |
+| **Standard** | `.wav` | Uncompressed |
+| **Chiptune** | `.vgm` / `.vgz` | Sega Genesis / Mega Drive / Sega CD (and other VGM-supported systems). `.vgz` is gzip-compressed VGM. |
+| **Chiptune** | `.nsf` | NES / Famicom. Right-click → Chiptunes → **Manage NSF Tracks** for per-track curation + loop overrides. |
+| **Chiptune** | `.spc` | SNES / Super Famicom |
+| **Chiptune** | `.hes` | NEC TurboGrafx-16 / PC Engine. Requires a sibling `.m3u` for multi-track playback. Right-click → Chiptunes → **Split HES Tracks** to break a multi-track HES into individual songs for skip/shuffle. |
+
+> Chiptune playback is powered by [Game Music Emu](https://github.com/libgme/game-music-emu) (LGPL v2.1+, dynamically linked). See `NOTICES.txt` and `docs/dev_docs/GME_BUILD.md` for license + build details.
 
 ---
 
