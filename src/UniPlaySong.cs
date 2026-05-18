@@ -89,6 +89,7 @@ namespace UniPlaySong
         private GameMenuHandler _gameMenuHandler;
         private MainMenuHandler _mainMenuHandler;
         private Handlers.ControllerDialogHandler _controllerDialogHandler;
+        private Features.MusicInfoCard.MusicInfoCardHandler _musicInfoCardHandler;
         private Handlers.NormalizationDialogHandler _normalizationDialogHandler;
         private Handlers.ConversionDialogHandler _conversionDialogHandler;
         private Handlers.TrimDialogHandler _trimDialogHandler;
@@ -2510,6 +2511,11 @@ namespace UniPlaySong
             _mainMenuHandler = new MainMenuHandler(_api, Id);
             _controllerDialogHandler = new Handlers.ControllerDialogHandler(
                 _api, _fileService, _playbackService, _downloadDialogService, _downloadManager);
+            // Self-contained module under Features/MusicInfoCard/. Only this
+            // constructor + the GetGameMenuItems wire-up reference it from
+            // the plugin core. See src/Features/MusicInfoCard/ for the rest.
+            _musicInfoCardHandler = new Features.MusicInfoCard.MusicInfoCardHandler(
+                _api, _fileService, IsFullscreen);
             _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
             var conversionService = new Services.AudioConversionService(_fileLogger);
@@ -3679,6 +3685,23 @@ namespace UniPlaySong
                     Description = $"[ {songs.Count} {(songs.Count == 1 ? "song" : "songs")} | {FormatFileSize(folderBytes)} ]",
                     MenuSection = menuSection
                 });
+
+                // v1.5.0: Music Info Card — opens a per-game stats dialog.
+                // Lives at the parent menu level (above the divider) so it
+                // sits next to the count/size info line as a "see more"
+                // affordance. Picks Desktop vs Fullscreen flavor internally.
+                // No emoji prefix — Playnite Desktop's right-click menu can
+                // silently drop items whose Description starts with chars it
+                // can't render through its font fallback chain; Fullscreen
+                // controller dialogs render emojis fine because they use a
+                // different UI surface.
+                items.Add(new GameMenuItem
+                {
+                    Description = "Music Info Card",
+                    MenuSection = menuSection,
+                    Action = _ => _musicInfoCardHandler.Show(game)
+                });
+
                 items.Add(new GameMenuItem
                 {
                     Description = "-",
