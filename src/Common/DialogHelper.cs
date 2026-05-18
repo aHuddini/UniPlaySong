@@ -277,78 +277,8 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Public overload: enables acrylic blur with caller-supplied tint
-        /// + opacity, so feature modules (Music Info Card, future panels)
-        /// can apply blur without reading the toast-specific defaults.
-        /// tintColor is 0xRRGGBB; opacity is 0-255 (0 = transparent overlay,
-        /// 255 = opaque tint with maximum blur). Mode: 0=basic, 1=acrylic.
-        public static void EnableWindowBlur(Window window, uint tintColor, byte opacity, int mode = 1)
-        {
-            EnableWindowBlurInternal(window, tintColor, opacity, mode);
-        }
-
-        /// Modern Win11 backdrop. Uses DwmSetWindowAttribute with
-        /// DWMWA_SYSTEMBACKDROP_TYPE on Windows 11 22H2+ (build 22621+),
-        /// falls back to the legacy SetWindowCompositionAttribute path on
-        /// older systems. Returns true if either path succeeded.
-        ///
-        /// Prefer this over EnableWindowBlur for new dialogs — DWM backdrop
-        /// works with rounded corners, integrates with the system theme,
-        /// and renders properly when the window is over opaque content
-        /// (the legacy API needs something see-through behind it to look
-        /// like blur, otherwise it appears as a flat tint).
-        ///
-        /// `backdropType`: 2 = Mica (subtle, matches taskbar), 3 = Acrylic
-        /// (heavier blur, matches notification center). Caller's choice.
-        /// `legacyTintColor`/`legacyOpacity` are used only on Win10 fallback.
-        public static bool EnableModernBackdrop(
-            Window window,
-            int backdropType = 3,
-            uint legacyTintColor = 0x150522,
-            byte legacyOpacity = 200)
-        {
-            try
-            {
-                var windowHelper = new WindowInteropHelper(window);
-                var hwnd = windowHelper.EnsureHandle();
-
-                if (IsWindows11WithBackdropSupport())
-                {
-                    // DwmSetWindowAttribute returns S_OK = 0 on success.
-                    int value = backdropType;
-                    int hr = DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref value, sizeof(int));
-                    Logger.Info($"EnableModernBackdrop: DWM API result hr=0x{hr:X8}, type={backdropType}");
-                    if (hr == 0)
-                    {
-                        // Modern backdrop set successfully.
-                        return true;
-                    }
-                    Logger.Info("EnableModernBackdrop: DWM API failed, falling back to legacy SetWindowCompositionAttribute");
-                }
-                else
-                {
-                    Logger.Info("EnableModernBackdrop: not on Win11 22H2+, using legacy SetWindowCompositionAttribute");
-                }
-
-                // Legacy fallback for Win10 / older Win11
-                EnableWindowBlurInternal(window, legacyTintColor, legacyOpacity, mode: 1);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, "EnableModernBackdrop failed");
-                return false;
-            }
-        }
-
         /// Enables acrylic blur on a window (Windows 10 1803+, falls back to basic blur).
-        /// Uses the global Toast* defaults — used by the toast pipeline.
         private static void EnableWindowBlur(Window window)
-        {
-            EnableWindowBlurInternal(window, ToastBlurTintColor, ToastBlurOpacity, ToastBlurMode);
-        }
-
-        private static void EnableWindowBlurInternal(Window window, uint tintColor, byte opacity, int mode)
         {
             try
             {
@@ -356,11 +286,11 @@ namespace UniPlaySong.Common
                 var hwnd = windowHelper.EnsureHandle();
 
                 // GradientColor format is AABBGGRR - convert from RGB to BGR and add alpha
-                var (r, g, b) = HexToRgb(tintColor);
-                uint gradientColor = ((uint)opacity << 24) | ((uint)b << 16) | ((uint)g << 8) | r;
+                var (r, g, b) = HexToRgb(ToastBlurTintColor);
+                uint gradientColor = ((uint)ToastBlurOpacity << 24) | ((uint)b << 16) | ((uint)g << 8) | r;
 
                 // Blur mode: 0 = Basic, 1 = Acrylic (with noise texture)
-                var blurState = mode == 0
+                var blurState = ToastBlurMode == 0
                     ? AccentState.ACCENT_ENABLE_BLURBEHIND
                     : AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
 

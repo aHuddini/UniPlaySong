@@ -2,8 +2,8 @@ AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.5.0
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-05-10
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.0/UniPlaySong-1_5_0-May10_2026.pext'
+    ReleaseDate: 2026-05-18
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.0/UniPlaySong-1_5_0-May18_2026.pext'
     Changelog:
       - '[New Feature] Music Info Card (right-click game -> Music Info Card) — per-game stats dialog showing total files, total duration, on-disk size, longest/shortest track, average bitrate, format breakdown, and a scrollable alphabetical song list. Visual polish: game icon with color-matched glow, game background art as a blurred backdrop, per-game accent colors throughout. Playlist-aware (multi-track chiptunes expand into per-track entries). Available in Desktop and Fullscreen modes.'
       - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS configuration to a portable JSON file for backup or migration to another machine. Re-import on the new machine and your audio settings are restored.'

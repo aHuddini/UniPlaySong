@@ -4,9 +4,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.5.0] - In development
+## [1.5.0] - 2026-05-18
 
-Quality-of-life and integration release. Tracking against the v1.5.0 plan in `docs/dev_docs/roadmaps/FEATURE_IDEAS.md`. Detailed release notes will live in `docs/release_notes/v1.5.0-beta1.md` once the first beta ships.
+> Detailed release notes (full feature breakdown, module structure, upgrade notes) live in `docs/release_notes/v1.5.0.md`.
+
+Quality-of-life and integration release. Four user-visible features land in this version: a per-game music dashboard with stylized backdrop and color theming, a smooth one-click "calm down" mode for ambient music, a randomize-on-startup option for bundled tracks, and a portable Settings Backup tab for moving your UPS config between machines.
 
 ### Added
 

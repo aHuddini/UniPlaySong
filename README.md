@@ -20,7 +20,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.0 (in development)
+## What's New - v1.5.0
 
 - **Music Info Card** — right-click any game → "Music Info Card" for a stylized per-game music summary (counts, duration, song list, format breakdown). The card picks up each game's art and accent colors so it feels native to that game.
 
