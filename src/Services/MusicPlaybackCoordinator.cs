@@ -157,7 +157,34 @@ namespace UniPlaySong.Services
             
             if (game == null)
             {
-                // No game selected: fade out (PlayGameMusic with null handles fade-out)
+                // v1.5.0 (Bug A): Playnite transiently empties SelectedGames
+                // during filter-preset switches, tab changes (Aniki/Solaris),
+                // and overlay clears. The old defensive behavior here was an
+                // unconditional fade-out via PlayGameMusic(null), which
+                // wiped any in-flight default music. Multiple Discord
+                // reports + an in-house repro on the "Recent Games" preset
+                // confirmed this manifests as: default music plays, user
+                // switches to a custom filter preset → music stops; or
+                // worse, the loop "plays for a second, stops, tries to
+                // play again" when Playnite re-emits the selection a beat
+                // later.
+                //
+                // Default music is session-persistent by design (memory:
+                // "ClearAllPauseSources Preservation"), so a transient
+                // null-selection is NOT a "user wants no music" signal —
+                // it's a list-mutation in progress. If default music is
+                // currently playing AND EnableDefaultMusic is on, treat
+                // null as a no-op. The next OnGameSelected with a real
+                // game (or a settings change) will route through
+                // PlayGameMusic normally.
+                if (_playbackService?.IsPlayingDefaultMusic == true && _settings?.EnableDefaultMusic == true)
+                {
+                    _fileLogger?.Debug("HandleGameSelected: No game but default music playing — preserving (skip fade-out)");
+                    _firstSelect = false;
+                    return;
+                }
+
+                // No default music to preserve — fade out normally.
                 _fileLogger?.Debug("HandleGameSelected: No game - fading out playback");
                 _playbackService?.PlayGameMusic(null, _settings, false);
                 _firstSelect = false;

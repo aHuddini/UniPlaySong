@@ -463,9 +463,17 @@ namespace UniPlaySong.Services
 
             switch (settings.DefaultMusicSourceOption)
             {
+                // v1.5.0: NativeTheme is [Obsolete] but kept here as a
+                // safety net — users with stale settings that bypass the
+                // migration on load (e.g. settings file edited by hand)
+                // still get sensible behavior instead of falling through
+                // to the default case. Pragma suppresses the obsolete-use
+                // warning since this is the intentional legacy handler.
+#pragma warning disable CS0618
                 case DefaultMusicSource.NativeTheme:
                     return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
                            string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
+#pragma warning restore CS0618
 
                 case DefaultMusicSource.ActiveThemeMusic:
                     var activeThemePath = Common.PlayniteThemeHelper.FindActiveThemeMusicFile();
@@ -538,6 +546,27 @@ namespace UniPlaySong.Services
 
                 _musicPlayer.Load(defaultMusicPath);
                 _musicPlayer.Volume = 0;
+
+                // v1.5.0 (welcome-hub bug): respect active pause sources
+                // before starting playback. Without this, when the user
+                // navigates from a theme overlay (welcome hub / login)
+                // directly to a game card with EnableMusic=off +
+                // EnableDefaultMusic=on, this path loads default music
+                // and immediately Plays + FadeIns even though ThemeOverlay
+                // is still an active pause source. The DefaultMusicPreservation
+                // source is about to be removed below, so we ignore it
+                // when computing "other sources active".
+                bool otherSourcesActive = _activePauseSources.Count > 0 &&
+                    !(_activePauseSources.Count == 1 && _activePauseSources.Contains(PauseSource.DefaultMusicPreservation));
+
+                if (otherSourcesActive)
+                {
+                    _fileLogger?.Debug($"ResumeDefaultMusic: pause sources active ({string.Join(",", _activePauseSources)}) — loaded but not playing; RemovePauseSource will trigger fade-in when overlays clear");
+                    RemovePauseSource(PauseSource.DefaultMusicPreservation);
+                    OnMusicStarted?.Invoke(settings);
+                    return;
+                }
+
                 _musicPlayer.Play(_defaultMusicPausedOnTime);
                 _fader.FadeIn();
                 RemovePauseSource(PauseSource.DefaultMusicPreservation);
@@ -552,6 +581,22 @@ namespace UniPlaySong.Services
         {
             if (game == null)
             {
+                // v1.5.0 (Bug A defense-in-depth): even if the coordinator
+                // misses the IsPlayingDefaultMusic guard at HandleGameSelected,
+                // protect default-music continuity here. Default music is
+                // session-persistent — a null-game call must not wipe it.
+                // The coordinator-level guard at MusicPlaybackCoordinator.cs:158
+                // is the primary defense; this is the safety net for any
+                // future callers that bypass the coordinator (settings
+                // handlers, theme overlay recovery paths, etc.).
+                if (_isPlayingDefaultMusic && settings?.EnableDefaultMusic == true)
+                {
+                    _fileLogger?.Debug("PlayGameMusic(null): default music playing — preserving (skip fade-out)");
+                    _deferredGame = null;
+                    _deferredSettings = null;
+                    return;
+                }
+
                 // Clear any deferred playback
                 _deferredGame = null;
                 _deferredSettings = null;
@@ -761,16 +806,25 @@ namespace UniPlaySong.Services
                 {
                     switch (settings.DefaultMusicSourceOption)
                     {
+                        // v1.5.0: NativeTheme is [Obsolete] but the case is
+                        // kept as a safety net. The migration on settings
+                        // load rewrites NativeTheme → BundledPreset, so
+                        // this branch should never fire in practice. If
+                        // it does (hand-edited settings, edge case), the
+                        // legacy behavior still works rather than going
+                        // silent.
+#pragma warning disable CS0618
                         case DefaultMusicSource.NativeTheme:
+#pragma warning restore CS0618
                             var nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
                             if (!string.IsNullOrWhiteSpace(nativeMusicPath) && File.Exists(nativeMusicPath))
                             {
-                                _fileLogger?.Info($"No game music for {game.Name}, using native theme music: {Path.GetFileName(nativeMusicPath)}");
+                                _fileLogger?.Info($"No game music for {game.Name}, using native theme music (deprecated source — migration should have run): {Path.GetFileName(nativeMusicPath)}");
                                 songs.Add(nativeMusicPath);
                             }
                             else
                             {
-                                _fileLogger?.Warn($"NativeTheme selected but native music file not found.");
+                                _fileLogger?.Warn($"NativeTheme selected (deprecated source) but native music file not found.");
                             }
                             break;
 
