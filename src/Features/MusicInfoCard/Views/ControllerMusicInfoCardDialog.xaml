@@ -37,6 +37,13 @@
                 <Image.Effect>
                     <BlurEffect Radius="50" KernelType="Gaussian" RenderingBias="Performance"/>
                 </Image.Effect>
+                <!-- See Desktop dialog XAML for the BitmapCache rationale.
+                     Without this, BlurEffect re-runs Gaussian convolution
+                     on every repaint — causing scroll + fade lag. -->
+                <Image.CacheMode>
+                    <BitmapCache EnableClearType="False"
+                                 SnapsToDevicePixels="True"/>
+                </Image.CacheMode>
             </Image>
 
             <!-- Dark veil ~80% black (was 60% / 0x99). Same readability

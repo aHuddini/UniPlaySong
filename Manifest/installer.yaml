@@ -5,11 +5,14 @@ Packages:
     ReleaseDate: 2026-05-18
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.0/UniPlaySong-1_5_0-May18_2026.pext'
     Changelog:
-      - '[New Feature] Music Info Card (right-click game -> Music Info Card) — per-game stats dialog showing total files, total duration, on-disk size, longest/shortest track, average bitrate, format breakdown, and a scrollable alphabetical song list. Visual polish: game icon with color-matched glow, game background art as a blurred backdrop, per-game accent colors throughout. Playlist-aware (multi-track chiptunes expand into per-track entries). Available in Desktop and Fullscreen modes.'
-      - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS configuration to a portable JSON file for backup or migration to another machine. Re-import on the new machine and your audio settings are restored.'
-      - '[New Feature] Markdown snapshot export — generate a human-readable .md file of your UPS configuration for sharing in GitHub issues / Discord support requests / personal notes. Includes game-count / music storage stats, tool-path validation, and a "Diff from defaults" table. User-specific paths sanitized to %AppData%-style placeholders for safe sharing.'
-      - '[New Feature] Randomize bundled track every startup (Settings -> Playback) — when enabled, UPS picks a random bundled ambient preset at each Playnite startup. Stays consistent across game switches within the session; each new session rolls a fresh pick. Anti-repeat: avoids picking the same preset two sessions in a row.'
-      - '[New Feature] Calm Down Mode (Fullscreen Extensions menu) — applies a low-pass filter + volume drop with a smooth 1.5s S-curve fade, useful for late-night browsing. Bindable from theme XAML via {PluginSettings Plugin=UniPlaySong, Path=CalmDownModeEnabled, Mode=TwoWay}. Auto-promotes the player backend to NAudio when toggled on so SDL2 users don''t need to enable Live Effects first.'
+      - '[New Feature] Music Info Card (right-click game -> Music Info Card) — stylized per-game music dashboard with blurred game art backdrop and icon-matched accent colors. Desktop + Fullscreen.'
+      - '[New Feature] Calm Down Mode (Fullscreen Extensions menu) — gently muffles + dims the music over ~1.5s with a low-pass filter and volume drop. Bindable from theme XAML via {PluginSettings}.'
+      - '[New Feature] Randomize bundled track every startup (Settings -> Playback) — picks a fresh bundled ambient preset each Playnite session, with anti-repeat across consecutive sessions.'
+      - '[New Feature] Settings Backup tab (Settings -> Backup) — export your UPS config as portable JSON for re-import on another machine, or as a Markdown snapshot for sharing in Discord or GitHub issues.'
+      - '[Fix] Default music no longer cuts out when switching Fullscreen filter presets, Aniki ReMake tabs, or Solaris filter buttons.'
+      - '[Fix] Default music no longer plays over theme welcome-hub / login overlays when Game Music is off — waits silently and fades in once the overlay clears.'
+      - '[Remove] "Use Playnite native theme music" default source removed — replaced by bundled "Shades of Orange" preset (the same track Playnite''s default Fullscreen theme uses). Existing users with the native-theme option selected are silently migrated to Bundled Ambient.'
+      - '[Known Issue] Toast notification blur appears broken on Windows 11 (most recent OS update appeared to break the API UPS used). Win10 users unaffected. Fix planned for v1.5.x.'
   - Version: 1.4.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-05-09

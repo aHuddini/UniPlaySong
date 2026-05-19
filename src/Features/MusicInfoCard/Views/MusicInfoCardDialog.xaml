@@ -43,6 +43,18 @@
                 <Image.Effect>
                     <BlurEffect Radius="45" KernelType="Gaussian" RenderingBias="Performance"/>
                 </Image.Effect>
+                <!-- BitmapCache renders the blurred backdrop ONCE to a
+                     cached bitmap, then reuses that bitmap every frame.
+                     Without this, the BlurEffect's Gaussian convolution
+                     re-runs on every WPF repaint — and the StatsPanel
+                     opacity fade-in + song-list scroll BOTH trigger
+                     repaints across the dialog area. That's what was
+                     causing the scroll/fade lag the user observed.
+                     Same pattern the icon below uses. -->
+                <Image.CacheMode>
+                    <BitmapCache EnableClearType="False"
+                                 SnapsToDevicePixels="True"/>
+                </Image.CacheMode>
             </Image>
 
             <!-- Dark veil on top of the blurred backdrop so foreground

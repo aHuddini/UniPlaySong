@@ -30,6 +30,19 @@ Built with the help of Claude Code and Cursor IDE
 
 - **Settings Backup tab** — new Settings → Backup tab. Export your UPS configuration as portable JSON for re-import on another machine, or as a Markdown snapshot you can paste into a GitHub issue or Discord support thread (paths are auto-sanitized so you don't leak your Windows username).
 
+### Fixed
+
+- **Default music no longer cuts out** when switching Fullscreen filter presets (Recent Games, custom presets), Aniki ReMake tabs, or Solaris filter buttons.
+- **Default music no longer plays over welcome-hub / login overlays** when Game Music is off. Waits silently and fades in once the overlay clears.
+
+### Changed
+
+- **"Use Playnite native theme music" default source replaced by bundled track.** The old native-theme option caused audio overlap because UPS and Playnite both played the same file at once. UPS now ships "Shades of Orange" (the same track Playnite's default Fullscreen theme uses, by Dave Miles via Zapsplat) as a bundled preset — same vibe, no conflict. Existing users with the native-theme source selected are silently migrated to Bundled Ambient on first launch. Credit shown in Settings → About.
+
+### Known Issue
+
+- **Toast notification blur is broken on Windows 11** (recent OS update deprecated the API). Toasts render with a flat tint instead of frosted glass. Windows 10 users are unaffected; a fix will be attempted for a future v1.5.x patch.
+
 ### Previous Version
 - **v1.4.6**: NEC TurboGrafx-16 / PC Engine (.hes) chiptune support, "Split HES Tracks" menu action, two new Bundled Ambient tracks from Mike Aniki (Hub OST + Login OST, included with composer's explicit permission), `{PluginSettings}` theme integration framework validated against Aniki ReMake, paired `Enable Game Music` + `Enable Default Music` toggles in the Fullscreen Extensions menu, LGPL §6 paperwork for the bundled GME chiptune library.
 
