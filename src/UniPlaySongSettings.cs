@@ -139,7 +139,17 @@ namespace UniPlaySong
     public enum DefaultMusicSource
     {
         CustomFile,     // User-selected music file
-        NativeTheme,    // Playnite's built-in theme music
+        // v1.5.0: NativeTheme deprecated. Kept as enum slot to preserve
+        // ordinal positions for existing users' serialized settings
+        // (Newtonsoft serializes enums as integers by default; removing
+        // this entry would shift every value after it). On settings
+        // load, NativeTheme is silently migrated to BundledPreset.
+        // Reason: UPS + Playnite both tried to play the same
+        // background.mp3 file producing audible overlap. The bundled
+        // "Shades of Orange" preset provides the same vanilla-theme
+        // ambient experience without the file-handle conflict.
+        [System.Obsolete("Migrated to BundledPreset in v1.5.0 — UPS now ships Shades of Orange as the equivalent vanilla-theme ambient option without the file-handle conflict against Playnite's native player.")]
+        NativeTheme,    // (deprecated) Playnite's built-in theme music
         BundledPreset,  // Bundled ambient tracks shipped with the plugin
         CustomFolder,   // User-selected directory of audio files
         RandomGame,     // Random song from any game's music library
@@ -1122,7 +1132,8 @@ namespace UniPlaySong
             set { radioMusicSource = value; OnPropertyChanged(); }
         }
 
-        // Which default music source to use: CustomFile, NativeTheme, or BundledPreset
+        // Which default music source to use: CustomFile, BundledPreset, CustomFolder, etc.
+        // NativeTheme deprecated in v1.5.0 — migrated to BundledPreset on settings load.
         public DefaultMusicSource DefaultMusicSourceOption
         {
             get => defaultMusicSourceOption;
@@ -1130,8 +1141,12 @@ namespace UniPlaySong
             {
                 defaultMusicSourceOption = value;
                 OnPropertyChanged();
-                // Keep UseNativeMusicAsDefault in sync for backward compatibility
+                // Keep UseNativeMusicAsDefault in sync for backward compatibility.
+                // Pragma needed because NativeTheme is [Obsolete] but we still
+                // need to compare against it for the legacy sync.
+#pragma warning disable CS0618
                 useNativeMusicAsDefault = (value == DefaultMusicSource.NativeTheme);
+#pragma warning restore CS0618
             }
         }
 

@@ -1710,6 +1710,26 @@ namespace UniPlaySong
                 changed = true;
             }
 
+            // v1.5.0: silent migration of the deprecated NativeTheme source.
+            // Users who previously selected "Use Playnite native theme music"
+            // were experiencing audible overlap because UPS and Playnite
+            // both tried to play the same background.mp3 file. v1.5.0
+            // ships Shades of Orange (the same track Playnite's default
+            // Fullscreen theme uses) as a bundled preset, so the user's
+            // intent ("I want vanilla-theme ambient") is preserved by
+            // routing through BundledPreset instead. SelectedBundledPreset
+            // is left untouched — if the user picked a different bundled
+            // track previously, we keep their choice; otherwise the
+            // validation block below ensures a sensible fallback.
+#pragma warning disable CS0618
+            if (_settings.DefaultMusicSourceOption == DefaultMusicSource.NativeTheme)
+            {
+                _settings.DefaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+                _fileLogger?.Info("MigrateBundledPresetSettings: NativeTheme (deprecated v1.5.0) → BundledPreset");
+                changed = true;
+            }
+#pragma warning restore CS0618
+
             // Always validate: if preset is blank or doesn't resolve to a real file, fix it
             if (string.IsNullOrEmpty(_settings.SelectedBundledPreset) ||
                 Services.BundledPresetService.ResolvePresetPath(_settings.SelectedBundledPreset) == null)
@@ -4280,7 +4300,9 @@ namespace UniPlaySong
             switch (source)
             {
                 case DefaultMusicSource.CustomFile:           return "Custom File";
-                case DefaultMusicSource.NativeTheme:          return "Playnite Theme Music";
+#pragma warning disable CS0618
+                case DefaultMusicSource.NativeTheme:          return "Playnite Theme Music (deprecated)";
+#pragma warning restore CS0618
                 case DefaultMusicSource.BundledPreset:        return "Bundled Ambient";
                 case DefaultMusicSource.CustomFolder:         return "Custom Folder";
                 case DefaultMusicSource.RandomGame:           return "Random Game";

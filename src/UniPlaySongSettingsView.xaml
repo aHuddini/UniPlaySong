@@ -557,17 +557,15 @@
                                TextWrapping="Wrap"
                                Margin="40,3,0,10"/>
 
-                    <!-- Default Music Source: Native Theme -->
-                    <RadioButton Content="Use Playnite native theme music"
-                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NativeTheme}"
-                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
-                                 GroupName="DefaultMusicSource"
-                                 Margin="20,5,0,0"/>
-                    <TextBlock Text="Uses Playnite's vanilla default theme background music"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
+                    <!-- v1.5.0: "Use Playnite native theme music" radio removed.
+                         The DefaultMusicSource.NativeTheme enum value is
+                         marked [Obsolete] and silently migrated to
+                         BundledPreset on settings load. UPS now ships
+                         Shades of Orange (the same track Playnite's
+                         default Fullscreen theme uses) as a bundled
+                         preset, avoiding the file-handle conflict UPS
+                         had when reading Playnite's installed theme
+                         directly. See NOTICES.txt for attribution. -->
 
                     <!-- Default Music Source: Active Theme Music -->
                     <RadioButton Content="Use active fullscreen theme's background music (If Available)"
@@ -4113,6 +4111,20 @@
                             </TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,0">• ANIKI REMAKE</TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bundled Music Credits -->
+                    <Border BorderBrush="#FF8888FF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A8888FF">
+                        <StackPanel>
+                            <TextBlock Text="Bundled Music Credits" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
+                                The Bundled Ambient default-music option ships these tracks. Full license details in NOTICES.txt.
+                            </TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Shades of Orange</Run> — Dave Miles, via Zapsplat (Standard License, Attribution)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Dark Ambient Soundscape Music / Dark Space Ambient</Run> — Tunetank (Pixabay Content License)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Ambient Background 2</Run> — DELOSound / Roman Dolmatov (Pixabay Content License)</TextBlock>
                         </StackPanel>
                     </Border>
 

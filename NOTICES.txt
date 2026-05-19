@@ -137,6 +137,28 @@ UniPlaySong ships a small set of default ambient music tracks in
 src/DefaultMusic/, used as the optional "Bundled Ambient" default-music
 source. Each track is included under its own license:
 
+Dave Miles - Shades of Orange (Playnite Vanilla).mp3
+----------------------------------------------------
+Composer:  Dave Miles
+           https://www.zapsplat.com/author/dave-miles-music/
+Source:    https://www.zapsplat.com/music/shades-of-orange-a-serene-
+           relaxing-warm-ambient-piece-with-slow-mellow-chords-perfect-
+           for-relaxation-meditation-etc/
+License:   Zapsplat Standard License (free tier — attribution required).
+           Mirrors the same attribution Crowfeather/Playnite uses for the
+           identical track in Playnite's default Fullscreen theme:
+           "Background music ... obtained from <URL above> (Attribution
+           license)". UniPlaySong is software (explicitly permitted in
+           §4 of the Zapsplat Standard License); the track is bundled
+           inside the .pext but not redistributed as a standalone
+           sound library (per §5). Surfaced in-plugin via Settings →
+           About so end users see the credit.
+Bundled as: v1.5.0+ default-music option, shipped as the "Playnite
+            Default"-style ambient choice so users who liked Playnite's
+            native theme music can pick the same track without the
+            file-handle conflict UPS has when reading Playnite's
+            installed theme directory directly.
+
 ANIKI REMAKE - Hub OST.mp3
 ANIKI REMAKE - Login OST.mp3
 --------------------------
