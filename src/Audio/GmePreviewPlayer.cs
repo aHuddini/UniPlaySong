@@ -81,6 +81,9 @@ namespace UniPlaySong.Audio
                 GmeNative.gme_set_fade(_emu, fadeStartMs);
 
                 _sampleProvider = new GmePreviewSampleProvider(_emu, SampleRate);
+                // Defensive unsubscribe: if Play() is called twice without a Stop in between,
+                // we'd stack handlers and fire TrackEnded multiple times per track end.
+                _sampleProvider.Ended -= OnSampleProviderEnded;
                 _sampleProvider.Ended += OnSampleProviderEnded;
 
                 _waveOut = new WaveOutEvent();

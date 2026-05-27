@@ -51,6 +51,11 @@ namespace UniPlaySong.Controls
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            // Unsubscribe per-instance settings handler to prevent leak when WPF rebuilds the tree
+            if (_settings != null)
+            {
+                _settings.PropertyChanged -= OnSettingsChanged;
+            }
             _musicControls.Remove(this);
             UpdateMute();
         }

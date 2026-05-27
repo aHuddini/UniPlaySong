@@ -464,10 +464,21 @@ namespace UniPlaySong.Downloaders
             var keyWords = ExtractKeyWords(game.Name);
             var seriesNumbers = ExtractSeriesNumbers(keyWords);
 
-            // Separate by source
-            var khAlbums = albumsList.Where(a => a.Source == Source.KHInsider).ToList();
-            var zopharAlbums = albumsList.Where(a => a.Source == Source.Zophar).ToList();
-            var ytAlbums = albumsList.Where(a => a.Source == Source.YouTube && IsLikelyGameMusic(a, game, auto: true)).ToList();
+            // Separate by source in a single pass (3 buckets vs 3 LINQ passes)
+            var khAlbums = new List<Album>();
+            var zopharAlbums = new List<Album>();
+            var ytAlbums = new List<Album>();
+            foreach (var a in albumsList)
+            {
+                switch (a.Source)
+                {
+                    case Source.KHInsider: khAlbums.Add(a); break;
+                    case Source.Zophar: zopharAlbums.Add(a); break;
+                    case Source.YouTube:
+                        if (IsLikelyGameMusic(a, game, auto: true)) ytAlbums.Add(a);
+                        break;
+                }
+            }
 
             // Priority 1: KHInsider with ALL keywords
             var result = FindBestWithKeywords(khAlbums, gameName, keyWords, 0, "KH");
@@ -573,7 +584,8 @@ namespace UniPlaySong.Downloaders
 
         private List<string> ExtractSeriesNumbers(List<string> keyWords)
         {
-            return keyWords.Where(k => Regex.IsMatch(k, @"^\d{1,2}$") && int.Parse(k) <= 20).ToList();
+            // Inline TryParse beats regex compile (this is called once per album search)
+            return keyWords.Where(k => int.TryParse(k, out var n) && n >= 0 && n <= 20 && k.Length <= 2).ToList();
         }
 
         private bool MatchesSeriesNumber(string albumName, List<string> seriesNumbers)
