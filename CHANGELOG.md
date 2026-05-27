@@ -4,6 +4,30 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.1] - 2026-05-25
+
+> Detailed release notes live in `docs/release_notes/v1.5.1.md`.
+
+Point release focused on a reported game-stop pause-source bug, defensive cleanup of long-lived event subscriptions, and a codebase-wide documentation/doc-comment pass per the project style guide.
+
+### Fixed
+
+- **Music silent after game exit until selection change.** Reported by users running `PauseOnFocusLoss` (often alongside `PauseOnMinimize` / `PauseWhenInSystemTray`). When a game exited via Steam BPM, a fullscreen-borderless launcher, a sound-driver hitch, or any path where focus didn't cleanly return to Playnite, the `FocusLoss` (or `Minimized` / `SystemTray`) pause source could survive past game stop because `OnApplicationActivate` never fired to remove it. Music stayed paused until the user changed selection (which doesn't clear window-state sources via `ClearAllPauseSources` — they're preserved — but does eventually nudge the set clean by other means) or restarted Playnite. `OnGameStopped` in [src/UniPlaySong.cs:487](src/UniPlaySong.cs#L487) now defers a re-poll of window state to the next UI tick via `Dispatcher.BeginInvoke(Background)` and drops any window-state pause source whose corresponding condition (`window.IsActive` / `window.IsVisible` / `WindowState != Minimized`) currently says playback should be allowed. Idempotent and safe: removing a pause source that isn't in the set is a no-op, and we never override genuine user state (if Playnite IS still minimized at game-stop time, `Minimized` stays). Doesn't touch the focus-tracking subsystem itself — the activate/deactivate/verify-timer race the user described remains, but the bug it produces no longer survives the next game stop.
+
+- **Event-handler leak in `MusicControl` (top panel control).** `OnUnloaded` removed the control from the static list but never unsubscribed `_settings.PropertyChanged -= OnSettingsChanged`. Each WPF tree rebuild (theme switch, fullscreen↔desktop mode swap, sidebar collapse/expand) leaked one settings handler. Over a long session this stacked to dozens of duplicate `PropertyChanged` fires per setting change. Fix at [src/Controls/MusicControl.xaml.cs:52-58](src/Controls/MusicControl.xaml.cs#L52-L58).
+
+- **Stacked `Ended` handlers in `GmePreviewPlayer`.** If `Play()` was called twice on the same instance without a `Stop()` in between (rare but possible during rapid preview-button mashing), the `_sampleProvider.Ended` subscription would stack and fire `TrackEnded` multiple times per track end. Defensive `-=` before `+=` at [src/Audio/GmePreviewPlayer.cs:83-86](src/Audio/GmePreviewPlayer.cs#L83-L86).
+
+### Performance
+
+- **`DownloadManager.FindBestAlbumMatch` single-pass source bucketing.** Three sequential `albumsList.Where(a => a.Source == ...).ToList()` passes replaced with a single `foreach` switch into three pre-allocated lists. Saves ~5-15ms per album search on libraries with ~100+ candidate albums; reduces transient `List<Album>` allocations. [src/Downloaders/DownloadManager.cs:467-481](src/Downloaders/DownloadManager.cs#L467-L481).
+
+- **`ExtractSeriesNumbers` regex compile removed.** Replaced `Regex.IsMatch(k, @"^\d{1,2}$") && int.Parse(k) <= 20` with a single `int.TryParse + range check + length check`. Saves ~200µs per call on the hot search path. [src/Downloaders/DownloadManager.cs:574-578](src/Downloaders/DownloadManager.cs#L574-L578).
+
+### Changed
+
+- **Documentation comments simplified across the codebase per `CLAUDE.md` style.** XML `/// <summary>` blocks removed where the method/property/enum-value name was self-documenting; converted to inline `//` lines where the comment carried real information; preserved on public APIs that legitimately need `<param>` / `<returns>` / `<exception>` tags. Touched files: `src/Models/Source.cs`, `src/Models/NormalizationSettings.cs`, `src/Services/GameMusicFileService.cs`, `src/Services/MusicPlayer.cs`, `src/Services/DownloadDialogService.cs`, `src/Services/BatchDownloadService.cs`, `src/Handlers/AmplifyDialogHandler.cs`, `src/Handlers/TrimDialogHandler.cs`, `src/UniPlaySongSettings.cs` (EffectChainPreset enum). No behavior changes.
+
 ## [1.5.0] - 2026-05-18
 
 > Detailed release notes (full feature breakdown, module structure, upgrade notes) live in `docs/release_notes/v1.5.0.md`.

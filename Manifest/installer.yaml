@@ -1,5 +1,15 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-05-25
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.1/UniPlaySong-1_5_1-May25_2026.pext'
+    Changelog:
+      - '[Critical Fix] Check implemented to ensure music does not stay silent after you exit a game. Triggered primarily when Pause on Focus Loss (often combined with Pause on Minimize / System Tray) was on and focus didn''t cleanly return to Playnite.'
+      - '[Fix] Memory and event-handler leak in the top-panel music control. Long sessions with theme switches or fullscreen/desktop toggles were leaking subscriptions; cleaned up.'
+      - '[Fix] HES preview button no longer fires "track ended" multiple times on rapid taps.'
+      - '[Performance] Album-search filtering tightened — small but consistent speedup when downloading music for games with many candidate albums.'
+      - '[Improved] Codebase-wide doc-comment cleanup. No user-visible changes.'
   - Version: 1.5.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-05-18

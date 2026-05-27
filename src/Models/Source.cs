@@ -1,34 +1,12 @@
 namespace UniPlaySong.Models
 {
-    /// <summary>
-    /// Represents available music download sources
-    /// </summary>
+    // Available music download sources
     public enum Source
     {
-        /// <summary>
-        /// All sources
-        /// </summary>
         All,
-
-        /// <summary>
-        /// KHInsider - Video game music archive
-        /// </summary>
-        KHInsider,
-
-        /// <summary>
-        /// Zophar - Video game music archive with emulated formats
-        /// </summary>
-        Zophar,
-
-        /// <summary>
-        /// YouTube - Video platform (last resort)
-        /// </summary>
-        YouTube,
-
-        /// <summary>
-        /// SoundCloud - Music streaming platform (hints-only, no search)
-        /// </summary>
-        SoundCloud
+        KHInsider,                  // Video game music archive
+        Zophar,                     // Video game music archive with emulated formats
+        YouTube,                    // Video platform (last resort)
+        SoundCloud                  // Music streaming platform (hints-only, no search)
     }
 }
-

@@ -101,7 +101,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>Shows source selection dialog (KHInsider, Zophar, YouTube)</summary>
+        // Shows source selection dialog (KHInsider, Zophar, YouTube)
         public Source? ShowSourceSelectionDialog()
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -252,7 +252,7 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        /// <summary>Shows unified album selection (searches all sources)</summary>
+        // Shows unified album selection (searches all sources)
         public Album ShowUnifiedAlbumSelectionDialog(Game game)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -391,7 +391,6 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>Shows album selection dialog</summary>
         public Album ShowAlbumSelectionDialog(Game game, Source source)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -578,7 +577,6 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>Shows song selection dialog</summary>
         public List<Song> ShowSongSelectionDialog(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -768,7 +766,7 @@ namespace UniPlaySong.Services
             return new List<Song>();
         }
 
-        /// <summary>Shows song selection dialog, returns selections (for batch download)</summary>
+        // Returns selections for batch download (vs ShowSongSelectionDialog which kicks off download directly)
         public List<Song> ShowSongSelectionDialogWithReturn(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -899,7 +897,7 @@ namespace UniPlaySong.Services
             return new List<Song>();
         }
 
-        /// <summary>Shows download dialog for default music (no game context)</summary>
+        // No game context — downloaded files land in the default-music folder
         public bool ShowDefaultMusicDownloadDialog(string defaultMusicPath)
         {
             // Pre-load Material Design assemblies before XAML parsing
@@ -1007,7 +1005,6 @@ namespace UniPlaySong.Services
             );
         }
 
-        /// <summary>Shows song selection for default music downloads</summary>
         private Song ShowSongSelectionForDefaultMusic(Game game, Album album)
         {
             // Pre-load Material Design assemblies before XAML parsing

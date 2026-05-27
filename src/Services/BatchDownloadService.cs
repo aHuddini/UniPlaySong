@@ -12,7 +12,6 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>Single game download result</summary>
     public class GameDownloadResult
     {
         public Game Game { get; set; }
@@ -26,7 +25,6 @@ namespace UniPlaySong.Services
         public string SkipReason { get; set; }
     }
 
-    /// <summary>Batch download result with successes and failures</summary>
     public class BatchDownloadResult
     {
         public List<string> DownloadedFiles { get; set; } = new List<string>();
@@ -36,10 +34,9 @@ namespace UniPlaySong.Services
         public int SkippedCount { get; set; }
     }
 
-    /// <summary>Progress callback for batch downloads</summary>
     public delegate void GameDownloadProgressCallback(Game game, string gameName, BatchDownloadStatus status, string message, string albumName = null, string sourceName = null);
 
-    /// <summary>Batch music download service with parallel support</summary>
+    // Batch music download service with parallel support
     public class BatchDownloadService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();

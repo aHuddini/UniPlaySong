@@ -35,9 +35,6 @@ namespace UniPlaySong.Handlers
             _amplifyService = amplifyService;
         }
 
-        /// <summary>
-        /// Show the desktop amplify dialog for a game
-        /// </summary>
         public void ShowAmplifyDialog(Game game)
         {
             try

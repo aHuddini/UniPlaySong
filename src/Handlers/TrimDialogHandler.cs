@@ -39,9 +39,7 @@ namespace UniPlaySong.Handlers
             _settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         }
 
-        /// <summary>
-        /// Trim leading silence from all music files in the library
-        /// </summary>
+        // Trim leading silence from all music files in the library
         public async void TrimAllMusicFiles()
         {
             try
@@ -103,9 +101,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Trim leading silence from music files for a single game (fullscreen menu)
-        /// </summary>
+        // Trim leading silence from music files for a single game (fullscreen menu)
         public void TrimSelectedGamesFullscreen(Game game)
         {
             if (game == null)

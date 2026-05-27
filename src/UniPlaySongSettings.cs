@@ -83,33 +83,18 @@ namespace UniPlaySong
         Cyberpunk           // Sci-fi reverb + HP + slight slow, dark futuristic city
     }
 
-    /// <summary>
-    /// Preset effect chain orderings.
-    /// Each preset defines a fixed, safe order for applying effects.
-    /// </summary>
+    // Preset orderings for the effect chain. Each defines a fixed, safe sequence.
     public enum EffectChainPreset
     {
-        /// <summary>Standard: High-Pass → Low-Pass → Reverb (Recommended)</summary>
-        Standard = 0,
-        /// <summary>Filters after reverb: Reverb → High-Pass → Low-Pass</summary>
-        ReverbFirst = 1,
-        /// <summary>Low-Pass → High-Pass → Reverb</summary>
-        LowPassFirst = 2,
-        /// <summary>Low-Pass → Reverb → High-Pass</summary>
-        LowPassThenReverb = 3,
-        /// <summary>High-Pass → Reverb → Low-Pass</summary>
-        HighPassThenReverb = 4,
-        /// <summary>Reverb → Low-Pass → High-Pass</summary>
-        ReverbThenLowPass = 5
+        Standard = 0,               // High-Pass → Low-Pass → Reverb (Recommended)
+        ReverbFirst = 1,            // Reverb → High-Pass → Low-Pass (filters after reverb)
+        LowPassFirst = 2,           // Low-Pass → High-Pass → Reverb
+        LowPassThenReverb = 3,      // Low-Pass → Reverb → High-Pass
+        HighPassThenReverb = 4,     // High-Pass → Reverb → Low-Pass
+        ReverbThenLowPass = 5       // Reverb → Low-Pass → High-Pass
     }
 
-    /// <summary>
-    /// Visualizer tuning presets — curated combinations of all viz parameters.
-    /// Selecting a preset overwrites all visualizer settings; user can then tweak.
-    /// </summary>
-    /// <summary>
-    /// Visualizer bar color themes.
-    /// </summary>
+    // Visualizer bar color themes
     public enum VizColorTheme
     {
         Dynamic = 0,    // Game Art V1: sampled from game artwork, natural tones

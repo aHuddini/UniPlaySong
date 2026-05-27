@@ -1,35 +1,20 @@
 namespace UniPlaySong.Models
 {
-    /// <summary>Audio normalization settings (EBU R128)</summary>
+    // Audio normalization settings (EBU R128)
     public class NormalizationSettings
     {
-        /// <summary>Target loudness in LUFS (default: -16)</summary>
-        public double TargetLoudness { get; set; } = -16.0;
-
-        /// <summary>True peak limit in dBTP (default: -1.5)</summary>
-        public double TruePeak { get; set; } = -1.5;
-
-        /// <summary>Loudness range in LU (default: 11)</summary>
-        public double LoudnessRange { get; set; } = 11.0;
-
-        /// <summary>Audio codec (default: libmp3lame)</summary>
+        public double TargetLoudness { get; set; } = -16.0;     // LUFS
+        public double TruePeak { get; set; } = -1.5;            // dBTP
+        public double LoudnessRange { get; set; } = 11.0;       // LU
         public string AudioCodec { get; set; } = "libmp3lame";
-
-        /// <summary>Suffix for normalized files</summary>
         public string NormalizationSuffix { get; set; } = "-normalized";
-
-        /// <summary>Suffix for trimmed files</summary>
         public string TrimSuffix { get; set; } = "-trimmed";
-
         public bool SkipAlreadyNormalized { get; set; } = true;
-
-        /// <summary>When true, replaces originals instead of preserving them</summary>
+        // When true, replaces originals instead of preserving them
         public bool DoNotPreserveOriginals { get; set; } = false;
-
         public string FFmpegPath { get; set; }
     }
 
-    /// <summary>FFmpeg loudnorm filter measurements</summary>
     public class LoudnormMeasurements
     {
         public double MeasuredI { get; set; }
@@ -39,7 +24,6 @@ namespace UniPlaySong.Models
         public double Offset { get; set; }
     }
 
-    /// <summary>Normalization progress tracking</summary>
     public class NormalizationProgress
     {
         public string CurrentFile { get; set; }
@@ -51,7 +35,6 @@ namespace UniPlaySong.Models
         public bool IsComplete { get; set; }
     }
 
-    /// <summary>Normalization operation result</summary>
     public class NormalizationResult
     {
         public int TotalFiles { get; set; }
@@ -64,37 +47,25 @@ namespace UniPlaySong.Models
         public bool IsComplete { get; set; }
     }
 
-    /// <summary>Audio silence trimming settings</summary>
+    // Audio silence trimming settings
     public class TrimSettings
     {
-        /// <summary>Silence threshold in dB (default: -50)</summary>
-        public double SilenceThreshold { get; set; } = -50.0;
-
-        /// <summary>Min silence duration to detect in seconds (default: 0.1)</summary>
-        public double SilenceDuration { get; set; } = 0.1;
-
-        /// <summary>Min silence to trim in seconds; skip if shorter (default: 0.5)</summary>
-        public double MinSilenceToTrim { get; set; } = 0.5;
-
-        /// <summary>Buffer after silence to avoid clicks (default: 0.15s)</summary>
-        public double TrimBuffer { get; set; } = 0.15;
-
+        public double SilenceThreshold { get; set; } = -50.0;   // dB
+        public double SilenceDuration { get; set; } = 0.1;      // seconds; min duration to detect
+        public double MinSilenceToTrim { get; set; } = 0.5;     // seconds; skip if shorter
+        public double TrimBuffer { get; set; } = 0.15;          // seconds after silence to avoid clicks
         public string TrimSuffix { get; set; } = "-trimmed";
         public bool SkipAlreadyTrimmed { get; set; } = true;
-
-        /// <summary>When true, replaces originals instead of preserving them</summary>
+        // When true, replaces originals instead of preserving them
         public bool DoNotPreserveOriginals { get; set; } = false;
-
         public string FFmpegPath { get; set; }
     }
 
-    /// <summary>Batch download status</summary>
     public enum BatchDownloadStatus
     {
         Pending, Downloading, Completed, Failed, Skipped, Cancelled
     }
 
-    /// <summary>Individual game download item for batch progress</summary>
     public class BatchDownloadItem : System.ComponentModel.INotifyPropertyChanged
     {
         private string _gameName;
@@ -217,7 +188,6 @@ namespace UniPlaySong.Models
             PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
     }
 
-    /// <summary>Batch download progress tracking</summary>
     public class BatchDownloadProgress
     {
         public int TotalGames { get; set; }

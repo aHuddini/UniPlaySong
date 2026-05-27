@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.5.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,31 +20,30 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.0
-
-- **Music Info Card** — right-click any game → "Music Info Card" for a stylized per-game music summary (counts, duration, song list, format breakdown). The card picks up each game's art and accent colors so it feels native to that game.
-
-- **Calm Down Mode** — Fullscreen toggle that gently muffles and dims the music over ~1.5 seconds. Perfect for late-night browsing. Theme authors can bind it via `{PluginSettings}`.
-
-- **Randomize bundled track every startup** — new Settings → Playback checkbox. Rolls a fresh bundled preset each Playnite session and won't pick the same one twice in a row.
-
-- **Settings Backup tab** — new Settings → Backup tab. Export your UPS configuration as portable JSON for re-import on another machine, or as a Markdown snapshot you can paste into a GitHub issue or Discord support thread (paths are auto-sanitized so you don't leak your Windows username).
+## What's New - v1.5.1
 
 ### Fixed
 
-- **Default music no longer cuts out** when switching Fullscreen filter presets (Recent Games, custom presets), Aniki ReMake tabs, or Solaris filter buttons.
-- **Default music no longer plays over welcome-hub / login overlays** when Game Music is off. Waits silently and fades in once the overlay clears.
+- **Music no longer stays silent after you exit a game.** Reported by users with "Pause on Focus Loss" (often combined with Pause on Minimize / Pause in System Tray) enabled. If focus didn't cleanly return to Playnite when a game closed — common with Steam Big Picture Mode, fullscreen-borderless launchers, or after a sound-driver hiccup — UPS could stay paused until you changed game selection or restarted Playnite. UPS now re-checks the window state right after a game stops and clears any stale pause sources whose condition no longer applies, so playback resumes as expected.
 
-### Changed
+- **Memory and event-handler leak in the top-panel music control.** Over long sessions (especially after switching themes, toggling fullscreen/desktop mode, or collapsing the sidebar), the control was leaking event subscriptions which gradually slowed setting changes. Cleaned up so it only subscribes once.
 
-- **"Use Playnite native theme music" default source replaced by bundled track.** The old native-theme option caused audio overlap because UPS and Playnite both played the same file at once. UPS now ships "Shades of Orange" (the same track Playnite's default Fullscreen theme uses, by Dave Miles via Zapsplat) as a bundled preset — same vibe, no conflict. Existing users with the native-theme source selected are silently migrated to Bundled Ambient on first launch. Credit shown in Settings → About.
+- **HES preview button no longer fires the "track ended" event multiple times** when you rapidly tap preview on the same track.
 
-### Known Issue
+### Performance
 
-- **Toast notification blur is broken on Windows 11** (recent OS update deprecated the API). Toasts render with a flat tint instead of frosted glass. Windows 10 users are unaffected; a fix will be attempted for a future v1.5.x patch.
+- Album-search filtering tightened up — small but consistent speedup when downloading music for games with lots of candidate albums.
+
+### Behind the scenes
+
+- Codebase-wide doc-comment cleanup. No user-visible changes; just internal polish for maintainability.
+
+### Known Issue (carried over from v1.5.0)
+
+- **Toast notification blur is still broken on Windows 11** (recent OS update deprecated the API UPS used). Toasts render with a flat tint instead of frosted glass. Windows 10 users are unaffected; a fix is planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.4.6**: NEC TurboGrafx-16 / PC Engine (.hes) chiptune support, "Split HES Tracks" menu action, two new Bundled Ambient tracks from Mike Aniki (Hub OST + Login OST, included with composer's explicit permission), `{PluginSettings}` theme integration framework validated against Aniki ReMake, paired `Enable Game Music` + `Enable Default Music` toggles in the Fullscreen Extensions menu, LGPL §6 paperwork for the bundled GME chiptune library.
+- **v1.5.0**: Music Info Card (right-click → per-game music dashboard with art-matched accent colors), Calm Down Mode (smooth muffle + dim fade), Randomize Bundled Track Every Startup (variety across sessions, anti-repeat), Settings Backup tab (portable JSON export + shareable Markdown snapshot with sanitized paths), default music continuity across Fullscreen filter-preset switches and theme overlays, retirement of the "Use Playnite native theme music" source in favor of the bundled "Shades of Orange" preset.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

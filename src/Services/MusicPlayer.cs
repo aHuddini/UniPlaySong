@@ -103,9 +103,7 @@ namespace UniPlaySong.Services
 
         public string Source => _mediaPlayer?.Source?.LocalPath ?? string.Empty;
 
-        /// <summary>
-        /// Preload a file into a separate player (for seamless switching)
-        /// </summary>
+        // Preload a file into a separate player (for seamless switching)
         public void PreLoad(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath))
@@ -139,9 +137,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Load a file - uses preloaded player if available
-        /// </summary>
+        // Load a file - uses preloaded player if available
         public void Load(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath))

@@ -11,9 +11,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for managing game music files and directories
-    /// </summary>
+    // Service for managing game music files and directories
     public class GameMusicFileService
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -126,9 +124,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Gets the primary song for a game
-        /// </summary>
         public string GetPrimarySong(Game game)
         {
             var directory = GetGameMusicDirectory(game);
@@ -140,9 +135,6 @@ namespace UniPlaySong.Services
             return PrimarySongManager.GetPrimarySong(directory, _errorHandler);
         }
 
-        /// <summary>
-        /// Sets the primary song for a game
-        /// </summary>
         public void SetPrimarySong(Game game, string songFilePath)
         {
             var directory = GetGameMusicDirectory(game);
@@ -154,9 +146,6 @@ namespace UniPlaySong.Services
             PrimarySongManager.SetPrimarySong(directory, songFilePath, _errorHandler);
         }
 
-        /// <summary>
-        /// Clears the primary song for a game
-        /// </summary>
         public void ClearPrimarySong(Game game)
         {
             var directory = GetGameMusicDirectory(game);
@@ -168,9 +157,7 @@ namespace UniPlaySong.Services
             PrimarySongManager.ClearPrimarySong(directory, _errorHandler);
         }
 
-        /// <summary>
-        /// Removes the primary song for a game (alias for ClearPrimarySong)
-        /// </summary>
+        // Alias for ClearPrimarySong (kept for backward compatibility with menu handlers)
         public void RemovePrimarySong(Game game)
         {
             ClearPrimarySong(game);
@@ -212,9 +199,6 @@ namespace UniPlaySong.Services
             return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
         }
 
-        /// <summary>
-        /// Invalidates the song cache for a specific game
-        /// </summary>
         public void InvalidateCacheForGame(Game game)
         {
             var directory = GetGameMusicDirectory(game);
@@ -224,9 +208,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Invalidates the song cache for a specific directory
-        /// </summary>
         public void InvalidateCacheForDirectory(string directory)
         {
             if (!string.IsNullOrWhiteSpace(directory))
@@ -235,9 +216,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Checks if a game has any music files
-        /// </summary>
         public bool HasMusic(Game game)
         {
             var songs = GetAvailableSongs(game);
