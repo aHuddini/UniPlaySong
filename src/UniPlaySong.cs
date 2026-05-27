@@ -494,6 +494,25 @@ namespace UniPlaySong
             {
                 _api.ApplicationSettings.Fullscreen.IsMusicMuted = true;
             }
+
+            // Defensive: game exit doesn't always produce a clean OnApplicationActivate
+            // (Steam BPM, fullscreen-borderless games, sound-driver hitches, focus-verify
+            // timer races). Re-poll window state on the next UI tick and drop any
+            // window-state pause sources whose condition no longer applies. Without this,
+            // a stale FocusLoss/Minimized/SystemTray can survive past game exit and silence
+            // music until the user changes selection or restarts Playnite.
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                var window = Application.Current?.MainWindow;
+                if (window == null || _playbackService == null) return;
+
+                if (window.IsActive)
+                    _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
+                if (window.IsVisible)
+                    _playbackService.RemovePauseSource(Models.PauseSource.SystemTray);
+                if (window.WindowState != WindowState.Minimized)
+                    _playbackService.RemovePauseSource(Models.PauseSource.Minimized);
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         /// <summary>
