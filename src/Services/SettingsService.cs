@@ -148,77 +148,18 @@ namespace UniPlaySong.Services
             return errors;
         }
 
-        /// <summary>
-        /// Validates that native music file exists if UseNativeMusicAsDefault is enabled
-        /// Does NOT modify DefaultMusicPath - it remains separate
-        /// </summary>
-        /// <param name="settings">Settings object to validate</param>
-        /// <param name="showErrors">If true, shows error dialogs to user if native music file not found</param>
-        /// <returns>True if native music file exists (or feature is disabled), false if enabled but file not found</returns>
+        // v1.5.0: UseNativeMusicAsDefault deprecated alongside the NativeTheme source.
+        // v1.5.2: validator no longer probes background.{ext} — that file belongs to
+        // Playnite's SDL player. If the legacy flag is somehow still set after migration,
+        // we silently clear it so the next save persists the cleanup.
         public bool ValidateNativeMusicFile(UniPlaySongSettings settings, bool showErrors = false)
         {
-            // Only validate if UseNativeMusicAsDefault is enabled
-            if (settings?.UseNativeMusicAsDefault != true)
+            if (settings?.UseNativeMusicAsDefault == true)
             {
-                return true; // Not applicable, return success
+                settings.UseNativeMusicAsDefault = false;
+                _fileLogger?.Info("SettingsService: cleared legacy UseNativeMusicAsDefault (deprecated v1.5.0).");
             }
-
-            try
-            {
-                var nativeMusicPath = PlayniteThemeHelper.FindBackgroundMusicFile(_api);
-                
-                if (!string.IsNullOrEmpty(nativeMusicPath) && File.Exists(nativeMusicPath))
-                {
-                    _fileLogger?.Debug($"SettingsService: Native music file validated: {nativeMusicPath}");
-                    return true;
-                }
-                else
-                {
-                    _fileLogger?.Warn("SettingsService: UseNativeMusicAsDefault enabled but native music file not found");
-                    
-                    if (showErrors)
-                    {
-                        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                        var expectedAudioDir = Path.Combine(localAppData, "Playnite", "Themes", "Fullscreen", "Default", "audio");
-                        var expectedPath = Path.Combine(expectedAudioDir, "background.*");
-                        
-                        var errorMsg = "Could not find Playnite background music file.\n\n" +
-                                      "Expected location: " + expectedPath + "\n\n" +
-                                      "Please ensure:\n" +
-                                      "1. You're using a theme with background music\n" +
-                                      "2. The file exists at: " + expectedAudioDir + "\n" +
-                                      "3. Or use a custom default music file instead.";
-                        
-                        settings.UseNativeMusicAsDefault = false;
-                        _api.Dialogs.ShowMessage(errorMsg, "Native Music Not Found");
-                    }
-                    else
-                    {
-                        settings.UseNativeMusicAsDefault = false;
-                    }
-                    
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Error validating native music file");
-                _fileLogger?.Error($"SettingsService: Error validating native music file: {ex.Message}", ex);
-                
-                if (showErrors)
-                {
-                    var errorMsg = $"Error detecting native music file: {ex.Message}\n\n" +
-                                  $"Please check the extension logs for more details.";
-                    settings.UseNativeMusicAsDefault = false;
-                    _api.Dialogs.ShowMessage(errorMsg, "Error");
-                }
-                else
-                {
-                    settings.UseNativeMusicAsDefault = false;
-                }
-                
-                return false;
-            }
+            return true;
         }
 
         private void OnSettingPropertyChanged(object sender, PropertyChangedEventArgs e)

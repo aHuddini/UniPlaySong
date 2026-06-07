@@ -146,6 +146,73 @@ namespace UniPlaySong
         // Parallel list filtered to the "abandoned" category for the Abandoned-status sound picker
         public List<Services.BundledJingleInfo> AbandonedJingles => Services.BundledJingleService.GetAbandonedJingles();
 
+        // === Active Theme UPS Audio status surface (v1.5.2) ===
+        // Bound by the Active Theme Music section in the Playback tab. Recomputed on demand
+        // when the user opens the settings page or clicks the radio button.
+
+        private Common.ActiveThemeStatusInfo _activeThemeStatus;
+        public Common.ActiveThemeStatusInfo ActiveThemeStatus
+        {
+            get
+            {
+                if (_activeThemeStatus == null)
+                    _activeThemeStatus = Common.PlayniteThemeHelper.GetActiveThemeStatus();
+                return _activeThemeStatus;
+            }
+        }
+
+        // Per-state visibility flags so XAML DataTriggers can show the right panel
+        public bool IsActiveThemeReady => ActiveThemeStatus.Status == Common.ActiveThemeUpsStatus.Ready;
+        public bool IsActiveThemeCanBeCreated => ActiveThemeStatus.Status == Common.ActiveThemeUpsStatus.CanBeCreated;
+        public bool IsActiveThemeUnsupported => ActiveThemeStatus.Status == Common.ActiveThemeUpsStatus.Unsupported;
+        public bool IsActiveThemeNotApplicable => ActiveThemeStatus.Status == Common.ActiveThemeUpsStatus.NotApplicable;
+
+        // Result of the most recent copy attempt, surfaced inline below the button
+        private string _activeThemeCopyResultMessage;
+        public string ActiveThemeCopyResultMessage
+        {
+            get => _activeThemeCopyResultMessage;
+            set { _activeThemeCopyResultMessage = value; OnPropertyChanged(); }
+        }
+
+        private bool _activeThemeCopyResultIsError;
+        public bool ActiveThemeCopyResultIsError
+        {
+            get => _activeThemeCopyResultIsError;
+            set { _activeThemeCopyResultIsError = value; OnPropertyChanged(); }
+        }
+
+        // Re-runs the active-theme scan. Call after the user changes their fullscreen theme
+        // or after a successful copy.
+        public void RefreshActiveThemeStatus()
+        {
+            Common.PlayniteThemeHelper.InvalidateCache();
+            _activeThemeStatus = null;
+            OnPropertyChanged(nameof(ActiveThemeStatus));
+            OnPropertyChanged(nameof(IsActiveThemeReady));
+            OnPropertyChanged(nameof(IsActiveThemeCanBeCreated));
+            OnPropertyChanged(nameof(IsActiveThemeUnsupported));
+            OnPropertyChanged(nameof(IsActiveThemeNotApplicable));
+        }
+
+        // One-click helper that copies the active theme's background.* to UPS_BackgroundAudio.*
+        // in the same folder. Surfaced as a button in the "CanBeCreated" state.
+        public ICommand CreateUpsAudioFromBackgroundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var result = Common.PlayniteThemeHelper.CreateUpsAudioFromBackground();
+            if (result.Success)
+            {
+                ActiveThemeCopyResultIsError = false;
+                ActiveThemeCopyResultMessage = $"Created: {System.IO.Path.GetFileName(result.TargetPath)}";
+            }
+            else
+            {
+                ActiveThemeCopyResultIsError = true;
+                ActiveThemeCopyResultMessage = $"Copy failed: {result.ErrorMessage}";
+            }
+            RefreshActiveThemeStatus();
+        });
+
         // Deep-clones current settings via JSON roundtrip, then applies the update.
         // This ensures ALL properties are preserved (previously only ~30 of 180 were copied).
         private UniPlaySongSettings CreateSettingsWithUpdate(Action<UniPlaySongSettings> updateAction)
@@ -2587,6 +2654,10 @@ namespace UniPlaySong
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();
             UpdateToolValidation();
+            RefreshActiveThemeStatus();
+            // Reset any stale "Created: …" or "Copy failed: …" message from the prior open
+            ActiveThemeCopyResultMessage = null;
+            ActiveThemeCopyResultIsError = false;
         }
 
         // Tool path validation — checks if yt-dlp.exe and ffmpeg.exe exist at configured paths

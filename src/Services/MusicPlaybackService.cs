@@ -27,7 +27,6 @@ namespace UniPlaySong.Services
         private readonly Dictionary<string, bool> _primarySongPlayed = new Dictionary<string, bool>();
 
         // Cached native music path to avoid repeated method calls in IsDefaultMusicPath()
-        private readonly string _nativeMusicPath;
         
         public event Action<UniPlaySongSettings> OnMusicStopped; // Fired when music stops (for native music restoration)
 
@@ -187,9 +186,6 @@ namespace UniPlaySong.Services
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _fileLogger = fileLogger;
             _errorHandler = errorHandler;
-
-            // Cache native music path once at service initialization
-            _nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
 
             _fader = new MusicFader(
                 _musicPlayer,
@@ -463,20 +459,18 @@ namespace UniPlaySong.Services
 
             switch (settings.DefaultMusicSourceOption)
             {
-                // v1.5.0: NativeTheme is [Obsolete] but kept here as a
-                // safety net — users with stale settings that bypass the
-                // migration on load (e.g. settings file edited by hand)
-                // still get sensible behavior instead of falling through
-                // to the default case. Pragma suppresses the obsolete-use
-                // warning since this is the intentional legacy handler.
+                // v1.5.0: NativeTheme deprecated. v1.5.2: legacy handler no-ops.
+                // Settings migration on load rewrites NativeTheme → BundledPreset, so this
+                // case should never fire. If hand-edited settings bypass the migration,
+                // returning false here means the path is treated as "not the default music
+                // path" — harmless fall-through to the regular game-music logic.
 #pragma warning disable CS0618
                 case DefaultMusicSource.NativeTheme:
-                    return !string.IsNullOrWhiteSpace(_nativeMusicPath) &&
-                           string.Equals(path, _nativeMusicPath, StringComparison.OrdinalIgnoreCase);
+                    return false;
 #pragma warning restore CS0618
 
                 case DefaultMusicSource.ActiveThemeMusic:
-                    var activeThemePath = Common.PlayniteThemeHelper.FindActiveThemeMusicFile();
+                    var activeThemePath = Common.PlayniteThemeHelper.FindActiveThemeUpsAudioFile();
                     return !string.IsNullOrWhiteSpace(activeThemePath) &&
                            string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
 
@@ -806,38 +800,32 @@ namespace UniPlaySong.Services
                 {
                     switch (settings.DefaultMusicSourceOption)
                     {
-                        // v1.5.0: NativeTheme is [Obsolete] but the case is
-                        // kept as a safety net. The migration on settings
-                        // load rewrites NativeTheme → BundledPreset, so
-                        // this branch should never fire in practice. If
-                        // it does (hand-edited settings, edge case), the
-                        // legacy behavior still works rather than going
-                        // silent.
+                        // v1.5.0: NativeTheme deprecated. v1.5.2: legacy handler no-ops.
+                        // Settings migration rewrites NativeTheme → BundledPreset on load,
+                        // so this case should never fire. If hand-edited settings bypass
+                        // the migration, adding nothing to `songs` results in silence (no
+                        // default music) rather than a crash — user can fix by re-selecting
+                        // a source in Settings → Playback.
 #pragma warning disable CS0618
                         case DefaultMusicSource.NativeTheme:
 #pragma warning restore CS0618
-                            var nativeMusicPath = Common.PlayniteThemeHelper.FindBackgroundMusicFile(null);
-                            if (!string.IsNullOrWhiteSpace(nativeMusicPath) && File.Exists(nativeMusicPath))
-                            {
-                                _fileLogger?.Info($"No game music for {game.Name}, using native theme music (deprecated source — migration should have run): {Path.GetFileName(nativeMusicPath)}");
-                                songs.Add(nativeMusicPath);
-                            }
-                            else
-                            {
-                                _fileLogger?.Warn($"NativeTheme selected (deprecated source) but native music file not found.");
-                            }
+                            _fileLogger?.Warn("NativeTheme is deprecated since v1.5.0 — migration should have run on settings load. " +
+                                              "If you see this, your settings file may have been hand-edited. " +
+                                              "Pick a different source in Settings -> Playback.");
                             break;
 
                         case DefaultMusicSource.ActiveThemeMusic:
-                            var themeMusicPath = Common.PlayniteThemeHelper.FindActiveThemeMusicFile();
+                            var themeMusicPath = Common.PlayniteThemeHelper.FindActiveThemeUpsAudioFile();
                             if (!string.IsNullOrWhiteSpace(themeMusicPath) && File.Exists(themeMusicPath))
                             {
-                                _fileLogger?.Info($"No game music for {game.Name}, using active theme music: {Path.GetFileName(themeMusicPath)}");
+                                _fileLogger?.Info($"No game music for {game.Name}, using active theme UPS audio: {Path.GetFileName(themeMusicPath)}");
                                 songs.Add(themeMusicPath);
                             }
                             else
                             {
-                                _fileLogger?.Warn($"ActiveThemeMusic selected but no background music found in active theme.");
+                                _fileLogger?.Warn("ActiveThemeMusic selected but UPS_BackgroundAudio.* not found in active theme. " +
+                                                  "Theme dev must add the file, or user can run the copy helper in " +
+                                                  "Settings -> Playback -> Active Theme Music.");
                             }
                             break;
 

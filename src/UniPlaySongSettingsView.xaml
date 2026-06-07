@@ -21,6 +21,8 @@
         <local:AbandonedThemeConverter x:Key="AbandonedThemeConverter"/>
         <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
         <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -567,17 +569,76 @@
                          had when reading Playnite's installed theme
                          directly. See NOTICES.txt for attribution. -->
 
-                    <!-- Default Music Source: Active Theme Music -->
-                    <RadioButton Content="Use active fullscreen theme's background music (If Available)"
+                    <!-- Default Music Source: Active Theme UPS Audio (v1.5.2) -->
+                    <RadioButton Content="Use active theme's UPS audio file (advanced — theme support required)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=ActiveThemeMusic}"
                                  IsEnabled="{Binding Settings.EnableDefaultMusic}"
                                  GroupName="DefaultMusicSource"
                                  Margin="20,5,0,0"/>
-                    <TextBlock Text="Plays the background music from your current fullscreen theme through UPS with fade-in and volume control. The theme must have a background.mp3 file in its audio directory for this to work (e.g. Solaris, Playnite Default). Themes that manage audio through other means (e.g. ANIKI REMAKE) are not supported by this option."
+                    <TextBlock Text="Plays UPS_BackgroundAudio.{mp3,ogg,wav,flac} from the active Fullscreen theme's audio folder. Theme developers must add this file for the option to work."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
+                               Margin="40,0,0,5"/>
+
+                    <!-- State A: Ready — UPS file is present -->
+                    <StackPanel Margin="40,0,0,10"
+                                Visibility="{Binding IsActiveThemeReady, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock FontSize="11" Foreground="#90C090" TextWrapping="Wrap">
+                            <Run Text="✓ Detected: UPS_BackgroundAudio in "/>
+                            <Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- State B: CanBeCreated — has background.* but no UPS file; offer copy button -->
+                    <StackPanel Margin="40,0,0,10"
+                                Visibility="{Binding IsActiveThemeCanBeCreated, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock FontSize="11" Foreground="#D0B070" TextWrapping="Wrap">
+                            <Run Text="⚠ Your active theme ("/>
+                            <Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/>
+                            <Run Text=") doesn't ship a UPS audio file, but it has a background.* file that Playnite uses for its own audio player."/>
+                        </TextBlock>
+                        <Button Content="Create UPS_BackgroundAudio from theme's background file"
+                                Command="{Binding CreateUpsAudioFromBackgroundCommand}"
+                                Padding="10,4"
+                                HorizontalAlignment="Left"
+                                Margin="0,8,0,4"/>
+                        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                                   Text="Makes a copy with the UPS filename so UPS plays it without fighting Playnite for the same file. Theme updates may overwrite this — re-run the helper if music goes silent after updating your theme."/>
+                        <!-- Result message shown after a copy attempt. Color reflects success/error.
+                             Stays hidden until the user clicks the button (message is null initially). -->
+                        <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Text="{Binding ActiveThemeCopyResultMessage}"
+                                   Visibility="{Binding ActiveThemeCopyResultMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#90C090"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveThemeCopyResultIsError}" Value="True">
+                                            <Setter Property="Foreground" Value="#E0805F"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- State C: Unsupported — no UPS file and no background.* file either -->
+                    <StackPanel Margin="40,0,0,10"
+                                Visibility="{Binding IsActiveThemeUnsupported, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock FontSize="11" Foreground="#E08070" TextWrapping="Wrap">
+                            <Run Text="✗ Not supported by your current theme ("/>
+                            <Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/>
+                            <Run Text="). Ask the theme developer to add UPS_BackgroundAudio.{mp3,ogg,wav,flac} to their audio folder, or pick a different default music source."/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- State D: NotApplicable — could not resolve fullscreen theme (Desktop only / lookup failed) -->
+                    <StackPanel Margin="40,0,0,10"
+                                Visibility="{Binding IsActiveThemeNotApplicable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                                   Text="ℹ This option applies in Fullscreen mode. UPS will resolve the file against whichever theme is active when you switch to Fullscreen."/>
+                    </StackPanel>
 
                     <!-- Default Music Source: Random Game -->
                     <RadioButton Content="Pick From Random Game"
