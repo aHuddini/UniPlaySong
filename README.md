@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.5.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![Version](https://img.shields.io/badge/version-1.5.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,30 +20,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.1
+## What's New - v1.5.2
 
-### Fixed
+### Changed
 
-- **Music no longer stays silent after you exit a game.** Reported by users with "Pause on Focus Loss" (often combined with Pause on Minimize / Pause in System Tray) enabled. If focus didn't cleanly return to Playnite when a game closed — common with Steam Big Picture Mode, fullscreen-borderless launchers, or after a sound-driver hiccup — UPS could stay paused until you changed game selection or restarted Playnite. UPS now re-checks the window state right after a game stops and clears any stale pause sources whose condition no longer applies, so playback resumes as expected.
-
-- **Memory and event-handler leak in the top-panel music control.** Over long sessions (especially after switching themes, toggling fullscreen/desktop mode, or collapsing the sidebar), the control was leaking event subscriptions which gradually slowed setting changes. Cleaned up so it only subscribes once.
-
-- **HES preview button no longer fires the "track ended" event multiple times** when you rapidly tap preview on the same track.
-
-### Performance
-
-- Album-search filtering tightened up — small but consistent speedup when downloading music for games with lots of candidate albums.
-
-### Behind the scenes
-
-- Codebase-wide doc-comment cleanup. No user-visible changes; just internal polish for maintainability.
+- **Active Theme Music option reworked.** The old behavior of reading the theme's `background.mp3` directly caused playback glitches and silence on some setups because Playnite's built-in audio player opens the same file at the same time. UPS now reads a dedicated UPS-named file from the theme's audio folder instead. Theme developers add `UPS_BackgroundAudio.mp3` (or .ogg/.wav/.flac) and the option works cleanly. For users on a theme that ships only `background.mp3`, a new helper button in **Settings → Playback** creates a UPS-named copy in one click. The settings panel now shows you exactly which state your active theme is in: ready, can-be-created, unsupported, or "fullscreen mode only".
 
 ### Known Issue (carried over from v1.5.0)
 
 - **Toast notification blur is still broken on Windows 11** (recent OS update deprecated the API UPS used). Toasts render with a flat tint instead of frosted glass. Windows 10 users are unaffected; a fix is planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.5.0**: Music Info Card (right-click → per-game music dashboard with art-matched accent colors), Calm Down Mode (smooth muffle + dim fade), Randomize Bundled Track Every Startup (variety across sessions, anti-repeat), Settings Backup tab (portable JSON export + shareable Markdown snapshot with sanitized paths), default music continuity across Fullscreen filter-preset switches and theme overlays, retirement of the "Use Playnite native theme music" source in favor of the bundled "Shades of Orange" preset.
+- **v1.5.1**: Defensive fix for music staying silent after exiting a game (focus-loss + game-stop edge case), memory leak fix in the top-panel music control over long sessions with theme/mode switches, HES chiptune preview event-fix on rapid taps, faster album-search filtering, codebase-wide doc-comment cleanup.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

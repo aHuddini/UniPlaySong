@@ -4,6 +4,24 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.2] - 2026-05-27
+
+> Detailed release notes live in `docs/release_notes/v1.5.2.md`.
+
+Point release focused on a rework of the Active Theme Music option after a reported bug class — file-handle contention between Playnite's built-in SDL player and UPS reading the same `background.{ext}` file.
+
+### Changed
+
+- **Active Theme Music source reworked: strict `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` filename, no fallback to `background.*`.** The pre-v1.5.2 implementation scanned the active fullscreen theme's `audio/` folder for `background.{mp3,ogg,wav,flac}` — the *same* file Playnite's built-in SDL player opens in fullscreen mode. Two players, one file handle → file-handle contention, partial reads, looping artifacts, silence, or in the reported reproducer a 4× / second EOF-loop on Aniki ReMake's intentionally-short 0.16s stub. v1.5.2 changes the convention: UPS now ONLY reads `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` from the theme's `audio/` folder. No fallback to `background.*`. Theme developers must add the UPS-named file for the option to work. The radio button label changed to "Use active theme's UPS audio file (advanced — theme support required)". See `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` for the updated theme-dev guidance. Code: `src/Common/PlayniteThemeHelper.cs` reworked end-to-end (`FindActiveThemeUpsAudioFile`, `GetActiveThemeStatus`, `CreateUpsAudioFromBackground`, `InvalidateCache`); call sites updated in `src/Services/MusicPlaybackService.cs:474-482` and `:811-826`.
+
+- **New: four-state Settings UI panel for Active Theme UPS Audio.** The radio button now drives a visible status panel beneath it that reflects what UPS finds in the active theme: **Ready** (`UPS_BackgroundAudio.*` found — ✓ Detected), **CanBeCreated** (no UPS file but `background.*` exists — shows a one-click button to copy `background.{ext}` → `UPS_BackgroundAudio.{ext}` in the same folder, preserving extension), **Unsupported** (neither file present — ✗ "ask theme dev to add UPS_BackgroundAudio.*"), or **NotApplicable** (Desktop-only / theme lookup failed — ℹ informational). Status is recomputed on settings-tab open and after a successful copy. New ViewModel surface: `ActiveThemeStatus`, four `IsActiveTheme*` booleans, `ActiveThemeCopyResultMessage`, `CreateUpsAudioFromBackgroundCommand`. New converter: `src/Common/NullToVisibilityConverter.cs`.
+
+- **Legacy `NativeTheme` default music source paths fully retired.** v1.5.0 deprecated this source (audio overlap with Playnite's own player) and added a silent on-load migration to `BundledPreset`. v1.5.2 takes the remaining cleanup step: the legacy `case DefaultMusicSource.NativeTheme:` handlers in `MusicPlaybackService.cs` no longer probe `background.{ext}` — they're now safe no-ops in case hand-edited settings bypass the migration. The `_nativeMusicPath` field is removed. `SettingsService.ValidateNativeMusicFile` collapsed from ~75 lines to a 6-line silent legacy-flag cleanup. The migration on `UniPlaySong.cs:1744-1748` still runs every startup so nobody actually hits the no-op paths.
+
+### Notes for Theme Developers
+
+If your theme historically shipped `background.mp3` for the v1.5.1-and-earlier Active Theme Music feature, the simplest migration is to ship the same audio twice — once as `background.mp3` (for Playnite's built-in player) and once as `UPS_BackgroundAudio.mp3` (for v1.5.2+ UPS users). The two can be identical bytes, or different tracks entirely; your call. Or rely on your users clicking the new copy-helper button in Settings → Playback. See `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` for the full rewrite.
+
 ## [1.5.1] - 2026-05-25
 
 > Detailed release notes live in `docs/release_notes/v1.5.1.md`.

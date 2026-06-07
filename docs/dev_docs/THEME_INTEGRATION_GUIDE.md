@@ -423,53 +423,79 @@ Themes can also control playback using Playnite's `playnite://` URI protocol. Th
 - Use `UPS_MusicControl` for overlay/video pause/resume (automatic, state-driven via XAML bindings)
 - Use URIs for explicit user actions like media control buttons (fire-and-forget)
 
-## Active Theme Music (v1.3.11+)
+## Active Theme UPS Audio (v1.3.11+, reworked in v1.5.2)
 
-UniPlaySong can detect and play your theme's background music through its own audio pipeline — with fade-in, volume control, and no conflicts with Playnite's native SDL2 player. Users enable this via **Settings > General > Default Music Source > "Use active fullscreen theme's background music (If Available)."**
+UniPlaySong can play a dedicated audio file from your theme through its own audio pipeline — with fade-in, volume control, and no conflicts with Playnite's built-in SDL player. Users enable this via **Settings → Playback → Default Music Source → "Use active theme's UPS audio file (advanced — theme support required)."**
 
-### How to Add Background Music to Your Theme
+### v1.5.2 — Why the filename changed
 
-Place an audio file named `background.mp3` in your theme's `audio/` directory:
+In v1.5.1 and earlier, UPS detected `background.{mp3,ogg,wav,flac}` in a theme's `audio/` folder. **Playnite's built-in SDL player opens the same file in fullscreen mode**, which caused:
+
+- File-handle contention (one player gets a partial read or zero-length stream)
+- Playback glitches, looping artifacts, and silence
+- The infamous "0.16-second loop" reported by users on Aniki ReMake (Aniki ships an intentionally short `background.mp3` because its theme handles audio internally)
+
+The fix as of v1.5.2 is a **strict filename convention**. UPS now ONLY reads `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` from the theme's `audio/` folder. There is no fallback to `background.*` — that file belongs to Playnite, period.
+
+### How to Add UPS Audio to Your Theme
+
+Place a separate audio file named `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` in your theme's `audio/` directory:
 
 ```
 YourTheme_GUID/
 ├── audio/
-│   ├── background.mp3      ← UPS detects this file
-│   ├── activation.wav       (optional: UI sounds)
-│   └── navigation.wav       (optional: UI sounds)
+│   ├── background.mp3         ← Playnite's SDL player reads this (unchanged)
+│   ├── UPS_BackgroundAudio.mp3 ← UPS reads this (new in v1.5.2)
+│   ├── activation.wav          (optional: UI sounds)
+│   └── navigation.wav          (optional: UI sounds)
 ├── Views/
 │   └── Main.xaml
 └── theme.yaml
 ```
 
 **Requirements:**
-- File must be named `background` with one of these extensions: `.mp3`, `.ogg`, `.wav`, `.flac`
+- File must be named `UPS_BackgroundAudio` (case-sensitive on case-sensitive filesystems; UPS matches case-insensitively but the canonical form is `UPS_BackgroundAudio`)
+- One of these extensions: `.mp3`, `.ogg`, `.wav`, `.flac`
 - File must be in the `audio/` subdirectory of your theme root
 - Works with both user-installed themes (`%AppData%/Roaming/Playnite/Themes/Fullscreen/`) and the built-in default theme
 
-**That's it.** No XAML changes, no plugin references, no code. UPS will automatically find and play the file when the user selects this option.
+**The two files can contain the same audio or different audio — your call.** Theme devs who want a unified experience ship the same track twice; theme devs who want a different ambient track when UPS is installed ship two different files.
 
 ### How It Works
 
 1. UPS reads the active fullscreen theme ID from Playnite's settings
-2. Scans the theme's directory for `audio/background.*`
-3. Plays the file through UPS's audio pipeline (NAudio or SDL2) with fade-in, volume integration, and proper pause/resume handling
-4. Playnite's native SDL2 playback of the same file is suppressed to avoid overlap
+2. Scans the theme's `audio/` directory for `UPS_BackgroundAudio.{mp3,ogg,wav,flac}`
+3. If found, plays the file through UPS's audio pipeline (NAudio or SDL2) with fade-in, volume integration, and proper pause/resume handling
+4. If not found, UPS does NOT fall back to `background.*` — the user sees a state panel in the settings UI explaining the theme doesn't support this option, with a one-click "create UPS audio from theme's background file" helper if a `background.*` file is present
 
-### Supported Active Theme Music
+### Settings UI States (what the user sees)
 
-| Theme | Has `background.mp3` | Works with Active Theme Music |
-|-------|----------------------|-------------------------------|
-| Playnite Default | Yes | Yes |
-| Solaris | Yes | Yes |
-| ANIKI REMAKE | No (uses WPF MediaElements) | No — use other default music options |
-| Your theme | Add `audio/background.mp3` | Yes |
+The Active Theme UPS Audio radio button in Settings → Playback has four mutually exclusive states the user sees beneath it, depending on what UPS finds in the active theme:
+
+| State | When | What the user sees |
+|---|---|---|
+| **Ready** | `UPS_BackgroundAudio.*` found in theme audio folder | ✓ "Detected: UPS_BackgroundAudio in `<theme name>`" |
+| **CanBeCreated** | No UPS file, but `background.*` exists | ⚠ Warning + button: "Create UPS_BackgroundAudio from theme's background file" |
+| **Unsupported** | Neither file present | ✗ "Not supported by your current theme — ask theme dev to add UPS_BackgroundAudio.*" |
+| **NotApplicable** | No fullscreen theme could be resolved (Desktop-only, lookup failed) | ℹ "This option applies in Fullscreen mode." |
+
+The **CanBeCreated** state is user-friendly fallback for the common case where a theme ships `background.mp3` but hasn't been updated for UPS yet. The user clicks the button, UPS copies the file as `UPS_BackgroundAudio.{same-extension}`, and from then on UPS plays the copy without touching the original.
+
+### Supported Active Theme UPS Audio (v1.5.2)
+
+| Theme | Ships `UPS_BackgroundAudio.*` | Works out-of-the-box | Works with copy-helper button |
+|---|---|---|---|
+| Playnite Default | No (ships `background.mp3` only) | No | Yes |
+| Solaris | No (ships `background.mp3` only) | No | Yes |
+| ANIKI REMAKE | No (uses WPF MediaElements; ships intentionally-short `background.mp3` stub) | No | Not recommended — the stub is 0.16 seconds. Use a different default music source (BundledPreset / Shades of Orange recommended) |
+| Your theme | Add `audio/UPS_BackgroundAudio.mp3` | Yes | n/a |
 
 ### Notes for Theme Developers
 
-- **No conflict with UPS_MusicControl**: The `UPS_MusicControl` pause/resume system works independently. If your theme uses overlays or intros that pause music, those still work as expected.
-- **No conflict with Playnite's native playback**: When Active Theme Music is enabled, UPS suppresses Playnite's native SDL2 playback of `background.mp3` and handles it directly. Users without UPS (or with a different default music option) will hear the file through Playnite's native player as usual.
-- **Login screen audio**: If your theme relies on `background.mp3` as ambient login screen music, note that UPS intially suppresses native playback when transitioning to fullscreen. Users who want theme login audio should not use UPS's suppress option, or the theme should use WPF `MediaElement` for login-specific audio (like ANIKI REMAKE does).
+- **No conflict with `UPS_MusicControl`**: The pause/resume system from `UPS_MusicControl` works independently of this audio file.
+- **No conflict with Playnite's built-in SDL player**: Because UPS reads its own dedicated file, Playnite's SDL player continues to handle `background.mp3` as usual. Users with UPS installed but a different default music source selected still hear Playnite's normal theme audio.
+- **Login screen audio**: If your theme uses `background.mp3` for login-screen ambient music (Playnite handles that natively), UPS does NOT interfere. UPS only activates Active Theme UPS Audio when the user is at the game library, not the login screen. Themes that handle login audio via WPF `MediaElement` (like Aniki ReMake) continue to work as before.
+- **Migration for existing themes**: If your theme historically shipped `background.mp3` for the v1.5.1-and-earlier Active Theme Music feature, the simplest migration is to ship the same file twice — once as `background.mp3` (for Playnite + legacy UPS users) and once as `UPS_BackgroundAudio.mp3` (for v1.5.2+ UPS users). Or rely on users clicking the copy-helper button.
 
 ## Support
 
