@@ -4181,6 +4181,63 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Changelog (current version only; older history on GitHub) -->
+                    <Border BorderBrush="#FF6FB36F" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A6FB36F">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="What's New in " FontSize="14" FontWeight="Bold"/>
+                                <TextBlock Text="v" FontSize="14" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding PluginVersion}" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                                The list below covers only the current release. For full version history, see the installer manifest on GitHub.
+                            </TextBlock>
+
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer stays paused after exiting a windowed game when "Keep paused after external audio" is on.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Changed:</Run> Active Theme Music option reworked. Now reads <Run FontFamily="Consolas">UPS_BackgroundAudio.mp3</Run> from the theme's audio folder instead of <Run FontFamily="Consolas">background.mp3</Run>. A new helper button in Settings → Playback creates the UPS file from your theme's existing background file in one click.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
+                                <Run FontWeight="SemiBold">Changed:</Run> "Pause on Play (Splash Screen Mode)" renamed to "Pause on Game Launch" with a clearer description. Same behavior as before.
+                            </TextBlock>
+
+                            <TextBlock FontSize="11">
+                                Full version history:
+                                <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml" RequestNavigate="AboutHyperlink_RequestNavigate">UniPlaySong installer manifest on GitHub</Hyperlink>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Troubleshooting / Known Quirks -->
+                    <Border BorderBrush="#FFE0A040" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1AE0A040">
+                        <StackPanel>
+                            <TextBlock Text="Troubleshooting / Known Quirks" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                                These are real-world edge cases UPS users have hit. If you run into one, the workaround is listed below the description.
+                            </TextBlock>
+
+                            <TextBlock Text="Pause on Focus Loss can be unreliable" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                If music gets stuck silent after exiting a game, try disabling "Ignore brief focus loss (alt-tab)" first. If it still happens, send a log file via Settings → Backup → Export Markdown Snapshot.
+                            </TextBlock>
+
+                            <TextBlock Text="Active Theme Music requires theme support" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
+                                As of v1.5.2, UPS reads <Run FontFamily="Consolas">UPS_BackgroundAudio.{mp3,ogg,wav,flac}</Run> from the active theme's audio folder. It no longer reads <Run FontFamily="Consolas">background.mp3</Run> because Playnite's own audio player uses that file. If your theme only has <Run FontFamily="Consolas">background.mp3</Run>, the Active Theme Music option in <Run FontWeight="SemiBold">Settings → Playback</Run> will show a one-click helper button to make a UPS-named copy.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                <Run FontWeight="SemiBold">Workaround:</Run> Click the helper button when it appears, or pick a different default music source. Themes that handle audio internally (like ANIKI REMAKE) don't support this option at all — use the Bundled Ambient preset instead.
+                            </TextBlock>
+
+                            <TextBlock Text="Toast notification blur is broken on Windows 11" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                A recent Windows 11 update deprecated the API UPS uses for the toast acrylic blur effect. Toasts still appear and work, but render with a flat colored tint instead of frosted glass. Windows 10 unaffected. A fix is planned for a future v1.5.x patch.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Bundled Music Credits -->
                     <Border BorderBrush="#FF8888FF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A8888FF">
                         <StackPanel>
