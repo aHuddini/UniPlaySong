@@ -1,22 +1,55 @@
 name: Mirror to Gitea
 
 on:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - '*'
   schedule:
     - cron: '0 */10 * * *'
+  workflow_dispatch:
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (bare clone)
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Push mirror to Gitea
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
         run: |
-          git remote add gitea https://aHuddini:${{ secrets.GITEA_TOKEN }}@gitea.com/aHuddini/UniPlaySong.git
-          git push gitea --branches && git push gitea --tags && exit 0
-          echo "First attempt failed, retrying in 10 minutes..."
-          sleep 600
-          git push gitea --branches && git push gitea --tags
+          set -u
+          if [ -z "${GITEA_TOKEN}" ]; then
+            echo "::error::GITEA_TOKEN secret is empty. Set it in repo Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          git remote add gitea "https://aHuddini:${GITEA_TOKEN}@gitea.com/aHuddini/UniPlaySong.git"
+
+          push_all() {
+            git push gitea --branches && git push gitea --tags
+          }
+
+          # First attempt
+          if push_all; then
+            echo "Mirror push succeeded on first attempt."
+            exit 0
+          fi
+
+          echo "::warning::First mirror attempt failed. Retrying in 60s..."
+          sleep 60
+
+          # Retry (typed exit-status check so set -e doesn't ambush us)
+          if push_all; then
+            echo "Mirror push succeeded on retry."
+            exit 0
+          fi
+
+          echo "::error::Mirror push failed twice. If the error was HTTP 403, the GITEA_TOKEN secret is expired/revoked or lacks repo:write scope. Rotate it in repo Settings."
+          exit 1
