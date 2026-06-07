@@ -22,16 +22,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.5.2
 
-### Changed
+### Fixed
+- Music no longer stays paused after exiting a windowed game when "Keep paused after external audio" is on.
 
-- **Active Theme Music option reworked.** The old behavior of reading the theme's `background.mp3` directly caused playback glitches and silence on some setups because Playnite's built-in audio player opens the same file at the same time. UPS now reads a dedicated UPS-named file from the theme's audio folder instead. Theme developers add `UPS_BackgroundAudio.mp3` (or .ogg/.wav/.flac) and the option works cleanly. For users on a theme that ships only `background.mp3`, a new helper button in **Settings → Playback** creates a UPS-named copy in one click. The settings panel now shows you exactly which state your active theme is in: ready, can-be-created, unsupported, or "fullscreen mode only".
+### Changed
+- **Active Theme Music** option reworked. Now reads `UPS_BackgroundAudio.mp3` from the theme's audio folder instead of `background.mp3`. A new helper button in **Settings → Playback** creates the UPS file from your theme's existing background file in one click.
+- "Pause on Play (Splash Screen Mode)" renamed to **"Pause on Game Launch"** with clearer wording. Same behavior as before.
 
 ### Known Issue (carried over from v1.5.0)
-
-- **Toast notification blur is still broken on Windows 11** (recent OS update deprecated the API UPS used). Toasts render with a flat tint instead of frosted glass. Windows 10 users are unaffected; a fix is planned for a future v1.5.x patch.
+- Toast notification blur is still broken on Windows 11. Win10 users unaffected. Planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.5.1**: Defensive fix for music staying silent after exiting a game (focus-loss + game-stop edge case), memory leak fix in the top-panel music control over long sessions with theme/mode switches, HES chiptune preview event-fix on rapid taps, faster album-search filtering, codebase-wide doc-comment cleanup.
+- **v1.5.1**: Fix for music staying silent after exiting a game (focus-loss edge case), top-panel memory leak fix, HES chiptune preview fix, faster album-search filtering, doc-comment cleanup.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
