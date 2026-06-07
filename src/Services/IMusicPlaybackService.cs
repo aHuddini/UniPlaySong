@@ -23,6 +23,7 @@ namespace UniPlaySong.Services
         void ConvertPauseSource(PauseSource from, PauseSource to); // atomic swap without triggering resume/pause
         void AddPauseSourceImmediate(PauseSource source);    // Instant pause (no fade), tracks source
         void RemovePauseSourceImmediate(PauseSource source);  // Instant resume (no fade), tracks source
+        bool HasPauseSource(PauseSource source);              // Peek the active pause-source set without mutating it
 
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);

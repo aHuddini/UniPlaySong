@@ -364,6 +364,13 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Read-only peek into the active pause-source set. Used by callers that need to
+        // gate behavior on whether a specific source is currently holding playback paused
+        // (e.g. the external-audio detector skips adding its own pause source while
+        // GameStarting is active, since the "external" audio is almost certainly the
+        // launched game itself).
+        public bool HasPauseSource(PauseSource source) => _activePauseSources.Contains(source);
+
         /// <summary>
         /// Clears all pause sources EXCEPT window-state sources (FocusLoss, Minimized, SystemTray).
         /// Window-state sources should only be cleared by the window event handlers.

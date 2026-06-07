@@ -1104,12 +1104,18 @@
                     <!-- System Events -->
                     <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
-                    <CheckBox Content="Compatibility: Pause on Play (Splash Screen Mode)"
+                    <CheckBox Content="Pause on Game Launch"
                               IsChecked="{Binding Settings.PauseOnGameStart}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause with a fade-out as soon as you click Play on a game. Music will resume when the game closes. Useful with the Splash Screen plugin."
+                    <TextBlock Text="When enabled, UPS music pauses with a smooth fade-out as soon as you click Play on a game. Music resumes when the game closes. Compatible with the Splash Screen plugin."
                                FontSize="11"
                                Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,4"/>
+                    <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. Only disable if you're using UPS in Radio Mode to play random library music over your game while the game's own audio is muted."
+                               FontSize="11"
+                               Foreground="#E08070"
+                               FontWeight="SemiBold"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 

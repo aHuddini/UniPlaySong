@@ -2026,6 +2026,20 @@ namespace UniPlaySong
 
                     if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
                     {
+                        // Don't treat a launched game's own audio as "external." When
+                        // GameStarting is active, the audio we're hearing is almost
+                        // certainly the game itself. Adding ExternalAudio on top creates
+                        // a stuck state via KeepPausedAfterExternalAudio when the game
+                        // audio oscillates (common with windowed games that produce
+                        // intermittent silence — see user report 2026-06-06).
+                        if (_playbackService?.HasPauseSource(Models.PauseSource.GameStarting) == true)
+                        {
+                            _externalAudioDetected = true;
+                            _externalAudioPausedInstantly = false;
+                            _fileLogger?.Debug("External audio detected, but a game is currently launching/running — skipping ExternalAudio pause source (game audio is expected, not a real external source)");
+                            return;
+                        }
+
                         _externalAudioDetected = true;
                         _externalAudioPausedInstantly = _settings?.ExternalAudioInstantPause == true;
                         var useInstant = _externalAudioPausedInstantly;
