@@ -700,6 +700,17 @@ namespace UniPlaySong.Services
                 var songs = _fileService.GetAvailableSongs(game);
                 _fileLogger?.Debug(() => $"[Perf] PlayGameMusic: GetAvailableSongs took {sw.ElapsedMilliseconds}ms ({songs.Count} songs for {game.Name})");
 
+                // v1.5.3 theme-integration trigger: when ForceDefaultMusicOverride is true
+                // (driven by UPS_MusicControl_PauseGamePlayDefault Tag=True or a theme
+                // {PluginSettings} binding), skip the game's own music and fall through
+                // to the default-music branch. Same clear-songs pattern as PlayOnlyOnGameSelect
+                // below — no new playback logic required.
+                if (songs.Count > 0 && settings?.ForceDefaultMusicOverride == true)
+                {
+                    _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride active — clearing {songs.Count} game songs to play default music");
+                    songs.Clear();
+                }
+
                 // "Play Only on Game Select" — in Fullscreen List view, clear game songs to play default music.
                 // Game music only plays when the user is in the Details view (explicitly selected a game).
                 // Uses ActiveFullscreenView from the Playnite API — no button interception needed.

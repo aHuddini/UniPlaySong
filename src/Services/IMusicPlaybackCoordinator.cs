@@ -23,6 +23,12 @@ namespace UniPlaySong.Services
         // Handles theme overlay state changes (pause/resume music; separate from video to prevent conflicts)
         void HandleThemeOverlayChange(bool isActive);
 
+        // Handles ForceDefaultMusicOverride flag changes from the
+        // UPS_MusicControl_PauseGamePlayDefault element or {PluginSettings} bindings.
+        // When true: re-trigger playback so the user hears default music swap in immediately.
+        // When false: re-trigger so the current game's own music comes back.
+        void HandleForceDefaultMusicOverrideChange(bool isActive);
+
         bool IsFirstSelect();
         
         bool IsLoginSkipActive();

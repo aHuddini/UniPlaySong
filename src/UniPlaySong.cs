@@ -294,11 +294,12 @@ namespace UniPlaySong
             InitializeMenuHandlers();
 
             // Register custom elements for theme integration
-            // SourceName + "_" + ElementName = "UPS_MusicControl", "UPS_SpectrumVisualizer"
+            // SourceName + "_" + ElementName = "UPS_MusicControl", "UPS_SpectrumVisualizer",
+            // "UPS_MusicControl_PauseGamePlayDefault" (v1.5.3+)
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault" }
             });
 
             // Register settings support for theme integration via Playnite's
@@ -326,6 +327,7 @@ namespace UniPlaySong
 
             // Initialize MusicControl static services
             Controls.MusicControl.UpdateServices(_settings);
+            Controls.MusicControlPauseGamePlayDefault.UpdateServices(_settings);
 
             WindowMonitor.Attach(_playbackService, _errorHandler);
 
@@ -1349,6 +1351,11 @@ namespace UniPlaySong
             if (e.PropertyName == nameof(UniPlaySongSettings.ThemeOverlayActive))
             {
                 _coordinator?.HandleThemeOverlayChange(_settings.ThemeOverlayActive);
+                return;
+            }
+            if (e.PropertyName == nameof(UniPlaySongSettings.ForceDefaultMusicOverride))
+            {
+                _coordinator?.HandleForceDefaultMusicOverrideChange(_settings.ForceDefaultMusicOverride);
                 return;
             }
 
@@ -3638,6 +3645,11 @@ namespace UniPlaySong
             {
                 // Creating SpectrumVisualizer instance for theme
                 return new Controls.SpectrumVisualizerPluginControl(() => _settings);
+            }
+            if (args.Name == "MusicControl_PauseGamePlayDefault")
+            {
+                // v1.5.3 theme-integration sibling — Tag=True swaps game music for default music
+                return new Controls.MusicControlPauseGamePlayDefault(_settings);
             }
             return null;
         }

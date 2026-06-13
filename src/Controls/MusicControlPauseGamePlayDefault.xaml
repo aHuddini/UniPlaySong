@@ -1,0 +1,40 @@
+<PluginUserControl x:Class="UniPlaySong.Controls.MusicControlPauseGamePlayDefault"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:UniPlaySong.Controls"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=local:MusicControlPauseGamePlayDefault}"
+    Tag="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Control, AncestorLevel=1}, Path=Tag}">
+    <!--
+    UniPlaySong Theme Integration Control — "Pause Game Music, Play Default" variant (v1.5.3+)
+
+    Companion to UPS_MusicControl. Where UPS_MusicControl pauses ALL UPS music when
+    Tag=True (game + default both), this control SWAPS the current game's own music
+    out for the user's selected default-music source (Bundled Ambient, Random Game,
+    Custom Folder, etc.) while Tag=True, and restores game music when Tag=False.
+
+    Theme dev use case: you want default/background music to play while the user
+    interacts with a custom panel (tag editor, settings sidebar, property pane)
+    instead of either (a) silence or (b) the current game's track stuttering
+    out and back in.
+
+    Usage in theme XAML:
+        <ContentControl x:Name="UPS_MusicControl_PauseGamePlayDefault">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="Tag" Value="False"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TagEditorOpen}" Value="True">
+                            <Setter Property="Tag" Value="True"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+
+    Tag="True"  = Swap game music for default music
+    Tag="False" = Restore game music
+    -->
+</PluginUserControl>

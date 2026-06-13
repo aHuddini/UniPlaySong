@@ -207,6 +207,42 @@ Here is how UPS_MusicControl can be used to support a theme like ANIKI REMAKE:
 </ContentControl>
 ```
 
+### UPS_MusicControl_PauseGamePlayDefault — Swap to default music (v1.5.3+)
+
+A sibling element to `UPS_MusicControl`. Where `UPS_MusicControl` pauses **everything** when `Tag=True` (game music + default music both), `UPS_MusicControl_PauseGamePlayDefault` instead **swaps the current game's own music out for the user's selected default-music source** (Bundled Ambient, Random Game, Custom Folder — whatever they have chosen) while `Tag=True`, and restores game music when `Tag=False`.
+
+**Use case:** background music keeps playing while the user interacts with a custom panel (tag editor, settings sidebar, property pane) — without stopping the music entirely or letting the current game's track stutter out and back in.
+
+```xml
+<ContentControl x:Name="UPS_MusicControl_PauseGamePlayDefault">
+    <ContentControl.Style>
+        <Style TargetType="ContentControl">
+            <Setter Property="Tag" Value="False"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=TagEditor, Path=IsOpen}" Value="True">
+                    <Setter Property="Tag" Value="True"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </ContentControl.Style>
+</ContentControl>
+```
+
+- `Tag="True"` → game's own songs are skipped; default music starts (or continues from the default-music branch UPS already manages)
+- `Tag="False"` → game's own music returns on the next playback decision
+- Multiple instances stack via OR — if **any** active instance has `Tag=True`, the override is active
+- Works alongside `UPS_MusicControl` — they are independent flags. A pause request from `UPS_MusicControl` will still pause everything regardless of the override
+
+Equivalent `{PluginSettings}` binding (no element required in the visual tree):
+
+```xml
+<CheckBox IsChecked="{PluginSettings Plugin=UniPlaySong,
+                                    Path=ForceDefaultMusicOverride,
+                                    Mode=TwoWay}"/>
+```
+
+Both forms target the same `ForceDefaultMusicOverride` runtime flag. The flag is `[JsonIgnore]` so it always starts `false` on Playnite startup — no risk of a previous session leaving the override stuck on.
+
 ### Example 6: Quick Audio Settings Menu (v1.4.6+) — `{PluginSettings}` Markup
 
 For an in-theme audio quick-settings menu (toggles for "Enable Game Music," "Radio Mode," etc.), use Playnite's `{PluginSettings}` markup extension. **No `<UPS:MusicControl>` element is required** — the theme binds directly to UPS's settings by name, and the binding gracefully no-ops if UPS isn't installed.

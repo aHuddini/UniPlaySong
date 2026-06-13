@@ -298,6 +298,7 @@ namespace UniPlaySong
         private string ffmpegPath = string.Empty;
         private bool videoIsPlaying = false;
         private bool themeOverlayActive = false;
+        private bool forceDefaultMusicOverride = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private bool enableDebugLogging = false;
@@ -544,6 +545,17 @@ namespace UniPlaySong
         {
             get => themeOverlayActive;
             set { themeOverlayActive = value; OnPropertyChanged(); }
+        }
+
+        // v1.5.3 theme-integration trigger: when true, UPS skips game music and
+        // plays default music instead. Driven by the UPS_MusicControl_PauseGamePlayDefault
+        // element via Tag=True, or by theme XAML via {PluginSettings} binding.
+        // Runtime-only state — excluded from serialization so it always starts false.
+        [JsonIgnore]
+        public bool ForceDefaultMusicOverride
+        {
+            get => forceDefaultMusicOverride;
+            set { forceDefaultMusicOverride = value; OnPropertyChanged(); }
         }
 
         /// <summary>

@@ -457,6 +457,26 @@ namespace UniPlaySong.Services
             }
         }
 
+        // v1.5.3: theme-integration trigger. When the flag flips we just re-call
+        // PlayGameMusic for the currently-selected game — the override check inside
+        // PlayGameMusic ([src/Services/MusicPlaybackService.cs] around the
+        // PlayOnlyOnGameSelect block) clears the song list when the flag is true,
+        // forcing the default-music fall-through path. When the flag goes false,
+        // the same re-call lets game music come back naturally.
+        public void HandleForceDefaultMusicOverrideChange(bool isActive)
+        {
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive}");
+
+            var game = _getSelectedGame();
+            if (game == null)
+            {
+                _fileLogger?.Debug("HandleForceDefaultMusicOverrideChange: No game selected — playback service will pick up the flag on next selection");
+                return;
+            }
+
+            _playbackService?.PlayGameMusic(game, _settings, true);
+        }
+
         public bool IsFirstSelect() => _firstSelect;
 
         public bool IsLoginSkipActive() => _loginSkipActive;
