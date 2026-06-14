@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-![Version](https://img.shields.io/badge/version-1.5.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+lis ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,20 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.2
+## What's New - v1.5.3
 
-### Fixed
-- Music no longer stays paused after exiting a windowed game when "Keep paused after external audio" is on.
-
-### Changed
-- **Active Theme Music** option reworked. Now reads `UPS_BackgroundAudio.mp3` from the theme's audio folder instead of `background.mp3`. A new helper button in **Settings → Playback** creates the UPS file from your theme's existing background file in one click.
-- "Pause on Play (Splash Screen Mode)" renamed to **"Pause on Game Launch"** with clearer wording. Same behavior as before.
+### Added
+- New theme-integration element `UPS_MusicControl_PauseGamePlayDefault` — lets theme devs swap game music for your default music while you interact with custom panels (tag editor, sidebars, etc.), then restore game music when you close them.
+- First-install auto-detect: if your fullscreen theme ships a UPS audio file, UPS picks it as your default music automatically.
 
 ### Known Issue (carried over from v1.5.0)
 - Toast notification blur is still broken on Windows 11. Win10 users unaffected. Planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.5.1**: Fix for music staying silent after exiting a game (focus-loss edge case), top-panel memory leak fix, HES chiptune preview fix, faster album-search filtering, doc-comment cleanup.
+- **v1.5.2**: Fix for music staying paused after exiting a windowed game (external-audio detector treating game audio as external). Active Theme Music option reworked to read `UPS_BackgroundAudio.mp3` instead of `background.mp3`. "Pause on Play (Splash Screen Mode)" renamed to "Pause on Game Launch".
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

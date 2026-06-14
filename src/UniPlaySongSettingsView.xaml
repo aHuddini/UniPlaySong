@@ -4194,13 +4194,10 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer stays paused after exiting a windowed game when "Keep paused after external audio" is on.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Changed:</Run> Active Theme Music option reworked. Now reads <Run FontFamily="Consolas">UPS_BackgroundAudio.mp3</Run> from the theme's audio folder instead of <Run FontFamily="Consolas">background.mp3</Run>. A new helper button in Settings → Playback creates the UPS file from your theme's existing background file in one click.
+                                <Run FontWeight="SemiBold">Added:</Run> New theme element <Run FontFamily="Consolas">UPS_MusicControl_PauseGamePlayDefault</Run> that lets theme devs swap game music for default music while you interact with custom panels (tag editor, settings sidebar, etc.), then restore game music when you close them.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
-                                <Run FontWeight="SemiBold">Changed:</Run> "Pause on Play (Splash Screen Mode)" renamed to "Pause on Game Launch" with a clearer description. Same behavior as before.
+                                <Run FontWeight="SemiBold">Added:</Run> First-install auto-detection — if your active fullscreen theme ships a <Run FontFamily="Consolas">UPS_BackgroundAudio</Run> file, UPS picks it as your default-music source automatically.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

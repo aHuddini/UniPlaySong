@@ -4,9 +4,17 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.5.2] - 2026-06-06
+## [1.5.3] - 2026-06-14
 
-> Detailed release notes live in `docs/release_notes/v1.5.2.md`.
+Two theme-integration features. No bug fixes.
+
+### Added
+
+- **New theme element `UPS_MusicControl_PauseGamePlayDefault`.** Sibling to the existing `UPS_MusicControl`. Where `UPS_MusicControl` pauses everything when `Tag=True`, this new variant swaps the current game's music out for the user's default music (Bundled Ambient, Random Game, Custom Folder — whatever they picked) and restores game music when `Tag=False`. Theme devs can use it to keep background music playing while the user interacts with a custom panel (tag editor, settings sidebar, property pane) without silence or game-track stutter. Multiple instances stack via OR. The equivalent `{PluginSettings}` binding to `ForceDefaultMusicOverride` works too. See `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` for the new section between Examples 5 and 6.
+
+- **First-install auto-detection of UPS audio in the active fullscreen theme.** On first run, UPS checks whether the active fullscreen theme ships a `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` file. If yes, the default-music source is auto-switched from Bundled Ambient to Active Theme Music so the theme's audio plays out of the box. Conservative: only when the theme dev explicitly added the UPS file (never silently copies from `background.*`), only when the user is still on the factory-default source (existing user choices are respected on upgrade), and the check runs once — never re-fires when the user switches themes later. Only the active theme is scanned; UPS doesn't enumerate other installed themes.
+
+## [1.5.2] - 2026-06-06
 
 Point release covering two distinct issues: a rework of the Active Theme Music option after a reported file-handle-contention bug class, and a fix for the External Audio detector treating a launched game's own audio as an external source — which combined with `KeepPausedAfterExternalAudio` could leave music stuck in a paused state after game exit.
 
@@ -29,8 +37,6 @@ Point release covering two distinct issues: a rework of the Active Theme Music o
 If your theme historically shipped `background.mp3` for the v1.5.1-and-earlier Active Theme Music feature, the simplest migration is to ship the same audio twice — once as `background.mp3` (for Playnite's built-in player) and once as `UPS_BackgroundAudio.mp3` (for v1.5.2+ UPS users). The two can be identical bytes, or different tracks entirely; your call. Or rely on your users clicking the new copy-helper button in Settings → Playback. See `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` for the full rewrite.
 
 ## [1.5.1] - 2026-05-25
-
-> Detailed release notes live in `docs/release_notes/v1.5.1.md`.
 
 Point release focused on a reported game-stop pause-source bug, defensive cleanup of long-lived event subscriptions, and a codebase-wide documentation/doc-comment pass per the project style guide.
 
