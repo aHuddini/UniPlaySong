@@ -302,6 +302,7 @@ namespace UniPlaySong
         private bool forceDefaultMusicOverride = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
+        private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
         private bool enableDebugLogging = false;
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
@@ -603,6 +604,29 @@ namespace UniPlaySong
         {
             get => enableDebugLogging;
             set { enableDebugLogging = value; OnPropertyChanged(); }
+        }
+
+        // v1.5.3 (issue #81): minutes UPS waits after going idle (no song loaded,
+        // no pending fade, no active game switch) before tearing down its persistent
+        // audio device. Closing the device releases the Windows audio session that
+        // would otherwise keep the system awake. Default 5 minutes balances "fast
+        // enough for autosuspend users" against "first song after wake-up costs
+        // ~70ms latency to reopen the device."
+        // 0 = disabled (device stays open forever — the pre-v1.5.3 behavior).
+        // Valid range: 0-60.
+        public int IdleAudioDeviceTeardownMinutes
+        {
+            get => idleAudioDeviceTeardownMinutes;
+            set
+            {
+                // Clamp to valid range
+                var clamped = Math.Max(0, Math.Min(60, value));
+                if (idleAudioDeviceTeardownMinutes != clamped)
+                {
+                    idleAudioDeviceTeardownMinutes = clamped;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         /// <summary>

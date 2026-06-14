@@ -29,9 +29,9 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Fixed
 - Music no longer resumes when Playnite's Keyboard Launcher opens with the main window in the background.
+- **Windows can now auto-suspend / sleep while Playnite is open** (issue #81). UPS keeps an audio device open between songs to avoid stutter when switching games, which previously kept Windows from sleeping. UPS now releases that device after a few minutes of no music (default 5, adjustable under **Settings → General → Performance → "Release Audio When Idle"**, or set to 0 to keep it open), and the next track reopens it automatically.
 
 ### Known Issues
-- **Windows can't auto-suspend while Playnite is running with UPS enabled** after UPS has played audio at least once (issue #81). UPS keeps a persistent audio device open between songs to avoid stutter during game-switches — Windows reads that as an active audio session and blocks system sleep. Workaround: fully exit Playnite when stepping away. A fix is being investigated for a future v1.5.x patch.
 - Toast notification blur is still broken on Windows 11 (carried over from v1.5.0). Win10 users unaffected. Planned for a future v1.5.x patch.
 
 ### Previous Version

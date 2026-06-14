@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK;
+using UniPlaySong.Common;
 using UniPlaySong.Players.SDL;
 using UniPlaySong.Services;
 
@@ -27,6 +28,7 @@ namespace UniPlaySong.Services
         private static bool _isSDLAudioInitialized = false;
         private SDL2Mixer.MusicFinishedCallback _musicFinishedCallback;
         private readonly ErrorHandlerService _errorHandler;
+        private readonly SettingsService _settingsService;
 
         // Volume ramp state — SDL2 has no per-sample ramp, so we step via DispatcherTimer
         private DispatcherTimer _rampTimer;
@@ -36,17 +38,36 @@ namespace UniPlaySong.Services
         private double _rampDuration;
         private const double RampIntervalMs = 16; // ~60 steps/sec
 
+        // v1.5.3 idle-teardown timer (issue #81). SDL_mixer holds the audio
+        // device open via Mix_OpenAudio for the whole process, which Windows
+        // reads as an active audio session and refuses to autosuspend. When the
+        // player sits idle (no song loaded/playing) past the user's configured
+        // threshold, we Mix_CloseAudio to release the device; the next Load()
+        // re-opens it via InitializeSDL().
+        //
+        // Only the MAIN player owns the teardown. The SDL audio device is
+        // process-wide (guarded by the static _isSDLAudioInitialized), so a
+        // transient jingle player must NOT tear it down out from under the main
+        // player — it's created with enableIdleTeardown:false.
+        private DispatcherTimer _idleTeardownTimer;
+        private readonly bool _enableIdleTeardown;
+        private DateTime _lastActivityUtc = DateTime.UtcNow;
+
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
 
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        public SDL2MusicPlayer(ErrorHandlerService errorHandler = null)
+        public SDL2MusicPlayer(ErrorHandlerService errorHandler = null, SettingsService settingsService = null, bool enableIdleTeardown = false)
         {
             _errorHandler = errorHandler;
+            _settingsService = settingsService;
+            _enableIdleTeardown = enableIdleTeardown;
             InitializeSDL();
             _musicFinishedCallback = OnMusicFinishedInternal;
             SDL2Mixer.Mix_HookMusicFinished(Marshal.GetFunctionPointerForDelegate(_musicFinishedCallback));
+            if (_enableIdleTeardown)
+                StartIdleTeardownTimer();
         }
 
         private void InitializeSDL()
@@ -65,8 +86,92 @@ namespace UniPlaySong.Services
                     throw new Exception($"SDL_mixer could not initialize! Mixer Error: {SDL2Mixer.GetMixError()}");
                 }
 
+                // v1.5.3 (issue #81) — explicit Windows power-state opt-out.
+                // Same call as the NAudio backend uses; clears any keep-alive
+                // assertions UPS might be associated with. The underlying
+                // Mix_OpenAudio still holds an audio session open, but UPS
+                // isn't contributing to that on top.
+                PowerStateHelper.OptOutOfKeepAwake();
+
                 _isSDLAudioInitialized = true;
             }
+
+            MarkAudioActivity();
+        }
+
+        // v1.5.3 (issue #81): start the idle-teardown timer. Polls every minute;
+        // on each tick, if the player has been idle past the user's configured
+        // threshold, closes the SDL audio device so Windows can autosuspend.
+        private void StartIdleTeardownTimer()
+        {
+            if (_idleTeardownTimer != null) return;
+            _idleTeardownTimer = new DispatcherTimer(DispatcherPriority.Normal)
+            {
+                Interval = TimeSpan.FromMinutes(1)
+            };
+            _idleTeardownTimer.Tick += OnIdleTeardownTick;
+            _idleTeardownTimer.Start();
+        }
+
+        private void StopIdleTeardownTimer()
+        {
+            if (_idleTeardownTimer == null) return;
+            _idleTeardownTimer.Stop();
+            _idleTeardownTimer.Tick -= OnIdleTeardownTick;
+            _idleTeardownTimer = null;
+        }
+
+        // Resets the idle countdown. Called on InitializeSDL and on Load — any
+        // real playback activity keeps the device alive.
+        private void MarkAudioActivity()
+        {
+            _lastActivityUtc = DateTime.UtcNow;
+        }
+
+        private void OnIdleTeardownTick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_isDisposed || !_isSDLAudioInitialized) return;
+
+                var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
+                if (minutes <= 0) return; // user disabled the feature
+
+                // Only tear down if genuinely idle: nothing loaded, nothing playing.
+                if (_isLoaded || _music != IntPtr.Zero) { MarkAudioActivity(); return; }
+                if (SDL2Mixer.Mix_PlayingMusic() == 1 || SDL2Mixer.Mix_PausedMusic() == 1) { MarkAudioActivity(); return; }
+
+                var idleFor = DateTime.UtcNow - _lastActivityUtc;
+                if (idleFor.TotalMinutes < minutes) return;
+
+                TearDownSDLAudio(idleFor);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"SDL2 idle teardown tick failed: {ex.Message}");
+            }
+        }
+
+        // Closes the SDL audio device, releasing the Windows audio session so the
+        // system can autosuspend. Leaves the SDL audio subsystem initialized; the
+        // static _isSDLAudioInitialized flag is reset so the next InitializeSDL()
+        // re-opens the device via Mix_OpenAudio.
+        private void TearDownSDLAudio(TimeSpan idleFor)
+        {
+            if (!_isSDLAudioInitialized) return;
+
+            // Free any preloaded handle first — it would dangle once the device closes.
+            if (_preloadedMusic != IntPtr.Zero)
+            {
+                SDL2Mixer.Mix_FreeMusic(_preloadedMusic);
+                _preloadedMusic = IntPtr.Zero;
+                _preloadedPath = string.Empty;
+            }
+
+            SDL2Mixer.Mix_CloseAudio();
+            _isSDLAudioInitialized = false;
+
+            Logger.Debug($"SDL2 idle teardown: {idleFor.TotalMinutes:F1}min idle — closed audio device so Windows can sleep");
         }
 
         public double Volume
@@ -125,6 +230,7 @@ namespace UniPlaySong.Services
         public void PreLoad(string filePath)
         {
             EnsureNotDisposed();
+            InitializeSDL(); // re-opens the device if the idle timer tore it down
             if (_preloadedMusic != IntPtr.Zero)
             {
                 SDL2Mixer.Mix_FreeMusic(_preloadedMusic);
@@ -145,6 +251,7 @@ namespace UniPlaySong.Services
             try
             {
                 EnsureNotDisposed();
+                InitializeSDL(); // re-opens the device if the idle timer tore it down
 
                 Close();
 
@@ -222,6 +329,7 @@ namespace UniPlaySong.Services
                 }
 
                 _isActive = true;
+                MarkAudioActivity();
             }
             catch (Exception ex)
             {
@@ -362,6 +470,7 @@ namespace UniPlaySong.Services
 
         public void Dispose()
         {
+            StopIdleTeardownTimer();
             if (_preloadedMusic != IntPtr.Zero)
             {
                 SDL2Mixer.Mix_FreeMusic(_preloadedMusic);

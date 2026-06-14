@@ -2683,7 +2683,7 @@ namespace UniPlaySong
             _isUsingLiveEffectsPlayer = false;
             try
             {
-                var player = new SDL2MusicPlayer(_errorHandler);
+                var player = new SDL2MusicPlayer(_errorHandler, _settingsService, enableIdleTeardown: true);
                 // SDL2MusicPlayer initialized
                 return player;
             }

@@ -59,6 +59,7 @@ namespace UniPlaySong
             s.AutoTagOnLibraryUpdate = true;
             s.AutoDeleteMusicOnGameRemoval = true;
             s.EnableSongListCache = false;
+            s.IdleAudioDeviceTeardownMinutes = 5;
             s.EnableDebugLogging = false;
 
             ShowButtonFeedback(sender, "Reset!");

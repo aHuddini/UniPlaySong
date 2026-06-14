@@ -216,6 +216,30 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
+                    <!-- Idle Audio Device Release (issue #81 — lets Windows sleep) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <TextBlock Text="Release Audio When Idle: " VerticalAlignment="Center" Width="160"/>
+                        <TextBlock Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                                   VerticalAlignment="Center"
+                                   Width="25"
+                                   Margin="0,0,3,0"/>
+                        <TextBlock Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="60"
+                                Value="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                                Width="200"
+                                IsSnapToTickEnabled="True"
+                                SmallChange="1"
+                                LargeChange="5"
+                                TickFrequency="1"
+                                TickPlacement="None"
+                                AutoToolTipPlacement="TopLeft"/>
+                    </StackPanel>
+                    <TextBlock Text="After this many minutes of no music playing, UniPlaySong closes the audio device so Windows can enter sleep / auto-suspend on schedule. Set to 0 to keep the device open at all times (older behavior — may prevent automatic sleep on some systems). The first song after a release costs a brief moment to reopen the device."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Troubleshooting -->
