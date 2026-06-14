@@ -481,6 +481,10 @@ namespace UniPlaySong.Services
                     return !string.IsNullOrWhiteSpace(activeThemePath) &&
                            string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
 
+                case DefaultMusicSource.DeferToTrailerAudio:
+                    // No UPS file is ever loaded for this source — nothing can match `path`
+                    return false;
+
                 case DefaultMusicSource.BundledPreset:
                     // v1.5.0: honor RandomizeBundledTrackOnStartup — the effective preset
                     // is either the session-random pick or the manual SelectedBundledPreset.
@@ -845,6 +849,16 @@ namespace UniPlaySong.Services
                                                   "Theme dev must add the file, or user can run the copy helper in " +
                                                   "Settings -> Playback -> Active Theme Music.");
                             }
+                            break;
+
+                        case DefaultMusicSource.DeferToTrailerAudio:
+                            // v1.5.3 — intentional no-op. UPS stays silent so the user's
+                            // ExtraMetadataLoader trailer (or any other plugin's MediaElement)
+                            // can produce audio uncontested. If no trailer is configured / no
+                            // EML installed, the user just gets silence — that's the documented
+                            // trade-off and the trade-off the user opted into by picking this
+                            // source.
+                            _fileLogger?.Debug($"DeferToTrailerAudio: skipping default-music load for {game.Name} (intentional — letting trailer/external audio play)");
                             break;
 
                         case DefaultMusicSource.BundledPreset:

@@ -140,7 +140,8 @@ namespace UniPlaySong
         RandomGame,     // Random song from any game's music library
         CustomRotation,         // Songs from user-selected games
         CompletionStatusPool,   // Songs from games matching selected completion statuses
-        ActiveThemeMusic        // Background music from the currently active fullscreen theme
+        ActiveThemeMusic,       // Background music from the currently active fullscreen theme
+        DeferToTrailerAudio     // v1.5.3+ — no UPS music; lets ExtraMetadataLoader's trailer audio play uncontested
     }
 
     public static class DefaultMusicSourceExtensions

@@ -640,6 +640,18 @@
                                    Text="ℹ This option applies in Fullscreen mode. UPS will resolve the file against whichever theme is active when you switch to Fullscreen."/>
                     </StackPanel>
 
+                    <!-- Default Music Source: Defer to Trailer Audio (v1.5.3+) -->
+                    <RadioButton Content="Defer to trailer audio when no UPS music is present"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="20,5,0,0"/>
+                    <TextBlock Text="When a game has no UPS songs, UPS stays silent so the game's trailer audio (via ExtraMetadataLoader or any other plugin that plays a trailer) can be heard uncontested. If no trailer is configured for the game or the relevant plugin isn't installed, you simply get silence."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
                     <!-- Default Music Source: Random Game -->
                     <RadioButton Content="Pick From Random Game"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"

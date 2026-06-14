@@ -4394,6 +4394,7 @@ namespace UniPlaySong
                 case DefaultMusicSource.CustomRotation:       return "Custom Rotation";
                 case DefaultMusicSource.CompletionStatusPool: return "Completion Status Pool";
                 case DefaultMusicSource.ActiveThemeMusic:     return "Active Theme Music";
+                case DefaultMusicSource.DeferToTrailerAudio:  return "Defer to Trailer Audio";
                 default:                                      return source.ToString();
             }
         }
