@@ -5,6 +5,8 @@ Packages:
     ReleaseDate: 2026-06-14
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.3/UniPlaySong-1_5_3-Jun14_2026.pext'
     Changelog:
+      - '[Fix] Music no longer resumes when Playnite''s Keyboard Launcher opens while the main window is in the background.'
+      - '[New Feature] New default-music source "Defer to trailer audio when no UPS music is present" — for users of ExtraMetadataLoader or other trailer plugins. When a game has no UPS songs, UPS stays silent so the trailer''s audio can be heard uncontested.'
       - '[Theme Dev Feature] New theme-integration option for theme devs to swap game music for your default music while you interact with custom panels (tag editor, sidebars, etc.), then restore game music when you close them. Called UPS_MusicControl_PauseGamePlayDefault (sibling to UPS_MusicControl).'
       - '[Theme Dev Feature] First-install auto-detect: if your fullscreen theme ships a UPS audio file, UPS picks it as your default music automatically.'
   - Version: 1.5.2

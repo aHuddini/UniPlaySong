@@ -6,13 +6,19 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.5.3] - 2026-06-14
 
-Two theme-integration features. No bug fixes.
+Two theme-integration features, a new default-music source, and a focus-tracking bug fix.
 
 ### Added
 
 - **New theme element `UPS_MusicControl_PauseGamePlayDefault`.** Sibling to the existing `UPS_MusicControl`. Where `UPS_MusicControl` pauses everything when `Tag=True`, this new variant swaps the current game's music out for the user's default music (Bundled Ambient, Random Game, Custom Folder — whatever they picked) and restores game music when `Tag=False`. Theme devs can use it to keep background music playing while the user interacts with a custom panel (tag editor, settings sidebar, property pane) without silence or game-track stutter. Multiple instances stack via OR. The equivalent `{PluginSettings}` binding to `ForceDefaultMusicOverride` works too. See `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` for the new section between Examples 5 and 6.
 
 - **First-install auto-detection of UPS audio in the active fullscreen theme.** On first run, UPS checks whether the active fullscreen theme ships a `UPS_BackgroundAudio.{mp3,ogg,wav,flac}` file. If yes, the default-music source is auto-switched from Bundled Ambient to Active Theme Music so the theme's audio plays out of the box. Conservative: only when the theme dev explicitly added the UPS file (never silently copies from `background.*`), only when the user is still on the factory-default source (existing user choices are respected on upgrade), and the check runs once — never re-fires when the user switches themes later. Only the active theme is scanned; UPS doesn't enumerate other installed themes.
+
+- **New default-music source: "Defer to trailer audio when no UPS music is present"** (issue #77). When picked, UPS stays silent on games with no UPS songs so the game's trailer audio (via ExtraMetadataLoader or any other plugin that plays a trailer) can be heard uncontested. If no trailer is configured or the relevant plugin isn't installed, the user gets silence — UPS doesn't request the trailer to play, it just doesn't compete with it. Minimum-viable, no-coupling-with-EML implementation: UPS doesn't reach into another plugin's visual tree to force a MediaElement to play, which keeps it resilient to EML's internal changes.
+
+### Fixed
+
+- **Music no longer resumes when Playnite's Keyboard Launcher opens** (issue #79). Symptom: with Playnite minimized in the background and another app in the foreground, pressing the Keyboard Launcher's global hotkey would cause UPS music to resume even though Playnite's main window wasn't actually back in the foreground. Root cause: `Application.Activated` (the WPF event UPS listened to) fires when ANY window owned by the app gets focus — including the Keyboard Launcher overlay, which is a sibling window to the main window. UPS now checks the foreground window handle against the main-window handle before clearing the FocusLoss pause source. This is the same window-handle check that the focus-loss verify timer already does on the symmetric path; the bug was the asymmetry. Reported by @darklinkpower with a video reproducer.
 
 ## [1.5.2] - 2026-06-06
 

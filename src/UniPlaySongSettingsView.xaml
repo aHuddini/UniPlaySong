@@ -4206,6 +4206,12 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer resumes when Playnite's Keyboard Launcher opens while the main window is in the background.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Added:</Run> New default-music source "Defer to trailer audio when no UPS music is present" — for users of ExtraMetadataLoader or other trailer plugins.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
                                 <Run FontWeight="SemiBold">Added:</Run> New theme element <Run FontFamily="Consolas">UPS_MusicControl_PauseGamePlayDefault</Run> that lets theme devs swap game music for default music while you interact with custom panels (tag editor, settings sidebar, etc.), then restore game music when you close them.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">

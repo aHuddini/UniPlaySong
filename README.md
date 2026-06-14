@@ -25,6 +25,10 @@ Built with the help of Claude Code and Cursor IDE
 ### Added
 - New theme-integration element `UPS_MusicControl_PauseGamePlayDefault` — lets theme devs swap game music for your default music while you interact with custom panels (tag editor, sidebars, etc.), then restore game music when you close them.
 - First-install auto-detect: if your fullscreen theme ships a UPS audio file, UPS picks it as your default music automatically.
+- New default-music source "Defer to trailer audio when no UPS music is present" — for users of ExtraMetadataLoader or other trailer plugins.
+
+### Fixed
+- Music no longer resumes when Playnite's Keyboard Launcher opens with the main window in the background.
 
 ### Known Issue (carried over from v1.5.0)
 - Toast notification blur is still broken on Windows 11. Win10 users unaffected. Planned for a future v1.5.x patch.
