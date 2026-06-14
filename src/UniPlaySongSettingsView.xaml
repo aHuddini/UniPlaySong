@@ -4233,6 +4233,14 @@
                                 These are real-world edge cases UPS users have hit. If you run into one, the workaround is listed below the description.
                             </TextBlock>
 
+                            <TextBlock Text="Windows can't auto-suspend while UPS has played audio" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
+                                UPS keeps a persistent audio device open between songs to avoid stutter on game switches. Windows reads that as an active audio session and prevents the system from going to sleep — even when UPS has been paused for a long time. You'll see this if you have desktop autosuspend configured and notice your PC never sleeps while Playnite is running.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                <Run FontWeight="SemiBold">Workaround:</Run> Fully exit Playnite when stepping away from your PC. A fix is being investigated for a future v1.5.x patch.
+                            </TextBlock>
+
                             <TextBlock Text="Pause on Focus Loss can be unreliable" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
                                 If music gets stuck silent after exiting a game, try disabling "Ignore brief focus loss (alt-tab)" first. If it still happens, send a log file via Settings → Backup → Export Markdown Snapshot.
