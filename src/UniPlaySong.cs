@@ -1962,6 +1962,22 @@ namespace UniPlaySong
             // Cancel pending focus verification — focus returned before the check fired
             _focusVerifyTimer?.Stop();
 
+            // v1.5.3 — issue #79 fix. Application.Activated fires when ANY window owned
+            // by Playnite gets focus, not just the main window. The Keyboard Launcher
+            // (a global hotkey-triggered Spotlight-style overlay) is a sibling window
+            // that activates while Playnite's main window stays in the background.
+            // Same goes for any Playnite-owned modal dialog opened from another app.
+            // Without this guard, music would resume the moment the launcher opens
+            // even though the user isn't actually looking at Playnite's main window.
+            // Symmetric to the check OnFocusVerifyTick already does on the deactivate side.
+            if (_mainWindowHandle != IntPtr.Zero && GetForegroundWindow() != _mainWindowHandle)
+            {
+                // A sibling window got focus, not the main window — leave FocusLoss in
+                // place. The next genuine return to the main window will fire this
+                // handler again and pass the check.
+                return;
+            }
+
             if (_settings?.FocusLossStayPaused == true && _settings?.PauseOnFocusLoss == true)
             {
                 // Atomic swap: FocusLoss → Manual so play button can clear it naturally.
