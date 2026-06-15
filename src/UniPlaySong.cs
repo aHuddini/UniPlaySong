@@ -233,7 +233,10 @@ namespace UniPlaySong
             try
             {
                 var extensionPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                _fileLogger = new FileLogger(extensionPath);
+                // Pass the SDK ConfigurationPath so FileLogger's fallback log locations
+                // resolve under Playnite's real data root on portable installs (data folder
+                // next to the .exe) instead of a hardcoded %AppData%\Playnite.
+                _fileLogger = new FileLogger(extensionPath, _api.Paths.ConfigurationPath);
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 _fileLogger.Info($"=== UniPlaySong v{version} Starting ===");
 

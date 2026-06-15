@@ -21,31 +21,41 @@ namespace UniPlaySong.Common
         // Instance-level debug check
         public Func<bool> IsDebugEnabled { get; set; }
 
-        public FileLogger(string extensionPath)
+        // playniteConfigPath: the SDK's IPlayniteAPI.Paths.ConfigurationPath. Used to
+        // resolve fallback log locations so they land in the right place on portable
+        // installs (data folder next to the .exe) instead of a hardcoded %AppData%.
+        // Falls back to %AppData%\Playnite only when the SDK path isn't supplied.
+        public FileLogger(string extensionPath, string playniteConfigPath = null)
         {
             // Try multiple fallback locations
             var possiblePaths = new List<string>();
-            
+
             // First, try the provided extension path
             if (!string.IsNullOrEmpty(extensionPath) && Directory.Exists(extensionPath))
             {
                 possiblePaths.Add(Path.Combine(extensionPath, Constants.LogFileName));
             }
-            
+
+            // Playnite's data root: SDK ConfigurationPath when available (portable-correct),
+            // otherwise the legacy %AppData%\Playnite guess.
+            var playniteDataRoot = !string.IsNullOrEmpty(playniteConfigPath)
+                ? playniteConfigPath
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Constants.PlayniteFolderName);
+
             // Fallback to Playnite extensions directory
-            var playniteAppData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Constants.PlayniteFolderName, Constants.PlayniteExtensionsFolderName);
-            if (Directory.Exists(playniteAppData))
+            var playniteExtensions = Path.Combine(playniteDataRoot, Constants.PlayniteExtensionsFolderName);
+            if (Directory.Exists(playniteExtensions))
             {
                 // Try to find our extension folder
-                var extensionFolders = Directory.GetDirectories(playniteAppData, Constants.ExtensionFolderName + "*");
+                var extensionFolders = Directory.GetDirectories(playniteExtensions, Constants.ExtensionFolderName + "*");
                 if (extensionFolders.Length > 0)
                 {
                     possiblePaths.Add(Path.Combine(extensionFolders[0], Constants.LogFileName));
                 }
             }
-            
-            // Final fallback to Playnite AppData
-            possiblePaths.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Constants.PlayniteFolderName, Constants.LogFileName));
+
+            // Final fallback to Playnite data root
+            possiblePaths.Add(Path.Combine(playniteDataRoot, Constants.LogFileName));
             
             // Use the first path that we can write to, or the last one as final fallback
             var pathCount = possiblePaths.Count;
