@@ -854,11 +854,17 @@ namespace UniPlaySong.Services
                         case DefaultMusicSource.DeferToTrailerAudio:
                             // v1.5.3 — intentional no-op. UPS stays silent so the user's
                             // ExtraMetadataLoader trailer (or any other plugin's MediaElement)
-                            // can produce audio uncontested. If no trailer is configured / no
-                            // EML installed, the user just gets silence — that's the documented
-                            // trade-off and the trade-off the user opted into by picking this
-                            // source.
-                            _fileLogger?.Debug($"DeferToTrailerAudio: skipping default-music load for {game.Name} (intentional — letting trailer/external audio play)");
+                            // can produce audio uncontested. Only ever reached for games with
+                            // no game music (we're inside the songs.Count == 0 block); games
+                            // with their own music never get here. If no trailer is configured /
+                            // no EML installed, the user just gets silence — the documented
+                            // trade-off they opted into by picking this source.
+                            //
+                            // v1.5.4 — detect EML's trailer file so the log shows whether a
+                            // trailer actually exists for this game (diagnostics only; the
+                            // silence outcome is unchanged either way).
+                            bool hasTrailer = _fileService.HasTrailerVideo(game);
+                            _fileLogger?.Debug($"DeferToTrailerAudio: {game.Name} — trailer {(hasTrailer ? "found, deferring to it" : "NOT found; staying silent per setting")}");
                             break;
 
                         case DefaultMusicSource.BundledPreset:

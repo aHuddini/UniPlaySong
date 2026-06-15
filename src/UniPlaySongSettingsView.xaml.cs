@@ -59,7 +59,6 @@ namespace UniPlaySong
             s.AutoTagOnLibraryUpdate = true;
             s.AutoDeleteMusicOnGameRemoval = true;
             s.EnableSongListCache = false;
-            s.IdleAudioDeviceTeardownMinutes = 5;
             s.EnableDebugLogging = false;
 
             ShowButtonFeedback(sender, "Reset!");
@@ -294,6 +293,7 @@ namespace UniPlaySong
             s.EnableSidebarGlow = false;
             s.SidebarGlowMode = SidebarGlowMode.Breathing;
             s.ShowMusicDashboard = false;
+            s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
             ShowButtonFeedback(sender, "Reset!");
         }
 

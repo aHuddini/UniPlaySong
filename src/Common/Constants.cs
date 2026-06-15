@@ -75,9 +75,15 @@ namespace UniPlaySong.Common
         #endregion
         
         #region File Names
-        
+
         public const string LogFileName = "UniPlaySong.log";
-        
+
+        // ExtraMetadataLoader trailer videos, stored at
+        // <Config>\ExtraMetadata\Games\{GameId}\. Used by the DeferToTrailerAudio
+        // default-music source to detect whether a trailer exists for a game.
+        public const string VideoTrailerFileName = "VideoTrailer.mp4";
+        public const string VideoMicrotrailerFileName = "VideoMicrotrailer.mp4";
+
         #endregion
         
         #region UI

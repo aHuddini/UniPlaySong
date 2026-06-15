@@ -2448,10 +2448,15 @@ namespace UniPlaySong
             _gamesPath = gamesPath;
             var tempPath = Path.Combine(basePath, Constants.TempFolderName);
 
+            // ExtraMetadataLoader stores trailers at <Config>\ExtraMetadata\Games\{GameId}
+            // (a sibling of our own UniPlaySong\Games path). Derive it from the SDK
+            // ConfigurationPath so it resolves on portable installs too — never hand-walk paths.
+            var emlGamesPath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.GamesFolderName);
+
             // Initialize error handler service (for centralized error handling)
             _errorHandler = new ErrorHandlerService(Logger, _fileLogger, _api);
 
-            _fileService = new GameMusicFileService(gamesPath, _errorHandler, () => _settings);
+            _fileService = new GameMusicFileService(gamesPath, _errorHandler, () => _settings, emlGamesPath);
 
             // Create the appropriate music player based on LiveEffectsEnabled setting
             _currentMusicPlayer = CreateMusicPlayer();

@@ -16,6 +16,7 @@ namespace UniPlaySong.Services
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private readonly string _baseMusicPath;
+        private readonly string _emlGamesPath;
         private readonly ErrorHandlerService _errorHandler;
         private readonly Func<UniPlaySongSettings> _settingsProvider;
         private static readonly string[] SupportedExtensions = Constants.SupportedAudioExtensions;
@@ -23,9 +24,13 @@ namespace UniPlaySong.Services
         // Song list cache to avoid repeated directory scans
         private readonly Dictionary<string, List<string>> _songCache = new Dictionary<string, List<string>>();
 
-        public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null, Func<UniPlaySongSettings> settingsProvider = null)
+        // emlGamesPath: ExtraMetadataLoader's games root (<Config>\ExtraMetadata\Games),
+        // supplied by the caller from the SDK ConfigurationPath so trailer detection works
+        // on portable installs. Optional — when null, HasTrailerVideo() returns false.
+        public GameMusicFileService(string baseMusicPath, ErrorHandlerService errorHandler = null, Func<UniPlaySongSettings> settingsProvider = null, string emlGamesPath = null)
         {
             _baseMusicPath = baseMusicPath ?? throw new ArgumentNullException(nameof(baseMusicPath));
+            _emlGamesPath = emlGamesPath;
             _errorHandler = errorHandler;
             _settingsProvider = settingsProvider;
             Directory.CreateDirectory(_baseMusicPath);
@@ -40,6 +45,31 @@ namespace UniPlaySong.Services
 
             var gameId = game.Id.ToString();
             return Path.Combine(_baseMusicPath, gameId);
+        }
+
+        // Returns true if ExtraMetadataLoader has a trailer video for this game.
+        // EML stores trailers at <Config>\ExtraMetadata\Games\{GameId}\VideoTrailer.mp4
+        // (or VideoMicrotrailer.mp4). _emlGamesPath is the <Config>\ExtraMetadata\Games
+        // root, supplied by the caller from the SDK ConfigurationPath so this resolves
+        // correctly on portable installs.
+        public bool HasTrailerVideo(Game game)
+        {
+            if (game == null || string.IsNullOrEmpty(_emlGamesPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var emlGameDir = Path.Combine(_emlGamesPath, game.Id.ToString());
+                return File.Exists(Path.Combine(emlGameDir, Constants.VideoTrailerFileName))
+                    || File.Exists(Path.Combine(emlGameDir, Constants.VideoMicrotrailerFileName));
+            }
+            catch (Exception ex)
+            {
+                _errorHandler?.HandleError(ex, "HasTrailerVideo");
+                return false;
+            }
         }
 
         public List<string> GetAvailableSongs(Game game)

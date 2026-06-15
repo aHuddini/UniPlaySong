@@ -216,29 +216,7 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
-                    <!-- Idle Audio Device Release (issue #81 — lets Windows sleep) -->
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <TextBlock Text="Release Audio When Idle: " VerticalAlignment="Center" Width="160"/>
-                        <TextBlock Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
-                                   VerticalAlignment="Center"
-                                   Width="25"
-                                   Margin="0,0,3,0"/>
-                        <TextBlock Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="0" Maximum="60"
-                                Value="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
-                                Width="200"
-                                IsSnapToTickEnabled="True"
-                                SmallChange="1"
-                                LargeChange="5"
-                                TickFrequency="1"
-                                TickPlacement="None"
-                                AutoToolTipPlacement="TopLeft"/>
-                    </StackPanel>
-                    <TextBlock Text="After this many minutes of no music playing, UniPlaySong closes the audio device so Windows can enter sleep / auto-suspend on schedule. Set to 0 to keep the device open at all times (older behavior — may prevent automatic sleep on some systems). The first song after a release costs a brief moment to reopen the device."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
+                    <!-- Note: "Release Audio When Idle" lives on the Experimental tab (v1.5.4) -->
 
                     <Separator Margin="0,15"/>
 
@@ -664,17 +642,7 @@
                                    Text="ℹ This option applies in Fullscreen mode. UPS will resolve the file against whichever theme is active when you switch to Fullscreen."/>
                     </StackPanel>
 
-                    <!-- Default Music Source: Defer to Trailer Audio (v1.5.3+) -->
-                    <RadioButton Content="Defer to trailer audio when no UPS music is present"
-                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
-                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
-                                 GroupName="DefaultMusicSource"
-                                 Margin="20,5,0,0"/>
-                    <TextBlock Text="When a game has no UPS songs, UPS stays silent so the game's trailer audio (via ExtraMetadataLoader or any other plugin that plays a trailer) can be heard uncontested. If no trailer is configured for the game or the relevant plugin isn't installed, you simply get silence."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
+                    <!-- Note: "Defer to trailer audio" lives on the Experimental tab (v1.5.4) -->
 
                     <!-- Default Music Source: Random Game -->
                     <RadioButton Content="Pick From Random Game"
@@ -3898,6 +3866,50 @@
                             <Run Text=" These features are experimental and under active development. They may not work correctly, cause minor audio glitches, or behave unexpectedly. They may be changed or removed in future versions. Enable at your own discretion."/>
                         </TextBlock>
                     </Border>
+
+                    <!-- Trailer Audio (moved from Playback tab in v1.5.4) -->
+                    <TextBlock Text="Trailer Audio (ExtraMetadataLoader)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <RadioButton Content="Stay silent for games with no music (let trailer / external audio play)"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="0,5,0,0"/>
+                    <TextBlock Text="Applies only to games that have no music of their own. For those games, UniPlaySong plays no default music, so a trailer playing via ExtraMetadataLoader (or any other plugin) can be heard on its own. UniPlaySong does not control the trailer's volume — if EML's &quot;play videos initially without sound&quot; is on, the trailer is muted and you get silence; turn that EML option off so the trailer is audible. Games that have their own music are never affected. If a game has no music and no trailer, you get silence."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Release Audio When Idle" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8">
+                        <TextBlock Text="Release after: " VerticalAlignment="Center" Width="100"/>
+                        <TextBlock Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                                   VerticalAlignment="Center"
+                                   Width="25"
+                                   Margin="0,0,3,0"/>
+                        <TextBlock Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="0" Maximum="60"
+                                Value="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                                Width="200"
+                                IsSnapToTickEnabled="True"
+                                SmallChange="1"
+                                LargeChange="5"
+                                TickFrequency="1"
+                                TickPlacement="None"
+                                AutoToolTipPlacement="TopLeft"/>
+                    </StackPanel>
+                    <TextBlock Text="After this many minutes of no music playing, UniPlaySong closes the audio device so Windows can enter sleep / auto-suspend on schedule. Set to 0 to keep the device open at all times (older behavior — may prevent automatic sleep on some systems). The first song after a release costs a brief moment to reopen the device."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <TextBlock Text="&#x26A0; Experimental: still being ironed out — behavior may change."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
 
                     <!-- Download Notification Sound -->
                     <TextBlock Text="Download Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
