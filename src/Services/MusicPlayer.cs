@@ -344,6 +344,11 @@ namespace UniPlaySong.Services
             }
         }
 
+        // WPF MediaPlayer opens/closes the audio handle per clip via its Clock — it
+        // holds no persistent device between songs, so issue #81 doesn't apply here.
+        // Nothing to release. (IMusicPlayer contract)
+        public void ReleaseAudioDevice() { }
+
         public void Close()
         {
             try

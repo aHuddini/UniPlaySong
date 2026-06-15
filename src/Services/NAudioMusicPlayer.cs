@@ -32,7 +32,7 @@ namespace UniPlaySong.Services
         public bool SuppressVisualizationProvider { get; set; }
 
         // Persistent infrastructure (created once on first Load, torn down by Dispose
-        // OR — v1.5.4+ (issue #81) — by the idle-teardown timer when the user has it on)
+        // OR — v1.5.3 (issue #81) — by the idle-teardown timer when the user has it on)
         private WaveOutEvent _outputDevice;
         private MixingSampleProvider _mixer;
         private CalmDownProcessor _calmDownProcessor;
@@ -170,11 +170,26 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug($"[NAudio] EnsurePersistentLayer: {sw.ElapsedMilliseconds}ms (mixer+volume+device+play)");
         }
 
-        // Error recovery: tears down the persistent layer so next Load() rebuilds it
+        // Tears down the persistent layer so next Load() rebuilds it. Used for both
+        // error recovery and idle teardown (issue #81). Disposes any loaded-but-paused
+        // song chain first — its mixer input would dangle once the mixer/device is
+        // gone, and the song must be reloaded on the next Load() anyway. Idempotent:
+        // safe whether or not a song is loaded, and whether or not Dispose() already
+        // removed the chain.
         private void TearDownPersistentLayer()
         {
             try
             {
+                RemoveCurrentSongChain();
+                // Reset load state so the next Load() rebuilds the chain and the
+                // MusicPlaybackService takes its replay (not resume) path. Without this,
+                // IsLoaded stays true while _audioFile is null, and Resume() silently
+                // no-ops into a stuck-silent state on the next un-minimize (issue #81).
+                IsLoaded = false;
+                Source = null;
+                _isPlaying = false;
+                _logicallyPaused = false;
+
                 if (_outputDevice != null)
                 {
                     _outputDevice.PlaybackStopped -= OnPlaybackStopped;
@@ -217,6 +232,29 @@ namespace UniPlaySong.Services
             _idleTeardownTimer = null;
         }
 
+        // Releases the persistent audio device immediately (e.g. on session lock)
+        // instead of waiting out the idle timer (issue #81). Self-gates on the same
+        // opt-out the idle tick uses, so disabling idle teardown disables this too.
+        // No-op if the device is already torn down. The next Load()/Play() rebuilds it.
+        public void ReleaseAudioDevice()
+        {
+            try
+            {
+                if (_isDisposed || !_persistentLayerInitialized) return;
+
+                var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
+                if (minutes <= 0) return; // user disabled the feature
+
+                _fileLogger?.Info("[NAudio] Session lock — releasing persistent audio device so Windows can sleep");
+                TearDownPersistentLayer();
+                StopIdleTeardownTimer();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[{LogPrefix}] ReleaseAudioDevice failed: {ex.Message}");
+            }
+        }
+
         // Resets the idle countdown. Called from Load() and Play() so any real
         // playback activity keeps the device alive — EnsurePersistentLayer is
         // idempotent (no-op when already initialized), so Load() relies on this
@@ -235,12 +273,14 @@ namespace UniPlaySong.Services
                 var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
                 if (minutes <= 0) return; // user disabled the feature
 
-                // Only tear down if genuinely idle: no song loaded AND mixer has
-                // no active inputs. _audioFile is the strongest signal — when
-                // RemoveCurrentSongChain ran it set this to null.
-                if (_audioFile != null) { MarkAudioActivity(); return; }
+                // Reset the idle clock ONLY while audio is actively playing. A song
+                // that's merely loaded-but-paused (Playnite minimized to tray, focus
+                // lost, song finished) is the IDLE state — it must NOT reset the clock,
+                // or teardown could never fire (issue #81). A loaded-but-paused song is
+                // disposed by TearDownPersistentLayer when the timeout is reached.
+                // Crossfading is genuine active playback, so it keeps the device alive.
                 if (IsCrossfading) { MarkAudioActivity(); return; }
-                if (_isPlaying || _logicallyPaused) { MarkAudioActivity(); return; }
+                if (_isPlaying && !_logicallyPaused) { MarkAudioActivity(); return; }
 
                 var idleFor = DateTime.UtcNow - _lastActivityUtc;
                 if (idleFor.TotalMinutes < minutes) return;

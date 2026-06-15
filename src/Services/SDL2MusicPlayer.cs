@@ -121,6 +121,33 @@ namespace UniPlaySong.Services
             _idleTeardownTimer = null;
         }
 
+        // Releases the SDL audio device immediately (e.g. on session lock) instead of
+        // waiting out the idle timer (issue #81). Self-gates on the same opt-out the
+        // idle tick uses, so disabling idle teardown disables this too. No-op if the
+        // device is already closed. The next Load()/Play() reopens it transparently.
+        public void ReleaseAudioDevice()
+        {
+            try
+            {
+                // Only the idle-teardown-enabled (main) player may close the shared,
+                // process-wide SDL audio device. A secondary instance (e.g. jingle
+                // player) constructed without enableIdleTeardown must never close it,
+                // or it would kill audio for the main player too.
+                if (!_enableIdleTeardown) return;
+                if (_isDisposed || !_isSDLAudioInitialized) return;
+
+                var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
+                if (minutes <= 0) return; // user disabled the feature
+
+                TearDownSDLAudio(DateTime.UtcNow - _lastActivityUtc);
+                StopIdleTeardownTimer();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"SDL2 ReleaseAudioDevice failed: {ex.Message}");
+            }
+        }
+
         // Resets the idle countdown. Called on InitializeSDL and on Load — any
         // real playback activity keeps the device alive.
         private void MarkAudioActivity()
@@ -137,9 +164,13 @@ namespace UniPlaySong.Services
                 var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
                 if (minutes <= 0) return; // user disabled the feature
 
-                // Only tear down if genuinely idle: nothing loaded, nothing playing.
-                if (_isLoaded || _music != IntPtr.Zero) { MarkAudioActivity(); return; }
-                if (SDL2Mixer.Mix_PlayingMusic() == 1 || SDL2Mixer.Mix_PausedMusic() == 1) { MarkAudioActivity(); return; }
+                // Reset the idle clock ONLY while audio is actively playing. A song
+                // that's merely loaded-but-paused (Playnite minimized to tray, focus
+                // lost, song finished) is the IDLE state — it must NOT reset the clock,
+                // or teardown could never fire (issue #81). Mix_PlayingMusic() returns 1
+                // even while paused, so we must also exclude Mix_PausedMusic().
+                bool activelyPlaying = SDL2Mixer.Mix_PlayingMusic() == 1 && SDL2Mixer.Mix_PausedMusic() == 0;
+                if (activelyPlaying) { MarkAudioActivity(); return; }
 
                 var idleFor = DateTime.UtcNow - _lastActivityUtc;
                 if (idleFor.TotalMinutes < minutes) return;
@@ -160,7 +191,20 @@ namespace UniPlaySong.Services
         {
             if (!_isSDLAudioInitialized) return;
 
-            // Free any preloaded handle first — it would dangle once the device closes.
+            // Halt and free the currently-loaded (paused/stopped) song. All Mix_*
+            // handles dangle once the device closes, so the loaded track must be
+            // freed and the loaded state cleared — the next Load() reloads it.
+            if (_music != IntPtr.Zero)
+            {
+                SDL2Mixer.Mix_HaltMusic();
+                SDL2Mixer.Mix_FreeMusic(_music);
+                _music = IntPtr.Zero;
+            }
+            _isLoaded = false;
+            _isActive = false;
+            _source = string.Empty;
+
+            // Free any preloaded handle too — it would dangle once the device closes.
             if (_preloadedMusic != IntPtr.Zero)
             {
                 SDL2Mixer.Mix_FreeMusic(_preloadedMusic);

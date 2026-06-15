@@ -575,6 +575,7 @@ namespace UniPlaySong
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
             if (Application.Current.MainWindow != null)
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
 
@@ -1049,6 +1050,7 @@ namespace UniPlaySong
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
@@ -1998,14 +2000,36 @@ namespace UniPlaySong
         {
             if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionLock)
             {
-                if (_settings?.PauseOnSystemLock == true)
+                // SessionSwitch fires on a ThreadPool thread; read settings and touch
+                // playback only on the UI thread (where settings are also written), so
+                // we never see a torn/stale snapshot of a setting the user just changed.
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    Application.Current?.Dispatcher?.Invoke(() =>
+                    bool pauseOnLock = _settings?.PauseOnSystemLock == true;
+                    bool releaseDevice = _settings?.IdleAudioDeviceTeardownMinutes > 0;
+                    if (!pauseOnLock && !releaseDevice)
+                        return;
+
+                    if (pauseOnLock)
                     {
-                        _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
                         _dashboardPlaybackService?.PauseForSystem();
-                    });
-                }
+                    }
+
+                    // Add the SystemLock pause source whenever we pause OR release the
+                    // device: releasing tears down the loaded song, so the unlock path's
+                    // RemovePauseSource(SystemLock) -> deferred-game branch is what
+                    // replays it. Without a pause source held, that resume branch never
+                    // runs and music stays silent (issue #81).
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
+
+                    // Release the persistent audio device so Windows can suspend while
+                    // locked, instead of waiting out the idle timer. Stashes the current
+                    // game for replay on unlock. (issue #81)
+                    if (releaseDevice)
+                    {
+                        _playbackService?.ReleaseAudioDeviceForLock();
+                    }
+                });
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
             {
@@ -2024,6 +2048,47 @@ namespace UniPlaySong
                     }
 
                     // Always remove — HashSet.Remove is a no-op if not present
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _dashboardPlaybackService?.ResumeFromSystem();
+                });
+            }
+        }
+
+        // Handles Windows system suspend/resume. On suspend, release the persistent
+        // audio device so the suspend isn't delayed (issue #81) — same teardown/replay
+        // plumbing as the lock path, reusing PauseSource.SystemLock so the round-2
+        // preservation/deferral fixes apply. Gated on the idle-teardown opt-out, like
+        // the lock trigger. PowerModeChanged fires on a non-UI thread, so all settings
+        // reads and playback touches happen on the UI dispatcher.
+        private void OnPowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == Microsoft.Win32.PowerModes.Suspend)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    bool releaseDevice = _settings?.IdleAudioDeviceTeardownMinutes > 0;
+                    if (!releaseDevice)
+                        return;
+
+                    // Pause the dashboard's independent player too — it holds its own
+                    // audio device, so leaving it active would keep the audio session
+                    // alive and defeat the suspend. Unconditional (not gated on
+                    // PauseOnSystemLock): on suspend the device is going away regardless.
+                    // Self-guards when the dashboard is closed.
+                    _dashboardPlaybackService?.PauseForSystem();
+
+                    // Hold the device released across the suspend. The matching Resume
+                    // below removes this source, which fires the deferred-game replay.
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
+                    _playbackService?.ReleaseAudioDeviceForLock();
+                });
+            }
+            else if (e.Mode == Microsoft.Win32.PowerModes.Resume)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    // Always remove — HashSet.Remove is a no-op if not present. If the
+                    // device was released on suspend, this triggers the deferred replay.
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                 });

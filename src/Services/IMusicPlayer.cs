@@ -42,6 +42,13 @@ namespace UniPlaySong.Services
 
         void Close();
 
+        // Releases the persistent audio device immediately so Windows can suspend,
+        // without waiting for the idle timer (issue #81). Same teardown the idle
+        // timer performs; the device reopens transparently on the next Load()/Play().
+        // No-op if the device is already released or if the user disabled idle
+        // teardown (IdleAudioDeviceTeardownMinutes <= 0).
+        void ReleaseAudioDevice();
+
         // Sets a volume ramp from current volume to target over the given duration.
         // NAudio: per-sample interpolation on the audio thread (no stepping artifacts).
         // SDL2/WPF: DispatcherTimer stepping with exponential curve (preserves current behavior).

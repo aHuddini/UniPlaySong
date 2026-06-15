@@ -13,6 +13,11 @@ namespace UniPlaySong.Services
         void Stop();
         void Pause();
         void Resume();
+
+        // Releases the backend's persistent audio device on session lock so Windows
+        // can suspend without waiting out the idle timer (issue #81), stashing the
+        // current game so the unlock path replays it. No-op if idle teardown is off.
+        void ReleaseAudioDeviceForLock();
         void PauseImmediate(); // Instant pause (no fade), for notification sounds
         void ResumeImmediate(); // Instant resume (no fade), for notification sounds
         void PauseForJingle();     // Instant pause for celebration jingle (dedicated PauseSource.Jingle)

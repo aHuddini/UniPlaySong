@@ -400,6 +400,12 @@ namespace UniPlaySong.Services
                     preservedSources.Add(PauseSource.ThemeOverlay);
                 if (_activePauseSources.Contains(PauseSource.Dashboard))
                     preservedSources.Add(PauseSource.Dashboard);
+                // SystemLock is a durable hold cleared only by its own unlock handler.
+                // If a song switch (radio auto-advance, external control) lifted it, the
+                // unlock path's deferred-game replay would never fire and music would stay
+                // silent after unlock (issue #81).
+                if (_activePauseSources.Contains(PauseSource.SystemLock))
+                    preservedSources.Add(PauseSource.SystemLock);
                 var clearedCount = _activePauseSources.Count - preservedSources.Count;
                 _activePauseSources.Clear();
 
@@ -639,12 +645,15 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // Don't start playback if window-state pause sources are active
-            // This prevents music from playing when Playnite is minimized/in tray/unfocused
-            // Store game info so we can play when pause sources are cleared
-            if (HasWindowStatePauseSources())
+            // Don't start playback if window-state pause sources are active, or while the
+            // session is locked. Window-state: prevents music when Playnite is
+            // minimized/in tray/unfocused. SystemLock: a switch (radio auto-advance,
+            // external control) arriving while locked must not reopen the audio device we
+            // just released for sleep (issue #81) — defer it to the unlock path instead.
+            // Store game info so we can play when pause sources are cleared.
+            if (HasWindowStatePauseSources() || _activePauseSources.Contains(PauseSource.SystemLock))
             {
-                _fileLogger?.Debug($"Playback blocked for {game.Name} (window state pause sources active) - storing for later");
+                _fileLogger?.Debug($"Playback blocked for {game.Name} (window-state or system-lock pause sources active) - storing for later");
                 _deferredGame = game;
                 _deferredSettings = settings;
                 _deferredForceReload = forceReload;
@@ -1278,6 +1287,35 @@ namespace UniPlaySong.Services
                     showUserMessage: false
                 );
             }
+        }
+
+        // Releases the backend's persistent audio device on session lock so Windows
+        // can suspend without waiting out the idle timer (issue #81). Stashes the
+        // current game as deferred so the unlock path (RemovePauseSource(SystemLock)
+        // -> deferred-game branch) replays it. Assumes the caller has already paused
+        // (AddPauseSource(SystemLock)). The backend self-gates on the idle-teardown
+        // opt-out, so this is a no-op when the feature is disabled.
+        public void ReleaseAudioDeviceForLock()
+        {
+            // Cancel any in-flight fade before tearing the device down — the fade timer
+            // would otherwise keep ticking against a released player. The accessors are
+            // null-safe so it wouldn't crash, but cancelling avoids the wasted ticks and
+            // keeps state clean for the unlock replay.
+            _fader?.CancelFade();
+
+            // Stash BEFORE releasing: release nulls the loaded song, and we want the
+            // unlock to reload exactly what was playing. A loaded player means real audio
+            // is/was active, so _currentGame is authoritative — overwrite any stale
+            // deferral (e.g. a switch deferred while minimized just before the lock).
+            if (_musicPlayer?.IsLoaded == true && _currentGame != null)
+            {
+                _deferredGame = _currentGame;
+                _deferredSettings = _currentSettings;
+                _deferredForceReload = true;
+                _fileLogger?.Debug($"ReleaseAudioDeviceForLock: stashed {_currentGame.Name} for replay on unlock");
+            }
+
+            _musicPlayer?.ReleaseAudioDevice();
         }
 
         private void FadeOutAndStop()
