@@ -178,6 +178,28 @@ namespace UniPlaySong.Common
             }
         }
 
+        // Returns Playnite's data-folder roots to probe for themes/config, most-likely
+        // first. ConfigurationPath comes from the SDK and is correct for BOTH installed
+        // (%AppData%\Playnite) and portable (data folder next to the .exe, any drive)
+        // installs — portable installs were the cause of issue #76. The %AppData% and
+        // %LocalAppData% paths are kept as fallbacks so the built-in Default theme
+        // (historically under %LocalAppData%) still resolves for installed users.
+        private static System.Collections.Generic.IEnumerable<string> GetPlayniteDataRoots()
+        {
+            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string configPath = null;
+            try { configPath = _api?.Paths?.ConfigurationPath; } catch { }
+            if (!string.IsNullOrWhiteSpace(configPath) && seen.Add(configPath))
+                yield return configPath;
+
+            var roaming = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playnite");
+            if (seen.Add(roaming)) yield return roaming;
+
+            var local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Playnite");
+            if (seen.Add(local)) yield return local;
+        }
+
         // Returns the full theme directory (parent of the audio/ folder) for the active
         // fullscreen theme, or null if the theme can't be resolved.
         private static string ResolveActiveThemeDirectory()
@@ -185,26 +207,23 @@ namespace UniPlaySong.Common
             var themeId = GetActiveFullscreenThemeId();
             if (string.IsNullOrWhiteSpace(themeId)) return null;
 
-            var roamingPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            bool isDefault = themeId == "Playnite_builtin_DefaultFullscreen";
 
-            // Built-in default theme: ID is "Playnite_builtin_DefaultFullscreen", dir is just "Default"
-            if (themeId == "Playnite_builtin_DefaultFullscreen")
+            // Probe each Playnite data root (ConfigurationPath first for portable support).
+            foreach (var root in GetPlayniteDataRoots())
             {
-                var defaultDir = Path.Combine(localPath, "Playnite", "Themes", "Fullscreen", "Default");
-                return Directory.Exists(defaultDir) ? defaultDir : null;
-            }
-
-            // User-installed themes: directory name matches the theme ID
-            var searchDirs = new[]
-            {
-                Path.Combine(roamingPath, "Playnite", "Themes", "Fullscreen"),
-                Path.Combine(localPath, "Playnite", "Themes", "Fullscreen")
-            };
-
-            foreach (var searchDir in searchDirs)
-            {
+                var searchDir = Path.Combine(root, "Themes", "Fullscreen");
                 if (!Directory.Exists(searchDir)) continue;
+
+                // Built-in default theme: ID is "Playnite_builtin_DefaultFullscreen", dir is just "Default"
+                if (isDefault)
+                {
+                    var defaultDir = Path.Combine(searchDir, "Default");
+                    if (Directory.Exists(defaultDir)) return defaultDir;
+                    continue;
+                }
+
+                // User-installed themes: directory name matches the theme ID
                 var match = Path.Combine(searchDir, themeId);
                 if (Directory.Exists(match)) return match;
 
@@ -244,14 +263,16 @@ namespace UniPlaySong.Common
             }
             catch { }
 
-            // Approach 2: Read from fullscreenConfig.json
+            // Approach 2: Read from fullscreenConfig.json. Probe each Playnite data root
+            // so portable installs (data folder next to the .exe, any drive) resolve too,
+            // not just %AppData% installs (issue #76).
             try
             {
-                var configPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "Playnite", "fullscreenConfig.json");
-                if (File.Exists(configPath))
+                foreach (var root in GetPlayniteDataRoots())
                 {
+                    var configPath = Path.Combine(root, "fullscreenConfig.json");
+                    if (!File.Exists(configPath)) continue;
+
                     var json = File.ReadAllText(configPath);
                     var key = "\"Theme\"";
                     var idx = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
