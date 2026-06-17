@@ -443,15 +443,49 @@ try {
 
     $packageInfo = Get-Item $pextFilePath
 
+    # Also emit the release-asset copy: the human-facing filename that
+    # Manifest/installer.yaml's PackageUrl points to (e.g.
+    # UniPlaySong-1_5_4-Jun16_2026.pext). The stable AddonId-named .pext above is
+    # the build artifact; this copy is what gets uploaded to the GitHub release.
+    # We derive the name from the manifest's PackageUrl for the current version so
+    # the asset name can never drift from what the manifest expects. If the current
+    # version isn't in the manifest yet, fall back to a date-stamped name.
+    $releaseAssetName = $null
+    $manifestPath = Join-Path $projectRoot "Manifest\installer.yaml"
+    if (Test-Path $manifestPath) {
+        $manifestLines = Get-Content $manifestPath
+        # Find the PackageUrl line that sits under the current version's block.
+        $inCurrentVersionBlock = $false
+        foreach ($line in $manifestLines) {
+            if ($line -match "^\s*-\s*Version:\s*(.+?)\s*$") {
+                $inCurrentVersionBlock = ($matches[1].Trim() -eq $versionFull)
+            } elseif ($inCurrentVersionBlock -and $line -match "PackageUrl:.*/([^/']+\.pext)") {
+                $releaseAssetName = $matches[1]
+                break
+            }
+        }
+    }
+    if (-not $releaseAssetName) {
+        # Manifest didn't list this version — build the name from version + today's
+        # date in the same MMMdd_yyyy scheme the project uses (e.g. Jun16_2026).
+        $dateStamp = (Get-Date).ToString("MMMdd_yyyy", [System.Globalization.CultureInfo]::InvariantCulture)
+        $releaseAssetName = "$extensionName-$version-$dateStamp.pext"
+        Write-Host ""
+        Write-Host "NOTE: v$versionFull not found in Manifest/installer.yaml; using date-stamped asset name." -ForegroundColor Yellow
+    }
+    $releaseAssetPath = Join-Path $pextOutputDir $releaseAssetName
+    Copy-Item $pextFilePath -Destination $releaseAssetPath -Force
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "  PACKAGE CREATED SUCCESSFULLY!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Package Details:" -ForegroundColor Cyan
-    Write-Host "  File: $($packageInfo.Name)" -ForegroundColor White
+    Write-Host "  Build artifact: $($packageInfo.Name)" -ForegroundColor White
+    Write-Host "  Release asset:  $releaseAssetName" -ForegroundColor Green
     Write-Host "  Size: $([math]::Round($packageInfo.Length/1KB, 2)) KB" -ForegroundColor White
-    Write-Host "  Location: $($packageInfo.FullName)" -ForegroundColor White
+    Write-Host "  Location: $pextOutputDir" -ForegroundColor White
     Write-Host "  Version: $versionFull" -ForegroundColor White
     Write-Host ""
     Write-Host "Package Contents:" -ForegroundColor Cyan

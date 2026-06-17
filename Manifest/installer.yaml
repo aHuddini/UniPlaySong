@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-06-16
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.4/UniPlaySong-1_5_4-Jun16_2026.pext'
     Changelog:
-      - '[Critical Fix] Active Theme Music now works on portable Playnite installs (issue #76). On portable Playnite — where the data folder sits next to the .exe, often on a non-C: drive — the "Use active theme''s UPS audio file" option played nothing. UPS now asks Playnite where its data lives instead of assuming the standard AppData location, so theme audio plays in both portable and standard installs. Confirmed fixed by affected users.'
+      - '[Critical Fix] Active Theme Music now works on portable Playnite installs (issue #76). On portable Playnite — where the data folder sits next to the .exe, often on a non-C: drive — the "Use active theme''s UPS audio file" option played nothing. UPS now asks Playnite where its data lives instead of assuming the standard AppData location, so theme audio plays in both portable and standard installs.'
       - '[Improved] "Defer to trailer audio" and "Release Audio When Idle" moved to the new Experimental settings tab while they''re still being refined. The trailer option was relabeled "Stay silent for games with no music" with clearer help text.'
   - Version: 1.5.3
     RequiredApiVersion: 6.16.0
