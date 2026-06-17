@@ -1,6 +1,6 @@
 # UniPlaySong Playnite Extension
 
-lis ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
+![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
 <p align="center">
   <img src="docs/assets/GHdisplay.png" alt="UniPlaySong" width="150">
@@ -20,22 +20,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.3
-
-### Added
-- New theme-integration element `UPS_MusicControl_PauseGamePlayDefault` — lets theme devs swap game music for your default music while you interact with custom panels (tag editor, sidebars, etc.), then restore game music when you close them.
-- First-install auto-detect: if your fullscreen theme ships a UPS audio file, UPS picks it as your default music automatically.
-- New default-music source "Defer to trailer audio when no UPS music is present" — for users of ExtraMetadataLoader or other trailer plugins.
+## What's New - v1.5.4
 
 ### Fixed
-- Music no longer resumes when Playnite's Keyboard Launcher opens with the main window in the background.
-- **Windows can now auto-suspend / sleep while Playnite is open** (issue #81). UPS keeps an audio device open between songs to avoid stutter when switching games, which previously kept Windows from sleeping. UPS now releases that device after a few minutes of no music (default 5, adjustable under **Settings → General → Performance → "Release Audio When Idle"**, or set to 0 to keep it open), and the next track reopens it automatically.
+- **Active Theme Music now works on portable Playnite installs** (issue #76). On portable Playnite — where the data folder sits next to the `.exe`, often on a non-`C:` drive — the "Use active theme's UPS audio file" option played nothing. UPS now asks Playnite where its data lives instead of assuming the standard AppData location, so theme audio plays in both portable and standard installs.
+
+### Changed
+- "Defer to trailer audio" and "Release Audio When Idle" moved to the new **Experimental** settings tab while they're still being refined.
 
 ### Known Issues
 - Toast notification blur is still broken on Windows 11 (carried over from v1.5.0). Win10 users unaffected. Planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.5.2**: Fix for music staying paused after exiting a windowed game (external-audio detector treating game audio as external). Active Theme Music option reworked to read `UPS_BackgroundAudio.mp3` instead of `background.mp3`. "Pause on Play (Splash Screen Mode)" renamed to "Pause on Game Launch".
+- **v1.5.3**: Windows can now auto-suspend / sleep while Playnite is open (issue #81) — UPS releases its idle audio device after a few minutes. Music no longer resumes when the Keyboard Launcher opens with the main window in the background. Added the "Defer to trailer audio" default-music source and two theme-integration features (`UPS_MusicControl_PauseGamePlayDefault`, first-install UPS-audio auto-detect).
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -4,6 +4,22 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.4] - 2026-06-16
+
+Portable-install support: the active-theme music fix that didn't resolve on portable Playnite, plus a settings-tab reorganization for two still-maturing options.
+
+### Fixed
+
+- **Active Theme Music silent on portable Playnite installs** (issue #76, confirmed fixed by the reporter and a theme dev on a portable install). `PlayniteThemeHelper` resolved the theme folder and `fullscreenConfig.json` from hardcoded `%AppData%` / `%LocalAppData%`, but portable installs keep their data folder next to the executable on any drive — so the lookup found nothing and the "Use active theme's UPS audio file" source played silence. New `GetPlayniteDataRoots()` yields `_api.Paths.ConfigurationPath` first (the SDK-provided data root, correct for both portable and installed), then the `%AppData%` / `%LocalAppData%` Playnite folders as fallbacks so the built-in Default theme (historically under `%LocalAppData%`) still resolves for installed users. Both `ResolveActiveThemeDirectory()` and the `fullscreenConfig.json` read route through it; Paths access is null/exception guarded and a `HashSet` dedupes when `ConfigurationPath` equals `%AppData%\Playnite`. `src/Common/PlayniteThemeHelper.cs`.
+
+- **FileLogger fallback log paths hardcoded to `%AppData%\Playnite`.** The two fallback log locations (the extension-folder probe and the final fallback) assumed the installed-mode data root, so on portable installs they pointed at the wrong drive. The `FileLogger` constructor now takes the SDK `ConfigurationPath` (threaded from `UniPlaySong.cs`) and derives both fallbacks from it. The primary log path — the DLL's own directory — was already portable-correct, so only the fallbacks change; `%AppData%` remains the last resort when no SDK path is supplied (e.g. a test harness constructing `FileLogger` directly). `src/Common/FileLogger.cs`, `src/UniPlaySong.cs`.
+
+### Changed
+
+- **"Defer to trailer audio" and "Release Audio When Idle" moved to the Experimental tab.** Both are still being ironed out, so the "Defer to Trailer Audio" default-music option (was Playback) and the "Release Audio When Idle" idle-teardown timer (issue #81, was General → Performance) now live under **Settings → Experimental**. The `IdleAudioDeviceTeardownMinutes` reset moved from `ResetGeneralTab_Click` to `ResetExperimentalTab_Click` to match the control's new home. `src/UniPlaySongSettingsView.xaml`, `src/UniPlaySongSettingsView.xaml.cs`.
+
+- **Trailer option relabeled "Stay silent for games with no music."** The old "Defer to trailer audio when no UPS music is present" label overpromised — UPS can't reach into another plugin to play or unmute its trailer; it only suppresses *its own* music on no-music games so the trailer can be heard uncontested. Help text rewritten to say so plainly. Added `GameMusicFileService.HasTrailerVideo()` (checks for EML's `VideoTrailer.mp4` / `VideoMicrotrailer.mp4`) so the debug log records whether a trailer actually exists for a no-music game — diagnostics only, the silence outcome is unchanged. The EML games path is derived from the SDK `ConfigurationPath` (passed in as `emlGamesPath`) so it resolves on portable installs. `src/Services/GameMusicFileService.cs`, `src/Common/Constants.cs`, `src/Services/MusicPlaybackService.cs`.
+
 ## [1.5.3] - 2026-06-14
 
 Two theme-integration features, a new default-music source, and a focus-tracking bug fix.
