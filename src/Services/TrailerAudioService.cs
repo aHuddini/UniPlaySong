@@ -145,7 +145,12 @@ namespace UniPlaySong.Services
         private bool Extract(string ffmpeg, string trailerMp4, string outPath, bool transcode)
         {
             // Unique temp so concurrent same-game extractions never read each other's partial file.
-            var temp = outPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            // The temp MUST keep outPath's real extension last (.m4a/.mp3): FFmpeg selects the
+            // output muxer from the filename extension, so a trailing ".tmp" makes it fail with
+            // "Unable to choose an output format" (exit -22). Insert the GUID before the extension.
+            var outDir = Path.GetDirectoryName(outPath);
+            var outExt = Path.GetExtension(outPath); // includes the leading dot, e.g. ".m4a"
+            var temp = Path.Combine(outDir, Path.GetFileNameWithoutExtension(outPath) + "." + Guid.NewGuid().ToString("N") + outExt);
             var args = transcode
                 ? $"-y -i \"{trailerMp4}\" -vn \"{temp}\""
                 : $"-y -i \"{trailerMp4}\" -vn -c:a copy \"{temp}\"";
@@ -163,7 +168,7 @@ namespace UniPlaySong.Services
 
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+                Directory.CreateDirectory(outDir);
 
                 using (var process = new Process())
                 {
