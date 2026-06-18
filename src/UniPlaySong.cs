@@ -85,6 +85,7 @@ namespace UniPlaySong
         private IMusicPlaybackService _playbackService;
         private IDownloadManager _downloadManager;
         private GameMusicFileService _fileService;
+        private Services.ITrailerAudioService _trailerAudioService;
         private ErrorHandlerService _errorHandler;
         private GameMenuHandler _gameMenuHandler;
         private MainMenuHandler _mainMenuHandler;
@@ -2461,10 +2462,15 @@ namespace UniPlaySong
 
             _fileService = new GameMusicFileService(gamesPath, _errorHandler, () => _settings, emlGamesPath);
 
+            // Trailer-audio extraction service: demuxes EML VideoTrailer.mp4 audio for
+            // no-music games when DefaultMusicSource.DeferToTrailerAudio is selected.
+            // basePath is <Config>\ExtraMetadata\UniPlaySong — the cache lives under it.
+            _trailerAudioService = new Services.TrailerAudioService(_settings, emlGamesPath, basePath, _fileLogger);
+
             // Create the appropriate music player based on LiveEffectsEnabled setting
             _currentMusicPlayer = CreateMusicPlayer();
 
-            _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+            _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
             _externalControlService = new Services.ExternalControlService(_playbackService, _api);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
@@ -2733,7 +2739,7 @@ namespace UniPlaySong
                 // Recreate playback service with new player
                 var oldService = _playbackService;
                 bool preserveManualStart = oldService?.UserHasManuallyStartedThisSession == true;
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
@@ -2818,7 +2824,7 @@ namespace UniPlaySong
 
                 // Recreate playback service
                 var oldService = _playbackService;
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler);
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
