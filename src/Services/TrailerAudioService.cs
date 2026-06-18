@@ -11,8 +11,6 @@ namespace UniPlaySong.Services
     // Every failure path returns null so the caller stays silent — never throws to the caller.
     public class TrailerAudioService : ITrailerAudioService
     {
-        private const string CacheFolderName = "TrailerAudioCache";
-
         private readonly UniPlaySongSettings _settings;
         private readonly string _emlGamesPath;     // <Config>\ExtraMetadata\Games
         private readonly string _pluginDataPath;   // <Config>\ExtraMetadata\UniPlaySong
@@ -36,14 +34,14 @@ namespace UniPlaySong.Services
             {
                 return null;
             }
-            return Path.Combine(GetCacheDir(), game.Id.ToString() + ".m4a");
+            return Path.Combine(GetCacheDir(), game.Id.ToString() + Constants.TrailerAudioExtension);
         }
 
+        // Pure path computation only — no I/O. The caller that actually writes a file
+        // (the FFmpeg extraction task) is responsible for ensuring the directory exists.
         private string GetCacheDir()
         {
-            var dir = Path.Combine(_pluginDataPath, CacheFolderName);
-            Directory.CreateDirectory(dir);
-            return dir;
+            return Path.Combine(_pluginDataPath, Constants.TrailerAudioCacheFolderName);
         }
 
         // <emlGamesPath>\{GameId}\VideoTrailer.mp4 if it exists, else null. Full trailer ONLY
@@ -72,7 +70,12 @@ namespace UniPlaySong.Services
         public string GetOrExtractAudio(Game game)
         {
             var cached = GetCachedPath(game);
-            if (cached != null && File.Exists(cached) && new FileInfo(cached).Length > 0)
+            if (cached == null)
+            {
+                return null;
+            }
+            var fi = new FileInfo(cached);
+            if (fi.Exists && fi.Length > 0)
             {
                 return cached;
             }
@@ -85,7 +88,7 @@ namespace UniPlaySong.Services
             long bytes = 0;
             try
             {
-                var dir = Path.Combine(_pluginDataPath ?? string.Empty, CacheFolderName);
+                var dir = Path.Combine(_pluginDataPath ?? string.Empty, Constants.TrailerAudioCacheFolderName);
                 if (!Directory.Exists(dir))
                 {
                     return (0, 0);
@@ -103,7 +106,7 @@ namespace UniPlaySong.Services
             }
             catch (Exception ex)
             {
-                _fileLogger?.Error($"TrailerAudio: ClearCache failed: {ex.Message}");
+                _fileLogger?.Error($"TrailerAudio: ClearCache failed: {ex.Message}", ex);
             }
             return (files, bytes);
         }

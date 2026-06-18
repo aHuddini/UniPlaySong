@@ -45,6 +45,9 @@ namespace UniPlaySong.Common
 
         public const string DefaultAudioExtension = ".mp3";
 
+        // Output container for extracted trailer audio (AAC in an MP4/M4A wrapper).
+        public const string TrailerAudioExtension = ".m4a";
+
         public static readonly string[] SupportedAudioExtensions =
         {
             ".mp3", ".wav", ".ogg", ".flac", ".wma", ".aif", ".m4a", ".aac", ".mid",
@@ -67,6 +70,7 @@ namespace UniPlaySong.Common
         public const string GamesFolderName = "Games";
         public const string TempFolderName = "Temp";
         public const string DefaultMusicFolderName = "DefaultMusic";
+        public const string TrailerAudioCacheFolderName = "TrailerAudioCache";
 
         public const string PreservedOriginalsFolderName = "PreservedOriginals";
         public const string PlayniteFolderName = "Playnite";
