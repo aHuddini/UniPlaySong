@@ -75,6 +75,7 @@ namespace UniPlaySong.Services
             {
                 return null; // null game / no plugin data path
             }
+            // Hot path 1: the lossless .m4a copy from a prior run.
             var cachedInfo = new FileInfo(cached);
             if (cachedInfo.Exists && cachedInfo.Length > 0)
             {
@@ -85,6 +86,21 @@ namespace UniPlaySong.Services
             {
                 _fileLogger?.Debug($"TrailerAudio: cached file for {game.Name} was empty; re-extracting.");
                 try { File.Delete(cached); } catch { }
+            }
+
+            // Hot path 2: the .mp3 transcode fallback from a prior run (non-AAC trailers).
+            // GetCachedPath only knows the .m4a path, so without this check a non-AAC game
+            // would re-transcode on every play despite a valid cached .mp3 existing.
+            var mp3Cached = Path.ChangeExtension(cached, Constants.DefaultAudioExtension);
+            var mp3Info = new FileInfo(mp3Cached);
+            if (mp3Info.Exists && mp3Info.Length > 0)
+            {
+                return mp3Cached; // hot path — no logging
+            }
+            if (mp3Info.Exists)
+            {
+                _fileLogger?.Debug($"TrailerAudio: cached transcode for {game.Name} was empty; re-extracting.");
+                try { File.Delete(mp3Cached); } catch { }
             }
 
             var trailer = ResolveFullTrailer(game);
@@ -112,7 +128,7 @@ namespace UniPlaySong.Services
                 return cached;
             }
             // Fallback: transcode to .mp3 (rare non-AAC trailer audio).
-            var mp3Cached = Path.ChangeExtension(cached, Constants.DefaultAudioExtension);
+            // mp3Cached already computed at the top of the method (hot-path 2 check).
             if (Extract(ffmpeg, trailer, mp3Cached, transcode: true))
             {
                 _fileLogger?.Info($"TrailerAudio: extracted audio (transcoded) for {game.Name} in {sw.ElapsedMilliseconds} ms.");
