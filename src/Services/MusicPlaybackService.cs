@@ -484,13 +484,11 @@ namespace UniPlaySong.Services
                            string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
 
                 case DefaultMusicSource.DeferToTrailerAudio:
-                    // The extracted trailer-audio file IS loaded as default music. Match it so
-                    // position-preservation, looping, and "continue same song" treat it correctly.
-                    var trailerCached = _trailerAudioService?.GetCachedPath(_currentGame);
-                    return (!string.IsNullOrWhiteSpace(trailerCached) &&
-                            string.Equals(path, trailerCached, StringComparison.OrdinalIgnoreCase))
-                        || (!string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
-                            string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase));
+                    // The extracted trailer-audio file is tracked via _lastDefaultMusicPath when
+                    // the play case adds it (same as the other pool sources). This also covers the
+                    // .mp3 transcode-fallback path, which GetCachedPath (.m4a only) would miss.
+                    return !string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
+                           string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase);
 
                 case DefaultMusicSource.BundledPreset:
                     // v1.5.0: honor RandomizeBundledTrackOnStartup — the effective preset
@@ -862,11 +860,16 @@ namespace UniPlaySong.Services
                             // Extract and play the game's EML trailer audio as default music.
                             // Service returns null (→ silence) if no full trailer, FFmpeg
                             // unavailable, or extraction fails. Only reached for no-music games.
+                            // NOTE: GetOrExtractAudio is intentionally synchronous. On a cache miss
+                            // the first play of a game briefly blocks the UI while FFmpeg extracts
+                            // (cached forever after). This is an accepted trade-off for this
+                            // experimental feature; the setting's help text warns it "might be slow".
                             var trailerAudioPath = _trailerAudioService?.GetOrExtractAudio(game);
                             if (!string.IsNullOrWhiteSpace(trailerAudioPath) && File.Exists(trailerAudioPath))
                             {
                                 _lastDefaultMusicPath = trailerAudioPath;
                                 songs.Add(trailerAudioPath);
+                                _fileLogger?.Info($"No game music for {game.Name}, using trailer audio: {Path.GetFileName(trailerAudioPath)}");
                             }
                             break;
 
