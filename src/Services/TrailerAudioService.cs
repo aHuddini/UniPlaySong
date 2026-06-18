@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 
@@ -113,7 +112,7 @@ namespace UniPlaySong.Services
                 return cached;
             }
             // Fallback: transcode to .mp3 (rare non-AAC trailer audio).
-            var mp3Cached = Path.ChangeExtension(cached, ".mp3");
+            var mp3Cached = Path.ChangeExtension(cached, Constants.DefaultAudioExtension);
             if (Extract(ffmpeg, trailer, mp3Cached, transcode: true))
             {
                 _fileLogger?.Info($"TrailerAudio: extracted audio (transcoded) for {game.Name} in {sw.ElapsedMilliseconds} ms.");
@@ -130,7 +129,7 @@ namespace UniPlaySong.Services
         private bool Extract(string ffmpeg, string trailerMp4, string outPath, bool transcode)
         {
             // Unique temp so concurrent same-game extractions never read each other's partial file.
-            var temp = outPath + "." + Guid.NewGuid().ToString("N") + ".tmp" + Path.GetExtension(outPath);
+            var temp = outPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
             var args = transcode
                 ? $"-y -i \"{trailerMp4}\" -vn \"{temp}\""
                 : $"-y -i \"{trailerMp4}\" -vn -c:a copy \"{temp}\"";
@@ -159,13 +158,14 @@ namespace UniPlaySong.Services
                     var readTask = System.Threading.Tasks.Task.Run(async () =>
                     {
                         var errTask = process.StandardError.ReadToEndAsync();
-                        var _ = process.StandardOutput.ReadToEndAsync();
+                        var outTask = process.StandardOutput.ReadToEndAsync();
                         if (!process.WaitForExit(60000)) // 1 minute — trailers are short
                         {
                             try { process.Kill(); } catch { }
                             throw new TimeoutException("FFmpeg trailer extraction timed out.");
                         }
                         stderr = await errTask.ConfigureAwait(false);
+                        await outTask.ConfigureAwait(false);
                     });
                     readTask.GetAwaiter().GetResult();
 
