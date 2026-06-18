@@ -1,5 +1,13 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.5
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-06-17
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.5/UniPlaySong-1_5_5-Jun17_2026.pext'
+    Changelog:
+      - '[New Feature] (Experimental) Play a game''s trailer audio when your game has no available music of its own. The "Stream audio from the game''s EML trailer" option under Settings > Experimental now extracts the soundtrack from the game''s video trailer (via ExtraMetadataLoader) and plays it as that game''s background music. First selection has a brief extraction pause, then it''s cached for instant playback after. Requires FFmpeg (set in the Downloads tab) and a full video trailer.'
+      - '[Improved] Added a "Clear trailer-audio cache" button to Settings > Cleanup to wipe saved trailer audio and free space (or force re-extraction).'
+      - '[Known Issue] Windows may not auto-suspend/sleep while Playnite is open (issue #81). UPS keeps its audio device open between songs (to avoid stutter on game switches), which can block sleep. A fix is being attempted. Workaround for now: fully exit Playnite when stepping away.'
   - Version: 1.5.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-16

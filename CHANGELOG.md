@@ -4,6 +4,24 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.5] - 2026-06-17
+
+Trailer-audio extraction: the Experimental "Defer to Trailer Audio" source now extracts the audio track from a no-music game's EML video trailer and plays it as default music, instead of merely staying silent.
+
+### Added
+
+- **Trailer-audio extraction and playback** (experimental, off by default). For a game with no UniPlaySong songs, the `DefaultMusicSource.DeferToTrailerAudio` source now demuxes the audio from the game's ExtraMetadataLoader `VideoTrailer.mp4` with FFmpeg and plays it as default music, rather than the prior v1.5.4 no-op that just suppressed UPS's own music. New `TrailerAudioService` (`ITrailerAudioService`) owns trailer resolution (full `VideoTrailer.mp4` only — micro-trailers are treated as no-trailer), FFmpeg demux, and per-game caching under `<Config>\ExtraMetadata\UniPlaySong\TrailerAudioCache\{GameId}.m4a`. Extraction tries a lossless AAC stream copy (`-vn -c:a copy` into `.m4a`) first and falls back to an `.mp3` transcode for non-AAC trailer audio. The extracted file is recognized as default music by `IsDefaultMusicPath` (via `_lastDefaultMusicPath`, covering both the `.m4a` copy and the `.mp3` transcode-fallback paths) so position-preservation and looping work. Cached forever; first play of each game blocks briefly while FFmpeg runs (synchronous `WaitForExit`, an accepted trade-off for the experimental feature — the help text warns it "might be slow"), then later plays are instant cache hits. Service constructed at the composition root and injected into all three `MusicPlaybackService` construction sites; a null service degrades silently to no trailer audio. `.m4a`/`.aac` confirmed in `Constants.SupportedAudioExtensionsLowercase` so the extracted file plays through the existing pipeline. `src/Services/TrailerAudioService.cs`, `src/Services/ITrailerAudioService.cs`, `src/Services/MusicPlaybackService.cs`, `src/UniPlaySong.cs`, `src/Common/Constants.cs`.
+
+- **"Clear trailer-audio cache" button** in **Settings → Cleanup**. MVVM `ClearTrailerAudioCacheCommand` → `plugin.ClearTrailerAudioCache()` → `ITrailerAudioService.ClearCache()` (reuses the service's deletion logic; no duplicated file-walk in the view). Reports files cleared and bytes freed, or a "nothing to clear" message. `src/UniPlaySongSettingsView.xaml`, `src/UniPlaySongSettingsViewModel.cs`, `src/UniPlaySong.cs`.
+
+### Changed
+
+- **Trailer option relabeled and gated behind FFmpeg.** The Experimental-tab radio is now "Stream audio from the game's EML trailer (no-music games only)" with help text describing extraction, the first-play delay, and the FFmpeg/full-trailer requirements. `IsEnabled` binds to a computed `IsTrailerAudioEnabled` (FFmpeg configured **and** `EnableDefaultMusic` on — consistent with the sibling `DefaultMusicSource` radios), with a "Requires FFmpeg" note shown when it's not configured. The settings-open gate uses a cheap `File.Exists` check (matching the `FfmpegStatus` label) rather than spawning `ffmpeg -version`, so opening Settings never stalls; the runtime path independently re-checks availability and degrades to silence if a present-but-broken FFmpeg fails to extract. `src/UniPlaySongSettingsView.xaml`, `src/UniPlaySongSettingsViewModel.cs`.
+
+### Known Issues
+
+- **System still won't auto-suspend/sleep while Playnite is open** (issue #81, still open — a fix is being attempted). The persistent audio device (v1.3.3 architecture) keeps a Windows audio session active, which blocks sleep (UPS shows under `powercfg /requests` as `[DRIVER]`). The v1.5.3 release triggers — idle-teardown timer (`IdleAudioDeviceTeardownMinutes`), release-on-lock (`OnSessionSwitch`), release-on-suspend (`OnPowerModeChanged`) — did **not** resolve it in the field. Per the reporter's latest testing (2026-06-17), the PC never sleeps in any case (foreground+playing, Win+L locked, or idle/not-foreground), and there is no UPS log evidence that the lock/suspend callbacks fire (his own extension logs `OnPowerModeChanged`; UPS logs nothing for the same events). Suggests the release path isn't actually triggering as designed — under investigation. Workaround: fully exit Playnite when stepping away.
+
 ## [1.5.4] - 2026-06-16
 
 Portable-install support: the active-theme music fix that didn't resolve on portable Playnite, plus a settings-tab reorganization for two still-maturing options.
