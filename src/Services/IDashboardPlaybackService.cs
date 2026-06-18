@@ -27,6 +27,7 @@ namespace UniPlaySong.Services
 
         void PauseForSystem();
         void ResumeFromSystem();
+        void ReleaseAudioDevice();
 
         event Action OnPlaybackStateChanged;
         event Action OnSongEnded;

@@ -369,6 +369,10 @@ namespace UniPlaySong.Services
             }
         }
 
+        // WPF MediaPlayer has no persistent audio device to close — this is a no-op.
+        // The NAudio and SDL2 backends override this to release their device on suspend.
+        public void ReleaseAudioDevice() { }
+
         private void OnMediaEnded(object sender, EventArgs e)
         {
             MediaEnded?.Invoke(sender, e);

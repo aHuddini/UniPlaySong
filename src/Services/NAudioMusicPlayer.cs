@@ -170,7 +170,8 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug($"[NAudio] EnsurePersistentLayer: {sw.ElapsedMilliseconds}ms (mixer+volume+device+play)");
         }
 
-        // Error recovery: tears down the persistent layer so next Load() rebuilds it
+        // Error recovery: tears down the persistent layer so next Load() or Resume() rebuilds it.
+        // Also clears _isInMixer so Resume() knows to re-add the song to the new mixer.
         private void TearDownPersistentLayer()
         {
             try
@@ -186,12 +187,26 @@ namespace UniPlaySong.Services
                 _calmDownProcessor = null;
                 _volumeProvider = null;
                 _persistentLayerInitialized = false;
+                // Song is no longer in any mixer — Resume() uses this flag to re-add
+                // the song chain to the new mixer that EnsurePersistentLayer() creates.
+                _isInMixer = false;
                 _fileLogger?.Debug("[NAudio] TearDownPersistentLayer complete");
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"[{LogPrefix}] Error tearing down persistent layer");
             }
+        }
+
+        // Immediately closes the audio device so Windows can sleep (issue #81).
+        // Called externally (e.g., on system suspend) without waiting for the idle timer.
+        // The persistent layer is transparently re-created on the next Load() or Resume().
+        public void ReleaseAudioDevice()
+        {
+            if (!_persistentLayerInitialized) return;
+            _fileLogger?.Info("[NAudio] ReleaseAudioDevice: closing audio device for system suspend");
+            TearDownPersistentLayer();
+            StopIdleTeardownTimer();
         }
 
         // v1.5.3 (issue #81): start the idle-teardown timer. Called from
@@ -531,6 +546,13 @@ namespace UniPlaySong.Services
                 onReady?.Invoke();
                 return;
             }
+
+            // If the persistent layer was torn down (e.g., ReleaseAudioDevice() on system
+            // suspend) while a song was paused, reinit now so the mixer is live again.
+            // EnsurePersistentLayer is idempotent — no-op when already initialized.
+            // TearDownPersistentLayer() sets _isInMixer=false, so the block below will
+            // re-add the song chain to the freshly-created mixer.
+            EnsurePersistentLayer();
 
             // Fast path: non-GME readers seek instantly (buffer pointer update).
             if (!(_audioFile is GmeReader))

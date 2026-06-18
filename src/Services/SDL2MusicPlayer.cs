@@ -356,10 +356,32 @@ namespace UniPlaySong.Services
         {
             if (!IsActive && _isLoaded)
             {
-                SDL2Mixer.Mix_ResumeMusic();
+                // If the audio device was closed (e.g., ReleaseAudioDevice() on system
+                // suspend), reopen it first. After a close+reopen the SDL pause state is
+                // gone, so we restart via Mix_PlayMusic rather than Mix_ResumeMusic.
+                bool deviceWasClosed = !_isSDLAudioInitialized;
+                InitializeSDL();
+
+                if (deviceWasClosed)
+                    SDL2Mixer.Mix_PlayMusic(_music, 0);
+                else
+                    SDL2Mixer.Mix_ResumeMusic();
+
                 _isActive = true;
             }
             onReady?.Invoke();
+        }
+
+        // Immediately closes the SDL audio device so Windows can sleep (issue #81).
+        // Called externally (e.g., on system suspend) without waiting for the idle timer.
+        // The device is transparently re-opened by the next InitializeSDL() call (Load,
+        // PreLoad, or Resume all call InitializeSDL at entry).
+        public void ReleaseAudioDevice()
+        {
+            if (!_isSDLAudioInitialized) return;
+            Logger.Debug("SDL2MusicPlayer: ReleaseAudioDevice — closing audio device for system suspend");
+            TearDownSDLAudio(DateTime.UtcNow - _lastActivityUtc);
+            StopIdleTeardownTimer();
         }
 
         public void Stop()

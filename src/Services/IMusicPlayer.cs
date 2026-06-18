@@ -46,6 +46,11 @@ namespace UniPlaySong.Services
         // NAudio: per-sample interpolation on the audio thread (no stepping artifacts).
         // SDL2/WPF: DispatcherTimer stepping with exponential curve (preserves current behavior).
         void SetVolumeRamp(double targetVolume, double durationSeconds);
+
+        // Immediately closes the underlying audio device, releasing the Windows audio session
+        // so the system can sleep. Safe to call even when no device is open (no-op then).
+        // The device is transparently re-created on the next Load() or Resume() call.
+        void ReleaseAudioDevice();
     }
 }
 

@@ -579,6 +579,7 @@ namespace UniPlaySong
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
             if (Application.Current.MainWindow != null)
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
 
@@ -1053,6 +1054,7 @@ namespace UniPlaySong
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
@@ -2029,6 +2031,36 @@ namespace UniPlaySong
 
                     // Always remove — HashSet.Remove is a no-op if not present
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _dashboardPlaybackService?.ResumeFromSystem();
+                });
+            }
+        }
+
+        // Handles Windows system sleep (Suspend) and wake (Resume) events.
+        // On Suspend: instantly stops playback and releases the audio device so the system
+        // can sleep without being held open by the audio session (issue #81 companion).
+        // On Resume: removes the pause source so playback restarts if music was active.
+        // PowerModeChanged fires on a non-UI thread — Dispatcher.Invoke is required.
+        private void OnPowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == Microsoft.Win32.PowerModes.Suspend)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    // Instant pause (no fade) so device can be closed before Windows suspends.
+                    _playbackService?.AddPauseSourceImmediate(Models.PauseSource.SystemSuspend);
+                    _dashboardPlaybackService?.PauseForSystem();
+                    // Release audio devices immediately so Windows is not blocked by open audio sessions.
+                    _currentMusicPlayer?.ReleaseAudioDevice();
+                    _dashboardPlaybackService?.ReleaseAudioDevice();
+                });
+            }
+            else if (e.Mode == Microsoft.Win32.PowerModes.Resume)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    // Clear suspend pause — RemovePauseSource resumes with fade-in if a song was active.
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemSuspend);
                     _dashboardPlaybackService?.ResumeFromSystem();
                 });
             }

@@ -274,6 +274,12 @@ namespace UniPlaySong.Services
             catch { }
         }
 
+        public void ReleaseAudioDevice()
+        {
+            try { _player?.ReleaseAudioDevice(); }
+            catch { }
+        }
+
         private void ActivateDashboard()
         {
             if (_isActive) return;
