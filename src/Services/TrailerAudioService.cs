@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using Playnite.SDK.Models;
 using UniPlaySong.Common;
 
@@ -66,20 +69,136 @@ namespace UniPlaySong.Services
             return File.Exists(path) ? path : null;
         }
 
-        // Implemented fully in Task 3.
         public string GetOrExtractAudio(Game game)
         {
             var cached = GetCachedPath(game);
             if (cached == null)
             {
+                return null; // null game / no plugin data path
+            }
+            var cachedInfo = new FileInfo(cached);
+            if (cachedInfo.Exists && cachedInfo.Length > 0)
+            {
+                return cached; // hot path — no logging
+            }
+            // Corrupt/empty cache file: treat as miss and re-extract.
+            if (cachedInfo.Exists)
+            {
+                _fileLogger?.Debug($"TrailerAudio: cached file for {game.Name} was empty; re-extracting.");
+                try { File.Delete(cached); } catch { }
+            }
+
+            var trailer = ResolveFullTrailer(game);
+            if (trailer == null)
+            {
+                return null; // no full trailer — expected for most games, not logged
+            }
+
+            var ffmpeg = _settings?.FFmpegPath;
+            if (!FFmpegHelper.IsAvailable(ffmpeg))
+            {
+                if (!_loggedNoFfmpeg)
+                {
+                    _fileLogger?.Info("TrailerAudio: FFmpeg not available — set its path in the Downloads tab. Trailer audio disabled.");
+                    _loggedNoFfmpeg = true;
+                }
                 return null;
             }
-            var fi = new FileInfo(cached);
-            if (fi.Exists && fi.Length > 0)
+
+            var sw = Stopwatch.StartNew();
+            // Fast path: copy the AAC stream into .m4a (lossless, near-instant).
+            if (Extract(ffmpeg, trailer, cached, transcode: false))
             {
+                _fileLogger?.Info($"TrailerAudio: extracted audio for {game.Name} in {sw.ElapsedMilliseconds} ms.");
                 return cached;
             }
+            // Fallback: transcode to .mp3 (rare non-AAC trailer audio).
+            var mp3Cached = Path.ChangeExtension(cached, ".mp3");
+            if (Extract(ffmpeg, trailer, mp3Cached, transcode: true))
+            {
+                _fileLogger?.Info($"TrailerAudio: extracted audio (transcoded) for {game.Name} in {sw.ElapsedMilliseconds} ms.");
+                return mp3Cached;
+            }
+
+            _fileLogger?.Error($"TrailerAudio: extraction failed for {game.Name}; staying silent.");
             return null;
+        }
+
+        // Demux/transcode the trailer audio into outPath via a unique temp + atomic move.
+        // transcode=false => -c:a copy into .m4a; transcode=true => re-encode into .mp3.
+        // Returns true only if a non-empty output file landed at outPath.
+        private bool Extract(string ffmpeg, string trailerMp4, string outPath, bool transcode)
+        {
+            // Unique temp so concurrent same-game extractions never read each other's partial file.
+            var temp = outPath + "." + Guid.NewGuid().ToString("N") + ".tmp" + Path.GetExtension(outPath);
+            var args = transcode
+                ? $"-y -i \"{trailerMp4}\" -vn \"{temp}\""
+                : $"-y -i \"{trailerMp4}\" -vn -c:a copy \"{temp}\"";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = ffmpeg,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+
+                using (var process = new Process())
+                {
+                    process.StartInfo = psi;
+                    process.Start();
+
+                    string stderr = null;
+                    var readTask = System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        var errTask = process.StandardError.ReadToEndAsync();
+                        var _ = process.StandardOutput.ReadToEndAsync();
+                        if (!process.WaitForExit(60000)) // 1 minute — trailers are short
+                        {
+                            try { process.Kill(); } catch { }
+                            throw new TimeoutException("FFmpeg trailer extraction timed out.");
+                        }
+                        stderr = await errTask.ConfigureAwait(false);
+                    });
+                    readTask.GetAwaiter().GetResult();
+
+                    if (process.ExitCode != 0)
+                    {
+                        _fileLogger?.Error($"TrailerAudio: FFmpeg exit {process.ExitCode}: {stderr}");
+                        TryDelete(temp);
+                        return false;
+                    }
+                }
+
+                if (!File.Exists(temp) || new FileInfo(temp).Length == 0)
+                {
+                    TryDelete(temp);
+                    return false;
+                }
+
+                // Atomic publish. Last writer wins on concurrent same-game extraction.
+                try { if (File.Exists(outPath)) File.Delete(outPath); } catch { }
+                File.Move(temp, outPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"TrailerAudio: extraction error: {ex.Message}", ex);
+                TryDelete(temp);
+                return false;
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
         }
 
         public (int filesDeleted, long bytesFreed) ClearCache()
