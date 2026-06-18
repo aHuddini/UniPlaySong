@@ -24,6 +24,7 @@ namespace UniPlaySong.Services
         private readonly GameMusicFileService _fileService;
         private readonly FileLogger _fileLogger;
         private readonly ErrorHandlerService _errorHandler;
+        private readonly ITrailerAudioService _trailerAudioService;
         private readonly Dictionary<string, bool> _primarySongPlayed = new Dictionary<string, bool>();
 
         // Cached native music path to avoid repeated method calls in IsDefaultMusicPath()
@@ -180,12 +181,13 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug("NotifyManualStart: session auto-play lock unlocked");
         }
 
-        public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null)
+        public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null, ITrailerAudioService trailerAudioService = null)
         {
             _musicPlayer = musicPlayer ?? throw new ArgumentNullException(nameof(musicPlayer));
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _fileLogger = fileLogger;
             _errorHandler = errorHandler;
+            _trailerAudioService = trailerAudioService;
 
             _fader = new MusicFader(
                 _musicPlayer,
@@ -482,8 +484,13 @@ namespace UniPlaySong.Services
                            string.Equals(path, activeThemePath, StringComparison.OrdinalIgnoreCase);
 
                 case DefaultMusicSource.DeferToTrailerAudio:
-                    // No UPS file is ever loaded for this source — nothing can match `path`
-                    return false;
+                    // The extracted trailer-audio file IS loaded as default music. Match it so
+                    // position-preservation, looping, and "continue same song" treat it correctly.
+                    var trailerCached = _trailerAudioService?.GetCachedPath(_currentGame);
+                    return (!string.IsNullOrWhiteSpace(trailerCached) &&
+                            string.Equals(path, trailerCached, StringComparison.OrdinalIgnoreCase))
+                        || (!string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
+                            string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase));
 
                 case DefaultMusicSource.BundledPreset:
                     // v1.5.0: honor RandomizeBundledTrackOnStartup — the effective preset
@@ -852,19 +859,15 @@ namespace UniPlaySong.Services
                             break;
 
                         case DefaultMusicSource.DeferToTrailerAudio:
-                            // v1.5.3 — intentional no-op. UPS stays silent so the user's
-                            // ExtraMetadataLoader trailer (or any other plugin's MediaElement)
-                            // can produce audio uncontested. Only ever reached for games with
-                            // no game music (we're inside the songs.Count == 0 block); games
-                            // with their own music never get here. If no trailer is configured /
-                            // no EML installed, the user just gets silence — the documented
-                            // trade-off they opted into by picking this source.
-                            //
-                            // v1.5.4 — detect EML's trailer file so the log shows whether a
-                            // trailer actually exists for this game (diagnostics only; the
-                            // silence outcome is unchanged either way).
-                            bool hasTrailer = _fileService.HasTrailerVideo(game);
-                            _fileLogger?.Debug($"DeferToTrailerAudio: {game.Name} — trailer {(hasTrailer ? "found, deferring to it" : "NOT found; staying silent per setting")}");
+                            // Extract and play the game's EML trailer audio as default music.
+                            // Service returns null (→ silence) if no full trailer, FFmpeg
+                            // unavailable, or extraction fails. Only reached for no-music games.
+                            var trailerAudioPath = _trailerAudioService?.GetOrExtractAudio(game);
+                            if (!string.IsNullOrWhiteSpace(trailerAudioPath) && File.Exists(trailerAudioPath))
+                            {
+                                _lastDefaultMusicPath = trailerAudioPath;
+                                songs.Add(trailerAudioPath);
+                            }
                             break;
 
                         case DefaultMusicSource.BundledPreset:
