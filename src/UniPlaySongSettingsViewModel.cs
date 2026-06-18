@@ -1595,6 +1595,32 @@ namespace UniPlaySong
             RefreshCleanupStorageInfo();
         }
 
+        public ICommand ClearTrailerAudioCacheCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () => ExecuteClearTrailerAudioCache(),
+                context: "clearing trailer-audio cache",
+                showUserMessage: true
+            );
+        });
+
+        private void ExecuteClearTrailerAudioCache()
+        {
+            var (filesDeleted, bytesFreed) = plugin.ClearTrailerAudioCache();
+
+            if (filesDeleted == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage("No cached trailer audio to clear.", "UniPlaySong");
+                return;
+            }
+
+            var mb = bytesFreed / 1024.0 / 1024.0;
+            PlayniteApi.Dialogs.ShowMessage(
+                $"Cleared {filesDeleted} cached trailer-audio file(s), freed {mb:F2} MB.",
+                "Clear Trailer-Audio Cache");
+        }
+
         public ICommand CleanupOrphanedMusicCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

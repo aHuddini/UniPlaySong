@@ -5173,6 +5173,14 @@ namespace UniPlaySong
             }
         }
 
+        // Clears all extracted trailer-audio cache files. Delegates to the service so the
+        // deletion logic lives in one place. Returns (filesDeleted, bytesFreed); (0,0) if the
+        // service was never constructed (feature unused this session).
+        public (int filesDeleted, long bytesFreed) ClearTrailerAudioCache()
+        {
+            return _trailerAudioService?.ClearCache() ?? (0, 0);
+        }
+
         /// <summary>
         /// Scans the Games music folder for orphaned directories (music for games no longer in the library)
         /// and deletes them.

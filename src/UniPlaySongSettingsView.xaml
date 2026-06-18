@@ -3649,6 +3649,24 @@
 
                     <Separator Margin="0,0,0,20"/>
 
+                    <!-- Clear Trailer-Audio Cache -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Clear Trailer-Audio Cache" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Deletes the audio extracted from game video trailers (used by the experimental &quot;Stream audio from the game's EML trailer (no-music games only)&quot; default-music option). Files are re-extracted automatically the next time such a game is played."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Content="Clear Trailer-Audio Cache"
+                                Command="{Binding ClearTrailerAudioCacheCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#664422"
+                                Foreground="White"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,20"/>
+
                     <!-- Reset Settings Only -->
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Text="Reset Settings Only" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
