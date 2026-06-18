@@ -2678,7 +2678,7 @@ namespace UniPlaySong
         public bool IsTrailerAudioAvailable
         {
             get => _isTrailerAudioAvailable;
-            set { _isTrailerAudioAvailable = value; OnPropertyChanged(); }
+            set { _isTrailerAudioAvailable = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsTrailerAudioEnabled)); }
         }
 
         private bool _trailerAudioFFmpegMissing;
@@ -2687,6 +2687,12 @@ namespace UniPlaySong
             get => _trailerAudioFFmpegMissing;
             set { _trailerAudioFFmpegMissing = value; OnPropertyChanged(); }
         }
+
+        // The DeferToTrailerAudio radio is enabled only when default music is on AND FFmpeg is
+        // configured — keeps it consistent with the sibling DefaultMusicSource radios (which all
+        // gate on EnableDefaultMusic) while also requiring FFmpeg for this source specifically.
+        public bool IsTrailerAudioEnabled =>
+            IsTrailerAudioAvailable && (Settings?.EnableDefaultMusic == true);
 
         // Cached version probe — avoids re-running yt-dlp.exe --version on every settings open.
         // Keyed by (path, last-write-time). Path-only caching missed in-place updates: when a
@@ -2728,13 +2734,15 @@ namespace UniPlaySong
             }
 
             var ffmpeg = Settings?.FFmpegPath;
-            FfmpegStatus = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg) ? "✓ Found" : "✗ Not found";
+            var ffmpegConfigured = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg);
+            FfmpegStatus = ffmpegConfigured ? "✓ Found" : "✗ Not found";
 
-            // Trailer-audio extraction needs a working FFmpeg. Reuse the same path the status
-            // line above evaluates so the gate and the "✓ Found / ✗ Not found" label agree.
-            var trailerAudioAvailable = Common.FFmpegHelper.IsAvailable(ffmpeg);
-            IsTrailerAudioAvailable = trailerAudioAvailable;
-            TrailerAudioFFmpegMissing = !trailerAudioAvailable;
+            // Trailer-audio extraction needs FFmpeg configured. Use the same cheap path check
+            // as the status label above (no process spawn) so the gate and the label agree and
+            // opening Settings never stalls. A present-but-broken FFmpeg is handled at runtime:
+            // extraction fails and the game falls back to silence.
+            IsTrailerAudioAvailable = ffmpegConfigured;
+            TrailerAudioFFmpegMissing = !ffmpegConfigured;
         }
 
         // Runs `yt-dlp.exe --version` and returns "✓ Found · v<version>". Caches the version

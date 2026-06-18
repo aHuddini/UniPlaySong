@@ -3871,7 +3871,7 @@
                     <TextBlock Text="Trailer Audio (ExtraMetadataLoader)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <RadioButton Content="Stream audio from the game's EML trailer (no-music games only)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
-                                 IsEnabled="{Binding IsTrailerAudioAvailable}"
+                                 IsEnabled="{Binding IsTrailerAudioEnabled}"
                                  GroupName="DefaultMusicSource"
                                  Margin="0,5,0,0"/>
                     <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Downloads tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
