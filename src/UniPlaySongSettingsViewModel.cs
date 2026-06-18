@@ -2670,6 +2670,24 @@ namespace UniPlaySong
         private string _ffmpegStatus = "";
         public string FfmpegStatus { get => _ffmpegStatus; set { _ffmpegStatus = value; OnPropertyChanged(); } }
 
+        // Trailer-audio (Experimental) availability — gates the DeferToTrailerAudio setting.
+        // Evaluated on settings open in UpdateToolValidation(). The feature needs FFmpeg to
+        // extract trailer audio, so the option is disabled (and a note shown) when FFmpeg
+        // is not configured. Mirror is exposed so the "Requires FFmpeg" note can bind to it.
+        private bool _isTrailerAudioAvailable;
+        public bool IsTrailerAudioAvailable
+        {
+            get => _isTrailerAudioAvailable;
+            set { _isTrailerAudioAvailable = value; OnPropertyChanged(); }
+        }
+
+        private bool _trailerAudioFFmpegMissing;
+        public bool TrailerAudioFFmpegMissing
+        {
+            get => _trailerAudioFFmpegMissing;
+            set { _trailerAudioFFmpegMissing = value; OnPropertyChanged(); }
+        }
+
         // Cached version probe — avoids re-running yt-dlp.exe --version on every settings open.
         // Keyed by (path, last-write-time). Path-only caching missed in-place updates: when a
         // user replaces yt-dlp.exe with a newer binary at the same path, the cache returned the
@@ -2711,6 +2729,12 @@ namespace UniPlaySong
 
             var ffmpeg = Settings?.FFmpegPath;
             FfmpegStatus = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg) ? "✓ Found" : "✗ Not found";
+
+            // Trailer-audio extraction needs a working FFmpeg. Reuse the same path the status
+            // line above evaluates so the gate and the "✓ Found / ✗ Not found" label agree.
+            var trailerAudioAvailable = Common.FFmpegHelper.IsAvailable(ffmpeg);
+            IsTrailerAudioAvailable = trailerAudioAvailable;
+            TrailerAudioFFmpegMissing = !trailerAudioAvailable;
         }
 
         // Runs `yt-dlp.exe --version` and returns "✓ Found · v<version>". Caches the version

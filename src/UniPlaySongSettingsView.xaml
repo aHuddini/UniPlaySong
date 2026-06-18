@@ -3867,18 +3867,24 @@
                         </TextBlock>
                     </Border>
 
-                    <!-- Trailer Audio (moved from Playback tab in v1.5.4) -->
+                    <!-- Trailer Audio (moved from Playback tab in v1.5.4; extract-and-play in v1.5.5) -->
                     <TextBlock Text="Trailer Audio (ExtraMetadataLoader)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <RadioButton Content="Stay silent for games with no music (let trailer / external audio play)"
+                    <RadioButton Content="Stream audio from the game's EML trailer (no-music games only)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
-                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 IsEnabled="{Binding IsTrailerAudioAvailable}"
                                  GroupName="DefaultMusicSource"
                                  Margin="0,5,0,0"/>
-                    <TextBlock Text="Applies only to games that have no music of their own. For those games, UniPlaySong plays no default music, so a trailer playing via ExtraMetadataLoader (or any other plugin) can be heard on its own. UniPlaySong does not control the trailer's volume — if EML's &quot;play videos initially without sound&quot; is on, the trailer is muted and you get silence; turn that EML option off so the trailer is audible. Games that have their own music are never affected. If a game has no music and no trailer, you get silence."
+                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Downloads tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                               Margin="20,0,0,4"/>
+                    <TextBlock Text="Requires FFmpeg — set its path in the Downloads tab"
+                               FontSize="11"
+                               Foreground="IndianRed"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                     <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
                     <Separator Margin="0,15"/>
