@@ -1288,6 +1288,15 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <CheckBox Content="Pause music when a theme overlay or window opens"
+                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
+                              Margin="0,10,0,5"/>
+                    <TextBlock Text="Some themes pause UniPlaySong music when an overlay or secondary window opens (for example a per-game trophies/achievements window, or a theme's welcome/menu panel) by setting the UPS_MusicControl element. Disable this to keep music playing when those overlays open. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Idle Detection -->
