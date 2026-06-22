@@ -475,10 +475,18 @@ namespace UniPlaySong.Services
         // focus-driven flicker collapses to a single apply of the settled value.
         public void HandleForceDefaultMusicOverrideChange(bool isActive)
         {
-            // Debounced: focus-driven theme triggers can flicker this flag many times within
-            // milliseconds. Coalesce into one apply of the settled value (see ScheduleOverrideApply).
-            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (debounced)");
-            ScheduleOverrideApply();
+            if (_settings?.PS5ThemeCompatMode == true)
+            {
+                // Debounced: focus-driven theme triggers can flicker this flag many times within
+                // milliseconds. Coalesce into one apply of the settled value.
+                _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (debounced)");
+                ScheduleOverrideApply();
+                return;
+            }
+
+            // Default (compat off): apply immediately.
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (immediate)");
+            ApplyOverrideImmediate();
         }
 
         // v1.5.6: force-reapply the current ForceDefaultMusicOverride state for the
@@ -492,11 +500,30 @@ namespace UniPlaySong.Services
         // authoritatively. No-ops cleanly when no game is resolvable.
         public void HandleForceDefaultMusicOverrideLoaded()
         {
-            // Route through the same debounced apply so a control load that coincides with
-            // trigger flicker still settles to one correct apply. ApplyForceDefaultMusicOverride
-            // no-ops when already in the desired state, so this is safe even when nothing changed.
-            _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: scheduling debounced re-assert");
-            ScheduleOverrideApply();
+            if (_settings?.PS5ThemeCompatMode == true)
+            {
+                _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: scheduling debounced re-assert");
+                ScheduleOverrideApply();
+                return;
+            }
+
+            _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: immediate re-assert");
+            ApplyOverrideImmediate();
+        }
+
+        // Immediate (compat-off) apply: re-call PlayGameMusic for the current game so the
+        // override flag is picked up right away. This is the pre-debounce behavior, used when
+        // PS5ThemeCompatMode is off. PlayGameMusic's own ForceDefaultMusicOverride check
+        // decides game-vs-default.
+        private void ApplyOverrideImmediate()
+        {
+            var game = _getSelectedGame();
+            if (game == null)
+            {
+                _fileLogger?.Debug("ApplyOverrideImmediate: No game resolvable — nothing to apply");
+                return;
+            }
+            _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
         // Schedules a debounced apply of the current ForceDefaultMusicOverride state. Each

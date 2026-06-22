@@ -991,6 +991,7 @@ namespace UniPlaySong
         private string backupCustomMusicPath = string.Empty; // Backup of custom path when using native as default
         private bool suppressPlayniteBackgroundMusic = true;
         private bool useNativeMusicAsDefault = false;
+        private bool ps5ThemeCompatMode = false;
         private bool musicOnlyForInstalledGames = false;
         private bool nostalgiaMode = false; // Only play game music for games matching selected completion statuses
         private List<Guid> nostalgiaStatusIds = new List<Guid>(); // Completion status IDs that qualify for game music
@@ -1062,6 +1063,18 @@ namespace UniPlaySong
                 useNativeMusicAsDefault = value;
                 OnPropertyChanged();
             }
+        }
+
+        // PS5-Experience theme compatibility. That theme drives the
+        // UPS_MusicControl_PauseGamePlayDefault Tag from a focus-driven trigger that flickers
+        // True/False within milliseconds as focus settles, which made UPS thrash playback
+        // (game music briefly broke through at the Welcome Hub). When enabled, UPS debounces
+        // the override so only the settled value is applied. Off by default — only needed for
+        // themes whose play-default-music trigger flickers with focus.
+        public bool PS5ThemeCompatMode
+        {
+            get => ps5ThemeCompatMode;
+            set { ps5ThemeCompatMode = value; OnPropertyChanged(); }
         }
 
         // When enabled, game-specific music only plays for installed games.
