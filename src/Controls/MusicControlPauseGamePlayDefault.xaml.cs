@@ -74,9 +74,15 @@ namespace UniPlaySong.Controls
                 {
                     try
                     {
-                        UpdateOverride();
-
-                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                        // If UpdateOverride() changed the flag, the settings PropertyChanged
+                        // already re-triggered playback (HandleForceDefaultMusicOverrideChange).
+                        // Only re-assert explicitly when it did NOT change — the edge-triggered
+                        // notification is swallowed in that case (e.g. a reused control instance
+                        // on logout→login whose flag was already at the target value), so we must
+                        // apply the current override state ourselves. This avoids a double-play.
+                        bool changed = UpdateOverride();
+                        if (!changed
+                            && Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                         {
                             var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
                             plugin?.GetCoordinator()?.ReassertForceDefaultMusicOverride();
@@ -101,20 +107,26 @@ namespace UniPlaySong.Controls
         }
 
         // If ANY active instance has Tag=True, ForceDefaultMusicOverride=true.
-        private static void UpdateOverride()
+        // Returns true if the override flag value changed (which fires PropertyChanged →
+        // HandleForceDefaultMusicOverrideChange → PlayGameMusic on its own). Returns false
+        // if the value was unchanged (caller may need to re-assert playback explicitly,
+        // since no PropertyChanged fires in that case).
+        private static bool UpdateOverride()
         {
             bool active = _instances.Count(c => ConvertTagToBool(c.Tag)) > 0;
 
             if (_settings == null)
             {
                 Logger.Warn("[MusicControlPauseGamePlayDefault] Settings is null, cannot update override state");
-                return;
+                return false;
             }
 
             if (_settings.ForceDefaultMusicOverride != active)
             {
                 _settings.ForceDefaultMusicOverride = active;
+                return true;
             }
+            return false;
         }
 
         private static bool ConvertTagToBool(object tag)
