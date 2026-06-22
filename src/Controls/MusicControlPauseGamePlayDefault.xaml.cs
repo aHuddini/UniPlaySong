@@ -51,28 +51,42 @@ namespace UniPlaySong.Controls
             {
                 _instances.Add(this);
             }
-            UpdateOverride();
 
-            // The control may enter the visual tree well after launch (e.g. it lives in a
-            // login-gated PART_ViewHost). By now Playnite has likely force-selected the first
-            // game and played its music. UpdateOverride()'s PropertyChanged is edge-triggered
-            // and can be swallowed when the flag was already true, leaving stale game music.
-            // Re-assert authoritatively now that this control (with its Tag intent) is live.
-            if (_settings?.ForceDefaultMusicOverride == true)
-            {
-                try
+            // Recompute + re-assert the override AFTER WPF has applied this control's Tag.
+            // The control's Tag mirrors its ancestor's Tag via a FindAncestor binding, and
+            // that binding only settles during/after the Loaded pass — so reading Tag
+            // synchronously here can see a STALE value. This bites two theme scenarios where
+            // the control sits in a login-gated, collapsible host (it is reused, not rebuilt,
+            // on logout→login, so its Tag keeps the pre-logout value until the binding
+            // re-evaluates):
+            //   - first login: Playnite already force-selected the first game and played its
+            //     music before the control was in the tree;
+            //   - logout→login: e.g. log out on a game (game music), log back in at the
+            //     Welcome Hub (Tag should be True → default music) — stale Tag would keep
+            //     game music.
+            // Deferring to DispatcherPriority.Loaded lets the Tag binding settle first, then
+            // UpdateOverride() reads the fresh Tag and we re-assert the resulting state
+            // unconditionally (both game→default and default→game) so the theme's current
+            // intent always wins over whatever was playing before.
+            Application.Current?.Dispatcher?.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() =>
                 {
-                    if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                    try
                     {
-                        var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
-                        plugin?.GetCoordinator()?.ReassertForceDefaultMusicOverride();
+                        UpdateOverride();
+
+                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                        {
+                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                            plugin?.GetCoordinator()?.ReassertForceDefaultMusicOverride();
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn($"[MusicControlPauseGamePlayDefault] Re-assert on load failed: {ex.Message}");
-                }
-            }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn($"[MusicControlPauseGamePlayDefault] Deferred override re-assert on load failed: {ex.Message}");
+                    }
+                }));
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
