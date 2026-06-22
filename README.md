@@ -20,18 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.5
+## What's New - v1.5.6
 
-### New (Experimental)
-- **Play a game's trailer audio when it has no music of its own.** A new option under **Settings → Experimental** turns the trailer setting from "stay silent" into "actually play the trailer's soundtrack." For any game with no UniPlaySong music but a video trailer (from the ExtraMetadataLoader extension), UPS pulls the audio out of the trailer and plays it as that game's background music. The first time you select such a game there's a brief pause while the audio is extracted; it's saved afterward, so every later visit plays instantly. Requires FFmpeg (set its path in the Downloads tab). Games with only a short micro-trailer, or no trailer at all, stay silent.
-- **"Clear trailer-audio cache" button** added to **Settings → Cleanup** to wipe the saved trailer audio if you ever want to free the space or re-extract.
+### Fixed
+- **Theme "play default music" control now works reliably at the Welcome Hub and after logging in/out.** For themes that use UPS's `UPS_MusicControl_PauseGamePlayDefault` element (which swaps the selected game's music for your default music while a panel like the Welcome Hub is shown), the swap was sometimes ignored — the game's music kept playing instead. This was a startup/login timing issue; UPS now applies the theme's intent reliably once the control loads, in both directions (game → default and back). Mainly affects themes built on this feature.
 
 ### Known Issues
 - **Windows may not auto-suspend/sleep while Playnite is open** (issue #81). UPS keeps its audio device open between songs (to avoid stutter on game switches), which can block sleep. A fix is being attempted. Workaround for now: fully exit Playnite when stepping away.
 - Toast notification blur is still broken on Windows 11 (carried over from v1.5.0). Win10 users unaffected. Planned for a future v1.5.x patch.
 
 ### Previous Version
-- **v1.5.4**: Active Theme Music now works on portable Playnite installs (issue #76) — UPS asks Playnite where its data lives instead of assuming the standard AppData location. The "Defer to trailer audio" and "Release Audio When Idle" options moved to a new **Experimental** settings tab while they're still being refined.
+- **v1.5.5**: Added an experimental option to play a game's trailer audio (from the ExtraMetadataLoader extension) as its background music when the game has no UniPlaySong music of its own, plus a "Clear trailer-audio cache" button under Settings → Cleanup.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

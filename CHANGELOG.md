@@ -4,6 +4,17 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.6] - 2026-06-22
+
+Theme-integration fix: `UPS_MusicControl_PauseGamePlayDefault` now reliably plays the user's default music when its `Tag=True` (e.g. at a theme's Welcome Hub), even across login/logout.
+
+### Fixed
+
+- **`UPS_MusicControl_PauseGamePlayDefault` ignored `Tag=True`, playing the selected game's music instead of default music** (reported by a theme dev with a Welcome-Hub reproducer). Two WPF-timing root causes, both in the control's load lifecycle:
+  1. The control commonly isn't in the visual tree at launch — it lives in a login-gated, collapsed host (`PART_ViewHost` behind a login screen). By the time it loads post-login, Playnite has already force-selected the first game and played its music. The override's settings `PropertyChanged` is edge-triggered, so when the flag was already at its target value (e.g. a reused control instance), the change notification was swallowed and the stale game music stuck.
+  2. The control's `Tag` is bound to its ancestor via `Tag="{Binding RelativeSource={RelativeSource FindAncestor...}, Path=Tag}"`, and that binding only settles *during/after* the `Loaded` pass. Because WPF reuses the control instance across logout→login (the constructor doesn't re-run), reading `Tag` synchronously in `OnLoaded` saw the stale pre-logout value — so logging out on a game then back in at the Welcome Hub kept game music instead of switching to default.
+  - **Fix:** `OnLoaded` now defers its work to `DispatcherPriority.Loaded` (the established codebase pattern) so the `FindAncestor` Tag binding settles first, then recomputes the override from the fresh Tag and re-applies the resulting state in both directions (game→default and default→game). To avoid an audible double-fade, `UpdateOverride()` reports whether it actually changed the flag; the explicit re-assert (`IMusicPlaybackCoordinator.HandleForceDefaultMusicOverrideLoaded()`) runs only when the flag was unchanged (the swallowed-edge case), since a real change already replays via the `PropertyChanged` path. New coordinator method + a `GetCoordinator()` accessor on the plugin. `src/Controls/MusicControlPauseGamePlayDefault.xaml.cs`, `src/Services/MusicPlaybackCoordinator.cs`, `src/Services/IMusicPlaybackCoordinator.cs`, `src/UniPlaySong.cs`.
+
 ## [1.5.5] - 2026-06-17
 
 Trailer-audio extraction: the Experimental "Defer to Trailer Audio" source now extracts the audio track from a no-music game's EML video trailer and plays it as default music, instead of merely staying silent.
