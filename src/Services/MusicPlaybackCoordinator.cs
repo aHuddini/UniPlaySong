@@ -486,16 +486,16 @@ namespace UniPlaySong.Services
         // true from a prior instance during a WPF tree rebuild), so the stale game music
         // would otherwise stick. Calling this on control load re-asserts the override
         // authoritatively. No-ops cleanly when no game is resolvable.
-        public void ReassertForceDefaultMusicOverride()
+        public void HandleForceDefaultMusicOverrideLoaded()
         {
             var game = _getSelectedGame();
             if (game == null)
             {
-                _fileLogger?.Debug("ReassertForceDefaultMusicOverride: No game resolvable — nothing to re-assert");
+                _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: No game resolvable — nothing to re-assert");
                 return;
             }
 
-            _fileLogger?.Debug($"ReassertForceDefaultMusicOverride: re-applying override for {game.Name} (override={_settings?.ForceDefaultMusicOverride})");
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideLoaded: re-applying override for {game.Name} (override={_settings?.ForceDefaultMusicOverride})");
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 

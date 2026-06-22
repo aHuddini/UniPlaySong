@@ -85,7 +85,7 @@ namespace UniPlaySong.Controls
                             && Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                         {
                             var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
-                            plugin?.GetCoordinator()?.ReassertForceDefaultMusicOverride();
+                            plugin?.GetCoordinator()?.HandleForceDefaultMusicOverrideLoaded();
                         }
                     }
                     catch (Exception ex)

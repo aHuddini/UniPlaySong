@@ -29,7 +29,11 @@ namespace UniPlaySong.Services
         // When false: re-trigger so the current game's own music comes back.
         void HandleForceDefaultMusicOverrideChange(bool isActive);
 
-        void ReassertForceDefaultMusicOverride();
+        // Re-applies the current ForceDefaultMusicOverride state on control load, even when
+        // the flag value didn't change (so the edge-triggered change event was swallowed).
+        // Used by UPS_MusicControl_PauseGamePlayDefault when it enters the visual tree late
+        // (login-gated host) to make its Tag intent win over Playnite's forced game selection.
+        void HandleForceDefaultMusicOverrideLoaded();
 
         bool IsFirstSelect();
         
