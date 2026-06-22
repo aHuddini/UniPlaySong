@@ -4993,6 +4993,11 @@ namespace UniPlaySong
         public IMusicPlaybackService GetPlaybackService() => _playbackService;
 
         /// <summary>
+        /// Gets the music playback coordinator.
+        /// </summary>
+        public IMusicPlaybackCoordinator GetCoordinator() => _coordinator;
+
+        /// <summary>
         /// Gets the game music file service.
         /// </summary>
         public GameMusicFileService GetFileService() => _fileService;

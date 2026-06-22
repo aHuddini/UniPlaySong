@@ -477,6 +477,28 @@ namespace UniPlaySong.Services
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
+        // v1.5.6: force-reapply the current ForceDefaultMusicOverride state for the
+        // selected game, even when the flag value did not change. The theme control
+        // (UPS_MusicControl_PauseGamePlayDefault) is often not in the visual tree until
+        // the user logs in — by then Playnite has already force-selected the first game
+        // and played its music. When the control finally loads with Tag=True, the normal
+        // PropertyChanged path is edge-triggered and can be swallowed (value was already
+        // true from a prior instance during a WPF tree rebuild), so the stale game music
+        // would otherwise stick. Calling this on control load re-asserts the override
+        // authoritatively. No-ops cleanly when no game is resolvable.
+        public void ReassertForceDefaultMusicOverride()
+        {
+            var game = _getSelectedGame();
+            if (game == null)
+            {
+                _fileLogger?.Debug("ReassertForceDefaultMusicOverride: No game resolvable — nothing to re-assert");
+                return;
+            }
+
+            _fileLogger?.Debug($"ReassertForceDefaultMusicOverride: re-applying override for {game.Name} (override={_settings?.ForceDefaultMusicOverride})");
+            _playbackService?.PlayGameMusic(game, _settings, true);
+        }
+
         public bool IsFirstSelect() => _firstSelect;
 
         public bool IsLoginSkipActive() => _loginSkipActive;

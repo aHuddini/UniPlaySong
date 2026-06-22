@@ -29,6 +29,8 @@ namespace UniPlaySong.Services
         // When false: re-trigger so the current game's own music comes back.
         void HandleForceDefaultMusicOverrideChange(bool isActive);
 
+        void ReassertForceDefaultMusicOverride();
+
         bool IsFirstSelect();
         
         bool IsLoginSkipActive();

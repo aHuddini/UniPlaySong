@@ -52,6 +52,27 @@ namespace UniPlaySong.Controls
                 _instances.Add(this);
             }
             UpdateOverride();
+
+            // The control may enter the visual tree well after launch (e.g. it lives in a
+            // login-gated PART_ViewHost). By now Playnite has likely force-selected the first
+            // game and played its music. UpdateOverride()'s PropertyChanged is edge-triggered
+            // and can be swallowed when the flag was already true, leaving stale game music.
+            // Re-assert authoritatively now that this control (with its Tag intent) is live.
+            if (_settings?.ForceDefaultMusicOverride == true)
+            {
+                try
+                {
+                    if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                    {
+                        var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                        plugin?.GetCoordinator()?.ReassertForceDefaultMusicOverride();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"[MusicControlPauseGamePlayDefault] Re-assert on load failed: {ex.Message}");
+                }
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
