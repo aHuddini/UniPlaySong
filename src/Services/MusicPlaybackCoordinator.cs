@@ -31,7 +31,16 @@ namespace UniPlaySong.Services
         private Game _gameBlockedByOverlay;
         private bool _hasSeenFullscreen = false;
         private Game _currentGame;
-        
+
+        // Debounce for ForceDefaultMusicOverride. Focus-driven theme triggers (e.g. the
+        // PS5-Experience Welcome Hub) can flicker the override flag True/False several times
+        // within milliseconds as focus settles. Without debouncing, each flip restarts
+        // playback, so a real game track briefly plays during a transient False before the
+        // next True corrects it — audible thrash. We coalesce flips into a single apply of
+        // the settled value after a short quiet window.
+        private System.Windows.Threading.DispatcherTimer _overrideDebounceTimer;
+        private const int OverrideDebounceMs = 250;
+
         private readonly Func<bool> _isFullscreen;
         private readonly Func<bool> _isDesktop;
         private readonly Func<Game> _getSelectedGame;
@@ -457,24 +466,19 @@ namespace UniPlaySong.Services
             }
         }
 
-        // v1.5.3: theme-integration trigger. When the flag flips we just re-call
-        // PlayGameMusic for the currently-selected game — the override check inside
-        // PlayGameMusic ([src/Services/MusicPlaybackService.cs] around the
-        // PlayOnlyOnGameSelect block) clears the song list when the flag is true,
-        // forcing the default-music fall-through path. When the flag goes false,
-        // the same re-call lets game music come back naturally.
+        // v1.5.3: theme-integration trigger. When the flag flips, ApplyForceDefaultMusicOverride
+        // re-asserts playback for the currently-selected game — the override check inside
+        // PlayGameMusic ([src/Services/MusicPlaybackService.cs] around the PlayOnlyOnGameSelect
+        // block) clears the song list when the flag is true, forcing the default-music
+        // fall-through path. When the flag goes false, the same re-call lets game music come
+        // back naturally. The flip is debounced (see ScheduleOverrideApply) so rapid
+        // focus-driven flicker collapses to a single apply of the settled value.
         public void HandleForceDefaultMusicOverrideChange(bool isActive)
         {
-            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive}");
-
-            var game = _getSelectedGame();
-            if (game == null)
-            {
-                _fileLogger?.Debug("HandleForceDefaultMusicOverrideChange: No game selected — playback service will pick up the flag on next selection");
-                return;
-            }
-
-            _playbackService?.PlayGameMusic(game, _settings, true);
+            // Debounced: focus-driven theme triggers can flicker this flag many times within
+            // milliseconds. Coalesce into one apply of the settled value (see ScheduleOverrideApply).
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (debounced)");
+            ScheduleOverrideApply();
         }
 
         // v1.5.6: force-reapply the current ForceDefaultMusicOverride state for the
@@ -488,14 +492,61 @@ namespace UniPlaySong.Services
         // authoritatively. No-ops cleanly when no game is resolvable.
         public void HandleForceDefaultMusicOverrideLoaded()
         {
+            // Route through the same debounced apply so a control load that coincides with
+            // trigger flicker still settles to one correct apply. ApplyForceDefaultMusicOverride
+            // no-ops when already in the desired state, so this is safe even when nothing changed.
+            _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: scheduling debounced re-assert");
+            ScheduleOverrideApply();
+        }
+
+        // Schedules a debounced apply of the current ForceDefaultMusicOverride state. Each
+        // call restarts the quiet-window timer, so a burst of rapid flips collapses to one
+        // apply of the value that's live when the window expires. Lazily creates the timer.
+        private void ScheduleOverrideApply()
+        {
+            if (_overrideDebounceTimer == null)
+            {
+                _overrideDebounceTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(OverrideDebounceMs)
+                };
+                _overrideDebounceTimer.Tick += OnOverrideDebounceTick;
+            }
+
+            // Restart the window: Stop() then Start() resets the elapsed time.
+            _overrideDebounceTimer.Stop();
+            _overrideDebounceTimer.Start();
+        }
+
+        private void OnOverrideDebounceTick(object sender, EventArgs e)
+        {
+            _overrideDebounceTimer.Stop();
+            ApplyForceDefaultMusicOverride();
+        }
+
+        // Applies the SETTLED override state. Reads the current flag (not a stale captured
+        // value), and no-ops when the desired state already matches what's playing — so a
+        // True→False→True flicker that nets to "no change" causes zero playback churn.
+        private void ApplyForceDefaultMusicOverride()
+        {
             var game = _getSelectedGame();
             if (game == null)
             {
-                _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: No game resolvable — nothing to re-assert");
+                _fileLogger?.Debug("ApplyForceDefaultMusicOverride: No game resolvable — nothing to apply");
                 return;
             }
 
-            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideLoaded: re-applying override for {game.Name} (override={_settings?.ForceDefaultMusicOverride})");
+            bool wantDefault = _settings?.ForceDefaultMusicOverride == true;
+            bool isPlayingDefault = _playbackService?.IsPlayingDefaultMusic == true;
+
+            // Already in the desired state — don't restart playback.
+            if (wantDefault == isPlayingDefault)
+            {
+                _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: already in desired state (wantDefault={wantDefault}) — skipping");
+                return;
+            }
+
+            _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: applying override for {game.Name} (wantDefault={wantDefault}, isPlayingDefault={isPlayingDefault})");
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
