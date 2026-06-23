@@ -415,9 +415,9 @@ namespace UniPlaySong.Services
         {
             if (isActive)
             {
-                if (_settings?.DisableThemeOverlayPause == true)
+                if (_settings?.PauseOnThemeOverlay != true)
                 {
-                    _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true but DisableThemeOverlayPause is on — not pausing");
+                    _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true but PauseOnThemeOverlay is off — not pausing");
                     return;
                 }
                 _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true - adding ThemeOverlay pause source");
