@@ -148,7 +148,6 @@ namespace UniPlaySong
             s.ExternalAudioInstantPause = false;
             s.ExternalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32";
             s.PauseOnTrailer = true;
-            s.PauseOnThemeOverlay = true;
             s.PauseOnIdle = false;
             s.IdleTimeoutMinutes = 15;
 
@@ -296,6 +295,7 @@ namespace UniPlaySong
             s.ShowMusicDashboard = false;
             s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
             s.PS5ThemeCompatMode = false;  // PS5-Experience theme compatibility (default off)
+            s.DisableThemeOverlayPause = false;
             ShowButtonFeedback(sender, "Reset!");
         }
 

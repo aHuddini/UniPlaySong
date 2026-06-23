@@ -291,7 +291,7 @@ namespace UniPlaySong
         private bool skipFirstSelectionAfterModeSwitch = false;
         private bool themeCompatibleSilentSkip = true;
         private bool pauseOnTrailer = true;
-        private bool pauseOnThemeOverlay = true;
+        private bool disableThemeOverlayPause = false;
         private int musicVolume = Constants.DefaultMusicVolume;
         private int fullscreenVolumeBoostPercent = 0;
         private double fadeInDuration = Constants.DefaultFadeInDuration;
@@ -440,14 +440,15 @@ namespace UniPlaySong
             set { pauseOnTrailer = value; OnPropertyChanged(); }
         }
 
-        // Pause music while a theme overlay/window is active (driven by the UPS_MusicControl
-        // theme element setting Tag=True). Some themes raise this for secondary windows like a
-        // per-game trophies/achievements view, which stops music. Disable to keep music playing
-        // when such overlays open. Default true (preserves the long-standing behavior).
-        public bool PauseOnThemeOverlay
+        // PS5-Experience theme compatibility: when enabled, theme overlays/windows do NOT pause
+        // UPS music. Some themes (e.g. PS5-Experience) set the UPS_MusicControl Tag=True for
+        // secondary windows like a per-game trophies/achievements view, which stops the music.
+        // Enable this to keep music playing when those overlays open. Off by default (preserves
+        // the long-standing pause-on-overlay behavior).
+        public bool DisableThemeOverlayPause
         {
-            get => pauseOnThemeOverlay;
-            set { pauseOnThemeOverlay = value; OnPropertyChanged(); }
+            get => disableThemeOverlayPause;
+            set { disableThemeOverlayPause = value; OnPropertyChanged(); }
         }
 
         /// <summary>
