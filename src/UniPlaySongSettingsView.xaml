@@ -3947,6 +3947,31 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
+                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+                    <CheckBox Content="Pause music for theme overlays"
+                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,8"/>
+                    <CheckBox Content="Pause music for theme videos"
+                              IsChecked="{Binding Settings.PauseOnThemeVideo}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
                     <!-- Download Notification Sound -->
                     <TextBlock Text="Download Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <CheckBox Content="Play sound when downloads complete"

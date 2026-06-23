@@ -992,6 +992,8 @@ namespace UniPlaySong
         private bool suppressPlayniteBackgroundMusic = true;
         private bool useNativeMusicAsDefault = false;
         private bool ps5ThemeCompatMode = false;
+        private bool pauseOnThemeOverlay = true;
+        private bool pauseOnThemeVideo = true;
         private bool musicOnlyForInstalledGames = false;
         private bool nostalgiaMode = false; // Only play game music for games matching selected completion statuses
         private List<Guid> nostalgiaStatusIds = new List<Guid>(); // Completion status IDs that qualify for game music
@@ -1075,6 +1077,26 @@ namespace UniPlaySong
         {
             get => ps5ThemeCompatMode;
             set { ps5ThemeCompatMode = value; OnPropertyChanged(); }
+        }
+
+        // Theme-developer option (default true). When false, a theme's overlay (driven by the
+        // UPS_MusicControl Tag → ThemeOverlayActive) does NOT pause UPS music. Off only when a
+        // theme developer instructs the user to — some themes raise the overlay Tag for views
+        // where music should keep playing.
+        public bool PauseOnThemeOverlay
+        {
+            get => pauseOnThemeOverlay;
+            set { pauseOnThemeOverlay = value; OnPropertyChanged(); }
+        }
+
+        // Theme-developer option (default true). When false, theme <MediaElement> videos do NOT
+        // pause UPS music. UPS auto-pauses for any unmuted theme video; some themes use decorative
+        // background videos (e.g. on trophy/menu/login screens) that shouldn't stop the music.
+        // Off only when a theme developer instructs the user to.
+        public bool PauseOnThemeVideo
+        {
+            get => pauseOnThemeVideo;
+            set { pauseOnThemeVideo = value; OnPropertyChanged(); }
         }
 
         // When enabled, game-specific music only plays for installed games.

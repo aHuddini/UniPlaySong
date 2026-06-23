@@ -295,6 +295,8 @@ namespace UniPlaySong
             s.ShowMusicDashboard = false;
             s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
             s.PS5ThemeCompatMode = false;  // PS5-Experience theme compatibility (default off)
+            s.PauseOnThemeOverlay = true;
+            s.PauseOnThemeVideo = true;
             ShowButtonFeedback(sender, "Reset!");
         }
 

@@ -98,6 +98,18 @@ namespace UniPlaySong.Monitors
         {
             bool someIsPlaying = false;
 
+            // Theme-developer opt-out: when PauseOnThemeVideo is off, never report theme video as
+            // playing. Clear VideoIsPlaying so any active video pause is released, and return early
+            // (skip the whole MediaElement scan). Default is on, so this changes nothing normally.
+            if (settings != null && !settings.PauseOnThemeVideo)
+            {
+                if (settings.VideoIsPlaying)
+                {
+                    settings.VideoIsPlaying = false;
+                }
+                return;
+            }
+
             List<MediaElement> mediaElements = new List<MediaElement>();
             foreach (Window w in Application.Current.Windows)
             {
