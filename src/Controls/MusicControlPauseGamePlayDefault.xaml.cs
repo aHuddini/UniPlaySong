@@ -130,6 +130,17 @@ namespace UniPlaySong.Controls
             return false;
         }
 
+        // Clears the live-instance registry and recomputes the override from scratch.
+        // Called once per launch (OnApplicationStarted) so a theme torn down in a prior
+        // process context cannot leave a lingering instance — defends against a missed
+        // OnUnloaded. With an empty registry, UpdateOverride() sets the override false;
+        // any control actually present in the new theme re-registers via its OnLoaded.
+        public static void ResetRegistry()
+        {
+            _instances.Clear();
+            UpdateOverride();
+        }
+
         private static bool ConvertTagToBool(object tag)
         {
             if (tag == null) return false;
