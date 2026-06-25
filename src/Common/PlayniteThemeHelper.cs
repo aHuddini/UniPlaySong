@@ -47,6 +47,11 @@ namespace UniPlaySong.Common
         private static string _activeThemeUpsAudioPath;
         private static bool _activeThemeScanned;
 
+        // The theme ID the cached path was resolved for. When the active theme differs,
+        // the cache is stale and must be rebuilt — this is what makes the path always a
+        // function of the CURRENT theme rather than a value persisted from a prior one.
+        private static string _cachedThemeId;
+
         // Call once during plugin initialization to enable active theme lookup
         public static void Initialize(IPlayniteAPI api)
         {
@@ -56,19 +61,22 @@ namespace UniPlaySong.Common
         // Returns the active theme's UPS_BackgroundAudio.* path, or null if not present.
         // Does NOT fall back to background.* — that file belongs to Playnite's SDL player.
         //
-        // A cached non-null path is re-validated against the filesystem on every call: if the
-        // file was deleted, replaced, or the active theme changed under us, the stale path is
-        // dropped and the theme re-scanned. Cheap (one File.Exists) and self-healing, so a bad
-        // or stale cache can never strand default-music playback.
+        // Cache hit only when we already scanned for THIS exact theme. A different (or first)
+        // theme ID forces a fresh scan, so a prior theme's path can never leak through.
         public static string FindActiveThemeUpsAudioFile()
         {
-            if (_activeThemeScanned &&
-                (string.IsNullOrEmpty(_activeThemeUpsAudioPath) || File.Exists(_activeThemeUpsAudioPath)))
+            var currentThemeId = GetActiveFullscreenThemeId();
+
+            // Cache hit only when we already scanned for THIS exact theme. A different
+            // (or first) theme ID forces a fresh scan, so a prior theme's path can never
+            // leak through. Resolving the theme ID is cheap (one settings read / small file).
+            if (_activeThemeScanned && string.Equals(_cachedThemeId, currentThemeId, StringComparison.OrdinalIgnoreCase))
             {
                 return _activeThemeUpsAudioPath;
             }
 
             _activeThemeScanned = true;
+            _cachedThemeId = currentThemeId;
             _activeThemeUpsAudioPath = ScanForUpsAudioFile();
             return _activeThemeUpsAudioPath;
         }
@@ -80,6 +88,7 @@ namespace UniPlaySong.Common
         {
             _activeThemeScanned = false;
             _activeThemeUpsAudioPath = null;
+            _cachedThemeId = null;
         }
 
         // Returns rich status for the settings UI: which state to show, what theme is active,
