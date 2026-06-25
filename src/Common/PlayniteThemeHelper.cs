@@ -55,10 +55,18 @@ namespace UniPlaySong.Common
 
         // Returns the active theme's UPS_BackgroundAudio.* path, or null if not present.
         // Does NOT fall back to background.* — that file belongs to Playnite's SDL player.
+        //
+        // A cached non-null path is re-validated against the filesystem on every call: if the
+        // file was deleted, replaced, or the active theme changed under us, the stale path is
+        // dropped and the theme re-scanned. Cheap (one File.Exists) and self-healing, so a bad
+        // or stale cache can never strand default-music playback.
         public static string FindActiveThemeUpsAudioFile()
         {
-            if (_activeThemeScanned)
+            if (_activeThemeScanned &&
+                (string.IsNullOrEmpty(_activeThemeUpsAudioPath) || File.Exists(_activeThemeUpsAudioPath)))
+            {
                 return _activeThemeUpsAudioPath;
+            }
 
             _activeThemeScanned = true;
             _activeThemeUpsAudioPath = ScanForUpsAudioFile();

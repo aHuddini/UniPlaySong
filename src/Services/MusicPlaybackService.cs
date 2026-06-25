@@ -714,10 +714,38 @@ namespace UniPlaySong.Services
                 // {PluginSettings} binding), skip the game's own music and fall through
                 // to the default-music branch. Same clear-songs pattern as PlayOnlyOnGameSelect
                 // below — no new playback logic required.
+                //
+                // v1.5.6: gate to Fullscreen only. The control and its flag are a Fullscreen
+                // Welcome-Hub concept, but the flag (and the static control instances that set
+                // it) are process-global, so a Fullscreen session could leave it true and
+                // suppress game music after switching to Desktop. Desktop ignores the override
+                // entirely — game music plays as normal there. Mirrors the mode resolution used
+                // by the PlayOnlyOnGameSelect block below.
                 if (songs.Count > 0 && settings?.ForceDefaultMusicOverride == true)
                 {
-                    _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride active — clearing {songs.Count} game songs to play default music");
-                    songs.Clear();
+                    bool isFullscreen = false;
+                    try
+                    {
+                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                        {
+                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                            isFullscreen = plugin?.PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride mode check failed: {ex.Message}");
+                    }
+
+                    if (isFullscreen)
+                    {
+                        _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride active — clearing {songs.Count} game songs to play default music");
+                        songs.Clear();
+                    }
+                    else
+                    {
+                        _fileLogger?.Debug("PlayGameMusic: ForceDefaultMusicOverride is true but mode is Desktop — ignoring (Fullscreen-only feature)");
+                    }
                 }
 
                 // "Play Only on Game Select" — in Fullscreen List view, clear game songs to play default music.

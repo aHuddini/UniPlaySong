@@ -529,6 +529,25 @@ namespace UniPlaySong
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
+            // Switching between Desktop and Fullscreen is a separate Playnite process launch, so
+            // this fires fresh on every mode change. Drop any cached active-theme audio path so
+            // ActiveThemeMusic re-scans for the mode we actually started in (the cache is static
+            // and would otherwise carry a path resolved for the wrong/previous context).
+            Common.PlayniteThemeHelper.InvalidateCache();
+
+            // ForceDefaultMusicOverride is a Fullscreen theme-integration flag (set true only by a
+            // UPS_MusicControl_PauseGamePlayDefault control or a {PluginSettings} binding present in
+            // the active theme). It's [JsonIgnore] precisely so it "always starts false", but the
+            // control's settings reference is static, so the flag can carry a stale true across a
+            // theme/mode reload into a theme that has no such control (e.g. PS5-Experience → Aniki),
+            // suppressing all game music. Reset it here on every launch so only a control actually
+            // present in the current theme can re-assert it (its OnLoaded re-runs UpdateOverride
+            // milliseconds later). Themes without the control leave it false — game music plays.
+            if (_settings != null)
+            {
+                _settings.ForceDefaultMusicOverride = false;
+            }
+
             LoadLocalization();
 
             // Register plugin instance for access from dialogs and services

@@ -471,27 +471,36 @@ namespace UniPlaySong.Services
             }
         }
 
-        // v1.5.3: theme-integration trigger. When the flag flips, ApplyForceDefaultMusicOverride
-        // re-asserts playback for the currently-selected game — the override check inside
-        // PlayGameMusic ([src/Services/MusicPlaybackService.cs] around the PlayOnlyOnGameSelect
-        // block) clears the song list when the flag is true, forcing the default-music
-        // fall-through path. When the flag goes false, the same re-call lets game music come
-        // back naturally. The flip is debounced (see ScheduleOverrideApply) so rapid
-        // focus-driven flicker collapses to a single apply of the settled value.
+        // v1.5.3: theme-integration trigger. When the flag flips we just re-call
+        // PlayGameMusic for the currently-selected game — the override check inside
+        // PlayGameMusic ([src/Services/MusicPlaybackService.cs] around the
+        // PlayOnlyOnGameSelect block) clears the song list when the flag is true,
+        // forcing the default-music fall-through path. When the flag goes false,
+        // the same re-call lets game music come back naturally.
+        //
+        // v1.5.6: PS5ThemeCompatMode (opt-in, OFF by default) routes the flip through a
+        // debounce so focus-driven Tag flicker on the PS5-Experience theme collapses to a
+        // single apply of the settled value. When the toggle is OFF the handler runs the
+        // exact pre-1.5.6 path below — no new behavior — so normal themes are unaffected.
         public void HandleForceDefaultMusicOverrideChange(bool isActive)
         {
             if (_settings?.PS5ThemeCompatMode == true)
             {
-                // Debounced: focus-driven theme triggers can flicker this flag many times within
-                // milliseconds. Coalesce into one apply of the settled value.
                 _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (debounced)");
                 ScheduleOverrideApply();
                 return;
             }
 
-            // Default (compat off): apply immediately.
-            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (immediate)");
-            ApplyOverrideImmediate();
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive}");
+
+            var game = _getSelectedGame();
+            if (game == null)
+            {
+                _fileLogger?.Debug("HandleForceDefaultMusicOverrideChange: No game selected — playback service will pick up the flag on next selection");
+                return;
+            }
+
+            _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
         // v1.5.6: force-reapply the current ForceDefaultMusicOverride state for the
@@ -503,6 +512,9 @@ namespace UniPlaySong.Services
         // true from a prior instance during a WPF tree rebuild), so the stale game music
         // would otherwise stick. Calling this on control load re-asserts the override
         // authoritatively. No-ops cleanly when no game is resolvable.
+        //
+        // Gated like HandleForceDefaultMusicOverrideChange: only the debounced PS5-compat
+        // path differs. With the toggle OFF this runs the original re-assert unchanged.
         public void HandleForceDefaultMusicOverrideLoaded()
         {
             if (_settings?.PS5ThemeCompatMode == true)
@@ -512,22 +524,14 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: immediate re-assert");
-            ApplyOverrideImmediate();
-        }
-
-        // Immediate (compat-off) apply: re-call PlayGameMusic for the current game so the
-        // override flag is picked up right away. This is the pre-debounce behavior, used when
-        // PS5ThemeCompatMode is off. PlayGameMusic's own ForceDefaultMusicOverride check
-        // decides game-vs-default.
-        private void ApplyOverrideImmediate()
-        {
             var game = _getSelectedGame();
             if (game == null)
             {
-                _fileLogger?.Debug("ApplyOverrideImmediate: No game resolvable — nothing to apply");
+                _fileLogger?.Debug("HandleForceDefaultMusicOverrideLoaded: No game resolvable — nothing to re-assert");
                 return;
             }
+
+            _fileLogger?.Debug($"HandleForceDefaultMusicOverrideLoaded: re-applying override for {game.Name} (override={_settings?.ForceDefaultMusicOverride})");
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
