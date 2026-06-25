@@ -41,14 +41,15 @@ namespace UniPlaySong.Controls
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-
-            _instances.Add(this);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             if (!_instances.Contains(this))
             {
+                // Sole registration site. Registering here (not the constructor) keeps _instances
+                // limited to controls actually in the visual tree — a constructed-but-never-loaded
+                // or torn-down control must not contribute to the override. OnUnloaded removes it.
                 _instances.Add(this);
             }
 
