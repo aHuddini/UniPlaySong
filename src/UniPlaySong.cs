@@ -1782,11 +1782,6 @@ namespace UniPlaySong
                 changed = true;
             }
 
-            // v1.5.4: one-time first-install auto-detection. If the user is still on the
-            // factory-default BundledPreset source AND the active fullscreen theme ships a
-            // UPS_BackgroundAudio.{mp3,ogg,wav,flac} file (ActiveThemeUpsStatus.Ready), switch
-            // the default-music source to ActiveThemeMusic so the theme's audio plays out of
-            // the box. Conservative on three axes:
             if (changed)
             {
                 SavePluginSettings(_settings);
