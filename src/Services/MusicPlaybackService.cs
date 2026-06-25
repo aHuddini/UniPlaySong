@@ -709,18 +709,10 @@ namespace UniPlaySong.Services
                 var songs = _fileService.GetAvailableSongs(game);
                 _fileLogger?.Debug(() => $"[Perf] PlayGameMusic: GetAvailableSongs took {sw.ElapsedMilliseconds}ms ({songs.Count} songs for {game.Name})");
 
-                // v1.5.3 theme-integration trigger: when ForceDefaultMusicOverride is true
-                // (driven by UPS_MusicControl_PauseGamePlayDefault Tag=True or a theme
-                // {PluginSettings} binding), skip the game's own music and fall through
-                // to the default-music branch. Same clear-songs pattern as PlayOnlyOnGameSelect
-                // below — no new playback logic required.
-                //
-                // v1.5.6: gate to Fullscreen only. The control and its flag are a Fullscreen
-                // Welcome-Hub concept, but the flag (and the static control instances that set
-                // it) are process-global, so a Fullscreen session could leave it true and
-                // suppress game music after switching to Desktop. Desktop ignores the override
-                // entirely — game music plays as normal there. Mirrors the mode resolution used
-                // by the PlayOnlyOnGameSelect block below.
+                // INVARIANT (not a leak-patch): the override is a Fullscreen Welcome-Hub concept and
+                // must NEVER suppress game music in Desktop, even when the flag is legitimately true.
+                // This is independent of the override's lifecycle correctness (Tasks 1-2); keep it
+                // permanently. Mode is resolved the same way as the PlayOnlyOnGameSelect block below.
                 if (songs.Count > 0 && settings?.ForceDefaultMusicOverride == true)
                 {
                     bool isFullscreen = false;
