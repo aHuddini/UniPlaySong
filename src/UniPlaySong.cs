@@ -1787,41 +1787,6 @@ namespace UniPlaySong
             // UPS_BackgroundAudio.{mp3,ogg,wav,flac} file (ActiveThemeUpsStatus.Ready), switch
             // the default-music source to ActiveThemeMusic so the theme's audio plays out of
             // the box. Conservative on three axes:
-            //   1. Only when the theme dev explicitly opted in (Ready, not CanBeCreated)
-            //   2. Only when the user hasn't already picked a non-default source
-            //   3. Marker is set unconditionally so the check never re-fires (even if the user
-            //      switches themes later — that's a deliberate user action)
-            if (!_settings.ActiveThemeAutodetectRun)
-            {
-                try
-                {
-                    if (_settings.DefaultMusicSourceOption == DefaultMusicSource.BundledPreset)
-                    {
-                        var status = Common.PlayniteThemeHelper.GetActiveThemeStatus();
-                        if (status.Status == Common.ActiveThemeUpsStatus.Ready)
-                        {
-                            _settings.DefaultMusicSourceOption = DefaultMusicSource.ActiveThemeMusic;
-                            _fileLogger?.Info($"ActiveThemeAutodetect: '{status.ThemeName}' ships UPS_BackgroundAudio — defaulting to ActiveThemeMusic source.");
-                        }
-                        else
-                        {
-                            _fileLogger?.Debug($"ActiveThemeAutodetect: active theme status={status.Status} — keeping BundledPreset default.");
-                        }
-                    }
-                    else
-                    {
-                        _fileLogger?.Debug($"ActiveThemeAutodetect: user already on non-default source ({_settings.DefaultMusicSourceOption}) — respecting choice, skipping auto-switch.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _fileLogger?.Warn($"ActiveThemeAutodetect: failed ({ex.Message}) — keeping current source.");
-                }
-
-                _settings.ActiveThemeAutodetectRun = true;
-                changed = true;
-            }
-
             if (changed)
             {
                 SavePluginSettings(_settings);

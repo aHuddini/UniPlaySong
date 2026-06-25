@@ -1009,7 +1009,6 @@ namespace UniPlaySong
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
-        private bool activeThemeAutodetectRun = false; // One-time first-install check for UPS_BackgroundAudio in active fullscreen theme (v1.5.4+)
         private bool randomizeBundledTrackOnStartup = false; // v1.5.0: pick a random bundled preset once at Playnite startup
         private string lastRandomizedBundledPreset = string.Empty; // v1.5.0: tracks the last session's random pick so the next session can avoid repeating it
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
@@ -1294,17 +1293,6 @@ namespace UniPlaySong
         {
             get => bundledPresetMigrated;
             set { bundledPresetMigrated = value; OnPropertyChanged(); }
-        }
-
-        // v1.5.4+ first-install check: on first run, UPS asks PlayniteThemeHelper whether the active
-        // fullscreen theme ships a UPS_BackgroundAudio.{mp3,ogg,wav,flac} file. If yes, the default-music
-        // source is auto-set to ActiveThemeMusic so the theme's audio plays out of the box. If no, the
-        // BundledPreset default is left alone. Flag is set unconditionally after the check so it never
-        // re-runs (even if the user later switches themes — that's a deliberate user action).
-        public bool ActiveThemeAutodetectRun
-        {
-            get => activeThemeAutodetectRun;
-            set { activeThemeAutodetectRun = value; OnPropertyChanged(); }
         }
 
         // Determines if "Use Playnite Native 'Default' Theme Music" checkbox should be enabled.
