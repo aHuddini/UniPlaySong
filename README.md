@@ -23,7 +23,14 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.5.6
 
 ### Fixed
-- **Theme "play default music" control now works reliably at the Welcome Hub and after logging in/out.** For themes that use UPS's `UPS_MusicControl_PauseGamePlayDefault` element (which swaps the selected game's music for your default music while a panel like the Welcome Hub is shown), the swap was sometimes ignored — the game's music kept playing instead. This was a startup/login timing issue; UPS now applies the theme's intent reliably once the control loads, in both directions (game → default and back). Mainly affects themes built on this feature.
+- **Game music no longer gets stuck after switching themes or between Desktop and Fullscreen.** Some theme combinations (like switching away from PS5-Experience) could leave your games silently playing the wrong track, with game selection seeming to do nothing. Music now plays correctly again.
+- **Theme "default music" feature is more reliable.** For themes that swap to your default music at a Welcome Hub or login screen, the swap now works consistently in both directions.
+
+### Changed
+- **Fresh installs no longer auto-switch your default-music source.** New installs keep the standard default; "Active Theme Music" is used only if you pick it in Settings → Playback.
+
+### Added
+- **Theme-developer toggles (Experimental tab).** Two new options for theme developers to disable music-pausing on theme overlays and videos. Leave them on unless a theme developer tells you otherwise.
 
 ### Known Issues
 - **Windows may not auto-suspend/sleep while Playnite is open** (issue #81). UPS keeps its audio device open between songs (to avoid stutter on game switches), which can block sleep. A fix is being attempted. Workaround for now: fully exit Playnite when stepping away.

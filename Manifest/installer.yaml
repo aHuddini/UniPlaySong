@@ -5,8 +5,11 @@ Packages:
     ReleaseDate: 2026-06-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.6/UniPlaySong-1_5_6-Jun22_2026.pext'
     Changelog:
-      - '[Fix] Theme "play default music" control (UPS_MusicControl_PauseGamePlayDefault) now works reliably at the Welcome Hub and after logging in/out. Themes built on this element sometimes kept playing the selected game''s music instead of swapping to your default music — a startup/login timing issue. UPS now applies the theme''s intent reliably once the control loads, in both directions. Mainly affects themes that use this feature.'
-      - '[Known Issue] Windows may not auto-suspend/sleep while Playnite is open (issue #81). UPS keeps its audio device open between songs (to avoid stutter on game switches), which can block sleep. A fix is being attempted. Workaround for now: fully exit Playnite when stepping away.'
+      - '[Critical Fix] Game music no longer gets stuck after switching themes or between Desktop and Fullscreen. Some theme switches (like leaving PS5-Experience) could leave games silently playing the wrong track, with game selection doing nothing. Music now plays correctly again.'
+      - '[Fix] The theme "default music" feature (used by some themes at a Welcome Hub or login screen) now swaps reliably in both directions.'
+      - '[Changed] Fresh installs no longer auto-switch your default-music source. New installs keep the standard default; "Active Theme Music" is used only if you pick it in Settings > Playback.'
+      - '[New Feature] Theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos. For theme developers only — leave them on unless told otherwise.'
+      - '[Known Issue] Windows may not auto-suspend/sleep while Playnite is open (issue #81). UPS keeps its audio device open between songs to avoid stutter, which can block sleep. Workaround: fully exit Playnite when stepping away.'
   - Version: 1.5.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-17
