@@ -5,10 +5,10 @@ Packages:
     ReleaseDate: 2026-06-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.6/UniPlaySong-1_5_6-Jun22_2026.pext'
     Changelog:
+      - '[Theme Support] UPS now supports PS5 Experience theme by developer saVantCZ (requires enabling the "PS5-Experience theme compatibility" option in the Theme Support tab).'
+      - '[Theme Dev Feature] "Theme Support" settings tab. Gathers the theme-developer compatibility options — the PS5-Experience compatibility patch and two toggles to disable music-pausing on theme overlays and videos. For theme developers only.'
       - '[Critical Fix] Game music no longer gets stuck after switching themes or between Desktop and Fullscreen when using the ACTIVE THEME MUSIC default music source.'
       - '[Changed] Fresh installs no longer auto-switch your default-music source to ACTIVE THEME MUSIC. New installs keep the standard default; "Active Theme Music" is used only if you pick it in Settings > Playback.'
-      - '[Theme Dev Features] Theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos. For theme developers only — leave them on unless told otherwise.'
-      - '[Known Issue] Windows may not auto-suspend/sleep while Playnite is open (issue #81). UPS keeps its audio device open between songs to avoid stutter, which can block sleep. Workaround: fully exit Playnite when stepping away.'
   - Version: 1.5.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-17
