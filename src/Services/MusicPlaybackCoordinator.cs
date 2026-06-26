@@ -415,6 +415,9 @@ namespace UniPlaySong.Services
         {
             if (isActive)
             {
+                // Gate is intentionally only on the pause-ADD path. The overlay-cleared else branch
+                // always RemovePauseSource, so PauseOnThemeOverlay=false self-heals when the overlay
+                // clears. Default ON — existing behavior unchanged for normal users.
                 if (_settings?.PauseOnThemeOverlay != true)
                 {
                     _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true but PauseOnThemeOverlay is off — not pausing");

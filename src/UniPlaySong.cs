@@ -529,12 +529,6 @@ namespace UniPlaySong
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
-            // Switching between Desktop and Fullscreen is a separate Playnite process launch, so
-            // this fires fresh on every mode change. Drop any cached active-theme audio path so
-            // ActiveThemeMusic re-scans for the mode we actually started in (the cache is static
-            // and would otherwise carry a path resolved for the wrong/previous context).
-            Common.PlayniteThemeHelper.InvalidateCache();
-
             // Rebuild the override-control registry from scratch on every launch. Switching
             // Desktop<->Fullscreen is a separate Playnite process launch, and theme changes
             // require a restart — so this fires fresh each time. Clearing the registry here
