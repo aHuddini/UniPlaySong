@@ -11,6 +11,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Goal | Tool |
 |---|---|
 | Pause UPS music while an overlay / video / login screen is up | `UPS_MusicControl` element |
+| Keep UPS music playing during a **decorative/silent** theme video (don't let it pause the music) | Set the video's `IsMuted="True"` (or `Volume="0"`) — UPS ignores muted video automatically |
 | Swap game music for the user's default music while a custom panel is open (tag editor, sidebar, etc.) — restore game music on close | `UPS_MusicControl_PauseGamePlayDefault` element (v1.5.3+) |
 | Bind UPS settings (Enable Music, Radio Mode, Calm Down, etc.) to checkboxes in your theme | `{PluginSettings}` markup (v1.4.6+) |
 | Ship a dedicated audio track that UPS plays as default music | `UPS_BackgroundAudio.mp3` in your theme's `audio/` folder (v1.5.2+) |
@@ -113,6 +114,34 @@ The full set of triggers Mike Aniki uses for intro videos, trailers, settings, a
     </ContentControl.Style>
 </ContentControl>
 ```
+
+### Keep music playing during decorative videos — mute them with `IsMuted="True"`
+
+UPS automatically pauses your game music when it detects a **theme video that is actually producing sound**. It does *not* pause for silent video. A video counts as "playing" only when **all three** are true:
+
+- the `MediaElement` has an audio track (`HasAudio`),
+- it is **not** muted (`IsMuted="False"`), and
+- its `Volume` is above `0`.
+
+So if your theme shows a **decorative or background video** that should *not* stop the music — an intro loop, a trophy/menu flourish, an ambient background clip — mark that element muted and UPS will ignore it:
+
+```xml
+<MediaElement Source="..."
+              IsMuted="True"
+              LoadedBehavior="Play" />
+```
+
+With `IsMuted="True"` (or `Volume="0"`), UPS never treats the video as audible playback, so your game music keeps playing while it's on screen. No `UPS_MusicControl` wiring needed for this — it's automatic.
+
+**When to use which:**
+
+| You want… | Do this |
+|---|---|
+| A video's **own audio** to take over (trailer, cutscene) — UPS music pauses | Leave the video **unmuted** (`IsMuted="False"`, `Volume > 0.8`). UPS pauses automatically. |
+| A **silent/decorative** video to play *over* the music — music keeps going | Set the video **`IsMuted="True"`** (or `Volume="0"`). UPS ignores it. |
+| Pause music for a **non-video overlay** (login panel, sidebar, menu) | Use `UPS_MusicControl` with a `Tag` trigger (above) — muting doesn't apply to non-video elements. |
+
+> Tip: this is the cleanest way to handle background/ambient video. You don't need a `UPS_MusicControl` Tag trigger for muted videos — just mute the element and UPS does the right thing.
 
 ---
 
@@ -367,6 +396,7 @@ If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS suppor
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |
+| **PS5 Experience** (by saVantCZ) | Supported with **Settings → Theme Support → "PS5-Experience theme compatibility" enabled**. The theme drives `UPS_MusicControl_PauseGamePlayDefault` from PS5Core's `ActiveSection`/`IsWelcomeHubActive`; the compat option debounces the focus-driven Tag flicker so default music plays cleanly at the Welcome Hub. |
 
 ---
 

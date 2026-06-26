@@ -1375,6 +1375,14 @@ public bool VideoIsPlaying { get; set; }      // Set by MediaElementsMonitor
 public bool ThemeOverlayActive { get; set; }  // Set by MusicControl
 ```
 
+**Video-detection condition (`MediaElementsMonitor.Timer_Tick`)**: a theme `MediaElement` only counts as "playing" — i.e. only sets `VideoIsPlaying = true` and pauses UPS music — when it is *audible*:
+
+```csharp
+bool isPlaying = mediaElement.HasAudio && !mediaElement.IsMuted && mediaElement.Volume > 0;
+```
+
+This is why a theme dev can keep UPS music playing over a decorative video simply by muting it (`IsMuted="True"` or `Volume="0"`): the monitor skips muted/silent video, so it never raises the `Video` pause source. Documented for theme devs in `THEME_INTEGRATION_GUIDE.md` ("Keep music playing during decorative videos"). Note this is `MediaElement.IsMuted` (a WPF property on the theme's own video element), *not* Playnite's `ApplicationSettings.Fullscreen.IsMusicMuted` (which UPS sets in `SuppressNativeMusic` to mute Playnite's native background music).
+
 ### Data Flow
 
 **Theme sets Tag="True"**:

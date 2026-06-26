@@ -24,7 +24,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Fixed
 - **Game music no longer gets stuck after switching themes or between Desktop and Fullscreen.** Some theme combinations (like switching away from PS5-Experience) could leave your games silently playing the wrong track, with game selection seeming to do nothing. Music now plays correctly again.
-- **Theme "default music" feature is more reliable.** For themes that swap to your default music at a Welcome Hub or login screen, the swap now works consistently in both directions.
+
 
 ### Changed
 - **Fresh installs no longer auto-switch your default-music source.** New installs keep the standard default; "Active Theme Music" is used only if you pick it in Settings → Playback.

@@ -294,6 +294,16 @@ namespace UniPlaySong
             s.SidebarGlowMode = SidebarGlowMode.Breathing;
             s.ShowMusicDashboard = false;
             s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        // Theme Support tab (v1.5.6): PS5-Experience compatibility + theme-developer
+        // overlay/video pause opt-outs. Moved out of the Experimental tab.
+        private void ResetThemeSupportTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Theme Support");
+            if (s == null) return;
+
             s.PS5ThemeCompatMode = false;  // PS5-Experience theme compatibility (default off)
             s.PauseOnThemeOverlay = true;
             s.PauseOnThemeVideo = true;

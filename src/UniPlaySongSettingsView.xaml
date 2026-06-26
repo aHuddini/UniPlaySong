@@ -3935,43 +3935,6 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
-                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <CheckBox Content="Enable PS5-Experience theme compatibility"
-                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
-
-                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
-                               FontSize="11"
-                               Foreground="Orange"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,8"/>
-                    <CheckBox Content="Pause music for theme overlays"
-                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,8"/>
-                    <CheckBox Content="Pause music for theme videos"
-                              IsChecked="{Binding Settings.PauseOnThemeVideo}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
-
                     <!-- Download Notification Sound -->
                     <TextBlock Text="Download Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <CheckBox Content="Play sound when downloads complete"
@@ -4242,6 +4205,61 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Theme Support Tab -->
+        <TabItem Header="Theme Support">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="These options help certain themes work better with UniPlaySong. They are geared toward theme developers — most users never need to change them. Only adjust a setting here if you are a theme developer, or if a theme developer (or a theme's setup guide) tells you to."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,5"/>
+
+                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Enable PS5-Experience theme compatibility"
+                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+                    <CheckBox Content="Pause music for theme overlays"
+                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,8"/>
+                    <CheckBox Content="Pause music for theme videos"
+                              IsChecked="{Binding Settings.PauseOnThemeVideo}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- About Tab -->
         <TabItem Header="About">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -4286,7 +4304,11 @@
                                 These themes are tested against every UniPlaySong release and use the plugin's theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens, and overlays:
                             </TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,0">• ANIKI REMAKE</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• ANIKI REMAKE</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• PS5 Experience (by saVantCZ) — enable "Theme compatibility" in Settings → Theme Support</TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                Theme developers: see Settings → Theme Support for the compatibility toggles (overlay/video music pausing, and the PS5-Experience fix).
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -4303,16 +4325,13 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer resumes when Playnite's Keyboard Launcher opens while the main window is in the background.
+                                <Run FontWeight="SemiBold">Fixed:</Run> Game music no longer gets stuck after switching themes or between Desktop and Fullscreen (seen most with the Active Theme Music source on themes like PS5-Experience). Music plays correctly again.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> New default-music source "Defer to trailer audio when no UPS music is present" — for users of ExtraMetadataLoader or other trailer plugins.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> New theme element <Run FontFamily="Consolas">UPS_MusicControl_PauseGamePlayDefault</Run> that lets theme devs swap game music for default music while you interact with custom panels (tag editor, settings sidebar, etc.), then restore game music when you close them.
+                                <Run FontWeight="SemiBold">Changed:</Run> Fresh installs no longer auto-switch your default-music source to "Active Theme Music". New installs keep the standard default; pick "Active Theme Music" yourself in Settings → Playback if you want it.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
-                                <Run FontWeight="SemiBold">Added:</Run> First-install auto-detection — if your active fullscreen theme ships a <Run FontFamily="Consolas">UPS_BackgroundAudio</Run> file, UPS picks it as your default-music source automatically.
+                                <Run FontWeight="SemiBold">Added:</Run> New <Run FontWeight="SemiBold">Theme Support</Run> settings tab gathering the theme-developer compatibility options (PS5-Experience fix, and the overlay/video pause opt-outs).
                             </TextBlock>
 
                             <TextBlock FontSize="11">
