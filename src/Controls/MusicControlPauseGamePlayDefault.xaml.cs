@@ -130,14 +130,24 @@ namespace UniPlaySong.Controls
             return false;
         }
 
-        // Clears the live-instance registry and recomputes the override from scratch.
-        // Called once per launch (OnApplicationStarted) so a theme torn down in a prior
-        // process context cannot leave a lingering instance — defends against a missed
-        // OnUnloaded. With an empty registry, UpdateOverride() sets the override false;
-        // any control actually present in the new theme re-registers via its OnLoaded.
-        public static void ResetRegistry()
+        // Recompute the override flag from the live, currently-loaded controls — without
+        // clearing the registry. Called once per launch (OnApplicationStarted).
+        //
+        // This is the leak guard: ForceDefaultMusicOverride is [JsonIgnore] (starts false), but
+        // its writer (_settings) is static, so a stale true could otherwise carry across a
+        // theme/mode reload into a theme that has NO override control (e.g. PS5-Experience →
+        // Aniki), suppressing all game music. Recomputing here from _instances forces the flag
+        // back to the truth for the theme we actually started in: no control loaded → false
+        // (game music plays); a control present in the current theme → its Tag wins.
+        //
+        // Why recompute instead of _instances.Clear() + force-false: in a Fullscreen-with-theme
+        // launch the override control's OnLoaded runs and sets its Tag BEFORE OnApplicationStarted
+        // fires (~400ms earlier in practice). Clearing here would deregister that live control and
+        // clobber its legitimate Tag=true at the Welcome Hub, so the theme's "play default music"
+        // intent was lost. Statics are fresh per process (mode/theme switch = restart), so there
+        // is no prior-process instance to clear anyway — only the current theme's live controls.
+        public static void SyncOverrideFromLiveControls()
         {
-            _instances.Clear();
             UpdateOverride();
         }
 

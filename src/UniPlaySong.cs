@@ -529,13 +529,13 @@ namespace UniPlaySong
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
 
-            // Rebuild the override-control registry from scratch on every launch. Switching
-            // Desktop<->Fullscreen is a separate Playnite process launch, and theme changes
-            // require a restart — so this fires fresh each time. Clearing the registry here
-            // guarantees a torn-down theme's controls cannot linger and force default music in
-            // a theme that has no such control; a control present in the current theme
-            // re-registers via its OnLoaded and re-asserts the override authoritatively.
-            Controls.MusicControlPauseGamePlayDefault.ResetRegistry();
+            // Recompute the theme-override flag from the controls actually loaded in the theme we
+            // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
+            // changes require a restart, so this fires fresh each time. A theme with no override
+            // control resolves the flag to false (game music plays — prevents a stale true leaking
+            // in from a previous theme like PS5-Experience → Aniki); a theme whose control already
+            // loaded keeps its Tag, so the Welcome Hub's "play default music" intent is preserved.
+            Controls.MusicControlPauseGamePlayDefault.SyncOverrideFromLiveControls();
 
             LoadLocalization();
 
