@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.7
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-06-26
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.7/UniPlaySong-1_5_7-Jun26_2026.pext'
+    Changelog:
+      - '[In Development] Version bump to 1.5.7; changelog entries added as features land.'
   - Version: 1.5.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-22
