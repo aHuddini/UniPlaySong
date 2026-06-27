@@ -1,0 +1,30 @@
+using System;
+
+namespace UniPlaySong.Services.Spotify
+{
+    // Mechanism contract for controlling the Spotify desktop app via the OS.
+    // Knows nothing about UniPlaySong; every method is fail-safe (never throws).
+    public interface ISpotifyClient
+    {
+        // True when a controllable Spotify session is present (app running, SMTC available).
+        bool IsAvailable { get; }
+
+        // True when Spotify is currently playing (PlaybackStatus == Playing).
+        bool IsPlaying { get; }
+
+        // Pause Spotify. Returns true if the command was accepted. No-op (returns false)
+        // when unavailable or pause is not currently enabled.
+        bool TryPause();
+
+        // Resume Spotify. Returns true if accepted. No-op (false) when unavailable or
+        // play is not currently enabled.
+        bool TryResume();
+
+        // Current track metadata, or SpotifyNowPlaying.Empty when unavailable.
+        SpotifyNowPlaying GetNowPlaying();
+
+        // Raised when Spotify becomes available or unavailable (session opened/closed),
+        // or its playback state changes, so the policy layer can recompute.
+        event Action AvailabilityChanged;
+    }
+}
