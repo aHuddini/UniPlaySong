@@ -4,6 +4,24 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.7] - 2026-06-26
+
+Spotify control integration: two engagement modes (Radio Mode source + default-music-source), transport-only via SMTC (Windows.Media.Control / `Dubya.WindowsMediaController` 2.5.6). No audio capture, no OAuth.
+
+### Added
+
+- **Spotify desktop-app control via SMTC.** New `SpotifyControlService` (with `ISpotifyControlService`) wraps `Dubya.WindowsMediaController.WindowsMediaController` to detect the Spotify session, call `TryPlayAsync`/`TryPauseAsync` on its `ControlSession`, and poll metadata (title, artist) for "Now Playing" display. No audio capture — transport and metadata only.
+
+- **Two engagement modes.** (1) *Radio Mode source* (`DefaultMusicSource.Spotify`): when Radio Mode is active and no UPS songs are queued, UPS hands off to Spotify instead of silence. (2) *Default-music source* (`DefaultMusicSource.SpotifyFallback`): for games with no UPS music, UPS resumes Spotify instead of playing the bundled ambient preset. Both are opt-in under Settings → Playback.
+
+- **Automatic pause/resume lifecycle.** `MusicPlaybackCoordinator` calls `SpotifyControlService.PauseAsync()`/`ResumeAsync()` at the same decision points as the existing UPS pause sources: game launch, video playback, focus loss, and system lock. Spotify resumes when the corresponding pause source clears.
+
+- **Bundled dependency.** `WindowsMediaController.dll` (`Dubya.WindowsMediaController` 2.5.6, NuGet) added to the extension package. No user-installed prerequisite beyond the Spotify desktop app itself.
+
+### Changed
+
+- `MusicPlaybackCoordinator` extended with Spotify awareness: `ShouldDeferToSpotify()` gate prevents UPS from starting its own audio while Spotify is the active source.
+
 ## [1.5.6] - 2026-06-22
 
 Theme-integration fix: `UPS_MusicControl_PauseGamePlayDefault` now reliably plays the user's default music when its `Tag=True` (e.g. at a theme's Welcome Hub), even across login/logout.

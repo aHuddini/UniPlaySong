@@ -20,24 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.6
-
-### Fixed
-- **Game music no longer gets stuck after switching themes or between Desktop and Fullscreen.** Some theme combinations (like switching away from PS5-Experience) could leave your games silently playing the wrong track, with game selection seeming to do nothing. Music now plays correctly again.
-
-
-### Changed
-- **Fresh installs no longer auto-switch your default-music source.** New installs keep the standard default; "Active Theme Music" is used only if you pick it in Settings → Playback.
+## What's New - v1.5.7
 
 ### Added
-- **Theme-developer toggles (Experimental tab).** Two new options for theme developers to disable music-pausing on theme overlays and videos. Leave them on unless a theme developer tells you otherwise.
-
-### Known Issues
-- **Windows may not auto-suspend/sleep while Playnite is open** (issue #81). UPS keeps its audio device open between songs (to avoid stutter on game switches), which can block sleep. A fix is being attempted. Workaround for now: fully exit Playnite when stepping away.
-- Toast notification blur is still broken on Windows 11 (carried over from v1.5.0). Win10 users unaffected. Planned for a future v1.5.x patch.
+- **Control Spotify from UniPlaySong** — use Spotify as your Radio Mode source, or as a default-music source for games with no UPS music. UPS pauses and resumes the Spotify desktop app when you launch a game, when a video plays, and on focus loss or system lock. Note: UPS can't access Spotify's audio, so the visualizer and fades don't apply while Spotify is playing. Requires the Spotify desktop app.
 
 ### Previous Version
-- **v1.5.5**: Added an experimental option to play a game's trailer audio (from the ExtraMetadataLoader extension) as its background music when the game has no UniPlaySong music of its own, plus a "Clear trailer-audio cache" button under Settings → Cleanup.
+- **v1.5.6**: Fixed game music getting stuck after switching themes or between Desktop and Fullscreen. Fresh installs no longer auto-switch your default-music source. Added theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

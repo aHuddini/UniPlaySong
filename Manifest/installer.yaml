@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-06-26
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.7/UniPlaySong-1_5_7-Jun26_2026.pext'
     Changelog:
-      - '[In Development] Version bump to 1.5.7; changelog entries added as features land.'
+      - '[New Feature] Control the Spotify desktop app from UniPlaySong — as a Radio Mode source or a default-music source. UPS pauses/resumes Spotify on game launch, video, focus loss, and lock. (UPS does not play Spotify''s audio, so the visualizer and fades do not apply while Spotify plays.) Requires the Spotify desktop app.'
   - Version: 1.5.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-22
