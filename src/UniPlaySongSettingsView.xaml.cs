@@ -30,6 +30,7 @@ namespace UniPlaySong
 
         private void NowPlayingPreview_OnLoaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (_liveSettingsForPreview != null) return; // already subscribed; avoid double-subscription on repeated Loaded
             var vm = DataContext as UniPlaySongSettingsViewModel;
             var live = vm?.PluginForPreview?.Settings; // the live UniPlaySongSettings the publisher writes
             if (live is System.ComponentModel.INotifyPropertyChanged inpc)
