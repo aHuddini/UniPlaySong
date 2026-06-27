@@ -112,6 +112,8 @@ namespace UniPlaySong
         private Services.MediaKeyService _mediaKeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
+        private Services.Spotify.SpotifySmtcClient _spotifyClient;
+        private Services.Spotify.SpotifyControlService _spotifyControlService;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
         private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
@@ -1071,6 +1073,10 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _spotifyControlService?.Dispose();
+            _spotifyControlService = null;
+            _spotifyClient?.Dispose();
+            _spotifyClient = null;
             _controllerEventRouter = null;
             _iconGlowManager?.Destroy();
             _iconGlowManager = null;
@@ -2494,6 +2500,17 @@ namespace UniPlaySong
                 () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
             );
             _fileLogger?.Debug("MusicPlaybackCoordinator initialized");
+
+            // Spotify control (Tier 1, SMTC). Observes the playback service's audible state
+            // and conducts the Spotify desktop app. Fail-safe: if SMTC/Spotify is unavailable
+            // the client reports not-available and the service stays inert (UPS plays its own music).
+            _spotifyClient = new Services.Spotify.SpotifySmtcClient(_fileLogger);
+            _spotifyControlService = new Services.Spotify.SpotifyControlService(
+                _playbackService,
+                _spotifyClient,
+                () => _settings,
+                _fileLogger);
+            _spotifyControlService.Recompute(); // establish initial SpotifyActive state
 
             // Mid-init suppression — ~150ms into InitializeServices
             if (IsFullscreen)
