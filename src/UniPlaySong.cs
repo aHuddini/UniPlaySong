@@ -2591,7 +2591,8 @@ namespace UniPlaySong
                     () => _settings,
                     () => SelectedGames?.FirstOrDefault(),
                     msg => _fileLogger?.Debug(msg),
-                    (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false)
+                    (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false),
+                    () => _spotifyControlService
                 );
                 _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
 

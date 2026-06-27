@@ -10,6 +10,7 @@ using Playnite.SDK.Plugins;
 using UniPlaySong.Common;
 using UniPlaySong.Models;
 using UniPlaySong.Services;
+using UniPlaySong.Services.Spotify;
 
 namespace UniPlaySong.DeskMediaControl
 {
@@ -21,6 +22,7 @@ namespace UniPlaySong.DeskMediaControl
         private readonly Func<Game> _getCurrentGame;
         private readonly Action<string> _log;
         private readonly Action<Exception, string> _handleError;
+        private readonly Func<SpotifyControlService> _getSpotifyService;
 
         private TopPanelItem _playPauseItem;
         private TopPanelItem _skipItem;
@@ -82,13 +84,15 @@ namespace UniPlaySong.DeskMediaControl
             Func<UniPlaySongSettings> getSettings,
             Func<Game> getCurrentGame,
             Action<string> log = null,
-            Action<Exception, string> handleError = null)
+            Action<Exception, string> handleError = null,
+            Func<SpotifyControlService> getSpotifyService = null)
         {
             _getPlaybackService = getPlaybackService ?? throw new ArgumentNullException(nameof(getPlaybackService));
             _getSettings = getSettings ?? throw new ArgumentNullException(nameof(getSettings));
             _getCurrentGame = getCurrentGame ?? throw new ArgumentNullException(nameof(getCurrentGame));
             _log = log;
             _handleError = handleError;
+            _getSpotifyService = getSpotifyService;
 
             InitializeTopPanelItems();
             InitializeSpectrumVisualizer();
@@ -280,6 +284,11 @@ namespace UniPlaySong.DeskMediaControl
                     }
                 }
 
+                // Subscribe to Spotify now-playing changes so the panel refreshes when Spotify's track changes
+                var spotify = _getSpotifyService?.Invoke();
+                if (spotify != null)
+                    spotify.NowPlayingChanged += OnSpotifyNowPlayingChanged;
+
                 _log?.Invoke("TopPanel: Now Playing panel initialized");
             }
             catch (Exception ex)
@@ -318,6 +327,18 @@ namespace UniPlaySong.DeskMediaControl
 
         private void OnSongInfoChanged(SongInfo songInfo)
         {
+            // When Spotify is active, show Spotify's track instead of UPS's song
+            var spotify = _getSpotifyService?.Invoke();
+            if (spotify != null && spotify.IsSpotifyActive)
+            {
+                var np = spotify.GetNowPlaying();
+                if (!np.IsEmpty)
+                {
+                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, TimeSpan.Zero));
+                    return;
+                }
+            }
+
             _nowPlayingPanel?.UpdateSongInfo(songInfo);
 
             // Reset progress bar on song change so it doesn't show stale position during crossfade
@@ -328,6 +349,26 @@ namespace UniPlaySong.DeskMediaControl
             var duration = songInfo?.Duration ?? TimeSpan.Zero;
             _progressBar?.SetDuration(duration);
             _nowPlayingPanel?.SetEmbeddedDuration(duration);
+        }
+
+        // Refreshes the Now Playing panel when Spotify's active state or track changes.
+        // Shows Spotify track when active; restores the last UPS song when Spotify becomes inactive.
+        private void OnSpotifyNowPlayingChanged()
+        {
+            var spotify = _getSpotifyService?.Invoke();
+            if (spotify != null && spotify.IsSpotifyActive)
+            {
+                var np = spotify.GetNowPlaying();
+                if (!np.IsEmpty)
+                {
+                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, TimeSpan.Zero));
+                    return;
+                }
+            }
+
+            // Spotify became inactive — restore UPS's current song info
+            var upsSong = _metadataService?.CurrentSongInfo ?? SongInfo.Empty;
+            _nowPlayingPanel?.UpdateSongInfo(upsSong);
         }
 
         private void SubscribeToEvents(IMusicPlaybackService playbackService)
