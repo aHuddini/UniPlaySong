@@ -1086,6 +1086,27 @@ namespace UniPlaySong
             }
         }
 
+        // Live now-playing mirror for the settings preview card. Reads the same UniPlaySongSettings
+        // properties theme devs bind via {PluginSettings}. Updated while the settings dialog is open
+        // (the view subscribes on Loaded, unsubscribes on Unloaded).
+        public string PreviewNowPlayingTitle =>
+            string.IsNullOrEmpty(plugin?.Settings?.NowPlayingTitle) ? "(nothing playing)" : plugin.Settings.NowPlayingTitle;
+        public string PreviewNowPlayingArtist => plugin?.Settings?.NowPlayingArtist ?? string.Empty;
+        public string PreviewNowPlayingArtPath => plugin?.Settings?.NowPlayingAlbumArtPath ?? string.Empty;
+        public bool PreviewHasArt => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingAlbumArtPath);
+        public bool PreviewHasNoArt => !PreviewHasArt;
+        public UniPlaySong PluginForPreview => plugin;
+
+        // Called by the view on the settings object's PropertyChanged to refresh the card live.
+        public void RefreshNowPlayingPreview()
+        {
+            OnPropertyChanged(nameof(PreviewNowPlayingTitle));
+            OnPropertyChanged(nameof(PreviewNowPlayingArtist));
+            OnPropertyChanged(nameof(PreviewNowPlayingArtPath));
+            OnPropertyChanged(nameof(PreviewHasArt));
+            OnPropertyChanged(nameof(PreviewHasNoArt));
+        }
+
         #region Search Hints Database Properties and Commands
 
         private string _hintsDatabaseStatus = "Loading...";

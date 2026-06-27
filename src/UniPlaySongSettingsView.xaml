@@ -129,6 +129,28 @@
                         <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                     </TextBlock>
 
+                    <!-- Live now-playing preview: mirrors the data theme devs pull via {PluginSettings}. -->
+                    <Border Margin="0,0,0,10" Padding="8" CornerRadius="4"
+                            BorderThickness="1" BorderBrush="#33888888" Background="#11888888"
+                            Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="64" Height="64" Margin="0,0,10,0">
+                                <Border Background="#22000000" CornerRadius="3"/>
+                                <TextBlock Text="&#x266A;" FontSize="28" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" Opacity="0.5"
+                                           Visibility="{Binding PreviewHasNoArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Image Source="{Binding PreviewNowPlayingArtPath}" Stretch="UniformToFill"
+                                       Visibility="{Binding PreviewHasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding PreviewNowPlayingTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                <TextBlock Text="{Binding PreviewNowPlayingArtist}" Opacity="0.75" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                <TextBlock Text="Theme devs can bind this via {PluginSettings} — see Theme Integration Guide."
+                                           FontSize="10" Opacity="0.55" TextWrapping="Wrap" MaxWidth="280" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
                     <CheckBox Content="Show Now Playing on Panel (Desktop)"
                               IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                               Command="{Binding SetRestartRequired}"

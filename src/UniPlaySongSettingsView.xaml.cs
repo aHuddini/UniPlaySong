@@ -23,6 +23,47 @@ namespace UniPlaySong
             // to the ISettings object returned by GetSettings()
         }
 
+        // Live now-playing preview card. Subscribes to the LIVE settings object (the one the
+        // NowPlayingPublisher writes, exposed via UniPlaySong.Settings) while the card is shown,
+        // and unsubscribes when it unloads so the handler doesn't outlive the dialog.
+        private System.ComponentModel.INotifyPropertyChanged _liveSettingsForPreview;
+
+        private void NowPlayingPreview_OnLoaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            var vm = DataContext as UniPlaySongSettingsViewModel;
+            var live = vm?.PluginForPreview?.Settings; // the live UniPlaySongSettings the publisher writes
+            if (live is System.ComponentModel.INotifyPropertyChanged inpc)
+            {
+                _liveSettingsForPreview = inpc;
+                inpc.PropertyChanged += LiveSettings_PropertyChanged;
+                vm.RefreshNowPlayingPreview(); // initial paint
+            }
+        }
+
+        private void NowPlayingPreview_OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (_liveSettingsForPreview != null)
+            {
+                _liveSettingsForPreview.PropertyChanged -= LiveSettings_PropertyChanged;
+                _liveSettingsForPreview = null;
+            }
+        }
+
+        private void LiveSettings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(UniPlaySongSettings.NowPlayingTitle) ||
+                e.PropertyName == nameof(UniPlaySongSettings.NowPlayingArtist) ||
+                e.PropertyName == nameof(UniPlaySongSettings.NowPlayingAlbumArtPath))
+            {
+                var vm = DataContext as UniPlaySongSettingsViewModel;
+                // The publisher may raise PropertyChanged off the UI thread; marshal the VM refresh.
+                if (System.Windows.Application.Current?.Dispatcher != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => vm?.RefreshNowPlayingPreview());
+                else
+                    vm?.RefreshNowPlayingPreview();
+            }
+        }
+
         // Per-tab reset helper: shows confirmation, returns settings object or null if cancelled
         private UniPlaySongSettings ConfirmAndGetSettings(string tabName)
         {
