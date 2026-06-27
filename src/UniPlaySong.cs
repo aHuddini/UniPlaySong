@@ -114,6 +114,8 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Spotify.SpotifySmtcClient _spotifyClient;
         private Services.Spotify.SpotifyControlService _spotifyControlService;
+        private Services.NowPlayingPublisher _nowPlayingPublisher;
+        private Services.SongMetadataService _publisherMetadata;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
         private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
@@ -1073,6 +1075,8 @@ namespace UniPlaySong
             Monitors.RandomPickerMonitor.Detach();
             _mediaKeyService?.Dispose();
             _mediaKeyService = null;
+            _nowPlayingPublisher?.Dispose();
+            _nowPlayingPublisher = null;
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;
             _spotifyClient?.Dispose();
@@ -2525,6 +2529,22 @@ namespace UniPlaySong
                 () => _settings,
                 _fileLogger);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state
+
+            // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
+            // binding via {PluginSettings}. Runs in BOTH Desktop and Fullscreen (theme exposure is
+            // the point). Uses its own SongMetadataService (the metadata cache is static/shared).
+            var nowPlayingArtDir = System.IO.Path.Combine(
+                _api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            var nowPlayingArtWriter = new Services.NowPlayingArtWriter(nowPlayingArtDir, _fileLogger);
+            _publisherMetadata = new Services.SongMetadataService(_playbackService, _fileLogger, () => _settings);
+            _nowPlayingPublisher = new Services.NowPlayingPublisher(
+                _publisherMetadata,
+                _spotifyControlService,
+                _spotifyClient,
+                nowPlayingArtWriter,
+                () => _settings,
+                _fileLogger);
+            _nowPlayingPublisher.Refresh(); // publish initial state
 
             // Mid-init suppression — ~150ms into InitializeServices
             if (IsFullscreen)
