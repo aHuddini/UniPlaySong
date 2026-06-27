@@ -141,7 +141,8 @@ namespace UniPlaySong
         CustomRotation,         // Songs from user-selected games
         CompletionStatusPool,   // Songs from games matching selected completion statuses
         ActiveThemeMusic,       // Background music from the currently active fullscreen theme
-        DeferToTrailerAudio     // v1.5.3+ — no UPS music; lets ExtraMetadataLoader's trailer audio play uncontested
+        DeferToTrailerAudio,    // v1.5.3+ — no UPS music; lets ExtraMetadataLoader's trailer audio play uncontested
+        Spotify                 // v1.5.7+ — control the Spotify desktop app (SMTC); UPS conducts, Spotify plays
     }
 
     public static class DefaultMusicSourceExtensions
@@ -300,6 +301,7 @@ namespace UniPlaySong
         private bool videoIsPlaying = false;
         private bool themeOverlayActive = false;
         private bool forceDefaultMusicOverride = false;
+        private bool spotifyActive = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
@@ -558,6 +560,16 @@ namespace UniPlaySong
         {
             get => forceDefaultMusicOverride;
             set { forceDefaultMusicOverride = value; OnPropertyChanged(); }
+        }
+
+        // Runtime-only: whether Spotify is the active music right now (computed by
+        // SpotifyControlService). Drives UPS output suppression and the now-playing display.
+        // [JsonIgnore] so it always starts false each launch.
+        [JsonIgnore]
+        public bool SpotifyActive
+        {
+            get => spotifyActive;
+            set { spotifyActive = value; OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -1001,6 +1013,7 @@ namespace UniPlaySong
         private bool gamePropFilterEnabled = false; // Only play game music for games matching selected platforms/genres/sources
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
+        private bool spotifyRadioMode = false; // when RadioModeEnabled, use Spotify as the radio source
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
@@ -1172,6 +1185,14 @@ namespace UniPlaySong
         {
             get => radioModeEnabled;
             set { radioModeEnabled = value; OnPropertyChanged(); }
+        }
+
+        // When Radio Mode is on, conduct the Spotify desktop app instead of UPS's own
+        // radio pool. Only meaningful when RadioModeEnabled is true.
+        public bool SpotifyRadioMode
+        {
+            get => spotifyRadioMode;
+            set { spotifyRadioMode = value; OnPropertyChanged(); }
         }
 
         // Fullscreen only: game music plays only on explicit A-button select, not D-pad navigation.
