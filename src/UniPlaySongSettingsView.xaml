@@ -854,9 +854,11 @@
                     <CheckBox Content="Use Spotify as the radio source"
                               IsChecked="{Binding Settings.SpotifyRadioMode}"
                               IsEnabled="{Binding Settings.RadioModeEnabled}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                               Margin="20,5,0,0"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
-                        Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply while Spotify is the music.
+                        Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply while Spotify is the music. Restart Playnite after toggling so playback state is cleanly reset.
                     </TextBlock>
                     <TextBlock Text="Ignore game selection entirely — music plays continuously from a fixed pool, like background radio. Overrides both game-specific and default music while active."
                                FontSize="11"
@@ -3913,9 +3915,18 @@
                     <RadioButton GroupName="DefaultMusicSource"
                                  Content="Spotify (control the Spotify desktop app)"
                                  IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                                 Command="{Binding SetRestartRequired}"
+                                 CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                                  Margin="0,5"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
-                        For games with no UniPlaySong music, conduct the open Spotify desktop app instead of playing a default track. Games that have their own music still play it (Spotify pauses). The visualizer and fades don't apply to Spotify audio.
+                        For games with no UniPlaySong music, conduct the open Spotify desktop app instead of playing a default track. Games that have their own music still play it (Spotify pauses). The visualizer and fades don't apply to Spotify audio. Restart Playnite after switching to this source so playback state is cleanly reset.
+                    </TextBlock>
+                    <CheckBox Content="Skip to a new Spotify track on each no-music game"
+                              IsChecked="{Binding Settings.SpotifySkipOnGap}"
+                              IsEnabled="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                              Margin="20,0,0,0"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="40,2,0,5">
+                        Each time you select a game with no UniPlaySong music, advance Spotify to the next track instead of resuming the current one — a fresh song per game. Falls back to resuming if Spotify can't skip (e.g. end of queue).
                     </TextBlock>
 
                     <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->

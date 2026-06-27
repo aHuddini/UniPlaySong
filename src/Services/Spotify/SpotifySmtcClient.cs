@@ -55,6 +55,8 @@ namespace UniPlaySong.Services.Spotify
             if (!_started || _manager == null) return null;
             try
             {
+                // Identify Spotify by a case-insensitive substring on the session id — works for
+                // both the Win32 ("Spotify.exe") and Store ("SpotifyAB.SpotifyMusic_…!Spotify") builds.
                 return _manager.CurrentMediaSessions.Values.FirstOrDefault(s =>
                     (s.Id ?? string.Empty).IndexOf("spotify", StringComparison.OrdinalIgnoreCase) >= 0);
             }
@@ -112,6 +114,55 @@ namespace UniPlaySong.Services.Spotify
             catch (Exception ex)
             {
                 _fileLogger?.Debug($"[Spotify] TryResume failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        public bool TrySkipNext()
+        {
+            var s = FindSpotify();
+            if (s == null) return false;
+            try
+            {
+                var info = s.ControlSession?.GetPlaybackInfo();
+                if (info?.Controls.IsNextEnabled != true) return false;
+                return s.ControlSession.TrySkipNextAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Spotify] TrySkipNext failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        public bool TrySkipPrevious()
+        {
+            var s = FindSpotify();
+            if (s == null) return false;
+            try
+            {
+                var info = s.ControlSession?.GetPlaybackInfo();
+                if (info?.Controls.IsPreviousEnabled != true) return false;
+                return s.ControlSession.TrySkipPreviousAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Spotify] TrySkipPrevious failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        public bool TryTogglePlayPause()
+        {
+            var s = FindSpotify();
+            if (s == null) return false;
+            try
+            {
+                return s.ControlSession.TryTogglePlayPauseAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Spotify] TryTogglePlayPause failed: {ex.Message}");
                 return false;
             }
         }

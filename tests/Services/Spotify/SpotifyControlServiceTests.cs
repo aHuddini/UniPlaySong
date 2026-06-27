@@ -26,6 +26,9 @@ namespace UniPlaySong.Tests.Services.Spotify
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _client.Setup(c => c.TryPause()).Returns(true);
             _client.Setup(c => c.TryResume()).Returns(true);
+            _client.Setup(c => c.TrySkipNext()).Returns(true);
+            _client.Setup(c => c.TrySkipPrevious()).Returns(true);
+            _client.Setup(c => c.TryTogglePlayPause()).Returns(true);
             _service = new SpotifyControlService(_playback.Object, _client.Object, () => _settings, null);
         }
 
@@ -89,53 +92,225 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
-        public void Active_AndUpsPaused_PausesSpotify_WhenPlaying()
+        public void Active_AndSpotifyPaused_StartsSpotify()
         {
+            // Spotify becomes the active music but is currently paused → UPS plays it.
             _settings.RadioModeEnabled = true;
             _settings.SpotifyRadioMode = true;
-            _playback.SetupGet(p => p.IsPaused).Returns(true);
-            _service.Recompute();
-            _client.Verify(c => c.TryPause(), Times.Once);
-        }
-
-        [Test]
-        public void Active_UpsResumes_ResumesSpotify_OnlyIfUpsPausedIt()
-        {
-            _settings.RadioModeEnabled = true;
-            _settings.SpotifyRadioMode = true;
-            // First: UPS pauses (UPS takes ownership).
-            _playback.SetupGet(p => p.IsPaused).Returns(true);
-            _service.Recompute();
-            // Then: UPS unpauses → should resume Spotify.
-            _playback.SetupGet(p => p.IsPaused).Returns(false);
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
             _service.Recompute();
             _client.Verify(c => c.TryResume(), Times.Once);
         }
 
         [Test]
-        public void Active_UpsNotPaused_DoesNotResume_IfUpsNeverPaused()
+        public void Active_AndSpotifyAlreadyPlaying_DoesNotReissuePlay()
         {
-            // User may have paused Spotify themselves; UPS must not auto-resume.
+            // Spotify is the active music and already playing → no redundant command.
             _settings.RadioModeEnabled = true;
             _settings.SpotifyRadioMode = true;
-            _client.SetupGet(c => c.IsPlaying).Returns(false); // user already paused it
-            _playback.SetupGet(p => p.IsPaused).Returns(false);
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.Recompute();
             _client.Verify(c => c.TryResume(), Times.Never);
+            _client.Verify(c => c.TryPause(), Times.Never);
         }
 
         [Test]
-        public void BecomesInactive_ReleasesUpsOwnedPause()
+        public void Active_AndUpsLifecyclePaused_PausesSpotify()
         {
+            // Spotify is the active music but a UPS lifecycle pause (e.g. game launch,
+            // video, lock) is in effect → Spotify should pause too.
             _settings.RadioModeEnabled = true;
             _settings.SpotifyRadioMode = true;
-            _playback.SetupGet(p => p.IsPaused).Returns(true);
-            _service.Recompute(); // UPS pauses Spotify, takes ownership
-            // Now Spotify mode turns off entirely.
-            _settings.SpotifyRadioMode = false;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _service.Recompute();                              // take the wheel (plays)
+            _client.SetupGet(c => c.IsPlaying).Returns(true);  // now playing
+            _playback.SetupGet(p => p.IsPaused).Returns(true); // lifecycle pause engages
             _service.Recompute();
-            _client.Verify(c => c.TryResume(), Times.Once); // ownership released → resume
+            _client.Verify(c => c.TryPause(), Times.Once);
+        }
+
+        [Test]
+        public void GameWithMusicTakesOver_PausesSpotify()
+        {
+            // Spotify was the active default music (driving), then a game with its own
+            // music is selected (active=false) → UPS pauses Spotify so game music plays.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                                       // active → plays Spotify
+            Assert.IsTrue(_service.IsSpotifyActive);
+            _client.SetupGet(c => c.IsPlaying).Returns(true);           // Spotify now playing
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false); // game music took over
+            _service.Recompute();                                       // inactive → pause Spotify
+            _client.Verify(c => c.TryPause(), Times.Once);
             Assert.IsFalse(_service.IsSpotifyActive);
+        }
+
+        [Test]
+        public void NeverActive_NeverTouchesSpotify()
+        {
+            // Spotify was never the active music (mode never engaged), so UPS never took the
+            // wheel — it must issue neither play nor pause, leaving the user's Spotify alone.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(true); // user is playing their own Spotify
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false); // not in a gap
+            _service.Recompute();
+            _service.Recompute();
+            _client.Verify(c => c.TryResume(), Times.Never);
+            _client.Verify(c => c.TryPause(), Times.Never);
+        }
+
+        [Test]
+        public void TookWheelButResumeNotYetLanded_StillPausesOnTakeover()
+        {
+            // RACE GUARD: gap entered → we attempt TryResume (take the wheel) but Spotify's
+            // status hasn't flipped to Playing yet; then a game with music immediately takes
+            // over. We MUST still issue the pause (unconditionally), or Spotify plays over the
+            // game once its delayed play lands. This reproduces the Fullscreen→Desktop bug.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(false); // resume hasn't landed yet
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                                   // take the wheel (TryResume)
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false); // game music takes over
+            _service.Recompute();                                   // inactive while resume in flight
+            _client.Verify(c => c.TryPause(), Times.Once);          // pause issued despite IsPlaying=false
+            Assert.IsFalse(_service.IsSpotifyActive);
+        }
+
+        [Test]
+        public void SkipOnGap_SkipsWhenFreshlyTakingOver_FromGameWithMusic()
+        {
+            // SpotifySkipOnGap on: when Spotify FRESHLY takes over (a game with its own music was
+            // playing → now a no-music game), advance to a new track instead of resuming.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _settings.SpotifySkipOnGap = true;
+            // Was a game with music (not a gap): not driving Spotify, not active.
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false);
+            _service.Recompute();                              // inactive: nothing to do
+            // Now a no-music game is selected → Spotify takes over.
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                              // fresh takeover → skip
+            _client.Verify(c => c.TrySkipNext(), Times.Once);
+            _client.Verify(c => c.TryResume(), Times.Never);   // skip replaces resume
+        }
+
+        [Test]
+        public void SkipOnGap_DoesNotSkip_NoMusicGameToNoMusicGame_StaysActive()
+        {
+            // REGRESSION: switching from one no-music game to ANOTHER while Spotify stays the
+            // active music (IsPlayingDefaultMusic remains true across the switch) must NOT skip
+            // again — we never left the gap, so _drivingSpotify stays true and the !_drivingSpotify
+            // guard suppresses the second skip.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _settings.SpotifySkipOnGap = true;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                              // no-music game A: fresh takeover, skips once
+            _client.SetupGet(c => c.IsPlaying).Returns(true);  // Spotify now playing, still in the gap
+            _service.Recompute();                              // no-music game B (still active): must NOT skip
+            _service.Recompute();                              // periodic recompute: must NOT skip
+            _client.Verify(c => c.TrySkipNext(), Times.Once);  // only game A skipped
+        }
+
+        [Test]
+        public void SkipOnGap_DoesNotReskip_OnRepeatRecomputeWhileActive()
+        {
+            // Skip fires only on the ENTERING edge, not on subsequent recomputes (e.g. the
+            // periodic safety timer) while we remain in the same gap.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _settings.SpotifySkipOnGap = true;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                              // entering: skips once
+            _client.SetupGet(c => c.IsPlaying).Returns(true);  // Spotify now playing
+            _service.Recompute();                              // still active, NOT entering
+            _service.Recompute();                              // still active, NOT entering
+            _client.Verify(c => c.TrySkipNext(), Times.Once);  // only the first (edge) skipped
+        }
+
+        [Test]
+        public void SkipOnGap_FallsBackToResume_WhenSkipUnavailable()
+        {
+            // If skip is unavailable (end of queue, no autoplay → TrySkipNext returns false),
+            // fall back to resume so the gap is never silent.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _settings.SpotifySkipOnGap = true;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _client.Setup(c => c.TrySkipNext()).Returns(false); // skip not accepted
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();
+            _client.Verify(c => c.TrySkipNext(), Times.Once);
+            _client.Verify(c => c.TryResume(), Times.Once);     // fallback fired
+        }
+
+        [Test]
+        public void ManualPause_WhileActive_Sticks_NoAutoResume()
+        {
+            // REGRESSION: user pauses Spotify from the menu while it's the active music. UPS must
+            // NOT auto-resume on the next recompute — the pause must stick (hands-off hold).
+            _settings.RadioModeEnabled = true;
+            _settings.SpotifyRadioMode = true;
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _service.Recompute();                              // Spotify active + playing, we drive it
+            // User toggles Play/Pause via menu: was playing → pauses → hold set.
+            _service.ToggleManualPlayPause();
+            _client.Verify(c => c.TryTogglePlayPause(), Times.Once);
+            _client.SetupGet(c => c.IsPlaying).Returns(false); // Spotify now paused
+            _service.Recompute();                              // must stay hands-off
+            _service.Recompute();                              // periodic recompute: still hands-off
+            _client.Verify(c => c.TryResume(), Times.Never);   // NEVER auto-resumed
+        }
+
+        [Test]
+        public void ManualPause_ThenToggleAgain_Resumes()
+        {
+            // User pauses (hold set), then toggles again → resumes, hold cleared.
+            _settings.RadioModeEnabled = true;
+            _settings.SpotifyRadioMode = true;
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _service.Recompute();
+            _service.ToggleManualPlayPause();                  // pause: was playing → hold
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _service.ToggleManualPlayPause();                  // toggle again: was paused → resume, clear hold
+            _client.Verify(c => c.TryTogglePlayPause(), Times.Exactly(2));
+            // Hold cleared: a recompute while wanting-playing now auto-resumes again.
+            _service.Recompute();
+            _client.Verify(c => c.TryResume(), Times.AtLeastOnce);
+        }
+
+        [Test]
+        public void ManualPauseHold_ClearedWhenSpotifyLeavesActiveMusic()
+        {
+            // Hold must clear when Spotify stops being the active music (game with music takes
+            // over), so the NEXT time it becomes active it plays rather than inheriting the hold.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();                              // gap: active, driving
+            _service.ToggleManualPlayPause();                  // user pauses → hold
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            // Game with music takes over → Spotify no longer active → hold should clear.
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false);
+            _service.Recompute();                              // !active: clears _drivingSpotify + hold
+            // Back to a no-music game → Spotify active again → should PLAY (hold was cleared).
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();
+            _client.Verify(c => c.TryResume(), Times.AtLeastOnce); // plays, not held
+        }
+
+        [Test]
+        public void SkipOnGap_Off_ResumesAsBefore()
+        {
+            // With the toggle off, entering the gap resumes (the existing behavior) — no skip.
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _settings.SpotifySkipOnGap = false;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(true);
+            _service.Recompute();
+            _client.Verify(c => c.TrySkipNext(), Times.Never);
+            _client.Verify(c => c.TryResume(), Times.Once);
         }
     }
 }

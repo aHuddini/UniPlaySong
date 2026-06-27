@@ -47,6 +47,13 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
    - Retro chiptune via GME (v1.4.0+, `.vgm` verified)
    - Backend auto-switch mechanism for GME
 
+7. **[SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md)** - Spotify control feature (v1.5.7, control-only)
+   - Event-mirror architecture (SpotifyControlService ↔ SpotifySmtcClient ↔ SMTC)
+   - "active = play, inactive = pause" drive model + `_drivingSpotify` ownership
+   - Default-music gap + asymmetric fade handoff
+   - Skip-on-gap behavior; Fullscreen/Desktop menu commands; manual-pause hold
+   - Available-but-unused SMTC surface (album art, timeline) for future mini-player
+
 ### Version-Specific Documentation
 
 - **[v1.2.11_TECHNICAL_NOTES.md](v1.2.11_TECHNICAL_NOTES.md)** - v1.2.11 implementation notes
@@ -179,6 +186,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-06-26
-**Documentation Version**: 1.5.6
+**Last Updated**: 2026-06-27
+**Documentation Version**: 1.5.7
 

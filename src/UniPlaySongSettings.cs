@@ -1014,6 +1014,7 @@ namespace UniPlaySong
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
         private bool spotifyRadioMode = false; // when RadioModeEnabled, use Spotify as the radio source
+        private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
@@ -1193,6 +1194,15 @@ namespace UniPlaySong
         {
             get => spotifyRadioMode;
             set { spotifyRadioMode = value; OnPropertyChanged(); }
+        }
+
+        // When Spotify is the default music source, advance Spotify to a new track each time
+        // a no-music game is selected (the gap is entered), instead of resuming the current
+        // track. Falls back to resume if skip is unavailable so the gap is never silent.
+        public bool SpotifySkipOnGap
+        {
+            get => spotifySkipOnGap;
+            set { spotifySkipOnGap = value; OnPropertyChanged(); }
         }
 
         // Fullscreen only: game music plays only on explicit A-button select, not D-pad navigation.

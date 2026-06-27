@@ -102,6 +102,7 @@ namespace UniPlaySong
             s.FilterModeEnabled = false;
             s.RadioModeEnabled = false;
             s.SpotifyRadioMode = false;
+            s.SpotifySkipOnGap = false;
             s.PlayOnlyOnGameSelect = false;
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
             s.FadeOutBeforeSongEnd = false;

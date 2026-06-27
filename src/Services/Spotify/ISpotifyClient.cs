@@ -20,6 +20,18 @@ namespace UniPlaySong.Services.Spotify
         // play is not currently enabled.
         bool TryResume();
 
+        // Skip to the next track. Returns true if accepted. No-op (false) when unavailable
+        // or next is not currently enabled (e.g. end of queue with no autoplay). On Spotify
+        // this also starts playback if paused.
+        bool TrySkipNext();
+
+        // Skip to the previous track. Returns true if accepted. No-op (false) when unavailable
+        // or previous is not currently enabled.
+        bool TrySkipPrevious();
+
+        // Toggle play/pause. Returns true if accepted. No-op (false) when unavailable.
+        bool TryTogglePlayPause();
+
         // Current track metadata, or SpotifyNowPlaying.Empty when unavailable.
         SpotifyNowPlaying GetNowPlaying();
 

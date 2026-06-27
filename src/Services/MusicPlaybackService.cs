@@ -672,14 +672,14 @@ namespace UniPlaySong.Services
                 // But we still respect it for regular game music.
             }
 
-            // Spotify is the active music — UPS must not play its own track. The
-            // SpotifyControlService conducts Spotify; UPS's own player stays silent.
-            if (settings?.SpotifyActive == true)
-            {
-                _fileLogger?.Debug("PlayGameMusic: SpotifyActive — suppressing UPS playback (Spotify is the music)");
-                Stop();
-                return;
-            }
+            // NOTE: Spotify default-source suppression is NOT done here. Doing it from a flag
+            // (SpotifyActive) at this point caused a stale-read race: switching from a no-music
+            // game (Spotify active) to a game WITH music read the previous game's SpotifyActive=true
+            // and suppressed the new game's music before SpotifyControlService recomputed. Instead,
+            // suppression is driven purely by THIS game's song count: a game with songs plays them
+            // (and SpotifyControlService pauses Spotify on its next recompute); a game with no songs
+            // falls through to the default-music switch, whose DefaultMusicSource.Spotify case marks
+            // the gap and plays nothing. So a with-music game is never wrongly suppressed.
 
             // Radio Mode: plays from the radio pool, but yields to installed games with their own music.
             if (settings?.RadioModeEnabled == true && !forceReload)
@@ -965,13 +965,49 @@ namespace UniPlaySong.Services
                             // SpotifyControlService leaves SpotifyActive false and UPS stays silent
                             // for this game (graceful — same as any default source with nothing to play).
                             _fileLogger?.Debug($"No game music for {game.Name}; Spotify is the default source — marking default-music gap (Spotify conducts).");
+                            // Gracefully fade out UPS's own current track (if any) so Spotify becomes
+                            // the only audio. Entering the gap from a game that HAD music would
+                            // otherwise leave the prior song playing — this case returns early and
+                            // never reaches the play path. We do NOT use FadeOutAndStop() here because
+                            // its async completion callback nulls _currentGame and resets
+                            // _isPlayingDefaultMusic=false, which would clobber the gap state below.
+                            // Instead we fade the audio out via the fader and close the player in a
+                            // callback that re-asserts the gap flags, so the order can't break the
+                            // load-bearing invariant (IsPlayingDefaultMusic must end true).
+                            CancelSongEndFade();
+                            // Establish the default-music gap FLAGS synchronously (before any re-entrant
+                            // PlayGameMusic), but defer the Spotify-resume trigger until UPS audio has
+                            // finished fading out, so Spotify doesn't blast in over the still-fading game
+                            // track. SpotifyControlService computes SpotifyActive=true from
+                            // IsPlayingDefaultMusic; subsequent PlayGameMusic calls hit the SpotifyActive
+                            // suppression guard and stay silent.
                             _currentGameId = gameId;
                             _currentGame = game;
                             _isPlayingDefaultMusic = true;
-                            // Trigger a recompute so SpotifyControlService sees the gap now. Reuses
-                            // OnPlaybackStateChanged (its other subscribers are read-only UI updaters)
-                            // because setting _isPlayingDefaultMusic alone does not raise it.
-                            OnPlaybackStateChanged?.Invoke();
+                            // Reuses OnPlaybackStateChanged (its other subscribers are read-only UI
+                            // updaters) because setting _isPlayingDefaultMusic alone does not raise it.
+                            if ((_musicPlayer?.IsLoaded ?? false) || (_musicPlayer?.IsActive ?? false))
+                            {
+                                StopPreviewTimer();
+                                // Fade UPS's track out first; only when the fade-out completes do we
+                                // close the player AND trigger the recompute that resumes Spotify — a
+                                // clean handoff (UPS fades down, then Spotify comes in, no overlap).
+                                // We do NOT use FadeOutAndStop()'s own callback semantics that null
+                                // _currentGame / reset _isPlayingDefaultMusic, so the gap flags above
+                                // survive (IsPlayingDefaultMusic must end true).
+                                _fader?.FadeOutAndStop(() =>
+                                {
+                                    _musicPlayer?.Close();
+                                    _currentSongPath = null;
+                                    OnPlaybackStateChanged?.Invoke();
+                                });
+                            }
+                            else
+                            {
+                                // Nothing audible to fade (entering the gap from another gap or at
+                                // startup) — resume Spotify immediately.
+                                OnPlaybackStateChanged?.Invoke();
+                            }
                             return;
 
                         case DefaultMusicSource.CustomFile:
@@ -1090,7 +1126,27 @@ namespace UniPlaySong.Services
                 // PNS PATTERN: Check if this is default music (native or custom).
                 // UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time.
                 bool isDefaultMusic = IsDefaultMusicPath(songToPlay, settings);
-                
+
+                // A real game track is about to play → we are NOT in a default-music gap.
+                // Reset the flag unconditionally here. The later reset (in the shouldFadeOut
+                // block) is gated on UPS's own player being active, which is FALSE when the
+                // previous "default music" was a Spotify gap (UPS's player was closed while
+                // Spotify played). Without this, _isPlayingDefaultMusic stayed true after a
+                // Spotify-gap → game-with-music switch, so SpotifyControlService kept Spotify
+                // active and played over the game's music.
+                if (!isDefaultMusic)
+                {
+                    bool wasSpotifyGap = _isPlayingDefaultMusic && settings?.SpotifyActive == true;
+                    _isPlayingDefaultMusic = false;
+                    // A real game track is taking over from a Spotify gap. Spotify is the OUTGOING
+                    // source, so pause it INSTANTLY (before the game track fades in) rather than
+                    // letting it stay audible during the fade-in or wait for the 7s safety timer.
+                    // Firing OnPlaybackStateChanged now makes SpotifyControlService recompute
+                    // immediately: SpotifyActive→false → it pauses Spotify at once. (Asymmetric with
+                    // entering the gap, where Spotify is incoming and waits for UPS's fade-out.)
+                    if (wasSpotifyGap) OnPlaybackStateChanged?.Invoke();
+                }
+
                 if (isDefaultMusic)
                 {
                     _fileLogger?.Debug($"Playing default music: {Path.GetFileName(songToPlay)} (CurrentSongPath: {_currentSongPath ?? "null"}, IsPlayingDefaultMusic: {_isPlayingDefaultMusic}, IsLoaded: {_musicPlayer?.IsLoaded}, IsActive: {IsPlaying})");

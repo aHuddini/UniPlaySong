@@ -2067,6 +2067,20 @@ namespace UniPlaySong
 
                     if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
                     {
+                        // Don't treat Spotify as "external audio" when UPS is conducting it as
+                        // the active music (radio mode or the Spotify default-music source). The
+                        // audio we're hearing IS the music; adding ExternalAudio would make
+                        // IsPaused flip true → SpotifyControlService pauses Spotify → silence →
+                        // ExternalAudio clears → resume → audio returns → pause again: an endless
+                        // oscillation. Same expected-audio exemption as the game-launching guard below.
+                        if (_settings?.SpotifyActive == true)
+                        {
+                            _externalAudioDetected = true;
+                            _externalAudioPausedInstantly = false;
+                            _fileLogger?.Debug("External audio detected, but Spotify is the active music — skipping ExternalAudio pause source (Spotify audio is expected, not external).");
+                            return;
+                        }
+
                         // Don't treat a launched game's own audio as "external." When
                         // GameStarting is active, the audio we're hearing is almost
                         // certainly the game itself. Adding ExternalAudio on top creates
@@ -3710,6 +3724,27 @@ namespace UniPlaySong
             return null;
         }
 
+        // Spotify transport actions for the Fullscreen/Desktop menus. Returns an empty list when
+        // no controllable Spotify session is present, so menus show nothing rather than dead
+        // entries. Commands route through the SAME _spotifyClient the control service uses, so
+        // there is one source of truth. Each command is fail-safe (the client never throws).
+        // Note: while Spotify is the active game music, a manual Pause here is temporary — UPS's
+        // next recompute resumes it (Spotify IS the music). Skip/Previous are the natural actions.
+        private List<(string Label, Action Invoke)> GetSpotifyMenuActions()
+        {
+            var actions = new List<(string, Action)>();
+            if (_spotifyClient?.IsAvailable != true || _spotifyControlService == null)
+                return actions;
+
+            // Route through the control SERVICE, not the client, so manual Play/Pause manages the
+            // hands-off "manual pause hold" — otherwise a manual pause while Spotify is the active
+            // music is instantly auto-resumed on the next recompute.
+            actions.Add(("Spotify: Skip to next track", () => _spotifyControlService?.SkipNext()));
+            actions.Add(("Spotify: Previous track", () => _spotifyControlService?.SkipPrevious()));
+            actions.Add(("Spotify: Play/Pause", () => _spotifyControlService?.ToggleManualPlayPause()));
+            return actions;
+        }
+
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
             if (args.Games.Count == 0)
@@ -3730,6 +3765,21 @@ namespace UniPlaySong
             string menuSection = (songs != null && songs.Count > 0)
                 ? $"{Constants.MenuSectionName} ({songs.Count} {(songs.Count == 1 ? "song" : "songs")})"
                 : Constants.MenuSectionName;
+
+            // Spotify transport commands — only when a controllable Spotify session is present.
+            // Lets the user skip/toggle Spotify directly from the Fullscreen game menu (where the
+            // Top Panel / Dashboard don't render). One source of truth via GetSpotifyMenuActions.
+            // Use the SAME menuSection as the other game-menu items so these live inside the single
+            // existing UniPlaySong submenu (not a second one) — the "Spotify: …" labels self-group.
+            foreach (var (label, action) in GetSpotifyMenuActions())
+            {
+                items.Add(new GameMenuItem
+                {
+                    Description = label,
+                    MenuSection = menuSection,
+                    Action = _ => action()
+                });
+            }
 
             // Multi-game selection: Show bulk operations
             if (games.Count > 1)
@@ -4201,6 +4251,21 @@ namespace UniPlaySong
                 Description = "Export Music Library Playlist (UPS)",
                 Action = _ => _gameMenuHandler.ExportLibraryPlaylist()
             });
+
+            // Spotify transport commands — only when a controllable Spotify session is present.
+            // Same actions as the game menu (one source of truth). MenuSection "@" places them at
+            // the TOP of the Fullscreen Extensions menu (not nested under a UniPlaySong submenu) —
+            // the labels are self-identifying ("Spotify: …"). Matches how UPS's existing Fullscreen
+            // quick-settings sit directly in Extensions.
+            foreach (var (label, action) in GetSpotifyMenuActions())
+            {
+                items.Add(new MainMenuItem
+                {
+                    Description = label,
+                    MenuSection = "@",
+                    Action = _ => action()
+                });
+            }
 
             // Add retry failed downloads option if there are any failed downloads
             if (_gameMenuHandler.FailedDownloads.Any(fd => !fd.Resolved))
