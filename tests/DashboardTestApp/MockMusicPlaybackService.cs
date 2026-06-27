@@ -30,6 +30,7 @@ namespace DashboardTestApp
         public event Action OnPlaybackStateChanged;
         public event Action OnSongCountChanged;
         public event Action<string> OnSongChanged;
+        public event Action<string> OnNeedsPlayerSwitch;
 
         public void AddPauseSource(PauseSource source)
         {
@@ -48,6 +49,7 @@ namespace DashboardTestApp
         public void ConvertPauseSource(PauseSource from, PauseSource to) { _pauseSources.Remove(from); _pauseSources.Add(to); }
         public void AddPauseSourceImmediate(PauseSource source) => AddPauseSource(source);
         public void RemovePauseSourceImmediate(PauseSource source) => RemovePauseSource(source);
+        public bool HasPauseSource(PauseSource source) => _pauseSources.Contains(source);
         public void PlayGameMusic(Game game) { }
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings) { }
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings, bool forceReload) { }
@@ -76,5 +78,11 @@ namespace DashboardTestApp
         public void RestartCurrentSong() { }
         public void RefreshSongCount() { }
         public void MarkInitializationComplete() { }
+        public void NotifyManualStart() { }
+        public bool IsInRadioMode => false;
+        public bool UserHasManuallyStartedThisSession => false;
+        public TimeSpan? GetCurrentSongTotalTime() => null;
+        public TimeSpan? GetCurrentSongCurrentTime() => null;
+        public void StartCrossfadeIntoNext(string nextPath, double durationSeconds) { }
     }
 }

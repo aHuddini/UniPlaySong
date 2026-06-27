@@ -152,6 +152,15 @@ namespace DashboardTestApp
             Stop();
         }
 
+        public void SkipPrevious()
+        {
+            if (_playlist != null && _playlistIndex > 0)
+            {
+                _playlistIndex--;
+                Play(_playlist[_playlistIndex]);
+            }
+        }
+
         public void SkipNext()
         {
             if (_isRadioMode && _radioPool != null && _radioPool.Count > 0)
