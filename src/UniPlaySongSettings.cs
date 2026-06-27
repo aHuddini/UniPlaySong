@@ -302,6 +302,9 @@ namespace UniPlaySong
         private bool themeOverlayActive = false;
         private bool forceDefaultMusicOverride = false;
         private bool spotifyActive = false;
+        private string nowPlayingTitle = string.Empty;
+        private string nowPlayingArtist = string.Empty;
+        private string nowPlayingAlbumArtPath = string.Empty;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
@@ -570,6 +573,36 @@ namespace UniPlaySong
         {
             get => spotifyActive;
             set { spotifyActive = value; OnPropertyChanged(); }
+        }
+
+        // Live now-playing TITLE of the active music (UPS song or Spotify track). [JsonIgnore]
+        // runtime state — theme devs bind via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}.
+        // Empty string when nothing is the active music. Set by NowPlayingPublisher.
+        [JsonIgnore]
+        public string NowPlayingTitle
+        {
+            get => nowPlayingTitle;
+            set { nowPlayingTitle = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Live now-playing ARTIST of the active music. [JsonIgnore] runtime state — theme devs bind
+        // via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}. Empty when none.
+        [JsonIgnore]
+        public string NowPlayingArtist
+        {
+            get => nowPlayingArtist;
+            set { nowPlayingArtist = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Live FILE PATH to the current track's album art (PNG), or "" when the track has no art.
+        // Exposed as a path string (not ImageSource) so themes load it in their own WPF context:
+        // <Image Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"/>.
+        // Track art only — no game-cover fallback. Set by NowPlayingPublisher.
+        [JsonIgnore]
+        public string NowPlayingAlbumArtPath
+        {
+            get => nowPlayingAlbumArtPath;
+            set { nowPlayingAlbumArtPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         /// <summary>
