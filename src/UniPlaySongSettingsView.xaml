@@ -851,6 +851,13 @@
                     <CheckBox Content="Radio Mode"
                               IsChecked="{Binding Settings.RadioModeEnabled}"
                               Margin="0,5"/>
+                    <CheckBox Content="Use Spotify as the radio source"
+                              IsChecked="{Binding Settings.SpotifyRadioMode}"
+                              IsEnabled="{Binding Settings.RadioModeEnabled}"
+                              Margin="20,5,0,0"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
+                        Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply while Spotify is the music.
+                    </TextBlock>
                     <TextBlock Text="Ignore game selection entirely — music plays continuously from a fixed pool, like background radio. Overrides both game-specific and default music while active."
                                FontSize="11"
                                Foreground="Gray"
@@ -3903,6 +3910,13 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"
                                Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <RadioButton GroupName="DefaultMusicSource"
+                                 Content="Spotify (control the Spotify desktop app)"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                                 Margin="0,5"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
+                        For games with no UniPlaySong music, conduct the open Spotify desktop app instead of playing a default track. Games that have their own music still play it (Spotify pauses). The visualizer and fades don't apply to Spotify audio.
+                    </TextBlock>
 
                     <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
                     <Separator Margin="0,15"/>
