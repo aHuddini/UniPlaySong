@@ -6,21 +6,23 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.5.7] - 2026-06-26
 
-Spotify control integration: two engagement modes (Radio Mode source + default-music-source), transport-only via SMTC (Windows.Media.Control / `Dubya.WindowsMediaController` 2.5.6). No audio capture, no OAuth.
+Spotify control integration (event-mirror architecture): UPS conducts the Spotify desktop app's transport via Windows SMTC while playing none of its own audio. Two opt-in engagement modes. Control-only — no audio capture, no OAuth, no Web API.
 
 ### Added
 
-- **Spotify desktop-app control via SMTC.** New `SpotifyControlService` (with `ISpotifyControlService`) wraps `Dubya.WindowsMediaController.WindowsMediaController` to detect the Spotify session, call `TryPlayAsync`/`TryPauseAsync` on its `ControlSession`, and poll metadata (title, artist) for "Now Playing" display. No audio capture — transport and metadata only.
+- **Spotify desktop-app control via SMTC.** New `SpotifySmtcClient` (the mechanism, implementing `ISpotifyClient`) wraps `Dubya.WindowsMediaController` 2.5.6 (Windows.Media.Control) to detect the Spotify SMTC session, issue play/pause (`TryResume`/`TryPause`), report availability/playing state, and read track metadata (title, artist) for a "Now Playing" display. Every call is fail-safe (never throws). No audio capture — transport and metadata only.
 
-- **Two engagement modes.** (1) *Radio Mode source* (`DefaultMusicSource.Spotify`): when Radio Mode is active and no UPS songs are queued, UPS hands off to Spotify instead of silence. (2) *Default-music source* (`DefaultMusicSource.SpotifyFallback`): for games with no UPS music, UPS resumes Spotify instead of playing the bundled ambient preset. Both are opt-in under Settings → Playback.
+- **Event-mirror policy layer.** New `SpotifyControlService` (the policy/"conductor") observes `MusicPlaybackService`'s `OnPlaybackStateChanged`, `IsPaused`, and `IsPlayingDefaultMusic` and mirrors UPS's audible state onto the `ISpotifyClient`: it computes a `SpotifyActive` flag and, while active, pauses/resumes Spotify to match UPS. It enforces "only resume what UPS paused" ownership so a user's own Spotify pause is never auto-resumed. A low-frequency (7s) periodic refresh backs up the unreliable SMTC change events, and all recomputes are serialized under a lock (the event fires on the UI thread, SMTC `AvailabilityChanged` on the threadpool, plus the timer).
 
-- **Automatic pause/resume lifecycle.** `MusicPlaybackCoordinator` calls `SpotifyControlService.PauseAsync()`/`ResumeAsync()` at the same decision points as the existing UPS pause sources: game launch, video playback, focus loss, and system lock. Spotify resumes when the corresponding pause source clears.
+- **Two engagement modes.** (1) *Radio Mode source* (`SpotifyRadioMode`, a sub-toggle under Radio Mode): when Radio Mode is on, UPS conducts Spotify instead of playing its own radio pool. (2) *Default-music source* (`DefaultMusicSource.Spotify`): for a game with no UPS music, UPS enters a "default-music gap" (sets `IsPlayingDefaultMusic`) and hands off to Spotify instead of the bundled ambient preset. `SpotifyControlService` reacts to the gap and sets `SpotifyActive=true`. Both are opt-in under Settings → Playback.
+
+- **Output suppression via a `SpotifyActive` guard (not a coordinator gate).** When `SpotifyActive` is true, `MusicPlaybackService.PlayGameMusic` stops its own player and returns, so UPS stays silent while Spotify is the audible source. There is no `MusicPlaybackCoordinator` involvement and no deferral gate.
 
 - **Bundled dependency.** `WindowsMediaController.dll` (`Dubya.WindowsMediaController` 2.5.6, NuGet) added to the extension package. No user-installed prerequisite beyond the Spotify desktop app itself.
 
-### Changed
+### Fixed
 
-- `MusicPlaybackCoordinator` extended with Spotify awareness: `ShouldDeferToSpotify()` gate prevents UPS from starting its own audio while Spotify is the active source.
+- **`DefaultMusicSource.Spotify` never engaged.** The default-source mode was wired into the settings/policy layer but not into the engine: `MusicPlaybackService.IsDefaultMusicPath` and the `PlayGameMusic` default-music resolution switch had no `Spotify` case, so a no-music game never set `IsPlayingDefaultMusic` and `SpotifyControlService` never activated. Both switches now handle `DefaultMusicSource.Spotify` — `IsDefaultMusicPath` returns false (no local file) and the resolution switch marks the default-music gap and fires `OnPlaybackStateChanged` to trigger the policy recompute. `src/Services/MusicPlaybackService.cs`.
 
 ## [1.5.6] - 2026-06-22
 

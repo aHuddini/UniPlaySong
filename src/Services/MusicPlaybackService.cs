@@ -506,6 +506,10 @@ namespace UniPlaySong.Services
                     return !string.IsNullOrWhiteSpace(_lastDefaultMusicPath) &&
                            string.Equals(path, _lastDefaultMusicPath, StringComparison.OrdinalIgnoreCase);
 
+                case DefaultMusicSource.Spotify:
+                    // Spotify default music has no local file path — Spotify plays its own audio.
+                    return false;
+
                 case DefaultMusicSource.CustomFile:
                 default:
                     return !string.IsNullOrWhiteSpace(settings.DefaultMusicPath) &&
@@ -951,6 +955,24 @@ namespace UniPlaySong.Services
                                 }
                             }
                             break;
+
+                        case DefaultMusicSource.Spotify:
+                            // Spotify is the default-music source: there is no local file to play.
+                            // Mark UPS as "in a default-music gap" so SpotifyControlService computes
+                            // SpotifyActive=true and conducts the Spotify desktop app. UPS itself
+                            // plays nothing. We set the flag and return early so the no-songs path
+                            // below does not FadeOutAndStop+reset it. If Spotify is unavailable,
+                            // SpotifyControlService leaves SpotifyActive false and UPS stays silent
+                            // for this game (graceful — same as any default source with nothing to play).
+                            _fileLogger?.Debug($"No game music for {game.Name}; Spotify is the default source — marking default-music gap (Spotify conducts).");
+                            _currentGameId = gameId;
+                            _currentGame = game;
+                            _isPlayingDefaultMusic = true;
+                            // Trigger a recompute so SpotifyControlService sees the gap now. Reuses
+                            // OnPlaybackStateChanged (its other subscribers are read-only UI updaters)
+                            // because setting _isPlayingDefaultMusic alone does not raise it.
+                            OnPlaybackStateChanged?.Invoke();
+                            return;
 
                         case DefaultMusicSource.CustomFile:
                         default:
