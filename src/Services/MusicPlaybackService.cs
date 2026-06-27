@@ -668,6 +668,15 @@ namespace UniPlaySong.Services
                 // But we still respect it for regular game music.
             }
 
+            // Spotify is the active music — UPS must not play its own track. The
+            // SpotifyControlService conducts Spotify; UPS's own player stays silent.
+            if (settings?.SpotifyActive == true)
+            {
+                _fileLogger?.Debug("PlayGameMusic: SpotifyActive — suppressing UPS playback (Spotify is the music)");
+                Stop();
+                return;
+            }
+
             // Radio Mode: plays from the radio pool, but yields to installed games with their own music.
             if (settings?.RadioModeEnabled == true && !forceReload)
             {
