@@ -35,6 +35,10 @@ namespace UniPlaySong.Services.Spotify
         // Current track metadata, or SpotifyNowPlaying.Empty when unavailable.
         SpotifyNowPlaying GetNowPlaying();
 
+        // Current track's album-art bytes from the SMTC thumbnail, or null when unavailable /
+        // no thumbnail / failure. Fail-safe (never throws).
+        byte[] TryGetAlbumArtBytes();
+
         // Raised when Spotify becomes available or unavailable (session opened/closed),
         // or its playback state changes, so the policy layer can recompute.
         event Action AvailabilityChanged;

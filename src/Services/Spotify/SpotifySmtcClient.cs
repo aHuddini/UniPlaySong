@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using UniPlaySong.Common;
 using Windows.Media.Control;
@@ -183,6 +184,34 @@ namespace UniPlaySong.Services.Spotify
             {
                 _fileLogger?.Debug($"[Spotify] GetNowPlaying failed: {ex.Message}");
                 return SpotifyNowPlaying.Empty;
+            }
+        }
+
+        public byte[] TryGetAlbumArtBytes()
+        {
+            var s = FindSpotify();
+            if (s == null) return null;
+            try
+            {
+                var props = s.ControlSession?.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
+                var thumbRef = props?.Thumbnail;
+                if (thumbRef == null) return null;
+
+                using (var ras = thumbRef.OpenReadAsync().GetAwaiter().GetResult())
+                {
+                    if (ras == null || ras.Size == 0) return null;
+                    using (var netStream = ras.AsStreamForRead())
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        netStream.CopyTo(ms);
+                        return ms.ToArray();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Spotify] TryGetAlbumArtBytes failed: {ex.Message}");
+                return null;
             }
         }
 
