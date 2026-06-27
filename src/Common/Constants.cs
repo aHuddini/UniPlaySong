@@ -88,6 +88,10 @@ namespace UniPlaySong.Common
         public const string VideoTrailerFileName = "VideoTrailer.mp4";
         public const string VideoMicrotrailerFileName = "VideoMicrotrailer.mp4";
 
+        // File name for the current-track album art PNG written by NowPlayingPublisher,
+        // exposed to themes via UniPlaySongSettings.NowPlayingAlbumArtPath.
+        public const string NowPlayingArtFileName = "nowplaying_art.png";
+
         #endregion
         
         #region UI
