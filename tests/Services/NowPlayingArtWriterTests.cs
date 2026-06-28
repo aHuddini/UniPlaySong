@@ -29,9 +29,23 @@ namespace UniPlaySong.Tests.Services
         {
             var bytes = new byte[] { 1, 2, 3, 4 };
             var path = _writer.WriteBytes(bytes);
-            Assert.AreEqual(_writer.ArtFilePath, path);
+            Assert.IsNotEmpty(path);
             Assert.IsTrue(File.Exists(path));
             Assert.AreEqual(bytes, File.ReadAllBytes(path));
+            Assert.AreEqual(path, _writer.ArtFilePath);
+        }
+
+        [Test]
+        public void WriteBytes_TwiceWithDifferentBytes_ReturnsDifferentPaths_AndDeletesOld()
+        {
+            var pathA = _writer.WriteBytes(new byte[] { 1, 2, 3 });
+            Assert.IsTrue(File.Exists(pathA));
+
+            var pathB = _writer.WriteBytes(new byte[] { 4, 5, 6 });
+            Assert.AreNotEqual(pathA, pathB);
+            Assert.IsTrue(File.Exists(pathB));
+            Assert.IsFalse(File.Exists(pathA)); // old file deleted
+            Assert.AreEqual(pathB, _writer.ArtFilePath);
         }
 
         [Test]

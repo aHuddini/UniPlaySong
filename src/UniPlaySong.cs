@@ -1077,6 +1077,7 @@ namespace UniPlaySong
             _mediaKeyService = null;
             _nowPlayingPublisher?.Dispose();
             _nowPlayingPublisher = null;
+            _publisherMetadata = null;
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;
             _spotifyClient?.Dispose();

@@ -86,12 +86,6 @@ namespace UniPlaySong.Services
         {
             s.NowPlayingTitle = title;
             s.NowPlayingArtist = artist;
-            // Force the {PluginSettings} binding to re-read even when the path text is unchanged
-            // across tracks (same file): clear first, then set. WPF reloads the image on the change.
-            if (s.NowPlayingAlbumArtPath == artPath && artPath.Length > 0)
-            {
-                s.NowPlayingAlbumArtPath = string.Empty;
-            }
             s.NowPlayingAlbumArtPath = artPath;
         }
 
