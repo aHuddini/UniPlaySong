@@ -1,29 +1,26 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Playnite.SDK.Controls;
 
 namespace UniPlaySong.Controls
 {
-    // Shared base for the now-playing mini-player elements. Proxies the live NowPlaying*
-    // properties off UniPlaySongSettings (set by NowPlayingPublisher) and raises change
-    // notifications so the two XAML views (bar + one-liner) can bind them. Display-only.
-    public abstract class NowPlayingMiniPlayerBase : PluginUserControl, INotifyPropertyChanged
+    // Shared DataContext model for the now-playing mini-player views (bar + one-liner).
+    // Proxies the live NowPlaying* properties off UniPlaySongSettings (set by NowPlayingPublisher)
+    // and raises change notifications so the views' XAML can bind them. Display-only. Composition
+    // over inheritance: the views set this as their DataContext rather than subclassing a control
+    // base (a XAML-rooted derived control base is not visible to WPF's markup-compile pass).
+    public class NowPlayingMiniPlayerModel : INotifyPropertyChanged
     {
-        protected readonly UniPlaySongSettings _settings;
+        private readonly UniPlaySongSettings _settings;
         private bool _subscribed;
 
-        protected NowPlayingMiniPlayerBase(UniPlaySongSettings settings)
+        public NowPlayingMiniPlayerModel(UniPlaySongSettings settings)
         {
             _settings = settings;
-            DataContext = this;
-            Loaded += OnLoaded;
-            Unloaded += OnUnloaded;
         }
 
-        // Subscribe on Loaded (guarded against repeated Loaded), unsubscribe on Unloaded, so the
-        // handler never outlives the control and never double-subscribes on view re-parenting.
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        // Call from the view's Loaded; guarded so repeated Loaded can't double-subscribe.
+        public void Attach()
         {
             if (_subscribed || _settings == null) return;
             _settings.PropertyChanged += OnSettingsChanged;
@@ -31,7 +28,8 @@ namespace UniPlaySong.Controls
             RaiseAll(); // initial paint
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        // Call from the view's Unloaded.
+        public void Detach()
         {
             if (!_subscribed || _settings == null) return;
             _settings.PropertyChanged -= OnSettingsChanged;
@@ -83,11 +81,10 @@ namespace UniPlaySong.Controls
         public bool HasAlbum => !string.IsNullOrEmpty(_settings?.NowPlayingAlbum);
         public bool HasGenre => !string.IsNullOrEmpty(_settings?.NowPlayingGenre);
         public bool HasDuration => !string.IsNullOrEmpty(_settings?.NowPlayingDuration);
-        // Whole-control visibility: collapse when nothing is playing.
         public bool IsPlaying => !string.IsNullOrEmpty(_settings?.NowPlayingTitle);
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        private void OnPropertyChanged([CallerMemberName] string name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
