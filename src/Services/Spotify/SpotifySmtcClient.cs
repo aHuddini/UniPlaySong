@@ -178,7 +178,30 @@ namespace UniPlaySong.Services.Spotify
                 if (props == null) return SpotifyNowPlaying.Empty;
                 if (string.Equals(props.Title, "Advertisement", StringComparison.OrdinalIgnoreCase))
                     return SpotifyNowPlaying.Empty;
-                return new SpotifyNowPlaying(props.Title, props.Artist);
+
+                // SMTC exposes genres as a list; join for a single display string.
+                var genre = (props.Genres != null && props.Genres.Count > 0)
+                    ? string.Join(", ", props.Genres)
+                    : string.Empty;
+
+                // Total track length comes from the timeline (EndTime - StartTime), not media props.
+                // Separate read, separately guarded — duration is optional, never fail the whole call.
+                var duration = TimeSpan.Zero;
+                try
+                {
+                    var tl = s.ControlSession?.GetTimelineProperties();
+                    if (tl != null)
+                    {
+                        var len = tl.EndTime - tl.StartTime;
+                        if (len > TimeSpan.Zero) duration = len;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"[Spotify] timeline duration unavailable: {ex.Message}");
+                }
+
+                return new SpotifyNowPlaying(props.Title, props.Artist, props.AlbumTitle, genre, duration);
             }
             catch (Exception ex)
             {

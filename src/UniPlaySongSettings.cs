@@ -305,6 +305,9 @@ namespace UniPlaySong
         private string nowPlayingTitle = string.Empty;
         private string nowPlayingArtist = string.Empty;
         private string nowPlayingAlbumArtPath = string.Empty;
+        private string nowPlayingAlbum = string.Empty;
+        private string nowPlayingGenre = string.Empty;
+        private string nowPlayingDuration = string.Empty;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
@@ -594,15 +597,45 @@ namespace UniPlaySong
             set { nowPlayingArtist = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        // Live FILE PATH to the current track's album art (PNG), or "" when the track has no art.
+        // Live FILE PATH to the current track's album art (PNG/image), or "" when no art is available.
         // Exposed as a path string (not ImageSource) so themes load it in their own WPF context:
         // <Image Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"/>.
-        // Track art only — no game-cover fallback. Set by NowPlayingPublisher.
+        // Track art, falling back to the game's cover for game music. Set by NowPlayingPublisher.
         [JsonIgnore]
         public string NowPlayingAlbumArtPath
         {
             get => nowPlayingAlbumArtPath;
             set { nowPlayingAlbumArtPath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Live ALBUM of the current Spotify track. [JsonIgnore] runtime state — theme devs bind via
+        // {PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbum}. Spotify only; "" for game music
+        // or when none. Set by NowPlayingPublisher.
+        [JsonIgnore]
+        public string NowPlayingAlbum
+        {
+            get => nowPlayingAlbum;
+            set { nowPlayingAlbum = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Live GENRE(S) of the current Spotify track (comma-joined). [JsonIgnore] runtime state — bind
+        // via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingGenre}. Spotify only; "" otherwise.
+        // Set by NowPlayingPublisher.
+        [JsonIgnore]
+        public string NowPlayingGenre
+        {
+            get => nowPlayingGenre;
+            set { nowPlayingGenre = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Live TOTAL DURATION of the current Spotify track, preformatted as "m:ss" (e.g. "3:45").
+        // [JsonIgnore] runtime state — bind via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingDuration}.
+        // Spotify only; "" for game music or when unavailable. Set by NowPlayingPublisher.
+        [JsonIgnore]
+        public string NowPlayingDuration
+        {
+            get => nowPlayingDuration;
+            set { nowPlayingDuration = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         /// <summary>

@@ -2544,7 +2544,8 @@ namespace UniPlaySong
                 _spotifyClient,
                 nowPlayingArtWriter,
                 () => _settings,
-                _fileLogger);
+                _fileLogger,
+                ResolveCurrentGameCoverPath); // game-music fallback when a track has no embedded art
             _nowPlayingPublisher.Refresh(); // publish initial state
 
             // Mid-init suppression — ~150ms into InitializeServices
@@ -2650,6 +2651,25 @@ namespace UniPlaySong
                     msg => _fileLogger?.Debug(msg)
                 );
                 _fileLogger?.Debug("MusicLibraryViewModel initialized");
+            }
+        }
+
+        // Resolves the currently-playing game's cover-art file path for the now-playing fallback
+        // (used when a game-music track has no embedded album art). Cover, then background; returns
+        // null on any miss. The same image-resolution pattern the dashboard uses. Fail-safe.
+        private string ResolveCurrentGameCoverPath()
+        {
+            try
+            {
+                var game = _playbackService?.CurrentGame;
+                var imageId = game?.CoverImage ?? game?.BackgroundImage;
+                if (string.IsNullOrEmpty(imageId)) return null;
+                return _api?.Database?.GetFullFilePath(imageId);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"ResolveCurrentGameCoverPath failed: {ex.Message}");
+                return null;
             }
         }
 

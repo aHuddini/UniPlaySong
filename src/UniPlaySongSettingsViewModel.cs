@@ -1026,12 +1026,25 @@ namespace UniPlaySong
                 try
                 {
                     var playbackService = plugin.GetPlaybackService();
-                    if (playbackService == null || !playbackService.IsPlaying)
+
+                    // When UPS isn't playing a file of its own (e.g. Spotify is the active music —
+                    // UPS stays silent during the gap), fall back to the unified now-playing title
+                    // the NowPlayingPublisher resolved. That's the same data the album art below
+                    // reflects, so the ticker no longer says "(No song playing)" during Spotify.
+                    // UPS's OWN playback keeps the richer legacy display below (duration, default).
+                    if (playbackService == null || !playbackService.IsPlaying
+                        || string.IsNullOrEmpty(playbackService.CurrentSongPath))
+                    {
+                        var npTitle = plugin?.Settings?.NowPlayingTitle;
+                        if (!string.IsNullOrWhiteSpace(npTitle))
+                        {
+                            var npArtist = plugin.Settings.NowPlayingArtist;
+                            return string.IsNullOrWhiteSpace(npArtist) ? npTitle : $"{npTitle} — {npArtist}";
+                        }
                         return "(No song playing)";
+                    }
 
                     var currentPath = playbackService.CurrentSongPath;
-                    if (string.IsNullOrEmpty(currentPath))
-                        return "(No song playing)";
 
                     // If playing default music (not a bundled preset), don't show song info
                     if (playbackService.IsPlayingDefaultMusic && !playbackService.IsPlayingBundledPreset && !playbackService.IsPlayingPoolBasedDefault)
@@ -1095,16 +1108,31 @@ namespace UniPlaySong
         public string PreviewNowPlayingArtPath => plugin?.Settings?.NowPlayingAlbumArtPath ?? string.Empty;
         public bool PreviewHasArt => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingAlbumArtPath);
         public bool PreviewHasNoArt => !PreviewHasArt;
+
+        // Spotify-only enrichment (album/genre/duration). Empty for game music — each card row hides.
+        public string PreviewNowPlayingAlbum => plugin?.Settings?.NowPlayingAlbum ?? string.Empty;
+        public string PreviewNowPlayingGenre => plugin?.Settings?.NowPlayingGenre ?? string.Empty;
+        public string PreviewNowPlayingDuration => plugin?.Settings?.NowPlayingDuration ?? string.Empty;
+        public bool PreviewHasAlbum => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingAlbum);
+        public bool PreviewHasGenre => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingGenre);
+        public bool PreviewHasDuration => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingDuration);
         public UniPlaySong PluginForPreview => plugin;
 
-        // Called by the view on the settings object's PropertyChanged to refresh the card live.
+        // Called by the view on the settings object's PropertyChanged to refresh the ticker + card live.
         public void RefreshNowPlayingPreview()
         {
+            OnPropertyChanged(nameof(CurrentSongDisplay));
             OnPropertyChanged(nameof(PreviewNowPlayingTitle));
             OnPropertyChanged(nameof(PreviewNowPlayingArtist));
             OnPropertyChanged(nameof(PreviewNowPlayingArtPath));
             OnPropertyChanged(nameof(PreviewHasArt));
             OnPropertyChanged(nameof(PreviewHasNoArt));
+            OnPropertyChanged(nameof(PreviewNowPlayingAlbum));
+            OnPropertyChanged(nameof(PreviewNowPlayingGenre));
+            OnPropertyChanged(nameof(PreviewNowPlayingDuration));
+            OnPropertyChanged(nameof(PreviewHasAlbum));
+            OnPropertyChanged(nameof(PreviewHasGenre));
+            OnPropertyChanged(nameof(PreviewHasDuration));
         }
 
         #region Search Hints Database Properties and Commands
