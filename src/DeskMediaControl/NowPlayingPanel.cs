@@ -287,7 +287,10 @@ namespace UniPlaySong.DeskMediaControl
 
             try
             {
-                if (songInfo == null || songInfo.IsEmpty)
+                // Key "nothing playing" on the title, not FilePath: Spotify tracks legitimately have
+                // no file but always carry a title, and a truly-stopped state has neither — so a
+                // title check blanks correctly for stops while keeping Spotify's now-playing entry.
+                if (songInfo == null || string.IsNullOrEmpty(songInfo.Title))
                 {
                     if (!string.IsNullOrEmpty(_currentText))
                     {

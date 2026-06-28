@@ -334,7 +334,7 @@ namespace UniPlaySong.DeskMediaControl
                 var np = spotify.GetNowPlaying();
                 if (!np.IsEmpty)
                 {
-                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, TimeSpan.Zero));
+                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
                     return;
                 }
             }
@@ -361,7 +361,7 @@ namespace UniPlaySong.DeskMediaControl
                 var np = spotify.GetNowPlaying();
                 if (!np.IsEmpty)
                 {
-                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, TimeSpan.Zero));
+                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
                     return;
                 }
             }
