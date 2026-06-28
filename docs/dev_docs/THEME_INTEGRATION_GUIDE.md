@@ -289,7 +289,7 @@ These reflect whichever source is the active music. Title, artist, and art are p
 
 ### Now-playing mini-player elements (v1.5.7+)
 
-Two display-only elements that show the current track (title, artist, album art; plus Spotify album/genre/duration). Place either on a Desktop view (e.g. anchored on a game banner). They collapse to nothing when no music is playing, and for game music show title + artist + art only (album/genre/duration are Spotify-only).
+Two display-only elements that show the current track (title, artist, album art; plus Spotify album/genre/duration). Place either in a **Desktop or Fullscreen** theme view (e.g. anchored on a game banner) — like the other `UPS_` elements, they render wherever the theme puts them. They collapse to nothing when no music is playing, and for game music show title + artist + art only (album/genre/duration are Spotify-only).
 
 | Element | Look |
 | --- | --- |
@@ -297,12 +297,12 @@ Two display-only elements that show the current track (title, artist, album art;
 | `UPS_NowPlayingMiniPlayerCompact` | One line: ♪ + title · artist · duration |
 
 ```xml
-<!-- in a Desktop theme view -->
+<!-- in a Desktop or Fullscreen theme view -->
 <ContentControl x:Name="UPS_NowPlayingMiniPlayer" />
 <ContentControl x:Name="UPS_NowPlayingMiniPlayerCompact" />
 ```
 
-Both ship a self-contained "glass pill" default style (legible over any banner art); a theme may retemplate them. They are Desktop-only and display-only (no transport controls).
+Both ship a self-contained "glass pill" default style and are display-only (no transport controls). The default sizing (compact art and fonts) is tuned for a Desktop banner; for Fullscreen (TV-distance) you'll likely want to retemplate or scale the element up — both support a standard implicit `Style`/`ControlTemplate` override.
 
 ---
 
