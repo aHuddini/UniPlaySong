@@ -307,7 +307,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact" }
             });
 
             // Register settings support for theme integration via Playnite's
@@ -3762,6 +3762,10 @@ namespace UniPlaySong
                 // v1.5.3 theme-integration sibling — Tag=True swaps game music for default music
                 return new Controls.MusicControlPauseGamePlayDefault(_settings);
             }
+            if (args.Name == "NowPlayingMiniPlayer")
+                return new Controls.NowPlayingMiniPlayer(_settings);
+            if (args.Name == "NowPlayingMiniPlayerCompact")
+                return new Controls.NowPlayingMiniPlayerCompact(_settings);
             return null;
         }
 

@@ -287,6 +287,23 @@ These reflect whichever source is the active music. Title, artist, and art are p
 
 `NowPlayingAlbum`, `NowPlayingGenre`, and `NowPlayingDuration` are populated **only when Spotify is the active music** (album, comma-joined genres, and total track length preformatted as `m:ss`). They are empty strings for game music, so bind them inside a panel you collapse when empty.
 
+### Now-playing mini-player elements (v1.5.7+)
+
+Two display-only elements that show the current track (title, artist, album art; plus Spotify album/genre/duration). Place either on a Desktop view (e.g. anchored on a game banner). They collapse to nothing when no music is playing, and for game music show title + artist + art only (album/genre/duration are Spotify-only).
+
+| Element | Look |
+| --- | --- |
+| `UPS_NowPlayingMiniPlayer` | Horizontal bar: album art + title + artist + Spotify album·genre·duration |
+| `UPS_NowPlayingMiniPlayerCompact` | One line: ♪ + title · artist · duration |
+
+```xml
+<!-- in a Desktop theme view -->
+<ContentControl x:Name="UPS_NowPlayingMiniPlayer" />
+<ContentControl x:Name="UPS_NowPlayingMiniPlayerCompact" />
+```
+
+Both ship a self-contained "glass pill" default style (legible over any banner art); a theme may retemplate them. They are Desktop-only and display-only (no transport controls).
+
 ---
 
 ## 4. Ship audio with your theme — `UPS_BackgroundAudio.mp3` (v1.5.2+)
@@ -409,7 +426,7 @@ If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS suppor
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`) |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact) |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |
