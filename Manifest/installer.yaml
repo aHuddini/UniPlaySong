@@ -10,6 +10,7 @@ Packages:
       - '[Theme Dev Feature] Two ready-made now-playing mini-player elements themes can drop in: UPS_NowPlayingMiniPlayer (a compact bar with art + title/artist) and UPS_NowPlayingMiniPlayerCompact (a one-line readout). Work in both Desktop and Fullscreen. Theme developers can also bind the raw data directly via {PluginSettings}. See the Github Theme Integration Guide.'
       - '[Improved] When a game''s track has no embedded album art, the now-playing art now falls back to the game''s cover image instead of showing nothing.'
       - '[Fix] The Top Panel now-playing ticker and the Settings "Current Song" line now show a Spotify track while Spotify is the active music.'
+      - '[Fix] Turning off "Auto-tag games on library update" now fully stops automatic tagging — downloading music no longer re-adds the [UPS] Has Music tag when the feature is off. The "Remove All Tags" button now makes the removal stick (it offers to turn auto-tagging off so the tags don''t reappear on the next library update).'
   - Version: 1.5.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-22

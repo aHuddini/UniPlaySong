@@ -2006,21 +2006,43 @@ namespace UniPlaySong
                 return;
             }
 
-            var result = PlayniteApi.Dialogs.ShowMessage(
-                "This will remove all UniPlaySong music status tags from your games.\n\n" +
+            // If auto-tagging is still ON, a plain removal is undone on the next library update —
+            // making "Remove All Tags" look broken. So when it's on, this also turns it off (with
+            // explicit notice) so the removal actually sticks.
+            bool autoTagOn = settings?.AutoTagOnLibraryUpdate == true;
+
+            var message = "This will remove all UniPlaySong music status tags from your games.\n\n" +
                 "The tags '[UPS] Has Music' and '[UPS] No Music' will be removed from all games,\n" +
-                "and deleted from the tag database.\n\n" +
-                "Do you want to proceed?",
+                "and deleted from the tag database.\n\n";
+            if (autoTagOn)
+            {
+                message += "Note: \"Auto-tag games on library update\" is currently ON, which would re-add " +
+                    "these tags on the next library update. Proceeding will also turn that option OFF " +
+                    "so the tags stay removed.\n\n";
+            }
+            message += "Do you want to proceed?";
+
+            var result = PlayniteApi.Dialogs.ShowMessage(
+                message,
                 "Remove All Music Tags",
                 System.Windows.MessageBoxButton.YesNo);
 
             if (result != System.Windows.MessageBoxResult.Yes)
                 return;
 
+            // Turn auto-tag off first (and persist) so the removal below isn't immediately undone.
+            if (autoTagOn && settings != null)
+            {
+                settings.AutoTagOnLibraryUpdate = false; // updates the bound checkbox too
+                plugin.SavePluginSettings(settings);
+            }
+
             tagService.RemoveAllMusicTags();
 
             PlayniteApi.Dialogs.ShowMessage(
-                "All music status tags have been removed.",
+                autoTagOn
+                    ? "All music status tags have been removed, and auto-tagging on library update has been turned off."
+                    : "All music status tags have been removed.",
                 "Tags Removed");
         }
 

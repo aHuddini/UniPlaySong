@@ -4387,8 +4387,11 @@
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
                                 <Run FontWeight="SemiBold">Improved:</Run> When a track has no embedded cover, the now-playing art now falls back to the game's cover image instead of showing nothing.
                             </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
                                 <Run FontWeight="SemiBold">Fixed:</Run> The Top Panel "Now Playing" ticker now shows the Spotify track while Spotify is the active music (it previously showed nothing).
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Turning off "Auto-tag games on library update" now fully stops automatic tagging — downloading music no longer re-adds the [UPS] Has Music tag when the feature is off. "Remove All Tags" now makes the removal stick (it offers to turn auto-tagging off so the tags don't come back on the next library update).
                             </TextBlock>
 
                             <TextBlock FontSize="11">

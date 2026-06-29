@@ -29,6 +29,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Fixed
 - The Top Panel "Now Playing" ticker now shows the Spotify track while Spotify is the active music (it previously showed nothing).
+- Turning off **Auto-tag games on library update** now fully stops automatic tagging — downloading music no longer re-adds the `[UPS] Has Music` tag when the feature is off, and **Remove All Tags** now makes the removal stick (it offers to turn auto-tagging off so the tags don't come back on the next library update).
 
 ### Previous Version
 - **v1.5.6**: Fixed game music getting stuck after switching themes or between Desktop and Fullscreen. Fresh installs no longer auto-switch your default-music source. Added theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos.
