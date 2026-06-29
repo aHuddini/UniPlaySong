@@ -5,12 +5,12 @@ Packages:
     ReleaseDate: 2026-06-26
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.7/UniPlaySong-1_5_7-Jun26_2026.pext'
     Changelog:
-      - '[New Feature] Spotify Control Integration: UPS can now control the Spotify desktop app from UniPlaySong — as a Radio Mode source or a default-music source. Requires the Spotify desktop app ti be running.'
+      - '[New Feature] Spotify Control Integration: UPS can now control the Spotify desktop app from UniPlaySong — as a Radio Mode source or a default-music source. Requires the Spotify desktop app to be running.'
       - '[Theme Dev Feature] Live "Now Playing" info — UniPlaySong now exposes the current track''s title, artist, and album art (plus album, genre, and length when Spotify music is playing) for themes to display. A preview of it is available in Settings > General next to the now-playing options.'
-      - '[Theme Dev Feature] Two ready-made now-playing mini-player elements themes can drop in: UPS_NowPlayingMiniPlayer (a compact bar with art + title/artist) and UPS_NowPlayingMiniPlayerCompact (a one-line readout). Work in both Desktop and Fullscreen. Theme developers can also bind the raw data directly via {PluginSettings}. See the Github Theme Integration Guide.'
+      - '[Theme Dev Feature] Two ready-made now-playing mini-player elements themes can drop in: UPS_NowPlayingMiniPlayer (a compact bar with art + title/artist) and UPS_NowPlayingMiniPlayerCompact (a one-line readout). Work in both Desktop and Fullscreen. Theme developers can also bind the raw song data directly via {PluginSettings}. See the Github Theme Integration Guide.'
       - '[Improved] When a game''s track has no embedded album art, the now-playing art now falls back to the game''s cover image instead of showing nothing.'
       - '[Fix] The Top Panel now-playing ticker and the Settings "Current Song" line now show a Spotify track while Spotify is the active music.'
-      - '[Fix] Turning off "Auto-tag games on library update" now fully stops automatic tagging — downloading music no longer re-adds the [UPS] Has Music tag when the feature is off. The "Remove All Tags" button now makes the removal stick (it offers to turn auto-tagging off so the tags don''t reappear on the next library update).'
+      - '[Fix Attempt] Turning off "Auto-tag games on library update" now fully stops automatic tagging — downloading music no longer re-adds the [UPS] Has Music tag when the feature is off. The "Remove All Tags" button now makes the removal stick.'
   - Version: 1.5.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-22
