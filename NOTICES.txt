@@ -87,9 +87,22 @@ Modifications: NONE.
 
 TagLibSharp (taglib-sharp.dll)
 -------------------------------
-Purpose:    Audio file metadata reading/writing
+Purpose:    Audio file metadata reading/writing (incl. embedded album art for Now Playing)
 License:    GNU Lesser General Public License v2.1 (LGPL-2.1)
 Upstream:   https://github.com/mono/taglib-sharp
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+WindowsMediaController (WindowsMediaController.dll)
+--------------------------------------------------
+Purpose:    Spotify desktop-app control via the Windows System Media Transport
+            Controls (SMTC) — detect the Spotify session, issue play/pause/skip,
+            and read track metadata (title, artist, album, genre, length, art)
+            for the Now Playing display. No audio capture.
+License:    MIT
+Upstream:   https://github.com/DubyaDude/WindowsMediaController
+            (NuGet package: Dubya.WindowsMediaController 2.5.6)
 Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
 

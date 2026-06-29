@@ -4379,13 +4379,16 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Game music no longer gets stuck after switching themes or between Desktop and Fullscreen (seen most with the Active Theme Music source on themes like PS5-Experience). Music plays correctly again.
+                                <Run FontWeight="SemiBold">Added:</Run> <Run FontWeight="SemiBold">Control Spotify from UniPlaySong</Run> — use the Spotify desktop app as a Radio Mode source or a default-music source for games with no UPS music. UPS pauses/resumes Spotify on game launch, video, focus loss, and lock. (UPS can't access Spotify's audio, so the visualizer and fades don't apply while Spotify plays.)
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Changed:</Run> Fresh installs no longer auto-switch your default-music source to "Active Theme Music". New installs keep the standard default; pick "Active Theme Music" yourself in Settings → Playback if you want it.
+                                <Run FontWeight="SemiBold">Added:</Run> <Run FontWeight="SemiBold">Live "Now Playing" for themes</Run> — UPS now shares the current track's title, artist, and album art (plus album, genre, and length when Spotify is playing). Two drop-in mini-player widgets are included for theme developers, in both Desktop and Fullscreen, and a live preview shows in the General tab next to the now-playing options.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Improved:</Run> When a track has no embedded cover, the now-playing art now falls back to the game's cover image instead of showing nothing.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
-                                <Run FontWeight="SemiBold">Added:</Run> New <Run FontWeight="SemiBold">Theme Support</Run> settings tab gathering the theme-developer compatibility options (PS5-Experience fix, and the overlay/video pause opt-outs).
+                                <Run FontWeight="SemiBold">Fixed:</Run> The Top Panel "Now Playing" ticker now shows the Spotify track while Spotify is the active music (it previously showed nothing).
                             </TextBlock>
 
                             <TextBlock FontSize="11">

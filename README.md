@@ -24,6 +24,11 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Added
 - **Control Spotify from UniPlaySong** — use Spotify as your Radio Mode source, or as a default-music source for games with no UPS music. UPS pauses and resumes the Spotify desktop app when you launch a game, when a video plays, and on focus loss or system lock. Note: UPS can't access Spotify's audio, so the visualizer and fades don't apply while Spotify is playing. Requires the Spotify desktop app.
+- **Live "Now Playing" for your theme** — UniPlaySong now shares the current track's title, artist, and album art (plus album, genre, and length when Spotify is playing) so your theme can display it. Two drop-in mini-player widgets are included for theme developers — in both Desktop and Fullscreen — and a live preview appears in Settings next to the now-playing options.
+- **Album art everywhere** — when a track has no embedded cover, the now-playing art falls back to the game's own cover image instead of showing nothing.
+
+### Fixed
+- The Top Panel "Now Playing" ticker now shows the Spotify track while Spotify is the active music (it previously showed nothing).
 
 ### Previous Version
 - **v1.5.6**: Fixed game music getting stuck after switching themes or between Desktop and Fullscreen. Fresh installs no longer auto-switch your default-music source. Added theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos.

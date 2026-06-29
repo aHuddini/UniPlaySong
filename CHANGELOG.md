@@ -20,9 +20,19 @@ Spotify control integration (event-mirror architecture): UPS conducts the Spotif
 
 - **Bundled dependency.** `WindowsMediaController.dll` (`Dubya.WindowsMediaController` 2.5.6, NuGet) added to the extension package. No user-installed prerequisite beyond the Spotify desktop app itself.
 
+- **Live now-playing exposure for themes.** New `NowPlayingPublisher` coordinator observes the active music source (UPS song or Spotify) and publishes the current track onto `UniPlaySongSettings` as `[JsonIgnore]` runtime properties — `NowPlayingTitle`, `NowPlayingArtist`, `NowPlayingAlbumArtPath`, and (Spotify only) `NowPlayingAlbum`, `NowPlayingGenre`, `NowPlayingDuration` (preformatted `m:ss`). Themes bind any of these via `{PluginSettings Plugin=UniPlaySong, Path=…}` with live updates. Runs in both Desktop and Fullscreen. A live preview card in the General settings tab mirrors the same data.
+
+- **Spotify track metadata.** `SpotifyNowPlaying` extended with Album, Genre (comma-joined), and total Duration; `SpotifySmtcClient.GetNowPlaying()` reads `MediaProperties.AlbumTitle`/`Genres` and derives length from `GetTimelineProperties()` (`EndTime - StartTime`), each separately fail-safe. (Year is not exposed by SMTC, so it's omitted.)
+
+- **Album-art file + game-cover fallback.** New `NowPlayingArtWriter` extracts embedded ID3 art (TagLib#) or Spotify's SMTC thumbnail to a file and returns its path. It writes a **unique filename per track** (`nowplaying_art_{n}.png`, old file best-effort deleted) so WPF's URI-keyed `BitmapImage` cache can't serve a stale image across track changes. For game music with no embedded art, the publisher falls back to the game's cover image (resolved at the composition root, keeping the publisher decoupled from the Playnite API).
+
+- **Now-playing mini-player theme elements.** Two display-only custom elements — `UPS_NowPlayingMiniPlayer` (horizontal bar: art + title + artist + Spotify album·genre·duration) and `UPS_NowPlayingMiniPlayerCompact` (one line). Both share a single `NowPlayingMiniPlayerModel` (a `DataContext`, not a control base — a XAML-rooted custom control base isn't visible to WPF's markup-compile pass) and are registered via `AddCustomElementSupport`. No mode gate — they render in Desktop and Fullscreen. Documented in `docs/dev_docs/THEME_INTEGRATION_GUIDE.md`.
+
 ### Fixed
 
 - **`DefaultMusicSource.Spotify` never engaged.** The default-source mode was wired into the settings/policy layer but not into the engine: `MusicPlaybackService.IsDefaultMusicPath` and the `PlayGameMusic` default-music resolution switch had no `Spotify` case, so a no-music game never set `IsPlayingDefaultMusic` and `SpotifyControlService` never activated. Both switches now handle `DefaultMusicSource.Spotify` — `IsDefaultMusicPath` returns false (no local file) and the resolution switch marks the default-music gap and fires `OnPlaybackStateChanged` to trigger the policy recompute. `src/Services/MusicPlaybackService.cs`.
+
+- **Now-playing tickers ignored Spotify.** The Top Panel ticker (`NowPlayingPanel`) and the Settings "Current Song" line showed "(No song playing)" while Spotify was the active music. Root cause: a Spotify track is modeled as a `SongInfo` with an empty `FilePath`, and `SongInfo.IsEmpty` is defined on `FilePath` — so the panel's empty-check discarded it. The panel now keys "nothing playing" on the title instead, and both tickers fall back to the published Spotify title/artist/duration during the gap.
 
 ## [1.5.6] - 2026-06-22
 
