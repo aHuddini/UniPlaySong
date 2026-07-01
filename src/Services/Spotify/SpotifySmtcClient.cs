@@ -12,18 +12,25 @@ namespace UniPlaySong.Services.Spotify
     // and Store "SpotifyAB.SpotifyMusic_...!Spotify" builds), and pauses/resumes it
     // via the OS. All Spotify interaction is funneled here and individually wrapped,
     // so any failure surfaces as "unavailable" rather than throwing.
+    // All blocking SMTC calls (.GetAwaiter().GetResult()) run on the worker thread,
+    // never on the caller/UI thread.
     public class SpotifySmtcClient : ISpotifyClient, IDisposable
     {
         private readonly FileLogger _fileLogger;
         private MediaManager _manager;
         private bool _started;
         private bool _disposed;
+        private readonly SpotifySmtcWorker _worker;
+        private volatile bool _cachedAvailable;
+        private volatile bool _cachedPlaying;
 
         public event Action AvailabilityChanged;
 
         public SpotifySmtcClient(FileLogger fileLogger)
         {
             _fileLogger = fileLogger;
+            _worker = new SpotifySmtcWorker(fileLogger);
+            _worker.Start();
             TryStart();
         }
 
@@ -38,6 +45,7 @@ namespace UniPlaySong.Services.Spotify
                 _manager.OnAnyMediaPropertyChanged += OnMediaPropertyChanged;
                 _manager.Start();
                 _started = true;
+                RefreshCache();
             }
             catch (Exception ex)
             {
@@ -47,14 +55,38 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
-        private void OnSessionsChanged(MediaManager.MediaSession session) => AvailabilityChanged?.Invoke();
-        private void OnPlaybackChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionPlaybackInfo info) => AvailabilityChanged?.Invoke();
+        private void OnSessionsChanged(MediaManager.MediaSession session) { RefreshCache(); AvailabilityChanged?.Invoke(); }
+        private void OnPlaybackChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionPlaybackInfo info) { RefreshCache(); AvailabilityChanged?.Invoke(); }
         // The OS pushes this when the current track's metadata changes (a track change). Without this
         // subscription the now-playing UI never learned Spotify changed tracks (the mini-player went
         // stale). Fan out through the existing AvailabilityChanged → SpotifyControlService.Recompute →
         // NowPlayingChanged → NowPlayingPublisher chain, which refreshes now-playing. Cheap handler:
         // it only raises the event; the publisher does the (already-existing) metadata fetch.
         private void OnMediaPropertyChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionMediaProperties props) => AvailabilityChanged?.Invoke();
+
+        // Recompute the cached availability/playing snapshot from the current Spotify session.
+        // Runs on the MediaManager's background thread (never the UI thread), so the synchronous
+        // WinRT reads here are safe. UI code reads the cached volatile fields, never this.
+        private void RefreshCache()
+        {
+            try
+            {
+                var s = FindSpotify();
+                _cachedAvailable = s != null;
+                bool playing = false;
+                if (s != null)
+                {
+                    try
+                    {
+                        playing = s.ControlSession?.GetPlaybackInfo()?.PlaybackStatus
+                            == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                    }
+                    catch { playing = false; }
+                }
+                _cachedPlaying = playing;
+            }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] RefreshCache failed: {ex.Message}"); }
+        }
 
         // Re-pull the Spotify session every call rather than caching — the library's
         // close events are unreliable, so we never trust a stale reference.
@@ -75,107 +107,117 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
-        public bool IsAvailable => FindSpotify() != null;
+        public bool IsAvailable => _cachedAvailable;
 
-        public bool IsPlaying
-        {
-            get
-            {
-                var s = FindSpotify();
-                if (s == null) return false;
-                try
-                {
-                    return s.ControlSession?.GetPlaybackInfo()?.PlaybackStatus
-                        == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-                }
-                catch { return false; }
-            }
-        }
+        public bool IsPlaying => _cachedPlaying;
 
         public bool TryPause()
         {
-            var s = FindSpotify();
-            if (s == null) return false;
-            try
-            {
-                var info = s.ControlSession?.GetPlaybackInfo();
-                if (info?.Controls.IsPauseEnabled != true) return false;
-                return s.ControlSession.TryPauseAsync().GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Spotify] TryPause failed: {ex.Message}");
-                return false;
-            }
+            _worker.PostControl(SpotifyControlIntent.Pause, _ => DoPause());
+            return true; // accepted for dispatch (non-blocking)
         }
 
         public bool TryResume()
         {
-            var s = FindSpotify();
-            if (s == null) return false;
+            _worker.PostControl(SpotifyControlIntent.Play, _ => DoResume());
+            return true;
+        }
+
+        public bool TrySkipNext() { _worker.PostRequest(DoSkipNext); return true; }
+        public bool TrySkipPrevious() { _worker.PostRequest(DoSkipPrevious); return true; }
+        public bool TryTogglePlayPause() { _worker.PostRequest(DoTogglePlayPause); return true; }
+
+        // The blocking SMTC bodies — now ONLY ever called on the worker thread.
+        private void DoPause()
+        {
+            var s = FindSpotify(); if (s == null) return;
             try
             {
                 var info = s.ControlSession?.GetPlaybackInfo();
-                if (info?.Controls.IsPlayEnabled != true) return false;
-                return s.ControlSession.TryPlayAsync().GetAwaiter().GetResult();
+                if (info?.Controls.IsPauseEnabled != true) return;
+                s.ControlSession.TryPauseAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Spotify] TryResume failed: {ex.Message}");
-                return false;
-            }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TryPause failed: {ex.Message}"); }
         }
 
-        public bool TrySkipNext()
+        private void DoResume()
         {
-            var s = FindSpotify();
-            if (s == null) return false;
+            var s = FindSpotify(); if (s == null) return;
             try
             {
                 var info = s.ControlSession?.GetPlaybackInfo();
-                if (info?.Controls.IsNextEnabled != true) return false;
-                return s.ControlSession.TrySkipNextAsync().GetAwaiter().GetResult();
+                if (info?.Controls.IsPlayEnabled != true) return;
+                s.ControlSession.TryPlayAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Spotify] TrySkipNext failed: {ex.Message}");
-                return false;
-            }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TryResume failed: {ex.Message}"); }
         }
 
-        public bool TrySkipPrevious()
+        private void DoSkipNext()
         {
-            var s = FindSpotify();
-            if (s == null) return false;
+            var s = FindSpotify(); if (s == null) return;
             try
             {
                 var info = s.ControlSession?.GetPlaybackInfo();
-                if (info?.Controls.IsPreviousEnabled != true) return false;
-                return s.ControlSession.TrySkipPreviousAsync().GetAwaiter().GetResult();
+                if (info?.Controls.IsNextEnabled != true) return;
+                s.ControlSession.TrySkipNextAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Spotify] TrySkipPrevious failed: {ex.Message}");
-                return false;
-            }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TrySkipNext failed: {ex.Message}"); }
         }
 
-        public bool TryTogglePlayPause()
+        private void DoSkipPrevious()
         {
-            var s = FindSpotify();
-            if (s == null) return false;
+            var s = FindSpotify(); if (s == null) return;
             try
             {
-                return s.ControlSession.TryTogglePlayPauseAsync().GetAwaiter().GetResult();
+                var info = s.ControlSession?.GetPlaybackInfo();
+                if (info?.Controls.IsPreviousEnabled != true) return;
+                s.ControlSession.TrySkipPreviousAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Spotify] TryTogglePlayPause failed: {ex.Message}");
-                return false;
-            }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TrySkipPrevious failed: {ex.Message}"); }
         }
 
-        public SpotifyNowPlaying GetNowPlaying()
+        private void DoTogglePlayPause()
+        {
+            var s = FindSpotify(); if (s == null) return;
+            try { s.ControlSession.TryTogglePlayPauseAsync().GetAwaiter().GetResult(); }
+            catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TryTogglePlayPause failed: {ex.Message}"); }
+        }
+
+        // ISpotifyClient.GetNowPlaying stays for callers that already hold a background thread
+        // (none should call it from the UI thread now). Prefer RequestNowPlaying from UI code.
+        public SpotifyNowPlaying GetNowPlaying() => DoGetNowPlaying();
+
+        public byte[] TryGetAlbumArtBytes() => DoGetAlbumArtBytes();
+
+        // Fetch now-playing OFF the UI thread, then invoke onResult ON the UI thread.
+        public void RequestNowPlaying(Action<SpotifyNowPlaying> onResult)
+        {
+            if (onResult == null) return;
+            _worker.PostRequest(() =>
+            {
+                var np = DoGetNowPlaying();
+                MarshalToUi(() => onResult(np));
+            });
+        }
+
+        public void RequestAlbumArt(Action<byte[]> onResult)
+        {
+            if (onResult == null) return;
+            _worker.PostRequest(() =>
+            {
+                var bytes = DoGetAlbumArtBytes();
+                MarshalToUi(() => onResult(bytes));
+            });
+        }
+
+        private static void MarshalToUi(Action a)
+        {
+            var disp = System.Windows.Application.Current?.Dispatcher;
+            if (disp != null) disp.BeginInvoke(a);
+            else a(); // no dispatcher (e.g. unit test) — run inline
+        }
+
+        private SpotifyNowPlaying DoGetNowPlaying()
         {
             var s = FindSpotify();
             if (s == null) return SpotifyNowPlaying.Empty;
@@ -217,7 +259,7 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
-        public byte[] TryGetAlbumArtBytes()
+        private byte[] DoGetAlbumArtBytes()
         {
             var s = FindSpotify();
             if (s == null) return null;
@@ -252,6 +294,7 @@ namespace UniPlaySong.Services.Spotify
             try { _manager?.Dispose(); }
             catch (Exception ex) { _fileLogger?.Debug($"[Spotify] Dispose failed: {ex.Message}"); }
             _manager = null;
+            try { _worker?.Dispose(); } catch (Exception ex) { _fileLogger?.Debug($"[Spotify] worker dispose failed: {ex.Message}"); }
         }
     }
 }
