@@ -2012,10 +2012,12 @@ namespace UniPlaySong
                         RestoreIdleVolume();
                     }
 
-                    // Always remove — HashSet.Remove is a no-op if not present
+                    // Always remove — HashSet.Remove is a no-op if not present. Removing SystemLock
+                    // drives fader.Resume() → player.Resume(), which rebuilds the device released on
+                    // lock and seeks back to the saved position (see NAudioMusicPlayer.Resume). No
+                    // explicit restore/reload needed — that would restart the track from the start.
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
-                    RestoreAfterSleep(); // issue #81 — reopen device + resume music after unlock
                 });
             }
         }
@@ -2027,39 +2029,35 @@ namespace UniPlaySong
         {
             if (e.Mode == Microsoft.Win32.PowerModes.Suspend)
             {
+                // Release the audio devices FIRST, directly on this threadpool thread, so Windows
+                // can sleep within its ~2s budget without waiting on a busy UI thread.
                 _sleepCoordinator?.OnLockOrSuspend("Suspend detected");
+
+                // Then mark playback paused via the same SystemLock source the lock path uses, so
+                // that on resume RemovePauseSource(SystemLock) drives the identical self-healing
+                // resume-at-position (the player already saved its position during device release).
+                // AddPauseSource sets the pause flag synchronously, so it survives even if the UI
+                // thread doesn't finish the fade before the machine freezes.
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
+                    _dashboardPlaybackService?.PauseForSystem();
+                }));
             }
             else if (e.Mode == Microsoft.Win32.PowerModes.Resume)
             {
                 Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
-                    _fileLogger?.Debug("[Sleep] Resume — devices will reopen on next playback");
-                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _fileLogger?.Debug("[Sleep] Resume — reopening device + resuming at saved position");
+                    // Removing SystemLock drives fader.Resume() → player.Resume(), which rebuilds the
+                    // released device and seeks back to where the track was (see NAudioMusicPlayer.Resume).
                     _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                    RestoreAfterSleep();
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _dashboardPlaybackService?.ResumeFromSystem();
                 }));
             }
         }
 
-        // issue #81 — after resume/unlock, the audio device is closed; re-trigger playback for the
-        // currently-selected game so music resumes (the device reopens lazily inside PlayGameMusic).
-        // No-op if nothing should be playing. Safe to call when nothing was released.
-        private void RestoreAfterSleep()
-        {
-            try
-            {
-                if (_playbackService == null) return;
-                var game = SelectedGames?.FirstOrDefault();
-                if (game != null && _playbackService.IsPlaying != true)
-                {
-                    _playbackService.PlayGameMusic(game, _settings, forceReload: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"[Sleep] RestoreAfterSleep failed: {ex.Message}");
-            }
-        }
 
         // Polls Windows audio sessions to detect external audio playback.
         // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).

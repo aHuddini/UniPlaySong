@@ -438,6 +438,23 @@ namespace UniPlaySong.Services
         // when the seek completes and the mixer input is back in place.
         public void Resume(Action onReady = null)
         {
+            // issue #81: if the persistent audio device was released (idle/lock/suspend), the mixer +
+            // output were disposed while the song reader (_audioFile) + its mixer input survived. Rebuild
+            // the device and re-add the input BEFORE seeking/fading, otherwise the fade-in ramp runs
+            // against a null volume provider and stays stuck at 0 (silent resume). Resumes at position.
+            if (!_persistentLayerInitialized && _audioFile != null)
+            {
+                _isInMixer = false; // the old mixer is gone; the input is not in the new one yet
+                EnsurePersistentLayer();
+                if (_mixerInput != null && _mixer != null)
+                {
+                    _songEndDetector?.Reset();
+                    _mixer.AddMixerInput(_mixerInput);
+                    _isInMixer = true;
+                    _fileLogger?.Debug("[NAudio] Resume() — rebuilt persistent layer after device release (issue #81)");
+                }
+            }
+
             var totalTimeBefore = _audioFile?.TotalTime ?? TimeSpan.Zero;
             var remainingBefore = totalTimeBefore - _pausedPosition;
             bool atOrPastEof = _audioFile != null && remainingBefore <= TimeSpan.FromMilliseconds(500);
@@ -1033,6 +1050,20 @@ namespace UniPlaySong.Services
             try
             {
                 if (_isDisposed || !_persistentLayerInitialized) return;
+
+                // issue #81: leave the player in a clean paused-at-position state before tearing the
+                // device down, mirroring Pause(). If a song was actively playing (not already logically
+                // paused), save its position and mark it paused so the later Resume()/self-heal knows to
+                // rebuild the device and seek back — otherwise resume-after-suspend comes back silent.
+                // (SoundKeeper's model: a sleep-reason fully Stop()s the stream; resume fully restarts it.)
+                if (_isPlaying && !_logicallyPaused && _audioFile != null)
+                {
+                    _pausedPosition = _audioFile.CurrentTime;
+                    _logicallyPaused = true;
+                    _isPlaying = false;
+                    _fileLogger?.Debug($"[NAudio] ReleaseAudioDevice() — saved resume pos={_pausedPosition} before teardown (issue #81)");
+                }
+
                 TearDownPersistentLayer();
             }
             catch (Exception ex)

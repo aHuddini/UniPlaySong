@@ -20,19 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.7
+## What's New - v1.5.8
 
-### Added
-- **Control Spotify from UniPlaySong** — use Spotify as your Radio Mode source, or as a default-music source for games with no UPS music. UPS pauses and resumes the Spotify desktop app when you launch a game, when a video plays, and on focus loss or system lock. Note: UPS can't access Spotify's audio, so the visualizer and fades don't apply while Spotify is playing. Requires the Spotify desktop app.
-- **Live "Now Playing" for your theme** — UniPlaySong now shares the current track's title, artist, and album art (plus album, genre, and length when Spotify is playing) so your theme can display it. Two drop-in mini-player widgets are included for theme developers — in both Desktop and Fullscreen — and a live preview appears in Settings next to the now-playing options.
-- **Album art everywhere** — when a track has no embedded cover, the now-playing art falls back to the game's own cover image instead of showing nothing.
-
-### Fixed
-- The Top Panel "Now Playing" ticker now shows the Spotify track while Spotify is the active music (it previously showed nothing).
-- Turning off **Auto-tag games on library update** now fully stops automatic tagging — downloading music no longer re-adds the `[UPS] Has Music` tag when the feature is off, and **Remove All Tags** now makes the removal stick (it offers to turn auto-tagging off so the tags don't come back on the next library update).
+### Fixed (attempt — pending confirmation)
+- **Windows can suspend/sleep again while Playnite is open** (issue #81). UPS now releases its audio device when the system locks or sleeps, so Windows is no longer kept awake, and resumes your music where it left off when you return.
 
 ### Previous Version
-- **v1.5.6**: Fixed game music getting stuck after switching themes or between Desktop and Fullscreen. Fresh installs no longer auto-switch your default-music source. Added theme-developer toggles (Experimental tab) to disable music-pausing on theme overlays and videos.
+- **v1.5.7**: Added Spotify desktop-app control (as a Radio Mode source or default-music source), live "Now Playing" info your theme can display (with two drop-in mini-player widgets for theme developers), and an album-art fallback to the game's cover. Fixed the Now Playing ticker not showing Spotify tracks, and the auto-tag off switch / Remove All Tags not sticking.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -25,6 +25,11 @@ namespace UniPlaySong.Services
         private bool _isActive = false;
         private bool _isLoaded = false;
         private double _volume = 1.0;
+        // issue #81: set when the device is released (idle/lock/suspend) while a song was loaded.
+        // SDL frees the decoded music on teardown, so resume must reload from this path + seek back
+        // (NAudio can just rebuild the mixer; SDL cannot). Consumed + cleared by ReloadFromDeviceRelease().
+        private string _resumeReloadPath = string.Empty;
+        private TimeSpan _resumeReloadPosition = TimeSpan.Zero;
         private static bool _isSDLAudioInitialized = false;
         private SDL2Mixer.MusicFinishedCallback _musicFinishedCallback;
         private readonly ErrorHandlerService _errorHandler;
@@ -248,6 +253,15 @@ namespace UniPlaySong.Services
             try
             {
                 EnsureNotDisposed();
+
+                // issue #81: if the device was released and the music freed, reload it here (seeking to
+                // the stashed position). ReloadFromDeviceRelease calls back into Play(pos), so return after.
+                if (_music == IntPtr.Zero && !string.IsNullOrEmpty(_resumeReloadPath))
+                {
+                    ReloadFromDeviceRelease();
+                    return;
+                }
+
                 if (!_isLoaded)
                 {
                     throw new InvalidOperationException("No music loaded. Call Load() first.");
@@ -289,6 +303,15 @@ namespace UniPlaySong.Services
 
         public void Resume(Action onReady = null)
         {
+            // issue #81: if the device was released and the music freed, reload from the stash + seek
+            // back rather than resuming a nonexistent stream (which would come back silent).
+            if (_music == IntPtr.Zero && !string.IsNullOrEmpty(_resumeReloadPath))
+            {
+                ReloadFromDeviceRelease();
+                onReady?.Invoke();
+                return;
+            }
+
             if (!IsActive && _isLoaded)
             {
                 SDL2Mixer.Mix_ResumeMusic();
@@ -418,12 +441,45 @@ namespace UniPlaySong.Services
             {
                 if (!_enableIdleTeardown) return;
                 if (_isDisposed || !_isSDLAudioInitialized) return;
+
+                // issue #81: if a song was loaded, stash its path + position so resume can reload it
+                // (TearDownSDLAudio frees _music and clears _source/_isLoaded). Keep _isLoaded logically
+                // true afterward so the playback service still routes resume to this player; Play()/Resume()
+                // transparently reload from the stash when _music is null.
+                bool hadSong = _isLoaded && !string.IsNullOrEmpty(_source);
+                if (hadSong)
+                {
+                    _resumeReloadPath = _source;
+                    _resumeReloadPosition = CurrentTime ?? TimeSpan.Zero;
+                }
+
                 TearDownSDLAudio(TimeSpan.Zero);
+
+                if (hadSong)
+                {
+                    _isLoaded = true; // logical "loaded" — real reload deferred to next Play()/Resume()
+                }
             }
             catch (Exception ex)
             {
                 Logger.Warn($"SDL2 ReleaseAudioDevice failed: {ex.Message}");
             }
+        }
+
+        // issue #81: reloads a song that was freed by ReleaseAudioDevice, seeking back to the stashed
+        // position. Returns true if a reload happened. Reopens the device lazily via Load().
+        private bool ReloadFromDeviceRelease()
+        {
+            if (_music != IntPtr.Zero || string.IsNullOrEmpty(_resumeReloadPath)) return false;
+
+            var path = _resumeReloadPath;
+            var pos = _resumeReloadPosition;
+            _resumeReloadPath = string.Empty;
+            _resumeReloadPosition = TimeSpan.Zero;
+
+            Load(path);
+            Play(pos);
+            return true;
         }
 
         public void Dispose()

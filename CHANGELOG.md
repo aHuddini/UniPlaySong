@@ -4,6 +4,32 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.8] - 2026-06-30
+
+Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation): UPS's open audio render stream no longer blocks Windows from sleeping/suspending. Rebuilt around a central device registry that releases *every* audio-device holder on lock/suspend/idle, with a resume path that comes back audible at the saved position. Supersedes the earlier main-player-only attempt (branch `fix/issue-81-idle-teardown`, `8fa106f`).
+
+### Added
+
+- **`AudioDeviceRegistry` + `IAudioDeviceHolder` contract.** A thread-safe registry owns the set of audio-device holders and a single `ReleaseAllDevices(reason)` operation (snapshot-under-lock so release runs off the UI thread; fail-safe so one throwing holder doesn't abort the rest). Holders implement `ReleaseAudioDevice()` / `IsAudioDeviceOpen` / `AudioDeviceLabel`. The four holders — main player, dashboard player (both `NAudioMusicPlayer`), `SDL2MusicPlayer`, and the transient jingle player — register on creation and unregister on dispose, structurally preventing the "forgot a holder" gap that sank the prior attempt. `src/Services/AudioDeviceRegistry.cs`, `src/Services/IAudioDeviceHolder.cs`.
+
+- **`SleepCoordinator` owning the triggers.** Centralizes issue-#81 release: one 1-minute idle timer (a *loaded-but-paused* song now **counts toward** idle — the core bug in the old per-backend timers, which treated paused as activity) plus immediate release on lock/suspend routed from the `SystemEvents` handlers. `IdleTick(DateTime)` is a pure, unit-tested state machine (`0` minutes disables idle release). `src/Services/SleepCoordinator.cs`.
+
+### Fixed
+
+- **UPS's open audio stream blocked Windows sleep/suspend** (issue #81, fix attempt). Root cause: Windows will not suspend while any audio render stream is open, and UPS held several (main + dashboard `WaveOutEvent`, process-wide SDL `Mix_OpenAudio`, jingle player) between songs. Now `PowerModeChanged.Suspend` and `SessionSwitch.SessionLock` both call `ReleaseAllDevices`, closing every holder so Windows sees no audio session; devices reopen lazily on the next `Load`/`Play`. The prior attempt released only the main player and relied on `PowerModeChanged.Suspend` for the auto-idle case — which can't fire, because Windows won't *initiate* suspend while audio blocks it (the idle timer is the load-bearing trigger for that path). `src/UniPlaySong.cs`.
+
+- **Resume came back silent after lock/suspend.** Root cause: the device teardown disposed the NAudio persistent mixer + output (nulling the volume provider) while the song reader and its mixer input survived, and `_isInMixer` wasn't reset — so on wake the fade-in ramp ran against a null/dead volume provider and stayed stuck at 0. Fix (modeled on SoundKeeper's "a sleep-reason fully stops the stream; resume fully restarts it, gated by a flag"): `ReleaseAudioDevice()` now saves the play position and marks the player paused-at-position before teardown, and `Resume()` self-heals — it rebuilds the persistent layer and re-adds the surviving input *before* seeking, then ramps against the live provider. Both wake paths are unified through the `PauseSource.SystemLock` symmetry: suspend adds the source (pause + save position) and resume/unlock removes it, driving the same self-healing resume-at-position (no track restart). `src/Services/NAudioMusicPlayer.cs`, `src/UniPlaySong.cs`.
+
+- **SDL2 resume after device release.** SDL frees the decoded music (`Mix_FreeMusic`) on teardown, so it can't simply rebuild a mixer like NAudio. `ReleaseAudioDevice()` now stashes the track path + position (keeping the player logically "loaded" so the playback service still routes resume to it), and `Play()`/`Resume()` transparently reload from the stash and seek back when the music handle is gone. `src/Services/SDL2MusicPlayer.cs`.
+
+### Removed
+
+- **`PowerStateHelper` and its two call sites.** It called `SetThreadExecutionState(ES_CONTINUOUS)` alone — an opt-*out* that cleared UPS's own keep-awake hints, a red herring that neither blocked nor fixed sleep (the open stream is the blocker). UPS now never touches `SetThreadExecutionState`, the truest "never interfere with Windows power behavior" stance. The two per-backend idle timers + `OnIdleTeardownTick` were also removed, superseded by the centralized `SleepCoordinator`. `src/Common/PowerStateHelper.cs` (deleted).
+
+### Changed
+
+- **`IdleAudioDeviceTeardownMinutes` help text** clarified: it now governs the centralized idle timer; lock/suspend release fire immediately regardless of the idle setting (`0` disables *idle* teardown only). The setting remains on the Experimental tab.
+
 ## [1.5.7] - 2026-06-26
 
 Spotify control integration (event-mirror architecture): UPS conducts the Spotify desktop app's transport via Windows SMTC while playing none of its own audio. Two opt-in engagement modes. Control-only — no audio capture, no OAuth, no Web API.
