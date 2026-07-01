@@ -68,8 +68,11 @@ namespace UniPlaySong.Services.Spotify
         private bool ComputeActive(UniPlaySongSettings s)
         {
             if (s == null || _client == null || !_client.IsAvailable) return false;
-            // Radio precedence: evaluated first, unconditionally.
-            if (s.RadioModeEnabled && s.SpotifyRadioMode) return true;
+            // Spotify Radio Mode: standalone continuous source (v1.5.8 — no longer gated on
+            // RadioModeEnabled, which caused UPS's pool radio to start alongside Spotify). It is
+            // mutually exclusive with RadioModeEnabled (enforced in settings), so when this is on,
+            // MusicPlaybackService's RadioMode branch never fires — Spotify alone is the source.
+            if (s.SpotifyRadioMode) return true;
             if (s.DefaultMusicSourceOption == DefaultMusicSource.Spotify
                 && _playback?.IsPlayingDefaultMusic == true) return true;
             return false;

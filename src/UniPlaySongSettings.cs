@@ -1248,18 +1248,33 @@ namespace UniPlaySong
 
         // Radio Mode: ignore game selection entirely; play continuously from a fixed pool.
         // Overrides all per-game music logic — game-specific songs never play while active.
+        // Mutually exclusive with SpotifyRadioMode (alternative continuous-music sources):
+        // enabling one disables the other, so they can never contend for audio.
         public bool RadioModeEnabled
         {
             get => radioModeEnabled;
-            set { radioModeEnabled = value; OnPropertyChanged(); }
+            set
+            {
+                radioModeEnabled = value;
+                OnPropertyChanged();
+                // Only act on the true transition and only if the other is set, so the mirror
+                // setter can't recurse (it sets spotifyRadioMode=false, whose setter won't touch this).
+                if (value && spotifyRadioMode) SpotifyRadioMode = false;
+            }
         }
 
-        // When Radio Mode is on, conduct the Spotify desktop app instead of UPS's own
-        // radio pool. Only meaningful when RadioModeEnabled is true.
+        // Spotify Radio Mode: conduct the Spotify desktop app continuously as background music
+        // (v1.5.8 — decoupled from Radio Mode; formerly a sub-toggle). Standalone top-level
+        // source, mutually exclusive with RadioModeEnabled.
         public bool SpotifyRadioMode
         {
             get => spotifyRadioMode;
-            set { spotifyRadioMode = value; OnPropertyChanged(); }
+            set
+            {
+                spotifyRadioMode = value;
+                OnPropertyChanged();
+                if (value && radioModeEnabled) RadioModeEnabled = false;
+            }
         }
 
         // When Spotify is the default music source, advance Spotify to a new track each time
