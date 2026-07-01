@@ -1083,6 +1083,7 @@ namespace UniPlaySong
         private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
+        private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path (v1.5.8)
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
         private List<Guid> gamePropFilterSourceIds = new List<Guid>();
@@ -1284,6 +1285,14 @@ namespace UniPlaySong
         {
             get => radioMusicSource;
             set { radioMusicSource = value; OnPropertyChanged(); }
+        }
+
+        // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath
+        // (v1.5.8 — preserves pre-decouple behavior for users who never picked a radio folder).
+        public string RadioCustomFolderPath
+        {
+            get => radioCustomFolderPath;
+            set { radioCustomFolderPath = value; OnPropertyChanged(); }
         }
 
         // Which default music source to use: CustomFile, BundledPreset, CustomFolder, etc.
