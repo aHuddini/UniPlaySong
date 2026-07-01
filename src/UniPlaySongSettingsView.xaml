@@ -3978,7 +3978,7 @@
                                 TickPlacement="None"
                                 AutoToolTipPlacement="TopLeft"/>
                     </StackPanel>
-                    <TextBlock Text="After this many minutes of no music playing, UniPlaySong closes the audio device so Windows can enter sleep / auto-suspend on schedule. Set to 0 to keep the device open at all times (older behavior — may prevent automatic sleep on some systems). The first song after a release costs a brief moment to reopen the device."
+                    <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. 0 disables idle release. UniPlaySong also releases its audio device immediately when you lock the PC or it suspends (regardless of this setting)."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
