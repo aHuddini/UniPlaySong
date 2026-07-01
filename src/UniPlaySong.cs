@@ -2592,7 +2592,7 @@ namespace UniPlaySong
                 _spotifyClient,
                 () => _settings,
                 _fileLogger);
-            _spotifyControlService.Recompute(); // establish initial SpotifyActive state
+            _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
 
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
             // binding via {PluginSettings}. Runs in BOTH Desktop and Fullscreen (theme exposure is
