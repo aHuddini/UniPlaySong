@@ -4,7 +4,7 @@ using System.Windows.Media;
 namespace UniPlaySong.Services
 {
     // Interface for low-level music playback
-    public interface IMusicPlayer
+    public interface IMusicPlayer : IAudioDeviceHolder
     {
         event EventHandler MediaEnded;
         event EventHandler<ExceptionEventArgs> MediaFailed;

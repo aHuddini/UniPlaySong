@@ -39,15 +39,6 @@ namespace UniPlaySong.Services
         private SmoothVolumeSampleProvider _volumeProvider;
         private bool _persistentLayerInitialized;
 
-        // v1.5.3 idle-teardown timer (issue #81). Polls every minute checking
-        // whether the player has been idle long enough to release the persistent
-        // audio device — freeing the Windows audio session and letting Windows
-        // autosuspend the system normally. Started on first persistent-layer init,
-        // stopped on Dispose. User-configurable via Settings -> General ->
-        // IdleAudioDeviceTeardownMinutes (default 5, 0 disables).
-        private System.Windows.Threading.DispatcherTimer _idleTeardownTimer;
-        private DateTime _lastActivityUtc = DateTime.UtcNow;
-
         // Per-song chain (created on Load, removed on Close)
         // WaveStream base type supports both AudioFileReader (MP3/WAV/FLAC) and VorbisWaveReader (OGG)
         private WaveStream _audioFile;
@@ -154,17 +145,7 @@ namespace UniPlaySong.Services
             _outputDevice.Init(_volumeProvider);
             _outputDevice.Play(); // Starts once, runs forever outputting silence until inputs added
 
-            // v1.5.3 (issue #81) — explicit Windows power-state opt-out. Tells the
-            // system we are not asking to block sleep. The underlying WaveOut handle
-            // still holds an audio session open (which Windows reads as a sleep
-            // blocker on its own); this call removes UPS's explicit contribution to
-            // that on top, and pairs with the idle-teardown timer (if the user has
-            // it on) which actually closes the device after long idle.
-            PowerStateHelper.OptOutOfKeepAwake();
-
             _persistentLayerInitialized = true;
-            MarkAudioActivity();
-            StartIdleTeardownTimer();
 
             sw.Stop();
             _fileLogger?.Debug($"[NAudio] EnsurePersistentLayer: {sw.ElapsedMilliseconds}ms (mixer+volume+device+play)");
@@ -191,67 +172,6 @@ namespace UniPlaySong.Services
             catch (Exception ex)
             {
                 Logger.Error(ex, $"[{LogPrefix}] Error tearing down persistent layer");
-            }
-        }
-
-        // v1.5.3 (issue #81): start the idle-teardown timer. Called from
-        // EnsurePersistentLayer right after the WaveOutEvent is up. Polls every
-        // minute; on each tick checks whether the player has been idle longer
-        // than IdleAudioDeviceTeardownMinutes and tears down the device if so.
-        private void StartIdleTeardownTimer()
-        {
-            if (_idleTeardownTimer != null) return;
-            _idleTeardownTimer = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(1)
-            };
-            _idleTeardownTimer.Tick += OnIdleTeardownTick;
-            _idleTeardownTimer.Start();
-        }
-
-        private void StopIdleTeardownTimer()
-        {
-            if (_idleTeardownTimer == null) return;
-            _idleTeardownTimer.Stop();
-            _idleTeardownTimer.Tick -= OnIdleTeardownTick;
-            _idleTeardownTimer = null;
-        }
-
-        // Resets the idle countdown. Called from Load() and Play() so any real
-        // playback activity keeps the device alive — EnsurePersistentLayer is
-        // idempotent (no-op when already initialized), so Load() relies on this
-        // call, not on EnsurePersistentLayer, to mark activity on the common path.
-        public void MarkAudioActivity()
-        {
-            _lastActivityUtc = DateTime.UtcNow;
-        }
-
-        private void OnIdleTeardownTick(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!_persistentLayerInitialized) return;
-
-                var minutes = _settingsService?.Current?.IdleAudioDeviceTeardownMinutes ?? 5;
-                if (minutes <= 0) return; // user disabled the feature
-
-                // Only tear down if genuinely idle: no song loaded AND mixer has
-                // no active inputs. _audioFile is the strongest signal — when
-                // RemoveCurrentSongChain ran it set this to null.
-                if (_audioFile != null) { MarkAudioActivity(); return; }
-                if (IsCrossfading) { MarkAudioActivity(); return; }
-                if (_isPlaying || _logicallyPaused) { MarkAudioActivity(); return; }
-
-                var idleFor = DateTime.UtcNow - _lastActivityUtc;
-                if (idleFor.TotalMinutes < minutes) return;
-
-                _fileLogger?.Info($"[NAudio] Idle teardown: {idleFor.TotalMinutes:F1}min >= {minutes}min threshold — releasing persistent audio device so Windows can sleep");
-                TearDownPersistentLayer();
-                StopIdleTeardownTimer();
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn($"[{LogPrefix}] Idle teardown tick failed: {ex.Message}");
             }
         }
 
@@ -393,7 +313,6 @@ namespace UniPlaySong.Services
                 Source = filePath;
                 IsLoaded = true;
                 _logicallyPaused = false;
-                MarkAudioActivity();
 
                 sw.Stop();
                 _fileLogger?.Debug($"[NAudio] Load: {sw.ElapsedMilliseconds}ms total (Remove={removeMs}, Persist={persistMs - removeMs}, Reader={readerMs - persistMs}{(usedPreload ? " PRELOADED" : "")}, Chain={chainMs - readerMs}, Viz={vizMs - chainMs}, Normalize={normalizeMs - vizMs}) — {System.IO.Path.GetFileName(filePath)}");
@@ -427,7 +346,6 @@ namespace UniPlaySong.Services
 
                 _isPlaying = true;
                 _logicallyPaused = false;
-                MarkAudioActivity();
             }
             catch (Exception ex)
             {
@@ -1101,11 +1019,31 @@ namespace UniPlaySong.Services
             }
         }
 
+        // --- IAudioDeviceHolder (issue #81) ---
+
+        public bool IsAudioDeviceOpen => _persistentLayerInitialized;
+
+        public string AudioDeviceLabel => "MainPlayer(NAudio)";
+
+        // Releases the persistent audio device immediately (idle/lock/suspend) so Windows can
+        // sleep. Idempotent; no-op if not open. The device rebuilds lazily on the next Load()/Play().
+        public void ReleaseAudioDevice()
+        {
+            try
+            {
+                if (_isDisposed || !_persistentLayerInitialized) return;
+                TearDownPersistentLayer();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[{LogPrefix}] ReleaseAudioDevice failed: {ex.Message}");
+            }
+        }
+
         public void Dispose()
         {
             if (!_isDisposed)
             {
-                StopIdleTeardownTimer();
                 RemoveCurrentSongChain();
                 TearDownPersistentLayer();
 

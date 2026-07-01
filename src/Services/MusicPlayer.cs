@@ -369,6 +369,13 @@ namespace UniPlaySong.Services
             }
         }
 
+        // --- IAudioDeviceHolder (issue #81) ---
+        // WPF MediaPlayer opens/closes its device per-media, so there's no persistent device to
+        // release. Report closed and no-op.
+        public bool IsAudioDeviceOpen => false;
+        public string AudioDeviceLabel => "MainPlayer(WPF)";
+        public void ReleaseAudioDevice() { }
+
         private void OnMediaEnded(object sender, EventArgs e)
         {
             MediaEnded?.Invoke(sender, e);
