@@ -893,6 +893,15 @@
                         <RadioButton Content="Custom Folder"
                                      IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"
                                      Margin="0,2"/>
+                        <!-- Radio's own custom folder (v1.5.8) — inside the RadioModeEnabled-gated group, so no own gate -->
+                        <StackPanel Orientation="Horizontal" Margin="20,2,0,0">
+                            <TextBox Text="{Binding Settings.RadioCustomFolderPath}"
+                                     Width="330" Margin="0,0,10,0" IsReadOnly="True"/>
+                            <Button Content="Browse..." Width="80"
+                                    Command="{Binding BrowseForRadioCustomFolder}"/>
+                        </StackPanel>
+                        <TextBlock Text="Plays random music from any audio files in the selected folder. If left empty, uses your Default Music folder."
+                                   FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,3,0,4"/>
                         <RadioButton Content="Custom Game Rotation"
                                      IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"
                                      Margin="0,2"/>

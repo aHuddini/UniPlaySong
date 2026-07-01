@@ -387,6 +387,23 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand BrowseForRadioCustomFolder => new Common.RelayCommand<object>((a) =>
+        {
+            var errorHandler = plugin.GetErrorHandlerService();
+            errorHandler?.Try(
+                () =>
+                {
+                    var selectedFolder = PlayniteApi.Dialogs.SelectFolder();
+                    if (!string.IsNullOrWhiteSpace(selectedFolder))
+                    {
+                        Settings = CreateSettingsWithUpdate(s => s.RadioCustomFolderPath = selectedFolder);
+                    }
+                },
+                context: "selecting radio custom folder",
+                showUserMessage: true
+            );
+        });
+
         public ICommand SelectRotationGames => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

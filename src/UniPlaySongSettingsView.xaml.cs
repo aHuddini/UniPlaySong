@@ -146,6 +146,7 @@ namespace UniPlaySong
             s.SpotifySkipOnGap = false;
             s.PlayOnlyOnGameSelect = false;
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
+            s.RadioCustomFolderPath = null;
             s.FadeOutBeforeSongEnd = false;
             s.FadeOutBeforeSongEndDuration = 3.0;
             s.EnableTrueCrossfade = false;
