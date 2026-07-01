@@ -39,6 +39,12 @@ namespace UniPlaySong.Services.Spotify
         // no thumbnail / failure. Fail-safe (never throws).
         byte[] TryGetAlbumArtBytes();
 
+        // Fetch the current track OFF the UI thread; onResult is invoked on the UI thread.
+        void RequestNowPlaying(Action<SpotifyNowPlaying> onResult);
+
+        // Fetch album-art bytes OFF the UI thread; onResult is invoked on the UI thread.
+        void RequestAlbumArt(Action<byte[]> onResult);
+
         // Raised when Spotify becomes available or unavailable (session opened/closed),
         // or its playback state changes, so the policy layer can recompute.
         event Action AvailabilityChanged;

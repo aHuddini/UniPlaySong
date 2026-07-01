@@ -30,9 +30,13 @@ namespace UniPlaySong.Tests.Services
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _client.Setup(c => c.TryPause()).Returns(true);
             _client.Setup(c => c.TryResume()).Returns(true);
-            _client.Setup(c => c.TryGetAlbumArtBytes()).Returns(new byte[] { 1, 2, 3 });
-            _client.Setup(c => c.GetNowPlaying()).Returns(
-                new SpotifyNowPlaying("Tokyo Rain", "CASPER", "Neon Nights", "Synthwave", TimeSpan.FromSeconds(225)));
+            var track = new SpotifyNowPlaying("Tokyo Rain", "CASPER", "Neon Nights", "Synthwave", TimeSpan.FromSeconds(225));
+            var artBytes = new byte[] { 1, 2, 3 };
+            // Invoke callbacks synchronously so publisher tests run end-to-end without a real dispatcher.
+            _client.Setup(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()))
+                .Callback<Action<SpotifyNowPlaying>>(cb => cb(track));
+            _client.Setup(c => c.RequestAlbumArt(It.IsAny<Action<byte[]>>()))
+                .Callback<Action<byte[]>>(cb => cb(artBytes));
 
             _dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ups_pub_" + Guid.NewGuid().ToString("N"));
             System.IO.Directory.CreateDirectory(_dir);
@@ -104,7 +108,9 @@ namespace UniPlaySong.Tests.Services
         {
             _settings.RadioModeEnabled = true;
             _settings.SpotifyRadioMode = true;
-            _client.Setup(c => c.TryGetAlbumArtBytes()).Returns((byte[])null);
+            // Override the default art-bytes stub to return null — simulates no thumbnail available.
+            _client.Setup(c => c.RequestAlbumArt(It.IsAny<Action<byte[]>>()))
+                .Callback<Action<byte[]>>(cb => cb(null));
             var (pub, spotify, meta, pb) = BuildPublisher();
             spotify.Recompute();
             pub.Refresh();

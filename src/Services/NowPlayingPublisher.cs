@@ -62,18 +62,36 @@ namespace UniPlaySong.Services
                 {
                     if (_spotify != null && _spotify.IsSpotifyActive)
                     {
-                        var np = _spotify.GetNowPlaying();
-                        var title = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
-                        var artist = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
-                        var album = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
-                        var genre = np.IsEmpty ? string.Empty : (np.Genre ?? string.Empty);
-                        // Preformat duration to "m:ss" here so themes/the card bind a ready string; "" when unknown.
-                        var duration = (np.IsEmpty || np.Duration <= TimeSpan.Zero)
-                            ? string.Empty
-                            : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
-                        var artPath = _artWriter?.WriteBytes(_spotifyClient?.TryGetAlbumArtBytes()) ?? string.Empty;
-                        Publish(s, title, artist, artPath, album, genre, duration);
-                        return;
+                        // Fetch Spotify metadata OFF the UI thread (worker); publish when it lands.
+                        // Two chained requests: now-playing then album art. The final callback
+                        // re-acquires the publish lock (Refresh's lock was released on return).
+                        _spotifyClient?.RequestNowPlaying(np =>
+                        {
+                            if (_disposed) return;
+                            _spotifyClient?.RequestAlbumArt(artBytes =>
+                            {
+                                if (_disposed) return;
+                                lock (_publishLock)
+                                {
+                                    if (_disposed) return;
+                                    var s2 = _getSettings?.Invoke();
+                                    if (s2 == null) return;
+                                    // Only publish if Spotify is still the active source (state may
+                                    // have changed while the async fetch was in flight).
+                                    if (_spotify == null || !_spotify.IsSpotifyActive) return;
+                                    var title = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
+                                    var artist = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
+                                    var album = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
+                                    var genre = np.IsEmpty ? string.Empty : (np.Genre ?? string.Empty);
+                                    var duration = (np.IsEmpty || np.Duration <= TimeSpan.Zero)
+                                        ? string.Empty
+                                        : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
+                                    var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
+                                    Publish(s2, title, artist, artPath, album, genre, duration);
+                                }
+                            });
+                        });
+                        return; // publish happens in the async callbacks above
                     }
 
                     var song = _metadata?.CurrentSongInfo;
