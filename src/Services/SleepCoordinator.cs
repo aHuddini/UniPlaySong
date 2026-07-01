@@ -32,6 +32,7 @@ namespace UniPlaySong.Services
         // Immediate release for lock/suspend — fires regardless of the idle setting. Safe from any thread.
         public void OnLockOrSuspend(string reason)
         {
+            _fileLogger?.Debug($"[Sleep] {reason} — coordinator releasing audio devices");
             _registry?.ReleaseAllDevices(reason);
         }
 

@@ -2035,6 +2035,7 @@ namespace UniPlaySong
                 {
                     _fileLogger?.Debug("[Sleep] Resume — devices will reopen on next playback");
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
                     RestoreAfterSleep();
                 }));
             }

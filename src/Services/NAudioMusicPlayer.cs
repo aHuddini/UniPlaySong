@@ -32,7 +32,8 @@ namespace UniPlaySong.Services
         public bool SuppressVisualizationProvider { get; set; }
 
         // Persistent infrastructure (created once on first Load, torn down by Dispose
-        // OR — v1.5.4+ (issue #81) — by the idle-teardown timer when the user has it on)
+        // OR — issue #81 — by ReleaseAudioDevice() when the AudioDeviceRegistry releases
+        // devices on idle/lock/suspend so Windows can sleep)
         private WaveOutEvent _outputDevice;
         private MixingSampleProvider _mixer;
         private CalmDownProcessor _calmDownProcessor;
