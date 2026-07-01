@@ -427,6 +427,27 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
+        public void EngageWaitsForAppReady_NoResumeUntilStarted()
+        {
+            // Fullscreen-switch churn fix: the engage Resume must not fire before the app is
+            // visible (OnApplicationStarted) — it previously played for ~1s during startup and
+            // was then paused by the theme-overlay pause source (pause -> play -> pause churn).
+            bool ready = false;
+            var svc = new SpotifyControlService(_playback.Object, _client.Object, () => _settings, null, () => ready);
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            svc.Recompute();                                   // engage attempt before app started
+            _client.Verify(c => c.TryResume(), Times.Never);   // held back
+
+            ready = true;
+            svc.Recompute();                                   // app now started
+            _client.Verify(c => c.TryResume(), Times.Once);    // radio starts exactly once
+            svc.Dispose();
+        }
+
+        [Test]
         public void NowPlayingChanged_RaisedOutsideRecomputeLock_NoDeadlock()
         {
             // Regression: the radio path raised NowPlayingChanged INSIDE _recomputeLock. A subscriber

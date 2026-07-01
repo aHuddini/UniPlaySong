@@ -114,6 +114,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Spotify.SpotifySmtcClient _spotifyClient;
         private Services.Spotify.SpotifyControlService _spotifyControlService;
+        private volatile bool _appStarted; // gates the Spotify radio engage until OnApplicationStarted
         private Services.NowPlayingPublisher _nowPlayingPublisher;
         private Services.SongMetadataService _publisherMetadata;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
@@ -534,6 +535,12 @@ namespace UniPlaySong
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
+
+            // App is visible: release the Spotify radio engage gate and recompute immediately so
+            // the radio starts now (not on the next poll). Before this gate, the engage fired in
+            // the startup window before the overlay/login pause registered -> pause/play/pause churn.
+            _appStarted = true;
+            _spotifyControlService?.Recompute();
 
             // Recompute the theme-override flag from the controls actually loaded in the theme we
             // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
@@ -1472,7 +1479,21 @@ namespace UniPlaySong
                     }
                     if (!yieldToGameMusic)
                     {
-                        _playbackService.StartRadioPlayback(_settings);
+                        if (_settings.RadioMusicSource == RadioMusicSource.Spotify)
+                        {
+                            // Spotify is the radio source: there is no UPS pool to start — instead the
+                            // currently-playing game music must STOP so Spotify plays alone. Routing
+                            // through PlayGameMusic (no forceReload) hits the SpotifyRadioMode
+                            // suppression branch (fade-out + suppress). Without this, toggling the
+                            // theme's Radio Mode ON left game music playing alongside Spotify.
+                            if (game != null) _playbackService.PlayGameMusic(game, _settings);
+                            else _playbackService.Stop(); // no game context — just silence UPS
+                            _spotifyControlService?.Recompute(); // engage Spotify now, not on the next poll
+                        }
+                        else
+                        {
+                            _playbackService.StartRadioPlayback(_settings);
+                        }
                     }
                 }
                 else
@@ -2592,7 +2613,8 @@ namespace UniPlaySong
                 _playbackService,
                 _spotifyClient,
                 () => _settings,
-                _fileLogger);
+                _fileLogger,
+                () => _appStarted);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
 
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme

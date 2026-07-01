@@ -16,6 +16,7 @@ namespace UniPlaySong.Services.Spotify
         private readonly ISpotifyClient _client;
         private readonly Func<UniPlaySongSettings> _getSettings;
         private readonly FileLogger _fileLogger;
+        private readonly Func<bool> _isAppReady;
 
         // True once UPS has taken control of Spotify playback (the first time Spotify needs
         // to play for UPS's purposes). While true, UPS drives Spotify play/pause to match
@@ -51,16 +52,22 @@ namespace UniPlaySong.Services.Spotify
         // Raised whenever now-playing should be refreshed (active state or track may have changed).
         public event Action NowPlayingChanged;
 
+        // isAppReady: gates the radio engage-Resume until the app is visible (OnApplicationStarted).
+        // Without it the engage fired during the startup window BEFORE the theme-overlay/login pause
+        // sources register, so Spotify played for ~1s and was then paused (pause->play->pause churn
+        // on a Desktop<->Fullscreen switch). null = always ready (tests, no gating).
         public SpotifyControlService(
             IMusicPlaybackService playbackService,
             ISpotifyClient spotifyClient,
             Func<UniPlaySongSettings> getSettings,
-            FileLogger fileLogger)
+            FileLogger fileLogger,
+            Func<bool> isAppReady = null)
         {
             _playback = playbackService;
             _client = spotifyClient;
             _getSettings = getSettings;
             _fileLogger = fileLogger;
+            _isAppReady = isAppReady;
 
             if (_playback != null) _playback.OnPlaybackStateChanged += Recompute;
             if (_client != null) _client.AvailabilityChanged += Recompute;
@@ -139,7 +146,10 @@ namespace UniPlaySong.Services.Spotify
 
                 if (radioActive)
                 {
-                    bool lifecyclePaused = _playback?.IsPaused == true;
+                    // Not-yet-started counts as a lifecycle pause: holds the engage seed (Pause +
+                    // LifecyclePausedByUps) until OnApplicationStarted, so the radio starts exactly
+                    // once when the app is actually visible instead of during startup churn.
+                    bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false;
                     bool spotifyPlaying = _client.IsPlaying;
                     var (action, next) = SpotifyRadioDecision.Decide(
                         radioOn: true, lifecyclePaused: lifecyclePaused,
