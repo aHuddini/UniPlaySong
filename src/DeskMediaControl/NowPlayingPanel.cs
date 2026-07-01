@@ -276,7 +276,9 @@ namespace UniPlaySong.DeskMediaControl
             }
             else
             {
-                dispatcher.Invoke(() => UpdateSongInfoInternal(songInfo));
+                // BeginInvoke (async), never Invoke: callers include SMTC/WinRT callback threads that
+                // may hold locks the UI thread wants — a sync Invoke there deadlocks (launch freeze).
+                dispatcher.BeginInvoke(new Action(() => UpdateSongInfoInternal(songInfo)));
             }
         }
 

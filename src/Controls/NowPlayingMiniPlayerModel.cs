@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -47,8 +48,10 @@ namespace UniPlaySong.Controls
                 e.PropertyName != nameof(UniPlaySongSettings.NowPlayingDuration))
                 return;
 
+            // BeginInvoke (async), never Invoke: a sync Invoke from a non-UI thread can deadlock
+            // when the raiser holds a lock the UI thread wants (the Spotify-radio launch freeze).
             if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
-                Application.Current.Dispatcher.Invoke(RaiseAll);
+                Application.Current.Dispatcher.BeginInvoke(new Action(RaiseAll));
             else
                 RaiseAll();
         }

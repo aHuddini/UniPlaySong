@@ -58,8 +58,10 @@ namespace UniPlaySong
             {
                 var vm = DataContext as UniPlaySongSettingsViewModel;
                 // The publisher may raise PropertyChanged off the UI thread; marshal the VM refresh.
+                // BeginInvoke (async), never Invoke: a sync Invoke from an SMTC callback thread can
+                // deadlock against a UI thread waiting on the raiser's lock (launch-freeze class).
                 if (System.Windows.Application.Current?.Dispatcher != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => vm?.RefreshNowPlayingPreview());
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new System.Action(() => vm?.RefreshNowPlayingPreview()));
                 else
                     vm?.RefreshNowPlayingPreview();
             }

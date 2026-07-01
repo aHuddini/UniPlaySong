@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-06-30
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.8/UniPlaySong-1_5_8-Jun30_2026.pext'
     Changelog:
+      - '[Fix Attempt] Spotify Radio Mode: fixed an intermittent Playnite freeze at launch (a threading deadlock in the now-playing refresh) and made the radio start seconds sooner after startup (faster Spotify detection, no more waiting on a slow poll).'
       - '[Improved] Radio Mode "Custom Folder" now has its own folder picker (Playback settings) instead of silently reusing your Default Music folder. Leave it empty to keep using the Default Music folder.'
       - '[Fix Attempt] Windows can auto-sleep/suspend again while Playnite is open (issue #81). UPS used to keep its audio device open between songs, which could stop Windows from sleeping on its own. UPS now releases its audio device when the system locks or goes to sleep, so Windows can suspend normally, and reopens it when you return.'
       - '[Fix Attempt] Music now resumes where it left off after you lock (Win+L) or the PC sleeps and you come back — it previously could come back silent.'

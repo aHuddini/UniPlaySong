@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Moq;
 using NUnit.Framework;
 using UniPlaySong;
@@ -423,6 +424,45 @@ namespace UniPlaySong.Tests.Services.Spotify
             _service.Recompute();
             _client.Verify(c => c.TryPause(), Times.Once);     // Spotify paused
             Assert.IsFalse(_service.IsSpotifyActive);
+        }
+
+        [Test]
+        public void NowPlayingChanged_RaisedOutsideRecomputeLock_NoDeadlock()
+        {
+            // Regression: the radio path raised NowPlayingChanged INSIDE _recomputeLock. A subscriber
+            // doing a sync Dispatcher.Invoke then blocks on a UI thread that is itself entering
+            // Recompute (playback event / timer) -> both wait on each other -> Playnite frozen.
+            // This test simulates that: the handler blocks until a SECOND thread finishes Recompute.
+            // If the raise happens while the lock is held, the second Recompute can't finish -> timeout.
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+
+            var handlerEntered = new ManualResetEventSlim(false);
+            var otherRecomputeDone = new ManualResetEventSlim(false);
+            bool deadlocked = false;
+
+            _service.NowPlayingChanged += () =>
+            {
+                if (handlerEntered.IsSet) return;   // only the first raise participates
+                handlerEntered.Set();
+                // Mirrors a sync Dispatcher.Invoke waiting on a thread that calls Recompute.
+                if (!otherRecomputeDone.Wait(TimeSpan.FromSeconds(2)))
+                    deadlocked = true;
+            };
+
+            var other = new Thread(() =>
+            {
+                handlerEntered.Wait(TimeSpan.FromSeconds(2));
+                _service.Recompute();               // must NOT block on _recomputeLock
+                otherRecomputeDone.Set();
+            });
+            other.Start();
+
+            _service.Recompute();                    // engage -> raises NowPlayingChanged
+            other.Join(TimeSpan.FromSeconds(5));
+
+            Assert.IsFalse(deadlocked, "Recompute on another thread blocked while a NowPlayingChanged handler ran — the event is raised inside _recomputeLock.");
+            Assert.IsTrue(otherRecomputeDone.IsSet);
         }
     }
 

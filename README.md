@@ -26,6 +26,7 @@ Built with the help of Claude Code and Cursor IDE
 - **Radio Mode "Custom Folder" now lets you pick a folder.** Choose any folder of audio files just for radio — or leave it empty to keep using your Default Music folder.
 
 ### Fixed (attempt — pending confirmation)
+- **Spotify Radio Mode stability.** Fixed an intermittent freeze when launching Playnite with Spotify radio on, and radio now starts sooner after startup (faster Spotify detection).
 - **Windows can suspend/sleep again while Playnite is open** (issue #81). UPS now releases its audio device when the system locks or sleeps, so Windows is no longer kept awake, and resumes your music where it left off when you return.
 - **Radio Mode now works with Spotify.** Pick Spotify as your Radio Mode source in the Playback settings, and your theme's Radio Mode button will play Spotify instead of forcing the plugin's own radio — no more both playing at once. Turning Radio Mode off now stops Spotify cleanly. If you used the old "Spotify Radio Mode" toggle, just re-pick "Spotify" as your source after updating.
 

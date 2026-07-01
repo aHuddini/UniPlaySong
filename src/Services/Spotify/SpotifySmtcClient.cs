@@ -31,11 +31,16 @@ namespace UniPlaySong.Services.Spotify
             _fileLogger = fileLogger;
             _worker = new SpotifySmtcWorker(fileLogger);
             _worker.Start();
-            TryStart();
+            // WinRT init OFF the constructing thread: the plugin ctor runs on Playnite's UI thread,
+            // and MediaManager.Start() + the first cache read block on the WinRT broker (can take
+            // seconds on a cold start). The client just reports unavailable until startup completes;
+            // TryStart announces readiness via AvailabilityChanged.
+            _worker.PostRequest(TryStart);
         }
 
         private void TryStart()
         {
+            if (_disposed) return;
             try
             {
                 _manager = new MediaManager();
@@ -46,6 +51,11 @@ namespace UniPlaySong.Services.Spotify
                 _manager.Start();
                 _started = true;
                 RefreshCache();
+                // Disposed while starting (e.g. Playnite shutting down mid-launch): tear down now.
+                if (_disposed) { try { _manager?.Dispose(); } catch { } return; }
+                // Announce readiness so subscribers recompute immediately (radio engages without
+                // waiting for the periodic poll).
+                AvailabilityChanged?.Invoke();
             }
             catch (Exception ex)
             {
@@ -65,8 +75,8 @@ namespace UniPlaySong.Services.Spotify
         private void OnMediaPropertyChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionMediaProperties props) => AvailabilityChanged?.Invoke();
 
         // Recompute the cached availability/playing snapshot from the current Spotify session.
-        // Runs on the MediaManager's background thread (never the UI thread), so the synchronous
-        // WinRT reads here are safe. UI code reads the cached volatile fields, never this.
+        // Runs on the worker (startup) or the MediaManager's callback threads — never the UI
+        // thread — so the synchronous WinRT reads here are safe. UI reads the cached volatiles.
         private void RefreshCache()
         {
             try
