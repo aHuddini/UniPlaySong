@@ -356,6 +356,11 @@ namespace UniPlaySong.DeskMediaControl
         // Shows Spotify track when active; restores the last UPS song when Spotify becomes inactive.
         private void OnSpotifyNowPlayingChanged()
         {
+            // Refresh the play/pause glyph on every Spotify state/track change (this fires on SMTC
+            // playback-state events) so an external Spotify pause/play — or active→inactive — flips
+            // the icon. UpdateIcons reads Spotify's current state and marshals to the UI thread itself.
+            UpdateIcons();
+
             var spotify = _getSpotifyService?.Invoke();
             if (spotify != null && spotify.IsSpotifyActive)
             {
@@ -517,8 +522,17 @@ namespace UniPlaySong.DeskMediaControl
                     var playbackService = _getPlaybackService?.Invoke();
                     bool isPlaying = playbackService?.IsPlaying == true && playbackService?.IsPaused != true;
 
-                    _playPauseIcon.Text = isPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
-                    _playPauseItem.Title = isPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
+                    // Play/pause GLYPH: when Spotify is the active source, reflect SPOTIFY's transport
+                    // state (UPS plays nothing in radio mode, so its own IsPlaying is always false).
+                    // The audio-reactive widgets below stay on UPS's own state — UPS has no audio buffer
+                    // for Spotify, so the visualizer/peak/progress would be blank for it regardless.
+                    var spotify = _getSpotifyService?.Invoke();
+                    bool iconPlaying = (spotify != null && spotify.IsSpotifyActive)
+                        ? spotify.IsSpotifyPlaying
+                        : isPlaying;
+
+                    _playPauseIcon.Text = iconPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
+                    _playPauseItem.Title = iconPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
 
                     UpdateSkipState(playbackService);
 

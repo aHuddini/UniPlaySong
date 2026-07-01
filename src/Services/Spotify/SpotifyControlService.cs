@@ -43,6 +43,11 @@ namespace UniPlaySong.Services.Spotify
 
         public bool IsSpotifyActive => _isActive;
 
+        // Cached, non-blocking: is Spotify currently playing (per SMTC)? Used by the Top Panel to show
+        // the correct play/pause icon while Spotify is the active source. Reads the client's cached
+        // volatile state — never a blocking SMTC round-trip.
+        public bool IsSpotifyPlaying => _client?.IsPlaying ?? false;
+
         // Raised whenever now-playing should be refreshed (active state or track may have changed).
         public event Action NowPlayingChanged;
 
