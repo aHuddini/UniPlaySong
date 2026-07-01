@@ -122,6 +122,8 @@ namespace UniPlaySong
         private bool _isUsingLiveEffectsPlayer;
         private bool _needsNAudioForFormat; // True when current song requires NAudio (GME retro formats)
         private Services.JingleService _jingleService;
+        private Services.AudioDeviceRegistry _audioDeviceRegistry;
+        private Services.SleepCoordinator _sleepCoordinator;
 
         // Gate for events that could start music during or after OnApplicationStopped.
         // Playnite's teardown sequence can fire late events (theme overlay changes from
@@ -591,6 +593,7 @@ namespace UniPlaySong
             Application.Current.Deactivated += OnApplicationDeactivate;
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
             if (Application.Current.MainWindow != null)
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
 
@@ -1065,6 +1068,8 @@ namespace UniPlaySong
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+            _sleepCoordinator?.Stop();
             _externalAudioPollTimer?.Stop();
             _externalAudioPollTimer?.Dispose();
             _externalAudioPollTimer = null;
@@ -1981,14 +1986,15 @@ namespace UniPlaySong
         {
             if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionLock)
             {
-                if (_settings?.PauseOnSystemLock == true)
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    Application.Current?.Dispatcher?.Invoke(() =>
+                    if (_settings?.PauseOnSystemLock == true)
                     {
                         _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
                         _dashboardPlaybackService?.PauseForSystem();
-                    });
-                }
+                    }
+                    _sleepCoordinator?.OnLockOrSuspend("SessionLock"); // issue #81 — release devices regardless of pause pref
+                });
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
             {
@@ -2009,7 +2015,48 @@ namespace UniPlaySong
                     // Always remove — HashSet.Remove is a no-op if not present
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
+                    RestoreAfterSleep(); // issue #81 — reopen device + resume music after unlock
                 });
+            }
+        }
+
+        // issue #81 — release all audio devices when the OS is about to suspend (manual sleep,
+        // lid close, power button) and on resume let them reopen lazily. Fires on a threadpool
+        // thread; ReleaseAllDevices is thread-safe and must NOT block on the UI thread.
+        private void OnPowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == Microsoft.Win32.PowerModes.Suspend)
+            {
+                _sleepCoordinator?.OnLockOrSuspend("Suspend detected");
+            }
+            else if (e.Mode == Microsoft.Win32.PowerModes.Resume)
+            {
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    _fileLogger?.Debug("[Sleep] Resume — devices will reopen on next playback");
+                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
+                    RestoreAfterSleep();
+                }));
+            }
+        }
+
+        // issue #81 — after resume/unlock, the audio device is closed; re-trigger playback for the
+        // currently-selected game so music resumes (the device reopens lazily inside PlayGameMusic).
+        // No-op if nothing should be playing. Safe to call when nothing was released.
+        private void RestoreAfterSleep()
+        {
+            try
+            {
+                if (_playbackService == null) return;
+                var game = SelectedGames?.FirstOrDefault();
+                if (game != null && _playbackService.IsPlaying != true)
+                {
+                    _playbackService.PlayGameMusic(game, _settings, forceReload: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Sleep] RestoreAfterSleep failed: {ex.Message}");
             }
         }
 
@@ -2470,6 +2517,19 @@ namespace UniPlaySong
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
             _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
+            // issue #81 — central audio-device registry + sleep coordinator. Construct early so
+            // the jingle factory delegate can register its transient player via the registry.
+            // SleepCoordinator.Start() is deferred until after CheckInitialWindowStateEarly.
+            _audioDeviceRegistry = new Services.AudioDeviceRegistry(_fileLogger);
+            _sleepCoordinator = new Services.SleepCoordinator(
+                _audioDeviceRegistry,
+                isAudible: () => _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true,
+                getIdleMinutes: () => _settings?.IdleAudioDeviceTeardownMinutes ?? 5,
+                _fileLogger);
+            // Register the main player (it's an IAudioDeviceHolder via IMusicPlayer).
+            if (_currentMusicPlayer is Services.IAudioDeviceHolder mainHolder)
+                _audioDeviceRegistry.Register(mainHolder);
+
             // JingleService owns the jingle playback pipeline. Factory delegate encapsulates
             // the _isUsingLiveEffectsPlayer save/restore dance so the service stays ignorant
             // of Live Effects state ownership (that flag is about the MAIN player).
@@ -2486,10 +2546,12 @@ namespace UniPlaySong
                     else
                         player = new Services.SDL2MusicPlayer(_errorHandler);
                     _isUsingLiveEffectsPlayer = savedFlag;
+                    if (player is Services.IAudioDeviceHolder jh) _audioDeviceRegistry?.Register(jh); // issue #81
                     return player;
                 },
                 _errorHandler,
-                _fileLogger);
+                _fileLogger,
+                _audioDeviceRegistry); // issue #81 — unregister on jingle-player dispose
 
             if (_settings != null)
             {
@@ -2499,6 +2561,8 @@ namespace UniPlaySong
             // Check initial window state EARLY - before any music can start playing
             // This ensures pause sources are set before OnGameSelected triggers
             CheckInitialWindowStateEarly();
+
+            _sleepCoordinator.Start(); // issue #81 — start idle timer after initial state is known
 
             // Initialize coordinator - centralizes all music playback logic and state management
             _coordinator = new MusicPlaybackCoordinator(
@@ -2636,7 +2700,8 @@ namespace UniPlaySong
                 _dashboardPlaybackService = new DashboardPlaybackService(
                     _settingsService,
                     _playbackService,
-                    _fileLogger
+                    _fileLogger,
+                    _audioDeviceRegistry
                 );
 
                 // Music Library sidebar panel

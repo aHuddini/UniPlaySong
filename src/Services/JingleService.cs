@@ -24,6 +24,7 @@ namespace UniPlaySong.Services
         private readonly Func<IMusicPlayer> _createJinglePlayer;
         private readonly ErrorHandlerService _errorHandler;
         private readonly FileLogger _fileLogger;
+        private readonly AudioDeviceRegistry _deviceRegistry; // issue #81
 
         private IMusicPlayer _jinglePlayer;
         private VisualizationDataProvider _savedVizProvider;
@@ -32,12 +33,14 @@ namespace UniPlaySong.Services
             IMusicPlaybackService playbackService,
             Func<IMusicPlayer> createJinglePlayer,
             ErrorHandlerService errorHandler,
-            FileLogger fileLogger = null)
+            FileLogger fileLogger = null,
+            AudioDeviceRegistry deviceRegistry = null)
         {
             _playbackService = playbackService ?? throw new ArgumentNullException(nameof(playbackService));
             _createJinglePlayer = createJinglePlayer ?? throw new ArgumentNullException(nameof(createJinglePlayer));
             _errorHandler = errorHandler;
             _fileLogger = fileLogger;
+            _deviceRegistry = deviceRegistry;
         }
 
         // Plays the configured jingle for a given event. No-op if the feature
@@ -160,6 +163,7 @@ namespace UniPlaySong.Services
         {
             if (_jinglePlayer != null)
             {
+                if (_jinglePlayer is IAudioDeviceHolder jh) _deviceRegistry?.Unregister(jh); // issue #81
                 _jinglePlayer.MediaEnded -= OnJingleEnded;
                 _jinglePlayer.Stop();
                 _jinglePlayer.Close();
