@@ -334,6 +334,53 @@ namespace UniPlaySong.Tests.Services.Spotify
             _client.Verify(c => c.TrySkipNext(), Times.Never);
             _client.Verify(c => c.TryResume(), Times.Once);
         }
+
+        // RequestNowPlaying passthrough tests -----------------------------------------------
+
+        [Test]
+        public void RequestNowPlaying_WhenActive_ForwardsToClient()
+        {
+            // Arrange: Spotify is the active music (radio mode on, available).
+            _settings.SpotifyRadioMode = true;
+            _service.Recompute();
+            Assert.IsTrue(_service.IsSpotifyActive);
+            var expected = new SpotifyNowPlaying("Song", "Artist", null, null, TimeSpan.FromSeconds(200));
+            SpotifyNowPlaying received = default;
+            _client.Setup(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()))
+                   .Callback<Action<SpotifyNowPlaying>>(cb => cb(expected));
+
+            // Act
+            _service.RequestNowPlaying(np => received = np);
+
+            // Assert: forwarded to client, result passed through.
+            _client.Verify(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()), Times.Once);
+            Assert.AreEqual(expected.Title, received.Title);
+        }
+
+        [Test]
+        public void RequestNowPlaying_WhenInactive_ReturnsEmptySynchronously()
+        {
+            // Arrange: Spotify is NOT the active music.
+            _settings.SpotifyRadioMode = false;
+            _service.Recompute();
+            Assert.IsFalse(_service.IsSpotifyActive);
+            SpotifyNowPlaying received = default;
+
+            // Act
+            _service.RequestNowPlaying(np => received = np);
+
+            // Assert: callback fired with Empty; client NOT touched.
+            _client.Verify(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()), Times.Never);
+            Assert.IsTrue(received.IsEmpty);
+        }
+
+        [Test]
+        public void RequestNowPlaying_NullCallback_DoesNotThrow()
+        {
+            // Should silently return without calling the client.
+            Assert.DoesNotThrow(() => _service.RequestNowPlaying(null));
+            _client.Verify(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()), Times.Never);
+        }
     }
 
     // v1.5.8 — Radio Mode and Spotify Radio Mode are mutually exclusive alternative

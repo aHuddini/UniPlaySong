@@ -327,16 +327,17 @@ namespace UniPlaySong.DeskMediaControl
 
         private void OnSongInfoChanged(SongInfo songInfo)
         {
-            // When Spotify is active, show Spotify's track instead of UPS's song
+            // When Spotify is active, show Spotify's track off-thread so we never block the UI
+            // with a synchronous SMTC call. The callback is marshaled back to the UI thread.
             var spotify = _getSpotifyService?.Invoke();
             if (spotify != null && spotify.IsSpotifyActive)
             {
-                var np = spotify.GetNowPlaying();
-                if (!np.IsEmpty)
+                spotify.RequestNowPlaying(np =>
                 {
-                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
-                    return;
-                }
+                    if (!np.IsEmpty)
+                        _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
+                });
+                return;
             }
 
             _nowPlayingPanel?.UpdateSongInfo(songInfo);
@@ -358,12 +359,20 @@ namespace UniPlaySong.DeskMediaControl
             var spotify = _getSpotifyService?.Invoke();
             if (spotify != null && spotify.IsSpotifyActive)
             {
-                var np = spotify.GetNowPlaying();
-                if (!np.IsEmpty)
+                // Fetch off-thread so we never block the UI with a synchronous SMTC call.
+                // The callback is marshaled back to the UI thread by the client.
+                spotify.RequestNowPlaying(np =>
                 {
-                    _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
-                    return;
-                }
+                    if (!np.IsEmpty)
+                        _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
+                    else
+                    {
+                        // Active but track not yet available — restore UPS's current song info
+                        var fallback = _metadataService?.CurrentSongInfo ?? SongInfo.Empty;
+                        _nowPlayingPanel?.UpdateSongInfo(fallback);
+                    }
+                });
+                return;
             }
 
             // Spotify became inactive — restore UPS's current song info
