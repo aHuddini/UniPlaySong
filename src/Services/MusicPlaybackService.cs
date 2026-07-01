@@ -681,6 +681,47 @@ namespace UniPlaySong.Services
             // falls through to the default-music switch, whose DefaultMusicSource.Spotify case marks
             // the gap and plays nothing. So a with-music game is never wrongly suppressed.
 
+            // Spotify Radio Mode: Spotify REPLACES all game music (the audio is Spotify's, conducted
+            // by SpotifyControlService). Fires for EVERY game — including games with their own songs —
+            // so UPS never plays a competing track. SpotifyRadioMode is a stable user setting (not a
+            // per-game computed flag), so reading it here has no stale-read race; it is mutually
+            // exclusive with RadioModeEnabled, so only one branch runs.
+            if (settings?.SpotifyRadioMode == true)
+            {
+                // Idempotency (FREEZE FIX): Playnite calls PlayGameMusic repeatedly for the SAME game
+                // (launch, video-stop, minimize-restore, manual play). If we are already suppressed for
+                // this same game (it's current AND UPS is silent), return without doing anything.
+                bool alreadySuppressed = _currentGameId == game.Id.ToString()
+                    && !(_musicPlayer?.IsLoaded ?? false)
+                    && !(_musicPlayer?.IsActive ?? false);
+                if (alreadySuppressed)
+                {
+                    return;
+                }
+
+                // Genuine transition: fade out any current UPS track and stay silent. We deliberately
+                // fire NO state-change events (OnPlaybackStateChanged/OnSongChanged/OnMusicStarted) —
+                // each such event synchronously drives SpotifyControlService.Recompute, and the flood
+                // from repeated PlayGameMusic calls froze Playnite. SpotifyControlService picks up
+                // SpotifyRadioMode via its own triggers (client events + timer), and Spotify (the user's
+                // open app) keeps playing; UPS's only job here is to not play a competing game track.
+                _fileLogger?.Debug($"SpotifyRadioMode: suppressing game music for {game.Name} — Spotify is the source");
+                _currentGameId = game.Id.ToString();
+                _currentGame = game;
+                if (_isInRadioMode) { _isInRadioMode = false; _lastRadioSongPath = null; }
+                if ((_musicPlayer?.IsLoaded ?? false) || (_musicPlayer?.IsActive ?? false))
+                {
+                    StopPreviewTimer();
+                    CancelSongEndFade();
+                    _fader?.FadeOutAndStop(() =>
+                    {
+                        _musicPlayer?.Close();
+                        _currentSongPath = null;
+                    });
+                }
+                return;
+            }
+
             // Radio Mode: plays from the radio pool, but yields to installed games with their own music.
             if (settings?.RadioModeEnabled == true && !forceReload)
             {

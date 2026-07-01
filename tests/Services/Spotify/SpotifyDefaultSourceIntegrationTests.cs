@@ -63,6 +63,47 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
+        public void SpotifyRadioMode_GameWithMusic_DoesNotPlayGameMusic()
+        {
+            // Spotify Radio Mode must REPLACE all game music, including for games that HAVE songs.
+            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var game = new Game("Game With Music") { Id = Guid.NewGuid() };
+            var gameDir = Path.Combine(_tempMusicDir, game.Id.ToString());
+            Directory.CreateDirectory(gameDir);
+            File.WriteAllText(Path.Combine(gameDir, "Title Screen.mp3"), "presence");
+
+            _service.PlayGameMusic(game, settings);
+
+            _player.Verify(p => p.Load(It.IsAny<string>()), Times.Never(),
+                "SpotifyRadioMode must suppress game music — UPS should never load the game's track.");
+            _player.Verify(p => p.Play(), Times.Never(),
+                "SpotifyRadioMode must suppress game music — UPS should never start the game's track.");
+        }
+
+        [Test]
+        public void SpotifyRadioMode_RepeatedSameGameSelect_FiresNoPlaybackStateChanged()
+        {
+            // FREEZE FIX: Playnite calls PlayGameMusic repeatedly for the same game at launch and on
+            // recovery paths. The suppression branch must fire NO state-change events — each such event
+            // synchronously drives SpotifyControlService.Recompute; the flood froze Playnite.
+            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var game = new Game("Game With Music") { Id = Guid.NewGuid() };
+            var gameDir = Path.Combine(_tempMusicDir, game.Id.ToString());
+            Directory.CreateDirectory(gameDir);
+            File.WriteAllText(Path.Combine(gameDir, "Title Screen.mp3"), "presence");
+
+            int fireCount = 0;
+            _service.OnPlaybackStateChanged += () => fireCount++;
+
+            _service.PlayGameMusic(game, settings);
+            _service.PlayGameMusic(game, settings);
+            _service.PlayGameMusic(game, settings);
+
+            Assert.AreEqual(0, fireCount,
+                "The SpotifyRadioMode suppression branch must never fire OnPlaybackStateChanged.");
+        }
+
+        [Test]
         public void DefaultSourceSpotify_FiresRecomputeTrigger_SoControlServiceActivates()
         {
             // End-to-end: a real MusicPlaybackService wired to a real SpotifyControlService.
