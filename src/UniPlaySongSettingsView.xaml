@@ -880,15 +880,6 @@
                     <CheckBox Content="Radio Mode"
                               IsChecked="{Binding Settings.RadioModeEnabled}"
                               Margin="0,5"/>
-                    <CheckBox Content="Use Spotify as the radio source"
-                              IsChecked="{Binding Settings.SpotifyRadioMode}"
-                              IsEnabled="{Binding Settings.RadioModeEnabled}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="20,5,0,0"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
-                        Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply while Spotify is the music. Restart Playnite after toggling so playback state is cleanly reset.
-                    </TextBlock>
                     <TextBlock Text="Ignore game selection entirely — music plays continuously from a fixed pool, like background radio. Overrides both game-specific and default music while active."
                                FontSize="11"
                                Foreground="Gray"
@@ -911,6 +902,16 @@
                     </StackPanel>
                     <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
                                Text="Tip: 'Full Library' shuffles every song you've downloaded. Other sources reuse your Default Music pool configuration."/>
+
+                    <!-- Spotify Radio Mode (v1.5.8 — decoupled from Radio Mode into its own top-level source) -->
+                    <CheckBox Content="Spotify Radio Mode"
+                              IsChecked="{Binding Settings.SpotifyRadioMode}"
+                              Command="{Binding SetRestartRequired}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                              Margin="0,5"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
+                        Play the Spotify desktop app continuously as background music (its own source, separate from Radio Mode above — turning this on turns Radio Mode off, and vice-versa). Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply. Restart Playnite after toggling so playback state is cleanly reset.
+                    </TextBlock>
 
                     <Separator Margin="0,15"/>
 
