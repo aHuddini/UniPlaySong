@@ -22,6 +22,8 @@ Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation
 
 - **SDL2 resume after device release.** SDL frees the decoded music (`Mix_FreeMusic`) on teardown, so it can't simply rebuild a mixer like NAudio. `ReleaseAudioDevice()` now stashes the track path + position (keeping the player logically "loaded" so the playback service still routes resume to it), and `Play()`/`Resume()` transparently reload from the stash and seek back when the music handle is gone. `src/Services/SDL2MusicPlayer.cs`.
 
+- **Spotify Radio Mode stability (fix attempt).** Decoupled Spotify Radio Mode from Radio Mode (they are now mutually exclusive top-level sources) and rebuilt its engine integration: game-music suppression is idempotent and fires no state-change events (fixing a launch freeze caused by an event flood on repeated game selections), and the now-playing UI updates event-driven by subscribing to the OS `OnAnyMediaPropertyChanged` track-change signal (the mini-player previously went stale because that event was never subscribed to). `src/Services/MusicPlaybackService.cs`, `src/Services/Spotify/SpotifySmtcClient.cs`, `src/Services/Spotify/SpotifyControlService.cs`, `src/UniPlaySongSettings.cs`.
+
 ### Removed
 
 - **`PowerStateHelper` and its two call sites.** It called `SetThreadExecutionState(ES_CONTINUOUS)` alone — an opt-*out* that cleared UPS's own keep-awake hints, a red herring that neither blocked nor fixed sleep (the open stream is the blocker). UPS now never touches `SetThreadExecutionState`, the truest "never interfere with Windows power behavior" stance. The two per-backend idle timers + `OnIdleTeardownTick` were also removed, superseded by the centralized `SleepCoordinator`. `src/Common/PowerStateHelper.cs` (deleted).
