@@ -190,6 +190,8 @@ For an in-theme audio quick-settings menu (Enable Game Music, Radio Mode, Calm D
 | `EnableMusic` | bool | Game music. Default music keeps playing if `EnableDefaultMusic` is on (toggle both off for full silence) |
 | `EnableDefaultMusic` | bool | Default / ambient music |
 | `RadioModeEnabled` | bool | Continuous pool-based playback |
+
+> **Radio source is the user's choice.** Binding a toggle to `RadioModeEnabled` turns Radio Mode on/off; the *source* it plays (a UPS pool, or **Spotify**) is chosen by the user in UniPlaySong's settings (Playback → Radio Mode → source). So your existing "Radio Mode" button automatically honors Spotify when the user has picked it — no theme change needed. (Optional: `RadioMusicSource` is also bindable if you want to offer a source picker in your theme.)
 | `PlayOnlyOnGameSelect` | bool | When false, music plays while browsing too |
 | `CalmDownModeEnabled` | bool | v1.5.0+ — gentle muffle + dim over 1.5s (great for late-night browsing toggles) |
 
