@@ -683,9 +683,9 @@ namespace UniPlaySong.Services
 
             // Spotify Radio Mode: Spotify REPLACES all game music (the audio is Spotify's, conducted
             // by SpotifyControlService). Fires for EVERY game — including games with their own songs —
-            // so UPS never plays a competing track. SpotifyRadioMode is a stable user setting (not a
-            // per-game computed flag), so reading it here has no stale-read race; it is mutually
-            // exclusive with RadioModeEnabled, so only one branch runs.
+            // so UPS never plays a competing track. SpotifyRadioMode is a DERIVED expression
+            // (RadioModeEnabled && RadioMusicSource == Spotify), so it is true only when RadioMode is
+            // also on; StartRadioPlayback's Spotify guard ensures the pool never starts for this source.
             if (settings?.SpotifyRadioMode == true)
             {
                 // Idempotency (FREEZE FIX): Playnite calls PlayGameMusic repeatedly for the SAME game
@@ -1795,6 +1795,15 @@ namespace UniPlaySong.Services
         // Called on first game selection after Radio Mode is enabled, and on song-end auto-advance.
         public void StartRadioPlayback(UniPlaySongSettings settings)
         {
+            // Spotify is the radio source → UPS plays no pool; SpotifyControlService conducts Spotify.
+            // Defensive: PlayGameMusic's SpotifyRadioMode suppression branch already returns before
+            // reaching here on the normal path, but guard any other caller (auto-advance/OnMediaEnded).
+            if (settings?.RadioMusicSource == RadioMusicSource.Spotify)
+            {
+                _fileLogger?.Debug("StartRadioPlayback: source is Spotify — not starting a UPS pool.");
+                return;
+            }
+
             if (_radioSongPoolProvider == null)
             {
                 _fileLogger?.Warn("RadioMode: no pool provider registered, cannot start radio");
