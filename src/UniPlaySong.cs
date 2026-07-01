@@ -1649,6 +1649,7 @@ namespace UniPlaySong
                     e.OldSettings.DefaultMusicSourceOption != e.NewSettings.DefaultMusicSourceOption ||
                     e.OldSettings.DefaultMusicPath != e.NewSettings.DefaultMusicPath ||
                     e.OldSettings.DefaultMusicFolderPath != e.NewSettings.DefaultMusicFolderPath ||
+                    e.OldSettings.RadioCustomFolderPath != e.NewSettings.RadioCustomFolderPath ||
                     e.OldSettings.SelectedBundledPreset != e.NewSettings.SelectedBundledPreset ||
                     e.OldSettings.RandomizeBundledTrackOnStartup != e.NewSettings.RandomizeBundledTrackOnStartup ||
                     e.OldSettings.EnableDefaultMusic != e.NewSettings.EnableDefaultMusic ||
@@ -5084,7 +5085,11 @@ namespace UniPlaySong
                     break;
 
                 case RadioMusicSource.CustomFolder:
-                    var folder = settings?.DefaultMusicFolderPath;
+                    // Radio's own folder; falls back to the Default Music folder when unset (v1.5.8 —
+                    // preserves pre-decouple behavior for users who never picked a radio-specific folder).
+                    var folder = settings?.RadioCustomFolderPath;
+                    if (string.IsNullOrWhiteSpace(folder))
+                        folder = settings?.DefaultMusicFolderPath;
                     if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
                     {
                         try
