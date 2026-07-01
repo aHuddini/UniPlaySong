@@ -90,30 +90,32 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
-        public void Active_AndSpotifyPaused_StartsSpotify()
+        public void Active_AndSpotifyPaused_DoesNotForceResume()
         {
-            // Spotify becomes the active music but is currently paused → UPS plays it.
+            // Clean-slate engage: Spotify is paused when radio mode turns on. Decide sees no
+            // lifecycle pause and IsPlaying=false → records UserPausedExternally, no resume.
+            // UPS respects the pre-existing pause; the user starts playback by pressing play.
             _settings.SpotifyRadioMode = true;
             _client.SetupGet(c => c.IsPlaying).Returns(false);
             _service.Recompute();
-            _client.Verify(c => c.TryResume(), Times.Once);
+            _client.Verify(c => c.TryResume(), Times.Never);
         }
 
         [Test]
         public void Active_AndSpotifyAlreadyPlaying_DoesNotReissuePlay()
         {
-            // v1.5.8 two-flag radio: on the engage edge, the seed (LifecyclePausedByUps=true)
-            // causes Decide to return Play exactly once — even if Spotify is already playing.
-            // This is a single non-blocking post, not a redundant command; subsequent recomputes
-            // with IsPlaying=true return None (no further TryResume). TryPause is never issued.
+            // v1.5.8 two-flag radio: engage while Spotify is already playing → clean slate, so
+            // Decide sees no lifecycle pause and a playing Spotify → returns None. UPS issues no
+            // resume command. Subsequent recomputes with IsPlaying=true also return None.
+            // TryResume and TryPause are never called.
             _settings.SpotifyRadioMode = true;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
-            _service.Recompute();                              // engage edge → one Resume post
-            _client.Verify(c => c.TryResume(), Times.Once);   // exactly one, from the engage seed
+            _service.Recompute();                              // engage: already playing → None
+            _client.Verify(c => c.TryResume(), Times.Never);  // no resume issued
             _client.Verify(c => c.TryPause(), Times.Never);   // never paused
-            _service.Recompute();                              // subsequent recompute: already playing → None
+            _service.Recompute();                              // subsequent recompute: still None
             _service.Recompute();
-            _client.Verify(c => c.TryResume(), Times.Once);   // still only the one from engage
+            _client.Verify(c => c.TryResume(), Times.Never);  // count stays at 0
         }
 
         [Test]
@@ -250,37 +252,53 @@ namespace UniPlaySong.Tests.Services.Spotify
         {
             // REGRESSION: user pauses Spotify from the menu while it's the active music. UPS must
             // NOT auto-resume on subsequent recomputes — the pause must stick.
-            // v1.5.8 two-flag radio: the engage edge issues exactly one TryResume on first Recompute
-            // (via LifecyclePausedByUps=true seed). After the user's manual pause, Spotify is
-            // paused externally → Decide returns None (UserPausedExternally=true) on all subsequent
-            // calls — no auto-resume is ever issued after the manual pause.
+            // v1.5.8 two-flag radio: engage with clean slate, Spotify already playing → Decide
+            // returns None (no resume on engage). After the user's manual pause, Spotify is paused
+            // externally → Decide returns None (UserPausedExternally=true) — no auto-resume ever.
             _settings.SpotifyRadioMode = true;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
-            _service.Recompute();                              // engage edge → one Resume post
-            _client.Verify(c => c.TryResume(), Times.Once);   // engage-edge resume only
+            _service.Recompute();                              // engage: already playing → None
+            _client.Verify(c => c.TryResume(), Times.Never);  // no resume on engage
             // User toggles Play/Pause via menu: was playing → pauses.
             _service.ToggleManualPlayPause();
             _client.Verify(c => c.TryTogglePlayPause(), Times.Once);
             _client.SetupGet(c => c.IsPlaying).Returns(false); // Spotify now paused externally
             _service.Recompute();                              // UserPausedExternally=true → None
             _service.Recompute();                              // periodic recompute: still None
-            _client.Verify(c => c.TryResume(), Times.Once);   // still only the engage-edge call, never auto-resumed
+            _client.Verify(c => c.TryResume(), Times.Never);  // never auto-resumed
+        }
+
+        [Test]
+        public void SpotifyRadioEngage_WhileSpotifyPausedByUser_DoesNotResume()
+        {
+            // Respect a pre-engage external pause: turning Radio Mode on when the user has Spotify
+            // paused must NOT force-resume it. The user starts playback by pressing play.
+            _client.SetupGet(c => c.IsAvailable).Returns(true);
+            _client.SetupGet(c => c.IsPlaying).Returns(false); // user has Spotify paused
+            _settings.SpotifyRadioMode = true;                 // engage
+            _service.Recompute();
+            _service.Recompute();
+            _client.Verify(c => c.TryResume(), Times.Never(),
+                "enabling Radio Mode must not force-resume a Spotify the user paused themselves");
         }
 
         [Test]
         public void ManualPause_ThenToggleAgain_Resumes()
         {
-            // User pauses (hold set), then toggles again → resumes, hold cleared.
+            // User pauses (hold set), then toggles again → resumes via TryTogglePlayPause, hold cleared.
+            // In radio mode UPS doesn't issue TryResume on its own — the user's toggle IS the resume.
+            // After the second toggle, Spotify is playing; a subsequent Recompute sees IsPlaying=true
+            // and returns None (already playing, no command).
             _settings.SpotifyRadioMode = true;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.Recompute();
             _service.ToggleManualPlayPause();                  // pause: was playing → hold
             _client.SetupGet(c => c.IsPlaying).Returns(false);
-            _service.ToggleManualPlayPause();                  // toggle again: was paused → resume, clear hold
-            _client.Verify(c => c.TryTogglePlayPause(), Times.Exactly(2));
-            // Hold cleared: a recompute while wanting-playing now auto-resumes again.
-            _service.Recompute();
-            _client.Verify(c => c.TryResume(), Times.AtLeastOnce);
+            _service.ToggleManualPlayPause();                  // toggle again: was paused → resume (TryTogglePlayPause), clear hold
+            _client.Verify(c => c.TryTogglePlayPause(), Times.Exactly(2)); // both toggles sent
+            _client.SetupGet(c => c.IsPlaying).Returns(true);  // Spotify is now playing after the toggle
+            _service.Recompute();                              // already playing → None; no TryResume from UPS
+            _client.Verify(c => c.TryResume(), Times.Never);   // UPS never issues TryResume; user's toggle did it
         }
 
         [Test]

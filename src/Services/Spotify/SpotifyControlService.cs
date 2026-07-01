@@ -104,14 +104,15 @@ namespace UniPlaySong.Services.Spotify
                         raiseNowPlaying = true;
                     }
 
-                    // Engage edge: radio just turned on → seed "UPS owns the pause" so the first
-                    // decision issues a single Resume to start the radio (unless the user has Spotify
-                    // paused, in which case the decision respects it).
+                    // Engage edge: radio just turned on → clean slate so Decide mirrors Spotify's real
+                    // state. If Spotify is already playing, Decide returns None (radio stays playing).
+                    // If Spotify was paused by the user before engage, Decide records UserPausedExternally
+                    // and issues NO resume — the user starts playback by pressing play in Spotify or
+                    // via UPS. Enabling a settings toggle is NOT a "resume" gesture.
                     if (!_radioWasOn)
                     {
                         _radioWasOn = true;
-                        _radioState.LifecyclePausedByUps = true;
-                        _radioState.UserPausedExternally = false;
+                        _radioState = default(SpotifyRadioState); // clean slate — respects a pre-engage user pause
                     }
 
                     if (radioActive)
