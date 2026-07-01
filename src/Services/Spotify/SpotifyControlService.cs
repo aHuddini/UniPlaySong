@@ -77,7 +77,7 @@ namespace UniPlaySong.Services.Spotify
             if (s == null || _client == null || !_client.IsAvailable) return false;
             // SpotifyRadioMode is derived (RadioModeEnabled=true AND RadioMusicSource=Spotify).
             // When it is true the pool-radio branch in MusicPlaybackService does not run because
-            // a guard in StartRadioPlayback (Task 3) prevents the pool from starting while Spotify
+            // a guard in StartRadioPlayback prevents the pool from starting while Spotify
             // is the active radio source — Spotify alone is the source.
             if (s.SpotifyRadioMode) return true;
             if (s.DefaultMusicSourceOption == DefaultMusicSource.Spotify
