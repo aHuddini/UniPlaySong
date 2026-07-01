@@ -35,6 +35,7 @@ namespace UniPlaySong.Services.Spotify
                 _manager.OnAnySessionOpened += OnSessionsChanged;
                 _manager.OnAnySessionClosed += OnSessionsChanged;
                 _manager.OnAnyPlaybackStateChanged += OnPlaybackChanged;
+                _manager.OnAnyMediaPropertyChanged += OnMediaPropertyChanged;
                 _manager.Start();
                 _started = true;
             }
@@ -48,6 +49,12 @@ namespace UniPlaySong.Services.Spotify
 
         private void OnSessionsChanged(MediaManager.MediaSession session) => AvailabilityChanged?.Invoke();
         private void OnPlaybackChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionPlaybackInfo info) => AvailabilityChanged?.Invoke();
+        // The OS pushes this when the current track's metadata changes (a track change). Without this
+        // subscription the now-playing UI never learned Spotify changed tracks (the mini-player went
+        // stale). Fan out through the existing AvailabilityChanged → SpotifyControlService.Recompute →
+        // NowPlayingChanged → NowPlayingPublisher chain, which refreshes now-playing. Cheap handler:
+        // it only raises the event; the publisher does the (already-existing) metadata fetch.
+        private void OnMediaPropertyChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionMediaProperties props) => AvailabilityChanged?.Invoke();
 
         // Re-pull the Spotify session every call rather than caching — the library's
         // close events are unreliable, so we never trust a stale reference.

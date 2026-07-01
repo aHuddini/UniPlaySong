@@ -40,6 +40,61 @@ namespace UniPlaySong.Tests.Services.Spotify
             try { if (Directory.Exists(_tempMusicDir)) Directory.Delete(_tempMusicDir, true); } catch { }
         }
 
+        // Minimal fake client whose AvailabilityChanged can be raised on demand (simulating the
+        // OS OnAnyMediaPropertyChanged → AvailabilityChanged fan-out) and whose now-playing track
+        // is settable, so we can prove the publisher republishes on a track change.
+        private class FakeSpotifyClient : ISpotifyClient
+        {
+            public bool IsAvailable { get; set; } = true;
+            public bool IsPlaying { get; set; } = true;
+            public SpotifyNowPlaying Now = SpotifyNowPlaying.Empty;
+            public bool TryPause() => true;
+            public bool TryResume() => true;
+            public bool TrySkipNext() => true;
+            public bool TrySkipPrevious() => true;
+            public bool TryTogglePlayPause() => true;
+            public SpotifyNowPlaying GetNowPlaying() => Now;
+            public byte[] TryGetAlbumArtBytes() => null;
+            public event Action AvailabilityChanged;
+            public void RaiseAvailabilityChanged() => AvailabilityChanged?.Invoke();
+        }
+
+        [Test]
+        public void SpotifyRadio_TrackChangeSignal_UpdatesNowPlaying()
+        {
+            // Event-driven now-playing: when the client signals a change (the real client fires this
+            // from OnAnyMediaPropertyChanged → AvailabilityChanged), the publisher must republish the
+            // current Spotify track. SpotifyNowPlaying is an immutable struct — use its constructor.
+            // NowPlayingPublisher ctor order: (metadata, spotify, spotifyClient, artWriter,
+            // getSettings, getGameCoverArtPath, fileLogger).
+            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var client = new FakeSpotifyClient { Now = new SpotifyNowPlaying("First Track", "Artist A") };
+
+            using (var control = new SpotifyControlService(_service, client, () => settings, null))
+            {
+                control.Recompute(); // active (SpotifyRadioMode) → SpotifyActive true
+                using (var publisher = new NowPlayingPublisher(
+                    null,            // metadata (SongMetadataService) — not exercised
+                    control,         // spotify (SpotifyControlService) — provides NowPlayingChanged + IsSpotifyActive
+                    client,          // spotifyClient (ISpotifyClient) — provides GetNowPlaying
+                    null,            // artWriter (NowPlayingArtWriter) — not exercised
+                    () => settings,  // getSettings
+                    null,            // getGameCoverArtPath
+                    null))           // fileLogger
+                {
+                    publisher.Refresh();
+                    Assert.AreEqual("First Track", settings.NowPlayingTitle, "Initial Spotify track must publish.");
+
+                    // Simulate a track change pushed by the OS.
+                    client.Now = new SpotifyNowPlaying("Second Track", "Artist B");
+                    client.RaiseAvailabilityChanged(); // → control.Recompute → NowPlayingChanged → publisher.Refresh
+
+                    Assert.AreEqual("Second Track", settings.NowPlayingTitle,
+                        "A track-change signal must republish the new Spotify track to now-playing.");
+                }
+            }
+        }
+
         [Test]
         public void DefaultSourceSpotify_NoGameMusic_MarksDefaultMusicGap()
         {
