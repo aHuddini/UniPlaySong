@@ -10,6 +10,8 @@ Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation
 
 ### Added
 
+- **Radio Mode "Custom Folder" now has its own folder picker.** Previously the Radio Mode Custom Folder source silently reused the Default Music folder with no way to choose a folder for radio. It now has a dedicated `RadioCustomFolderPath` setting + Browse button; when left empty it falls back to the Default Music folder (so existing setups are unaffected). `src/UniPlaySongSettings.cs`, `src/UniPlaySong.cs`, `src/UniPlaySongSettingsView.xaml`, `src/UniPlaySongSettingsViewModel.cs`.
+
 - **`AudioDeviceRegistry` + `IAudioDeviceHolder` contract.** A thread-safe registry owns the set of audio-device holders and a single `ReleaseAllDevices(reason)` operation (snapshot-under-lock so release runs off the UI thread; fail-safe so one throwing holder doesn't abort the rest). Holders implement `ReleaseAudioDevice()` / `IsAudioDeviceOpen` / `AudioDeviceLabel`. The four holders — main player, dashboard player (both `NAudioMusicPlayer`), `SDL2MusicPlayer`, and the transient jingle player — register on creation and unregister on dispose, structurally preventing the "forgot a holder" gap that sank the prior attempt. `src/Services/AudioDeviceRegistry.cs`, `src/Services/IAudioDeviceHolder.cs`.
 
 - **`SleepCoordinator` owning the triggers.** Centralizes issue-#81 release: one 1-minute idle timer (a *loaded-but-paused* song now **counts toward** idle — the core bug in the old per-backend timers, which treated paused as activity) plus immediate release on lock/suspend routed from the `SystemEvents` handlers. `IdleTick(DateTime)` is a pure, unit-tested state machine (`0` minutes disables idle release). `src/Services/SleepCoordinator.cs`.
