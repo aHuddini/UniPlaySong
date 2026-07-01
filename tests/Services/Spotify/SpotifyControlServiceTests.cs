@@ -35,7 +35,8 @@ namespace UniPlaySong.Tests.Services.Spotify
         [Test]
         public void RadioModeOn_SpotifyAvailable_IsActive()
         {
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _service.Recompute();
             Assert.IsTrue(_service.IsSpotifyActive);
             Assert.IsTrue(_settings.SpotifyActive);
@@ -44,9 +45,9 @@ namespace UniPlaySong.Tests.Services.Spotify
         [Test]
         public void SpotifyRadioOn_IsActive_WithoutRadioMode()
         {
-            // v1.5.8 decoupling: SpotifyRadioMode is a standalone source; no RadioModeEnabled needed.
-            _settings.RadioModeEnabled = false;
-            _settings.SpotifyRadioMode = true;
+            // v1.5.8 unification: SpotifyRadioMode is derived — RadioModeEnabled=true + RadioMusicSource=Spotify.
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _service.Recompute();
             Assert.IsTrue(_service.IsSpotifyActive);
         }
@@ -55,7 +56,8 @@ namespace UniPlaySong.Tests.Services.Spotify
         public void SpotifyUnavailable_NotActive_EvenInRadioMode()
         {
             _client.SetupGet(c => c.IsAvailable).Returns(false);
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _service.Recompute();
             Assert.IsFalse(_service.IsSpotifyActive);
         }
@@ -82,7 +84,8 @@ namespace UniPlaySong.Tests.Services.Spotify
         public void RadioWinsOverDefaultSource_WhenBothSet()
         {
             // Radio on, but not "in a gap": radio precedence still makes it active.
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
             _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(false);
             _service.Recompute();
@@ -96,7 +99,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             // (LifecyclePausedByUps=true) makes Decide issue one Resume to START the radio, even from
             // a paused state. (A pause the user makes AFTER this initial start is respected — see
             // ManualPause_WhileActive_Sticks_NoAutoResume.)
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _client.SetupGet(c => c.IsPlaying).Returns(false);
             _service.Recompute();
             _client.Verify(c => c.TryResume(), Times.Once);
@@ -108,7 +112,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             // Engage issues exactly one Resume to start the radio (the engage seed). When Spotify is
             // already playing that Resume is a harmless no-op, but it is issued once. After engage the
             // flags clear, so subsequent recomputes (still playing) return None — no command spam.
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.Recompute();                              // engage: seed → Resume once
             _client.Verify(c => c.TryResume(), Times.Once);   // one resume on engage
@@ -123,7 +128,8 @@ namespace UniPlaySong.Tests.Services.Spotify
         {
             // Spotify is the active music but a UPS lifecycle pause (e.g. game launch,
             // video, lock) is in effect → Spotify should pause too.
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _client.SetupGet(c => c.IsPlaying).Returns(false);
             _service.Recompute();                              // take the wheel (plays)
             _client.SetupGet(c => c.IsPlaying).Returns(true);  // now playing
@@ -256,7 +262,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             // harmless no-op). After the user's manual pause, Spotify is paused externally → Decide
             // returns None (UserPausedExternally=true). The resume count stays at 1 (the engage one) —
             // NO auto-resume follows the manual pause.
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.Recompute();                              // engage: seed → Resume once
             _client.Verify(c => c.TryResume(), Times.Once);   // the engage resume
@@ -278,7 +285,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             // user makes AFTER the radio is running is still respected (tracked as UserPausedExternally).
             _client.SetupGet(c => c.IsAvailable).Returns(true);
             _client.SetupGet(c => c.IsPlaying).Returns(false); // Spotify currently paused
-            _settings.SpotifyRadioMode = true;                 // engage
+            _settings.RadioModeEnabled = true;                 // engage
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _service.Recompute();
             _client.Verify(c => c.TryResume(), Times.Once(),
                 "enabling Radio Mode / entering with it on must start the radio (resume once)");
@@ -291,7 +299,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             // In radio mode the user's own transport toggle is the pause/resume channel; UPS itself
             // only ever issues the single engage Resume. So after engage (one TryResume) plus two
             // manual toggles, TryResume stays at 1 and TryTogglePlayPause is exactly 2.
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.Recompute();                              // engage: seed → Resume once
             _service.ToggleManualPlayPause();                  // pause via toggle
@@ -343,7 +352,8 @@ namespace UniPlaySong.Tests.Services.Spotify
         public void RequestNowPlaying_WhenActive_ForwardsToClient()
         {
             // Arrange: Spotify is the active music (radio mode on, available).
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _service.Recompute();
             Assert.IsTrue(_service.IsSpotifyActive);
             var expected = new SpotifyNowPlaying("Song", "Artist", null, null, TimeSpan.FromSeconds(200));
@@ -362,8 +372,7 @@ namespace UniPlaySong.Tests.Services.Spotify
         [Test]
         public void RequestNowPlaying_WhenInactive_ReturnsEmptySynchronously()
         {
-            // Arrange: Spotify is NOT the active music.
-            _settings.SpotifyRadioMode = false;
+            // Arrange: Spotify is NOT the active music (RadioModeEnabled defaults to false → SpotifyRadioMode false).
             _service.Recompute();
             Assert.IsFalse(_service.IsSpotifyActive);
             SpotifyNowPlaying received = default;
@@ -385,48 +394,37 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
     }
 
-    // v1.5.8 — Radio Mode and Spotify Radio Mode are mutually exclusive alternative
-    // continuous-music sources. Enabling one disables the other, enforced in the setters.
+    // v1.5.8 unification — SpotifyRadioMode is derived: radio on AND the radio source is Spotify.
     [TestFixture]
-    public class SpotifyRadioModeMutualExclusionTests
+    public class SpotifyRadioModeDerivedTests
     {
         [Test]
-        public void EnablingSpotifyRadio_DisablesRadioMode()
+        public void SpotifyRadioMode_True_WhenRadioOn_AndSourceSpotify()
         {
-            var s = new UniPlaySongSettings { RadioModeEnabled = true };
-            s.SpotifyRadioMode = true;
+            var s = new UniPlaySongSettings { RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
             Assert.IsTrue(s.SpotifyRadioMode);
-            Assert.IsFalse(s.RadioModeEnabled, "Radio Mode should turn off when Spotify Radio Mode is enabled");
         }
 
         [Test]
-        public void EnablingRadioMode_DisablesSpotifyRadio()
+        public void SpotifyRadioMode_False_WhenRadioOff()
         {
-            var s = new UniPlaySongSettings { SpotifyRadioMode = true };
-            s.RadioModeEnabled = true;
-            Assert.IsTrue(s.RadioModeEnabled);
-            Assert.IsFalse(s.SpotifyRadioMode, "Spotify Radio Mode should turn off when Radio Mode is enabled");
-        }
-
-        [Test]
-        public void DisablingOne_DoesNotEnableOrRecurseTheOther()
-        {
-            var s = new UniPlaySongSettings { SpotifyRadioMode = true };
-            s.SpotifyRadioMode = false;
+            var s = new UniPlaySongSettings { RadioModeEnabled = false, RadioMusicSource = RadioMusicSource.Spotify };
             Assert.IsFalse(s.SpotifyRadioMode);
-            Assert.IsFalse(s.RadioModeEnabled);
         }
 
         [Test]
-        public void TogglingBackAndForth_KeepsExactlyOneOn()
+        public void SpotifyRadioMode_False_WhenSourceIsAPool()
         {
-            var s = new UniPlaySongSettings();
-            s.RadioModeEnabled = true;
-            Assert.IsTrue(s.RadioModeEnabled); Assert.IsFalse(s.SpotifyRadioMode);
-            s.SpotifyRadioMode = true;
-            Assert.IsFalse(s.RadioModeEnabled); Assert.IsTrue(s.SpotifyRadioMode);
-            s.RadioModeEnabled = true;
-            Assert.IsTrue(s.RadioModeEnabled); Assert.IsFalse(s.SpotifyRadioMode);
+            var s = new UniPlaySongSettings { RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.FullLibrary };
+            Assert.IsFalse(s.SpotifyRadioMode);
+        }
+
+        [Test]
+        public void RadioMode_AndPoolSource_DoNotImplySpotify()
+        {
+            // A theme toggling RadioModeEnabled with a pool source runs POOL radio, not Spotify.
+            var s = new UniPlaySongSettings { RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.CustomFolder };
+            Assert.IsFalse(s.SpotifyRadioMode);
         }
     }
 }

@@ -63,7 +63,7 @@ namespace UniPlaySong.Tests.Services
         public void Refresh_SpotifyActive_PublishesSpotifyTitleArtistAndArt()
         {
             _settings.RadioModeEnabled = true;
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             var (pub, spotify, meta, pb) = BuildPublisher();
             spotify.Recompute();             // makes SpotifyActive true
             pub.Refresh();
@@ -107,7 +107,7 @@ namespace UniPlaySong.Tests.Services
         public void Refresh_SpotifyActiveButNoArtBytes_LeavesArtPathEmpty()
         {
             _settings.RadioModeEnabled = true;
-            _settings.SpotifyRadioMode = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
             // Override the default art-bytes stub to return null — simulates no thumbnail available.
             _client.Setup(c => c.RequestAlbumArt(It.IsAny<Action<byte[]>>()))
                 .Callback<Action<byte[]>>(cb => cb(null));

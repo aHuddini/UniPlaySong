@@ -70,12 +70,12 @@ namespace UniPlaySong.Tests.Services.Spotify
             // current Spotify track. SpotifyNowPlaying is an immutable struct — use its constructor.
             // NowPlayingPublisher ctor order: (metadata, spotify, spotifyClient, artWriter,
             // getSettings, getGameCoverArtPath, fileLogger).
-            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var settings = new UniPlaySongSettings { EnableMusic = true, RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
             var client = new FakeSpotifyClient { Now = new SpotifyNowPlaying("First Track", "Artist A") };
 
             using (var control = new SpotifyControlService(_service, client, () => settings, null))
             {
-                control.Recompute(); // active (SpotifyRadioMode) → SpotifyActive true
+                control.Recompute(); // active (RadioModeEnabled + Spotify source → SpotifyRadioMode derived true) → SpotifyActive true
                 using (var publisher = new NowPlayingPublisher(
                     null,            // metadata (SongMetadataService) — not exercised
                     control,         // spotify (SpotifyControlService) — provides NowPlayingChanged + IsSpotifyActive
@@ -124,7 +124,7 @@ namespace UniPlaySong.Tests.Services.Spotify
         public void SpotifyRadioMode_GameWithMusic_DoesNotPlayGameMusic()
         {
             // Spotify Radio Mode must REPLACE all game music, including for games that HAVE songs.
-            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var settings = new UniPlaySongSettings { EnableMusic = true, RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
             var game = new Game("Game With Music") { Id = Guid.NewGuid() };
             var gameDir = Path.Combine(_tempMusicDir, game.Id.ToString());
             Directory.CreateDirectory(gameDir);
@@ -144,7 +144,7 @@ namespace UniPlaySong.Tests.Services.Spotify
             // FREEZE FIX: Playnite calls PlayGameMusic repeatedly for the same game at launch and on
             // recovery paths. The suppression branch must fire NO state-change events — each such event
             // synchronously drives SpotifyControlService.Recompute; the flood froze Playnite.
-            var settings = new UniPlaySongSettings { EnableMusic = true, SpotifyRadioMode = true };
+            var settings = new UniPlaySongSettings { EnableMusic = true, RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
             var game = new Game("Game With Music") { Id = Guid.NewGuid() };
             var gameDir = Path.Combine(_tempMusicDir, game.Id.ToString());
             Directory.CreateDirectory(gameDir);

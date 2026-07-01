@@ -161,10 +161,11 @@ namespace UniPlaySong
     // Subset of DefaultMusicSource: only pool-based sources make sense for radio.
     public enum RadioMusicSource
     {
-        FullLibrary,         // Shuffle across every downloaded song in the entire library
-        CustomFolder,        // User-selected directory (same as DefaultMusicSource.CustomFolder)
-        CustomRotation,      // Songs from user-selected games (same as DefaultMusicSource.CustomRotation)
-        CompletionStatusPool // Songs from games matching selected completion statuses
+        FullLibrary,          // Shuffle across every downloaded song in the entire library
+        CustomFolder,         // User-selected directory (same as DefaultMusicSource.CustomFolder)
+        CustomRotation,       // Songs from user-selected games (same as DefaultMusicSource.CustomRotation)
+        CompletionStatusPool, // Songs from games matching selected completion statuses
+        Spotify               // v1.5.8 — Spotify is the radio source (continuous Spotify, not a UPS pool)
     }
 
     public enum CookieMode
@@ -1079,7 +1080,6 @@ namespace UniPlaySong
         private bool gamePropFilterEnabled = false; // Only play game music for games matching selected platforms/genres/sources
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
-        private bool spotifyRadioMode = false; // when RadioModeEnabled, use Spotify as the radio source
         private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
@@ -1246,36 +1246,21 @@ namespace UniPlaySong
             set { filterModeEnabled = value; OnPropertyChanged(); }
         }
 
-        // Radio Mode: ignore game selection entirely; play continuously from a fixed pool.
-        // Overrides all per-game music logic — game-specific songs never play while active.
-        // Mutually exclusive with SpotifyRadioMode (alternative continuous-music sources):
-        // enabling one disables the other, so they can never contend for audio.
+        // Radio Mode: ignore game selection entirely; play continuously from the chosen radio source.
+        // Overrides all per-game music logic — game-specific songs never play while active. The SOURCE
+        // (a UPS pool, or Spotify) is RadioMusicSource. Theme-facing binding: {PluginSettings Path=RadioModeEnabled}.
         public bool RadioModeEnabled
         {
             get => radioModeEnabled;
-            set
-            {
-                radioModeEnabled = value;
-                OnPropertyChanged();
-                // Only act on the true transition and only if the other is set, so the mirror
-                // setter can't recurse (it sets spotifyRadioMode=false, whose setter won't touch this).
-                if (value && spotifyRadioMode) SpotifyRadioMode = false;
-            }
+            set { radioModeEnabled = value; OnPropertyChanged(); }
         }
 
-        // Spotify Radio Mode: conduct the Spotify desktop app continuously as background music
-        // (v1.5.8 — decoupled from Radio Mode; formerly a sub-toggle). Standalone top-level
-        // source, mutually exclusive with RadioModeEnabled.
-        public bool SpotifyRadioMode
-        {
-            get => spotifyRadioMode;
-            set
-            {
-                spotifyRadioMode = value;
-                OnPropertyChanged();
-                if (value && radioModeEnabled) RadioModeEnabled = false;
-            }
-        }
+        // Spotify Radio Mode is DERIVED (v1.5.8 unification): radio is on AND the source is Spotify.
+        // Read-only + [JsonIgnore] so the old persisted key is ignored on load (reset-to-off migration)
+        // and no stale key is written. All engine readers (ComputeActive, PlayGameMusic suppression,
+        // NowPlayingPublisher) read this property unchanged.
+        [JsonIgnore]
+        public bool SpotifyRadioMode => RadioModeEnabled && RadioMusicSource == RadioMusicSource.Spotify;
 
         // When Spotify is the default music source, advance Spotify to a new track each time
         // a no-music game is selected (the gap is entered), instead of resuming the current

@@ -143,7 +143,6 @@ namespace UniPlaySong
             s.GamePropFilterSourceIds = new List<Guid>();
             s.FilterModeEnabled = false;
             s.RadioModeEnabled = false;
-            s.SpotifyRadioMode = false;
             s.SpotifySkipOnGap = false;
             s.PlayOnlyOnGameSelect = false;
             s.RadioMusicSource = RadioMusicSource.FullLibrary;
