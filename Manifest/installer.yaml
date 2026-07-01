@@ -8,6 +8,7 @@ Packages:
       - '[Fix Attempt] Windows can auto-sleep/suspend again while Playnite is open (issue #81). UPS used to keep its audio device open between songs, which could stop Windows from sleeping on its own. UPS now releases its audio device when the system locks or goes to sleep, so Windows can suspend normally, and reopens it when you return.'
       - '[Fix Attempt] Music now resumes where it left off after you lock (Win+L) or the PC sleeps and you come back — it previously could come back silent.'
       - '[Fix Attempt] Spotify Radio Mode is more stable: it no longer freezes Playnite on launch, the now-playing/mini-player updates while Spotify is your music, and it is now its own top-level option (turning it on turns Radio Mode off, and vice-versa).'
+      - '[Fix Attempt] Spotify Radio Mode no longer freezes Playnite (on launch or when switching Desktop/Fullscreen). It now pauses/resumes Spotify around game launches and lock, respects a pause you make directly in Spotify, and keeps the now-playing display live.'
   - Version: 1.5.7
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-26
