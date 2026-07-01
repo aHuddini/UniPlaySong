@@ -43,7 +43,7 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
-        public void SpotifyRadioOn_IsActive_WithoutRadioMode()
+        public void RadioMode_WithSpotifySource_IsActive()
         {
             // v1.5.8 unification: SpotifyRadioMode is derived — RadioModeEnabled=true + RadioMusicSource=Spotify.
             _settings.RadioModeEnabled = true;

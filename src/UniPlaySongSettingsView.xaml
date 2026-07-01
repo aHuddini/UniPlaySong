@@ -899,18 +899,16 @@
                         <RadioButton Content="Completion Status Pool"
                                      IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"
                                      Margin="0,2"/>
+                        <RadioButton Content="Spotify (desktop app)"
+                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                                     Command="{Binding SetRestartRequired}"
+                                     CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                                     Margin="0,2"/>
                     </StackPanel>
                     <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
-                               Text="Tip: 'Full Library' shuffles every song you've downloaded. Other sources reuse your Default Music pool configuration."/>
-
-                    <!-- Spotify Radio Mode (v1.5.8 — decoupled from Radio Mode into its own top-level source) -->
-                    <CheckBox Content="Spotify Radio Mode"
-                              IsChecked="{Binding Settings.SpotifyRadioMode}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="0,5"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
-                        Play the Spotify desktop app continuously as background music (its own source, separate from Radio Mode above — turning this on turns Radio Mode off, and vice-versa). Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply. Restart Playnite after toggling so playback state is cleanly reset.
+                               Text="Tip: 'Full Library' shuffles every song you've downloaded. Other pool sources reuse your Default Music pool configuration."/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5">
+                        'Spotify' plays the Spotify desktop app continuously as background music instead of a UPS pool. Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply. Restart Playnite after selecting so playback state is cleanly reset.
                     </TextBlock>
 
                     <Separator Margin="0,15"/>
