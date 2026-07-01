@@ -410,6 +410,19 @@ namespace UniPlaySong.DeskMediaControl
                     return;
                 }
 
+                // When Spotify is the active source (Radio Mode), the play/pause button controls
+                // SPOTIFY via SMTC — not UPS's own (silent) player. Same path as the "SPOTIFY:
+                // PAUSE/PLAY" menu. Pausing here is a user pause the two-flag radio logic respects
+                // (it won't auto-resume); playing clears it. Both react off the UI thread via the worker.
+                var spotify = _getSpotifyService?.Invoke();
+                if (spotify != null && spotify.IsSpotifyActive)
+                {
+                    _log?.Invoke("TopPanel: toggling Spotify play/pause (Spotify is the active source)");
+                    spotify.ToggleManualPlayPause();
+                    UpdateIcons();
+                    return;
+                }
+
                 if (playbackService.IsPaused)
                 {
                     _log?.Invoke("TopPanel: Resuming playback via manual toggle");

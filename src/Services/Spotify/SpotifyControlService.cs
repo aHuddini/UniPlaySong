@@ -104,15 +104,17 @@ namespace UniPlaySong.Services.Spotify
                         raiseNowPlaying = true;
                     }
 
-                    // Engage edge: radio just turned on → clean slate so Decide mirrors Spotify's real
-                    // state. If Spotify is already playing, Decide returns None (radio stays playing).
-                    // If Spotify was paused by the user before engage, Decide records UserPausedExternally
-                    // and issues NO resume — the user starts playback by pressing play in Spotify or
-                    // via UPS. Enabling a settings toggle is NOT a "resume" gesture.
+                    // Engage edge: radio just turned on (toggled on, or a fresh process started with it
+                    // on — e.g. a Desktop↔Fullscreen switch). Seed "UPS owns a pause" so the first Decide
+                    // issues a single Resume to START the radio, even if Spotify is currently paused —
+                    // enabling radio / entering a mode with it on means "I want music now". The ownership
+                    // resume clears the flags, so AFTER this initial start, a pause the user makes in the
+                    // Spotify app (or via the Top Panel button) is tracked as UserPausedExternally and
+                    // respected (radio won't auto-resume it) until the user resumes.
                     if (!_radioWasOn)
                     {
                         _radioWasOn = true;
-                        _radioState = default(SpotifyRadioState); // clean slate — respects a pre-engage user pause
+                        _radioState = new SpotifyRadioState { LifecyclePausedByUps = true, UserPausedExternally = false };
                     }
 
                     if (radioActive)
