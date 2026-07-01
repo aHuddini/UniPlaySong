@@ -1,12 +1,13 @@
 using System;
 using NAudio.Wave;
+using UniPlaySong.Services;
 
 namespace UniPlaySong.Audio
 {
     // Dedicated preview player for NSF Track Manager.
     // Owns its own libgme emulator + WaveOutEvent so it can play a specific
     // track without disturbing the main music player.
-    internal sealed class GmePreviewPlayer : IDisposable
+    internal sealed class GmePreviewPlayer : IDisposable, IAudioDeviceHolder
     {
         private const int SampleRate = 44100;
 
@@ -133,6 +134,19 @@ namespace UniPlaySong.Audio
                 GmeNative.gme_delete(_emu);
                 _emu = IntPtr.Zero;
             }
+        }
+
+        // --- IAudioDeviceHolder (issue #81) ---
+        public bool IsAudioDeviceOpen
+        {
+            get { lock (_lock) { return _waveOut != null; } }
+        }
+        public string AudioDeviceLabel => "GmePreviewPlayer";
+        // Closes the preview device immediately (idle/lock/suspend). Preview is transient, so this
+        // just stops it; it reopens on the next preview request.
+        public void ReleaseAudioDevice()
+        {
+            lock (_lock) { StopInternal(); }
         }
 
         public void Dispose()
