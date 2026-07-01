@@ -392,6 +392,38 @@ namespace UniPlaySong.Tests.Services.Spotify
             Assert.DoesNotThrow(() => _service.RequestNowPlaying(null));
             _client.Verify(c => c.RequestNowPlaying(It.IsAny<Action<SpotifyNowPlaying>>()), Times.Never);
         }
+
+        [Test]
+        public void RadioModeOff_WhileSpotifyWasActive_PausesSpotify()
+        {
+            // Spotify radio was active + playing; user turns Radio Mode OFF → Spotify must pause
+            // (not keep playing alongside game music / pool radio).
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _service.Recompute();                              // engage: active
+            Assert.IsTrue(_service.IsSpotifyActive);
+            _settings.RadioModeEnabled = false;                // user turns radio off
+            _service.Recompute();                              // disengage
+            _client.Verify(c => c.TryPause(), Times.Once);     // Spotify paused on disengage
+            Assert.IsFalse(_service.IsSpotifyActive);
+        }
+
+        [Test]
+        public void RadioSource_SpotifyToPool_PausesSpotify()
+        {
+            // Radio stays on but the user switches source Spotify → a pool → Spotify must pause
+            // (the pool takes over; no overlap).
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _service.Recompute();                              // Spotify radio active
+            Assert.IsTrue(_service.IsSpotifyActive);
+            _settings.RadioMusicSource = RadioMusicSource.FullLibrary; // switch to a pool
+            _service.Recompute();
+            _client.Verify(c => c.TryPause(), Times.Once);     // Spotify paused
+            Assert.IsFalse(_service.IsSpotifyActive);
+        }
     }
 
     // v1.5.8 unification — SpotifyRadioMode is derived: radio on AND the radio source is Spotify.

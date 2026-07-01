@@ -75,10 +75,10 @@ namespace UniPlaySong.Services.Spotify
         private bool ComputeActive(UniPlaySongSettings s)
         {
             if (s == null || _client == null || !_client.IsAvailable) return false;
-            // Spotify Radio Mode: standalone continuous source (v1.5.8 — no longer gated on
-            // RadioModeEnabled, which caused UPS's pool radio to start alongside Spotify). It is
-            // mutually exclusive with RadioModeEnabled (enforced in settings), so when this is on,
-            // MusicPlaybackService's RadioMode branch never fires — Spotify alone is the source.
+            // SpotifyRadioMode is derived (RadioModeEnabled=true AND RadioMusicSource=Spotify).
+            // When it is true the pool-radio branch in MusicPlaybackService does not run because
+            // a guard in StartRadioPlayback (Task 3) prevents the pool from starting while Spotify
+            // is the active radio source — Spotify alone is the source.
             if (s.SpotifyRadioMode) return true;
             if (s.DefaultMusicSourceOption == DefaultMusicSource.Spotify
                 && _playback?.IsPlayingDefaultMusic == true) return true;
@@ -139,11 +139,22 @@ namespace UniPlaySong.Services.Spotify
                     return; // radio handled — do NOT run the gap-fill machinery
                 }
 
-                // Radio just turned off: reset the engage edge + radio flags.
+                // Radio (Spotify) just turned off — the user disabled Radio Mode or switched the source
+                // away from Spotify. If UPS was driving Spotify, PAUSE it so it doesn't keep playing
+                // alongside whatever takes over (pool radio, game music). This is a deliberate disengage,
+                // so pausing is correct (distinct from the "respect external pause" rule, which governs
+                // pauses DURING active Spotify radio). All SMTC calls are non-blocking posts.
                 if (_radioWasOn)
                 {
                     _radioWasOn = false;
                     _radioState = default(SpotifyRadioState);
+                    if (_isActive)
+                    {
+                        _client?.TryPause();
+                        _isActive = false;
+                        if (s != null) s.SpotifyActive = false;
+                        raiseNowPlaying = true;
+                    }
                 }
 
                 // ---- GAP-FILL PATH (unchanged) ----
