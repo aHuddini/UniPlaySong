@@ -86,10 +86,17 @@ namespace UniPlaySong.Controls
 
         private void OnServiceChanged()
         {
+            // GetSnapshot() is a cheap, fail-safe read — fine on the calling thread
+            // (may be a non-UI SMTC/WinRT callback thread). Everything that follows
+            // touches settings/PropertyChanged and must run on the UI thread, so it's
+            // marshalled via OnUi (never a synchronous Dispatcher.Invoke).
             _snap = _service?.GetSnapshot() ?? ActiveMediaSnapshot.Empty;
-            MirrorToSettings(_snap);
-            RaiseSnapshot();
-            CommandManager.InvalidateRequerySuggested();
+            OnUi(() =>
+            {
+                MirrorToSettings(_snap);
+                RaiseSnapshotCore();
+                CommandManager.InvalidateRequerySuggested();
+            });
         }
 
         private void MirrorToSettings(ActiveMediaSnapshot s)
@@ -120,15 +127,14 @@ namespace UniPlaySong.Controls
         }
 
         // ── change notification (BeginInvoke, never sync Invoke — deadlock-fix rule) ──
-        private void RaiseSnapshot()
+        // Unmarshalled core — call only from within an OnUi(...) block (or another
+        // already-UI-thread context) to avoid nested/double dispatching.
+        private void RaiseSnapshotCore()
         {
-            OnUi(() =>
-            {
-                Raise(nameof(HasActiveMedia)); Raise(nameof(SourceKind)); Raise(nameof(SourceName));
-                Raise(nameof(IsPlaying)); Raise(nameof(IsMuted)); Raise(nameof(Progress));
-                Raise(nameof(PositionText)); Raise(nameof(DurationText)); Raise(nameof(HasTimeline));
-                Raise(nameof(Volume)); Raise(nameof(CanNext)); Raise(nameof(CanPrevious));
-            });
+            Raise(nameof(HasActiveMedia)); Raise(nameof(SourceKind)); Raise(nameof(SourceName));
+            Raise(nameof(IsPlaying)); Raise(nameof(IsMuted)); Raise(nameof(Progress));
+            Raise(nameof(PositionText)); Raise(nameof(DurationText)); Raise(nameof(HasTimeline));
+            Raise(nameof(Volume)); Raise(nameof(CanNext)); Raise(nameof(CanPrevious));
         }
 
         private void RaiseMetadata()

@@ -73,5 +73,34 @@ namespace UniPlaySong.Tests.Controls
             _vm.Volume = 65.0;
             _service.Verify(s => s.SetVolume(65.0), Times.Once);
         }
+
+        // Regression: OnServiceChanged now marshals MirrorToSettings (+ the raises)
+        // through OnUi via Dispatcher.BeginInvoke instead of running them inline on
+        // whatever thread raised Changed (e.g. a non-UI SMTC/WinRT callback thread).
+        // Application.Current is null in the test host, so OnUi falls through to its
+        // inline branch — this locks in that the marshalled path still performs the
+        // full settings mirror synchronously in that fallback case.
+        [Test]
+        public void Changed_MirrorsSettings_EvenWhenMarshalled()
+        {
+            var snap = new ActiveMediaSnapshot(
+                true, ActiveMediaSourceKind.Spotify, "Spotify", true, false,
+                42.0, "0:42", "3:15", 77.0, true, false);
+            _service.Setup(s => s.GetSnapshot()).Returns(snap);
+
+            _vm.Attach();
+            _service.Raise(s => s.Changed += null);
+
+            Assert.AreEqual(42.0, _settings.ActiveMediaProgress);
+            Assert.AreEqual("0:42", _settings.ActiveMediaPositionText);
+            Assert.AreEqual("3:15", _settings.ActiveMediaDurationText);
+            Assert.AreEqual(77.0, _settings.ActiveMediaVolume);
+            Assert.IsTrue(_settings.ActiveMediaIsPlaying);
+            Assert.AreEqual("Spotify", _settings.ActiveMediaSourceName);
+            Assert.AreEqual(ActiveMediaSourceKind.Spotify, _settings.ActiveMediaSourceKind);
+            Assert.IsTrue(_settings.ActiveMediaHasMedia);
+            Assert.IsTrue(_settings.ActiveMediaCanNext);
+            Assert.IsFalse(_settings.ActiveMediaCanPrevious);
+        }
     }
 }
