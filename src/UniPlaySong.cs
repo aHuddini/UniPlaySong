@@ -313,7 +313,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact" }
             });
 
             // Register settings support for theme integration via Playnite's
@@ -3924,6 +3924,12 @@ namespace UniPlaySong
                 return new Controls.NowPlayingMiniPlayer(_settings);
             if (args.Name == "NowPlayingMiniPlayerCompact")
                 return new Controls.NowPlayingMiniPlayerCompact(_settings);
+            if (args.Name == "MediaControllerBar")
+                return new Controls.MediaControllerBar(_activeMediaViewModel);
+            if (args.Name == "MediaControllerOverlay")
+                return new Controls.MediaControllerOverlay(_activeMediaViewModel);
+            if (args.Name == "MediaControllerCompact")
+                return new Controls.MediaControllerCompact(_activeMediaViewModel);
             return null;
         }
 
