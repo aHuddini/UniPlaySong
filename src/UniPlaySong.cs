@@ -117,6 +117,9 @@ namespace UniPlaySong
         private volatile bool _appStarted; // gates the Spotify radio engage until OnApplicationStarted
         private Services.NowPlayingPublisher _nowPlayingPublisher;
         private Services.SongMetadataService _publisherMetadata;
+        private Services.ActiveMedia.ActiveMediaService _activeMediaService;
+        private Controls.ActiveMediaViewModel _activeMediaViewModel;
+        private System.Windows.Threading.DispatcherTimer _activeMediaPollTimer;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
         private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
@@ -1092,6 +1095,8 @@ namespace UniPlaySong
             _nowPlayingPublisher?.Dispose();
             _nowPlayingPublisher = null;
             _publisherMetadata = null;
+            _activeMediaPollTimer?.Stop();
+            _activeMediaViewModel?.Detach();
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;
             _spotifyClient?.Dispose();
@@ -2656,6 +2661,44 @@ namespace UniPlaySong
                 _fileLogger,
                 ResolveCurrentGameCoverPath); // game-music fallback when a track has no embedded art
             _nowPlayingPublisher.Refresh(); // publish initial state
+
+            // ActiveMediaService: resolves the single audible active source (UPS or Spotify)
+            // and routes transport commands. Shared ActiveMediaViewModel is handed to every
+            // theme media element (Task 7) so they all reflect the same state.
+            _activeMediaService = new Services.ActiveMedia.ActiveMediaService(
+                _playbackService,
+                _spotifyControlService,
+                _spotifyClient,
+                () => _settings,
+                _fileLogger);
+
+            _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settings, _activeMediaService);
+            _activeMediaViewModel.Attach();
+
+            // 1s position poll — runs ONLY while there is active media and it is playing.
+            _activeMediaPollTimer = new System.Windows.Threading.DispatcherTimer(
+                System.Windows.Threading.DispatcherPriority.Normal)
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _activeMediaPollTimer.Tick += (s, e) =>
+            {
+                var snap = _activeMediaService.GetSnapshot();
+                if (snap.HasActiveMedia && snap.IsPlaying) _activeMediaService.Poll();
+                else _activeMediaPollTimer.Stop();   // idle/paused — stop churning
+            };
+            _activeMediaService.Changed += () =>
+            {
+                var snap = _activeMediaService.GetSnapshot();
+                if (snap.HasActiveMedia && snap.IsPlaying)
+                {
+                    if (!_activeMediaPollTimer.IsEnabled) _activeMediaPollTimer.Start();
+                }
+                else if (_activeMediaPollTimer.IsEnabled)
+                {
+                    _activeMediaPollTimer.Stop();
+                }
+            };
 
             // Mid-init suppression — ~150ms into InitializeServices
             if (IsFullscreen)
