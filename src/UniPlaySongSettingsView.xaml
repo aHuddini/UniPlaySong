@@ -23,6 +23,8 @@
         <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <!-- Official Spotify logomark: green circle + 3 sound-wave arcs, viewBox 0 0 168 168. -->
+        <Geometry x:Key="SpotifyLogoGeometry">M84,0 C37.6,0 0,37.6 0,84 C0,130.4 37.6,168 84,168 C130.4,168 168,130.4 168,84 C168,37.6 130.4,0 84,0 Z M122.5,121.2 C121,123.7 117.8,124.4 115.4,122.9 C95.9,111 71.4,108.3 42.5,114.9 C39.7,115.5 37,113.8 36.3,111 C35.7,108.2 37.4,105.5 40.2,104.8 C71.8,97.6 98.9,100.7 120.8,114.1 C123.2,115.6 124,118.8 122.5,121.2 Z M132.8,98.3 C130.9,101.4 126.9,102.3 123.8,100.4 C101.5,86.7 67.5,82.7 41.1,90.7 C37.6,91.8 33.9,89.8 32.8,86.3 C31.8,82.8 33.8,79.1 37.3,78 C67.4,68.9 104.9,73.3 130.5,89.1 C133.6,91 134.6,95.1 132.8,98.3 Z M133.7,74.4 C107,58.5 62.9,57.1 37.4,64.8 C33.2,66.1 28.8,63.7 27.5,59.5 C26.3,55.3 28.7,50.9 32.9,49.6 C62.2,40.7 110.9,42.4 141.6,60.6 C145.4,62.9 146.6,67.8 144.4,71.5 C142.2,75.3 137.4,76.6 133.7,74.4 Z</Geometry>
     </UserControl.Resources>
     <TabControl>
         <!-- General Tab -->
@@ -760,6 +762,59 @@
                                TextWrapping="Wrap"
                                Margin="40,0,0,10"/>
 
+                    <!-- Default Music Source: Trailer Audio (graduated from Experimental in v1.5.8) -->
+                    <RadioButton Content="Stream audio from the game's EML trailer (no-music games only)"
+                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
+                                 IsEnabled="{Binding IsTrailerAudioEnabled}"
+                                 GroupName="DefaultMusicSource"
+                                 Margin="20,5,0,0"/>
+                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Editing tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,4"/>
+                    <TextBlock Text="Important: in ExtraMetadataLoader's settings, enable &quot;Play videos initially without sound&quot;. Otherwise EML's own video plays its audio on top of the extracted trailer audio, and you hear the trailer even on games that have music."
+                               FontSize="11"
+                               Foreground="#E0A030"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,4"/>
+                    <TextBlock Text="Requires FFmpeg — set its path in the Editing tab"
+                               FontSize="11"
+                               Foreground="IndianRed"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"
+                               Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <!-- Default Music Source: Spotify (graduated from Experimental in v1.5.8) -->
+                    <RadioButton IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                                 IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                                 GroupName="DefaultMusicSource"
+                                 Command="{Binding SetRestartRequired}"
+                                 CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                                 Margin="20,5,0,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Official Spotify logomark. Brand green #1DB954, geometry from resources. -->
+                            <Path Data="{StaticResource SpotifyLogoGeometry}"
+                                  Fill="#1DB954"
+                                  Stretch="Uniform"
+                                  Width="16" Height="16"
+                                  Margin="0,0,6,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="Spotify (control the Spotify desktop app)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="40,2,0,5">
+                        For games with no UniPlaySong music, conduct the open Spotify desktop app instead of playing a default track. Games that have their own music still play it (Spotify pauses). The visualizer and fades don't apply to Spotify audio. Restart Playnite after switching to this source so playback state is cleanly reset.
+                    </TextBlock>
+                    <CheckBox Content="Skip to a new Spotify track on each no-music game"
+                              IsChecked="{Binding Settings.SpotifySkipOnGap}"
+                              IsEnabled="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                              Margin="40,0,0,0"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="60,2,0,5">
+                        Each time you select a game with no UniPlaySong music, advance Spotify to the next track instead of resuming the current one — a fresh song per game. Falls back to resuming if Spotify can't skip (e.g. end of queue).
+                    </TextBlock>
+
                     <!-- Continue same song option (for pool-based sources) -->
                     <CheckBox Content="Keep Same Default Track On Game Switch"
                               IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
@@ -908,11 +963,20 @@
                         <RadioButton Content="Completion Status Pool"
                                      IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"
                                      Margin="0,2"/>
-                        <RadioButton Content="Spotify (desktop app)"
-                                     IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                        <RadioButton IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
                                      Command="{Binding SetRestartRequired}"
                                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                                     Margin="0,2"/>
+                                     Margin="0,2">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource SpotifyLogoGeometry}"
+                                      Fill="#1DB954"
+                                      Stretch="Uniform"
+                                      Width="16" Height="16"
+                                      Margin="0,0,6,0"
+                                      VerticalAlignment="Center"/>
+                                <TextBlock Text="Spotify (desktop app)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
                     <TextBlock Margin="20,0,0,10" FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
                                Text="Tip: 'Full Library' shuffles every song you've downloaded. Other pool sources reuse your Default Music pool configuration."/>
@@ -3931,43 +3995,7 @@
                         </TextBlock>
                     </Border>
 
-                    <!-- Trailer Audio (moved from Playback tab in v1.5.4; extract-and-play in v1.5.5) -->
-                    <TextBlock Text="Trailer Audio (ExtraMetadataLoader)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <RadioButton Content="Stream audio from the game's EML trailer (no-music games only)"
-                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"
-                                 IsEnabled="{Binding IsTrailerAudioEnabled}"
-                                 GroupName="DefaultMusicSource"
-                                 Margin="0,5,0,0"/>
-                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Editing tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,4"/>
-                    <TextBlock Text="Requires FFmpeg — set its path in the Editing tab"
-                               FontSize="11"
-                               Foreground="IndianRed"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <RadioButton GroupName="DefaultMusicSource"
-                                 Content="Spotify (control the Spotify desktop app)"
-                                 IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
-                                 Command="{Binding SetRestartRequired}"
-                                 CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                                 Margin="0,5"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,2,0,5">
-                        For games with no UniPlaySong music, conduct the open Spotify desktop app instead of playing a default track. Games that have their own music still play it (Spotify pauses). The visualizer and fades don't apply to Spotify audio. Restart Playnite after switching to this source so playback state is cleanly reset.
-                    </TextBlock>
-                    <CheckBox Content="Skip to a new Spotify track on each no-music game"
-                              IsChecked="{Binding Settings.SpotifySkipOnGap}"
-                              IsEnabled="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
-                              Margin="20,0,0,0"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="40,2,0,5">
-                        Each time you select a game with no UniPlaySong music, advance Spotify to the next track instead of resuming the current one — a fresh song per game. Falls back to resuming if Spotify can't skip (e.g. end of queue).
-                    </TextBlock>
-
                     <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
-                    <Separator Margin="0,15"/>
                     <TextBlock Text="Release Audio When Idle" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8">
                         <TextBlock Text="Release after: " VerticalAlignment="Center" Width="100"/>

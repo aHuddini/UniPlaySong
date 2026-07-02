@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Media;
 using UniPlaySong.Common;
 
@@ -1770,8 +1771,6 @@ namespace UniPlaySong
         private bool enableYouTubeChannelWhitelist = true;
         private List<string> whitelistedYouTubeChannelIds = new List<string>
         {
-            // GilvaSunner - Well-known for high-quality game music rips
-            "UCfSN UCFt4IRa-lKRYUhvEg",
             // BrawlBRSTMs3 - Extensive library of video game music
             "UC9l8PCqbv1x7qwU_1oiSR3A",
             // GiIvaSunner (with uppercase i) - Another variant
@@ -1796,10 +1795,22 @@ namespace UniPlaySong
         /// List of whitelisted YouTube channel IDs
         /// These channels are known to provide reliable game soundtrack uploads
         /// </summary>
+        // ObjectCreationHandling.Replace: without it Newtonsoft appends onto the
+        // constructor-populated default list every load, so the defaults multiply
+        // on each save/load cycle. Setter also de-dupes to self-heal configs that
+        // already grew before this fix.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<string> WhitelistedYouTubeChannelIds
         {
             get => whitelistedYouTubeChannelIds;
-            set { whitelistedYouTubeChannelIds = value ?? new List<string>(); OnPropertyChanged(); }
+            set
+            {
+                var incoming = value ?? new List<string>();
+                whitelistedYouTubeChannelIds = incoming
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                OnPropertyChanged();
+            }
         }
 
         // Live Effects Settings
