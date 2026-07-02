@@ -1703,7 +1703,11 @@ namespace UniPlaySong
                 // enters the radio branch on game switch, so settings-driven flips need their
                 // own kick. Mirrors the radio entry/exit logic from PlayGameMusic.
                 bool radioModeChanged = e.OldSettings.RadioModeEnabled != e.NewSettings.RadioModeEnabled;
-                if (radioModeChanged && _playbackService != null)
+                // Source switch while radio stays on (e.g. pool → Spotify in the dialog) must also
+                // re-enter: without it the old source keeps playing alongside the new one.
+                bool radioSourceChanged = e.NewSettings.RadioModeEnabled
+                    && e.OldSettings.RadioMusicSource != e.NewSettings.RadioMusicSource;
+                if ((radioModeChanged || radioSourceChanged) && _playbackService != null)
                 {
                     var game = ResolveContextGame();
                     if (e.NewSettings.RadioModeEnabled)
@@ -1725,8 +1729,24 @@ namespace UniPlaySong
                         }
                         if (!yieldToGameMusic)
                         {
-                            _fileLogger?.Debug("RadioMode toggled ON via dialog — starting radio");
-                            _playbackService.StartRadioPlayback(e.NewSettings);
+                            if (e.NewSettings.RadioMusicSource == RadioMusicSource.Spotify)
+                            {
+                                // Spotify is the radio source: no UPS pool to start — the playing
+                                // game/pool music must STOP so Spotify plays alone. PlayGameMusic
+                                // (no forceReload) hits the SpotifyRadioMode suppression branch
+                                // (fade-out + suppress). Same fix as the theme-toggle path.
+                                _fileLogger?.Debug("RadioMode ON via dialog (Spotify source) — suppressing UPS music");
+                                if (game != null) _playbackService.PlayGameMusic(game, e.NewSettings);
+                                else _playbackService.Stop();
+                                _spotifyControlService?.Recompute(); // engage now, not on the next poll
+                            }
+                            else
+                            {
+                                _fileLogger?.Debug("RadioMode toggled ON via dialog — starting radio");
+                                // Also covers Spotify → pool: the pool starts here and the control
+                                // service's disengage pauses Spotify.
+                                _playbackService.StartRadioPlayback(e.NewSettings);
+                            }
                         }
                     }
                     else
