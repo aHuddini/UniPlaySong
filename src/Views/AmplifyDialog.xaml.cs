@@ -569,7 +569,7 @@ namespace UniPlaySong.Views
                 if (string.IsNullOrEmpty(ffmpegPath))
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
-                        "FFmpeg path is not configured.\n\nPlease configure FFmpeg path in Settings.",
+                        "FFmpeg path is not configured.\n\nPlease configure FFmpeg path in Settings → Editing tab.",
                         "FFmpeg Not Found");
                     return;
                 }

@@ -66,7 +66,7 @@ namespace UniPlaySong.Handlers
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for audio amplification.\n\n" +
-                        "Please configure FFmpeg path in Settings → Audio Normalization.",
+                        "Please configure FFmpeg path in Settings → Editing tab.",
                         "FFmpeg Not Found");
                     return;
                 }
@@ -149,7 +149,7 @@ namespace UniPlaySong.Handlers
                 {
                     _playniteApi.Dialogs.ShowErrorMessage(
                         "FFmpeg is required for audio amplification.\n\n" +
-                        "Please configure FFmpeg path in Settings → Audio Normalization.",
+                        "Please configure FFmpeg path in Settings → Editing tab.",
                         "FFmpeg Not Found");
                     return;
                 }

@@ -2671,7 +2671,7 @@
                                 Command="{Binding BrowseForFFmpegFile}"/>
                         <TextBlock Text="{Binding FfmpegStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
                     </StackPanel>
-                    <TextBlock Text="Point this to the full path of ffmpeg.exe (e.g. C:\Tools\ffmpeg\ffmpeg.exe). Required for normalization, silence trimming, precise trim, and audio repair. Download from ffmpeg.org if not installed."
+                    <TextBlock Text="Point this to the full path of ffmpeg.exe (e.g. C:\Tools\ffmpeg\ffmpeg.exe). Required for music downloads (audio extraction/conversion) as well as normalization, silence trimming, precise trim, and audio repair. Download from ffmpeg.org if not installed."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -3938,12 +3938,12 @@
                                  IsEnabled="{Binding IsTrailerAudioEnabled}"
                                  GroupName="DefaultMusicSource"
                                  Margin="0,5,0,0"/>
-                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Downloads tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
+                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Editing tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,4"/>
-                    <TextBlock Text="Requires FFmpeg — set its path in the Downloads tab"
+                    <TextBlock Text="Requires FFmpeg — set its path in the Editing tab"
                                FontSize="11"
                                Foreground="IndianRed"
                                TextWrapping="Wrap"
@@ -4482,7 +4482,7 @@
 
                     <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">FFmpeg (for normalization, conversion, and waveform editing)</TextBlock>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
-                        Download FFmpeg and point the plugin to ffmpeg.exe in the Editing tab. Required for audio normalization, bulk format conversion, silence trim, and amplify.
+                        Download FFmpeg and point the plugin to ffmpeg.exe in the Editing tab. Required for music downloads, plus audio normalization, bulk format conversion, silence trim, and amplify.
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
                         <TextBlock FontSize="11" Foreground="Gray" Text="Download: "/>

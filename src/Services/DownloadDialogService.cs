@@ -1269,7 +1269,7 @@ namespace UniPlaySong.Services
             {
                 _playniteApi.Dialogs.ShowErrorMessage(
                     "FFmpeg is not configured or not found.\n\n" +
-                    "Please configure the FFmpeg path in Settings → Audio Normalization (or Downloads tab) to use the Download From URL feature.",
+                    "Please configure the FFmpeg path in Settings → Editing tab to use the Download From URL feature.",
                     "UniPlaySong - Configuration Required");
                 return;
             }

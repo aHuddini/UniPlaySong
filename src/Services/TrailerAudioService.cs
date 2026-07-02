@@ -114,7 +114,7 @@ namespace UniPlaySong.Services
             {
                 if (!_loggedNoFfmpeg)
                 {
-                    _fileLogger?.Info("TrailerAudio: FFmpeg not available — set its path in the Downloads tab. Trailer audio disabled.");
+                    _fileLogger?.Info("TrailerAudio: FFmpeg not available — set its path in the Editing tab. Trailer audio disabled.");
                     _loggedNoFfmpeg = true;
                 }
                 return null;

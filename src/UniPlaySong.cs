@@ -3473,7 +3473,7 @@ namespace UniPlaySong
             if (_settings == null || string.IsNullOrWhiteSpace(_settings.FFmpegPath))
             {
                 PlayniteApi.Dialogs.ShowMessage(
-                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Editing tab.",
                     "UniPlaySong");
                 return;
             }

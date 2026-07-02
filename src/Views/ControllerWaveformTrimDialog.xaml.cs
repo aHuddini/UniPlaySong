@@ -775,7 +775,7 @@ namespace UniPlaySong.Views
                 {
                     DialogHelper.ShowErrorToast(
                         _playniteApi,
-                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings.",
+                        "FFmpeg is required for trimming. Please configure FFmpeg in Settings → Editing tab.",
                         "FFmpeg Required");
                     UpdateFeedback("Waveform", "FFmpeg not configured - check Settings");
                     return;

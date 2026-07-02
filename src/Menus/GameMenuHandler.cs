@@ -1482,7 +1482,7 @@ namespace UniPlaySong.Menus
             if (settings == null || string.IsNullOrWhiteSpace(settings.FFmpegPath))
             {
                 _playniteApi.Dialogs.ShowMessage(
-                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Editing tab.",
                     "UniPlaySong");
                 return;
             }
@@ -1646,7 +1646,7 @@ namespace UniPlaySong.Menus
             if (settings == null || string.IsNullOrWhiteSpace(settings.FFmpegPath))
             {
                 _playniteApi.Dialogs.ShowMessage(
-                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Audio Normalization.",
+                    "FFmpeg is required for audio repair. Please configure FFmpeg path in Settings → Editing tab.",
                     "UniPlaySong");
                 return;
             }
