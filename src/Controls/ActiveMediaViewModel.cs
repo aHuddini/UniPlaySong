@@ -1,0 +1,154 @@
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Input;
+using UniPlaySong.Common;
+using UniPlaySong.Models;
+using UniPlaySong.Services.ActiveMedia;
+
+namespace UniPlaySong.Controls
+{
+    // Thin shared ViewModel over IActiveMediaService. Proxies now-playing metadata
+    // from settings (like NowPlayingMiniPlayerModel), adds transport commands + timeline
+    // state, and mirrors the snapshot back into the settings ActiveMedia* props for
+    // decoupled {PluginSettings} binding. One instance shared by all UPS media elements.
+    public class ActiveMediaViewModel : INotifyPropertyChanged
+    {
+        private readonly UniPlaySongSettings _settings;
+        private readonly IActiveMediaService _service;
+        private bool _subscribed;
+        private ActiveMediaSnapshot _snap = ActiveMediaSnapshot.Empty;
+
+        public ActiveMediaViewModel(UniPlaySongSettings settings, IActiveMediaService service)
+        {
+            _settings = settings;
+            _service = service;
+
+            PlayPauseCommand = new RelayCommand(() => _service?.PlayPause());
+            NextCommand = new RelayCommand(() => _service?.Next(), () => _snap.CanNext);
+            PreviousCommand = new RelayCommand(() => _service?.Previous(), () => _snap.CanPrevious);
+            ToggleMuteCommand = new RelayCommand(() => _service?.ToggleMute());
+        }
+
+        public void Attach()
+        {
+            if (_subscribed) return;
+            if (_settings != null) _settings.PropertyChanged += OnSettingsChanged;
+            if (_service != null) _service.Changed += OnServiceChanged;
+            _subscribed = true;
+            OnServiceChanged();   // initial snapshot
+            RaiseMetadata();      // initial metadata paint
+        }
+
+        public void Detach()
+        {
+            if (!_subscribed) return;
+            if (_settings != null) _settings.PropertyChanged -= OnSettingsChanged;
+            if (_service != null) _service.Changed -= OnServiceChanged;
+            _subscribed = false;
+        }
+
+        // ── transport commands ──
+        public ICommand PlayPauseCommand { get; }
+        public ICommand NextCommand { get; }
+        public ICommand PreviousCommand { get; }
+        public ICommand ToggleMuteCommand { get; }
+
+        // ── metadata (proxied from settings, same source as the existing mini-players) ──
+        public string Title => _settings?.NowPlayingTitle ?? string.Empty;
+        public string Artist => _settings?.NowPlayingArtist ?? string.Empty;
+        public string AlbumArtPath => _settings?.NowPlayingAlbumArtPath ?? string.Empty;
+        public string Album => _settings?.NowPlayingAlbum ?? string.Empty;
+        public string Genre => _settings?.NowPlayingGenre ?? string.Empty;
+        public string Duration => _settings?.NowPlayingDuration ?? string.Empty;
+        public bool HasArt => !string.IsNullOrEmpty(AlbumArtPath);
+
+        // ── active-media snapshot state ──
+        public bool HasActiveMedia => _snap.HasActiveMedia;
+        public ActiveMediaSourceKind SourceKind => _snap.SourceKind;
+        public string SourceName => _snap.SourceName;
+        public bool IsPlaying => _snap.IsPlaying;
+        public bool IsMuted => _snap.IsMuted;
+        public double Progress => _snap.Progress;
+        public string PositionText => _snap.PositionText;
+        public string DurationText => _snap.DurationText;
+        public bool HasTimeline => !string.IsNullOrEmpty(_snap.DurationText);
+        public bool CanNext => _snap.CanNext;
+        public bool CanPrevious => _snap.CanPrevious;
+
+        // Volume is two-way: getter from snapshot, setter routes to the service.
+        public double Volume
+        {
+            get => _snap.Volume;
+            set { _service?.SetVolume(value); }
+        }
+
+        private void OnServiceChanged()
+        {
+            _snap = _service?.GetSnapshot() ?? ActiveMediaSnapshot.Empty;
+            MirrorToSettings(_snap);
+            RaiseSnapshot();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void MirrorToSettings(ActiveMediaSnapshot s)
+        {
+            if (_settings == null) return;
+            _settings.ActiveMediaProgress = s.Progress;
+            _settings.ActiveMediaPositionText = s.PositionText;
+            _settings.ActiveMediaDurationText = s.DurationText;
+            _settings.ActiveMediaVolume = s.Volume;
+            _settings.ActiveMediaIsPlaying = s.IsPlaying;
+            _settings.ActiveMediaSourceName = s.SourceName;
+            _settings.ActiveMediaSourceKind = s.SourceKind;
+            _settings.ActiveMediaHasMedia = s.HasActiveMedia;
+            _settings.ActiveMediaCanNext = s.CanNext;
+            _settings.ActiveMediaCanPrevious = s.CanPrevious;
+        }
+
+        private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(UniPlaySongSettings.NowPlayingTitle) &&
+                e.PropertyName != nameof(UniPlaySongSettings.NowPlayingArtist) &&
+                e.PropertyName != nameof(UniPlaySongSettings.NowPlayingAlbumArtPath) &&
+                e.PropertyName != nameof(UniPlaySongSettings.NowPlayingAlbum) &&
+                e.PropertyName != nameof(UniPlaySongSettings.NowPlayingGenre) &&
+                e.PropertyName != nameof(UniPlaySongSettings.NowPlayingDuration))
+                return;
+            RaiseMetadata();
+        }
+
+        // ── change notification (BeginInvoke, never sync Invoke — deadlock-fix rule) ──
+        private void RaiseSnapshot()
+        {
+            OnUi(() =>
+            {
+                Raise(nameof(HasActiveMedia)); Raise(nameof(SourceKind)); Raise(nameof(SourceName));
+                Raise(nameof(IsPlaying)); Raise(nameof(IsMuted)); Raise(nameof(Progress));
+                Raise(nameof(PositionText)); Raise(nameof(DurationText)); Raise(nameof(HasTimeline));
+                Raise(nameof(Volume)); Raise(nameof(CanNext)); Raise(nameof(CanPrevious));
+            });
+        }
+
+        private void RaiseMetadata()
+        {
+            OnUi(() =>
+            {
+                Raise(nameof(Title)); Raise(nameof(Artist)); Raise(nameof(AlbumArtPath));
+                Raise(nameof(Album)); Raise(nameof(Genre)); Raise(nameof(Duration)); Raise(nameof(HasArt));
+            });
+        }
+
+        private static void OnUi(Action a)
+        {
+            var d = Application.Current?.Dispatcher;
+            if (d != null && !d.CheckAccess()) d.BeginInvoke(a);
+            else a();
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void Raise([CallerMemberName] string name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+}
