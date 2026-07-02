@@ -1,0 +1,62 @@
+<PluginUserControl x:Class="UniPlaySong.Controls.MediaControllerOverlay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:UniPlaySong.Controls"
+    mc:Ignorable="d">
+    <PluginUserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </PluginUserControl.Resources>
+    <PluginUserControl.Style>
+        <Style TargetType="PluginUserControl">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasActiveMedia}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </PluginUserControl.Style>
+    <Border Background="#CC101418" CornerRadius="14" Padding="18" MinWidth="340">
+        <StackPanel>
+            <Image Source="{Binding AlbumArtPath}" Height="180" Stretch="Uniform" Margin="0,0,0,12"
+                   Visibility="{Binding HasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock Text="{Binding SourceName}" FontSize="11" Opacity="0.55" VerticalAlignment="Center"/>
+            </StackPanel>
+            <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+            <TextBlock Text="{Binding Artist}" FontSize="14" Opacity="0.78" Margin="0,0,0,10" TextTrimming="CharacterEllipsis"/>
+
+            <Grid Visibility="{Binding HasTimeline, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Progress}" Height="4" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,8">
+                <Button Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}" Content="&#xEC78;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
+                <Button Command="{Binding PlayPauseCommand}" FontFamily="{DynamicResource FontIcoFont}" Width="60" Height="60" Margin="6,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Content" Value="&#xECA5;"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPlaying}" Value="False">
+                                    <Setter Property="Content" Value="&#xECA6;"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}" Content="&#xEC6E;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
+                <Button Command="{Binding ToggleMuteCommand}" Content="&#xECBA;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
+            </StackPanel>
+
+            <Slider Minimum="0" Maximum="100" Value="{Binding Volume, Mode=TwoWay}" Margin="4,0"/>
+        </StackPanel>
+    </Border>
+</PluginUserControl>
