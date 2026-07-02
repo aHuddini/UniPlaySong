@@ -85,11 +85,11 @@ Right-click any game → **Music Info Card** for a stylized per-game music dashb
 
 | Tool | Purpose | Download |
 |------|---------|----------|
-| **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** | Music searching and downloading | [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases) |
+| **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** | Music searching and downloading — **required** for downloads | [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases) |
 | **[Deno](https://deno.com/)** | Required JS runtime for yt-dlp | [Deno.com](https://deno.com/) |
-| **[FFmpeg](https://ffmpeg.org/download.html)** | Audio processing | [Official Website](https://ffmpeg.org/download.html) |
+| **[FFmpeg](https://ffmpeg.org/download.html)** | **Required** for downloads (audio extraction/conversion); also powers editing features (normalize, trim, convert) | [Official Website](https://ffmpeg.org/download.html) |
 
-> **Note**: Place `deno.exe` in the same folder as `yt-dlp.exe` for automatic detection.
+> **Note**: Place `deno.exe` in the same folder as `yt-dlp.exe` for automatic detection. Downloads need **both** yt-dlp and FFmpeg configured.
 
 ---
 
@@ -104,10 +104,11 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Setup
 
-1. Download yt-dlp, Deno, and FFmpeg
+1. Download yt-dlp, Deno, and FFmpeg (all three are required for download functionality)
 2. Place `deno.exe` in the same folder as `yt-dlp.exe`
-3. In Playnite: **Settings → Add-ons → Extension Settings → UniPlaySong → Downloads Tab**
-4. Set paths to `yt-dlp.exe` and `ffmpeg.exe`
+3. In Playnite: **Settings → Add-ons → Extension Settings → UniPlaySong**
+4. **Downloads tab** → set the path to `yt-dlp.exe`
+5. **Editing tab** → set the path to `ffmpeg.exe`
 
 ---
 
