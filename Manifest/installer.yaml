@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.9
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-02
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.9/UniPlaySong-1_5_9-Jul02_2026.pext'
+    Changelog:
+      - '[Theme Dev Feature] Media controls for theme developers: three drop-in elements (full Now-Playing overlay, compact transport bar, minimal play/skip) that show now-playing info and control playback — play/pause, next/previous, volume — following whatever''s playing (your game music or Spotify). Custom theme layouts can read live state via plugin data bindings and trigger transport via control links.'
   - Version: 1.5.8
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-30

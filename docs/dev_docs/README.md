@@ -81,6 +81,7 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - `{PluginSettings}` markup for binding theme toggles to UPS settings (v1.4.6+)
   - Active Theme Music: adding `audio/background.mp3` for UPS playback (v1.3.11+)
   - External Control via URI for custom media control buttons
+  - Unified Media Controls: UPS_MediaControllerOverlay / Bar / Compact drop-in elements, `ActiveMedia*` data bindings, and source-aware transport URIs (v1.5.9+)
   - ANIKI REMAKE integration example
 
 ### Additional Resources
@@ -186,6 +187,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-06-28
-**Documentation Version**: 1.5.7
+**Last Updated**: 2026-07-02
+**Documentation Version**: 1.5.9
 

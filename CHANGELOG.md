@@ -4,6 +4,22 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.9] - 2026-07-02
+
+Unified media controls: three self-contained theme elements for now-playing display + transport, plus a decoupled data/URI path for custom layouts. Fully additive — existing mini-players, `NowPlaying*` props, and prior URIs are unchanged.
+
+### Added
+
+- **`ActiveMediaService`.** Resolves the single audible "active" source — Spotify when it's the currently active source, otherwise UniPlaySong's own internal player — and routes transport calls (play/pause, next, previous, mute toggle) to whichever one is actually playing. External-source support is Spotify-only in this build; the seam is in place to widen to any OS media session later. `src/Services/ActiveMedia/ActiveMediaService.cs`, `src/Services/ActiveMedia/IActiveMediaService.cs`, `src/Services/ActiveMedia/ActiveMediaSnapshot.cs`, `src/Models/ActiveMediaSourceKind.cs`.
+
+- **Shared `ActiveMediaViewModel`.** A single view model backs all three new elements: live now-playing (title/artist/art), timeline (position/duration/progress), volume, source name/kind, and real `ICommand` transport (play-pause, next, previous, mute) bound directly to XAML. `src/Controls/ActiveMediaViewModel.cs`.
+
+- **Three registered theme elements.** `UPS_MediaControllerOverlay` (PS5-style Now-Playing popup: large art, source name, position/duration + progress bar, full transport row, volume slider), `UPS_MediaControllerBar` (horizontal transport pill: art + title/artist + inline prev/play-pause/next), and `UPS_MediaControllerCompact` (minimal one-line play-pause + next). All three are empty-tag `<ContentControl x:Name="UPS_..."/>` drop-ins, collapse when nothing is playing, and swap the play/pause icon with state. `src/Controls/MediaControllerOverlay.xaml(.cs)`, `src/Controls/MediaControllerBar.xaml(.cs)`, `src/Controls/MediaControllerCompact.xaml(.cs)`, registered in `src/UniPlaySong.cs`.
+
+- **`ActiveMedia*` settings mirror for decoupled custom layouts.** Since Playnite can't inject theme XAML into a plugin control, custom theme layouts read state via `{PluginSettings Plugin=UniPlaySong, Path=...}` against new `[JsonIgnore]` runtime-only properties on `UniPlaySongSettings`: `ActiveMediaProgress` (double 0–100), `ActiveMediaPositionText`/`ActiveMediaDurationText` (preformatted "m:ss"), `ActiveMediaVolume` (double 0–100), `ActiveMediaIsPlaying` (bool), `ActiveMediaSourceName` (string), `ActiveMediaSourceKind` (enum None/Ups/Spotify), `ActiveMediaHasMedia`, `ActiveMediaCanNext`, `ActiveMediaCanPrevious` (bools). Set by `ActiveMediaService`, never persisted. `src/UniPlaySongSettings.cs`.
+
+- **Source-aware URI transport.** `ExternalControlService` gained `playnite://uniplaysong/{playpausetoggle,next,previous,togglemute}`, all routed through `ActiveMediaService` so they control whichever source is audible (UPS or Spotify). `skip` remains a back-compat alias for `next`. Existing `play`, `pause`, `stop`, `restart`, `volume/{0-100}` URIs are unchanged (still UPS-only). `src/Services/ExternalControlService.cs`.
+
 ## [1.5.8] - 2026-06-30
 
 Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation): UPS's open audio render stream no longer blocks Windows from sleeping/suspending. Rebuilt around a central device registry that releases *every* audio-device holder on lock/suspend/idle, with a resume path that comes back audible at the saved position. Supersedes the earlier main-player-only attempt (branch `fix/issue-81-idle-teardown`, `8fa106f`).
