@@ -154,6 +154,28 @@ namespace UniPlaySong.Services
 
         public TimeSpan? GetCurrentSongCurrentTime() => _musicPlayer?.CurrentTime;
 
+        // Toggle play/pause for the unified controller. Uses the Manual pause source so it
+        // composes with the existing multi-source pause model (does not fight FocusLoss etc.).
+        public void TogglePlayPauseInternal()
+        {
+            if (_isPaused)
+            {
+                NotifyManualStart();
+                RemovePauseSource(PauseSource.Manual);
+            }
+            else
+            {
+                AddPauseSource(PauseSource.Manual);
+            }
+        }
+
+        public double GetInternalVolume() => _musicPlayer?.Volume ?? 0.0;
+
+        public void SetInternalVolume(double volume0to1)
+        {
+            if (_musicPlayer != null) _musicPlayer.Volume = volume0to1;
+        }
+
         public void StartCrossfadeIntoNext(string nextPath, double durationSeconds)
         {
             if (_musicPlayer is NAudioMusicPlayer naudio)

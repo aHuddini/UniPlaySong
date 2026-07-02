@@ -76,6 +76,9 @@ namespace DashboardTestApp
         public void PlayPreview(string filePath, double volume) { }
         public void SkipToNextSong() { }
         public void RestartCurrentSong() { }
+        public void TogglePlayPauseInternal() { }
+        public double GetInternalVolume() => 0.0;
+        public void SetInternalVolume(double volume0to1) { }
         public void RefreshSongCount() { }
         public void MarkInitializationComplete() { }
         public void NotifyManualStart() { }
