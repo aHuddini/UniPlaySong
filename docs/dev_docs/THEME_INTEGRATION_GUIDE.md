@@ -403,6 +403,36 @@ Three self-contained, transport-capable theme elements — display **and** contr
 
 Each is an empty-tag `<ContentControl>` — no child XAML, no triggers to wire. Drop it anywhere in a Desktop or Fullscreen theme view and UPS supplies the content, styling, and behavior. If UniPlaySong isn't installed the tag simply resolves to nothing, so it's safe to ship in a theme unconditionally. The now-playing text and album art update live as tracks and playback change (including when the user toggles Radio Mode or edits UPS settings) — no theme-side refresh needed.
 
+### Fullscreen / controller support
+
+The transport buttons inside these elements are controller-friendly in Fullscreen: use the D-pad to move focus onto a button and press the **confirm** button (A, or B if the user has *Swap Confirm/Cancel* enabled) to activate it — UPS bridges the gamepad confirm to the focused button (Playnite only auto-activates its own internal buttons, so plugin controls need this bridge, which UPS provides for you).
+
+Two things to know when placing them in Fullscreen:
+
+- **A control needs keyboard focus to receive the confirm press.** If you drop an element into a **popup, flyout, or reveal panel**, set focus onto it (or one of its buttons) when the panel opens — otherwise the gamepad has nothing focused to confirm. This is the same approach Playnite's own overlays use. The simplest way is a focus trigger on your container:
+
+  ```xml
+  <!-- When your popup/panel becomes visible, move focus into the UPS element -->
+  <ContentControl x:Name="UPS_MediaControllerBar" Focusable="True">
+      <ContentControl.Style>
+          <Style TargetType="ContentControl">
+              <Style.Triggers>
+                  <Trigger Property="IsVisible" Value="True">
+                      <Setter Property="FocusManager.FocusedElement"
+                              Value="{Binding RelativeSource={RelativeSource Self}}"/>
+                  </Trigger>
+              </Style.Triggers>
+          </Style>
+      </ContentControl.Style>
+  </ContentControl>
+  ```
+
+  For finer control, focus the play/pause button specifically from your own popup-opened handler (e.g. a `Storyboard`/`EventTrigger` calling into your theme code), exactly as the PS5-style overlays do.
+
+- **Always-visible placements** (e.g. docked in a details view) just work — the user D-pads to the buttons and confirms.
+
+Prefer building your **own** transport buttons? Use the `{PluginSettings}` state + `playnite://uniplaysong/*` URIs below, and make your buttons Playnite's Fullscreen `ButtonEx` (a plain `<Button>` will show but won't respond to the gamepad confirm press).
+
 ### Custom layouts — read state + trigger transport directly
 
 Playnite can't inject theme XAML into a plugin control, so if you want your **own** buttons and layout instead of the three prefabs above, read live state via `{PluginSettings}` and drive transport via `playnite://uniplaysong/*` URIs.

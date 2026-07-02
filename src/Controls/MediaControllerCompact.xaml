@@ -69,7 +69,8 @@
             <TextBlock Text="{Binding Title}" Foreground="#FFFFFF" FontSize="12" Opacity="0.85"
                        VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" Margin="2,0,8,0"/>
             <Button Command="{Binding PlayPauseCommand}" FontFamily="{DynamicResource FontIcoFont}"
-                    FontSize="14" Width="32" Height="32" Margin="1,0">
+                    FontSize="14" Width="32" Height="32" Margin="1,0"
+                    Focusable="True" local:GamepadConfirm.IsTarget="True">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource UpsPrimaryButton}">
                         <Setter Property="Content" Value="&#xECA5;"/>
@@ -83,7 +84,8 @@
             </Button>
             <Button Style="{StaticResource UpsIconButton}" Command="{Binding NextCommand}"
                     IsEnabled="{Binding CanNext}" Content="&#xEC6E;" FontFamily="{DynamicResource FontIcoFont}"
-                    FontSize="13" Width="28" Height="28" Margin="1,0"/>
+                    FontSize="13" Width="28" Height="28" Margin="1,0"
+                    Focusable="True" local:GamepadConfirm.IsTarget="True"/>
         </StackPanel>
     </Border>
 </PluginUserControl>

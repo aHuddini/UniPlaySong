@@ -28,6 +28,7 @@ Built with the help of Claude Code and Cursor IDE
 - **Radio Mode "Custom Folder" now lets you pick a folder.** Choose any folder of audio files just for radio — or leave it empty to keep using your Default Music folder.
 
 ### Fixed
+- **Media-controller buttons now work with a controller in Fullscreen.** Move focus onto a transport button with the D-pad and press A (or B if you've swapped confirm/cancel) to activate it.
 - **Now-playing displays no longer freeze after changing settings.** Toggling Spotify Radio Mode on/off (or saving any setting) used to leave the mini-players and media controllers stuck on the previous song until you restarted Playnite — they now update live.
 - **Rebuilt Spotify Radio Mode** to address critical freeze and stability issues: no more freezes launching Playnite or switching Desktop/Fullscreen, game music no longer plays alongside Spotify, and radio starts faster without blipping on/off while Fullscreen loads. Spotify is now a Radio Mode *source* — pick it under Playback → Radio Mode. (Used the old "Spotify Radio Mode" toggle? Re-pick "Spotify" as your source after updating.)
 - **Your settings now survive add-on updates.** A rare startup hiccup could silently reset settings to defaults after installing an update — fixed.

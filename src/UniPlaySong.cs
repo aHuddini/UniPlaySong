@@ -1155,9 +1155,46 @@ namespace UniPlaySong
             }
 
             if (args.State == ControllerInputState.Pressed)
+            {
+                // Embedded media-controller buttons: Playnite only auto-clicks its own internal
+                // ButtonEx on the confirm press, so our plugin Buttons need this bridge. Only when
+                // no UPS modal owns input (a dialog's own A/B handling takes precedence) and the
+                // confirm button (A, or B if Swap Confirm/Cancel is on) is pressed. If a focused
+                // confirm-target button handles it, don't also route to the modal stack.
+                if (_controllerEventRouter?.HasActiveReceiver != true
+                    && args.Button == GetFullscreenConfirmButton())
+                {
+                    bool handled = false;
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        handled = Controls.GamepadConfirm.ConfirmFocused();
+                    });
+                    if (handled) return;
+                }
+
                 _controllerEventRouter?.HandleButtonPressed(args.Button);
+            }
             else if (args.State == ControllerInputState.Released)
                 _controllerEventRouter?.HandleButtonReleased(args.Button);
+        }
+
+        // The controller button that means "confirm" in Fullscreen — A normally, B when the user
+        // enables Swap Confirm/Cancel. Read from Playnite's fullscreen settings via the cached
+        // reflection handle; defaults to A on any failure. Matches GameControllerGesture.ConfirmationBinding.
+        private ControllerInput GetFullscreenConfirmButton()
+        {
+            try
+            {
+                if (_fullscreenSettingsObj != null)
+                {
+                    var prop = _fullscreenSettingsObj.GetType()
+                        .GetProperty("SwapConfirmCancelButtons");
+                    if (prop?.GetValue(_fullscreenSettingsObj) is bool swap && swap)
+                        return ControllerInput.B;
+                }
+            }
+            catch { }
+            return ControllerInput.A;
         }
 
         // "Play Only on Game Select" — fires on every Fullscreen List ↔ Details toggle.

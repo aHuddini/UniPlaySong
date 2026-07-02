@@ -102,9 +102,11 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,4">
                 <Button Style="{StaticResource UpsIconButton}" Command="{Binding PreviousCommand}"
                         IsEnabled="{Binding CanPrevious}" Content="&#xEC78;" FontFamily="{DynamicResource FontIcoFont}"
-                        FontSize="20" Width="46" Height="46" Margin="6,0"/>
+                        FontSize="20" Width="46" Height="46" Margin="6,0"
+                        Focusable="True" local:GamepadConfirm.IsTarget="True"/>
                 <Button Command="{Binding PlayPauseCommand}" FontFamily="{DynamicResource FontIcoFont}"
-                        FontSize="26" Width="64" Height="64" Margin="8,0">
+                        FontSize="26" Width="64" Height="64" Margin="8,0"
+                        Focusable="True" local:GamepadConfirm.IsTarget="True">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource UpsPrimaryButton}">
                             <Setter Property="Content" Value="&#xECA5;"/>
@@ -118,7 +120,8 @@
                 </Button>
                 <Button Style="{StaticResource UpsIconButton}" Command="{Binding NextCommand}"
                         IsEnabled="{Binding CanNext}" Content="&#xEC6E;" FontFamily="{DynamicResource FontIcoFont}"
-                        FontSize="20" Width="46" Height="46" Margin="6,0"/>
+                        FontSize="20" Width="46" Height="46" Margin="6,0"
+                        Focusable="True" local:GamepadConfirm.IsTarget="True"/>
             </StackPanel>
         </StackPanel>
     </Border>
