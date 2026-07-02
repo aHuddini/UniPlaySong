@@ -819,16 +819,18 @@ namespace UniPlaySong
                         Task.Run(() => AutoDownloadMusicForGamesAsync(newGames));
                     }
 
-                    // Update timestamp AFTER identifying games (like PlayniteSound does)
+                    // Update timestamp AFTER identifying games (like PlayniteSound does).
+                    // Guarded: never persist if settings didn't genuinely load from disk —
+                    // this save was the write that wiped user settings after a .pext update.
                     _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
-                    SavePluginSettings(_settings);
+                    if (_settingsService?.SettingsLoadedFromDisk == true) SavePluginSettings(_settings);
                 }
                 else
                 {
                     _fileLogger?.Debug("OnLibraryUpdated: Auto-download disabled");
-                    // Still update timestamp to avoid processing old games later
+                    // Still update timestamp to avoid processing old games later (same guard as above)
                     _settings.LastAutoLibUpdateAssetsDownload = DateTime.Now;
-                    SavePluginSettings(_settings);
+                    if (_settingsService?.SettingsLoadedFromDisk == true) SavePluginSettings(_settings);
                 }
 
                 // Handle auto-tagging (scans all games, not just new ones)
@@ -1834,8 +1836,9 @@ namespace UniPlaySong
                 changed = true;
             }
 
-            if (changed)
+            if (changed && _settingsService?.SettingsLoadedFromDisk == true)
             {
+                // Guarded like the OnLibraryUpdated save: never persist over a file that didn't load.
                 SavePluginSettings(_settings);
                 _fileLogger?.Debug($"BundledPreset migration: source={_settings.DefaultMusicSourceOption}, preset={_settings.SelectedBundledPreset}");
             }

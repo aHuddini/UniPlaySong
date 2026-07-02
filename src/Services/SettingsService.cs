@@ -36,27 +36,48 @@ namespace UniPlaySong.Services
             LoadSettings();
         }
 
+        // True only when settings were genuinely read from disk (or no config exists — a real
+        // first run). False when a config file EXISTS but failed to load: the in-memory defaults
+        // are then a stand-in and must NEVER be auto-saved over the user's file. Automatic saves
+        // (OnLibraryUpdated timestamps, startup migrations) check this; user-initiated saves
+        // (settings dialog, imports) do not — an explicit save is user intent.
+        // Root cause this guards against: a transient load failure on a .pext update-restart put
+        // defaults in memory, and the OnLibraryUpdated timestamp save persisted them ~6s later —
+        // silently wiping the user's settings (seen as "radio mode resets after updating").
+        public bool SettingsLoadedFromDisk { get; private set; }
+
         public void LoadSettings()
         {
             try
             {
                 var newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
+                if (newSettings == null)
+                {
+                    // Retry once: on a .pext update-restart the config can be transiently unreadable.
+                    System.Threading.Thread.Sleep(250);
+                    newSettings = _plugin.LoadPluginSettings<UniPlaySongSettings>();
+                }
                 if (newSettings != null)
                 {
                     MigrateSettings(newSettings);
+                    SettingsLoadedFromDisk = true;
                     UpdateSettings(newSettings, source: "LoadSettings");
                 }
                 else
                 {
-                    // Create default settings if none exist
-                    var defaultSettings = new UniPlaySongSettings();
-                    UpdateSettings(defaultSettings, source: "LoadSettings (default)");
+                    var configPath = System.IO.Path.Combine(_plugin.GetPluginUserDataPath(), "config.json");
+                    bool configExists = System.IO.File.Exists(configPath);
+                    SettingsLoadedFromDisk = !configExists; // missing file = true first run, defaults are real
+                    if (configExists)
+                        _fileLogger?.Error("Settings file exists but failed to load — running on in-memory defaults; automatic saves disabled this session to protect the file.");
+                    UpdateSettings(new UniPlaySongSettings(), source: "LoadSettings (default)");
                 }
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error loading settings");
                 _fileLogger?.Error($"Error loading settings: {ex.Message}", ex);
+                SettingsLoadedFromDisk = false; // whatever is in memory, don't let it overwrite disk
             }
         }
 

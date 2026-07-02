@@ -74,9 +74,10 @@ namespace UniPlaySong.Services.Spotify
 
             // Spec-mandated periodic refresh: ticks on the UI thread (DispatcherTimer),
             // catching missed availability/close events. Recompute() is idempotent.
-            // 3s (was 7s): the SMTC library's events are unreliable around app startup, so this
-            // poll bounds how late Spotify radio engages once Spotify becomes available.
-            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            // 2s: the SMTC library's events are unreliable around app startup, so this poll
+            // bounds how late Spotify radio engages once Spotify becomes available. Each tick
+            // is cheap (lock + cached volatile reads; commands are non-blocking worker posts).
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _refreshTimer.Tick += (s, e) => Recompute();
             _refreshTimer.Start();
         }
