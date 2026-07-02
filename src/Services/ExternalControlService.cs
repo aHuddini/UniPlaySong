@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using UniPlaySong.Common;
+using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Services
 {
@@ -9,12 +10,14 @@ namespace UniPlaySong.Services
     public class ExternalControlService
     {
         private readonly IMusicPlaybackService _playbackService;
+        private readonly IActiveMediaService _activeMedia;
         private readonly IPlayniteAPI _api;
         private const string NotificationPrefix = "UniPlaySong_ExtCtrl";
 
-        public ExternalControlService(IMusicPlaybackService playbackService, IPlayniteAPI api)
+        public ExternalControlService(IMusicPlaybackService playbackService, IActiveMediaService activeMedia, IPlayniteAPI api)
         {
             _playbackService = playbackService;
+            _activeMedia = activeMedia;
             _api = api;
         }
 
@@ -40,17 +43,22 @@ namespace UniPlaySong.Services
                     break;
 
                 case "playpausetoggle":
-                    if (_playbackService.IsPlaying)
-                        _playbackService.Pause();
-                    else
-                    {
-                        _playbackService.NotifyManualStart();
-                        _playbackService.Resume();
-                    }
+                    _activeMedia.PlayPause();
                     break;
 
+                case "next":
                 case "skip":
-                    _playbackService.SkipToNextSong();
+                    // "skip" is a back-compat alias for "next" — source-aware since UPS's
+                    // Next() calls SkipToNextSong() anyway, so behavior is unchanged for UPS.
+                    _activeMedia.Next();
+                    break;
+
+                case "previous":
+                    _activeMedia.Previous();
+                    break;
+
+                case "togglemute":
+                    _activeMedia.ToggleMute();
                     break;
 
                 case "restart":

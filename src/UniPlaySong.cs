@@ -2560,7 +2560,6 @@ namespace UniPlaySong
             _currentMusicPlayer = CreateMusicPlayer();
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
-            _externalControlService = new Services.ExternalControlService(_playbackService, _api);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
@@ -2674,6 +2673,12 @@ namespace UniPlaySong
 
             _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settings, _activeMediaService);
             _activeMediaViewModel.Attach();
+
+            // ExternalControlService: routes playnite://uniplaysong/{command} URIs. Constructed
+            // after _activeMediaService so source-aware transport commands (next/previous/
+            // playpausetoggle/togglemute) can route through it; UPS-specific commands
+            // (play/pause/stop/restart/volume) still go straight to _playbackService.
+            _externalControlService = new Services.ExternalControlService(_playbackService, _activeMediaService, _api);
 
             // 1s position poll — runs ONLY while there is active media and it is playing.
             _activeMediaPollTimer = new System.Windows.Threading.DispatcherTimer(
