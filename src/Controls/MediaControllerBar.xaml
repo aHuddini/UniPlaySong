@@ -19,11 +19,16 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid Background="Transparent">
-                            <Ellipse x:Name="ring" Fill="Transparent"/>
+                            <Ellipse x:Name="ring" Fill="Transparent" Stroke="Transparent" StrokeThickness="2"/>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ring" Property="Fill" Value="#22FFFFFF"/></Trigger>
+                            <!-- Controller/keyboard focus highlight (no mouse pointer in Fullscreen) -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="ring" Property="Fill" Value="#33FFFFFF"/>
+                                <Setter TargetName="ring" Property="Stroke" Value="#FFFFFFFF"/>
+                            </Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="ring" Property="Fill" Value="#3AFFFFFF"/></Trigger>
                             <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.28"/></Trigger>
                         </ControlTemplate.Triggers>
@@ -41,12 +46,19 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid Background="Transparent">
-                            <Ellipse x:Name="ring" Fill="#FFFFFF"/>
+                        <Grid>
+                            <!-- Focus halo (behind the white disc), shown only on keyboard/controller focus -->
+                            <Ellipse x:Name="halo" Fill="Transparent" Margin="-4"/>
+                            <Ellipse x:Name="ring" Fill="#FFFFFF" Stroke="Transparent" StrokeThickness="2"/>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ring" Property="Fill" Value="#E6FFFFFF"/></Trigger>
+                            <!-- Controller/keyboard focus highlight -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="halo" Property="Fill" Value="#59FFFFFF"/>
+                                <Setter TargetName="ring" Property="Stroke" Value="#FF3DA5FF"/>
+                            </Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="ring" Property="Fill" Value="#CCFFFFFF"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

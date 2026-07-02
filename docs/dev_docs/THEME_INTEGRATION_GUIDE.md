@@ -429,7 +429,18 @@ Two things to know when placing them in Fullscreen:
 
   For finer control, focus the play/pause button specifically from your own popup-opened handler (e.g. a `Storyboard`/`EventTrigger` calling into your theme code), exactly as the PS5-style overlays do.
 
-- **Always-visible placements** (e.g. docked in a details view) just work — the user D-pads to the buttons and confirms.
+- **Always-visible placements** (e.g. docked in a details view) put the transport buttons in the view's controller navigation path. That's what you want if the element is meant to be operated there — the user D-pads to the buttons and confirms. But if you're docking one purely for **display** (e.g. a status bar at the top of a details view), those focusable buttons can trap D-pad focus and stop the user reaching other content like the game description. Wall the element off from directional navigation so it stays display-only:
+
+  ```xml
+  <ContentControl x:Name="UPS_MediaControllerBar" Focusable="False"
+                  KeyboardNavigation.IsTabStop="False"
+                  KeyboardNavigation.DirectionalNavigation="None"
+                  KeyboardNavigation.TabNavigation="None"/>
+  ```
+
+  Mouse clicks still work; the controller just skips over it. (Use a display-only `UPS_NowPlayingMiniPlayer`/`Compact` instead if you never need transport there.)
+
+- **Focus highlight.** The transport buttons show a focus ring when they hold keyboard/controller focus (there's no mouse pointer in Fullscreen), so the user can see what the confirm press will hit.
 
 Prefer building your **own** transport buttons? Use the `{PluginSettings}` state + `playnite://uniplaysong/*` URIs below, and make your buttons Playnite's Fullscreen `ButtonEx` (a plain `<Button>` will show but won't respond to the gamepad confirm press).
 
