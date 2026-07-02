@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Media;
 using UniPlaySong.Common;
+using UniPlaySong.Models;
 
 namespace UniPlaySong
 {
@@ -638,6 +639,100 @@ namespace UniPlaySong
         {
             get => nowPlayingDuration;
             set { nowPlayingDuration = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // ── Unified active-media surface (v1.5.9) ──────────────────────────
+        // Runtime-only mirror of ActiveMediaViewModel for decoupled {PluginSettings}
+        // binding. Set by ActiveMediaService. All [JsonIgnore] — never persisted.
+        private double activeMediaProgress;
+        private string activeMediaPositionText = string.Empty;
+        private string activeMediaDurationText = string.Empty;
+        private double activeMediaVolume;
+        private bool activeMediaIsPlaying;
+        private string activeMediaSourceName = string.Empty;
+        private ActiveMediaSourceKind activeMediaSourceKind = ActiveMediaSourceKind.None;
+        private bool activeMediaHasMedia;
+        private bool activeMediaCanNext;
+        private bool activeMediaCanPrevious;
+
+        // Playback progress of the active source, 0–100.
+        [JsonIgnore]
+        public double ActiveMediaProgress
+        {
+            get => activeMediaProgress;
+            set { activeMediaProgress = value; OnPropertyChanged(); }
+        }
+
+        // Current position of the active source, preformatted "m:ss".
+        [JsonIgnore]
+        public string ActiveMediaPositionText
+        {
+            get => activeMediaPositionText;
+            set { activeMediaPositionText = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Total duration of the active source, preformatted "m:ss".
+        [JsonIgnore]
+        public string ActiveMediaDurationText
+        {
+            get => activeMediaDurationText;
+            set { activeMediaDurationText = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Volume of the active source, 0–100.
+        [JsonIgnore]
+        public double ActiveMediaVolume
+        {
+            get => activeMediaVolume;
+            set { activeMediaVolume = value; OnPropertyChanged(); }
+        }
+
+        // True when the active source is currently playing (drives play/pause icon).
+        [JsonIgnore]
+        public bool ActiveMediaIsPlaying
+        {
+            get => activeMediaIsPlaying;
+            set { activeMediaIsPlaying = value; OnPropertyChanged(); }
+        }
+
+        // Friendly name of the active source ("UniPlaySong" / "Spotify"), "" when none.
+        [JsonIgnore]
+        public string ActiveMediaSourceName
+        {
+            get => activeMediaSourceName;
+            set { activeMediaSourceName = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Which source is active (None/Ups/Spotify), for theme source-icon logic.
+        [JsonIgnore]
+        public ActiveMediaSourceKind ActiveMediaSourceKind
+        {
+            get => activeMediaSourceKind;
+            set { activeMediaSourceKind = value; OnPropertyChanged(); }
+        }
+
+        // True when there is any active media (elements collapse when false).
+        [JsonIgnore]
+        public bool ActiveMediaHasMedia
+        {
+            get => activeMediaHasMedia;
+            set { activeMediaHasMedia = value; OnPropertyChanged(); }
+        }
+
+        // True when the active source can skip to a next track/song.
+        [JsonIgnore]
+        public bool ActiveMediaCanNext
+        {
+            get => activeMediaCanNext;
+            set { activeMediaCanNext = value; OnPropertyChanged(); }
+        }
+
+        // True when the active source can go to a previous track (or restart, for UPS).
+        [JsonIgnore]
+        public bool ActiveMediaCanPrevious
+        {
+            get => activeMediaCanPrevious;
+            set { activeMediaCanPrevious = value; OnPropertyChanged(); }
         }
 
         /// <summary>
