@@ -8,9 +8,9 @@ namespace UniPlaySong.Controls
     {
         private readonly NowPlayingMiniPlayerModel _model;
 
-        public NowPlayingMiniPlayer(UniPlaySongSettings settings)
+        public NowPlayingMiniPlayer(Services.ISettingsProvider settingsProvider)
         {
-            _model = new NowPlayingMiniPlayerModel(settings);
+            _model = new NowPlayingMiniPlayerModel(settingsProvider);
             ((IComponentConnector)this).InitializeComponent();
             DataContext = _model;
             Loaded += (s, e) => _model.Attach();

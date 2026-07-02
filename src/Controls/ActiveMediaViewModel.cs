@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using UniPlaySong.Common;
 using UniPlaySong.Models;
+using UniPlaySong.Services;
 using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Controls
@@ -13,16 +14,24 @@ namespace UniPlaySong.Controls
     // from settings (like NowPlayingMiniPlayerModel), adds transport commands + timeline
     // state, and mirrors the snapshot back into the settings ActiveMedia* props for
     // decoupled {PluginSettings} binding. One instance shared by all UPS media elements.
+    //
+    // Settings are read through SettingsService.Current (never a captured object): a settings
+    // SAVE replaces the whole settings object, so a captured reference goes stale and the
+    // element freezes until restart. We track SettingsChanged and move our metadata
+    // PropertyChanged handler onto the new object (same pattern as SidebarGlowManager).
     public class ActiveMediaViewModel : INotifyPropertyChanged
     {
-        private readonly UniPlaySongSettings _settings;
+        private readonly ISettingsProvider _svc;
         private readonly IActiveMediaService _service;
+        private UniPlaySongSettings _subscribedTo; // object our metadata PropertyChanged handler is on
         private bool _subscribed;
         private ActiveMediaSnapshot _snap = ActiveMediaSnapshot.Empty;
 
-        public ActiveMediaViewModel(UniPlaySongSettings settings, IActiveMediaService service)
+        private UniPlaySongSettings Settings => _svc?.Current;
+
+        public ActiveMediaViewModel(ISettingsProvider svc, IActiveMediaService service)
         {
-            _settings = settings;
+            _svc = svc;
             _service = service;
 
             PlayPauseCommand = new RelayCommand(() => _service?.PlayPause());
@@ -34,7 +43,9 @@ namespace UniPlaySong.Controls
         public void Attach()
         {
             if (_subscribed) return;
-            if (_settings != null) _settings.PropertyChanged += OnSettingsChanged;
+            _subscribedTo = _svc?.Current;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingsChanged;
+            if (_svc != null) _svc.SettingsChanged += OnSettingsReplaced;
             if (_service != null) _service.Changed += OnServiceChanged;
             _subscribed = true;
             OnServiceChanged();   // initial snapshot
@@ -44,9 +55,21 @@ namespace UniPlaySong.Controls
         public void Detach()
         {
             if (!_subscribed) return;
-            if (_settings != null) _settings.PropertyChanged -= OnSettingsChanged;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingsChanged;
+            _subscribedTo = null;
+            if (_svc != null) _svc.SettingsChanged -= OnSettingsReplaced;
             if (_service != null) _service.Changed -= OnServiceChanged;
             _subscribed = false;
+        }
+
+        // A save/load swaps the settings object wholesale. Move our metadata PropertyChanged
+        // handler to the new instance and repaint the proxied metadata.
+        private void OnSettingsReplaced(object sender, SettingsChangedEventArgs e)
+        {
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingsChanged;
+            _subscribedTo = e.NewSettings;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingsChanged;
+            RaiseMetadata();
         }
 
         // ── transport commands ──
@@ -56,12 +79,12 @@ namespace UniPlaySong.Controls
         public ICommand ToggleMuteCommand { get; }
 
         // ── metadata (proxied from settings, same source as the existing mini-players) ──
-        public string Title => _settings?.NowPlayingTitle ?? string.Empty;
-        public string Artist => _settings?.NowPlayingArtist ?? string.Empty;
-        public string AlbumArtPath => _settings?.NowPlayingAlbumArtPath ?? string.Empty;
-        public string Album => _settings?.NowPlayingAlbum ?? string.Empty;
-        public string Genre => _settings?.NowPlayingGenre ?? string.Empty;
-        public string Duration => _settings?.NowPlayingDuration ?? string.Empty;
+        public string Title => Settings?.NowPlayingTitle ?? string.Empty;
+        public string Artist => Settings?.NowPlayingArtist ?? string.Empty;
+        public string AlbumArtPath => Settings?.NowPlayingAlbumArtPath ?? string.Empty;
+        public string Album => Settings?.NowPlayingAlbum ?? string.Empty;
+        public string Genre => Settings?.NowPlayingGenre ?? string.Empty;
+        public string Duration => Settings?.NowPlayingDuration ?? string.Empty;
         public bool HasArt => !string.IsNullOrEmpty(AlbumArtPath);
 
         // ── active-media snapshot state ──
@@ -101,17 +124,18 @@ namespace UniPlaySong.Controls
 
         private void MirrorToSettings(ActiveMediaSnapshot s)
         {
-            if (_settings == null) return;
-            _settings.ActiveMediaProgress = s.Progress;
-            _settings.ActiveMediaPositionText = s.PositionText;
-            _settings.ActiveMediaDurationText = s.DurationText;
-            _settings.ActiveMediaVolume = s.Volume;
-            _settings.ActiveMediaIsPlaying = s.IsPlaying;
-            _settings.ActiveMediaSourceName = s.SourceName;
-            _settings.ActiveMediaSourceKind = s.SourceKind;
-            _settings.ActiveMediaHasMedia = s.HasActiveMedia;
-            _settings.ActiveMediaCanNext = s.CanNext;
-            _settings.ActiveMediaCanPrevious = s.CanPrevious;
+            var st = Settings;
+            if (st == null) return;
+            st.ActiveMediaProgress = s.Progress;
+            st.ActiveMediaPositionText = s.PositionText;
+            st.ActiveMediaDurationText = s.DurationText;
+            st.ActiveMediaVolume = s.Volume;
+            st.ActiveMediaIsPlaying = s.IsPlaying;
+            st.ActiveMediaSourceName = s.SourceName;
+            st.ActiveMediaSourceKind = s.SourceKind;
+            st.ActiveMediaHasMedia = s.HasActiveMedia;
+            st.ActiveMediaCanNext = s.CanNext;
+            st.ActiveMediaCanPrevious = s.CanPrevious;
         }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)

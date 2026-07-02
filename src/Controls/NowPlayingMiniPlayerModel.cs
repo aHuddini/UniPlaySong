@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using UniPlaySong.Services;
 
 namespace UniPlaySong.Controls
 {
@@ -10,21 +11,31 @@ namespace UniPlaySong.Controls
     // and raises change notifications so the views' XAML can bind them. Display-only. Composition
     // over inheritance: the views set this as their DataContext rather than subclassing a control
     // base (a XAML-rooted derived control base is not visible to WPF's markup-compile pass).
+    //
+    // Reads settings through SettingsService.Current (never a captured object): a settings SAVE
+    // replaces the whole settings object (UpdateSettings), so a captured reference goes stale and
+    // the view freezes until restart. We track SettingsChanged and move our PropertyChanged handler
+    // onto the new object (same pattern as SidebarGlowManager).
     public class NowPlayingMiniPlayerModel : INotifyPropertyChanged
     {
-        private readonly UniPlaySongSettings _settings;
+        private readonly ISettingsProvider _svc;
+        private UniPlaySongSettings _subscribedTo; // the object our PropertyChanged handler is on
         private bool _subscribed;
 
-        public NowPlayingMiniPlayerModel(UniPlaySongSettings settings)
+        public NowPlayingMiniPlayerModel(ISettingsProvider svc)
         {
-            _settings = settings;
+            _svc = svc;
         }
+
+        private UniPlaySongSettings Settings => _svc?.Current;
 
         // Call from the view's Loaded; guarded so repeated Loaded can't double-subscribe.
         public void Attach()
         {
-            if (_subscribed || _settings == null) return;
-            _settings.PropertyChanged += OnSettingsChanged;
+            if (_subscribed || _svc == null) return;
+            _subscribedTo = _svc.Current;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingsChanged;
+            _svc.SettingsChanged += OnSettingsReplaced;
             _subscribed = true;
             RaiseAll(); // initial paint
         }
@@ -32,9 +43,25 @@ namespace UniPlaySong.Controls
         // Call from the view's Unloaded.
         public void Detach()
         {
-            if (!_subscribed || _settings == null) return;
-            _settings.PropertyChanged -= OnSettingsChanged;
+            if (!_subscribed || _svc == null) return;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingsChanged;
+            _subscribedTo = null;
+            _svc.SettingsChanged -= OnSettingsReplaced;
             _subscribed = false;
+        }
+
+        // A save/load swaps the settings object wholesale. Move our PropertyChanged handler to the
+        // new instance and repaint (the new object holds the current NowPlaying* values).
+        private void OnSettingsReplaced(object sender, SettingsChangedEventArgs e)
+        {
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingsChanged;
+            _subscribedTo = e.NewSettings;
+            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingsChanged;
+
+            if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
+                Application.Current.Dispatcher.BeginInvoke(new Action(RaiseAll));
+            else
+                RaiseAll();
         }
 
         // The publisher may raise PropertyChanged off the UI thread; marshal the refresh.
@@ -72,19 +99,19 @@ namespace UniPlaySong.Controls
             OnPropertyChanged(nameof(IsPlaying));
         }
 
-        public string Title => _settings?.NowPlayingTitle ?? string.Empty;
-        public string Artist => _settings?.NowPlayingArtist ?? string.Empty;
-        public string AlbumArtPath => _settings?.NowPlayingAlbumArtPath ?? string.Empty;
-        public string Album => _settings?.NowPlayingAlbum ?? string.Empty;
-        public string Genre => _settings?.NowPlayingGenre ?? string.Empty;
-        public string Duration => _settings?.NowPlayingDuration ?? string.Empty;
+        public string Title => Settings?.NowPlayingTitle ?? string.Empty;
+        public string Artist => Settings?.NowPlayingArtist ?? string.Empty;
+        public string AlbumArtPath => Settings?.NowPlayingAlbumArtPath ?? string.Empty;
+        public string Album => Settings?.NowPlayingAlbum ?? string.Empty;
+        public string Genre => Settings?.NowPlayingGenre ?? string.Empty;
+        public string Duration => Settings?.NowPlayingDuration ?? string.Empty;
 
-        public bool HasArt => !string.IsNullOrEmpty(_settings?.NowPlayingAlbumArtPath);
+        public bool HasArt => !string.IsNullOrEmpty(Settings?.NowPlayingAlbumArtPath);
         public bool HasNoArt => !HasArt;
-        public bool HasAlbum => !string.IsNullOrEmpty(_settings?.NowPlayingAlbum);
-        public bool HasGenre => !string.IsNullOrEmpty(_settings?.NowPlayingGenre);
-        public bool HasDuration => !string.IsNullOrEmpty(_settings?.NowPlayingDuration);
-        public bool IsPlaying => !string.IsNullOrEmpty(_settings?.NowPlayingTitle);
+        public bool HasAlbum => !string.IsNullOrEmpty(Settings?.NowPlayingAlbum);
+        public bool HasGenre => !string.IsNullOrEmpty(Settings?.NowPlayingGenre);
+        public bool HasDuration => !string.IsNullOrEmpty(Settings?.NowPlayingDuration);
+        public bool IsPlaying => !string.IsNullOrEmpty(Settings?.NowPlayingTitle);
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)

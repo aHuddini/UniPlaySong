@@ -78,7 +78,10 @@ namespace UniPlaySong.Services
                                     if (s2 == null) return;
                                     // Only publish if Spotify is still the active source (state may
                                     // have changed while the async fetch was in flight).
-                                    if (_spotify == null || !_spotify.IsSpotifyActive) return;
+                                    if (_spotify == null || !_spotify.IsSpotifyActive)
+                                    {
+                                        return;
+                                    }
                                     var title = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
                                     var artist = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
                                     var album = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
@@ -108,7 +111,10 @@ namespace UniPlaySong.Services
                                 artPath = cover;
                             }
                         }
-                        Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath);
+                        // Expose UPS song duration too (like Spotify) when the track carries it.
+                        var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
+                        Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
+                            duration: upsDuration);
                         return;
                     }
 
@@ -140,8 +146,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        // album/genre/duration are Spotify-only; the game-music and nothing-playing call sites omit
-        // them (default ""), which clears any stale values from a prior Spotify track.
+        // album/genre are Spotify-only; duration is populated for both Spotify AND UPS game music.
+        // The nothing-playing call site omits them (default ""), clearing any stale prior values.
         private void Publish(UniPlaySongSettings s, string title, string artist, string artPath,
             string album = "", string genre = "", string duration = "")
         {

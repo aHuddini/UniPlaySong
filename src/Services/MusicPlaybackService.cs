@@ -741,6 +741,13 @@ namespace UniPlaySong.Services
                         _currentSongPath = null;
                     });
                 }
+                // Clear the now-playing metadata so it doesn't stay stuck on the last game song
+                // while Spotify is the source (and, critically, so turning radio OFF later re-reads
+                // a CLEARED SongMetadataService rather than republishing the stale pre-radio song).
+                // OnMusicStopped is flood-safe here: SpotifyControlService subscribes to
+                // OnPlaybackStateChanged/OnSongChanged (which we deliberately do NOT fire), NOT to
+                // OnMusicStopped — so this clears metadata + refreshes icons without re-entering Recompute.
+                OnMusicStopped?.Invoke(settings);
                 return;
             }
 

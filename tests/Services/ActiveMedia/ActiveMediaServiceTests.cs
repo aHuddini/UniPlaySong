@@ -32,7 +32,7 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             _client.Setup(c => c.TrySkipPrevious()).Returns(true);
 
             _spotifyControl = new SpotifyControlService(_playback.Object, _client.Object, () => _settings, null);
-            _service = new ActiveMediaService(_playback.Object, _spotifyControl, _client.Object, () => _settings, null);
+            _service = new ActiveMediaService(_playback.Object, _spotifyControl, _client.Object, null);
         }
 
         [Test]

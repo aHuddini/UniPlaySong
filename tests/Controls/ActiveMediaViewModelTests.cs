@@ -1,8 +1,10 @@
+using System;
 using Moq;
 using NUnit.Framework;
 using UniPlaySong;
 using UniPlaySong.Controls;
 using UniPlaySong.Models;
+using UniPlaySong.Services;
 using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Tests.Controls
@@ -11,6 +13,7 @@ namespace UniPlaySong.Tests.Controls
     public class ActiveMediaViewModelTests
     {
         private Mock<IActiveMediaService> _service;
+        private FakeSettingsProvider _provider;
         private UniPlaySongSettings _settings;
         private ActiveMediaViewModel _vm;
 
@@ -20,7 +23,8 @@ namespace UniPlaySong.Tests.Controls
             _service = new Mock<IActiveMediaService>();
             _service.Setup(s => s.GetSnapshot()).Returns(ActiveMediaSnapshot.Empty);
             _settings = new UniPlaySongSettings();
-            _vm = new ActiveMediaViewModel(_settings, _service.Object);
+            _provider = new FakeSettingsProvider(_settings);
+            _vm = new ActiveMediaViewModel(_provider, _service.Object);
         }
 
         [Test]
@@ -101,6 +105,52 @@ namespace UniPlaySong.Tests.Controls
             Assert.IsTrue(_settings.ActiveMediaHasMedia);
             Assert.IsTrue(_settings.ActiveMediaCanNext);
             Assert.IsFalse(_settings.ActiveMediaCanPrevious);
+        }
+
+        // Regression: a settings SAVE replaces the whole settings object. The VM must move its
+        // metadata subscription onto the new object and read from it (not the stale original) —
+        // otherwise elements freeze on old now-playing data until a Playnite restart.
+        [Test]
+        public void SettingsReplaced_RepointsToNewObject_AndRepaintsMetadata()
+        {
+            _settings.NowPlayingTitle = "OldTrack";
+            _vm.Attach();
+            Assert.AreEqual("OldTrack", _vm.Title);
+
+            // Swap in a brand-new settings object (what UpdateSettings does on save).
+            var newSettings = new UniPlaySongSettings { NowPlayingTitle = "NewTrack" };
+            _provider.Replace(newSettings);
+
+            // VM now reads the new object...
+            Assert.AreEqual("NewTrack", _vm.Title);
+
+            // ...and a PropertyChanged on the NEW object reaches the VM (handler moved).
+            string raised = null;
+            _vm.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(_vm.Title)) raised = "hit"; };
+            newSettings.NowPlayingTitle = "Newer";
+            Assert.AreEqual("hit", raised);
+            Assert.AreEqual("Newer", _vm.Title);
+
+            // ...while the OLD object no longer drives the VM.
+            raised = null;
+            _settings.NowPlayingTitle = "StaleUpdate";
+            Assert.IsNull(raised, "old settings object must be detached after swap");
+        }
+    }
+
+    // Minimal ISettingsProvider fake: swappable Current + raisable SettingsChanged, no Playnite API.
+    internal class FakeSettingsProvider : ISettingsProvider
+    {
+        public UniPlaySongSettings Current { get; private set; }
+        public event EventHandler<SettingsChangedEventArgs> SettingsChanged;
+
+        public FakeSettingsProvider(UniPlaySongSettings initial) => Current = initial;
+
+        public void Replace(UniPlaySongSettings next)
+        {
+            var old = Current;
+            Current = next;
+            SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(old, next, "test"));
         }
     }
 }

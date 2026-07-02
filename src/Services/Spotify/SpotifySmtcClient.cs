@@ -189,7 +189,29 @@ namespace UniPlaySong.Services.Spotify
         private void DoTogglePlayPause()
         {
             var s = FindSpotify(); if (s == null) return;
-            try { s.ControlSession.TryTogglePlayPauseAsync().GetAwaiter().GetResult(); }
+            try
+            {
+                // Resolve intent from current state and route to the capability-gated
+                // play/pause commands rather than a blind TryTogglePlayPause: the raw
+                // toggle can silently no-op while paused, which (via SpotifyControlService's
+                // pause-hold state machine) could leave Spotify stuck unable to resume.
+                var info = s.ControlSession?.GetPlaybackInfo();
+                bool isPlaying = info?.PlaybackStatus
+                    == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                if (isPlaying)
+                {
+                    if (info?.Controls.IsPauseEnabled == true)
+                        s.ControlSession.TryPauseAsync().GetAwaiter().GetResult();
+                }
+                else
+                {
+                    if (info?.Controls.IsPlayEnabled == true)
+                        s.ControlSession.TryPlayAsync().GetAwaiter().GetResult();
+                    else
+                        // Fallback: some sessions expose only the toggle while paused.
+                        s.ControlSession.TryTogglePlayPauseAsync().GetAwaiter().GetResult();
+                }
+            }
             catch (Exception ex) { _fileLogger?.Debug($"[Spotify] TryTogglePlayPause failed: {ex.Message}"); }
         }
 

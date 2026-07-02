@@ -15,7 +15,6 @@ namespace UniPlaySong.Services.ActiveMedia
         private readonly IMusicPlaybackService _playback;
         private readonly SpotifyControlService _spotifyControl;
         private readonly ISpotifyClient _spotifyClient;
-        private readonly Func<UniPlaySongSettings> _getSettings;
         private readonly FileLogger _fileLogger;
 
         public event Action Changed;
@@ -24,19 +23,31 @@ namespace UniPlaySong.Services.ActiveMedia
             IMusicPlaybackService playback,
             SpotifyControlService spotifyControl,
             ISpotifyClient spotifyClient,
-            Func<UniPlaySongSettings> getSettings,
             FileLogger fileLogger)
         {
             _playback = playback;
             _spotifyControl = spotifyControl;
             _spotifyClient = spotifyClient;
-            _getSettings = getSettings;
             _fileLogger = fileLogger;
 
             if (_spotifyControl != null) _spotifyControl.NowPlayingChanged += RaiseChanged;
             if (_spotifyClient != null) _spotifyClient.AvailabilityChanged += RaiseChanged;
-            if (_playback != null) _playback.OnPlaybackStateChanged += RaiseChanged;
+            if (_playback != null)
+            {
+                // Pause/resume/mute/volume transitions.
+                _playback.OnPlaybackStateChanged += RaiseChanged;
+                // Game-music song load/switch: OnPlaybackStateChanged does NOT fire for a
+                // plain song change, so without these the snapshot (and HasActiveMedia,
+                // which gates element visibility) would never refresh for game music —
+                // elements would stay collapsed/stale. Spotify already refreshes via
+                // NowPlayingChanged; these give UPS's own player the equivalent signal.
+                _playback.OnMusicStarted += OnMusicStarted;
+                _playback.OnSongChanged += OnSongChanged;
+            }
         }
+
+        private void OnMusicStarted(UniPlaySongSettings settings) => RaiseChanged();
+        private void OnSongChanged(string songPath) => RaiseChanged();
 
         private void RaiseChanged()
         {
@@ -116,23 +127,29 @@ namespace UniPlaySong.Services.ActiveMedia
                 canPrevious: true);
         }
 
+        // Spotify transport MUST route through SpotifyControlService, not the raw client:
+        // SpotifyControlService owns the two-flag pause/ownership state machine (radio
+        // engage/disengage + "respect a pause made in the app"). Calling _spotifyClient
+        // directly bypasses that bookkeeping, which left UserPausedExternally stuck true
+        // and Spotify unable to resume until an app restart. UPS's own player has no such
+        // shared state, so it's driven directly.
         public void PlayPause()
         {
-            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyClient?.TryTogglePlayPause();
+            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyControl?.ToggleManualPlayPause();
             else _playback?.TogglePlayPauseInternal();
             RaiseChanged();
         }
 
         public void Next()
         {
-            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyClient?.TrySkipNext();
+            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyControl?.SkipNext();
             else _playback?.SkipToNextSong();
             RaiseChanged();
         }
 
         public void Previous()
         {
-            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyClient?.TrySkipPrevious();
+            if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyControl?.SkipPrevious();
             else _playback?.RestartCurrentSong();
             RaiseChanged();
         }

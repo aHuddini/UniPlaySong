@@ -4,10 +4,59 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:UniPlaySong.Controls"
+    HorizontalAlignment="Left" VerticalAlignment="Top"
     mc:Ignorable="d">
     <PluginUserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="UpsBoolToVis"/>
+        <!-- Circular icon transport button: borderless, transparent, hover/press ring, dims when disabled. -->
+        <Style x:Key="UpsIconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F2FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Ellipse x:Name="ring" Fill="Transparent"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ring" Property="Fill" Value="#22FFFFFF"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ring" Property="Fill" Value="#3AFFFFFF"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.28"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Primary play/pause: filled white circle, dark glyph. -->
+        <Style x:Key="UpsPrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#101418"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Ellipse x:Name="ring" Fill="#FFFFFF"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ring" Property="Fill" Value="#E6FFFFFF"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ring" Property="Fill" Value="#CCFFFFFF"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </PluginUserControl.Resources>
+
     <PluginUserControl.Style>
         <Style TargetType="PluginUserControl">
             <Style.Triggers>
@@ -17,32 +66,47 @@
             </Style.Triggers>
         </Style>
     </PluginUserControl.Style>
-    <Border Background="#CC101418" CornerRadius="14" Padding="18" MinWidth="340">
-        <StackPanel>
-            <Image Source="{Binding AlbumArtPath}" Height="180" Stretch="Uniform" Margin="0,0,0,12"
-                   Visibility="{Binding HasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                <TextBlock Text="{Binding SourceName}" FontSize="11" Opacity="0.55" VerticalAlignment="Center"/>
-            </StackPanel>
-            <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-            <TextBlock Text="{Binding Artist}" FontSize="14" Opacity="0.78" Margin="0,0,0,10" TextTrimming="CharacterEllipsis"/>
 
-            <Grid Visibility="{Binding HasTimeline, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,10">
+    <Border Background="#E60E1116" CornerRadius="16" Padding="22" MinWidth="360" MaxWidth="420">
+        <StackPanel>
+            <!-- Album art -->
+            <Border CornerRadius="10" ClipToBounds="True" Margin="0,0,0,16" HorizontalAlignment="Center"
+                    Visibility="{Binding HasArt, Converter={StaticResource UpsBoolToVis}}">
+                <Image Source="{Binding AlbumArtPath}" Height="240" Stretch="Uniform"/>
+            </Border>
+
+            <!-- Source label + title + artist -->
+            <TextBlock Text="{Binding SourceName}" FontSize="11" Opacity="0.5" Margin="2,0,0,2" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" Foreground="#FFFFFF"
+                       TextTrimming="CharacterEllipsis" Margin="2,0,0,1"/>
+            <TextBlock Text="{Binding Artist}" FontSize="14" Opacity="0.72" Foreground="#FFFFFF"
+                       TextTrimming="CharacterEllipsis" Margin="2,0,0,14"/>
+
+            <!-- Timeline -->
+            <Grid Visibility="{Binding HasTimeline, Converter={StaticResource UpsBoolToVis}}" Margin="0,0,0,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Progress}" Height="4" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="11" Opacity="0.6"
+                           Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}"
+                             Height="4" VerticalAlignment="Center" Foreground="#FFFFFF" Background="#26FFFFFF"
+                             BorderThickness="0"/>
+                <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Opacity="0.6"
+                           Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </Grid>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,8">
-                <Button Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}" Content="&#xEC78;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
-                <Button Command="{Binding PlayPauseCommand}" FontFamily="{DynamicResource FontIcoFont}" Width="60" Height="60" Margin="6,0">
+            <!-- Transport row -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,4">
+                <Button Style="{StaticResource UpsIconButton}" Command="{Binding PreviousCommand}"
+                        IsEnabled="{Binding CanPrevious}" Content="&#xEC78;" FontFamily="{DynamicResource FontIcoFont}"
+                        FontSize="20" Width="46" Height="46" Margin="6,0"/>
+                <Button Command="{Binding PlayPauseCommand}" FontFamily="{DynamicResource FontIcoFont}"
+                        FontSize="26" Width="64" Height="64" Margin="8,0">
                     <Button.Style>
-                        <Style TargetType="Button">
+                        <Style TargetType="Button" BasedOn="{StaticResource UpsPrimaryButton}">
                             <Setter Property="Content" Value="&#xECA5;"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsPlaying}" Value="False">
@@ -52,11 +116,10 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}" Content="&#xEC6E;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
-                <Button Command="{Binding ToggleMuteCommand}" Content="&#xECBA;" FontFamily="{DynamicResource FontIcoFont}" Width="44" Height="44" Margin="6,0"/>
+                <Button Style="{StaticResource UpsIconButton}" Command="{Binding NextCommand}"
+                        IsEnabled="{Binding CanNext}" Content="&#xEC6E;" FontFamily="{DynamicResource FontIcoFont}"
+                        FontSize="20" Width="46" Height="46" Margin="6,0"/>
             </StackPanel>
-
-            <Slider Minimum="0" Maximum="100" Value="{Binding Volume, Mode=TwoWay}" Margin="4,0"/>
         </StackPanel>
     </Border>
 </PluginUserControl>

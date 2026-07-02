@@ -20,13 +20,22 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.9
+## What's New - v1.5.8
 
 ### Added
 - **Media controls for theme developers.** Three drop-in elements — a full Now-Playing overlay, a compact transport bar, and a minimal play/skip control — let themes show what's playing AND control it (play/pause, next/previous, volume). Controls follow whatever's playing: your game music or Spotify. Theme devs building custom layouts can read live playback state and trigger transport via UniPlaySong's data bindings and control links.
+- **Trailer audio and Spotify are now standard Default Music options.** "Stream audio from the game's EML trailer" and "Spotify (control the Spotify desktop app)" moved out of Experimental into the main Default Music Source list. *Trailer audio:* for games with no music of their own, plays the audio from that game's video trailer — enable **"Play videos initially without sound"** in ExtraMetadataLoader's settings so the trailer's own sound doesn't play on top. *Spotify:* controls your open Spotify desktop app instead of a default track (needs the app running + a Playnite restart after switching).
+- **Radio Mode "Custom Folder" now lets you pick a folder.** Choose any folder of audio files just for radio — or leave it empty to keep using your Default Music folder.
+
+### Fixed
+- **Now-playing displays no longer freeze after changing settings.** Toggling Spotify Radio Mode on/off (or saving any setting) used to leave the mini-players and media controllers stuck on the previous song until you restarted Playnite — they now update live.
+- **Rebuilt Spotify Radio Mode** to address critical freeze and stability issues: no more freezes launching Playnite or switching Desktop/Fullscreen, game music no longer plays alongside Spotify, and radio starts faster without blipping on/off while Fullscreen loads. Spotify is now a Radio Mode *source* — pick it under Playback → Radio Mode. (Used the old "Spotify Radio Mode" toggle? Re-pick "Spotify" as your source after updating.)
+- **Your settings now survive add-on updates.** A rare startup hiccup could silently reset settings to defaults after installing an update — fixed.
+- **YouTube channel whitelist no longer grows on its own.** The default channel list was quietly duplicating itself every time settings loaded — fixed, and existing bloated lists clean themselves up automatically.
+- **Windows can suspend/sleep again while Playnite is open** (issue #81). UPS now releases its audio device when the system locks or sleeps, and resumes your music where it left off when you return.
 
 ### Previous Version
-- **v1.5.8**: Rebuilt Spotify Radio Mode to fix freezes and both-playing issues, moved Trailer Audio and Spotify into the standard Default Music options, added a folder picker for Radio Mode's Custom Folder source, fixed settings resetting after add-on updates, fixed the YouTube channel whitelist duplicating itself, and let Windows suspend/sleep normally again while Playnite is open (issue #81).
+- **v1.5.7**: Added Spotify desktop-app control (as a Radio Mode source or default-music source), live "Now Playing" info your theme can display (with two drop-in mini-player widgets for theme developers), and an album-art fallback to the game's cover. Fixed the Now Playing ticker not showing Spotify tracks, and the auto-tag off switch / Remove All Tags not sticking.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -151,6 +160,7 @@ See `docs/dev_docs/` for detailed build instructions.
 - **SDL2 & SDL2_mixer** - Audio playback (zlib license)
 - **MaterialDesignThemes** - WPF UI components (MIT)
 - **HtmlAgilityPack, Newtonsoft.Json, NAudio, NVorbis, FuzzySharp** - Core functionality (MIT)
+- **[Dubya.WindowsMediaController](https://github.com/DubyaDude/WindowsMediaController)** by DubyaDude - Windows SMTC media-session control, powers the Spotify integration (MIT)
 - **TagLibSharp** - Audio metadata (LGPL)
 - **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking — see [`docs/dev_docs/GME_BUILD.md`](docs/dev_docs/GME_BUILD.md) for the source pin and reproducible build)
 - **[zlib](https://github.com/madler/zlib)** - Decompression for VGZ files (zlib license)

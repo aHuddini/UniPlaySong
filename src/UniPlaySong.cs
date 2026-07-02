@@ -2668,10 +2668,9 @@ namespace UniPlaySong
                 _playbackService,
                 _spotifyControlService,
                 _spotifyClient,
-                () => _settings,
                 _fileLogger);
 
-            _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settings, _activeMediaService);
+            _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settingsService, _activeMediaService);
             _activeMediaViewModel.Attach();
 
             // ExternalControlService: routes playnite://uniplaysong/{command} URIs. Constructed
@@ -3921,9 +3920,9 @@ namespace UniPlaySong
                 return new Controls.MusicControlPauseGamePlayDefault(_settings);
             }
             if (args.Name == "NowPlayingMiniPlayer")
-                return new Controls.NowPlayingMiniPlayer(_settings);
+                return new Controls.NowPlayingMiniPlayer(_settingsService);
             if (args.Name == "NowPlayingMiniPlayerCompact")
-                return new Controls.NowPlayingMiniPlayerCompact(_settings);
+                return new Controls.NowPlayingMiniPlayerCompact(_settingsService);
             if (args.Name == "MediaControllerBar")
                 return new Controls.MediaControllerBar(_activeMediaViewModel);
             if (args.Name == "MediaControllerOverlay")

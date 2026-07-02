@@ -16,7 +16,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Bind UPS settings (Enable Music, Radio Mode, Calm Down, etc.) to checkboxes in your theme | `{PluginSettings}` markup (v1.4.6+) |
 | Ship a dedicated audio track that UPS plays as default music | `UPS_BackgroundAudio.mp3` in your theme's `audio/` folder (v1.5.2+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |
-| Drop in a ready-made Now-Playing overlay, transport bar, or minimal play/skip control | `UPS_MediaControllerOverlay` / `UPS_MediaControllerBar` / `UPS_MediaControllerCompact` elements (v1.5.9+) |
+| Drop in a ready-made Now-Playing overlay, transport bar, or minimal play/skip control | `UPS_MediaControllerOverlay` / `UPS_MediaControllerBar` / `UPS_MediaControllerCompact` elements (v1.5.8+) |
 
 ---
 
@@ -376,7 +376,7 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 
 ---
 
-## Unified Media Controls (v1.5.9+)
+## Unified Media Controls (v1.5.8+)
 
 Three self-contained, transport-capable theme elements — display **and** control now-playing music in one drop-in. All follow whichever source is currently audible (your game music, or Spotify when Spotify is the active source), collapse to nothing when no music is playing, and swap the play/pause icon with playback state.
 
@@ -401,7 +401,7 @@ Three self-contained, transport-capable theme elements — display **and** contr
 <ContentControl x:Name="UPS_MediaControllerCompact" />
 ```
 
-Each is an empty-tag `<ContentControl>` — no child XAML, no triggers to wire. Drop it anywhere in a Desktop or Fullscreen theme view and UPS supplies the content, styling, and behavior.
+Each is an empty-tag `<ContentControl>` — no child XAML, no triggers to wire. Drop it anywhere in a Desktop or Fullscreen theme view and UPS supplies the content, styling, and behavior. If UniPlaySong isn't installed the tag simply resolves to nothing, so it's safe to ship in a theme unconditionally. The now-playing text and album art update live as tracks and playback change (including when the user toggles Radio Mode or edits UPS settings) — no theme-side refresh needed.
 
 ### Custom layouts — read state + trigger transport directly
 
@@ -498,7 +498,7 @@ If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS suppor
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.9+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |

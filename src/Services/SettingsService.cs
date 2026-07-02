@@ -9,7 +9,7 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Services
 {
     // Centralized settings management: single source of truth with automatic propagation via events
-    public class SettingsService
+    public class SettingsService : ISettingsProvider
     {
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;

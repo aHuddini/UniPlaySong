@@ -631,9 +631,10 @@ namespace UniPlaySong
             set { nowPlayingGenre = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        // Live TOTAL DURATION of the current Spotify track, preformatted as "m:ss" (e.g. "3:45").
+        // Live TOTAL DURATION of the current track, preformatted as "m:ss" (e.g. "3:45").
         // [JsonIgnore] runtime state — bind via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingDuration}.
-        // Spotify only; "" for game music or when unavailable. Set by NowPlayingPublisher.
+        // Populated for both Spotify tracks AND UPS game music (when the file carries duration);
+        // "" when unavailable. Set by NowPlayingPublisher.
         [JsonIgnore]
         public string NowPlayingDuration
         {
@@ -641,7 +642,7 @@ namespace UniPlaySong
             set { nowPlayingDuration = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        // ── Unified active-media surface (v1.5.9) ──────────────────────────
+        // ── Unified active-media surface (v1.5.8) ──────────────────────────
         // Runtime-only mirror of ActiveMediaViewModel for decoupled {PluginSettings}
         // binding. Set by ActiveMediaService. All [JsonIgnore] — never persisted.
         private double activeMediaProgress;
