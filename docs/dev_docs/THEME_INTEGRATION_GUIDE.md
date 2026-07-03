@@ -465,6 +465,12 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 
 ## Unified Media Controls (v1.5.8+)
 
+<p align="center">
+  <img src="../assets/DemoMediaControls.png" alt="UniPlaySong media controls and Now Playing toast in a Fullscreen theme" width="720">
+</p>
+
+*The drop-in media controls and the `IsMusicChanged` "Now Playing" toast in a Fullscreen theme.*
+
 Three self-contained, transport-capable theme elements — display **and** control now-playing music in one drop-in. All follow whichever source is currently audible (your game music, or Spotify when Spotify is the active source), collapse to nothing when no music is playing, and swap the play/pause icon with playback state.
 
 | Element | What it is |
