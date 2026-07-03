@@ -35,6 +35,9 @@ Built with the help of Claude Code and Cursor IDE
 - **YouTube channel whitelist no longer grows on its own.** The default channel list was quietly duplicating itself every time settings loaded — fixed, and existing bloated lists clean themselves up automatically.
 - **Windows can suspend/sleep again while Playnite is open** (issue #81). UPS now releases its audio device when the system locks or sleeps, and resumes your music where it left off when you return.
 
+### Performance
+- **Less logging during controller navigation.** UniPlaySong no longer writes a log line on every controller button press, cutting log churn while you browse with a gamepad.
+
 ### Previous Version
 - **v1.5.7**: Added Spotify desktop-app control (as a Radio Mode source or default-music source), live "Now Playing" info your theme can display (with two drop-in mini-player widgets for theme developers), and an album-art fallback to the game's cover. Fixed the Now Playing ticker not showing Spotify tracks, and the auto-tag off switch / Remove All Tags not sticking.
 
