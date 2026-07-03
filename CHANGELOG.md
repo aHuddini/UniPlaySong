@@ -58,6 +58,10 @@ Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation
 
 - **`IdleAudioDeviceTeardownMinutes` help text** clarified: it now governs the centralized idle timer; lock/suspend release fire immediately regardless of the idle setting (`0` disables *idle* teardown only). The setting remains on the Experimental tab.
 
+### Performance
+
+- **Dropped the per-press controller-input debug log.** `RouteControllerInput` logged `[Controller] <button> <state>` on every controller button press *and* release, in both Desktop and Fullscreen — a hot path that produced steady log churn during normal navigation. Removed; dialog register/unregister is still logged in `ControllerEventRouter` (open/close only, not per input). `src/UniPlaySong.cs`.
+
 ## [1.5.7] - 2026-06-26
 
 Spotify control integration (event-mirror architecture): UPS conducts the Spotify desktop app's transport via Windows SMTC while playing none of its own audio. Two opt-in engagement modes. Control-only — no audio capture, no OAuth, no Web API.

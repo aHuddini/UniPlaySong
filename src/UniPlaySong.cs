@@ -1140,7 +1140,8 @@ namespace UniPlaySong
         {
             if (args == null) return;
 
-            _fileLogger?.Debug($"[Controller] {args.Button} {args.State} (router has receiver: {_controllerEventRouter != null})");
+            // No per-press logging here — this is a hot path (fires on every button press AND
+            // release, Desktop + Fullscreen). Dialog register/unregister is logged in the router.
 
             // Login bypass — check before routing to active dialog
             if (_isControllerLoginMonitoring && args.State == ControllerInputState.Pressed
