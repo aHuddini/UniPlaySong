@@ -60,7 +60,10 @@ Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation
 
 ### Performance
 
-- **Dropped the per-press controller-input debug log.** `RouteControllerInput` logged `[Controller] <button> <state>` on every controller button press *and* release, in both Desktop and Fullscreen — a hot path that produced steady log churn during normal navigation. Removed; dialog register/unregister is still logged in `ControllerEventRouter` (open/close only, not per input). `src/UniPlaySong.cs`.
+- **Trimmed high-frequency debug logging on playback hot paths.** Three sources dominated log volume during normal use, all now quieted (behavior unchanged):
+  - *Controller input* — `RouteControllerInput` logged `[Controller] <button> <state>` on every press *and* release, Desktop + Fullscreen. Removed (dialog register/unregister still logged in `ControllerEventRouter`, open/close only). `src/UniPlaySong.cs`.
+  - *Fader ticks* — the `[Fader] Tick — polling` line fired every 50ms (~20×/sec) for the entire duration of every fade in/out, i.e. ~30 lines per song switch. Removed; ramp start and phase-completion are still logged. `src/Players/MusicFader.cs`.
+  - *External-audio poll* — the `[Perf] ExternalAudioPoll: …ms (slow tick)` warning used a 50ms threshold, but this 1–2×/sec poll routinely takes 50–200ms, so it logged on nearly every tick. Threshold raised to 250ms so it only flags genuine stalls. `src/UniPlaySong.cs`.
 
 ## [1.5.7] - 2026-06-26
 

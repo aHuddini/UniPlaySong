@@ -89,10 +89,9 @@ namespace UniPlaySong.Players
                     _player.SetVolumeRamp(target, duration);
                     _rampStarted = true;
                 }
-                else
-                {
-                    _fileLogger?.Debug($"[Fader] Tick — polling: vol={currentVol:F4}, fadingOut={_isFadingOut}, hasPause={_pauseAction != null}, hasPlay={_playAction != null}, hasStop={_stopAction != null}");
-                }
+                // Subsequent ticks just poll for ramp completion (below) — no per-tick log:
+                // this timer fires every 50ms (~20×/sec) for the whole fade, so a line here
+                // floods the log during normal playback. Phase transitions are logged instead.
 
                 // Detect stalled ramp: if the player's audio thread stopped (e.g. short
                 // song reached EOF during fade-out), the volume ramp freezes because

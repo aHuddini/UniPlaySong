@@ -2295,7 +2295,10 @@ namespace UniPlaySong
             finally
             {
                 sw.Stop();
-                if (sw.ElapsedMilliseconds > 50)
+                // Only flag genuinely abnormal ticks. This poll runs 1–2×/sec forever, and routine
+                // work here regularly takes 50–200ms, so the old 50ms threshold logged nearly every
+                // tick — steady churn. 250ms flags real stalls without the per-tick noise.
+                if (sw.ElapsedMilliseconds > 250)
                     _fileLogger?.Debug(() => $"[Perf] ExternalAudioPoll: {sw.ElapsedMilliseconds}ms (slow tick)");
                 Interlocked.Exchange(ref _externalAudioPollRunning, 0);
             }
