@@ -75,6 +75,31 @@ The most common use — pause UPS music while a theme overlay is visible.
 </MultiDataTrigger>
 ```
 
+### Don't pause Radio Mode music for your overlay — gate the `Tag` on `RadioModeEnabled`
+
+A `Tag="True"` on `UPS_MusicControl` pauses **whatever** is currently playing, including Radio Mode (a pool, or Spotify). If your overlay (welcome hub, sidebar, menu) should pause per-game music but let *Radio Mode* keep playing, add `RadioModeEnabled` as a condition so the pause only fires when Radio Mode is **off**:
+
+```xml
+<MultiDataTrigger>
+    <MultiDataTrigger.Conditions>
+        <Condition Binding="{PluginSettings Plugin=AnikiHelper, Path=IsWelcomeHubOpen}" Value="True"/>
+        <!-- only pause when Radio Mode is OFF; Radio Mode music plays through the hub -->
+        <Condition Binding="{PluginSettings Plugin=UniPlaySong, Path=RadioModeEnabled}" Value="False"/>
+    </MultiDataTrigger.Conditions>
+    <Setter Property="Tag" Value="True"/>
+</MultiDataTrigger>
+```
+
+`RadioModeEnabled` covers **all** Radio Mode sources (a UPS pool *or* Spotify) — that's usually what you want, and it's the simplest gate. There is no separate "Spotify radio" mode: Spotify is just one of the sources Radio Mode can play, chosen by the user in UniPlaySong's settings.
+
+If you specifically need to distinguish **Spotify-as-radio** from a UPS-pool radio (e.g. pause pool-radio but never Spotify), bind the derived read-only `SpotifyRadioMode` instead — it's `true` only when Radio Mode is on **and** the source is Spotify:
+
+```xml
+<Condition Binding="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRadioMode}" Value="False"/>
+```
+
+Both properties update live as the user toggles Radio Mode or switches the source, so the trigger re-evaluates on the fly. (Prefer `RadioModeEnabled` unless you truly need the Spotify-only distinction.)
+
 ### ANIKI REMAKE reference
 
 The full set of triggers Mike Aniki uses for intro videos, trailers, settings, and welcome control:
@@ -193,6 +218,8 @@ For an in-theme audio quick-settings menu (Enable Game Music, Radio Mode, Calm D
 | `RadioModeEnabled` | bool | Continuous pool-based playback |
 
 > **Radio source is the user's choice.** Binding a toggle to `RadioModeEnabled` turns Radio Mode on/off; the *source* it plays (a UPS pool, or **Spotify**) is chosen by the user in UniPlaySong's settings (Playback → Radio Mode → source). So your existing "Radio Mode" button automatically honors Spotify when the user has picked it — no theme change needed. (Optional: `RadioMusicSource` is also bindable if you want to offer a source picker in your theme.)
+>
+> **Read-only status (for gating your own triggers):** `RadioModeEnabled` also reads back the current state, and the derived read-only `SpotifyRadioMode` is `true` only when Radio Mode is on *and* the source is Spotify. Both update live — use them to keep an overlay from pausing Radio Mode music (see [Don't pause Radio Mode music for your overlay](#dont-pause-radio-mode-music-for-your-overlay--gate-the-tag-on-radiomodeenabled)).
 | `PlayOnlyOnGameSelect` | bool | When false, music plays while browsing too |
 | `CalmDownModeEnabled` | bool | v1.5.0+ — gentle muffle + dim over 1.5s (great for late-night browsing toggles) |
 

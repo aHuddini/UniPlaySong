@@ -1350,7 +1350,9 @@ namespace UniPlaySong
         public bool RadioModeEnabled
         {
             get => radioModeEnabled;
-            set { radioModeEnabled = value; OnPropertyChanged(); }
+            // Also raise the derived SpotifyRadioMode so {PluginSettings} bindings on it update live
+            // (it has no backing field, so it never notifies on its own).
+            set { radioModeEnabled = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpotifyRadioMode)); }
         }
 
         // Spotify Radio Mode is DERIVED (v1.5.8 unification): radio is on AND the source is Spotify.
@@ -1381,7 +1383,8 @@ namespace UniPlaySong
         public RadioMusicSource RadioMusicSource
         {
             get => radioMusicSource;
-            set { radioMusicSource = value; OnPropertyChanged(); }
+            // Also raise the derived SpotifyRadioMode (depends on this) so theme bindings on it update live.
+            set { radioMusicSource = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpotifyRadioMode)); }
         }
 
         // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath
