@@ -317,6 +317,34 @@ These reflect whichever source is the active music. Title, artist, and art are p
 
 `NowPlayingAlbum`, `NowPlayingGenre`, and `NowPlayingDuration` are populated **only when Spotify is the active music** (album, comma-joined genres, and total track length preformatted as `m:ss`). They are empty strings for game music, so bind them inside a panel you collapse when empty.
 
+### Fire an animation when the track changes — `IsMusicChanged` (v1.5.9+)
+
+If you want a **notification-style animation** that plays each time the music changes — rather than a permanently-visible now-playing readout — bind to `IsMusicChanged`. UniPlaySong flips it to `true` the moment the track changes (song→song, silence→song, song→silence, or a source switch), then flips it back to `false` a fraction of a second later. It never fires on a mere re-publish of the same track.
+
+| Bind | Type | Meaning |
+| --- | --- | --- |
+| `IsMusicChanged` | bool | Pulses `true` briefly on each track change, then returns to `false`. |
+
+The `true`→`false` **edge** is the point — it re-arms so the next change pulses again. The pulse is intentionally short; run your own visible-duration timer in the animation:
+
+```xml
+<Style.Triggers>
+    <DataTrigger Binding="{PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}" Value="True">
+        <DataTrigger.EnterActions>
+            <BeginStoryboard>
+                <Storyboard>
+                    <!-- e.g. slide a "Now Playing" toast in, hold, then fade out -->
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2"/>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:3" Duration="0:0:0.4"/>
+                </Storyboard>
+            </BeginStoryboard>
+        </DataTrigger.EnterActions>
+    </DataTrigger>
+</Style.Triggers>
+```
+
+Combine with `NowPlayingTitle` / `NowPlayingArtist` / `NowPlayingAlbumArtPath` to show *what* changed inside the toast.
+
 ### Now-playing mini-player elements (v1.5.7+)
 
 Two display-only elements that show the current track (title, artist, album art; plus Spotify album/genre/duration). Place either in a **Desktop or Fullscreen** theme view (e.g. anchored on a game banner) — like the other `UPS_` elements, they render wherever the theme puts them. They collapse to nothing when no music is playing, and for game music show title + artist + art only (album/genre/duration are Spotify-only).

@@ -311,6 +311,7 @@ namespace UniPlaySong
         private string nowPlayingAlbum = string.Empty;
         private string nowPlayingGenre = string.Empty;
         private string nowPlayingDuration = string.Empty;
+        private bool isMusicChanged = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
@@ -640,6 +641,20 @@ namespace UniPlaySong
         {
             get => nowPlayingDuration;
             set { nowPlayingDuration = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Transient "the track just changed" pulse for theme animations. Set true by
+        // NowPlayingPublisher the moment the now-playing track changes (song→song, silence→song,
+        // song→silence, or a source switch), then auto-reset to false a moment later. It is the
+        // true→false EDGE that matters, not the duration: a theme binds a DataTrigger to it to fire
+        // an animation on each change, and the reset lets the next change re-trigger. [JsonIgnore]
+        // runtime state — bind via {PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}.
+        // Never fires on a mere re-publish of the same track.
+        [JsonIgnore]
+        public bool IsMusicChanged
+        {
+            get => isMusicChanged;
+            set { isMusicChanged = value; OnPropertyChanged(); }
         }
 
         // ── Unified active-media surface (v1.5.8) ──────────────────────────

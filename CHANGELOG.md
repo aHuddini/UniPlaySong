@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.9] - 2026-07-03
+
+### Added
+
+- **`IsMusicChanged` pulse for theme animations.** A new `[JsonIgnore]` bindable property on `UniPlaySongSettings` that flips to `true` the moment the now-playing track changes, then auto-resets to `false` a fraction of a second later — so a theme can fire a notification-style animation on each change (bind a `DataTrigger` to it) instead of showing a permanent now-playing readout. Driven from the single `NowPlayingPublisher.Publish` choke point: it tracks the last published `title`+`artist` identity and pulses only on a real change (song→song, silence→song, song→silence, source switch), never on a re-publish of the same track (Spotify re-publishes the same track every couple seconds). The reset is a one-shot UI-thread `DispatcherTimer`, re-armed on each change; all writes marshal via `Dispatcher.BeginInvoke` (publisher runs off-thread for Spotify). The initial startup empty publish is suppressed so no spurious pulse fires before any music. `src/UniPlaySongSettings.cs`, `src/Services/NowPlayingPublisher.cs`. Documented in `THEME_INTEGRATION_GUIDE.md`.
+
 ## [1.5.8] - 2026-06-30
 
 Issue #81 sleep/audio-device revamp (fix attempt — pending tester confirmation): UPS's open audio render stream no longer blocks Windows from sleeping/suspending. Rebuilt around a central device registry that releases *every* audio-device holder on lock/suspend/idle, with a resume path that comes back audible at the saved position. Supersedes the earlier main-player-only attempt (branch `fix/issue-81-idle-teardown`, `8fa106f`).

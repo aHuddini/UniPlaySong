@@ -20,27 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.8
+## What's New - v1.5.9
 
 ### Added
-- **Media controls for theme developers.** Three drop-in elements — a full Now-Playing overlay, a compact transport bar, and a minimal play/skip control — let themes show what's playing AND control it (play/pause, next/previous, volume). Controls follow whatever's playing: your game music or Spotify. Theme devs building custom layouts can read live playback state and trigger transport via UniPlaySong's data bindings and control links.
-- **Trailer audio and Spotify are now standard Default Music options.** "Stream audio from the game's EML trailer" and "Spotify (control the Spotify desktop app)" moved out of Experimental into the main Default Music Source list. *Trailer audio:* for games with no music of their own, plays the audio from that game's video trailer — enable **"Play videos initially without sound"** in ExtraMetadataLoader's settings so the trailer's own sound doesn't play on top. *Spotify:* controls your open Spotify desktop app instead of a default track (needs the app running + a Playnite restart after switching).
-- **Radio Mode "Custom Folder" now lets you pick a folder.** Choose any folder of audio files just for radio — or leave it empty to keep using your Default Music folder.
-- **Theme devs: live Radio Mode status bindings.** `RadioModeEnabled` and the read-only `SpotifyRadioMode` are now live `{PluginSettings}` bindings, so a theme can (for example) keep Radio Mode music playing while a welcome hub/overlay is open instead of pausing it.
-
-### Fixed
-- **Media-controller buttons now work with a controller in Fullscreen.** Move focus onto a transport button with the D-pad and press A (or B if you've swapped confirm/cancel) to activate it.
-- **Now-playing displays no longer freeze after changing settings.** Toggling Spotify Radio Mode on/off (or saving any setting) used to leave the mini-players and media controllers stuck on the previous song until you restarted Playnite — they now update live.
-- **Rebuilt Spotify Radio Mode** to address critical freeze and stability issues: no more freezes launching Playnite or switching Desktop/Fullscreen, game music no longer plays alongside Spotify, and radio starts faster without blipping on/off while Fullscreen loads. Spotify is now a Radio Mode *source* — pick it under Playback → Radio Mode. (Used the old "Spotify Radio Mode" toggle? Re-pick "Spotify" as your source after updating.)
-- **Your settings now survive add-on updates.** A rare startup hiccup could silently reset settings to defaults after installing an update — fixed.
-- **YouTube channel whitelist no longer grows on its own.** The default channel list was quietly duplicating itself every time settings loaded — fixed, and existing bloated lists clean themselves up automatically.
-- **Windows can suspend/sleep again while Playnite is open** (issue #81). UPS now releases its audio device when the system locks or sleeps, and resumes your music where it left off when you return.
-
-### Performance
-- **Much less background logging during normal use.** Removed the high-frequency log lines written during fades, controller navigation, and external-audio checks — smaller log files, same behavior.
+- **Theme devs: a "music changed" signal for notification animations.** A new live `IsMusicChanged` binding briefly flips to `true` each time the track changes and then back to `false`, so a theme can trigger a pop-up/animation on song change (bind a `DataTrigger` to it) instead of showing the now-playing info permanently. See the Theme Integration Guide.
 
 ### Previous Version
-- **v1.5.7**: Added Spotify desktop-app control (as a Radio Mode source or default-music source), live "Now Playing" info your theme can display (with two drop-in mini-player widgets for theme developers), and an album-art fallback to the game's cover. Fixed the Now Playing ticker not showing Spotify tracks, and the auto-tag off switch / Remove All Tags not sticking.
+- **v1.5.8**: Media control elements for theme developers (full overlay, transport bar, minimal play/skip — follow your game music or Spotify, controller-friendly in Fullscreen); trailer audio and Spotify graduated to standard Default Music sources; a dedicated Radio Mode "Custom Folder" picker; live Radio Mode status bindings for themes. Fixed a critical settings-reset-on-update bug and now-playing displays freezing after a settings change, rebuilt Spotify Radio Mode for stability, stopped the YouTube whitelist growing on its own, and let Windows sleep/resume properly (issue #81). Cut noisy background logging on playback hot paths.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -1,4 +1,6 @@
 using System;
+using System.Windows;
+using System.Windows.Threading;
 using UniPlaySong.Common;
 using UniPlaySong.Services.Spotify;
 
@@ -19,6 +21,15 @@ namespace UniPlaySong.Services
         private readonly FileLogger _fileLogger;
         private readonly object _publishLock = new object();
         private bool _disposed;
+
+        // "Track just changed" pulse: remember the last published identity so a re-publish of the
+        // same track (Spotify re-publishes every couple seconds) does NOT re-fire, and a one-shot
+        // UI-thread timer that flips IsMusicChanged back to false shortly after each real change.
+        private string _lastPublishedKey;
+        private DispatcherTimer _musicChangedResetTimer;
+        // Short by design: only the true→false edge matters (a theme runs its own visible-duration
+        // timer). Long enough that the true state is observed, short enough to re-arm quickly.
+        private static readonly TimeSpan MusicChangedPulse = TimeSpan.FromMilliseconds(750);
 
         // getGameCoverArtPath: returns the current game's cover-art file path (or null/""), used as
         // a fallback for GAME MUSIC when the track has no embedded art. Resolved at the composition
@@ -157,6 +168,51 @@ namespace UniPlaySong.Services
             s.NowPlayingAlbum = album;
             s.NowPlayingGenre = genre;
             s.NowPlayingDuration = duration;
+
+            // Pulse IsMusicChanged only when the track identity actually changed (not on a re-publish
+            // of the same song). Identity = title + U+0001 + artist (a control char that cannot occur in
+            // real metadata, so "A"+"" stays distinct from ""+"A". Start and stop both count.
+            var key = (title ?? string.Empty) + "" + (artist ?? string.Empty);
+            bool bothEmpty = string.IsNullOrEmpty(title) && string.IsNullOrEmpty(artist);
+            bool firstEmptyAtStartup = _lastPublishedKey == null && bothEmpty;
+            bool changed = key != _lastPublishedKey && !firstEmptyAtStartup;
+            _lastPublishedKey = key;
+            if (changed) PulseMusicChanged(s);
+        }
+
+        // Flip IsMusicChanged true now, then back to false after a short delay. The reset runs on a
+        // UI-thread DispatcherTimer so the property change is raised on the UI thread (this method may
+        // be called from an off-thread Spotify callback); both the initial set and the timer arming are
+        // marshalled via the dispatcher. Re-arming restarts the window so rapid changes still end false.
+        private void PulseMusicChanged(UniPlaySongSettings s)
+        {
+            if (s == null) return;
+            OnUi(() =>
+            {
+                if (_disposed) return;
+                s.IsMusicChanged = true;
+
+                if (_musicChangedResetTimer == null)
+                {
+                    _musicChangedResetTimer = new DispatcherTimer { Interval = MusicChangedPulse };
+                    _musicChangedResetTimer.Tick += (sender, e) =>
+                    {
+                        _musicChangedResetTimer.Stop();
+                        var cur = _getSettings?.Invoke();
+                        if (cur != null) cur.IsMusicChanged = false;
+                    };
+                }
+                _musicChangedResetTimer.Stop();   // restart the window on each change
+                _musicChangedResetTimer.Start();
+            });
+        }
+
+        // Marshal to the UI thread (BeginInvoke, never sync Invoke — the established deadlock-fix rule).
+        private static void OnUi(Action a)
+        {
+            var d = Application.Current?.Dispatcher;
+            if (d != null && !d.CheckAccess()) d.BeginInvoke(a);
+            else a();
         }
 
         public void Dispose()
@@ -165,6 +221,8 @@ namespace UniPlaySong.Services
             _disposed = true;
             if (_metadata != null) _metadata.OnSongInfoChanged -= OnUpsSongInfoChanged;
             if (_spotify != null) _spotify.NowPlayingChanged -= Refresh;
+            try { _musicChangedResetTimer?.Stop(); } catch { }
+            _musicChangedResetTimer = null;
         }
     }
 }
