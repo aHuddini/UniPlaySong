@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-07-03
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.9/UniPlaySong-1_5_9.pext'
     Changelog:
-      - '[Theme Dev Feature] New "music changed" signal for themes: a bindable IsMusicChanged flag that briefly turns true each time the track changes and then back to false, so a theme can trigger a notification/animation on song change instead of showing the now-playing info permanently. See the Theme Integration Guide.'
+      - '[Theme Dev Feature] Music-change notifications for themes (console-style): UniPlaySong now provides live "the music just changed" data, so a theme can pop up a Now Playing toast whenever the track changes — like PlayStation/Xbox flashing a notification when a new song starts — instead of showing the track info permanently. Themes opt in; a ready-made demo toast is in the Theme Integration Guide.'
   - Version: 1.5.8
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-06-30

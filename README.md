@@ -23,7 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.5.9
 
 ### Added
-- **Theme devs: a "music changed" signal for notification animations.** A new live `IsMusicChanged` binding briefly flips to `true` each time the track changes and then back to `false`, so a theme can trigger a pop-up/animation on song change (bind a `DataTrigger` to it) instead of showing the now-playing info permanently. See the Theme Integration Guide.
+- **Music-change notifications for themes (console-style toasts).** UniPlaySong now provides live "the music just changed" data to themes, so a theme can pop up a **Now Playing toast whenever the track changes** — the way PlayStation and Xbox flash a notification when a new song starts — instead of showing the track info on screen permanently. It's up to each theme to use it; the demo toast (title + artist + album art, slides in and fades out) is available as a ready-made example in the Theme Integration Guide.
 
 ### Previous Version
 - **v1.5.8**: Media control elements for theme developers (full overlay, transport bar, minimal play/skip — follow your game music or Spotify, controller-friendly in Fullscreen); trailer audio and Spotify graduated to standard Default Music sources; a dedicated Radio Mode "Custom Folder" picker; live Radio Mode status bindings for themes. Fixed a critical settings-reset-on-update bug and now-playing displays freezing after a settings change, rebuilt Spotify Radio Mode for stability, stopped the YouTube whitelist growing on its own, and let Windows sleep/resume properly (issue #81). Cut noisy background logging on playback hot paths.
