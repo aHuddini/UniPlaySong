@@ -333,9 +333,9 @@ The `true`→`false` **edge** is the point — it re-arms so the next change pul
         <DataTrigger.EnterActions>
             <BeginStoryboard>
                 <Storyboard>
-                    <!-- e.g. slide a "Now Playing" toast in, hold, then fade out -->
+                    <!-- e.g. fade a "Now Playing" toast in, hold ~4.5s, then fade out -->
                     <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2"/>
-                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:3" Duration="0:0:0.4"/>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:4.5" Duration="0:0:0.4"/>
                 </Storyboard>
             </BeginStoryboard>
         </DataTrigger.EnterActions>
@@ -362,8 +362,8 @@ Combine with `NowPlayingTitle` / `NowPlayingArtist` / `NowPlayingAlbumArtPath` t
 >                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
 >                                 <!-- animate the Border's OWN transform by path — no TargetName -->
 >                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="0" Duration="0:0:0.25"/>
->                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:3.2" Duration="0:0:0.5"/>
->                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="-40" BeginTime="0:0:3.2" Duration="0:0:0.5"/>
+>                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+>                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="-40" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
 >                             </Storyboard>
 >                         </BeginStoryboard>
 >                     </DataTrigger.EnterActions>
