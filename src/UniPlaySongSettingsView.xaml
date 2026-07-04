@@ -1117,54 +1117,6 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Achievement / trophy unlock sound (v1 — triggered by external plugins via URI) -->
-                    <Separator Margin="0,15,0,10"/>
-                    <CheckBox Content="Play sound on achievement unlock"
-                              IsChecked="{Binding Settings.EnableAchievementSound}"
-                              Margin="0,5"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5"
-                               Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game."/>
-
-                    <StackPanel Margin="20,5,0,10"
-                                IsEnabled="{Binding Settings.EnableAchievementSound}">
-                        <RadioButton Content="System beep"
-                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SystemBeep}"
-                                     GroupName="AchievementSound"
-                                     Margin="0,3"/>
-                        <RadioButton Content="Jingle Preset"
-                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
-                                     GroupName="AchievementSound"
-                                     Margin="0,3"/>
-                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
-                            <ComboBox ItemsSource="{Binding CelebrationJingles}"
-                                      DisplayMemberPath="DisplayName"
-                                      SelectedValuePath="File"
-                                      SelectedValue="{Binding Settings.SelectedAchievementJingle}"
-                                      Width="300"
-                                      Margin="0,0,8,0"/>
-                            <Button Content="Preview"
-                                    Command="{Binding PreviewAchievementSoundCommand}"
-                                    Padding="10,4"/>
-                        </StackPanel>
-                        <RadioButton Content="Custom sound file (.wav recommended)"
-                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
-                                     GroupName="AchievementSound"
-                                     Margin="0,3"/>
-                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
-                            <TextBox Text="{Binding Settings.AchievementSoundPath, UpdateSourceTrigger=PropertyChanged}"
-                                     Width="350"
-                                     VerticalContentAlignment="Center"
-                                     Margin="0,0,8,0"/>
-                            <Button Content="Browse..."
-                                    Command="{Binding BrowseAchievementSoundCommand}"
-                                    Padding="10,4"/>
-                            <Button Content="Preview"
-                                    Command="{Binding PreviewAchievementSoundCommand}"
-                                    Padding="10,4"
-                                    Margin="5,0,0,0"/>
-                        </StackPanel>
-                    </StackPanel>
-
                     <!-- Abandoned Status Sound + Toast (parallel pipeline, separate settings) -->
                     <Separator Margin="0,15,0,10"/>
                     <CheckBox Content="Play Sound on Abandoned Games"
@@ -1254,6 +1206,54 @@
                                      VerticalContentAlignment="Center"/>
                             <TextBlock Text="Examples: &quot;Filed away without finishing {gameName}.&quot;, &quot;{gameName} has been flushed.&quot;, &quot;RIP {gameName}&quot;"
                                        FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Achievement / trophy unlock sound (v1 — triggered by external plugins via URI) -->
+                    <Separator Margin="0,15,0,10"/>
+                    <CheckBox Content="Play sound on achievement unlock"
+                              IsChecked="{Binding Settings.EnableAchievementSound}"
+                              Margin="0,5"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5"
+                               Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game."/>
+
+                    <StackPanel Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.EnableAchievementSound}">
+                        <RadioButton Content="System beep"
+                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SystemBeep}"
+                                     GroupName="AchievementSound"
+                                     Margin="0,3"/>
+                        <RadioButton Content="Jingle Preset"
+                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                     GroupName="AchievementSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <ComboBox ItemsSource="{Binding CelebrationJingles}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="File"
+                                      SelectedValue="{Binding Settings.SelectedAchievementJingle}"
+                                      Width="300"
+                                      Margin="0,0,8,0"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewAchievementSoundCommand}"
+                                    Padding="10,4"/>
+                        </StackPanel>
+                        <RadioButton Content="Custom sound file (.wav recommended)"
+                                     IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                     GroupName="AchievementSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                            <TextBox Text="{Binding Settings.AchievementSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="350"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                            <Button Content="Browse..."
+                                    Command="{Binding BrowseAchievementSoundCommand}"
+                                    Padding="10,4"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewAchievementSoundCommand}"
+                                    Padding="10,4"
+                                    Margin="5,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
