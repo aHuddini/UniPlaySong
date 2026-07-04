@@ -161,7 +161,7 @@ With `IsMuted="True"` (or `Volume="0"`), UPS never treats the video as audible p
 
 **When to use which:**
 
-| You want… | Do this |
+| You want... | Do this |
 |---|---|
 | A video's **own audio** to take over (trailer, cutscene) — UPS music pauses | Leave the video **unmuted** (`IsMuted="False"`, `Volume > 0.8`). UPS pauses automatically. |
 | A **silent/decorative** video to play *over* the music — music keeps going | Set the video **`IsMuted="True"`** (or `Volume="0"`). UPS ignores it. |
@@ -345,37 +345,37 @@ The `true`→`false` **edge** is the point — it re-arms so the next change pul
 
 Combine with `NowPlayingTitle` / `NowPlayingArtist` / `NowPlayingAlbumArtPath` to show *what* changed inside the toast.
 
-> ⚠️ **Style storyboards can't use `TargetName`.** A `Storyboard` inside a `Style` (as above) may only animate the **styled element itself** — WPF throws *"A Storyboard tree in a Style cannot specify a TargetName"* and Playnite crashes if you add `Storyboard.TargetName="…"`. So don't reference a named child. To animate a transform (e.g. slide the toast in), give the styled element its own `RenderTransform` and animate it **by property path**, no name:
->
-> ```xml
-> <Border Opacity="0" HorizontalAlignment="Left" VerticalAlignment="Top" ...>
->     <Border.RenderTransform>
->         <TranslateTransform X="-40"/>   <!-- no x:Name -->
->     </Border.RenderTransform>
->     <Border.Style>
->         <Style TargetType="Border">
->             <Style.Triggers>
->                 <DataTrigger Binding="{PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}" Value="True">
->                     <DataTrigger.EnterActions>
->                         <BeginStoryboard>
->                             <Storyboard>
->                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
->                                 <!-- animate the Border's OWN transform by path — no TargetName -->
->                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="0" Duration="0:0:0.25"/>
->                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
->                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="-40" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
->                             </Storyboard>
->                         </BeginStoryboard>
->                     </DataTrigger.EnterActions>
->                 </DataTrigger>
->             </Style.Triggers>
->         </Style>
->     </Border.Style>
->     <!-- toast content: NowPlaying* bindings -->
-> </Border>
-> ```
->
-> If you need to animate several *different* named children together, drive the storyboard from the element's own `Triggers`/`ControlTemplate.Triggers` (where `TargetName` is allowed) instead of a `Style`.
+⚠️ **Style storyboards can't use `TargetName`.** A `Storyboard` inside a `Style` (as above) may only animate the **styled element itself** — WPF throws *"A Storyboard tree in a Style cannot specify a TargetName"* and Playnite crashes if you add `Storyboard.TargetName="..."`. So don't reference a named child. To animate a transform (e.g. slide the toast in), give the styled element its own `RenderTransform` and animate it **by property path**, no name:
+
+```xml
+<Border Opacity="0" HorizontalAlignment="Left" VerticalAlignment="Top" ...>
+    <Border.RenderTransform>
+        <TranslateTransform X="-40"/>   <!-- no x:Name -->
+    </Border.RenderTransform>
+    <Border.Style>
+        <Style TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
+                                <!-- animate the Border's OWN transform by path - no TargetName -->
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="0" Duration="0:0:0.25"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X" To="-40" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Border.Style>
+    <!-- toast content: NowPlaying* bindings -->
+</Border>
+```
+
+If you need to animate several *different* named children together, drive the storyboard from the element's own `Triggers`/`ControlTemplate.Triggers` (where `TargetName` is allowed) instead of a `Style`.
 
 ### Now-playing mini-player elements (v1.5.7+)
 

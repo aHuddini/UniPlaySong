@@ -21,7 +21,7 @@ assembly, no compile-time dependency, safe if either is absent.
 playnite://uniplaysong/playniteachievements/{rarity}
 ```
 
-`{rarity}` ∈ `common | uncommon | rare | ultrarare | capstone` (case-insensitive).
+`{rarity}` is one of `common | uncommon | rare | ultrarare | capstone` (case-insensitive).
 
 - **Namespaced** under `playniteachievements` so other source plugins can have their own path later
   (`uniplaysong/<source>/...`).
@@ -47,18 +47,18 @@ shared-interface channel (below) would remove even that.
 ## UniPlaySong side — how it's wired
 
 ```
-URI  →  UriHandler.RegisterSource("uniplaysong", …)  [src/UniPlaySong.cs]
-     →  ExternalControlService.HandleCommand         [switch on args[0]]
-     →  case "playniteachievements" → HandlePlayniteAchievement(args)
-     →  JingleService.PlayForEvent(JingleEvent.Achievement, settings)
-     →  PlayExternalSound(path, settings)            [dedicated lightweight path]
+URI  ->  UriHandler.RegisterSource("uniplaysong", ...)  [src/UniPlaySong.cs]
+     ->  ExternalControlService.HandleCommand         [switch on args[0]]
+     ->  case "playniteachievements" -> HandlePlayniteAchievement(args)
+     ->  JingleService.PlayForEvent(JingleEvent.Achievement, settings)
+     ->  PlayExternalSound(path, settings)            [dedicated lightweight path]
 ```
 
 Key files:
 - `src/Services/ExternalControlService.cs` — URI dispatch (`playniteachievements` case, `HandlePlayniteAchievement`). `args[1]` is the rarity (parsed; currently informational).
 - `src/Services/JingleService.cs` — `JingleEvent.Achievement`, `GetConfigForEvent`, and the **separate** `PlayExternalSound` / `_externalPlayer` / `_createLightweightPlayer` path.
 - `src/UniPlaySong.cs` — registers the URI source; constructs `JingleService` with the lightweight (SDL2) factory.
-- `src/UniPlaySongSettings.cs` — `EnableAchievementSound`, `AchievementSoundType`, `SelectedAchievementJingle`, `AchievementSoundPath` (all off/default; `[not] JsonIgnore` — these are persisted user settings).
+- `src/UniPlaySongSettings.cs` — `EnableAchievementSound`, `AchievementSoundType`, `SelectedAchievementJingle`, `AchievementSoundPath` (off by default; these are persisted user settings, NOT `[JsonIgnore]` runtime state).
 - Settings UI: `src/UniPlaySongSettingsView.xaml(.cs)` (Gamification section), `src/UniPlaySongSettingsViewModel.cs` (`PreviewAchievementSoundCommand`, `BrowseAchievementSoundCommand`).
 
 ## Why a dedicated lightweight player (the performance decision)
@@ -88,7 +88,7 @@ object with its own music handle but **rides that shared device**. It is a **sec
   the main player's audio.
 - It must **not** close the shared device itself; only the main (teardown-enabled) player may.
 - It **is** registered with `AudioDeviceRegistry` so the issue-#81 idle/lock/suspend release
-  (`SleepCoordinator` → `ReleaseAllDevices`) sees its open device via `IsAnyDeviceOpen`; the actual
+  (`SleepCoordinator` -> `ReleaseAllDevices`) sees its open device via `IsAnyDeviceOpen`; the actual
   close is performed by the main player on the shared device.
 
 Net: an achievement sound that opened the shared device is torn down after
@@ -119,5 +119,5 @@ Windows sleep. See `docs/dev_docs/` issue-#81 notes and `src/Services/SleepCoord
 ## History
 
 - v1.5.10 — initial release: single `playniteachievements/{rarity}` URI, one sound for all tiers,
-  dedicated lightweight SDL2 player. Proposed by the Playnite Achievements dev as PA↔UPS
+  dedicated lightweight SDL2 player. Proposed by the Playnite Achievements dev as PA<->UPS
   cross-support (PA owns the visual notification, UPS owns the audio + user config).
