@@ -345,6 +345,11 @@ The `true`→`false` **edge** is the point — it re-arms so the next change pul
 
 Combine with `NowPlayingTitle` / `NowPlayingArtist` / `NowPlayingAlbumArtPath` to show *what* changed inside the toast.
 
+#### Basic toast
+
+A minimal slide-in toast. Good starting point — see the **ready-made template** below for a
+polished, theme-integrated version.
+
 ⚠️ **Style storyboards can't use `TargetName`.** A `Storyboard` inside a `Style` (as above) may only animate the **styled element itself** — WPF throws *"A Storyboard tree in a Style cannot specify a TargetName"* and Playnite crashes if you add `Storyboard.TargetName="..."`. So don't reference a named child. To animate a transform (e.g. slide the toast in), give the styled element its own `RenderTransform` and animate it **by property path**, no name:
 
 ```xml
@@ -376,6 +381,88 @@ Combine with `NowPlayingTitle` / `NowPlayingArtist` / `NowPlayingAlbumArtPath` t
 ```
 
 If you need to animate several *different* named children together, drive the storyboard from the element's own `Triggers`/`ControlTemplate.Triggers` (where `TargetName` is allowed) instead of a `Style`.
+
+#### Ready-made "Now Playing" toast template
+
+A complete, drop-in toast — slides in from the top-right on each track change, holds ~4.5s, slides
+out — with album art + title + artist bound to the live now-playing data. Contributed by **Mike
+Aniki** (ANIKI REMAKE). Notes on what makes it robust:
+
+- Uses your theme's `DynamicResource` brushes/styles (`BackgroundMenu`, `NotificationBorder`,
+  `TextHighlightBrush`, `TextBlockBaseStyle`) so it matches the theme instead of hardcoded colors —
+  swap these for whatever your theme exposes.
+- `MaxWidth` on the border + `TextWrapping="Wrap"` on the title/artist so long track names display
+  fully instead of being clipped.
+- `RenderOptions.BitmapScalingMode="Fant"` on the album art for crisp scaling.
+
+```xml
+<Border HorizontalAlignment="Right"
+        VerticalAlignment="Top"
+        Margin="0,130,40,0"
+        Opacity="0"
+        MinHeight="75"
+        MinWidth="250"
+        MaxWidth="500"
+        Background="{DynamicResource BackgroundMenu}"
+        BorderBrush="{DynamicResource NotificationBorder}"
+        CornerRadius="10"
+        Padding="14,10"
+        BorderThickness="1">
+
+    <!-- transform used for the slide-in (no x:Name — Style storyboards can't reference names) -->
+    <Border.RenderTransform>
+        <TranslateTransform X="40"/>
+    </Border.RenderTransform>
+
+    <Border.Style>
+        <Style TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <!-- slide + fade IN -->
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="1" Duration="0:0:0.25"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X"
+                                                 To="0" Duration="0:0:0.25"/>
+                                <!-- hold ~4.5s, then slide + fade OUT (change this to taste) -->
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="0" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X"
+                                                 To="40" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Border.Style>
+
+    <!-- toast content: live now-playing data -->
+    <StackPanel Orientation="Horizontal">
+        <Border CornerRadius="6" ClipToBounds="True" Width="60" Height="60" Margin="0,0,12,0">
+            <Image Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"
+                   Stretch="UniformToFill"
+                   RenderOptions.BitmapScalingMode="Fant"/>
+        </Border>
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="♫ NOW PLAYING"
+                       Foreground="{DynamicResource TextHighlightBrush}"
+                       Style="{DynamicResource TextBlockBaseStyle}"
+                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2" Opacity="0.7"/>
+            <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}"
+                       Style="{DynamicResource TextBlockBaseStyle}"
+                       FontWeight="SemiBold" FontSize="20"
+                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+            <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}"
+                       Style="{DynamicResource TextBlockBaseStyle}"
+                       FontSize="18" Opacity="0.8"
+                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+        </StackPanel>
+    </StackPanel>
+</Border>
+```
 
 ### Now-playing mini-player elements (v1.5.7+)
 
