@@ -222,6 +222,27 @@ namespace UniPlaySong.Services
                 }
             }
 
+            // v1.5.10: achievement sounds moved to the pack model. The master default sound keeps
+            // its BundledJingle picker; older configs may point it at a celebration-pack file
+            // ("Streets of Rage ...") that isn't in the achievement pack, leaving the ComboBox blank.
+            // Reset a master SelectedAchievementJingle that isn't a valid achievement-pack file to
+            // the bundled default. The per-rarity Selected*Jingle fields are gone (replaced by
+            // AchievementSoundPack, which defaults to PAStarterPack via its backing field, so old
+            // configs missing the key adopt it automatically). Idempotent.
+            var achievementFiles = new HashSet<string>(
+                BundledJingleService.GetAchievementJingles().Select(j => j.File),
+                StringComparer.OrdinalIgnoreCase);
+            if (achievementFiles.Count > 0)
+            {
+                const string def = BundledJingleService.DefaultAchievementJingle;
+                var cur = settings.SelectedAchievementJingle;
+                if (!string.IsNullOrEmpty(cur) && !achievementFiles.Contains(cur))
+                {
+                    settings.SelectedAchievementJingle = achievementFiles.Contains(def) ? def : cur;
+                    changed = true;
+                }
+            }
+
             if (changed)
             {
                 settings.ExternalAudioExcludedApps = string.Join(", ", currentExclusions);

@@ -21,6 +21,7 @@ namespace UniPlaySong.Tests.Services
                 if (Throws) throw new System.InvalidOperationException("boom");
                 Open = false;
             }
+            public void PrewarmAudioDevice() { Open = true; }
             public bool IsAudioDeviceOpen => Open;
             public string AudioDeviceLabel => Label;
         }

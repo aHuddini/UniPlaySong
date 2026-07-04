@@ -176,5 +176,23 @@
     "source": "Sound Effect",
     "license": "Creative Commons",
     "category": "abandoned"
+  },
+  {
+    "file": "Achievements/Trophy_Notif.mp3",
+    "title": "Trophy Notification (Default)",
+    "artist": "",
+    "console": "",
+    "source": "UniPlaySong",
+    "license": "Bundled",
+    "category": "achievement"
+  },
+  {
+    "file": "Achievements/Trophy_Platine.mp3",
+    "title": "Platinum Trophy",
+    "artist": "",
+    "console": "",
+    "source": "UniPlaySong",
+    "license": "Bundled",
+    "category": "achievement"
   }
 ]

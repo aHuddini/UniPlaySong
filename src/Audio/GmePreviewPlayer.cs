@@ -148,6 +148,7 @@ namespace UniPlaySong.Audio
         {
             lock (_lock) { StopInternal(); }
         }
+        public void PrewarmAudioDevice() { } // transient preview player; nothing to prewarm
 
         public void Dispose()
         {

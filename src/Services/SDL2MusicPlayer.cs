@@ -432,6 +432,22 @@ namespace UniPlaySong.Services
 
         public string AudioDeviceLabel => "MainPlayer(SDL2)";
 
+        // Opens the process-wide SDL audio device ahead of first play. Idempotent — InitializeSDL()
+        // is guarded by the static _isSDLAudioInitialized, so this is a cheap no-op when the shared
+        // device is already open (the usual case, since SDL2 opens once for the whole process).
+        public void PrewarmAudioDevice()
+        {
+            try
+            {
+                if (_isDisposed || _isSDLAudioInitialized) return;
+                InitializeSDL();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"SDL2 PrewarmAudioDevice failed: {ex.Message}");
+            }
+        }
+
         // Releases the process-wide SDL audio device immediately (idle/lock/suspend). Only the
         // teardown-enabled (main) instance may close it — a secondary jingle player must not, or
         // it would kill audio for the main player. Idempotent; reopens lazily on next Load()/Play().

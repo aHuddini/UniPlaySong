@@ -18,24 +18,37 @@ assembly, no compile-time dependency, safe if either is absent.
 ## The URI contract
 
 ```
-playnite://uniplaysong/playniteachievements/{rarity}
+playnite://uniplaysong/playniteachievements/{tier}
 ```
 
-`{rarity}` is one of `common | uncommon | rare | ultrarare | capstone` (case-insensitive).
+`{tier}` is one of (case-insensitive; the segment names follow the Playnite Achievements command labels):
+
+| Tier segment            | Rarity      | Badge     |
+|-------------------------|-------------|-----------|
+| `commonachievement`     | Common      | bronze    |
+| `uncommonachievement`   | Uncommon    | silver    |
+| `rareachievement`       | Rare        | gold      |
+| `ultrarareachievement`  | Ultra-Rare  | platinum  |
+| `capstoneachievement`   | Capstone    | perfect   |
+
+`capstoneachievement` = platinum trophy / 100% completion.
 
 - **Namespaced** under `playniteachievements` so other source plugins can have their own path later
   (`uniplaysong/<source>/...`).
-- **Rarity is carried by the path** — no query args, no name parsing.
+- **Tier is carried by the path** — no query args, no name parsing on the caller side.
 - **Fire-and-forget** — no return value; UniPlaySong plays on receipt.
-- **Forward-compatible** — an unrecognized or missing tier still plays the configured sound; never errors.
-- **Current behavior:** all five tiers play the **same** user-configured sound. Per-rarity override
-  sounds are a planned, non-breaking follow-up (see "Extending" below).
+- **Forward-compatible** — an unrecognized or missing tier plays the master/default sound; never errors.
+- **Per-rarity sounds:** each tier resolves to a sound via the user's selected **Achievement Sound
+  Pack** (Theme / PA Starter / Custom), falling back to a single master/default sound. So the caller
+  always fires the tier; whether it sounds distinct is the user's choice in UniPlaySong's settings.
 
 ### Caller side (e.g. Playnite Achievements)
 
 ```csharp
 // On unlock — pick the tier segment, fire the URI. No reference to UniPlaySong.
-string tier = /* "common" | "uncommon" | "rare" | "ultrarare" | "capstone" */;
+// tier = "commonachievement" | "uncommonachievement" | "rareachievement"
+//        | "ultrarareachievement" | "capstoneachievement"
+string tier = /* map trophy rarity to one of the above */;
 try { System.Diagnostics.Process.Start($"playnite://uniplaysong/playniteachievements/{tier}"); }
 catch { /* UPS not installed / URI unhandled — ignore */ }
 ```
@@ -58,7 +71,8 @@ Key files:
 - `src/Services/ExternalControlService.cs` — URI dispatch (`playniteachievements` case, `HandlePlayniteAchievement`). `args[1]` is the rarity (parsed; currently informational).
 - `src/Services/JingleService.cs` — `JingleEvent.Achievement`, `GetConfigForEvent`, and the **separate** `PlayExternalSound` / `_externalPlayer` / `_createLightweightPlayer` path.
 - `src/UniPlaySong.cs` — registers the URI source; constructs `JingleService` with the lightweight (SDL2) factory.
-- `src/UniPlaySongSettings.cs` — `EnableAchievementSound`, `AchievementSoundType`, `SelectedAchievementJingle`, `AchievementSoundPath` (off by default; these are persisted user settings, NOT `[JsonIgnore]` runtime state).
+- `src/UniPlaySongSettings.cs` — `EnableAchievementSound`, `AchievementSoundType`, `SelectedAchievementJingle`, `AchievementSoundPath`, `AchievementSoundPack` (enum), and five `{Rarity}AchievementSoundPath` (off by default; persisted user settings, NOT `[JsonIgnore]` runtime state).
+- `src/Services/BundledJingleService.cs` — `GetPAStarterPackPath(rarity)`; `src/Common/PlayniteThemeHelper.cs` — `FindThemeAchievementSound(rarity)` / `CountThemeAchievementSounds()`.
 - Settings UI: `src/UniPlaySongSettingsView.xaml(.cs)` (Gamification section), `src/UniPlaySongSettingsViewModel.cs` (`PreviewAchievementSoundCommand`, `BrowseAchievementSoundCommand`).
 
 ## Why a dedicated lightweight player (the performance decision)
@@ -102,22 +116,51 @@ Windows sleep. See `docs/dev_docs/` issue-#81 notes and `src/Services/SleepCoord
 - Plays over a running game (UPS music is already paused; no ducking needed).
 - Volume follows `MusicVolume` for now.
 
+## Per-rarity sound resolution (sound-pack model)
+
+`HandlePlayniteAchievement` maps each tier segment to a `JingleEvent`
+(`AchievementCommon/Uncommon/Rare/UltraRare/Capstone`), plus `Achievement` for the master/default.
+
+The global gate is `EnableAchievementSound`. When on, a rarity event resolves to a **file path**
+directly (not a `JingleSoundConfig`) via `JingleService.ResolveAchievementRarityPath`, driven by the
+`AchievementSoundPack` setting:
+
+```
+Theme         -> PlayniteThemeHelper.FindThemeAchievementSound(rarity)  // audio/Achievements/{rarity}.{wav,mp3,ogg,flac}
+                 ?? PA Starter Pack file for {rarity}
+PAStarterPack -> Jingles/Achievements/PAStarterPack/{rarity}.mp3        // bundled Pixabay set (default)
+Custom        -> {Rarity}AchievementSoundPath (if set + exists)
+                 ?? PA Starter Pack file for {rarity}
+```
+
+If the pack yields nothing, the event falls back to the **master default sound**
+(`AchievementSoundType` / `SelectedAchievementJingle` / `AchievementSoundPath`, or a system beep). The
+master event itself still goes through `GetConfigForEvent` → `MasterAchievementConfig`. All achievement
+events play on the lightweight external-sound path (`PlayExternalSound`).
+
+Settings: `EnableAchievementSound` (gate + master), master `AchievementSoundType` /
+`SelectedAchievementJingle` / `AchievementSoundPath`, `AchievementSoundPack` (enum, default
+`PAStarterPack`), and five custom paths `{Rarity}AchievementSoundPath` (used only in Custom mode).
+Browsing a custom file for any rarity in the settings UI auto-switches the pack to `Custom`.
+
+Rarity badge icons (`Images/Achievements/badge-{bronze,silver,gold,platinum,perfect}.png`, resolved
+via `BundledImageService`) label each per-rarity file row. The PA Starter Pack sounds are royalty-free
+Pixabay SFX; badge art is derived from the Playnite Achievements plugin badges (MIT) — see `NOTICES.txt`.
+
 ## Extending
 
-- **Per-rarity override sounds.** `HandlePlayniteAchievement` already parses `args[1]` (the tier).
-  To vary the sound: add per-rarity settings, branch on the tier in `GetConfigForEvent` (or a new
-  resolver), keep the master sound as the default when an override is blank. Non-breaking — the URI
-  contract is unchanged.
 - **Dedicated achievement volume.** Change the one line in `PlayExternalSound` that reads
   `settings.MusicVolume` to a new `AchievementVolume` setting (default = current behavior). Non-breaking.
 - **Trophy name / metadata.** The path can carry an extra segment
-  (`.../playniteachievements/{rarity}/{urlEncodedName}`) that v1 ignores — parse it when needed.
+  (`.../playniteachievements/{tier}/{urlEncodedName}`) that today's code ignores — parse it when needed.
 - **Typed channel (optional, later).** If richer data + a return value is ever wanted, add a shared
   contract interface discovered via `PlayniteApi.Addons.Plugins.OfType<IUpsAchievementSink>()`,
   **alongside** — not replacing — the URI. The URI stays the zero-dependency default.
 
 ## History
 
-- v1.5.10 — initial release: single `playniteachievements/{rarity}` URI, one sound for all tiers,
-  dedicated lightweight SDL2 player. Proposed by the Playnite Achievements dev as PA<->UPS
-  cross-support (PA owns the visual notification, UPS owns the audio + user config).
+- v1.5.10 — achievement unlock sound, dedicated lightweight SDL2 player. Proposed by the Playnite
+  Achievements dev as PA<->UPS cross-support (PA owns the visual notification, UPS owns the audio +
+  user config). Shipped with five per-rarity tiers (common/uncommon/rare/ultrarare/capstone) driven by
+  a selectable **Achievement Sound Pack** (Theme / PA Starter / Custom) over a master/default fallback,
+  plus the bundled PA Starter Pack (Pixabay SFX) and PA-derived rarity badge icons.

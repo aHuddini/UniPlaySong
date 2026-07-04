@@ -15,6 +15,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Swap game music for the user's default music while a custom panel is open (tag editor, sidebar, etc.) — restore game music on close | `UPS_MusicControl_PauseGamePlayDefault` element (v1.5.3+) |
 | Bind UPS settings (Enable Music, Radio Mode, Calm Down, etc.) to checkboxes in your theme | `{PluginSettings}` markup (v1.4.6+) |
 | Ship a dedicated audio track that UPS plays as default music | `UPS_BackgroundAudio.mp3` in your theme's `audio/` folder (v1.5.2+) |
+| Ship per-rarity achievement unlock sounds | `audio/Achievements/{rarity}.wav` in your theme's folder (v1.5.10+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |
 | Drop in a ready-made Now-Playing overlay, transport bar, or minimal play/skip control | `UPS_MediaControllerOverlay` / `UPS_MediaControllerBar` / `UPS_MediaControllerCompact` elements (v1.5.8+) |
 
@@ -525,6 +526,28 @@ In Settings → Playback → Default Music Source → "Active Theme Music", UPS 
 
 UPS only activates Active Theme Music when the user is at the game library — never on the login screen. Themes that play `background.mp3` during login (Playnite's native behavior) keep working unchanged. Themes that handle login audio via WPF `MediaElement` (like Aniki ReMake) also keep working unchanged.
 
+### Ship achievement unlock sounds with your theme (v1.5.10+)
+
+Your theme can provide its own per-rarity achievement unlock sounds. Drop audio files in an `audio/Achievements/` subfolder of your theme, named by rarity:
+
+```
+YourTheme/
+├── audio/
+│   ├── UPS_BackgroundAudio.mp3
+│   └── Achievements/
+│       ├── common.wav       ← bronze
+│       ├── uncommon.wav      ← silver
+│       ├── rare.wav          ← gold
+│       ├── ultrarare.wav     ← platinum
+│       └── capstone.wav      ← perfect / 100%
+```
+
+- Rarity filenames: `common`, `uncommon`, `rare`, `ultrarare`, `capstone` (case-insensitive).
+- Extensions: `.wav`, `.mp3`, `.ogg`, `.flac` — first match wins.
+- Ship as many or as few as you like — the user's selected pack falls back to UPS's bundled **PA Starter Pack** for any rarity you don't provide, and to their master default sound if that's missing too.
+
+The user opts in via **Settings → Gamification → Achievement Unlock Sounds → Rarity sound pack → "Active theme's sounds"**. That screen shows how many of the five rarities your theme provides (`N/5`). Achievement sounds play over a running game (triggered by an external unlock plugin such as Playnite Achievements — UPS doesn't detect unlocks itself).
+
 ---
 
 ## 5. External control via URIs (v1.3.10+)
@@ -550,20 +573,19 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 
 ### Achievement / trophy unlock sound (v1.5.10+)
 
-For **plugins** (e.g. Playnite Achievements) — or a theme — that want UniPlaySong to play a console-style unlock sound when an achievement is earned. UniPlaySong doesn't detect unlocks; the caller fires the URI, and UniPlaySong plays the user's configured achievement sound (Playback → Gamification → "Play sound on achievement unlock"). It plays on a dedicated lightweight player, so it's near-instant and works over a running game; it no-ops if the user has the sound turned off.
+For **plugins** (e.g. Playnite Achievements) — or a theme — that want UniPlaySong to play a console-style unlock sound when an achievement is earned. UniPlaySong doesn't detect unlocks; the caller fires the URI, and UniPlaySong plays the user's configured achievement sound (Settings → **Gamification** → Achievement Unlock Sounds). It plays on a dedicated lightweight player, so it's near-instant and works over a running game; it no-ops if the user has the sound turned off.
 
-**Format:** `playnite://uniplaysong/playniteachievements/{rarity}` where `{rarity}` is one of
-`common`, `uncommon`, `rare`, `ultrarare`, `capstone`.
+**Format:** `playnite://uniplaysong/playniteachievements/{tier}`
 
-| Rarity | URI |
-|---|---|
-| Common | `playnite://uniplaysong/playniteachievements/common` |
-| Uncommon | `playnite://uniplaysong/playniteachievements/uncommon` |
-| Rare | `playnite://uniplaysong/playniteachievements/rare` |
-| Ultra-rare | `playnite://uniplaysong/playniteachievements/ultrarare` |
-| Capstone (platinum) | `playnite://uniplaysong/playniteachievements/capstone` |
+| Rarity | Tier segment | URI |
+|---|---|---|
+| Common | `commonachievement` | `playnite://uniplaysong/playniteachievements/commonachievement` |
+| Uncommon | `uncommonachievement` | `playnite://uniplaysong/playniteachievements/uncommonachievement` |
+| Rare | `rareachievement` | `playnite://uniplaysong/playniteachievements/rareachievement` |
+| Ultra-rare | `ultrarareachievement` | `playnite://uniplaysong/playniteachievements/ultrarareachievement` |
+| Capstone (platinum / 100%) | `capstoneachievement` | `playnite://uniplaysong/playniteachievements/capstoneachievement` |
 
-All tiers play the same configured sound for now (per-rarity override sounds are planned). Case-insensitive; unknown tiers still play the sound (forward-compatible).
+Each tier plays that rarity's own sound if the user set one, otherwise a shared **default** achievement sound. Case-insensitive; an unknown/missing tier plays the default (forward-compatible).
 
 ---
 

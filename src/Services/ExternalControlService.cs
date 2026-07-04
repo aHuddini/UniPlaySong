@@ -124,12 +124,28 @@ namespace UniPlaySong.Services
 
         private void HandlePlayniteAchievement(string[] arguments)
         {
-            // arguments[0] == "playniteachievements"; arguments[1] (optional) == rarity tier
-            // (common | uncommon | rare | ultrarare | capstone). Every tier — recognized or not —
-            // plays the same configured achievement sound for now, so a newer PA that adds a tier
-            // still works. Per-rarity override sounds are a planned follow-up; arguments[1] is where
-            // that branch will read the tier.
-            _jingleService?.PlayForEvent(JingleEvent.Achievement, _getSettings?.Invoke());
+            // arguments[0] == "playniteachievements"; arguments[1] (optional) == the rarity tier
+            // segment (Playnite Achievements' command names, lowercased):
+            //   commonachievement | uncommonachievement | rareachievement | ultrarareachievement | capstoneachievement
+            // Each maps to its own JingleEvent; the event resolves to that rarity's sound, or falls
+            // back to the master achievement sound when the rarity has none. An unknown or missing
+            // tier plays the master sound, so a newer PA that adds a tier still works.
+            var tier = arguments != null && arguments.Length > 1
+                ? arguments[1].ToLowerInvariant()
+                : null;
+
+            JingleEvent evt;
+            switch (tier)
+            {
+                case "commonachievement":     evt = JingleEvent.AchievementCommon;    break;
+                case "uncommonachievement":   evt = JingleEvent.AchievementUncommon;  break;
+                case "rareachievement":       evt = JingleEvent.AchievementRare;      break;
+                case "ultrarareachievement":  evt = JingleEvent.AchievementUltraRare; break;
+                case "capstoneachievement":   evt = JingleEvent.AchievementCapstone;  break;
+                default:                      evt = JingleEvent.Achievement;          break; // master fallback
+            }
+
+            _jingleService?.PlayForEvent(evt, _getSettings?.Invoke());
         }
 
         private void Notify(string message)

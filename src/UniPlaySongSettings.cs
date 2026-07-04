@@ -188,6 +188,16 @@ namespace UniPlaySong
         CustomFile      // User-selected audio file (.wav recommended)
     }
 
+    // Which set of per-rarity achievement sounds to use. Resolves a file per rarity;
+    // any gap falls through to the master default sound (see JingleService).
+    public enum AchievementSoundPack
+    {
+        Theme,          // active fullscreen theme's audio/Achievements/{rarity}.* (falls back to PA Starter per rarity)
+        PAStarterPack,  // bundled Pixabay pack (Jingles/Achievements/PAStarterPack/{rarity}.mp3)
+        Custom          // user's own per-rarity files ({Rarity}AchievementSoundPath), PA Starter per rarity where unset
+    }
+
+
     public enum CelebrationToastTheme
     {
         Gold = 0,        // Default — amber/gold (#FFC107)
@@ -371,12 +381,24 @@ namespace UniPlaySong
         private string abandonedToastMessage = "Filed away without finishing {gameName}.";
 
         // Gamification — Achievement/trophy unlock sound. Fired via the
-        // playnite://uniplaysong/playniteachievements/{rarity} URI (e.g. by the Playnite Achievements
-        // plugin). Off by default. One sound for all rarities for now; per-rarity overrides planned.
+        // playnite://uniplaysong/playniteachievements/{tier} URI (e.g. by the Playnite Achievements
+        // plugin). This is the MASTER / fallback sound: the five rarity tiers below each have their
+        // own optional sound and fall back to this one when not enabled. Off by default.
         private bool enableAchievementSound = false;
         private CelebrationSoundType achievementSoundType = CelebrationSoundType.BundledJingle;
-        private string selectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+        private string selectedAchievementJingle = "Achievements/Trophy_Notif.mp3";
         private string achievementSoundPath = string.Empty;
+
+        // Which per-rarity sound pack to use. PA Starter Pack (bundled Pixabay set) by default.
+        // Tier -> badge: Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum,
+        // Capstone=perfect (100%). Each rarity's custom file (below) is used only in Custom mode;
+        // any unresolved rarity falls back to PA Starter, then to the master sound above.
+        private AchievementSoundPack achievementSoundPack = AchievementSoundPack.PAStarterPack;
+        private string commonAchievementSoundPath = string.Empty;
+        private string uncommonAchievementSoundPath = string.Empty;
+        private string rareAchievementSoundPath = string.Empty;
+        private string ultraRareAchievementSoundPath = string.Empty;
+        private string capstoneAchievementSoundPath = string.Empty;
 
         // Download notifications
         private bool playSoundOnDownloadComplete = false;
@@ -1101,8 +1123,8 @@ namespace UniPlaySong
         // Play a sound when an achievement/trophy is unlocked. Triggered externally via the
         // playnite://uniplaysong/playniteachievements/{rarity} URI (e.g. by the Playnite Achievements
         // plugin) — UniPlaySong doesn't detect unlocks itself. Uses the dedicated jingle player, so it
-        // plays fine over a running game. Off by default. (One sound for all rarities for now;
-        // per-rarity override sounds are a planned, non-breaking follow-up.)
+        // plays fine over a running game. Off by default. This is the global gate AND the master
+        // fallback sound; the per-rarity sound comes from the selected AchievementSoundPack below.
         public bool EnableAchievementSound
         {
             get => enableAchievementSound;
@@ -1128,6 +1150,18 @@ namespace UniPlaySong
             get => achievementSoundPath;
             set { achievementSoundPath = value; OnPropertyChanged(); }
         }
+
+        // ── Per-rarity achievement sound pack ──
+        // Which set of rarity sounds to use. Custom mode uses the {Rarity}AchievementSoundPath files
+        // below; Theme/PAStarterPack/Custom all fall back to the master sound above for any gap.
+        public AchievementSoundPack AchievementSoundPack { get => achievementSoundPack; set { achievementSoundPack = value; OnPropertyChanged(); } }
+        // Custom per-rarity files (used only when AchievementSoundPack == Custom). Tier -> badge:
+        // Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum, Capstone=perfect (100%).
+        public string CommonAchievementSoundPath { get => commonAchievementSoundPath; set { commonAchievementSoundPath = value; OnPropertyChanged(); } }
+        public string UncommonAchievementSoundPath { get => uncommonAchievementSoundPath; set { uncommonAchievementSoundPath = value; OnPropertyChanged(); } }
+        public string RareAchievementSoundPath { get => rareAchievementSoundPath; set { rareAchievementSoundPath = value; OnPropertyChanged(); } }
+        public string UltraRareAchievementSoundPath { get => ultraRareAchievementSoundPath; set { ultraRareAchievementSoundPath = value; OnPropertyChanged(); } }
+        public string CapstoneAchievementSoundPath { get => capstoneAchievementSoundPath; set { capstoneAchievementSoundPath = value; OnPropertyChanged(); } }
 
         public bool ShowCelebrationToast
         {

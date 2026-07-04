@@ -23,7 +23,13 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.5.10
 
 ### Added
-- **Achievement unlock sounds (Playnite Achievements integration).** UniPlaySong can now play a console-style "trophy unlocked" fanfare when you earn an achievement — the Playnite Achievements plugin (or any plugin/theme) tells UniPlaySong an achievement was unlocked, and UniPlaySong plays the sound you configured. Turn it on and pick your sound under **Playback → Gamification → "Play sound on achievement unlock."** It plays instantly, even over a running game.
+- **Achievement unlock sounds.** Plays a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity — bundled PA Starter Pack, your theme's own sounds, or your own files. New **Gamification** settings tab.
+
+### Fixed & Improved
+- **No more lag** on completion/abandoned jingles or settings sound-previews (addresses an issue #81 audio-engine slowdown) — both now play instantly. Also fixed the master achievement custom-file preview playing the wrong sound.
+
+### Changed
+- **Settings tabs tidied** — Search merged into Downloads; Theme Support moved next to Editing.
 
 ### Previous Version
 - **v1.5.9**: Music-change notifications for themes — UniPlaySong exposes live "the music just changed" data so a theme can pop up a Now Playing toast on each track change, console-style, instead of a permanent readout. Ready-made demo toast in the Theme Integration Guide.
@@ -116,12 +122,13 @@ Download or update directly from the Playnite add-on database, or browse Generic
 
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), completion fanfare, random game picker music, game property filter, filter mode, radio mode
+- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), random game picker music, game property filter, filter mode, radio mode
+- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, abandoned-status sound + toast
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
-- **Downloads**: Tool paths, cookie source, YouTube search and download
-- **Search**: Search result caching and auto-search hints database
+- **Theme Support**: Compatibility options for theme developers (overlay/video pause opt-outs, PS5-Experience mode)
+- **Downloads**: Tool paths, cookie source, YouTube search and download, search caching and hints database
 - **Migration**: Import/export from PlayniteSound
 - **Cleanup**: Storage management, reset options, factory reset
 - **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics, icon glow

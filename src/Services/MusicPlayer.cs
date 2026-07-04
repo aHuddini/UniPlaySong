@@ -375,6 +375,7 @@ namespace UniPlaySong.Services
         public bool IsAudioDeviceOpen => false;
         public string AudioDeviceLabel => "MainPlayer(WPF)";
         public void ReleaseAudioDevice() { }
+        public void PrewarmAudioDevice() { } // WPF opens its device per-media; nothing to prewarm
 
         private void OnMediaEnded(object sender, EventArgs e)
         {

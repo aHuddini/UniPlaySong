@@ -208,6 +208,32 @@ Source:    Sony PlayStation 2 system menu (uncertain redistribution status).
            distribution per .gitignore.
 
 
+PA Starter Pack — achievement rarity sounds (Jingles/Achievements/PAStarterPack/*.mp3)
+--------------------------------------------------------------------------------------
+Purpose:    Default per-rarity achievement unlock sounds (the "PA Starter Pack").
+License:    Pixabay Content License — royalty-free.
+Source:     https://pixabay.com/sound-effects/
+Rarity -> original Pixabay filename:
+  common.mp3    <- (Common) PIXABAY - lolo - Start.mp3
+  uncommon.mp3  <- (Uncommon) PIXABAY - lesiakower - level-up-enhancement.mp3
+  rare.mp3      <- (Rare) PIXABAY - mrstokes 302 - Success Videogame - SFX.mp3
+  ultrarare.mp3 <- (UltraRare) PIXABAY - lolo - Powered Up 3.mp3
+  capstone.mp3  <- (Capstone) PIXABAY - cartoon music game sfx - Cartoon Game Upgrade.mp3
+Modifications: Copied and renamed to {rarity}.mp3; audio otherwise unchanged. The
+            labeled originals are kept alongside in Jingles/Achievements/ for provenance.
+
+
+Achievement rarity badge art (Images/Achievements/badge-*.png)
+--------------------------------------------------------------
+Purpose:    Rarity badge icons (bronze/silver/gold/platinum/perfect) shown next
+            to the per-rarity achievement-sound settings.
+Source:     Derived (SVG -> PNG) from the Playnite Achievements plugin's badge
+            artwork: https://github.com/justin-delano/PlayniteAchievements
+License:    MIT — Copyright (c) 2026 Justin Delano
+Linkage:    Bundled PNGs in the .pext (Images/Achievements/).
+Modifications: Rasterized from the original .svg badges to .png; otherwise unchanged.
+
+
 External Tools (Not Bundled — Installed Separately by User)
 ============================================================
 

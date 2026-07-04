@@ -52,6 +52,14 @@ namespace UniPlaySong.Common
         // function of the CURRENT theme rather than a value persisted from a prior one.
         private static string _cachedThemeId;
 
+        // Per-rarity achievement-sound cache. Keyed by rarity; wiped whenever the active theme
+        // changes (tracked by _achievementThemeId) or InvalidateCache() runs. A cached null means
+        // "scanned, theme has no sound for this rarity" — distinct from "not scanned yet".
+        private static readonly System.Collections.Generic.Dictionary<string, string> _achievementSoundCache =
+            new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static string _achievementThemeId;
+        private const string AchievementAudioSubfolder = "Achievements";
+
         // Call once during plugin initialization to enable active theme lookup
         public static void Initialize(IPlayniteAPI api)
         {
@@ -89,6 +97,62 @@ namespace UniPlaySong.Common
             _activeThemeScanned = false;
             _activeThemeUpsAudioPath = null;
             _cachedThemeId = null;
+            _achievementSoundCache.Clear();
+            _achievementThemeId = null;
+        }
+
+        // Returns the active fullscreen theme's achievement sound for a rarity
+        // (common|uncommon|rare|ultrarare|capstone) — audio/Achievements/{rarity}.{wav,mp3,ogg,flac},
+        // first match — or null if the theme provides none. Cached per rarity, invalidated on theme
+        // change (same mechanism as FindActiveThemeUpsAudioFile).
+        public static string FindThemeAchievementSound(string rarity)
+        {
+            if (string.IsNullOrWhiteSpace(rarity)) return null;
+            var key = rarity.Trim().ToLowerInvariant();
+
+            var currentThemeId = GetActiveFullscreenThemeId();
+            if (!string.Equals(_achievementThemeId, currentThemeId, StringComparison.OrdinalIgnoreCase))
+            {
+                _achievementSoundCache.Clear();
+                _achievementThemeId = currentThemeId;
+            }
+
+            if (_achievementSoundCache.TryGetValue(key, out var cached))
+                return cached;
+
+            var resolved = ScanForThemeAchievementSound(key);
+            _achievementSoundCache[key] = resolved;
+            return resolved;
+        }
+
+        // Returns how many of the five rarities the active theme provides a sound for (0..5).
+        // Drives the settings status line ("Active theme provides N/5 rarity sounds").
+        public static int CountThemeAchievementSounds()
+        {
+            var rarities = new[] { "common", "uncommon", "rare", "ultrarare", "capstone" };
+            int count = 0;
+            foreach (var r in rarities)
+                if (!string.IsNullOrEmpty(FindThemeAchievementSound(r))) count++;
+            return count;
+        }
+
+        private static string ScanForThemeAchievementSound(string rarity)
+        {
+            try
+            {
+                var themeDir = ResolveActiveThemeDirectory();
+                if (string.IsNullOrWhiteSpace(themeDir)) return null;
+
+                var achDir = Path.Combine(themeDir, "audio", AchievementAudioSubfolder);
+                if (!Directory.Exists(achDir)) return null;
+
+                return FindFileWithBaseName(achDir, rarity);
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger()?.Error(ex, "PlayniteThemeHelper: Error finding theme achievement sound");
+                return null;
+            }
         }
 
         // Returns rich status for the settings UI: which state to show, what theme is active,

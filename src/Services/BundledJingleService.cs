@@ -47,6 +47,7 @@ namespace UniPlaySong.Services
     {
         private const string CategoryCelebration = "celebration";
         private const string CategoryAbandoned = "abandoned";
+        private const string CategoryAchievement = "achievement";
 
         private static List<BundledJingleInfo> _jingles;
         private static string _jinglesDirectory;
@@ -76,6 +77,38 @@ namespace UniPlaySong.Services
             return GetAllJingles()
                 .Where(j => string.Equals(j.Category, CategoryAbandoned, System.StringComparison.OrdinalIgnoreCase))
                 .ToList();
+        }
+
+        // Returns jingles tagged "achievement" — the bundled "Default" achievement/trophy pack
+        // (master default + platinum), shown in the achievement-sound pickers.
+        public static List<BundledJingleInfo> GetAchievementJingles()
+        {
+            return GetAllJingles()
+                .Where(j => string.Equals(j.Category, CategoryAchievement, System.StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // The master/default achievement sound filename ("Trophy Notif"). Falls back to the first
+        // achievement jingle, then empty, if the expected file is missing.
+        public const string DefaultAchievementJingle = "Achievements/Trophy_Notif.mp3";
+
+        // Full path to the bundled PA Starter Pack sound for a rarity (common|uncommon|rare|
+        // ultrarare|capstone), or null if the file is missing. Used as the pack default and as the
+        // per-rarity fallback for the Theme and Custom packs.
+        public static string GetPAStarterPackPath(string rarity)
+        {
+            var r = (rarity ?? string.Empty).Trim().ToLowerInvariant();
+            switch (r)
+            {
+                case "common":
+                case "uncommon":
+                case "rare":
+                case "ultrarare":
+                case "capstone":
+                    return ResolveJinglePath($"Achievements/PAStarterPack/{r}.mp3");
+                default:
+                    return null;
+            }
         }
 
         private static List<BundledJingleInfo> GetAllJingles()

@@ -154,6 +154,16 @@ if (Test-Path $jinglesDir) {
     Write-Host "  WARNING: Jingles folder not found (bundled jingles missing)" -ForegroundColor Yellow
 }
 
+# Copy Images folder (bundled UI art — achievement rarity badges, etc.)
+$imagesDir = Join-Path $projectRoot "src\Images"
+if (Test-Path $imagesDir) {
+    $destImages = Join-Path $packageDir "Images"
+    Copy-Item $imagesDir -Destination $destImages -Recurse -Force
+    Write-Host "  Copied folder: Images" -ForegroundColor Gray
+} else {
+    Write-Host "  WARNING: Images folder not found (bundled art missing)" -ForegroundColor Yellow
+}
+
 # Copy main DLL
 Copy-Item $dllPath -Destination $packageDir -Force
 Write-Host "  Copied: UniPlaySong.dll" -ForegroundColor Gray

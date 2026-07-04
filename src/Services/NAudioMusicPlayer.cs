@@ -1043,6 +1043,22 @@ namespace UniPlaySong.Services
 
         public string AudioDeviceLabel => "MainPlayer(NAudio)";
 
+        // Opens the persistent audio device ahead of a first Load()/Play() so that first jingle
+        // doesn't pay the ~700ms cold endpoint-open. Idempotent (no-op if already open). No song loaded.
+        public void PrewarmAudioDevice()
+        {
+            try
+            {
+                if (_isDisposed || _persistentLayerInitialized) return;
+                EnsurePersistentLayer();
+                _fileLogger?.Debug("[NAudio] PrewarmAudioDevice() — persistent layer opened ahead of first play");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[{LogPrefix}] PrewarmAudioDevice failed: {ex.Message}");
+            }
+        }
+
         // Releases the persistent audio device immediately (idle/lock/suspend) so Windows can
         // sleep. Idempotent; no-op if not open. The device rebuilds lazily on the next Load()/Play().
         public void ReleaseAudioDevice()

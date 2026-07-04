@@ -9,6 +9,11 @@ namespace UniPlaySong.Services
         // The device is expected to reopen lazily on the next Load()/Play().
         void ReleaseAudioDevice();
 
+        // Opens this holder's OS audio device/stream ahead of time (idempotent; never throws) so the
+        // first playback doesn't pay the ~700ms cold endpoint-open. No song is loaded or played.
+        // Used to prewarm the jingle player at startup / after idle-exit (issue #81).
+        void PrewarmAudioDevice();
+
         // True if this holder currently has an OS audio device/stream open.
         bool IsAudioDeviceOpen { get; }
 

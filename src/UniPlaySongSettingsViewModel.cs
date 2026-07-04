@@ -19,6 +19,9 @@ namespace UniPlaySong
         private readonly UniPlaySong plugin;
         private UniPlaySongSettings settings;
         private MediaPlayer _jinglePreviewPlayer;
+        private int _previewGen;      // bumped per preview click
+        private int _previewOpenGen;  // gen of the most recent Open(); MediaOpened plays only if it still matches _previewGen
+        private double _previewVolume;
         private CancellationTokenSource _audioScanCts;
 
         public UniPlaySongSettingsViewModel(UniPlaySong plugin)
@@ -145,6 +148,55 @@ namespace UniPlaySong
 
         // Parallel list filtered to the "abandoned" category for the Abandoned-status sound picker
         public List<Services.BundledJingleInfo> AbandonedJingles => Services.BundledJingleService.GetAbandonedJingles();
+
+        // Bundled "Default" achievement pack (Trophy Notif + Platinum) for the achievement sound pickers
+        public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
+
+        // Plays a sound preview. Always tears down the previous player and builds a fresh one, and
+        // gates Play() on MediaOpened — WPF MediaPlayer.Open is async, so playing immediately can
+        // replay the previously-loaded file (the "preview doesn't update when I change the option"
+        // bug). Gating on MediaOpened guarantees the just-selected file is what plays.
+        // Persistent preview player: created once and reused. Reusing the same MediaPlayer keeps the
+        // Windows Media Foundation session warm, so only the FIRST preview pays the ~1-2s cold-start
+        // cost; later clicks play near-instantly. We never Close() it (that tears the session down and
+        // makes the next Open cold again) — we Stop() and re-Open the new source instead.
+        private void PlayPreview(string filePath)
+        {
+            _previewVolume = Settings.MusicVolume / 100.0;
+            ++_previewGen;
+
+            // Handler registered once and reused; it reads the fields (_previewGen/_previewVolume),
+            // NOT closure-captured locals — so every click's Open is honored, not just the first.
+            if (_jinglePreviewPlayer == null)
+            {
+                _jinglePreviewPlayer = new MediaPlayer();
+                _jinglePreviewPlayer.MediaOpened += (s, e) =>
+                {
+                    // Play only if no newer preview click has happened since this Open was issued.
+                    if (_previewOpenGen == _previewGen)
+                    {
+                        _jinglePreviewPlayer.Volume = _previewVolume;
+                        _jinglePreviewPlayer.Position = TimeSpan.Zero;
+                        _jinglePreviewPlayer.Play();
+                    }
+                };
+            }
+
+            _previewOpenGen = _previewGen;
+            try { _jinglePreviewPlayer.Stop(); } catch { }
+            _jinglePreviewPlayer.Open(new Uri(filePath));
+        }
+
+        // Achievement rarity badge image paths (bound by the per-rarity sound rows).
+        public string BadgeBronzePath => Services.BundledImageService.GetAchievementBadgePath("bronze");
+        public string BadgeSilverPath => Services.BundledImageService.GetAchievementBadgePath("silver");
+        public string BadgeGoldPath => Services.BundledImageService.GetAchievementBadgePath("gold");
+        public string BadgePlatinumPath => Services.BundledImageService.GetAchievementBadgePath("platinum");
+        public string BadgePerfectPath => Services.BundledImageService.GetAchievementBadgePath("perfect");
+
+        // Status line for the Theme pack: how many of the five rarities the active theme provides.
+        public string ThemeAchievementStatus =>
+            $"Active theme provides {Common.PlayniteThemeHelper.CountThemeAchievementSounds()}/5 rarity sounds (audio/Achievements/{{rarity}}.wav). Missing rarities use the PA Starter Pack.";
 
         // === Active Theme UPS Audio status surface (v1.5.2) ===
         // Bound by the Active Theme Music section in the Playback tab. Recomputed on demand
@@ -900,37 +952,16 @@ namespace UniPlaySong
             }
         });
 
+        // Previews the master BUNDLED JINGLE (the picker's selection) — independent of which sound-type
+        // radio is active, so the jingle row's Preview always previews the jingle.
         public ICommand PreviewAchievementSoundCommand => new Common.RelayCommand<object>((a) =>
         {
             try
             {
-                string fileToPlay = null;
-
-                if (Settings.AchievementSoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                    return;
-                }
-                else if (Settings.AchievementSoundType == CelebrationSoundType.BundledJingle)
-                {
-                    fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAchievementJingle);
-                }
-                else if (Settings.AchievementSoundType == CelebrationSoundType.CustomFile)
-                {
-                    if (!string.IsNullOrWhiteSpace(Settings.AchievementSoundPath)
-                        && File.Exists(Settings.AchievementSoundPath))
-                        fileToPlay = Settings.AchievementSoundPath;
-                }
-
+                var fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAchievementJingle);
                 if (!string.IsNullOrEmpty(fileToPlay))
                 {
-                    _jinglePreviewPlayer?.Stop();
-                    _jinglePreviewPlayer?.Close();
-
-                    _jinglePreviewPlayer = new MediaPlayer();
-                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
-                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
-                    _jinglePreviewPlayer.Play();
+                    PlayPreview(fileToPlay);
                 }
                 else
                 {
@@ -942,6 +973,132 @@ namespace UniPlaySong
                 PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
             }
         });
+
+        // Previews the master CUSTOM sound file directly — independent of which sound-type radio is
+        // active, so the custom row's Preview always previews the custom file (not the jingle).
+        public ICommand PreviewAchievementCustomSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(Settings.AchievementSoundPath)
+                    && File.Exists(Settings.AchievementSoundPath))
+                {
+                    PlayPreview(Settings.AchievementSoundPath);
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No custom sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
+        });
+
+        // ── Per-rarity achievement sound commands (parameterized by rarity to avoid 10 near-identical
+        // blocks). CommandParameter is "common"|"uncommon"|"rare"|"ultrarare"|"capstone". ──
+
+        // Browse for a rarity's custom file. Setting one auto-switches the pack to Custom, per the
+        // design: "if a user picks a rarity to customize, the main option switches to Custom."
+        public ICommand BrowseRarityAchievementSoundCommand => new Common.RelayCommand<object>((rarity) =>
+        {
+            var r = rarity?.ToString();
+            if (string.IsNullOrEmpty(r)) return;
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.ogg;*.flac|WAV Files (recommended)|*.wav|All Files|*.*"
+            };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                SetRarityAchievementSoundPath(r, dialog.FileName);
+                Settings.AchievementSoundPack = AchievementSoundPack.Custom;
+            }
+        });
+
+        // Previews the RESOLVED sound for a rarity under the current pack (custom file if set, else
+        // the pack default — same resolution the runtime uses).
+        public ICommand PreviewRarityAchievementSoundCommand => new Common.RelayCommand<object>((rarity) =>
+        {
+            var r = rarity?.ToString();
+            if (string.IsNullOrEmpty(r)) return;
+            try
+            {
+                var fileToPlay = ResolveRarityPreviewPath(r);
+                if (!string.IsNullOrEmpty(fileToPlay))
+                {
+                    PlayPreview(fileToPlay);
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No sound resolved for this rarity under the current pack.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
+        });
+
+        // Resolves the file a rarity would play under the current pack — mirrors JingleService's
+        // ResolveAchievementRarityPath, then falls back to the master default sound for preview.
+        private string ResolveRarityPreviewPath(string rarity)
+        {
+            string packPath = null;
+            switch (Settings.AchievementSoundPack)
+            {
+                case AchievementSoundPack.Theme:
+                    packPath = Common.PlayniteThemeHelper.FindThemeAchievementSound(rarity)
+                               ?? Services.BundledJingleService.GetPAStarterPackPath(rarity);
+                    break;
+                case AchievementSoundPack.Custom:
+                    var custom = GetRarityAchievementSoundPath(rarity);
+                    packPath = (!string.IsNullOrWhiteSpace(custom) && File.Exists(custom))
+                        ? custom
+                        : Services.BundledJingleService.GetPAStarterPackPath(rarity);
+                    break;
+                default:
+                    packPath = Services.BundledJingleService.GetPAStarterPackPath(rarity);
+                    break;
+            }
+            if (!string.IsNullOrEmpty(packPath)) return packPath;
+
+            // Master fallback (skip beep — nothing to preview as a file).
+            if (Settings.AchievementSoundType == CelebrationSoundType.BundledJingle)
+                return Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAchievementJingle);
+            if (Settings.AchievementSoundType == CelebrationSoundType.CustomFile
+                && !string.IsNullOrWhiteSpace(Settings.AchievementSoundPath)
+                && File.Exists(Settings.AchievementSoundPath))
+                return Settings.AchievementSoundPath;
+            return null;
+        }
+
+        // Reads a rarity's custom sound path from Settings.
+        private string GetRarityAchievementSoundPath(string rarity)
+        {
+            switch (rarity)
+            {
+                case "common":    return Settings.CommonAchievementSoundPath;
+                case "uncommon":  return Settings.UncommonAchievementSoundPath;
+                case "rare":      return Settings.RareAchievementSoundPath;
+                case "ultrarare": return Settings.UltraRareAchievementSoundPath;
+                case "capstone":  return Settings.CapstoneAchievementSoundPath;
+                default:          return null;
+            }
+        }
+
+        // Sets a rarity's custom sound path after a Browse.
+        private void SetRarityAchievementSoundPath(string rarity, string path)
+        {
+            switch (rarity)
+            {
+                case "common":    Settings.CommonAchievementSoundPath = path; break;
+                case "uncommon":  Settings.UncommonAchievementSoundPath = path; break;
+                case "rare":      Settings.RareAchievementSoundPath = path; break;
+                case "ultrarare": Settings.UltraRareAchievementSoundPath = path; break;
+                case "capstone":  Settings.CapstoneAchievementSoundPath = path; break;
+            }
+        }
 
         public ICommand PreviewAbandonedSoundCommand => new Common.RelayCommand<object>((a) =>
         {
@@ -967,13 +1124,7 @@ namespace UniPlaySong
 
                 if (!string.IsNullOrEmpty(fileToPlay))
                 {
-                    _jinglePreviewPlayer?.Stop();
-                    _jinglePreviewPlayer?.Close();
-
-                    _jinglePreviewPlayer = new MediaPlayer();
-                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
-                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
-                    _jinglePreviewPlayer.Play();
+                    PlayPreview(fileToPlay);
                 }
                 else
                 {
@@ -1010,15 +1161,7 @@ namespace UniPlaySong
 
                 if (!string.IsNullOrEmpty(fileToPlay))
                 {
-                    // Stop any previous jingle preview
-                    _jinglePreviewPlayer?.Stop();
-                    _jinglePreviewPlayer?.Close();
-
-                    // Use dedicated MediaPlayer for one-shot playback (doesn't hijack main music player)
-                    _jinglePreviewPlayer = new MediaPlayer();
-                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
-                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
-                    _jinglePreviewPlayer.Play();
+                    PlayPreview(fileToPlay);
                 }
                 else
                 {

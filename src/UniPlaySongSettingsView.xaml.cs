@@ -174,11 +174,19 @@ namespace UniPlaySong
             s.CelebrationToastDurationSeconds = 8;
             s.CelebrationToastTheme = CelebrationToastTheme.Gold;
             s.ApplyLiveEffectsToJingles = true;
-            // Achievement sound
+            // Achievement sound (master fallback) — bundled "Trophy Notif" default
+            const string defaultAchJingle = "Achievements/Trophy_Notif.mp3";
             s.EnableAchievementSound = false;
             s.AchievementSoundType = CelebrationSoundType.BundledJingle;
-            s.SelectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+            s.SelectedAchievementJingle = defaultAchJingle;
             s.AchievementSoundPath = string.Empty;
+            // Achievement sound pack — PA Starter Pack default; clear all custom per-rarity files
+            s.AchievementSoundPack = AchievementSoundPack.PAStarterPack;
+            s.CommonAchievementSoundPath = string.Empty;
+            s.UncommonAchievementSoundPath = string.Empty;
+            s.RareAchievementSoundPath = string.Empty;
+            s.UltraRareAchievementSoundPath = string.Empty;
+            s.CapstoneAchievementSoundPath = string.Empty;
             // Abandoned status
             s.EnableAbandonedSound = false;
             s.AbandonedSoundType = CelebrationSoundType.BundledJingle;
@@ -319,14 +327,7 @@ namespace UniPlaySong
             s.AutoDownloadOnGameInstall = true;
             s.MaxConcurrentDownloads = 3;
 
-            ShowButtonFeedback(sender, "Reset!");
-        }
-
-        private void ResetSearchTab_Click(object sender, RoutedEventArgs e)
-        {
-            var s = ConfirmAndGetSettings("Search");
-            if (s == null) return;
-
+            // Search settings (merged into the Downloads tab in v1.5.10)
             s.EnableSearchCache = true;
             s.SearchCacheDurationDays = 7;
             s.UseCustomHintsDatabase = false;

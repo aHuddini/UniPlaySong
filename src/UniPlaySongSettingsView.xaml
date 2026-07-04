@@ -23,6 +23,24 @@
         <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <!-- Section divider: bolder + accent-tinted so settings sections read as distinct blocks
+             instead of blending together. Implicit style applies to every Separator on every tab. -->
+        <Style TargetType="Separator">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="#4EC9B0"/>
+            <Setter Property="Opacity" Value="0.75"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="{TemplateBinding Height}"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="1"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Official Spotify logomark: green circle + 3 sound-wave arcs, viewBox 0 0 168 168. -->
         <Geometry x:Key="SpotifyLogoGeometry">M84,0 C37.6,0 0,37.6 0,84 C0,130.4 37.6,168 84,168 C130.4,168 168,130.4 168,84 C168,37.6 130.4,0 84,0 Z M122.5,121.2 C121,123.7 117.8,124.4 115.4,122.9 C95.9,111 71.4,108.3 42.5,114.9 C39.7,115.5 37,113.8 36.3,111 C35.7,108.2 37.4,105.5 40.2,104.8 C71.8,97.6 98.9,100.7 120.8,114.1 C123.2,115.6 124,118.8 122.5,121.2 Z M132.8,98.3 C130.9,101.4 126.9,102.3 123.8,100.4 C101.5,86.7 67.5,82.7 41.1,90.7 C37.6,91.8 33.9,89.8 32.8,86.3 C31.8,82.8 33.8,79.1 37.3,78 C67.4,68.9 104.9,73.3 130.5,89.1 C133.6,91 134.6,95.1 132.8,98.3 Z M133.7,74.4 C107,58.5 62.9,57.1 37.4,64.8 C33.2,66.1 28.8,63.7 27.5,59.5 C26.3,55.3 28.7,50.9 32.9,49.6 C62.2,40.7 110.9,42.4 141.6,60.6 C145.4,62.9 146.6,67.8 144.4,71.5 C142.2,75.3 137.4,76.6 133.7,74.4 Z</Geometry>
     </UserControl.Resources>
@@ -1209,13 +1227,17 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Achievement / trophy unlock sound (v1 — triggered by external plugins via URI) -->
+                    <!-- Achievement / trophy unlock sound — triggered by external plugins via URI -->
                     <Separator Margin="0,15,0,10"/>
-                    <CheckBox Content="Play sound on achievement unlock"
+                    <TextBlock Text="Achievement Unlock Sounds" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
+                               Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game. Pick a sound pack for the five rarities below; the master default sound is the ultimate fallback."/>
+
+                    <CheckBox Content="Enable achievement sounds (default / fallback)"
                               IsChecked="{Binding Settings.EnableAchievementSound}"
                               Margin="0,5"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5"
-                               Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game."/>
+                               Text="The default sound, played for any rarity that doesn't have its own sound set below."/>
 
                     <StackPanel Margin="20,5,0,10"
                                 IsEnabled="{Binding Settings.EnableAchievementSound}">
@@ -1228,7 +1250,7 @@
                                      GroupName="AchievementSound"
                                      Margin="0,3"/>
                         <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
-                            <ComboBox ItemsSource="{Binding CelebrationJingles}"
+                            <ComboBox ItemsSource="{Binding AchievementJingles}"
                                       DisplayMemberPath="DisplayName"
                                       SelectedValuePath="File"
                                       SelectedValue="{Binding Settings.SelectedAchievementJingle}"
@@ -1251,9 +1273,81 @@
                                     Command="{Binding BrowseAchievementSoundCommand}"
                                     Padding="10,4"/>
                             <Button Content="Preview"
-                                    Command="{Binding PreviewAchievementSoundCommand}"
+                                    Command="{Binding PreviewAchievementCustomSoundCommand}"
                                     Padding="10,4"
                                     Margin="5,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Per-rarity sound pack -->
+                    <TextBlock Text="Rarity sound pack" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,2"
+                               IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+                    <StackPanel Margin="0,0,0,4" IsEnabled="{Binding Settings.EnableAchievementSound}">
+                        <RadioButton Content="Active theme's sounds" GroupName="AchievementPack" Margin="0,3"
+                                     IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Theme}"/>
+                        <TextBlock Text="{Binding ThemeAchievementStatus}" FontSize="10" Foreground="Gray" Margin="24,0,0,4" TextWrapping="Wrap"/>
+                        <RadioButton Content="PA Starter Pack (bundled)" GroupName="AchievementPack" Margin="0,3"
+                                     IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PAStarterPack}"/>
+                        <RadioButton Content="Custom (your own per-rarity files below)" GroupName="AchievementPack" Margin="0,3"
+                                     IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    </StackPanel>
+
+                    <!-- Per-rarity custom files (always visible; setting one switches the pack to Custom) -->
+                    <TextBlock Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
+                               IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,6"
+                               IsEnabled="{Binding Settings.EnableAchievementSound}"
+                               Text="Pick the Custom pack above to enable per-rarity file overrides. Preview always plays the sound that rarity would use under the current pack. Badge art from the Playnite Achievements plugin."/>
+                    <StackPanel IsEnabled="{Binding Settings.EnableAchievementSound}">
+                        <!-- Common -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgeBronzePath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Common" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.CommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <!-- Uncommon -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgeSilverPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Uncommon" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.UncommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <!-- Rare -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgeGoldPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Rare" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.RareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <!-- Ultra-Rare -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgePlatinumPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Ultra-Rare" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.UltraRareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <!-- Capstone -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgePerfectPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Capstone" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.CapstoneAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4" Margin="5,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -3053,6 +3147,61 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Theme Support Tab -->
+        <TabItem Header="Theme Support">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="These options help certain themes work better with UniPlaySong. They are geared toward theme developers — most users never need to change them. Only adjust a setting here if you are a theme developer, or if a theme developer (or a theme's setup guide) tells you to."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,5"/>
+
+                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Enable PS5-Experience theme compatibility"
+                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+                    <CheckBox Content="Pause music for theme overlays"
+                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,8"/>
+                    <CheckBox Content="Pause music for theme videos"
+                              IsChecked="{Binding Settings.PauseOnThemeVideo}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- Downloads Tab -->
         <TabItem Header="Downloads">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -3062,7 +3211,7 @@
                         <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
                                 Click="ResetDownloadsTab_Click" Padding="8,3" FontSize="11"/>
                     </Grid>
-                    <TextBlock Text="Configure download tools and auto-download behavior" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
+                    <TextBlock Text="Configure download tools, auto-download behavior, and search caching" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,5">
                         <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
@@ -3186,20 +3335,11 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
                     -->
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
 
-        <!-- Search Tab -->
-        <TabItem Header="Search">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Search Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Click="ResetSearchTab_Click" Padding="8,3" FontSize="11"/>
-                    </Grid>
-                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
+                    <!-- Search settings (merged from the former Search tab in v1.5.10) -->
+                    <Separator Margin="0,20"/>
+                    <TextBlock Text="Search" FontSize="16" FontWeight="Bold" Margin="0,10,0,4"/>
+                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,15"/>
 
                     <CheckBox Content="Enable Search Result Caching"
                               IsChecked="{Binding Settings.EnableSearchCache}"
@@ -4350,61 +4490,6 @@
                         A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
                     </TextBlock>
 
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Theme Support Tab -->
-        <TabItem Header="Theme Support">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
-                    </Grid>
-                    <TextBlock Text="These options help certain themes work better with UniPlaySong. They are geared toward theme developers — most users never need to change them. Only adjust a setting here if you are a theme developer, or if a theme developer (or a theme's setup guide) tells you to."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,5"/>
-
-                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <CheckBox Content="Enable PS5-Experience theme compatibility"
-                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
-
-                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
-                               FontSize="11"
-                               Foreground="Orange"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,8"/>
-                    <CheckBox Content="Pause music for theme overlays"
-                              IsChecked="{Binding Settings.PauseOnThemeOverlay}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,8"/>
-                    <CheckBox Content="Pause music for theme videos"
-                              IsChecked="{Binding Settings.PauseOnThemeVideo}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

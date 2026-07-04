@@ -12,6 +12,7 @@ namespace UniPlaySong.Tests.Services
             public bool Open = true;
             public int ReleaseCalls;
             public void ReleaseAudioDevice() { ReleaseCalls++; Open = false; }
+            public void PrewarmAudioDevice() { Open = true; }
             public bool IsAudioDeviceOpen => Open;
             public string AudioDeviceLabel => "Fake";
         }

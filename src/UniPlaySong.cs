@@ -255,6 +255,7 @@ namespace UniPlaySong
                 Services.BundledPresetService.Initialize(extensionPath);
                 Services.BundledPresetService.SetPersistSettingsCallback(s => SavePluginSettings(s));
                 Services.BundledJingleService.Initialize(extensionPath);
+                Services.BundledImageService.Initialize(extensionPath);
             }
             catch
             {
@@ -476,23 +477,31 @@ namespace UniPlaySong
                         bool isAbandonedStatus = _settings?.EnableAbandonedSound == true &&
                             newStatus.Name.Equals("Abandoned", StringComparison.OrdinalIgnoreCase);
 
+                        // Defer the jingle + toast to a Background dispatch so this ItemUpdated handler
+                        // returns immediately. Firing inline blocks the UI thread while the jingle
+                        // player cold-loads the sound (~1-2s), which stalls the completion-status change.
+                        var gameName = update.NewData.Name;
                         if (isCelebratedStatus)
                         {
-                            _jingleService.PlayForEvent(Services.JingleEvent.Completion, _settings);
-
-                            if (_settings.ShowCelebrationToast)
-                            {
-                                Common.DialogHelper.ShowCelebrationToast(_api, update.NewData.Name);
-                            }
+                            Application.Current?.Dispatcher?.BeginInvoke(
+                                System.Windows.Threading.DispatcherPriority.Background,
+                                new Action(() =>
+                                {
+                                    _jingleService.PlayForEvent(Services.JingleEvent.Completion, _settings);
+                                    if (_settings.ShowCelebrationToast)
+                                        Common.DialogHelper.ShowCelebrationToast(_api, gameName);
+                                }));
                         }
                         else if (isAbandonedStatus)
                         {
-                            _jingleService.PlayForEvent(Services.JingleEvent.Abandoned, _settings);
-
-                            if (_settings.ShowAbandonedToast)
-                            {
-                                Common.DialogHelper.ShowAbandonedToast(_api, update.NewData.Name);
-                            }
+                            Application.Current?.Dispatcher?.BeginInvoke(
+                                System.Windows.Threading.DispatcherPriority.Background,
+                                new Action(() =>
+                                {
+                                    _jingleService.PlayForEvent(Services.JingleEvent.Abandoned, _settings);
+                                    if (_settings.ShowAbandonedToast)
+                                        Common.DialogHelper.ShowAbandonedToast(_api, gameName);
+                                }));
                         }
                     }
                 }
@@ -670,6 +679,17 @@ namespace UniPlaySong
             // Mark initialization complete - this allows deferred playback to proceed
             // Any game selection that happened during startup will now be processed
             _playbackService?.MarkInitializationComplete();
+
+            // Prewarm the jingle audio device so the first completion/abandoned jingle doesn't pay the
+            // ~700ms cold endpoint-open (only matters with Live Effects on jingles; SDL2's shared device
+            // is already open). Deferred 3s off the startup path; only when a jingle feature is enabled.
+            if (_settings?.EnableCompletionCelebration == true || _settings?.EnableAbandonedSound == true)
+            {
+                System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ =>
+                    Application.Current?.Dispatcher?.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Background,
+                        new Action(() => _jingleService?.PrewarmJinglePlayer())));
+            }
 
             // DISABLED: GitHub hints update check temporarily removed (GitHub TOS review)
             // if (_settings?.AutoCheckHintsOnStartup == true)
@@ -2106,8 +2126,22 @@ namespace UniPlaySong
                     // explicit restore/reload needed — that would restart the track from the start.
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
+                    RewarmJinglePlayerIfEnabled();
                 });
             }
+        }
+
+        // Re-open the jingle audio device after an idle/lock/suspend release (issue #81) so the first
+        // jingle after wake stays instant. Only when a jingle feature is on. Deferred slightly so it
+        // doesn't contend with the main player's resume work.
+        private void RewarmJinglePlayerIfEnabled()
+        {
+            if (_settings?.EnableCompletionCelebration != true && _settings?.EnableAbandonedSound != true)
+                return;
+            System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
+                Application.Current?.Dispatcher?.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(() => _jingleService?.PrewarmJinglePlayer())));
         }
 
         // issue #81 — release all audio devices when the OS is about to suspend (manual sleep,
@@ -2142,6 +2176,7 @@ namespace UniPlaySong
                     _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
+                    RewarmJinglePlayerIfEnabled();
                 }));
             }
         }
@@ -2359,6 +2394,7 @@ namespace UniPlaySong
                         _idleDetected = false;
                         _fileLogger?.Debug("Input detected, resuming from idle");
                         _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
+                        RewarmJinglePlayerIfEnabled(); // re-open jingle device if idle-teardown released it
                     }
                 }
                 else if (_idleDetected)
@@ -2664,7 +2700,11 @@ namespace UniPlaySong
                     var player = new Services.SDL2MusicPlayer(_errorHandler);
                     if (player is Services.IAudioDeviceHolder xh) _audioDeviceRegistry?.Register(xh); // issue #81
                     return player;
-                });
+                },
+                // Predicate: do jingles currently want the NAudio (Live-Effects) backend? Must mirror
+                // the useLiveEffects computation in the jingle factory above so JingleService reuses
+                // the persistent player across fires and only rebuilds when the backend truly changes.
+                () => _isUsingLiveEffectsPlayer && (_settings?.ApplyLiveEffectsToJingles ?? true));
 
             if (_settings != null)
             {
