@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.5.10
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-03
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.10/UniPlaySong-1_5_10.pext'
+    Changelog:
+      - '[New Feature] Achievement unlock sounds — UniPlaySong can play a console-style "trophy unlocked" fanfare when you earn an achievement. The Playnite Achievements plugin (or any plugin/theme) tells UniPlaySong an achievement unlocked, and it plays the sound you chose. Enable it and pick a sound under Playback → Gamification → "Play sound on achievement unlock." Plays instantly, even over a running game.'
   - Version: 1.5.9
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-03

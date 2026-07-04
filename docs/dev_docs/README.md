@@ -83,6 +83,7 @@ Welcome to the UniPlaySong developer documentation. This directory contains comp
   - External Control via URI for custom media control buttons
   - Unified Media Controls: UPS_MediaControllerOverlay / Bar / Compact drop-in elements, `ActiveMedia*` data bindings, and source-aware transport URIs (v1.5.8+)
   - `IsMusicChanged` pulse binding for track-change animations (v1.5.9+)
+  - Achievement unlock sound URI (`playniteachievements/{rarity}`) — see [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) (v1.5.10+)
   - ANIKI REMAKE integration example
 
 ### Additional Resources
@@ -189,5 +190,5 @@ If you have questions about the codebase or need clarification on documentation:
 ---
 
 **Last Updated**: 2026-07-03
-**Documentation Version**: 1.5.9
+**Documentation Version**: 1.5.10
 

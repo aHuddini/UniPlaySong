@@ -10,7 +10,8 @@ namespace UniPlaySong.Services
     public enum JingleEvent
     {
         Completion,   // Game marked Completed (or Beaten, if CelebrateBeaten is on)
-        Abandoned     // Game marked Abandoned
+        Abandoned,    // Game marked Abandoned
+        Achievement   // Achievement/trophy unlocked — fired via URI by external plugins (e.g. Playnite Achievements)
     }
 
     // Owns jingle playback lifecycle: creates a dedicated player for each fire,
@@ -22,11 +23,18 @@ namespace UniPlaySong.Services
     {
         private readonly IMusicPlaybackService _playbackService;
         private readonly Func<IMusicPlayer> _createJinglePlayer;
+        // Separate, deliberately lightweight factory for EXTERNAL notification sounds (achievement
+        // unlocks fired via URI, etc.). Always a plain SDL2 player — never the NAudio Live-Effects
+        // pipeline, whose per-fire persistent-layer setup added ~130ms latency and whose reverb/viz
+        // machinery is pointless for a short notification "ding" fired over a running game. Kept
+        // wholly separate from the regular jingle path so the completion/abandoned system is unaffected.
+        private readonly Func<IMusicPlayer> _createLightweightPlayer;
         private readonly ErrorHandlerService _errorHandler;
         private readonly FileLogger _fileLogger;
         private readonly AudioDeviceRegistry _deviceRegistry; // issue #81
 
-        private IMusicPlayer _jinglePlayer;
+        private IMusicPlayer _jinglePlayer;      // regular jingles (completion/abandoned)
+        private IMusicPlayer _externalPlayer;    // external notification sounds (achievement/URI)
         private VisualizationDataProvider _savedVizProvider;
 
         public JingleService(
@@ -34,13 +42,17 @@ namespace UniPlaySong.Services
             Func<IMusicPlayer> createJinglePlayer,
             ErrorHandlerService errorHandler,
             FileLogger fileLogger = null,
-            AudioDeviceRegistry deviceRegistry = null)
+            AudioDeviceRegistry deviceRegistry = null,
+            Func<IMusicPlayer> createLightweightPlayer = null)
         {
             _playbackService = playbackService ?? throw new ArgumentNullException(nameof(playbackService));
             _createJinglePlayer = createJinglePlayer ?? throw new ArgumentNullException(nameof(createJinglePlayer));
             _errorHandler = errorHandler;
             _fileLogger = fileLogger;
             _deviceRegistry = deviceRegistry;
+            // Falls back to the regular factory if a lightweight one isn't supplied (keeps behavior
+            // for any caller that doesn't wire it), but the composition root always supplies SDL2.
+            _createLightweightPlayer = createLightweightPlayer ?? createJinglePlayer;
         }
 
         // Plays the configured jingle for a given event. No-op if the feature
@@ -77,7 +89,13 @@ namespace UniPlaySong.Services
 
                 if (string.IsNullOrEmpty(path)) return;
 
-                Play(path, settings);
+                // External notification sounds (achievement/URI) take the dedicated lightweight path;
+                // regular celebration jingles (completion/abandoned) keep the existing effects-capable
+                // path untouched.
+                if (evt == JingleEvent.Achievement)
+                    PlayExternalSound(path, settings);
+                else
+                    Play(path, settings);
             }
             catch (Exception ex)
             {
@@ -113,6 +131,15 @@ namespace UniPlaySong.Services
                         SoundType = settings.AbandonedSoundType,
                         JingleFilename = settings.SelectedAbandonedJingle,
                         CustomFilePath = settings.AbandonedSoundPath
+                    };
+
+                case JingleEvent.Achievement:
+                    if (settings?.EnableAchievementSound != true) return null;
+                    return new JingleSoundConfig
+                    {
+                        SoundType = settings.AchievementSoundType,
+                        JingleFilename = settings.SelectedAchievementJingle,
+                        CustomFilePath = settings.AchievementSoundPath
                     };
 
                 default:
@@ -179,10 +206,54 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Disposes any in-flight jingle player. Call from plugin shutdown.
+        // Plays an EXTERNAL notification sound (achievement unlock via URI, etc.) on the dedicated
+        // lightweight player. Intentionally NOT the regular jingle path:
+        //   - no PauseForJingle/ResumeFromJingle — these fire over a running game where UPS music is
+        //     already paused, so there's nothing to duck; the sound just plays alongside game audio.
+        //   - no viz-provider save/restore — no Live Effects / visualizer involvement by design.
+        //   - own player + own MediaEnded, fully isolated from the completion/abandoned jingle state.
+        private void PlayExternalSound(string filePath, UniPlaySongSettings settings)
+        {
+            DisposeExternalPlayer(); // stop any still-playing external sound
+
+            try
+            {
+                _externalPlayer = _createLightweightPlayer();
+                _externalPlayer.MediaEnded += OnExternalEnded;
+                _externalPlayer.Load(filePath);
+                _externalPlayer.Volume = settings.MusicVolume / 100.0;
+                _externalPlayer.Play();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"External sound playback failed: {ex.Message}");
+                DisposeExternalPlayer();
+            }
+        }
+
+        private void OnExternalEnded(object sender, EventArgs e)
+        {
+            DisposeExternalPlayer();
+        }
+
+        private void DisposeExternalPlayer()
+        {
+            if (_externalPlayer != null)
+            {
+                if (_externalPlayer is IAudioDeviceHolder xh) _deviceRegistry?.Unregister(xh); // issue #81
+                _externalPlayer.MediaEnded -= OnExternalEnded;
+                _externalPlayer.Stop();
+                _externalPlayer.Close();
+                (_externalPlayer as IDisposable)?.Dispose();
+                _externalPlayer = null;
+            }
+        }
+
+        // Disposes any in-flight jingle/external players. Call from plugin shutdown.
         public void Cleanup()
         {
             DisposeJinglePlayer();
+            DisposeExternalPlayer();
         }
     }
 }

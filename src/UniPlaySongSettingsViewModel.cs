@@ -886,6 +886,63 @@ namespace UniPlaySong
             }
         });
 
+        public ICommand BrowseAchievementSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.ogg;*.flac|WAV Files (recommended)|*.wav|All Files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                Settings.AchievementSoundPath = dialog.FileName;
+                Settings.AchievementSoundType = CelebrationSoundType.CustomFile;
+            }
+        });
+
+        public ICommand PreviewAchievementSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                string fileToPlay = null;
+
+                if (Settings.AchievementSoundType == CelebrationSoundType.SystemBeep)
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                    return;
+                }
+                else if (Settings.AchievementSoundType == CelebrationSoundType.BundledJingle)
+                {
+                    fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAchievementJingle);
+                }
+                else if (Settings.AchievementSoundType == CelebrationSoundType.CustomFile)
+                {
+                    if (!string.IsNullOrWhiteSpace(Settings.AchievementSoundPath)
+                        && File.Exists(Settings.AchievementSoundPath))
+                        fileToPlay = Settings.AchievementSoundPath;
+                }
+
+                if (!string.IsNullOrEmpty(fileToPlay))
+                {
+                    _jinglePreviewPlayer?.Stop();
+                    _jinglePreviewPlayer?.Close();
+
+                    _jinglePreviewPlayer = new MediaPlayer();
+                    _jinglePreviewPlayer.Open(new Uri(fileToPlay));
+                    _jinglePreviewPlayer.Volume = Settings.MusicVolume / 100.0;
+                    _jinglePreviewPlayer.Play();
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
+        });
+
         public ICommand PreviewAbandonedSoundCommand => new Common.RelayCommand<object>((a) =>
         {
             try

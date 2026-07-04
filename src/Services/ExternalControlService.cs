@@ -12,13 +12,22 @@ namespace UniPlaySong.Services
         private readonly IMusicPlaybackService _playbackService;
         private readonly IActiveMediaService _activeMedia;
         private readonly IPlayniteAPI _api;
+        private readonly JingleService _jingleService;
+        private readonly System.Func<UniPlaySongSettings> _getSettings;
         private const string NotificationPrefix = "UniPlaySong_ExtCtrl";
 
-        public ExternalControlService(IMusicPlaybackService playbackService, IActiveMediaService activeMedia, IPlayniteAPI api)
+        public ExternalControlService(
+            IMusicPlaybackService playbackService,
+            IActiveMediaService activeMedia,
+            IPlayniteAPI api,
+            JingleService jingleService = null,
+            System.Func<UniPlaySongSettings> getSettings = null)
         {
             _playbackService = playbackService;
             _activeMedia = activeMedia;
             _api = api;
+            _jingleService = jingleService;
+            _getSettings = getSettings;
         }
 
         public void HandleCommand(PlayniteUriEventArgs args)
@@ -73,6 +82,17 @@ namespace UniPlaySong.Services
                     HandleVolume(args.Arguments);
                     break;
 
+                // Achievement/trophy unlock sound — fired by external plugins (e.g. Playnite
+                // Achievements) via playnite://uniplaysong/playniteachievements/{rarity}, where
+                // {rarity} is common | uncommon | rare | ultrarare | capstone. Namespaced under the
+                // source plugin so other integrations can add their own path later. All rarities play
+                // the same achievement sound for now (per-rarity override sounds are a planned
+                // follow-up). Plays on the dedicated jingle player, so it works over a running game
+                // and no-ops when the achievement-sound setting is off.
+                case "playniteachievements":
+                    HandlePlayniteAchievement(args.Arguments);
+                    break;
+
                 default:
                     Notify($"Unknown command \"{command}\"");
                     break;
@@ -100,6 +120,16 @@ namespace UniPlaySong.Services
             }
 
             _playbackService.SetVolume(volume / Constants.VolumeDivisor);
+        }
+
+        private void HandlePlayniteAchievement(string[] arguments)
+        {
+            // arguments[0] == "playniteachievements"; arguments[1] (optional) == rarity tier
+            // (common | uncommon | rare | ultrarare | capstone). Every tier — recognized or not —
+            // plays the same configured achievement sound for now, so a newer PA that adds a tier
+            // still works. Per-rarity override sounds are a planned follow-up; arguments[1] is where
+            // that branch will read the tier.
+            _jingleService?.PlayForEvent(JingleEvent.Achievement, _getSettings?.Invoke());
         }
 
         private void Notify(string message)

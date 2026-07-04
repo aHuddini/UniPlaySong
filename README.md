@@ -20,13 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.9
+## What's New - v1.5.10
 
 ### Added
-- **Music-change notifications for themes (console-style toasts).** UniPlaySong now provides live "the music just changed" data to themes, so a theme can pop up a **Now Playing toast whenever the track changes** — the way PlayStation and Xbox flash a notification when a new song starts — instead of showing the track info on screen permanently. It's up to each theme to use it; the demo toast (title + artist + album art, slides in and fades out) is available as a ready-made example in the Theme Integration Guide.
+- **Achievement unlock sounds (Playnite Achievements integration).** UniPlaySong can now play a console-style "trophy unlocked" fanfare when you earn an achievement — the Playnite Achievements plugin (or any plugin/theme) tells UniPlaySong an achievement was unlocked, and UniPlaySong plays the sound you configured. Turn it on and pick your sound under **Playback → Gamification → "Play sound on achievement unlock."** It plays instantly, even over a running game.
 
 ### Previous Version
-- **v1.5.8**: Media control elements for theme developers (full overlay, transport bar, minimal play/skip — follow your game music or Spotify, controller-friendly in Fullscreen); trailer audio and Spotify graduated to standard Default Music sources; a dedicated Radio Mode "Custom Folder" picker; live Radio Mode status bindings for themes. Fixed a critical settings-reset-on-update bug and now-playing displays freezing after a settings change, rebuilt Spotify Radio Mode for stability, stopped the YouTube whitelist growing on its own, and let Windows sleep/resume properly (issue #81). Cut noisy background logging on playback hot paths.
+- **v1.5.9**: Music-change notifications for themes — UniPlaySong exposes live "the music just changed" data so a theme can pop up a Now Playing toast on each track change, console-style, instead of a permanent readout. Ready-made demo toast in the Theme Integration Guide.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

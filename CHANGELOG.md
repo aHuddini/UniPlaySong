@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.5.10] - 2026-07-03
+
+### Added
+
+- **Achievement/trophy unlock sound for external plugins (Playnite Achievements integration).** A new URI, `playnite://uniplaysong/playniteachievements/{rarity}` (`common` | `uncommon` | `rare` | `ultrarare` | `capstone`), lets another plugin (e.g. Playnite Achievements) ask UniPlaySong to play a console-style unlock fanfare — UniPlaySong owns the sound + user config, the caller just fires the URI, no compile-time dependency either way. All tiers play the same user-configured sound for now (per-rarity overrides planned); unknown/missing tiers still play (forward-compatible); command is case-insensitive. New settings (Playback → Gamification): `EnableAchievementSound`, `AchievementSoundType`, `SelectedAchievementJingle`, `AchievementSoundPath` (off by default). Routed through `ExternalControlService` to `JingleService.PlayForEvent(JingleEvent.Achievement, …)`. `src/Services/ExternalControlService.cs`, `src/Services/JingleService.cs`, `src/UniPlaySongSettings.cs`, `src/UniPlaySongSettingsView.xaml(.cs)`, `src/UniPlaySongSettingsViewModel.cs`, `src/UniPlaySong.cs`. Contract + integration documented in `THEME_INTEGRATION_GUIDE.md`.
+
+### Performance
+
+- **External notification sounds play near-instantly.** The achievement sound runs on a dedicated, deliberately lightweight SDL2 player, wholly separate from the effects-capable music/jingle pipeline. That pipeline rebuilds its NAudio persistent mixer/device on every fire (~130ms of `EnsurePersistentLayer`, measured) — pointless latency for a short notification "ding" and irrelevant to its reverb/visualizer. The lightweight path skips it entirely: an achievement fanfare fires with no per-event mixer setup. Device safety is preserved — the external player is a secondary SDL2 holder (never closes the process-wide shared device), and the issue-#81 idle/lock/suspend release still tears the shared device down normally. The completion/abandoned jingle path is untouched. `src/Services/JingleService.cs`, `src/UniPlaySong.cs`.
+
 ## [1.5.9] - 2026-07-03
 
 ### Added

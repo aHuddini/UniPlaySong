@@ -461,6 +461,23 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 - `UPS_MusicControl` — state-driven pause/resume tied to UI visibility
 - URI — explicit user actions (a "Skip" button on a media bar)
 
+### Achievement / trophy unlock sound (v1.5.10+)
+
+For **plugins** (e.g. Playnite Achievements) — or a theme — that want UniPlaySong to play a console-style unlock sound when an achievement is earned. UniPlaySong doesn't detect unlocks; the caller fires the URI, and UniPlaySong plays the user's configured achievement sound (Playback → Gamification → "Play sound on achievement unlock"). It plays on a dedicated lightweight player, so it's near-instant and works over a running game; it no-ops if the user has the sound turned off.
+
+**Format:** `playnite://uniplaysong/playniteachievements/{rarity}` where `{rarity}` is one of
+`common`, `uncommon`, `rare`, `ultrarare`, `capstone`.
+
+| Rarity | URI |
+|---|---|
+| Common | `playnite://uniplaysong/playniteachievements/common` |
+| Uncommon | `playnite://uniplaysong/playniteachievements/uncommon` |
+| Rare | `playnite://uniplaysong/playniteachievements/rare` |
+| Ultra-rare | `playnite://uniplaysong/playniteachievements/ultrarare` |
+| Capstone (platinum) | `playnite://uniplaysong/playniteachievements/capstone` |
+
+All tiers play the same configured sound for now (per-rarity override sounds are planned). Case-insensitive; unknown tiers still play the sound (forward-compatible).
+
 ---
 
 ## Unified Media Controls (v1.5.8+)

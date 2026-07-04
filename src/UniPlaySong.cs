@@ -2640,7 +2640,31 @@ namespace UniPlaySong
                 },
                 _errorHandler,
                 _fileLogger,
-                _audioDeviceRegistry); // issue #81 — unregister on jingle-player dispose
+                _audioDeviceRegistry, // issue #81 — unregister on jingle-player dispose
+                // Lightweight factory for EXTERNAL notification sounds (achievement/URI): always a
+                // plain SDL2 player, never the NAudio Live-Effects pipeline. SDL2's device is opened
+                // once (shared init), so these fire near-instantly instead of paying the ~130ms
+                // NAudio persistent-layer setup that Live-Effects jingles incur.
+                //
+                // Device model (issue #81): SDL2's audio device is PROCESS-WIDE — one shared device
+                // (static Mix_OpenAudio/Mix_CloseAudio), not one per player. This player is its own
+                // C# object with its own music handle, but it RIDES that shared device. It is a
+                // secondary holder (enableIdleTeardown defaults to false), so:
+                //   - disposing it frees only its music (Mix_FreeMusic), never Mix_CloseAudio — it
+                //     can't accidentally kill the main player's audio;
+                //   - it must NOT close the shared device itself (that would); only the main,
+                //     teardown-enabled player may.
+                // We still Register it so the #81 idle/lock/suspend release SEES its open device via
+                // IsAnyDeviceOpen — the actual close is then performed by the main player on the
+                // shared device. Net: an achievement sound that opened the device is torn down after
+                // IdleAudioDeviceTeardownMinutes (Experimental) just like any other playback, and it
+                // never blocks Windows sleep.
+                () =>
+                {
+                    var player = new Services.SDL2MusicPlayer(_errorHandler);
+                    if (player is Services.IAudioDeviceHolder xh) _audioDeviceRegistry?.Register(xh); // issue #81
+                    return player;
+                });
 
             if (_settings != null)
             {
@@ -2718,7 +2742,8 @@ namespace UniPlaySong
             // after _activeMediaService so source-aware transport commands (next/previous/
             // playpausetoggle/togglemute) can route through it; UPS-specific commands
             // (play/pause/stop/restart/volume) still go straight to _playbackService.
-            _externalControlService = new Services.ExternalControlService(_playbackService, _activeMediaService, _api);
+            _externalControlService = new Services.ExternalControlService(
+                _playbackService, _activeMediaService, _api, _jingleService, () => _settings);
 
             // 1s position poll — runs ONLY while there is active media and it is playing.
             _activeMediaPollTimer = new System.Windows.Threading.DispatcherTimer(

@@ -166,6 +166,10 @@ namespace UniPlaySong
             s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
             s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
             s.CelebrationSoundPath = string.Empty;
+            s.EnableAchievementSound = false;
+            s.AchievementSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+            s.AchievementSoundPath = string.Empty;
             s.PlaySoundOnDownloadComplete = false;
             s.ApplyLiveEffectsToJingles = true;
             s.ShowCelebrationToast = true;

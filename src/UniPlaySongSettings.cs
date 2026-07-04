@@ -370,6 +370,14 @@ namespace UniPlaySong
         private AbandonedToastTheme abandonedToastTheme = AbandonedToastTheme.Tombstone;
         private string abandonedToastMessage = "Filed away without finishing {gameName}.";
 
+        // Gamification — Achievement/trophy unlock sound. Fired via the
+        // playnite://uniplaysong/playniteachievements/{rarity} URI (e.g. by the Playnite Achievements
+        // plugin). Off by default. One sound for all rarities for now; per-rarity overrides planned.
+        private bool enableAchievementSound = false;
+        private CelebrationSoundType achievementSoundType = CelebrationSoundType.BundledJingle;
+        private string selectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+        private string achievementSoundPath = string.Empty;
+
         // Download notifications
         private bool playSoundOnDownloadComplete = false;
 
@@ -1088,6 +1096,37 @@ namespace UniPlaySong
         {
             get => celebrationSoundPath;
             set { celebrationSoundPath = value; OnPropertyChanged(); }
+        }
+
+        // Play a sound when an achievement/trophy is unlocked. Triggered externally via the
+        // playnite://uniplaysong/playniteachievements/{rarity} URI (e.g. by the Playnite Achievements
+        // plugin) — UniPlaySong doesn't detect unlocks itself. Uses the dedicated jingle player, so it
+        // plays fine over a running game. Off by default. (One sound for all rarities for now;
+        // per-rarity override sounds are a planned, non-breaking follow-up.)
+        public bool EnableAchievementSound
+        {
+            get => enableAchievementSound;
+            set { enableAchievementSound = value; OnPropertyChanged(); }
+        }
+
+        public CelebrationSoundType AchievementSoundType
+        {
+            get => achievementSoundType;
+            set { achievementSoundType = value; OnPropertyChanged(); }
+        }
+
+        // Filename of selected bundled jingle (from Jingles folder) for achievement unlocks.
+        public string SelectedAchievementJingle
+        {
+            get => selectedAchievementJingle;
+            set { selectedAchievementJingle = value; OnPropertyChanged(); }
+        }
+
+        // Path to a custom achievement sound file (.wav recommended).
+        public string AchievementSoundPath
+        {
+            get => achievementSoundPath;
+            set { achievementSoundPath = value; OnPropertyChanged(); }
         }
 
         public bool ShowCelebrationToast
