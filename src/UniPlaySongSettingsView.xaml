@@ -984,11 +984,37 @@
                         'Spotify' plays the Spotify desktop app continuously as background music instead of a UPS pool. Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply. Restart Playnite after selecting so playback state is cleanly reset.
                     </TextBlock>
 
+                    <!-- Random Game Picker -->
                     <Separator Margin="0,15"/>
+                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
 
-                    <!-- Gamification -->
-                    <TextBlock Text="Gamification" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Celebrate your gaming milestones" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+                    <CheckBox Content="Play music while browsing the random game picker"
+                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+
+        <!-- Gamification Tab -->
+        <TabItem Header="Gamification">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Gamification" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetGamificationTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Celebrate your gaming milestones — completion fanfares, achievement sounds, and status toasts" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
+
+                    <!-- Completion Celebration -->
+                    <TextBlock Text="Completion Celebration" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Play Fanfare on Completed Games"
                               IsChecked="{Binding Settings.EnableCompletionCelebration}"
@@ -1230,24 +1256,9 @@
                                        FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
                         </StackPanel>
                     </StackPanel>
-
-                    <!-- Random Game Picker -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-
-                    <CheckBox Content="Play music while browsing the random game picker"
-                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
-
         <!-- Pauses Tab -->
         <TabItem Header="Pauses">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

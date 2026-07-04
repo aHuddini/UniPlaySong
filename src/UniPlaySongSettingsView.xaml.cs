@@ -153,8 +153,33 @@ namespace UniPlaySong
             s.FadeOutBeforeSongEndDuration = 3.0;
             s.EnableTrueCrossfade = false;
             s.CrossfadeDurationSeconds = 9;
+            s.PlaySoundOnDownloadComplete = false;
+            s.EnableRandomPickerMusic = true;
+
+            ShowButtonFeedback(sender, "Reset!");
+        }
+
+        private void ResetGamificationTab_Click(object sender, RoutedEventArgs e)
+        {
+            var s = ConfirmAndGetSettings("Gamification");
+            if (s == null) return;
+
+            // Completion celebration
             s.EnableCompletionCelebration = true;
             s.CelebrateBeaten = false;
+            s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+            s.CelebrationSoundPath = string.Empty;
+            s.ShowCelebrationToast = true;
+            s.CelebrationToastDurationSeconds = 8;
+            s.CelebrationToastTheme = CelebrationToastTheme.Gold;
+            s.ApplyLiveEffectsToJingles = true;
+            // Achievement sound
+            s.EnableAchievementSound = false;
+            s.AchievementSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
+            s.AchievementSoundPath = string.Empty;
+            // Abandoned status
             s.EnableAbandonedSound = false;
             s.AbandonedSoundType = CelebrationSoundType.BundledJingle;
             s.SelectedAbandonedJingle = "Abandoned/Shinobi III - Sega Genesis - Round Clear.mp3";
@@ -163,19 +188,6 @@ namespace UniPlaySong
             s.AbandonedToastDurationSeconds = 6;
             s.AbandonedToastTheme = AbandonedToastTheme.Tombstone;
             s.AbandonedToastMessage = "Filed away without finishing {gameName}.";
-            s.CelebrationSoundType = CelebrationSoundType.BundledJingle;
-            s.SelectedCelebrationJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
-            s.CelebrationSoundPath = string.Empty;
-            s.EnableAchievementSound = false;
-            s.AchievementSoundType = CelebrationSoundType.BundledJingle;
-            s.SelectedAchievementJingle = "Streets of Rage 1 - Sega Genesis - Level Clear.mp3";
-            s.AchievementSoundPath = string.Empty;
-            s.PlaySoundOnDownloadComplete = false;
-            s.ApplyLiveEffectsToJingles = true;
-            s.ShowCelebrationToast = true;
-            s.CelebrationToastDurationSeconds = 8;
-            s.CelebrationToastTheme = CelebrationToastTheme.Gold;
-            s.EnableRandomPickerMusic = true;
 
             ShowButtonFeedback(sender, "Reset!");
         }
