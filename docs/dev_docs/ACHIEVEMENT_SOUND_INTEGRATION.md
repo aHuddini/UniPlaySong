@@ -1,10 +1,18 @@
 # Achievement Sound Integration (URI) — Technical Reference
 
-**Status:** shipped v1.5.10. **Audience:** UniPlaySong maintainers and external plugin devs (e.g. Playnite Achievements).
+**Status:** shipped v1.5.10. **Audience:** UniPlaySong maintainers and the Playnite Achievements dev (and any other plugin/theme that wants to reuse it).
 
-UniPlaySong can play a console-style "trophy unlocked" sound on demand. It does **not** detect
-achievement unlocks itself — an external plugin (or theme) tells it via a Playnite URI, and
-UniPlaySong plays the user's configured sound. This keeps the two sides fully decoupled: no shared
+**Designed for the Playnite Achievements (PA) plugin.**
+This feature exists specifically because the PA developer proposed a cross-plugin collaboration: **PA
+detects trophy unlocks and shows the visual notification; UniPlaySong plays the sound and lets the
+user customize it** — console-style. The URI's `playniteachievements` path segment is named after PA
+for exactly this reason. PA is the primary and reference consumer.
+
+The mechanism is generic (any plugin or theme can fire the same URI), but it was built for the PA
+integration; keep PA as the driving use case when changing anything here.
+
+UniPlaySong does **not** detect achievement unlocks itself — PA tells it via a Playnite URI, and
+UniPlaySong plays the user's configured sound. The two sides are fully decoupled: no shared
 assembly, no compile-time dependency, safe if either is absent.
 
 ## The URI contract
