@@ -275,6 +275,8 @@ Two-way sync is automatic — flipping a checkbox in the theme and flipping the 
 
 > Prefer `SwitchRadioMode` (a clean bool) for a Fullscreen "switch" button. `RadioMusicSource` (the raw enum) is also bindable if you want a full multi-source picker (FullLibrary, CustomFolder, Spotify, …).
 
+When Spotify is your active source, UniPlaySong auto-launches it on startup if it isn't already running (Experimental tab, off by default). If Spotify opens to a login screen and doesn't auto-play, your theme's transport controls (play/skip) let the user start playback manually once authenticated.
+
 ### Aniki ReMake reference (drop-in)
 
 Mike's exact paste-in for Aniki ReMake — `Views/AdditionalViews/QuickOptionsView.xaml`, inside the existing `<Grid x:Name="Volume">`, after the BackgroundVolume slider:

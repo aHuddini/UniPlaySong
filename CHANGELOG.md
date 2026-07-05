@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.0] - Unreleased
+
+### Added
+
+- **Auto-launch Spotify on startup (Experimental, opt-in).** When Spotify is the active Radio Mode or Default Music source and the Spotify desktop app isn't running, UniPlaySong launches it on Playnite startup so music can begin. Gated on the source being Spotify; off by default (Experimental tab). Auto-detects `%APPDATA%\Spotify\Spotify.exe`, with an optional user path (`.exe`/`.lnk`) for Store/custom installs. Launch + a 10s session poll run on the Spotify worker thread (never the UI thread / recompute lock — respects the `8e1f2e4` deadlock class); once the SMTC session registers, the standard `Recompute()` engage sends Play. A single failure toast fires if Spotify can't be found or doesn't register a session. UPS never closes Spotify. `src/Common/SpotifyLauncher.cs` (new), `src/UniPlaySong.cs`, `src/UniPlaySongSettings.cs`, `src/Services/Spotify/SpotifySmtcClient.cs`, Experimental-tab UI.
+
 ## [1.5.10] - 2026-07-03
 
 ### Added
