@@ -553,6 +553,7 @@ namespace UniPlaySong
             // the startup window before the overlay/login pause registered -> pause/play/pause churn.
             _appStarted = true;
             _spotifyControlService?.Recompute();
+            TryAutoLaunchSpotify();
 
             // Recompute the theme-override flag from the controls actually loaded in the theme we
             // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
@@ -4126,6 +4127,88 @@ namespace UniPlaySong
             actions.Add(("Previous track", () => _spotifyControlService?.SkipPrevious()));
             actions.Add(("Play/Pause", () => _spotifyControlService?.ToggleManualPlayPause()));
             return actions;
+        }
+
+        // True when Spotify is the user's active music source (radio or default). The auto-launch
+        // gate — we never launch Spotify unless it's actually the chosen source.
+        private bool SpotifyIsActiveSource(UniPlaySongSettings settings)
+        {
+            if (settings == null) return false;
+            bool radioSpotify = settings.RadioModeEnabled
+                && settings.RadioMusicSource == RadioMusicSource.Spotify;
+            bool defaultSpotify = settings.DefaultMusicSourceOption == DefaultMusicSource.Spotify;
+            return radioSpotify || defaultSpotify;
+        }
+
+        // Experimental: on startup, if Spotify is the active source and the desktop app isn't
+        // running, launch it (auto-scanned or user-pointed path), poll up to 10s for its SMTC
+        // session, then run the standard engage (Recompute sends Play). Failure -> a single toast.
+        // All blocking work (Process.Start + poll) runs on the Spotify worker thread — NEVER the UI
+        // thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called once
+        // from OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
+        private void TryAutoLaunchSpotify()
+        {
+            var settings = _settings;
+            if (settings?.AutoLaunchSpotifyOnStartup != true) return;   // feature off
+            if (!SpotifyIsActiveSource(settings)) return;               // Spotify not the source
+            if (Common.SpotifyLauncher.IsSpotifyRunning()) return;      // already running (process check, not SMTC)
+
+            var userPath = settings.SpotifyExePath;
+
+            _spotifyClient?.PostToWorker(() =>
+            {
+                try
+                {
+                    var path = Common.SpotifyLauncher.ResolveSpotifyPath(userPath);
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        _fileLogger?.Warn("[AutoLaunch] No Spotify path resolved (auto-scan miss + no valid user path).");
+                        ShowSpotifyNotRunningToast();
+                        return;
+                    }
+
+                    if (!Common.SpotifyLauncher.Launch(path))
+                    {
+                        ShowSpotifyNotRunningToast();
+                        return;
+                    }
+
+                    // Poll up to 10s (1s interval) for the SMTC session to register, then engage.
+                    for (int i = 0; i < 10; i++)
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        if (_spotifyClient?.IsAvailable == true)
+                        {
+                            _fileLogger?.Debug($"[AutoLaunch] Spotify session available after ~{i + 1}s — engaging.");
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                _spotifyControlService?.Recompute()));
+                            return;
+                        }
+                    }
+
+                    _fileLogger?.Warn("[AutoLaunch] Spotify session not available after 10s.");
+                    ShowSpotifyNotRunningToast();
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"[AutoLaunch] TryAutoLaunchSpotify worker failed: {ex.Message}");
+                }
+            });
+        }
+
+        // Single failure toast (Jingle/Download style) for the auto-launch flow. Marshalled to UI.
+        private void ShowSpotifyNotRunningToast()
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    Common.DialogHelper.ShowErrorToast(_api,
+                        "Spotify Desktop not running. Media Controls will not work if Spotify is closed.",
+                        "UniPlaySong", null);
+                }
+                catch (Exception ex) { _fileLogger?.Debug($"[AutoLaunch] toast failed: {ex.Message}"); }
+            }));
         }
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)

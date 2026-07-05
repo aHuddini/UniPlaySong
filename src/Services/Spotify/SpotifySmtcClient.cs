@@ -137,6 +137,10 @@ namespace UniPlaySong.Services.Spotify
         public bool TrySkipPrevious() { _worker.PostRequest(DoSkipPrevious); return true; }
         public bool TryTogglePlayPause() { _worker.PostRequest(DoTogglePlayPause); return true; }
 
+        // Runs an action on the dedicated Spotify worker thread (never the UI thread). Used by the
+        // auto-launch flow so its Process.Start + poll never block the UI or the recompute lock.
+        public void PostToWorker(System.Action work) => _worker.PostRequest(work);
+
         // The blocking SMTC bodies — now ONLY ever called on the worker thread.
         private void DoPause()
         {
