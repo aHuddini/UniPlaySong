@@ -4169,12 +4169,22 @@ namespace UniPlaySong
                     }
 
                     // Poll up to 10s (1s interval) for the SMTC session to register, then engage.
+                    // Along the way, minimize Spotify's window once it appears so it doesn't sit on
+                    // top of Playnite (Spotify has no "start minimized" option). The window can show
+                    // before OR after the SMTC session registers, so we retry each tick until it takes.
+                    bool minimized = false;
                     for (int i = 0; i < 10; i++)
                     {
                         System.Threading.Thread.Sleep(1000);
+
+                        if (!minimized)
+                            minimized = Common.SpotifyLauncher.MinimizeSpotifyWindow();
+
                         if (_spotifyClient?.IsAvailable == true)
                         {
                             _fileLogger?.Debug($"[AutoLaunch] Spotify session available after ~{i + 1}s — engaging.");
+                            // One last minimize attempt in case the window only just appeared this tick.
+                            if (!minimized) Common.SpotifyLauncher.MinimizeSpotifyWindow();
                             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                                 _spotifyControlService?.Recompute()));
                             return;
