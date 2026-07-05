@@ -1,10 +1,8 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: ComVisible(false)]
 [assembly: Guid("a1b2c3d4-e5f6-7890-abcd-ef1234567890")]
-[assembly: InternalsVisibleTo("UniPlaySong.Tests")]
 
 // Version information - updated automatically by scripts from version.txt
 [assembly: AssemblyVersion("1.6.0")]
