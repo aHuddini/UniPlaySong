@@ -1266,6 +1266,8 @@ namespace UniPlaySong
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
         private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
+        private bool autoLaunchSpotifyOnStartup = false; // Experimental: launch Spotify on startup if not running and Spotify is the source
+        private string spotifyExePath = string.Empty;    // Optional user path to Spotify.exe or a .lnk shortcut (auto-scan fallback)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
@@ -1458,6 +1460,22 @@ namespace UniPlaySong
         {
             get => spotifySkipOnGap;
             set { spotifySkipOnGap = value; OnPropertyChanged(); }
+        }
+
+        // Experimental: on Playnite startup, launch the Spotify desktop app if it isn't running and
+        // Spotify is the active Radio/Default source. Off by default. See SpotifyLauncher / TryAutoLaunchSpotify.
+        public bool AutoLaunchSpotifyOnStartup
+        {
+            get => autoLaunchSpotifyOnStartup;
+            set { autoLaunchSpotifyOnStartup = value; OnPropertyChanged(); }
+        }
+
+        // Optional path to Spotify.exe or a .lnk shortcut, used only when auto-scan of
+        // %APPDATA%\Spotify\Spotify.exe misses (Store/portable/custom installs).
+        public string SpotifyExePath
+        {
+            get => spotifyExePath;
+            set { spotifyExePath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         // Fullscreen only: game music plays only on explicit A-button select, not D-pad navigation.

@@ -357,6 +357,8 @@ namespace UniPlaySong
             s.SidebarGlowMode = SidebarGlowMode.Breathing;
             s.ShowMusicDashboard = false;
             s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
+            s.AutoLaunchSpotifyOnStartup = false;
+            s.SpotifyExePath = string.Empty;
             ShowButtonFeedback(sender, "Reset!");
         }
 
