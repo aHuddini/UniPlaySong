@@ -4159,16 +4159,11 @@ namespace UniPlaySong
             {
                 try
                 {
-                    var path = Common.SpotifyLauncher.ResolveSpotifyPath(userPath);
-                    if (string.IsNullOrEmpty(path))
+                    // Try every launch strategy: file path (Win32/user exe/.lnk), then the "spotify:"
+                    // URI, then the Store AUMID (Microsoft Store install has no launchable file path).
+                    if (!Common.SpotifyLauncher.LaunchSpotify(userPath))
                     {
-                        _fileLogger?.Warn("[AutoLaunch] No Spotify path resolved (auto-scan miss + no valid user path).");
-                        ShowSpotifyNotRunningToast();
-                        return;
-                    }
-
-                    if (!Common.SpotifyLauncher.Launch(path))
-                    {
+                        _fileLogger?.Warn("[AutoLaunch] Could not launch Spotify (no file path, URI, or Store AUMID worked).");
                         ShowSpotifyNotRunningToast();
                         return;
                     }
