@@ -200,6 +200,9 @@ namespace UniPlaySong.Common
         [DllImport("user32.dll")]
         private static extern bool BringWindowToTop(IntPtr hWnd);
 
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
         private const int SW_RESTORE = 9;
 
         // Brings the given window (Playnite's main window) to the foreground. Needed after minimizing
@@ -221,9 +224,14 @@ namespace UniPlaySong.Common
         }
 
         // Finds Spotify's main visible top-level window and minimizes it. Returns true if a window was
-        // found and minimized. Fail-safe. Match criteria: window is owned by a process named "Spotify",
-        // is visible, is a top-level window (no owner), and has a non-empty title (Spotify's helper /
-        // renderer / message-only windows are hidden, owned, or titleless, so they're skipped).
+        // found and minimized. Fail-safe. Two match strategies (Spotify ships as either flavor):
+        //   - Win32 install: the visible top-level window is owned by a process named "Spotify".
+        //   - Microsoft Store install: the visible window is a "CoreWindow" hosted inside an
+        //     "ApplicationFrameWindow" owned by ApplicationFrameHost.exe (NOT the Spotify process), so
+        //     a PID match misses it — match by window class "ApplicationFrameWindow" + a title
+        //     containing "Spotify" instead.
+        // Common filters: visible, top-level (no owner), non-empty title (skips helper/renderer/
+        // message-only windows).
         public static bool MinimizeSpotifyWindow()
         {
             try
@@ -234,19 +242,40 @@ namespace UniPlaySong.Common
                     try { spotifyPids.Add((uint)p.Id); } catch { }
                     finally { p.Dispose(); }
                 }
-                if (spotifyPids.Count == 0) return false;
 
                 IntPtr target = IntPtr.Zero;
+                var titleBuf = new StringBuilder(256);
+                var classBuf = new StringBuilder(128);
+
                 EnumWindows((hWnd, lParam) =>
                 {
                     try
                     {
                         if (!IsWindowVisible(hWnd)) return true;                 // skip hidden
                         if (GetWindow(hWnd, GW_OWNER) != IntPtr.Zero) return true; // skip owned (not top-level)
-                        if (GetWindowTextLength(hWnd) == 0) return true;          // skip titleless
 
+                        int titleLen = GetWindowTextLength(hWnd);
+                        if (titleLen == 0) return true;                          // skip titleless
+                        titleBuf.Clear();
+                        GetWindowText(hWnd, titleBuf, titleBuf.Capacity);
+                        var title = titleBuf.ToString();
+
+                        // Win32: window owned by a Spotify process.
                         GetWindowThreadProcessId(hWnd, out uint pid);
-                        if (!spotifyPids.Contains(pid)) return true;             // not a Spotify window
+                        bool win32Match = spotifyPids.Contains(pid);
+
+                        // Store: ApplicationFrameWindow-hosted window whose title mentions Spotify.
+                        bool storeMatch = false;
+                        if (!win32Match)
+                        {
+                            classBuf.Clear();
+                            GetClassName(hWnd, classBuf, classBuf.Capacity);
+                            if (classBuf.ToString() == "ApplicationFrameWindow"
+                                && title.IndexOf("Spotify", StringComparison.OrdinalIgnoreCase) >= 0)
+                                storeMatch = true;
+                        }
+
+                        if (!win32Match && !storeMatch) return true;
 
                         target = hWnd;
                         return false; // found it — stop enumerating
@@ -254,7 +283,11 @@ namespace UniPlaySong.Common
                     catch { return true; }
                 }, IntPtr.Zero);
 
-                if (target == IntPtr.Zero) return false;
+                if (target == IntPtr.Zero)
+                {
+                    Logger.Debug("[SpotifyLauncher] MinimizeSpotifyWindow: no Spotify window found yet.");
+                    return false;
+                }
 
                 ShowWindow(target, SW_MINIMIZE);
                 Logger.Info("[SpotifyLauncher] Minimized Spotify window.");
