@@ -5,10 +5,10 @@ Packages:
     ReleaseDate: 2026-07-03
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.5.10/UniPlaySong-1_5_10.pext'
     Changelog:
-      - '[New Dev & User Feature] Achievement unlock sounds — a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity: bundled PA Starter Pack, your theme''s own sounds, or your own files, with a master default as fallback. Configure in the new Gamification settings tab. Plays over a running game.'
-      - '[UI] New Gamification settings tab — completion celebration, achievement sounds, and abandoned-status settings now live together, split out of the crowded Playback tab.'
-      - '[Theme Dev Feature] "Switch Radio Mode" toggle — themes can bind a Fullscreen button (SwitchRadioMode) to flip the radio source between UPS music and Spotify without opening Desktop settings.'
-      - '[Fix] Completion/abandoned jingles and settings sound-previews no longer lag — both play instantly now.'
+      - '[New Dev & User Feature] Achievement unlock sounds: a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity: bundled PA Starter Pack, your theme''s own sounds, or your own files, with a master default as fallback. Configure in the new Gamification settings tab. Plays over a running game.'
+      - '[UI] New Gamification settings tab: completion celebration, achievement sounds, and abandoned-status settings now live together, split out of the crowded Playback tab.'
+      - '[Theme Dev Feature] "Switch Radio Mode" toggle: themes can bind a Fullscreen button (SwitchRadioMode) to flip the radio source between UPS music and Spotify without opening Desktop settings.'
+      - '[Fix] Completion/abandoned jingles and settings sound-previews no longer lag: both play instantly now.'
       - '[Fix] Now-playing album art now falls back to the game''s cover when a track has no embedded art (including Radio Mode / pool music). Spotify now-playing also shows live progress/position/duration and a cover fallback for themes that display it.'
       - '[Improved] Spotify skip/play-pause commands moved into their own "Spotify" submenu in the right-click game menu, below Music Info Card.'
       - '[Improved] Search settings merged into the Downloads tab (under a "Search" section); Theme Support tab moved next to Editing. Bolder section dividers in settings.'
