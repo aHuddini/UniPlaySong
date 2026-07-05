@@ -35,6 +35,11 @@ namespace UniPlaySong.Services.Spotify
         // Current track metadata, or SpotifyNowPlaying.Empty when unavailable.
         SpotifyNowPlaying GetNowPlaying();
 
+        // Current playback timeline (position + duration) from SMTC, or SpotifyTimeline.Empty when
+        // unavailable. Position is a point-in-time read (SMTC steps it, doesn't tick continuously).
+        // Fail-safe (never throws).
+        SpotifyTimeline GetTimeline();
+
         // Current track's album-art bytes from the SMTC thumbnail, or null when unavailable /
         // no thumbnail / failure. Fail-safe (never throws).
         byte[] TryGetAlbumArtBytes();

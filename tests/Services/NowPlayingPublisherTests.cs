@@ -50,7 +50,7 @@ namespace UniPlaySong.Tests.Services
         }
 
         private (NowPlayingPublisher pub, SpotifyControlService spotify, SongMetadataService meta, Mock<IMusicPlaybackService> pb)
-            BuildPublisher(Func<string> gameCoverResolver = null)
+            BuildPublisher(Func<string, string> gameCoverResolver = null)
         {
             var pb = new Mock<IMusicPlaybackService>();
             var spotify = new SpotifyControlService(pb.Object, _client.Object, () => _settings, null);
@@ -129,12 +129,17 @@ namespace UniPlaySong.Tests.Services
             var coverPath = System.IO.Path.Combine(_dir, "cover.jpg");
             System.IO.File.WriteAllBytes(coverPath, new byte[] { 9, 9, 9 });
 
-            var (pub, spotify, meta, pb) = BuildPublisher(() => coverPath);
+            string resolverReceivedPath = null;
+            var (pub, spotify, meta, pb) = BuildPublisher(p => { resolverReceivedPath = p; return coverPath; });
             pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
             meta.ResubscribeToService(pb.Object); // populates CurrentSongInfo from songPath
             pub.Refresh();
 
             Assert.AreEqual(coverPath, _settings.NowPlayingAlbumArtPath);
+            // The resolver must receive the TRACK's path so it can derive the owning game
+            // (Games\{GameId}\...) — the right cover for pool/radio songs, and works when
+            // CurrentGame is null (radio never sets it).
+            Assert.AreEqual(songPath, resolverReceivedPath);
         }
 
         [Test]

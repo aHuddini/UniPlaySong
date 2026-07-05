@@ -54,6 +54,7 @@ namespace UniPlaySong.Tests.Services.Spotify
             public bool TrySkipPrevious() => true;
             public bool TryTogglePlayPause() => true;
             public SpotifyNowPlaying GetNowPlaying() => Now;
+            public SpotifyTimeline GetTimeline() => SpotifyTimeline.Empty;
             public byte[] TryGetAlbumArtBytes() => null;
             // Invoke synchronously so publisher tests run end-to-end without a real dispatcher.
             public void RequestNowPlaying(Action<SpotifyNowPlaying> onResult) => onResult?.Invoke(Now);

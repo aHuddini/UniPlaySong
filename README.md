@@ -24,12 +24,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Added
 - **Achievement unlock sounds.** Plays a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity — bundled PA Starter Pack, your theme's own sounds, or your own files. New **Gamification** settings tab.
+- **Switch Radio Mode toggle for themes.** Themes can add a Fullscreen button to flip radio between UPS music and Spotify without opening Desktop settings.
 
 ### Fixed & Improved
 - **No more lag** on completion/abandoned jingles or settings sound-previews (addresses an issue #81 audio-engine slowdown) — both now play instantly. Also fixed the master achievement custom-file preview playing the wrong sound.
+- **Now-playing album art** falls back to the game's cover when a track has no embedded art (including Radio Mode). Spotify now-playing also shows live progress and time for themes that display it.
 
 ### Changed
-- **Settings tabs tidied** — Search merged into Downloads; Theme Support moved next to Editing.
+- **Settings tabs tidied** — Search merged into Downloads; Theme Support moved next to Editing; bolder section dividers.
+- **Spotify menu commands** (skip / play-pause) moved into their own submenu in the right-click game menu.
 
 ### Previous Version
 - **v1.5.9**: Music-change notifications for themes — UniPlaySong exposes live "the music just changed" data so a theme can pop up a Now Playing toast on each track change, console-style, instead of a permanent readout. Ready-made demo toast in the Theme Integration Guide.
@@ -153,6 +156,10 @@ See `docs/dev_docs/` for detailed build instructions.
 
 **Inspired by [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)** - Special thanks to the original developer for the foundation that made this project possible.
 
+### Collaborations & Contributors
+- **[Playnite Achievements](https://github.com/justin-delano/PlayniteAchievements) by Justin Delano** — collaboration on the achievement unlock sound feature. His plugin tells UniPlaySong when an achievement is earned so UPS can play the sound, and his rarity badge artwork (MIT) is used in the achievement settings. Thanks to Justin for the cross-plugin integration.
+- **[Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — author of the Aniki ReMake theme. His theme's notification sounds are bundled (with permission) as UniPlaySong's default achievement-sound presets, and he requested/tested several theme-integration features.
+
 ### Bundled Libraries
 - **Playnite SDK** - Extension framework
 - **SDL2 & SDL2_mixer** - Audio playback (zlib license)
@@ -182,4 +189,6 @@ Bundled third-party components ship under their own licenses — see [`NOTICES.t
 
 - [Gitea Repository](https://gitea.com/aHuddini/UniPlaySong)
 - [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)
+- [Playnite Achievements](https://github.com/justin-delano/PlayniteAchievements) by Justin Delano
+- [Aniki ReMake theme](https://github.com/Mike-Aniki/Aniki-ReMake) by Mike Aniki
 - [Playnite](https://playnite.link/)

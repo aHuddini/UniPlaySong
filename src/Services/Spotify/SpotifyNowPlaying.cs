@@ -31,4 +31,22 @@ namespace UniPlaySong.Services.Spotify
 
         public bool IsEmpty => string.IsNullOrEmpty(Title);
     }
+
+    // Immutable snapshot of Spotify's playback timeline from SMTC. Position is a point-in-time
+    // read (SMTC updates it in steps, not continuously); Duration is EndTime - StartTime.
+    public struct SpotifyTimeline
+    {
+        public static readonly SpotifyTimeline Empty = new SpotifyTimeline(TimeSpan.Zero, TimeSpan.Zero);
+
+        public TimeSpan Position { get; }
+        public TimeSpan Duration { get; }
+
+        public SpotifyTimeline(TimeSpan position, TimeSpan duration)
+        {
+            Position = position;
+            Duration = duration;
+        }
+
+        public bool HasDuration => Duration > TimeSpan.Zero;
+    }
 }

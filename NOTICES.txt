@@ -187,6 +187,15 @@ Original filenames: WelcomeOST.mp3 (renamed Hub OST), AcceuilOST.mp3
                    composer to reflect current usage in the Aniki ReMake
                    theme's Hub view.
 
+Achievement sound presets (Jingles/Achievements/Trophy_Notif.mp3, Trophy_Platine.mp3)
+-------------------------------------------------------------------------------------
+Composer / Source: Mike Aniki — author of the Aniki ReMake Playnite theme
+                   https://github.com/Mike-Aniki/Aniki-ReMake
+License:           Used with permission from Mike Aniki. These are the
+                   Aniki ReMake theme's notification sounds, bundled as the
+                   default achievement-unlock sound presets in UniPlaySong
+                   (v1.5.10 — "Trophy Notification" default + "Platinum Trophy").
+
 tunetank-dark-ambient-soundscape-music.mp3
 tunetank-dark-space-ambient.mp3
 ------------------------------

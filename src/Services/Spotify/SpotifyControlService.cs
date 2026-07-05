@@ -90,6 +90,11 @@ namespace UniPlaySong.Services.Spotify
             // a guard in StartRadioPlayback prevents the pool from starting while Spotify
             // is the active radio source — Spotify alone is the source.
             if (s.SpotifyRadioMode) return true;
+            // A UPS radio POOL is playing (RadioModeEnabled with a non-Spotify source): UPS owns the
+            // music, so Spotify is NOT active even if the default-music source happens to be Spotify.
+            // Without this, switching radio Spotify->UPS pool sets IsPlayingDefaultMusic=true and the
+            // gap-fill below would immediately RESUME the Spotify we just paused on disengage.
+            if (_playback?.IsInRadioMode == true) return false;
             if (s.DefaultMusicSourceOption == DefaultMusicSource.Spotify
                 && _playback?.IsPlayingDefaultMusic == true) return true;
             return false;
@@ -173,7 +178,12 @@ namespace UniPlaySong.Services.Spotify
             {
                 _radioWasOn = false;
                 _radioState = default(SpotifyRadioState);
-                if (_isActive)
+                _fileLogger?.Debug($"[Spotify] radio disengage: _isActive={_isActive}, IsPlaying={_client?.IsPlaying} — pausing Spotify");
+                // Pause Spotify whenever UPS was driving radio and Spotify is still playing — NOT gated
+                // on the internal _isActive flag, which an intervening gap-fill Recompute may have
+                // already cleared (leaving Spotify playing on after a source switch). If Spotify is
+                // audibly playing on our way out of radio, stop it so it doesn't overlap the pool.
+                if (_isActive || _client?.IsPlaying == true)
                 {
                     _client?.TryPause();
                     _isActive = false;

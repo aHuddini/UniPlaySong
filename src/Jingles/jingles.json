@@ -180,19 +180,19 @@
   {
     "file": "Achievements/Trophy_Notif.mp3",
     "title": "Trophy Notification (Default)",
-    "artist": "",
+    "artist": "Mike Aniki",
     "console": "",
-    "source": "UniPlaySong",
-    "license": "Bundled",
+    "source": "Aniki ReMake theme",
+    "license": "Used with permission",
     "category": "achievement"
   },
   {
     "file": "Achievements/Trophy_Platine.mp3",
     "title": "Platinum Trophy",
-    "artist": "",
+    "artist": "Mike Aniki",
     "console": "",
-    "source": "UniPlaySong",
-    "license": "Bundled",
+    "source": "Aniki ReMake theme",
+    "license": "Used with permission",
     "category": "achievement"
   }
 ]

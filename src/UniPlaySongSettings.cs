@@ -1268,6 +1268,7 @@ namespace UniPlaySong
         private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
+        private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
         private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path (v1.5.8)
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
@@ -1471,8 +1472,36 @@ namespace UniPlaySong
         public RadioMusicSource RadioMusicSource
         {
             get => radioMusicSource;
-            // Also raise the derived SpotifyRadioMode (depends on this) so theme bindings on it update live.
-            set { radioMusicSource = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpotifyRadioMode)); }
+            set
+            {
+                // Remember the last UPS (non-Spotify) pool so SwitchRadioMode can toggle back to it.
+                if (value != RadioMusicSource.Spotify) lastUpsRadioSource = value;
+                radioMusicSource = value;
+                OnPropertyChanged();
+                // Derived props depend on this — raise so theme bindings update live.
+                OnPropertyChanged(nameof(SpotifyRadioMode));
+                OnPropertyChanged(nameof(SwitchRadioMode));
+            }
+        }
+
+        // Last UPS radio pool used (persisted) — the source SwitchRadioMode returns to when toggled
+        // off Spotify. Never Spotify.
+        public RadioMusicSource LastUpsRadioSource
+        {
+            get => lastUpsRadioSource;
+            set { lastUpsRadioSource = value; OnPropertyChanged(); }
+        }
+
+        // Theme-bindable toggle for a Fullscreen "Switch Radio Mode" control: flips the radio source
+        // between Spotify and the last UPS pool WITHOUT visiting Desktop settings. Only switches the
+        // source — it does not turn Radio Mode on/off (the live re-route in UniPlaySong.cs applies the
+        // change only when Radio Mode is already on; otherwise it's stored for the next time it turns on).
+        // Bind: IsChecked="{PluginSettings Plugin=UniPlaySong, Path=SwitchRadioMode}".
+        [JsonIgnore]
+        public bool SwitchRadioMode
+        {
+            get => RadioMusicSource == RadioMusicSource.Spotify;
+            set => RadioMusicSource = value ? RadioMusicSource.Spotify : lastUpsRadioSource;
         }
 
         // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath

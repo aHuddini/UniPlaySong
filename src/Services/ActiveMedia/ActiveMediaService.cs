@@ -82,16 +82,30 @@ namespace UniPlaySong.Services.ActiveMedia
         private ActiveMediaSnapshot BuildSpotifySnapshot()
         {
             bool playing = _spotifyClient?.IsPlaying ?? false;
-            // Spotify position/progress is not exposed by the client; leave timeline blank.
+
+            // Timeline from SMTC (position + duration). Position is a stepped read, not a smooth
+            // per-second tick — Spotify updates it periodically — so the progress bar advances in
+            // jumps. Blank when the timeline is unavailable.
+            var tl = _spotifyClient?.GetTimeline() ?? SpotifyTimeline.Empty;
+            double progress = 0.0;
+            string posText = string.Empty, durText = string.Empty;
+            if (tl.HasDuration)
+            {
+                progress = Math.Max(0.0, Math.Min(100.0,
+                    tl.Position.TotalSeconds / tl.Duration.TotalSeconds * 100.0));
+                posText = SongTitleCleaner.FormatDuration(tl.Position);
+                durText = SongTitleCleaner.FormatDuration(tl.Duration);
+            }
+
             return new ActiveMediaSnapshot(
                 hasActiveMedia: true,
                 sourceKind: ActiveMediaSourceKind.Spotify,
                 sourceName: "Spotify",
                 isPlaying: playing,
                 isMuted: false,
-                progress: 0.0,
-                positionText: string.Empty,
-                durationText: string.Empty,
+                progress: progress,
+                positionText: posText,
+                durationText: durText,
                 volume: 0.0,
                 canNext: true,
                 canPrevious: true);

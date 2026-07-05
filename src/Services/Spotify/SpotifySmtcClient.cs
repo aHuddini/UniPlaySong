@@ -221,6 +221,46 @@ namespace UniPlaySong.Services.Spotify
 
         public byte[] TryGetAlbumArtBytes() => DoGetAlbumArtBytes();
 
+        // GetTimelineProperties() is a fast synchronous session read (unlike the async media-props
+        // fetch), so this is safe to call inline from the snapshot path without the worker.
+        public SpotifyTimeline GetTimeline()
+        {
+            var s = FindSpotify();
+            if (s == null) return SpotifyTimeline.Empty;
+            try
+            {
+                var tl = s.ControlSession?.GetTimelineProperties();
+                if (tl == null) return SpotifyTimeline.Empty;
+
+                var duration = tl.EndTime - tl.StartTime;
+                if (duration < TimeSpan.Zero) duration = TimeSpan.Zero;
+
+                // Position is reported relative to StartTime.
+                var position = tl.Position - tl.StartTime;
+
+                // SMTC only refreshes Position when Spotify pushes an update (track change, seek,
+                // pause/play) — it does NOT tick between pushes, so a raw read is stale and the bar
+                // moves in jumps. While playing, extrapolate: add the wall-clock elapsed since the
+                // timeline was last updated. Zero extra SMTC calls — pure arithmetic. Paused tracks
+                // are left frozen (correct). Clamped to [0, duration].
+                if (_cachedPlaying)
+                {
+                    var elapsed = DateTimeOffset.UtcNow - tl.LastUpdatedTime;
+                    if (elapsed > TimeSpan.Zero) position += elapsed;
+                }
+
+                if (position < TimeSpan.Zero) position = TimeSpan.Zero;
+                if (duration > TimeSpan.Zero && position > duration) position = duration;
+
+                return new SpotifyTimeline(position, duration);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[Spotify] GetTimeline failed: {ex.Message}");
+                return SpotifyTimeline.Empty;
+            }
+        }
+
         // Fetch now-playing OFF the UI thread, then invoke onResult ON the UI thread.
         public void RequestNowPlaying(Action<SpotifyNowPlaying> onResult)
         {

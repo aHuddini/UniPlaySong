@@ -1570,6 +1570,37 @@ namespace UniPlaySong
                 return;
             }
 
+            // "Switch Radio Mode" (v1.5.10): a theme flipped the radio SOURCE (UPS pool <-> Spotify)
+            // live via {PluginSettings Path=SwitchRadioMode / RadioMusicSource}. Re-route ONLY when
+            // Radio Mode is already ON — this switches the source, it does not turn radio on/off. When
+            // radio is off, the new source is just stored and takes effect the next time it turns on.
+            // Uses the SAME proven sub-logic as the RadioModeEnabled ON path above (branching on
+            // RadioMusicSource == Spotify) to avoid the both-playing / engage-timing bugs.
+            if (e.PropertyName == nameof(UniPlaySongSettings.RadioMusicSource))
+            {
+                _fileLogger?.Debug($"OnSettingsServicePropertyChanged: RadioMusicSource={_settings.RadioMusicSource} (theme write)");
+                if (!_settings.RadioModeEnabled) return; // source stored; applied when radio turns on
+
+                if (_settings.RadioMusicSource == RadioMusicSource.Spotify)
+                {
+                    // Switching TO Spotify: stop the UPS radio pool so Spotify plays alone. Routing
+                    // through PlayGameMusic (no forceReload) hits the SpotifyRadioMode suppression
+                    // branch (fade-out + suppress); Recompute engages Spotify now, not on the next poll.
+                    if (_playbackService.IsInRadioMode) _playbackService.StopRadioMode();
+                    if (game != null) _playbackService.PlayGameMusic(game, _settings);
+                    else _playbackService.Stop();
+                    _spotifyControlService?.Recompute();
+                }
+                else
+                {
+                    // Switching TO a UPS pool: disengage Spotify (Recompute sees SpotifyRadioMode now
+                    // false and releases control) and start the UPS radio pool.
+                    _spotifyControlService?.Recompute();
+                    _playbackService.StartRadioPlayback(_settings);
+                }
+                return;
+            }
+
             if (e.PropertyName == nameof(UniPlaySongSettings.PlayOnlyOnGameSelect))
             {
                 _fileLogger?.Debug($"OnSettingsServicePropertyChanged: PlayOnlyOnGameSelect={_settings.PlayOnlyOnGameSelect} (theme write)");
@@ -2763,7 +2794,7 @@ namespace UniPlaySong
                 nowPlayingArtWriter,
                 () => _settings,
                 _fileLogger,
-                ResolveCurrentGameCoverPath); // game-music fallback when a track has no embedded art
+                ResolveGameCoverPathForTrack); // cover fallback: track's owning game, else selected game
             _nowPlayingPublisher.Refresh(); // publish initial state
 
             // ActiveMediaService: resolves the single audible active source (UPS or Spotify)
@@ -2920,20 +2951,56 @@ namespace UniPlaySong
         // Resolves the currently-playing game's cover-art file path for the now-playing fallback
         // (used when a game-music track has no embedded album art). Cover, then background; returns
         // null on any miss. The same image-resolution pattern the dashboard uses. Fail-safe.
-        private string ResolveCurrentGameCoverPath()
+        // Resolves the cover for a now-playing track. Prefers the game that OWNS the track (parsed
+        // from its ...\Games\{GameId}\ path) so pool/radio songs show THEIR game's cover, not the
+        // selected game's; also works when CurrentGame is null (radio never sets it). Falls back to
+        // the selected/current game for non-game-owned files (custom folder, bundled presets).
+        private string ResolveGameCoverPathForTrack(string songFilePath)
         {
             try
             {
-                var game = _playbackService?.CurrentGame;
+                var game = ResolveOwningGameFromPath(songFilePath) ?? _playbackService?.CurrentGame;
                 var imageId = game?.CoverImage ?? game?.BackgroundImage;
-                if (string.IsNullOrEmpty(imageId)) return null;
-                return _api?.Database?.GetFullFilePath(imageId);
+                if (string.IsNullOrEmpty(imageId))
+                {
+                    _fileLogger?.Debug($"[NowPlaying] cover resolver: game='{game?.Name ?? "<null>"}' has no CoverImage/BackgroundImage (track='{songFilePath}')");
+                    return null;
+                }
+                var full = _api?.Database?.GetFullFilePath(imageId);
+                if (string.IsNullOrEmpty(full) || !System.IO.File.Exists(full))
+                    _fileLogger?.Debug($"[NowPlaying] cover resolver: game='{game?.Name}' imageId='{imageId}' -> path '{full}' missing on disk");
+                return full;
             }
             catch (Exception ex)
             {
-                _fileLogger?.Debug($"ResolveCurrentGameCoverPath failed: {ex.Message}");
+                _fileLogger?.Debug($"ResolveGameCoverPathForTrack failed: {ex.Message}");
                 return null;
             }
+        }
+
+        // Extracts the owning game from a UPS music path (...\UniPlaySong\Games\{GameId}\track.mp3).
+        // Returns null for non-game-owned paths (custom folder, default music, Spotify/no path).
+        private Game ResolveOwningGameFromPath(string songFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(songFilePath)) return null;
+            try
+            {
+                var parts = songFilePath.Split(
+                    new[] { System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar });
+                for (int i = 0; i < parts.Length - 1; i++)
+                {
+                    if (string.Equals(parts[i], Constants.GamesFolderName, StringComparison.OrdinalIgnoreCase)
+                        && Guid.TryParse(parts[i + 1], out var gameId))
+                    {
+                        return _api?.Database?.Games?.Get(gameId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[NowPlaying] owning-game parse failed for '{songFilePath}': {ex.Message}");
+            }
+            return null;
         }
 
         private void InitializeMenuHandlers()
@@ -4053,9 +4120,11 @@ namespace UniPlaySong
             // Route through the control SERVICE, not the client, so manual Play/Pause manages the
             // hands-off "manual pause hold" — otherwise a manual pause while Spotify is the active
             // music is instantly auto-resumed on the next recompute.
-            actions.Add(("Spotify: Skip to next track", () => _spotifyControlService?.SkipNext()));
-            actions.Add(("Spotify: Previous track", () => _spotifyControlService?.SkipPrevious()));
-            actions.Add(("Spotify: Play/Pause", () => _spotifyControlService?.ToggleManualPlayPause()));
+            // Labels are bare (no "Spotify:" prefix) because they live in the dedicated "Spotify"
+            // submenu (see GetGameMenuItems); the submenu header already provides the context.
+            actions.Add(("Skip to next track", () => _spotifyControlService?.SkipNext()));
+            actions.Add(("Previous track", () => _spotifyControlService?.SkipPrevious()));
+            actions.Add(("Play/Pause", () => _spotifyControlService?.ToggleManualPlayPause()));
             return actions;
         }
 
@@ -4079,21 +4148,6 @@ namespace UniPlaySong
             string menuSection = (songs != null && songs.Count > 0)
                 ? $"{Constants.MenuSectionName} ({songs.Count} {(songs.Count == 1 ? "song" : "songs")})"
                 : Constants.MenuSectionName;
-
-            // Spotify transport commands — only when a controllable Spotify session is present.
-            // Lets the user skip/toggle Spotify directly from the Fullscreen game menu (where the
-            // Top Panel / Dashboard don't render). One source of truth via GetSpotifyMenuActions.
-            // Use the SAME menuSection as the other game-menu items so these live inside the single
-            // existing UniPlaySong submenu (not a second one) — the "Spotify: …" labels self-group.
-            foreach (var (label, action) in GetSpotifyMenuActions())
-            {
-                items.Add(new GameMenuItem
-                {
-                    Description = label,
-                    MenuSection = menuSection,
-                    Action = _ => action()
-                });
-            }
 
             // Multi-game selection: Show bulk operations
             if (games.Count > 1)
@@ -4186,6 +4240,21 @@ namespace UniPlaySong
                     MenuSection = menuSection,
                     Action = _ => _musicInfoCardHandler.Show(game)
                 });
+
+                // Spotify transport commands — only when a controllable Spotify session is present.
+                // Nested in a dedicated "Spotify" submenu under the UniPlaySong section (Playnite uses
+                // '|' as the submenu separator), placed right below Music Info Card. One source of
+                // truth via GetSpotifyMenuActions.
+                var spotifySection = menuSection + "|Spotify";
+                foreach (var (label, action) in GetSpotifyMenuActions())
+                {
+                    items.Add(new GameMenuItem
+                    {
+                        Description = label,
+                        MenuSection = spotifySection,
+                        Action = _ => action()
+                    });
+                }
 
                 items.Add(new GameMenuItem
                 {
@@ -4568,14 +4637,14 @@ namespace UniPlaySong
 
             // Spotify transport commands — only when a controllable Spotify session is present.
             // Same actions as the game menu (one source of truth). MenuSection "@" places them at
-            // the TOP of the Fullscreen Extensions menu (not nested under a UniPlaySong submenu) —
-            // the labels are self-identifying ("Spotify: …"). Matches how UPS's existing Fullscreen
-            // quick-settings sit directly in Extensions.
+            // the TOP of the Fullscreen Extensions menu (not nested under a UniPlaySong submenu), so
+            // they carry a "Spotify: " prefix for context (the shared action labels are bare, since
+            // the game menu nests them under a "Spotify" submenu that already provides context).
             foreach (var (label, action) in GetSpotifyMenuActions())
             {
                 items.Add(new MainMenuItem
                 {
-                    Description = label,
+                    Description = "Spotify: " + label,
                     MenuSection = "@",
                     Action = _ => action()
                 });

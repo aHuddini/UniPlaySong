@@ -17,7 +17,7 @@ namespace UniPlaySong.Services
         private readonly ISpotifyClient _spotifyClient;
         private readonly NowPlayingArtWriter _artWriter;
         private readonly Func<UniPlaySongSettings> _getSettings;
-        private readonly Func<string> _getGameCoverArtPath;
+        private readonly Func<string, string> _getGameCoverArtPath;
         private readonly FileLogger _fileLogger;
         private readonly object _publishLock = new object();
         private bool _disposed;
@@ -31,10 +31,12 @@ namespace UniPlaySong.Services
         // timer). Long enough that the true state is observed, short enough to re-arm quickly.
         private static readonly TimeSpan MusicChangedPulse = TimeSpan.FromMilliseconds(750);
 
-        // getGameCoverArtPath: returns the current game's cover-art file path (or null/""), used as
-        // a fallback for GAME MUSIC when the track has no embedded art. Resolved at the composition
-        // root (where the Playnite API lives) so the publisher stays decoupled from it. Optional —
-        // pass null to disable the fallback (the ♪ placeholder shows instead). Spotify never uses it.
+        // getGameCoverArtPath: takes the playing track's file path (null for Spotify) and returns a
+        // game cover-art file path (or null/""), used as a fallback when the track has no embedded
+        // art or Spotify exposes no album art. The resolver prefers the game that OWNS the track
+        // (parsed from its ...\Games\{GameId}\ path — so pool/radio songs get THEIR game's cover),
+        // then the selected game. Resolved at the composition root (where the Playnite API lives) so
+        // the publisher stays decoupled. Optional — null disables the fallback (♪ placeholder shows).
         public NowPlayingPublisher(
             SongMetadataService metadata,
             SpotifyControlService spotify,
@@ -42,7 +44,7 @@ namespace UniPlaySong.Services
             NowPlayingArtWriter artWriter,
             Func<UniPlaySongSettings> getSettings,
             FileLogger fileLogger,
-            Func<string> getGameCoverArtPath = null)
+            Func<string, string> getGameCoverArtPath = null)
         {
             _metadata = metadata;
             _spotify = spotify;
@@ -101,6 +103,18 @@ namespace UniPlaySong.Services
                                         ? string.Empty
                                         : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
                                     var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
+                                    if (string.IsNullOrEmpty(artPath))
+                                    {
+                                        // No Spotify album art — fall back to the selected game's cover
+                                        // so the now-playing slot isn't empty (same fallback as game music).
+                                        // Null path: a Spotify track has no owning-game folder.
+                                        var cover = TryGetGameCoverPath(null);
+                                        if (!string.IsNullOrEmpty(cover))
+                                        {
+                                            _artWriter?.Clear(); // point at the cover directly
+                                            artPath = cover;
+                                        }
+                                    }
                                     Publish(s2, title, artist, artPath, album, genre, duration);
                                 }
                             });
@@ -114,14 +128,23 @@ namespace UniPlaySong.Services
                         var artPath = _artWriter?.WriteFromAudioFile(song.FilePath) ?? string.Empty;
                         if (string.IsNullOrEmpty(artPath))
                         {
-                            // No embedded track art — fall back to the game's cover art (game music only).
-                            var cover = TryGetGameCoverPath();
+                            // No embedded track art — fall back to a game cover: the track's OWNING
+                            // game (parsed from its Games\{GameId}\ path — right cover for pool/radio
+                            // songs, and works when CurrentGame is null), else the selected game.
+                            var cover = TryGetGameCoverPath(song.FilePath);
+                            _fileLogger?.Debug($"[NowPlaying] UPS art: embedded=none, file='{song.FilePath}', coverFallback='{cover}'");
                             if (!string.IsNullOrEmpty(cover))
                             {
                                 _artWriter?.Clear(); // drop any stale written art; we point at the cover directly
                                 artPath = cover;
                             }
                         }
+                        else
+                        {
+                            _fileLogger?.Debug($"[NowPlaying] UPS art: embedded='{artPath}'");
+                        }
+                        if (string.IsNullOrEmpty(artPath))
+                            _fileLogger?.Debug("[NowPlaying] UPS art: FINAL empty (no embedded art AND no game cover resolved)");
                         // Expose UPS song duration too (like Spotify) when the track carries it.
                         var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
                         Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
@@ -140,14 +163,14 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Resolve the current game's cover-art file via the injected resolver. Returns "" when no
-        // resolver, no game/cover, or the file is missing. Fail-safe (never throws).
-        private string TryGetGameCoverPath()
+        // Resolve a game cover for the given track path (null for Spotify) via the injected resolver.
+        // Returns "" when no resolver, no game/cover, or the file is missing. Fail-safe (never throws).
+        private string TryGetGameCoverPath(string songFilePath)
         {
             if (_getGameCoverArtPath == null) return string.Empty;
             try
             {
-                var path = _getGameCoverArtPath();
+                var path = _getGameCoverArtPath(songFilePath);
                 return (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path)) ? path : string.Empty;
             }
             catch (Exception ex)
@@ -162,6 +185,7 @@ namespace UniPlaySong.Services
         private void Publish(UniPlaySongSettings s, string title, string artist, string artPath,
             string album = "", string genre = "", string duration = "")
         {
+            _fileLogger?.Debug($"[NowPlaying] Publish: title='{title}', artPath='{artPath}'");
             s.NowPlayingTitle = title;
             s.NowPlayingArtist = artist;
             s.NowPlayingAlbumArtPath = artPath;

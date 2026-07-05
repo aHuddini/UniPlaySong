@@ -14,6 +14,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Keep UPS music playing during a **decorative/silent** theme video (don't let it pause the music) | Set the video's `IsMuted="True"` (or `Volume="0"`) — UPS ignores muted video automatically |
 | Swap game music for the user's default music while a custom panel is open (tag editor, sidebar, etc.) — restore game music on close | `UPS_MusicControl_PauseGamePlayDefault` element (v1.5.3+) |
 | Bind UPS settings (Enable Music, Radio Mode, Calm Down, etc.) to checkboxes in your theme | `{PluginSettings}` markup (v1.4.6+) |
+| Switch the radio source (UPS pool ↔ Spotify) from Fullscreen | `SwitchRadioMode` bool via `{PluginSettings}` (v1.5.10+) |
 | Ship a dedicated audio track that UPS plays as default music | `UPS_BackgroundAudio.mp3` in your theme's `audio/` folder (v1.5.2+) |
 | Ship per-rarity achievement unlock sounds | `audio/Achievements/{rarity}.wav` in your theme's folder (v1.5.10+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |
@@ -218,7 +219,7 @@ For an in-theme audio quick-settings menu (Enable Game Music, Radio Mode, Calm D
 | `EnableDefaultMusic` | bool | Default / ambient music |
 | `RadioModeEnabled` | bool | Continuous pool-based playback |
 
-> **Radio source is the user's choice.** Binding a toggle to `RadioModeEnabled` turns Radio Mode on/off; the *source* it plays (a UPS pool, or **Spotify**) is chosen by the user in UniPlaySong's settings (Playback → Radio Mode → source). So your existing "Radio Mode" button automatically honors Spotify when the user has picked it — no theme change needed. (Optional: `RadioMusicSource` is also bindable if you want to offer a source picker in your theme.)
+> **Radio source is the user's choice.** Binding a toggle to `RadioModeEnabled` turns Radio Mode on/off; the *source* it plays (a UPS pool, or **Spotify**) is chosen by the user in UniPlaySong's settings (Playback → Radio Mode → source). So your existing "Radio Mode" button automatically honors Spotify when the user has picked it — no theme change needed. To let users **switch the source from Fullscreen** (UPS pool ↔ Spotify) without visiting Desktop settings, bind the `SwitchRadioMode` toggle — see [Switch Radio Mode](#switch-radio-mode--flip-ups-pool--spotify-without-leaving-fullscreen-v1510) below.
 >
 > **Read-only status (for gating your own triggers):** `RadioModeEnabled` also reads back the current state, and the derived read-only `SpotifyRadioMode` is `true` only when Radio Mode is on *and* the source is Spotify. Both update live — use them to keep an overlay from pausing Radio Mode music (see [Don't pause Radio Mode music for your overlay](#dont-pause-radio-mode-music-for-your-overlay--gate-the-tag-on-radiomodeenabled)).
 | `PlayOnlyOnGameSelect` | bool | When false, music plays while browsing too |
@@ -253,6 +254,26 @@ Any property on `UniPlaySongSettings` is bindable this way — these five are ju
 ```
 
 Two-way sync is automatic — flipping a checkbox in the theme and flipping the same setting in UPS's own settings dialog stay in sync.
+
+### Switch Radio Mode — flip UPS pool ↔ Spotify without leaving Fullscreen (v1.5.10+)
+
+`RadioMusicSource` is a **global** setting, so before v1.5.10 switching between a UPS-pool radio and Spotify radio meant going back to Desktop settings. `SwitchRadioMode` is a theme-bindable **bool toggle** that flips the radio source live from Fullscreen:
+
+```xml
+<!-- Unchecked = UPS pool radio · Checked = Spotify radio -->
+<CheckBox Content="Switch Radio Mode (UPS ↔ Spotify)"
+          IsChecked="{PluginSettings Plugin=UniPlaySong, Path=SwitchRadioMode, Mode=TwoWay}"/>
+```
+
+| `Path=` | Type | Behavior |
+|---|---|---|
+| `SwitchRadioMode` | bool | `false` → last UPS pool (FullLibrary, etc.), `true` → Spotify. Reads back the current source live. |
+
+- **Switches the source only** — it does **not** turn Radio Mode on or off. If Radio Mode is already on, the switch takes effect immediately (the current pool fades out and the new source starts). If Radio Mode is off, the choice is stored and applies the next time Radio Mode turns on.
+- Toggling off Spotify returns to the **last UPS pool** the user had (remembered across restarts), not a default.
+- Pair it with a `RadioModeEnabled` toggle if you want one control for on/off and another for the source. `SpotifyRadioMode` (read-only) still reflects the result for gating your own triggers.
+
+> Prefer `SwitchRadioMode` (a clean bool) for a Fullscreen "switch" button. `RadioMusicSource` (the raw enum) is also bindable if you want a full multi-source picker (FullLibrary, CustomFolder, Spotify, …).
 
 ### Aniki ReMake reference (drop-in)
 
@@ -585,7 +606,7 @@ For **plugins** (e.g. Playnite Achievements) — or a theme — that want UniPla
 | Ultra-rare | `ultrarareachievement` | `playnite://uniplaysong/playniteachievements/ultrarareachievement` |
 | Capstone (platinum / 100%) | `capstoneachievement` | `playnite://uniplaysong/playniteachievements/capstoneachievement` |
 
-Each tier plays that rarity's own sound if the user set one, otherwise a shared **default** achievement sound. Case-insensitive; an unknown/missing tier plays the default (forward-compatible).
+Each tier resolves to a sound via the user's selected **Achievement Sound Pack** (their theme's sounds, the bundled PA Starter Pack, or their own custom files), falling back to a master default sound. Case-insensitive; an unknown/missing tier plays the default (forward-compatible). Theme devs: to ship your own per-rarity sounds, see ["Ship achievement unlock sounds with your theme"](#ship-achievement-unlock-sounds-with-your-theme-v1510) above.
 
 ---
 
