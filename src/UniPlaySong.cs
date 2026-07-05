@@ -4172,19 +4172,33 @@ namespace UniPlaySong
                     // Along the way, minimize Spotify's window once it appears so it doesn't sit on
                     // top of Playnite (Spotify has no "start minimized" option). The window can show
                     // before OR after the SMTC session registers, so we retry each tick until it takes.
+                    // In Fullscreen, minimizing Spotify hands focus to the desktop instead of back to
+                    // Playnite's fullscreen window (controller input goes dead), so we re-assert
+                    // Playnite as foreground after minimizing. In Desktop, minimizing already restores
+                    // Playnite naturally, and force-focusing could yank focus if the user tabbed away.
+                    bool restoreForeground = IsFullscreen;
+                    var playniteHandle = _mainWindowHandle;
+
                     bool minimized = false;
                     for (int i = 0; i < 10; i++)
                     {
                         System.Threading.Thread.Sleep(1000);
 
                         if (!minimized)
+                        {
                             minimized = Common.SpotifyLauncher.MinimizeSpotifyWindow();
+                            if (minimized && restoreForeground)
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    Common.SpotifyLauncher.BringWindowToForeground(playniteHandle)));
+                        }
 
                         if (_spotifyClient?.IsAvailable == true)
                         {
                             _fileLogger?.Debug($"[AutoLaunch] Spotify session available after ~{i + 1}s — engaging.");
                             // One last minimize attempt in case the window only just appeared this tick.
-                            if (!minimized) Common.SpotifyLauncher.MinimizeSpotifyWindow();
+                            if (!minimized && Common.SpotifyLauncher.MinimizeSpotifyWindow() && restoreForeground)
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    Common.SpotifyLauncher.BringWindowToForeground(playniteHandle)));
                             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                                 _spotifyControlService?.Recompute()));
                             return;

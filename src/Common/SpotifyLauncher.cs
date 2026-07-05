@@ -194,6 +194,32 @@ namespace UniPlaySong.Common
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool BringWindowToTop(IntPtr hWnd);
+
+        private const int SW_RESTORE = 9;
+
+        // Brings the given window (Playnite's main window) to the foreground. Needed after minimizing
+        // Spotify in Fullscreen mode: minimizing Spotify hands focus to the desktop rather than back to
+        // the Playnite fullscreen window, leaving controller input dead until the user clicks. Called
+        // right after our own SW_MINIMIZE (which released the foreground-lock holder), so
+        // SetForegroundWindow reliably takes here. Fail-safe. No-op on IntPtr.Zero.
+        public static void BringWindowToForeground(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return;
+            try
+            {
+                ShowWindow(hWnd, SW_RESTORE); // in case it was minimized
+                BringWindowToTop(hWnd);
+                SetForegroundWindow(hWnd);
+                Logger.Debug("[SpotifyLauncher] Restored Playnite to foreground.");
+            }
+            catch (Exception ex) { Logger.Warn($"[SpotifyLauncher] BringWindowToForeground failed: {ex.Message}"); }
+        }
+
         // Finds Spotify's main visible top-level window and minimizes it. Returns true if a window was
         // found and minimized. Fail-safe. Match criteria: window is owned by a process named "Spotify",
         // is visible, is a top-level window (no owner), and has a non-empty title (Spotify's helper /
