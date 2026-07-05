@@ -952,6 +952,19 @@ namespace UniPlaySong
             }
         });
 
+        // Picker for the optional Spotify.exe / shortcut path (Experimental → Auto-launch Spotify).
+        public ICommand BrowseSpotifyExeCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Spotify (Spotify.exe or shortcut)|Spotify.exe;*.lnk|Executables|*.exe|Shortcuts|*.lnk|All Files|*.*"
+            };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                Settings.SpotifyExePath = dialog.FileName;
+            }
+        });
+
         // Previews the master BUNDLED JINGLE (the picker's selection) — independent of which sound-type
         // radio is active, so the jingle row's Preview always previews the jingle.
         public ICommand PreviewAchievementSoundCommand => new Common.RelayCommand<object>((a) =>

@@ -4479,6 +4479,24 @@
                         </ComboBox>
                     </StackPanel>
 
+                    <!-- Auto-launch Spotify (Experimental) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Auto-launch Spotify (Experimental)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Auto-launch Spotify on startup if not running"
+                              IsChecked="{Binding Settings.AutoLaunchSpotifyOnStartup}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,8"
+                               Text="When Spotify is your Radio Mode or Default Music source and the Spotify desktop app isn't running, UniPlaySong opens it on startup so music can begin. Only acts when Spotify is your active source. Media controls need Spotify running."/>
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,0"
+                                IsEnabled="{Binding Settings.AutoLaunchSpotifyOnStartup}">
+                        <TextBlock Text="Spotify path (optional): " VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Settings.SpotifyExePath, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="Browse..." Command="{Binding BrowseSpotifyExeCommand}" Padding="10,4"/>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,3,0,0"
+                               Text="Leave empty for standard installs (auto-detected at %APPDATA%\Spotify\Spotify.exe). For Microsoft Store or custom installs, point this at Spotify.exe or its shortcut (.lnk)."/>
+
                     <!-- Music Dashboard -->
                     <Separator Margin="0,15"/>
                     <TextBlock Text="Music Dashboard" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
