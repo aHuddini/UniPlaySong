@@ -4141,11 +4141,14 @@ namespace UniPlaySong
         }
 
         // Experimental: on startup, if Spotify is the active source and the desktop app isn't
-        // running, launch it (auto-scanned or user-pointed path), poll up to 10s for its SMTC
-        // session, then run the standard engage (Recompute sends Play). Failure -> a single toast.
-        // All blocking work (Process.Start + poll) runs on the Spotify worker thread — NEVER the UI
-        // thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called once
-        // from OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
+        // running, launch it (file path / spotify: URI / Store AUMID), then run a 15s dual-goal
+        // watch: ENGAGE when the SMTC session registers (standard Recompute sends Play; toast at the
+        // 10s mark if no session), and MINIMIZE Spotify's window whenever it appears (+ re-assert
+        // Playnite foreground in Fullscreen). The two goals are decoupled because Spotify's session
+        // usually registers BEFORE its window renders on a cold start.
+        // All blocking work (Process.Start + watch loop) runs on the Spotify worker thread — NEVER
+        // the UI thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called
+        // once from OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
         private void TryAutoLaunchSpotify()
         {
             var settings = _settings;
@@ -4168,45 +4171,55 @@ namespace UniPlaySong
                         return;
                     }
 
-                    // Poll up to 10s (1s interval) for the SMTC session to register, then engage.
-                    // Along the way, minimize Spotify's window once it appears so it doesn't sit on
-                    // top of Playnite (Spotify has no "start minimized" option). The window can show
-                    // before OR after the SMTC session registers, so we retry each tick until it takes.
-                    // In Fullscreen, minimizing Spotify hands focus to the desktop instead of back to
-                    // Playnite's fullscreen window (controller input goes dead), so we re-assert
-                    // Playnite as foreground after minimizing. In Desktop, minimizing already restores
-                    // Playnite naturally, and force-focusing could yank focus if the user tabbed away.
+                    // Watch loop (15s, 1s ticks) with TWO independent goals — deliberately decoupled,
+                    // because cold-start Spotify usually registers its SMTC session BEFORE its window
+                    // renders, so an engage-and-return poll stops watching before the window exists
+                    // and nothing ever minimizes it:
+                    //   1. ENGAGE: when the SMTC session registers, run the standard Recompute (sends
+                    //      Play). If no session by the 10s mark, show the failure toast — but keep
+                    //      watching for the window.
+                    //   2. MINIMIZE: when Spotify's window appears, minimize it (Spotify has no
+                    //      "start minimized" option). In Fullscreen, then re-assert Playnite as
+                    //      foreground (minimizing hands focus to the desktop there, killing controller
+                    //      input); in Desktop, minimizing restores Playnite naturally and force-focus
+                    //      could yank focus if the user tabbed away.
+                    // Exits early only when BOTH goals are met.
                     bool restoreForeground = IsFullscreen;
-                    var playniteHandle = _mainWindowHandle;
-
                     bool minimized = false;
-                    for (int i = 0; i < 10; i++)
+                    bool engaged = false;
+                    bool toasted = false;
+
+                    for (int i = 1; i <= 15; i++)
                     {
                         System.Threading.Thread.Sleep(1000);
 
                         if (!minimized)
                         {
                             minimized = Common.SpotifyLauncher.MinimizeSpotifyWindow();
+                            _fileLogger?.Debug($"[AutoLaunch] t={i}s minimize attempt -> {(minimized ? "MINIMIZED" : "window not found yet")}");
                             if (minimized && restoreForeground)
-                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                                    Common.SpotifyLauncher.BringWindowToForeground(playniteHandle)));
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(RestorePlayniteForeground));
                         }
 
-                        if (_spotifyClient?.IsAvailable == true)
+                        if (!engaged && _spotifyClient?.IsAvailable == true)
                         {
-                            _fileLogger?.Debug($"[AutoLaunch] Spotify session available after ~{i + 1}s — engaging.");
-                            // One last minimize attempt in case the window only just appeared this tick.
-                            if (!minimized && Common.SpotifyLauncher.MinimizeSpotifyWindow() && restoreForeground)
-                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                                    Common.SpotifyLauncher.BringWindowToForeground(playniteHandle)));
+                            engaged = true;
+                            _fileLogger?.Debug($"[AutoLaunch] t={i}s Spotify session available — engaging.");
                             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                                 _spotifyControlService?.Recompute()));
-                            return;
                         }
+
+                        if (!engaged && !toasted && i == 10)
+                        {
+                            toasted = true;
+                            _fileLogger?.Warn("[AutoLaunch] Spotify session not available after 10s.");
+                            ShowSpotifyNotRunningToast();
+                        }
+
+                        if (engaged && minimized) return; // both goals met
                     }
 
-                    _fileLogger?.Warn("[AutoLaunch] Spotify session not available after 10s.");
-                    ShowSpotifyNotRunningToast();
+                    _fileLogger?.Debug($"[AutoLaunch] watch ended (engaged={engaged}, minimized={minimized}).");
                 }
                 catch (Exception ex)
                 {
@@ -4216,6 +4229,23 @@ namespace UniPlaySong
         }
 
         // Single failure toast (Jingle/Download style) for the auto-launch flow. Marshalled to UI.
+        // Brings Playnite back to the foreground after the auto-launch minimizes Spotify (Fullscreen).
+        // Resolves the window handle AT CALL TIME on the UI thread: _mainWindowHandle is assigned
+        // LATER in OnApplicationStarted than the auto-launch dispatch, so an eager capture at dispatch
+        // time reads IntPtr.Zero and the restore silently no-ops (the original Fullscreen focus bug).
+        private void RestorePlayniteForeground()
+        {
+            try
+            {
+                var handle = _mainWindowHandle;
+                if (handle == IntPtr.Zero && Application.Current?.MainWindow != null)
+                    handle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
+                _fileLogger?.Debug($"[AutoLaunch] restoring Playnite foreground (handle={(handle == IntPtr.Zero ? "ZERO!" : "ok")})");
+                Common.SpotifyLauncher.BringWindowToForeground(handle);
+            }
+            catch (Exception ex) { _fileLogger?.Debug($"[AutoLaunch] RestorePlayniteForeground failed: {ex.Message}"); }
+        }
+
         private void ShowSpotifyNotRunningToast()
         {
             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
