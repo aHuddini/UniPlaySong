@@ -3352,90 +3352,96 @@
                     </StackPanel>
                     -->
 
-                    <!-- Search settings (merged from the former Search tab in v1.5.10) -->
+                    <!-- Search settings (merged from the former Search tab in v1.5.10) — collapsible -->
                     <Separator Margin="0,20"/>
-                    <TextBlock Text="Search" FontSize="16" FontWeight="Bold" Margin="0,10,0,4"/>
-                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,15"/>
+                    <Expander IsExpanded="False" Margin="0,10,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Search" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                            <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,15"/>
 
-                    <CheckBox Content="Enable Search Result Caching"
-                              IsChecked="{Binding Settings.EnableSearchCache}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, caches search results from KHInsider and YouTube to avoid redundant searches. Cached results expire after the specified duration."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                            <CheckBox Content="Enable Search Result Caching"
+                                      IsChecked="{Binding Settings.EnableSearchCache}"
+                                      Margin="0,5"/>
+                            <TextBlock Text="When enabled, caches search results from KHInsider and YouTube to avoid redundant searches. Cached results expire after the specified duration."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.EnableSearchCache}">
-                        <TextBlock Text="Cache Duration (days): " VerticalAlignment="Center" Width="150"/>
-                        <TextBox Text="{Binding Settings.SearchCacheDurationDays}"
-                                 Width="60"
-                                 Margin="0,0,10,0"/>
-                        <TextBlock Text="(1-30 days)"
-                                   VerticalAlignment="Center"
-                                   FontSize="11"
-                                   Foreground="Gray"/>
-                    </StackPanel>
-                    <TextBlock Text="How long to keep cached search results before they expire. Longer duration = fewer searches but may miss new uploads."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.EnableSearchCache}">
+                                <TextBlock Text="Cache Duration (days): " VerticalAlignment="Center" Width="150"/>
+                                <TextBox Text="{Binding Settings.SearchCacheDurationDays}"
+                                         Width="60"
+                                         Margin="0,0,10,0"/>
+                                <TextBlock Text="(1-30 days)"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"/>
+                            </StackPanel>
+                            <TextBlock Text="How long to keep cached search results before they expire. Longer duration = fewer searches but may miss new uploads."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Content="Clear Search Cache"
-                                Width="150"
-                                Command="{Binding ClearSearchCache}"/>
-                        <TextBlock Text="{Binding CacheStatsText}"
-                                   VerticalAlignment="Center"
-                                   Margin="15,0,0,0"
-                                   FontSize="11"
-                                   Foreground="Gray"/>
-                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Clear Search Cache"
+                                        Width="150"
+                                        Command="{Binding ClearSearchCache}"/>
+                                <TextBlock Text="{Binding CacheStatsText}"
+                                           VerticalAlignment="Center"
+                                           Margin="15,0,0,0"
+                                           FontSize="11"
+                                           Foreground="Gray"/>
+                            </StackPanel>
 
-                    <Separator Margin="0,20"/>
+                            <Separator Margin="0,20"/>
 
-                    <!-- Search Hint Database Section -->
-                    <TextBlock Text="Search Hint Database" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-                    <TextBlock Text="The search hints database helps find correct soundtracks for games with problematic names."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,15"/>
+                            <!-- Search Hint Database Section -->
+                            <TextBlock Text="Search Hint Database" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                            <TextBlock Text="The search hints database helps find correct soundtracks for games with problematic names."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,15"/>
 
-                    <RadioButton Content="Use bundled database"
-                                 IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}}"
-                                 GroupName="HintsDatabase"
-                                 Margin="0,5,0,5"/>
+                            <RadioButton Content="Use bundled database"
+                                         IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}}"
+                                         GroupName="HintsDatabase"
+                                         Margin="0,5,0,5"/>
 
-                    <RadioButton Content="Use custom database file"
-                                 IsChecked="{Binding Settings.UseCustomHintsDatabase}"
-                                 GroupName="HintsDatabase"
-                                 Margin="0,5,0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,10"
-                                IsEnabled="{Binding Settings.UseCustomHintsDatabase}">
-                        <TextBox Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
-                                 Width="350"
-                                 VerticalContentAlignment="Center"
-                                 IsReadOnly="True"/>
-                        <Button Content="Browse..."
-                                Width="80"
-                                Margin="5,0,0,0"
-                                Command="{Binding BrowseForCustomHintsDatabase}"/>
-                    </StackPanel>
+                            <RadioButton Content="Use custom database file"
+                                         IsChecked="{Binding Settings.UseCustomHintsDatabase}"
+                                         GroupName="HintsDatabase"
+                                         Margin="0,5,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,5,0,10"
+                                        IsEnabled="{Binding Settings.UseCustomHintsDatabase}">
+                                <TextBox Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="350"
+                                         VerticalContentAlignment="Center"
+                                         IsReadOnly="True"/>
+                                <Button Content="Browse..."
+                                        Width="80"
+                                        Margin="5,0,0,0"
+                                        Command="{Binding BrowseForCustomHintsDatabase}"/>
+                            </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Status: " VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding HintsDatabaseStatus}"
-                                   VerticalAlignment="Center"
-                                   Foreground="#90CAF9"/>
-                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="Status: " VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding HintsDatabaseStatus}"
+                                           VerticalAlignment="Center"
+                                           Foreground="#90CAF9"/>
+                            </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
-                        <Button Content="Open Database Folder"
-                                Width="160"
-                                Command="{Binding OpenHintsDatabaseFolder}"/>
-                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
+                                <Button Content="Open Database Folder"
+                                        Width="160"
+                                        Command="{Binding OpenHintsDatabaseFolder}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
