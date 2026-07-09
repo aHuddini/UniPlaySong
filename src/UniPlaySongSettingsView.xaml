@@ -514,6 +514,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
+                    <!-- Random Game Picker (grouped under Song Randomization) -->
+                    <CheckBox Content="Play music while browsing the random game picker"
+                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <Separator Margin="0,15"/>
 
                     <!-- Default Music -->
@@ -991,19 +1001,6 @@
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5">
                         'Spotify' plays the Spotify desktop app continuously as background music instead of a UPS pool. Requires the Spotify desktop app to be open. UPS pauses/resumes it on game launch, video, focus loss, and lock — it does not play Spotify's audio itself, so the visualizer and fades don't apply. Restart Playnite after selecting so playback state is cleanly reset.
                     </TextBlock>
-
-                    <!-- Random Game Picker -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-
-                    <CheckBox Content="Play music while browsing the random game picker"
-                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
 
                 </StackPanel>
             </ScrollViewer>
