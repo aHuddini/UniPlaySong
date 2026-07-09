@@ -2885,6 +2885,7 @@
                                Margin="20,0,0,20"/>
 
                     <StackPanel>
+                        <Separator Margin="0,15"/>
                         <TextBlock Text="Format Conversion" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
@@ -2922,74 +2923,79 @@
 
                         <Separator Margin="0,15"/>
 
-                        <TextBlock Text="Normalization Settings" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,10"/>
-                        
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <TextBlock Text="Target Loudness: " VerticalAlignment="Center" Width="150"/>
-                            <TextBox Text="{Binding Settings.NormalizationTargetLoudness}" 
-                                     Width="60" 
-                                     Margin="0,0,10,0"/>
-                            <TextBlock Text="LUFS (EBU R128: -16 LUFS)" 
-                                       VerticalAlignment="Center" 
-                                       FontSize="11" 
-                                       Foreground="Gray"/>
-                        </StackPanel>
-                        <TextBlock Text="Target integrated loudness. Industry standard is -16 LUFS. Range: -30 to -10 LUFS" 
-                                   FontSize="11" 
-                                   Foreground="Gray" 
-                                   TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                        <Expander IsExpanded="False" Margin="0,10,0,10">
+                            <Expander.Header>
+                                <TextBlock Text="Normalization Settings" FontSize="14" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,10,0,0">
+                                <StackPanel Orientation="Horizontal" Margin="0,5">
+                                    <TextBlock Text="Target Loudness: " VerticalAlignment="Center" Width="150"/>
+                                    <TextBox Text="{Binding Settings.NormalizationTargetLoudness}"
+                                             Width="60"
+                                             Margin="0,0,10,0"/>
+                                    <TextBlock Text="LUFS (EBU R128: -16 LUFS)"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="Gray"/>
+                                </StackPanel>
+                                <TextBlock Text="Target integrated loudness. Industry standard is -16 LUFS. Range: -30 to -10 LUFS"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="20,0,0,5"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <TextBlock Text="True Peak Limit: " VerticalAlignment="Center" Width="150"/>
-                            <TextBox Text="{Binding Settings.NormalizationTruePeak}" 
-                                     Width="60" 
-                                     Margin="0,0,10,0"/>
-                            <TextBlock Text="dBTP (EBU R128: -1.5 dBTP)" 
-                                       VerticalAlignment="Center" 
-                                       FontSize="11" 
-                                       Foreground="Gray"/>
-                        </StackPanel>
-                        <TextBlock Text="True peak limit to prevent clipping. Industry standard is -1.5 dBTP. Range: -3.0 to 0.0 dBTP" 
-                                   FontSize="11" 
-                                   Foreground="Gray" 
-                                   TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5">
+                                    <TextBlock Text="True Peak Limit: " VerticalAlignment="Center" Width="150"/>
+                                    <TextBox Text="{Binding Settings.NormalizationTruePeak}"
+                                             Width="60"
+                                             Margin="0,0,10,0"/>
+                                    <TextBlock Text="dBTP (EBU R128: -1.5 dBTP)"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="Gray"/>
+                                </StackPanel>
+                                <TextBlock Text="True peak limit to prevent clipping. Industry standard is -1.5 dBTP. Range: -3.0 to 0.0 dBTP"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="20,0,0,5"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <TextBlock Text="Loudness Range: " VerticalAlignment="Center" Width="150"/>
-                            <TextBox Text="{Binding Settings.NormalizationLoudnessRange}" 
-                                     Width="60" 
-                                     Margin="0,0,10,0"/>
-                            <TextBlock Text="LU (EBU R128: 11 LU)" 
-                                       VerticalAlignment="Center" 
-                                       FontSize="11" 
-                                       Foreground="Gray"/>
-                        </StackPanel>
-                        <TextBlock Text="Loudness range target. Industry standard is 11 LU. Range: 1 to 20 LU" 
-                                   FontSize="11" 
-                                   Foreground="Gray" 
-                                   TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5">
+                                    <TextBlock Text="Loudness Range: " VerticalAlignment="Center" Width="150"/>
+                                    <TextBox Text="{Binding Settings.NormalizationLoudnessRange}"
+                                             Width="60"
+                                             Margin="0,0,10,0"/>
+                                    <TextBlock Text="LU (EBU R128: 11 LU)"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="Gray"/>
+                                </StackPanel>
+                                <TextBlock Text="Loudness range target. Industry standard is 11 LU. Range: 1 to 20 LU"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="20,0,0,5"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <TextBlock Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
-                            <ComboBox SelectedValue="{Binding Settings.NormalizationCodec}"
-                                      SelectedValuePath="Tag"
-                                      Width="220"
-                                      Margin="0,0,10,0">
-                                <ComboBoxItem Content="Auto (match input format)" Tag="auto"/>
-                                <ComboBoxItem Content="MP3 (libmp3lame)" Tag="libmp3lame"/>
-                                <ComboBoxItem Content="OGG Vorbis (libvorbis)" Tag="libvorbis"/>
-                                <ComboBoxItem Content="FLAC (lossless)" Tag="flac"/>
-                                <ComboBoxItem Content="WAV (uncompressed)" Tag="pcm_s16le"/>
-                            </ComboBox>
-                        </StackPanel>
-                        <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
-                                   FontSize="11"
-                                   Foreground="Gray"
-                                   TextWrapping="Wrap"
-                                   Margin="20,0,0,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5">
+                                    <TextBlock Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
+                                    <ComboBox SelectedValue="{Binding Settings.NormalizationCodec}"
+                                              SelectedValuePath="Tag"
+                                              Width="220"
+                                              Margin="0,0,10,0">
+                                        <ComboBoxItem Content="Auto (match input format)" Tag="auto"/>
+                                        <ComboBoxItem Content="MP3 (libmp3lame)" Tag="libmp3lame"/>
+                                        <ComboBoxItem Content="OGG Vorbis (libvorbis)" Tag="libvorbis"/>
+                                        <ComboBoxItem Content="FLAC (lossless)" Tag="flac"/>
+                                        <ComboBoxItem Content="WAV (uncompressed)" Tag="pcm_s16le"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="20,0,0,10"/>
+                            </StackPanel>
+                        </Expander>
 
                         <TextBlock Text="File Naming" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
                         <TextBlock Text="Normalized files are always created with a suffix (e.g., 'song-normalized.mp3'), preserving your original files. Original files are never modified or deleted." 
