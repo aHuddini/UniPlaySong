@@ -4184,12 +4184,18 @@ namespace UniPlaySong
                     //      input); in Desktop, minimizing restores Playnite naturally and force-focus
                     //      could yank focus if the user tabbed away.
                     // Exits early only when BOTH goals are met.
+                    // restoreForeground: in Fullscreen we must actively pull Playnite back to the front
+                    // AFTER minimizing Spotify — and keep doing it for a while, because Playnite's own
+                    // Fullscreen startup (theme intro video, login/hub overlay) keeps grabbing focus for
+                    // ~15-20s after launch, stealing it back from a single restore. We re-assert each
+                    // tick until Playnite is confirmed foreground (self-limiting), then stop.
                     bool restoreForeground = IsFullscreen;
                     bool minimized = false;
                     bool engaged = false;
                     bool toasted = false;
+                    bool foregroundSettled = false;
 
-                    for (int i = 1; i <= 15; i++)
+                    for (int i = 1; i <= 20; i++)
                     {
                         System.Threading.Thread.Sleep(1000);
 
@@ -4197,8 +4203,23 @@ namespace UniPlaySong
                         {
                             minimized = Common.SpotifyLauncher.MinimizeSpotifyWindow();
                             _fileLogger?.Debug($"[AutoLaunch] t={i}s minimize attempt -> {(minimized ? "MINIMIZED" : "window not found yet")}");
-                            if (minimized && restoreForeground)
-                                Application.Current?.Dispatcher?.BeginInvoke(new Action(RestorePlayniteForeground));
+                        }
+
+                        // Re-assert Playnite foreground each tick after minimize (Fullscreen only),
+                        // continuing even once it briefly sticks — Playnite's theme-intro (video +
+                        // login/hub overlay) keeps stealing focus for ~15-20s, so a one-shot restore
+                        // loses to the LAST steal. Runs on the UI thread; we wait briefly for the result
+                        // so foregroundSettled reflects the actual post-restore state for the exit check.
+                        if (minimized && restoreForeground)
+                        {
+                            bool settledThisTick = false;
+                            var wait = Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                            {
+                                settledThisTick = RestorePlayniteForegroundAndCheck();
+                            }));
+                            try { wait?.Wait(TimeSpan.FromMilliseconds(500)); } catch { }
+                            foregroundSettled = settledThisTick;
+                            _fileLogger?.Debug($"[AutoLaunch] t={i}s foreground re-assert -> {(settledThisTick ? "IS foreground" : "not yet")}");
                         }
 
                         if (!engaged && _spotifyClient?.IsAvailable == true)
@@ -4216,10 +4237,15 @@ namespace UniPlaySong
                             ShowSpotifyNotRunningToast();
                         }
 
-                        if (engaged && minimized) return; // both goals met
+                        // All goals met. In Fullscreen, don't exit on foreground-settled before ~8s —
+                        // the theme intro keeps stealing focus for ~15-20s, so an early exit would stop
+                        // re-asserting and lose to a later steal. After the churn window, exit once
+                        // Playnite is confirmed foreground.
+                        if (engaged && minimized && (!restoreForeground || (foregroundSettled && i >= 8)))
+                            return;
                     }
 
-                    _fileLogger?.Debug($"[AutoLaunch] watch ended (engaged={engaged}, minimized={minimized}).");
+                    _fileLogger?.Debug($"[AutoLaunch] watch ended (engaged={engaged}, minimized={minimized}, fgSettled={foregroundSettled}).");
                 }
                 catch (Exception ex)
                 {
@@ -4228,24 +4254,30 @@ namespace UniPlaySong
             });
         }
 
-        // Single failure toast (Jingle/Download style) for the auto-launch flow. Marshalled to UI.
-        // Brings Playnite back to the foreground after the auto-launch minimizes Spotify (Fullscreen).
+        // Brings Playnite back to the foreground after the auto-launch minimizes Spotify (Fullscreen)
+        // and returns true if Playnite IS now the foreground window (so the caller can stop retrying).
         // Resolves the window handle AT CALL TIME on the UI thread: _mainWindowHandle is assigned
         // LATER in OnApplicationStarted than the auto-launch dispatch, so an eager capture at dispatch
         // time reads IntPtr.Zero and the restore silently no-ops (the original Fullscreen focus bug).
-        private void RestorePlayniteForeground()
+        private bool RestorePlayniteForegroundAndCheck()
         {
             try
             {
                 var handle = _mainWindowHandle;
                 if (handle == IntPtr.Zero && Application.Current?.MainWindow != null)
                     handle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
-                _fileLogger?.Debug($"[AutoLaunch] restoring Playnite foreground (handle={(handle == IntPtr.Zero ? "ZERO!" : "ok")})");
+                if (handle == IntPtr.Zero)
+                {
+                    _fileLogger?.Debug("[AutoLaunch] restore foreground: handle ZERO!");
+                    return false;
+                }
                 Common.SpotifyLauncher.BringWindowToForeground(handle);
+                return Common.SpotifyLauncher.IsForegroundWindow(handle);
             }
-            catch (Exception ex) { _fileLogger?.Debug($"[AutoLaunch] RestorePlayniteForeground failed: {ex.Message}"); }
+            catch (Exception ex) { _fileLogger?.Debug($"[AutoLaunch] RestorePlayniteForeground failed: {ex.Message}"); return false; }
         }
 
+        // Single failure toast (Jingle/Download style) for the auto-launch flow. Marshalled to UI.
         private void ShowSpotifyNotRunningToast()
         {
             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>

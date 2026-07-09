@@ -203,24 +203,66 @@ namespace UniPlaySong.Common
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
         private const int SW_RESTORE = 9;
 
         // Brings the given window (Playnite's main window) to the foreground. Needed after minimizing
         // Spotify in Fullscreen mode: minimizing Spotify hands focus to the desktop rather than back to
-        // the Playnite fullscreen window, leaving controller input dead until the user clicks. Called
-        // right after our own SW_MINIMIZE (which released the foreground-lock holder), so
-        // SetForegroundWindow reliably takes here. Fail-safe. No-op on IntPtr.Zero.
+        // the Playnite fullscreen window, leaving controller input dead until the user clicks.
+        //
+        // A plain SetForegroundWindow is SILENTLY DENIED by Windows when a different process just held
+        // the foreground (it flashes the taskbar instead) — the classic foreground-lock. The reliable
+        // bypass is AttachThreadInput: temporarily attach our thread's input queue to the CURRENT
+        // foreground window's thread, which makes Windows treat our SetForegroundWindow as coming from
+        // the focused thread, so it's allowed. Detach afterward. Must run on the UI thread.
+        // Fail-safe. No-op on IntPtr.Zero.
         public static void BringWindowToForeground(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return;
             try
             {
                 ShowWindow(hWnd, SW_RESTORE); // in case it was minimized
-                BringWindowToTop(hWnd);
-                SetForegroundWindow(hWnd);
-                Logger.Debug("[SpotifyLauncher] Restored Playnite to foreground.");
+
+                var foreground = GetForegroundWindow();
+                uint ourThread = GetCurrentThreadId();
+                uint foregroundThread = foreground != IntPtr.Zero
+                    ? GetWindowThreadProcessId(foreground, out _)
+                    : 0;
+
+                bool attached = false;
+                if (foregroundThread != 0 && foregroundThread != ourThread)
+                    attached = AttachThreadInput(ourThread, foregroundThread, true);
+
+                try
+                {
+                    BringWindowToTop(hWnd);
+                    SetForegroundWindow(hWnd);
+                }
+                finally
+                {
+                    if (attached) AttachThreadInput(ourThread, foregroundThread, false);
+                }
+
+                Logger.Debug("[SpotifyLauncher] Restored Playnite to foreground (attach-input).");
             }
             catch (Exception ex) { Logger.Warn($"[SpotifyLauncher] BringWindowToForeground failed: {ex.Message}"); }
+        }
+
+        // True if the given window is currently the foreground window. Lets the caller stop retrying
+        // the foreground-restore once Playnite has actually taken focus. Fail-safe.
+        public static bool IsForegroundWindow(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return false;
+            try { return GetForegroundWindow() == hWnd; }
+            catch { return false; }
         }
 
         // Finds Spotify's main visible top-level window and minimizes it. Returns true if a window was
