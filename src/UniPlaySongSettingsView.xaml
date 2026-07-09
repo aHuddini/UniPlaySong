@@ -542,11 +542,22 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <!-- Keep same default track on game switch (for pool-based sources) -->
+                    <CheckBox Content="Keep Same Default Track On Game Switch"
+                              IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
+                              IsEnabled="{Binding Settings.EnableDefaultMusic}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Applies to Random Game, Custom Folder, Custom Rotation, and Completion Status Pool sources. When enabled, the same default song keeps playing as you browse games instead of picking a new random song each time. Pair with 'Auto-advance Default Music on song end' below (disable it) for a fully persistent single-track backdrop."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
                     <CheckBox Content="Auto-advance Default Music on song end"
                               IsChecked="{Binding Settings.RandomizeDefaultMusicOnEnd}"
                               IsEnabled="{Binding Settings.EnableDefaultMusic}"
                               Margin="0,5"/>
-                    <TextBlock Text="Only affects pool-based sources (Random Game, Custom Folder, Custom Rotation, Completion Status Pool). When enabled (default), default music rotates to a new random track when the current one ends — radio-style. When disabled, the current track loops instead. For fully persistent single-track behavior, also enable 'Keep Same Default Track On Game Switch' below — otherwise game hovers still re-roll the pool. Independent from the 'Randomize on Music End' setting above, which only affects game music."
+                    <TextBlock Text="Only affects pool-based sources (Random Game, Custom Folder, Custom Rotation, Completion Status Pool). When enabled (default), default music rotates to a new random track when the current one ends — radio-style. When disabled, the current track loops instead. For fully persistent single-track behavior, also enable 'Keep Same Default Track On Game Switch' above — otherwise game hovers still re-roll the pool. Independent from the 'Randomize on Music End' setting above, which only affects game music."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -835,17 +846,6 @@
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="60,2,0,5">
                         Each time you select a game with no UniPlaySong music, advance Spotify to the next track instead of resuming the current one — a fresh song per game. Falls back to resuming if Spotify can't skip (e.g. end of queue).
                     </TextBlock>
-
-                    <!-- Continue same song option (for pool-based sources) -->
-                    <CheckBox Content="Keep Same Default Track On Game Switch"
-                              IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
-                              IsEnabled="{Binding Settings.EnableDefaultMusic}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="Applies to Random Game, Custom Folder, Custom Rotation, and Completion Status Pool sources. When enabled, the same default song keeps playing as you browse games instead of picking a new random song each time. Pair with 'Auto-advance Default Music on song end' above (disable it) for a fully persistent single-track backdrop."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
 
                     <Separator Margin="0,15"/>
 
