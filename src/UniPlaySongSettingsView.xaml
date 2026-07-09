@@ -105,20 +105,10 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
-                    <CheckBox Content="Do not play music on startup (Fullscreen)" 
-                              IsChecked="{Binding Settings.SkipFirstSelectionAfterModeSwitch}" 
+                    <CheckBox Content="Do not play music on startup (Fullscreen)"
+                              IsChecked="{Binding Settings.SkipFirstSelectionAfterModeSwitch}"
                               Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will not play on the first game selection after switching to fullscreen mode" 
-                               FontSize="11" 
-                               Foreground="Gray" 
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    
-                    <CheckBox Content="Theme Compatible Login Skip (Fullscreen)"
-                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
-                              IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
-                              Margin="0,5"/>
-                    <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
+                    <TextBlock Text="When enabled, music will not play on the first game selection after switching to fullscreen mode"
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -3156,11 +3146,24 @@
                         <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
                                 Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
                     </Grid>
-                    <TextBlock Text="These options help certain themes work better with UniPlaySong. They are geared toward theme developers — most users never need to change them. Only adjust a setting here if you are a theme developer, or if a theme developer (or a theme's setup guide) tells you to."
+                    <TextBlock Text="These options help certain themes work better with UniPlaySong. Most are geared toward theme developers or specific themes — most users never need to change them, unless a theme (or its setup guide) tells you to."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="0,0,0,5"/>
+
+                    <!-- Login Skip: user-facing compat for fullscreen themes that don't natively support UPS -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Fullscreen Login Skip" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Theme Compatible Login Skip (Fullscreen)"
+                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
+                              IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
 
                     <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
                     <Separator Margin="0,15"/>

@@ -14,6 +14,10 @@ All notable changes to UniPlaySong will be documented in this file.
   - **Threading + engage.** All blocking work (launch + a 15s watch loop with `Thread.Sleep`) runs on the Spotify worker thread — never the UI thread or under the recompute lock (respects the `8e1f2e4` launch-freeze deadlock class). The watch has two decoupled goals: ENGAGE when the SMTC session registers (standard `Recompute()` sends Play; a single failure toast at the 10s mark if no session), and MINIMIZE whenever the window appears (Spotify's session usually registers before its window renders on a cold start). Fires once from `OnApplicationStarted` after `_appStarted`.
   - Files: `src/Common/SpotifyLauncher.cs` (new), `src/UniPlaySong.cs`, `src/UniPlaySongSettings.cs` (`AutoLaunchSpotifyOnStartup` + `SpotifyExePath`), `src/Services/Spotify/SpotifySmtcClient.cs` (`PostToWorker` passthrough), Experimental-tab UI. 8 `SpotifyLauncher` unit tests.
 
+### Changed
+
+- **"Theme Compatible Login Skip" moved from the General tab to the Theme Support tab.** It's a theme-compatibility workaround (only for fullscreen themes that don't natively support UPS), so it now lives with the other theme options. No behavior change; its per-tab reset moved from `ResetGeneralTab_Click` to `ResetThemeSupportTab_Click`. `src/UniPlaySongSettingsView.xaml(.cs)`.
+
 ## [1.5.10] - 2026-07-03
 
 ### Added

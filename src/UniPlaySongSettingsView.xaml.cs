@@ -92,7 +92,6 @@ namespace UniPlaySong
             s.MusicState = AudioState.Always;
             s.AutoPlayOnFirstLaunchDesktop = true;
             s.SkipFirstSelectionAfterModeSwitch = false;
-            s.ThemeCompatibleSilentSkip = true;
             s.ShowDesktopMediaControls = true;
             s.ShowTaskbarMediaControls = true;
             s.ShowNowPlayingInTopPanel = true;
@@ -369,6 +368,7 @@ namespace UniPlaySong
             var s = ConfirmAndGetSettings("Theme Support");
             if (s == null) return;
 
+            s.ThemeCompatibleSilentSkip = true;  // moved here from the General tab
             s.PS5ThemeCompatMode = false;  // PS5-Experience theme compatibility (default off)
             s.PauseOnThemeOverlay = true;
             s.PauseOnThemeVideo = true;
