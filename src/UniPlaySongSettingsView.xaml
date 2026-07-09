@@ -514,7 +514,10 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
 
+                    <Separator Margin="0,15"/>
+
                     <!-- Random Game Picker (grouped under Song Randomization) -->
+                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <CheckBox Content="Play music while browsing the random game picker"
                               IsChecked="{Binding Settings.EnableRandomPickerMusic}"
                               Margin="0,5,0,5"/>
