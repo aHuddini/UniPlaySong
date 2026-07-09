@@ -20,22 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.5.10
+## What's New - v1.6.0
 
 ### Added
-- **Achievement unlock sounds.** Plays a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity — bundled PA Starter Pack, your theme's own sounds, or your own files. New **Gamification** settings tab.
-- **Switch Radio Mode toggle for themes.** Themes can add a Fullscreen button to flip radio between UPS music and Spotify without opening Desktop settings.
-
-### Fixed & Improved
-- **No more lag** on completion/abandoned jingles or settings sound-previews (addresses an issue #81 audio-engine slowdown) — both now play instantly. Also fixed the master achievement custom-file preview playing the wrong sound.
-- **Now-playing album art** falls back to the game's cover when a track has no embedded art (including Radio Mode). Spotify now-playing also shows live progress and time for themes that display it.
-
-### Changed
-- **Settings tabs tidied** — Search merged into Downloads; Theme Support moved next to Editing; bolder section dividers.
-- **Spotify menu commands** (skip / play-pause) moved into their own submenu in the right-click game menu.
+- **Auto-launch Spotify on startup (Experimental).** When Spotify is your Radio Mode or Default Music source and the desktop app isn't running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with both classic and Microsoft Store installs — no path setup for standard installs. Off by default; enable it in the Experimental settings tab.
 
 ### Previous Version
-- **v1.5.9**: Music-change notifications for themes — UniPlaySong exposes live "the music just changed" data so a theme can pop up a Now Playing toast on each track change, console-style, instead of a permanent readout. Ready-made demo toast in the Theme Integration Guide.
+- **v1.5.10**: Achievement unlock sounds (console-style "trophy unlocked" fanfare via the Playnite Achievements plugin, with per-rarity sound packs) + a new Gamification settings tab. Plus a theme "Switch Radio Mode" toggle, faster jingles/previews, game-cover art fallback, and tidied settings tabs.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

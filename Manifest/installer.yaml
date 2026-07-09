@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-09
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.0/UniPlaySong-1_6_0.pext'
+    Changelog:
+      - '[New Feature] Auto-launch Spotify on startup (Experimental): when Spotify is your Radio Mode or Default Music source and the desktop app isn''t running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with both classic and Microsoft Store installs (no path setup needed for standard installs). Off by default; enable it in the Experimental settings tab.'
   - Version: 1.5.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-03
