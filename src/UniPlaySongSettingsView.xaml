@@ -4577,16 +4577,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> <Run FontWeight="SemiBold">Achievement unlock sounds</Run> — a console-style "trophy unlocked" fanfare when you earn an achievement (via the Playnite Achievements plugin). Pick a sound pack per rarity in the new Gamification settings tab.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> New <Run FontWeight="SemiBold">Gamification</Run> settings tab (celebration, achievement, and abandoned-status settings), plus a theme "Switch Radio Mode" toggle (UPS ↔ Spotify from Fullscreen).
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Completion/abandoned jingles and settings sound-previews no longer lag. Now-playing art falls back to the game's cover when a track has no embedded art.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10">
-                                <Run FontWeight="SemiBold">Improved:</Run> Spotify menu commands grouped into their own submenu; Search settings merged into Downloads; Theme Support moved next to Editing.
+                                <Run FontWeight="SemiBold">Added:</Run> <Run FontWeight="SemiBold">Auto-launch Spotify on startup</Run> (Experimental) — when Spotify is your Radio/Default source and it isn't running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with classic and Microsoft Store installs.
                             </TextBlock>
 
                             <TextBlock FontSize="11">
