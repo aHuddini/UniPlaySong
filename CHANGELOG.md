@@ -17,6 +17,8 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Changed
 
 - **"Theme Compatible Login Skip" moved from the General tab to the Theme Support tab.** It's a theme-compatibility workaround (only for fullscreen themes that don't natively support UPS), so it now lives with the other theme options. No behavior change; its per-tab reset moved from `ResetGeneralTab_Click` to `ResetThemeSupportTab_Click`. `src/UniPlaySongSettingsView.xaml(.cs)`.
+- **Settings layout cleanup.** Within the Playback tab, the Random Game Picker section moved up under Song Randomization, and "Keep Same Default Track On Game Switch" now sits above "Auto-advance Default Music on song end" (cross-reference text updated to match). In the Editing tab, Format Conversion moved up to sit directly below the FFmpeg path. Purely UI reordering — no settings renamed or removed.
+- **Collapsible settings sections (`Expander`).** Dense/advanced sections are now collapsible (native WPF `Expander`, collapsed by default) so tabs are easier to scan — expand only what you need. Converted so far: Editing → Normalization Settings, File Naming; Downloads → Cookie Source, Search (cache + hint database); Theme Support → Theme Developer Options. Expander header text uses the same white/semibold styling as the other section headers. `src/UniPlaySongSettingsView.xaml`.
 
 ## [1.5.10] - 2026-07-03
 
