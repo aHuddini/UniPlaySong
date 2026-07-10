@@ -1359,7 +1359,11 @@
                                Margin="0,0,0,20"/>
 
                     <!-- System Events -->
-                    <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
 
                     <CheckBox Content="Pause on Game Launch"
                               IsChecked="{Binding Settings.PauseOnGameStart}"
@@ -1403,11 +1407,17 @@
                         <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
                                    Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
                     </StackPanel>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,15"/>
 
                     <!-- Window State -->
-                    <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
 
                     <CheckBox Content="Pause music when Playnite loses focus"
                               IsChecked="{Binding Settings.PauseOnFocusLoss}"
@@ -1453,11 +1463,17 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,15"/>
 
-                    <!-- Audio Awareness -->
-                    <TextBlock Text="Audio Awareness" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <!-- External Audio -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="External Audio" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
 
                     <CheckBox Content="Pause music when another app plays audio"
                               IsChecked="{Binding Settings.PauseOnExternalAudio}"
@@ -1545,6 +1561,8 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"
                                IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,15"/>
 

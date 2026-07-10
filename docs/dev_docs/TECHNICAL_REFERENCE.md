@@ -1477,7 +1477,7 @@ Polls Windows audio sessions via NAudio `CoreAudioApi` to detect when other appl
 
 **App exclusion list**: Comma-separated process names in `ExternalAudioExcludedApps` setting, parsed into a `HashSet<string>` (case-insensitive). Cache rebuilt only when the setting string changes. Process names resolved via `Process.GetProcessById()` inside the session loop. OBS (`obs64, obs32`) excluded by default — screen recorders mirror system audio through their own sessions, causing feedback loops.
 
-**Settings** (Experimental → Audio Awareness):
+**Settings** (Pauses → External Audio):
 - `PauseOnExternalAudio` (bool, default false) — master toggle
 - `ExternalAudioDebounceSeconds` (int, default 0) — 0-10 seconds, 0 = instant debounce
 - `ExternalAudioInstantPause` (bool, default false) — bypass fade transitions
