@@ -1233,7 +1233,11 @@
 
                     <!-- Achievement / trophy unlock sound — triggered by external plugins via URI -->
                     <Separator Margin="0,15,0,10"/>
-                    <TextBlock Text="Achievement Unlock Sounds" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Achievement Unlock Sounds" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
                                Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game. Pick a sound pack for the five rarities below; the master default sound is the ultimate fallback."/>
 
@@ -1354,6 +1358,8 @@
                             <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4" Margin="5,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
