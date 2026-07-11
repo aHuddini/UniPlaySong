@@ -292,6 +292,11 @@
                     <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <!-- Volume -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Volume" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Music Volume: " VerticalAlignment="Center" Width="120"/>
                         <Slider Minimum="0" Maximum="100"
@@ -336,11 +341,15 @@
                         <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
                                    Text="{Binding Settings.IdleVolumeTimeoutMinutes, StringFormat='{}{0} min'}"/>
                     </StackPanel>
-
-                    <Separator Margin="0,15"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Fade Effects -->
-                    <TextBlock Text="Fade Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Fade Effects" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
                     <TextBlock Text="Control how music transitions in and out. With Live Effects enabled, fades may feel different due to reverb tail processing."
                                FontSize="12"
                                FontStyle="Italic"
@@ -442,11 +451,15 @@
                                TextWrapping="Wrap"
                                Margin="20,4,0,0"
                                IsEnabled="{Binding Settings.EnableTrueCrossfade}"/>
-
-                    <Separator Margin="0,15"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Preview Mode -->
-                    <TextBlock Text="Preview Mode" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Preview Mode" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
                     <TextBlock Text="Limit playback duration for game-specific music tracks" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Enable Preview Mode"
@@ -480,11 +493,15 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
-
-                    <Separator Margin="0,15"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Song Randomization -->
-                    <TextBlock Text="Song Randomization" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Song Randomization" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
                     <TextBlock Text="Control when songs are randomized during playback" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
 
                     <CheckBox Content="Randomize song upon selection"
@@ -513,6 +530,8 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,15"/>
 
