@@ -131,7 +131,12 @@ namespace UniPlaySong.Services.ActiveMedia
                 hasActiveMedia: true,
                 sourceKind: ActiveMediaSourceKind.Ups,
                 sourceName: "UniPlaySong",
-                isPlaying: _playback?.IsPlaying ?? false,
+                // IsPlaying alone is the raw backend "stream active" flag, which stays true when
+                // UPS is logically paused (pause sources + fader ride volume to 0 but the NAudio
+                // persistent mixer keeps the stream active). That left theme play/pause icons stuck
+                // on the "pause" glyph after pausing UPS game music. Gate on the logical pause state
+                // so ActiveMediaIsPlaying reflects an actual pause across every UPS pause path.
+                isPlaying: (_playback?.IsPlaying ?? false) && !(_playback?.IsPaused ?? false),
                 isMuted: vol <= 0.0,
                 progress: progress,
                 positionText: posText,
