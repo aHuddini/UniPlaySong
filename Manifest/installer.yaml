@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-07-11
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.2/UniPlaySong-1_6_2.pext'
     Changelog:
-      - '[Fix] "Pause music when other audio plays" works again while game music is playing. If Spotify was set as your Default Music source, a stale internal state (often triggered by a theme''s Radio Mode toggle) could make UniPlaySong ignore all other audio and skip pausing — so alt-tabbing to a browser or video no longer ducked your music. Fixed.'
+      - '[Fix] External audio: "Pause music when other audio plays" works again while game music is playing. If Spotify was set as your Default Music source, a stale internal state (often triggered by a theme''s Radio Mode toggle) could make UniPlaySong ignore all other audio and skip pausing — so alt-tabbing to a browser or video no longer ducked your music. Fixed.'
   - Version: 1.6.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-11
