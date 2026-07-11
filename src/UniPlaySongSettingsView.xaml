@@ -1022,7 +1022,11 @@
                     <TextBlock Text="Celebrate your gaming milestones — completion fanfares, achievement sounds, and status toasts" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <!-- Completion Celebration -->
-                    <TextBlock Text="Completion Celebration" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Completion Celebration" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
 
                     <CheckBox Content="Play Fanfare on Completed Games"
                               IsChecked="{Binding Settings.EnableCompletionCelebration}"
@@ -1124,9 +1128,17 @@
                             </ComboBox>
                         </StackPanel>
                     </StackPanel>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Abandoned Status Sound + Toast (parallel pipeline, separate settings) -->
                     <Separator Margin="0,15,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Abandoned Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+
                     <CheckBox Content="Play Sound on Abandoned Games"
                               IsChecked="{Binding Settings.EnableAbandonedSound}"
                               Margin="0,5"/>
@@ -1216,6 +1228,8 @@
                                        FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
                         </StackPanel>
                     </StackPanel>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Achievement / trophy unlock sound — triggered by external plugins via URI -->
                     <Separator Margin="0,15,0,10"/>
