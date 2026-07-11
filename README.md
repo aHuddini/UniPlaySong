@@ -20,13 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.1
+## What's New - v1.6.2
 
 ### Fixed
-- **Theme play/pause icon now updates for game music.** In themes with UniPlaySong media controls (like Aniki ReMake), the play/pause button could get stuck showing "pause" after you paused UniPlaySong's own game music. Spotify was already fine. It now flips correctly.
+- **"Pause when other audio plays" works again during game music.** If Spotify was your Default Music source, UniPlaySong could get into a state (often after toggling Radio Mode from a theme) where it ignored all other audio and never paused — so alt-tabbing to a browser or video didn't duck your music. It now pauses correctly again.
 
 ### Previous Version
-- **v1.6.0**: Auto-launch Spotify on startup (Experimental). Fixed music resuming behind the lock screen after Win+L. Cleaner, collapsible settings across most tabs, and a couple of settings moved to more logical tabs.
+- **v1.6.1**: Fixed theme play/pause icons getting stuck on "pause" for game music (Spotify was already fine).
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -2274,12 +2274,21 @@ namespace UniPlaySong
                     if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
                     {
                         // Don't treat Spotify as "external audio" when UPS is conducting it as
-                        // the active music (radio mode or the Spotify default-music source). The
-                        // audio we're hearing IS the music; adding ExternalAudio would make
-                        // IsPaused flip true → SpotifyControlService pauses Spotify → silence →
-                        // ExternalAudio clears → resume → audio returns → pause again: an endless
-                        // oscillation. Same expected-audio exemption as the game-launching guard below.
-                        if (_settings?.SpotifyActive == true)
+                        // the active music. The audio we're hearing IS the music; adding
+                        // ExternalAudio would make IsPaused flip true → SpotifyControlService
+                        // pauses Spotify → silence → ExternalAudio clears → resume → audio
+                        // returns → pause again: an endless oscillation.
+                        //
+                        // Gate on IsPlayingDefaultMusic, NOT the bare SpotifyActive flag: Spotify
+                        // is only the AUDIBLE source when UPS is in the default-music gap conducting
+                        // it. When a game's own music is playing (IsPlayingDefaultMusic == false),
+                        // the audio is UPS's game music — a real external source (e.g. a browser)
+                        // must still pause it. SpotifyActive can strand true (a theme's Quick Access
+                        // mode-flip sets it, and no recompute clears it while game music plays
+                        // steadily); without the IsPlayingDefaultMusic guard that stale flag disabled
+                        // ExternalAudio pause entirely during game music. Same expected-audio
+                        // exemption as the game-launching guard below.
+                        if (_settings?.SpotifyActive == true && _playbackService?.IsPlayingDefaultMusic == true)
                         {
                             _externalAudioDetected = true;
                             _externalAudioPausedInstantly = false;

@@ -4729,7 +4729,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Theme media controls — the play/pause icon now updates for UniPlaySong game music (it could get stuck on "pause" after pausing). Spotify was already fine.
+                                <Run FontWeight="SemiBold">Fixed:</Run> "Pause when other audio plays" works again during game music — with Spotify as your Default source, a stale state (often from toggling Radio Mode in a theme) could make UPS skip pausing for browsers/videos.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

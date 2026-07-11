@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.2] - Unreleased
+
+### Fixed
+
+- **"Pause music when other audio plays" stopped working while game music played, if Spotify was your Default Music source.** The external-audio detector's Spotify exemption — which correctly ignores Spotify's own audio so it doesn't pause-oscillate when Spotify IS the active music — was gated on the bare `SpotifyActive` runtime flag. That flag can strand `true` (a theme's Quick Access mode-toggle, e.g. Aniki ReMake, sets it and no recompute clears it while a game's own music plays steadily). With Spotify set as the Default Music source, that stale flag made UPS treat *any* external audio (a browser, video, etc.) as "expected Spotify audio" and skip the pause entirely — so alt-tabbing to other audio no longer ducked your game music. Fixed by gating the exemption on `IsPlayingDefaultMusic` (Spotify is only the audible source when UPS is in the default-music gap conducting it) instead of the raw flag: when a game's own music is playing, external audio pauses correctly again. The anti-oscillation behavior is preserved for when Spotify genuinely is the playing default music. `src/UniPlaySong.cs`. Tester-confirmed.
+
 ## [1.6.1] - Unreleased
 
 ### Fixed
