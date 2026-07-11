@@ -140,6 +140,26 @@ namespace UniPlaySong.Services
         private readonly HashSet<PauseSource> _activePauseSources = new HashSet<PauseSource>();
         private bool _isPaused => _activePauseSources.Count > 0;
 
+        // Sources that survive ClearAllPauseSources(): environmental/session state owned by
+        // their own handlers (window events, session lock/suspend, external-audio + idle
+        // detectors, video, theme overlay, dashboard). Only those handlers know when the
+        // condition ends, so a transient song-start clear must NOT drop them.
+        // SystemLock is included so a game switch or deferred-play while the machine is locked
+        // (issue #81) can't wipe the lock-pause and resume audio behind the lock screen.
+        private static readonly HashSet<PauseSource> PreservedOnClear = new HashSet<PauseSource>
+        {
+            PauseSource.FocusLoss, PauseSource.Minimized, PauseSource.SystemTray,
+            PauseSource.Manual, PauseSource.ExternalAudio, PauseSource.Idle,
+            PauseSource.Video, PauseSource.ThemeOverlay, PauseSource.Dashboard,
+            PauseSource.SystemLock,
+        };
+
+        // Window-state subset (used by HasWindowStatePauseSources()).
+        private static readonly HashSet<PauseSource> WindowStateSources = new HashSet<PauseSource>
+        {
+            PauseSource.FocusLoss, PauseSource.Minimized, PauseSource.SystemTray,
+        };
+
         // Session-scoped flag: set true on first manual-play action (top panel,
         // media key, dashboard, external control). Reset only by service disposal
         // (Playnite restart). Used by MusicPlaybackCoordinator's Desktop auto-play lock.
@@ -284,11 +304,9 @@ namespace UniPlaySong.Services
             {
                 // Interrupted switch: pause arrived during a song-switch fade-out, orphaning
                 // the play action. Resume the fader to execute the pending load+play.
-                if (_fader?.HasPendingPlayAction == true)
+                if (TryResumePendingPlayAction(source, logSuffix: ""))
                 {
-                    _fileLogger?.Debug($"Resume: {source} removed — fader has pending play action (interrupted switch)");
-                    _fader.Resume();
-                    OnPlaybackStateChanged?.Invoke();
+                    return;
                 }
                 else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
@@ -307,19 +325,9 @@ namespace UniPlaySong.Services
                     _fader.FadeIn();
                     OnPlaybackStateChanged?.Invoke();
                 }
-                else if (_deferredGame != null && _initializationComplete)
+                else
                 {
-                    // Music not loaded but we have a deferred game - trigger playback now
-                    var game = _deferredGame;
-                    var settings = _deferredSettings;
-                    var forceReload = _deferredForceReload;
-
-                    _deferredGame = null;
-                    _deferredSettings = null;
-                    _deferredForceReload = false;
-
-                    _fileLogger?.Debug($"Triggering deferred playback for {game.Name} (pause sources cleared)");
-                    PlayGameMusic(game, settings, forceReload);
+                    TryTriggerDeferredPlayback(logSuffix: "");
                 }
             }
         }
@@ -353,11 +361,9 @@ namespace UniPlaySong.Services
             if (wasPaused && !_isPaused)
             {
                 // Interrupted switch: fader has orphaned play action from a paused song switch
-                if (_fader?.HasPendingPlayAction == true)
+                if (TryResumePendingPlayAction(source, logSuffix: " (instant)"))
                 {
-                    _fileLogger?.Debug($"Resume (instant): {source} removed — fader has pending play action (interrupted switch)");
-                    _fader.Resume();
-                    OnPlaybackStateChanged?.Invoke();
+                    return;
                 }
                 else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
@@ -374,18 +380,49 @@ namespace UniPlaySong.Services
                     MarkSongStart();
                     OnPlaybackStateChanged?.Invoke();
                 }
-                else if (_deferredGame != null && _initializationComplete)
+                else
                 {
-                    var game = _deferredGame;
-                    var settings = _deferredSettings;
-                    var forceReload = _deferredForceReload;
-                    _deferredGame = null;
-                    _deferredSettings = null;
-                    _deferredForceReload = false;
-                    _fileLogger?.Debug($"Triggering deferred playback for {game.Name} (pause sources cleared, instant)");
-                    PlayGameMusic(game, settings, forceReload);
+                    TryTriggerDeferredPlayback(logSuffix: " (instant)");
                 }
             }
+        }
+
+        // Interrupted-switch recovery: a pause arrived during a song-switch fade-out and
+        // orphaned the fader's pending play action. Resume the fader to run the pending
+        // load+play. Identical for faded and instant removal — only the log suffix differs.
+        // Returns true if it handled the resume.
+        private bool TryResumePendingPlayAction(PauseSource source, string logSuffix)
+        {
+            if (_fader?.HasPendingPlayAction == true)
+            {
+                _fileLogger?.Debug($"Resume{logSuffix}: {source} removed — fader has pending play action (interrupted switch)");
+                _fader.Resume();
+                OnPlaybackStateChanged?.Invoke();
+                return true;
+            }
+            return false;
+        }
+
+        // Music isn't loaded but a game was deferred while paused — trigger its playback now.
+        // Identical for faded and instant removal — only the log suffix differs.
+        // Returns true if it triggered deferred playback.
+        private bool TryTriggerDeferredPlayback(string logSuffix)
+        {
+            if (_deferredGame != null && _initializationComplete)
+            {
+                var game = _deferredGame;
+                var settings = _deferredSettings;
+                var forceReload = _deferredForceReload;
+
+                _deferredGame = null;
+                _deferredSettings = null;
+                _deferredForceReload = false;
+
+                _fileLogger?.Debug($"Triggering deferred playback for {game.Name} (pause sources cleared{logSuffix})");
+                PlayGameMusic(game, settings, forceReload);
+                return true;
+            }
+            return false;
         }
 
         // Read-only peek into the active pause-source set. Used by callers that need to
@@ -396,46 +433,23 @@ namespace UniPlaySong.Services
         public bool HasPauseSource(PauseSource source) => _activePauseSources.Contains(source);
 
         /// <summary>
-        /// Clears all pause sources EXCEPT window-state sources (FocusLoss, Minimized, SystemTray).
-        /// Window-state sources should only be cleared by the window event handlers.
-        /// This ensures music stays paused if the window started minimized/in tray/unfocused.
+        /// Clears transient pause sources (song-start bookkeeping) while preserving the
+        /// environmental/session sources in <see cref="PreservedOnClear"/> — those are owned
+        /// by their own handlers and must survive a clear so playback stays paused when the
+        /// window is minimized/in tray/unfocused, external audio or idle is active, a video
+        /// or theme overlay is up, the dashboard holds it, or the session is locked.
         /// </summary>
         public void ClearAllPauseSources()
         {
             if (_activePauseSources.Count > 0)
             {
-                // Preserve window-state and manual pause sources - they should only be cleared by their own handlers
-                var preservedSources = new HashSet<PauseSource>();
-                if (_activePauseSources.Contains(PauseSource.FocusLoss))
-                    preservedSources.Add(PauseSource.FocusLoss);
-                if (_activePauseSources.Contains(PauseSource.Minimized))
-                    preservedSources.Add(PauseSource.Minimized);
-                if (_activePauseSources.Contains(PauseSource.SystemTray))
-                    preservedSources.Add(PauseSource.SystemTray);
-                if (_activePauseSources.Contains(PauseSource.Manual))
-                    preservedSources.Add(PauseSource.Manual);
-                if (_activePauseSources.Contains(PauseSource.ExternalAudio))
-                    preservedSources.Add(PauseSource.ExternalAudio);
-                if (_activePauseSources.Contains(PauseSource.Idle))
-                    preservedSources.Add(PauseSource.Idle);
-                if (_activePauseSources.Contains(PauseSource.Video))
-                    preservedSources.Add(PauseSource.Video);
-                if (_activePauseSources.Contains(PauseSource.ThemeOverlay))
-                    preservedSources.Add(PauseSource.ThemeOverlay);
-                if (_activePauseSources.Contains(PauseSource.Dashboard))
-                    preservedSources.Add(PauseSource.Dashboard);
-                var clearedCount = _activePauseSources.Count - preservedSources.Count;
-                _activePauseSources.Clear();
-
-                // Re-add preserved sources
-                foreach (var source in preservedSources)
-                {
-                    _activePauseSources.Add(source);
-                }
+                var beforeCount = _activePauseSources.Count;
+                _activePauseSources.RemoveWhere(s => !PreservedOnClear.Contains(s));
+                var clearedCount = beforeCount - _activePauseSources.Count;
 
                 if (clearedCount > 0)
                 {
-                    _fileLogger?.Debug($"Cleared {clearedCount} pause sources (preserved {preservedSources.Count}: {string.Join(", ", preservedSources)})");
+                    _fileLogger?.Debug($"Cleared {clearedCount} pause sources (preserved {_activePauseSources.Count}: {string.Join(", ", _activePauseSources)})");
                 }
 
                 // Only resume if no pause sources remain (including preserved ones)
@@ -450,9 +464,7 @@ namespace UniPlaySong.Services
         // Checks if any window-state pause sources are active (FocusLoss, Minimized, SystemTray)
         private bool HasWindowStatePauseSources()
         {
-            return _activePauseSources.Contains(PauseSource.FocusLoss) ||
-                   _activePauseSources.Contains(PauseSource.Minimized) ||
-                   _activePauseSources.Contains(PauseSource.SystemTray);
+            return _activePauseSources.Overlaps(WindowStateSources);
         }
 
         // Called after CheckInitialWindowState. Processes any deferred playback request.

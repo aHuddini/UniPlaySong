@@ -4740,6 +4740,10 @@
                                 <Run FontWeight="SemiBold">Moved:</Run> "Theme Compatible Login Skip" → Theme Support tab; "Pause music when idle" → System Events (Pauses tab, where "Audio Awareness" is now "External Audio").
                             </TextBlock>
 
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer resumes behind the lock screen after Win+L — the lock-pause now holds until you unlock.
+                            </TextBlock>
+
                             <TextBlock FontSize="11">
                                 Full version history:
                                 <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml" RequestNavigate="AboutHyperlink_RequestNavigate">UniPlaySong installer manifest on GitHub</Hyperlink>

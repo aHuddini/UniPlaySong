@@ -6,6 +6,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.6.0] - Unreleased
 
+### Fixed
+
+- **Music could resume behind the lock screen after Win+L (issue #81 regression).** `PauseSource.SystemLock` was never added to the `ClearAllPauseSources()` preservation list — every other environmental source (FocusLoss, Minimized, Idle, ExternalAudio, Video, ThemeOverlay, Dashboard) was preserved, SystemLock was the lone omission. So if any of the ~12 `ClearAllPauseSources()` call sites fired while the session was locked (a deferred-play trigger or auto-advance race at the lock boundary), the lock-pause was silently dropped, the clear path called `_fader.Resume()`, and audio restarted behind the lock screen — reopening the audio device the #81 teardown had released and blocking Windows auto-suspend again. Fixed by adding `SystemLock` to the preserved set. Safe: every unlock path already calls `RemovePauseSource(SystemLock)` unconditionally (a no-op when absent), so preserving it can't cause a stuck pause. `src/Services/MusicPlaybackService.cs`.
+
+### Changed
+
+- **Pause-source housekeeping (code cleanup, no behavior change).** `ClearAllPauseSources()` now derives its preserved set from a single `static readonly HashSet<PauseSource>` (`PreservedOnClear`) via `RemoveWhere`, replacing 9 hand-typed `if (Contains) Add` blocks + a clear/re-add dance; `HasWindowStatePauseSources()` uses `Overlaps(WindowStateSources)`. Adding a pause source no longer means editing two hardcoded lists. Separately, the two verbatim-duplicated recovery branches shared by `RemovePauseSource` / `RemovePauseSourceImmediate` — interrupted-switch resume and deferred-game trigger — were extracted into `TryResumePendingPlayAction` / `TryTriggerDeferredPlayback`; the fade-vs-instant resume mechanics stay inline and explicit. First slice of the refactoring roadmap (Phase 0). `src/Services/MusicPlaybackService.cs`.
+
 ### Added
 
 - **Auto-launch Spotify on startup (Experimental, opt-in).** When Spotify is the active Radio Mode or Default Music source and the Spotify desktop app isn't running, UniPlaySong launches it on Playnite startup so music can begin. Gated on the source being Spotify; off by default (Experimental tab). UPS never closes Spotify.

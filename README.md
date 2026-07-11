@@ -25,6 +25,9 @@ Built with the help of Claude Code and Cursor IDE
 ### Added
 - **Auto-launch Spotify on startup (Experimental).** When Spotify is your Radio Mode or Default Music source and the desktop app isn't running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with both classic and Microsoft Store installs — no path setup for standard installs. Off by default; enable it in the Experimental settings tab.
 
+### Fixed
+- **Music no longer resumes behind the lock screen.** After locking with Win+L, a game switch could restart audio behind the lock screen (and keep Windows from sleeping). The lock-pause now holds until you unlock.
+
 ### Changed
 - **Cleaner settings.** Dense sections across most tabs now collapse — expand only what you need, so tabs are much easier to scan.
 - **A couple of settings moved.** "Theme Compatible Login Skip" is now in the **Theme Support** tab, and "Pause music when idle" now lives under **System Events** in the Pauses tab (where "Audio Awareness" is now called "External Audio"). Same settings, just easier to find.
