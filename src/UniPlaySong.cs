@@ -2285,10 +2285,21 @@ namespace UniPlaySong
                         // the audio is UPS's game music — a real external source (e.g. a browser)
                         // must still pause it. SpotifyActive can strand true (a theme's Quick Access
                         // mode-flip sets it, and no recompute clears it while game music plays
-                        // steadily); without the IsPlayingDefaultMusic guard that stale flag disabled
-                        // ExternalAudio pause entirely during game music. Same expected-audio
-                        // exemption as the game-launching guard below.
-                        if (_settings?.SpotifyActive == true && _playbackService?.IsPlayingDefaultMusic == true)
+                        // steadily); without this guard that stale flag disabled ExternalAudio
+                        // pause entirely during game music. Same expected-audio exemption as the
+                        // game-launching guard below.
+                        //
+                        // Spotify is the AUDIBLE source in two cases, and both must be exempt:
+                        //   1. Default-music gap — UPS is conducting Spotify because the game has no
+                        //      music (IsPlayingDefaultMusic).
+                        //   2. Spotify Radio Mode — Spotify is the radio source; UPS goes silent and
+                        //      lets Spotify play (IsPlayingDefaultMusic stays false here, so it must
+                        //      be checked separately or radio users get the pause-oscillation).
+                        // When a game's own music plays, neither is true → external audio (browser,
+                        // etc.) still pauses correctly.
+                        bool spotifyIsAudible = _settings?.SpotifyActive == true
+                            && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
+                        if (spotifyIsAudible)
                         {
                             _externalAudioDetected = true;
                             _externalAudioPausedInstantly = false;
