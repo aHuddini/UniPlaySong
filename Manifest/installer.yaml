@@ -6,7 +6,8 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.0/UniPlaySong-1_6_0.pext'
     Changelog:
       - '[New Feature] Auto-launch Spotify on startup (Experimental): when Spotify is your Radio Mode or Default Music source and the desktop app isn''t running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way.'
-      - '[UI] Settings cleanup: dense sections (Normalization, File Naming, Cookie Source, Search, Theme Developer Options) are now collapsible so tabs are easier to scan, and a few settings were regrouped for a more logical layout.'
+      - '[UI] Settings cleanup: dense sections across most tabs (Playback, Live Effects, Gamification, Pauses, Editing, Downloads, Theme Support) are now collapsible so tabs are far easier to scan — expand only what you need.'
+      - '[UI] A couple of settings changed tabs: "Theme Compatible Login Skip" moved to Theme Support, and "Pause music when idle" now lives under System Events in the Pauses tab (the Pauses "Audio Awareness" section was also renamed "External Audio"). No behavior changes — just where they live.'
   - Version: 1.5.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-03
