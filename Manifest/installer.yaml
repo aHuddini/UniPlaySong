@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-11
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.1/UniPlaySong-1_6_1.pext'
+    Changelog:
+      - '[Fix] Theme media controls: the play/pause button icon now updates correctly for UniPlaySong game music (it could get stuck showing "pause" after you paused). Spotify was already fine. Thanks to Mike Aniki for the report.'
   - Version: 1.6.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-10

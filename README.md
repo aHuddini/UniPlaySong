@@ -20,20 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.0
-
-### Added
-- **Auto-launch Spotify on startup (Experimental).** When Spotify is your Radio Mode or Default Music source and the desktop app isn't running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with both classic and Microsoft Store installs — no path setup for standard installs. Off by default; enable it in the Experimental settings tab.
+## What's New - v1.6.1
 
 ### Fixed
-- **Music no longer resumes behind the lock screen.** After locking with Win+L, a game switch could restart audio behind the lock screen (and keep Windows from sleeping). The lock-pause now holds until you unlock.
-
-### Changed
-- **Cleaner settings.** Dense sections across most tabs now collapse — expand only what you need, so tabs are much easier to scan.
-- **A couple of settings moved.** "Theme Compatible Login Skip" is now in the **Theme Support** tab, and "Pause music when idle" now lives under **System Events** in the Pauses tab (where "Audio Awareness" is now called "External Audio"). Same settings, just easier to find.
+- **Theme play/pause icon now updates for game music.** In themes with UniPlaySong media controls (like Aniki ReMake), the play/pause button could get stuck showing "pause" after you paused UniPlaySong's own game music. Spotify was already fine. It now flips correctly.
 
 ### Previous Version
-- **v1.5.10**: Achievement unlock sounds (console-style "trophy unlocked" fanfare via the Playnite Achievements plugin, with per-rarity sound packs) + a new Gamification settings tab. Plus a theme "Switch Radio Mode" toggle, faster jingles/previews, game-cover art fallback, and tidied settings tabs.
+- **v1.6.0**: Auto-launch Spotify on startup (Experimental). Fixed music resuming behind the lock screen after Win+L. Cleaner, collapsible settings across most tabs, and a couple of settings moved to more logical tabs.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

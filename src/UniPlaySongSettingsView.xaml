@@ -4729,19 +4729,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> <Run FontWeight="SemiBold">Auto-launch Spotify on startup</Run> (Experimental) — when Spotify is your Radio/Default source and it isn't running, UniPlaySong opens it on startup so music can begin, then minimizes it out of the way. Works with classic and Microsoft Store installs.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Changed:</Run> Dense sections across most tabs now collapse — expand only what you need.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Moved:</Run> "Theme Compatible Login Skip" → Theme Support tab; "Pause music when idle" → System Events (Pauses tab, where "Audio Awareness" is now "External Audio").
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Music no longer resumes behind the lock screen after Win+L — the lock-pause now holds until you unlock.
+                                <Run FontWeight="SemiBold">Fixed:</Run> Theme media controls — the play/pause icon now updates for UniPlaySong game music (it could get stuck on "pause" after pausing). Spotify was already fine.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

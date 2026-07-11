@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.1] - Unreleased
+
+### Fixed
+
+- **Theme play/pause icons stayed stuck on the pause glyph in UPS (game music) mode.** The unified `ActiveMedia` snapshot fed the theme-bindable `ActiveMediaIsPlaying` property from the raw backend flag (`IsPlaying` → `_musicPlayer.IsActive`), which stays `true` through a *logical* pause — UPS pauses via pause sources + the fader riding volume to 0, but the NAudio persistent mixer keeps the stream active. So a theme's play/pause button bound to `ActiveMediaIsPlaying` (e.g. Aniki ReMake's media controls) never flipped after pausing UPS game music; Spotify was unaffected because it reports its true SMTC playback state. Fixed by gating the snapshot on the logical pause state (`IsPlaying && !IsPaused`) so `ActiveMediaIsPlaying` reflects an actual pause across every UPS pause path. `src/Services/ActiveMedia/ActiveMediaService.cs`. Tester-confirmed with Aniki ReMake.
+
 ## [1.6.0] - Unreleased
 
 ### Fixed
