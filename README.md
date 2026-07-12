@@ -24,6 +24,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Fixed
 - **Theme mute button fixed.** On themes with a media-control mute button (like Aniki ReMake), muting then unmuting jumped the music to full volume and turned off Calm Down. Unmute now returns to the exact volume you had before muting.
+- **Theme mute button now works with Spotify.** Pressing mute while Spotify is playing now actually mutes Spotify (and the icon flips) — it mutes at the Windows level, just like Spotify's Volume Mixer entry.
 
 ### For Theme Developers
 - **New mute-state binding.** `ActiveMediaIsMuted` lets a theme's mute icon reflect real mute state instead of guessing from volume. See the Theme Integration Guide.

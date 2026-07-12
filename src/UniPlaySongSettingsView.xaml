@@ -4733,6 +4733,10 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute button now works with Spotify — it mutes Spotify at the Windows level, and the icon flips correctly.
+                            </TextBlock>
+
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
                                 <Run FontWeight="SemiBold">Added:</Run> An ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state.
                             </TextBlock>
 

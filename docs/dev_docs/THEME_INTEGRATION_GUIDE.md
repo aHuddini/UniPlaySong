@@ -723,7 +723,7 @@ The existing `NowPlaying*` properties (`NowPlayingTitle`, `NowPlayingArtist`, `N
 | Previous | `playnite://uniplaysong/previous` |
 | Toggle Mute | `playnite://uniplaysong/togglemute` |
 
-These four are source-aware — they act on whichever source is audible (UPS or Spotify). The original `play`, `pause`, `stop`, `restart`, and `volume/{0-100}` URIs (see [External control via URIs](#5-external-control-via-uris-v1310)) are unchanged and remain UPS-only.
+These four are source-aware — they act on whichever source is audible (UPS or Spotify). `togglemute` mutes UPS's own music via its player volume, or Spotify at the Windows audio-session level (the same as Spotify's Volume Mixer entry, since the media-key API has no mute); either way `ActiveMediaIsMuted` reflects the result. The original `play`, `pause`, `stop`, `restart`, and `volume/{0-100}` URIs (see [External control via URIs](#5-external-control-via-uris-v1310)) are unchanged and remain UPS-only.
 
 > **Note:** Transport currently drives UniPlaySong's own music playback and the Spotify desktop app. Support for other media apps/sessions is planned.
 

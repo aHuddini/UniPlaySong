@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.4/UniPlaySong-1_6_4.pext'
     Changelog:
       - '[Fix] Theme mute buttons no longer jump the volume to 100% (and wipe Calm Down) on unmute. The exact volume from before muting is now restored. Fixes the Aniki ReMake media-control mute.'
+      - '[Fix] Theme mute button now works when Spotify is playing — it mutes Spotify at the Windows audio-session level. The mute icon flips correctly too.'
       - '[Theme] Added an ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state instead of inferring it from volume.'
   - Version: 1.6.3
     RequiredApiVersion: 6.16.0
