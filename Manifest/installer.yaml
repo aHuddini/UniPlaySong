@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.3
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-12
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.3/UniPlaySong-1_6_3.pext'
+    Changelog:
+      - '[Fix] Fixed a constant pause/resume loop for users running Sunshine (game streaming). Sunshine''s audio capture made UniPlaySong hear its own music as "external audio" and pause itself in a loop. Sunshine is now excluded by default in the External Audio settings (you can edit the list).'
+      - '[Improved] When "Pause when other audio plays" triggers, the debug log now names which app''s audio caused it — making it easy to spot and exclude a misbehaving app if your music keeps pausing.'
   - Version: 1.6.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-11

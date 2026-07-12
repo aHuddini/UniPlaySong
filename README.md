@@ -20,13 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.2
+## What's New - v1.6.3
 
 ### Fixed
-- **"Pause when other audio plays" works again during game music.** If Spotify was your Default Music source, UniPlaySong could get into a state (often after toggling Radio Mode from a theme) where it ignored all other audio and never paused — so alt-tabbing to a browser or video didn't duck your music. It now pauses correctly again.
+- **No more constant pause/resume loop when running Sunshine.** On PCs using Sunshine (game streaming), UniPlaySong could hear its own music as "other audio" and rapidly pause/resume itself. Sunshine is now excluded by default in the External Audio settings (you can edit the list any time).
+
+### Added
+- **Easier to diagnose unexpected pausing.** If "Pause when other audio plays" keeps triggering, the debug log now names which app's audio caused it — so you can spot and exclude a misbehaving app.
 
 ### Previous Version
-- **v1.6.1**: Fixed theme play/pause icons getting stuck on "pause" for game music (Spotify was already fine).
+- **v1.6.2**: Fixed "Pause when other audio plays" not working during game music when Spotify was your Default source.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

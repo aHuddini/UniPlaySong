@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.3] - Unreleased
+
+### Fixed
+
+- **Constant pause/resume feedback loop with Sunshine (game streaming host).** On PCs running Sunshine, music would rapidly pause/resume (~once per second) and could end up stuck. Sunshine's audio-capture session mirrors the system's output level, so UniPlaySong's own music read back through the "Pause when other audio plays" detector as *external* audio: UPS plays → Sunshine's session peaks → detected as external → pause → silence → resume → repeat. Added `sunshine` + `sunshinesvc` to the default External Audio excluded-apps list (Pauses tab) — visible and user-editable, injected into existing users' lists on load via the settings migration (same mechanism that added Wallpaper Engine in v1.3.8). `src/UniPlaySongSettings.cs`, `src/UniPlaySongSettingsView.xaml.cs`, `src/Services/SettingsService.cs`. Tester-confirmed on a Sunshine host.
+
+### Added
+
+- **External-audio detection now logs the triggering process.** Every "External audio detected" debug line now names the process whose audio session tripped the threshold (`External audio detected (source: X), pausing`). This makes "my music keeps pausing/resuming" reports self-diagnosing — the culprit (a game-streaming host, audio-enhancement suite, browser, etc.) is named directly, and points the user at the excluded-apps list. `src/Common/AudioSessionDetector.cs` (`IsExternalAudioPlaying` now returns the detected process name), `src/UniPlaySong.cs`.
+
 ## [1.6.2] - Unreleased
 
 ### Fixed
