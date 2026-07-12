@@ -695,6 +695,7 @@ namespace UniPlaySong
         private string activeMediaDurationText = string.Empty;
         private double activeMediaVolume;
         private bool activeMediaIsPlaying;
+        private bool activeMediaIsMuted;
         private string activeMediaSourceName = string.Empty;
         private ActiveMediaSourceKind activeMediaSourceKind = ActiveMediaSourceKind.None;
         private bool activeMediaHasMedia;
@@ -739,6 +740,16 @@ namespace UniPlaySong
         {
             get => activeMediaIsPlaying;
             set { activeMediaIsPlaying = value; OnPropertyChanged(); }
+        }
+
+        // True when the active source is muted (drives the theme's mute-icon DataTrigger).
+        // Explicit mute state so themes bind to this instead of inferring from
+        // ActiveMediaVolume == 0 (which also reads 0 during fades/pauses).
+        [JsonIgnore]
+        public bool ActiveMediaIsMuted
+        {
+            get => activeMediaIsMuted;
+            set { activeMediaIsMuted = value; OnPropertyChanged(); }
         }
 
         // Friendly name of the active source ("UniPlaySong" / "Spotify"), "" when none.

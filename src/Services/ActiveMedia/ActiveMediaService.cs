@@ -141,7 +141,9 @@ namespace UniPlaySong.Services.ActiveMedia
                 // on the "pause" glyph after pausing UPS game music. Gate on the logical pause state
                 // so ActiveMediaIsPlaying reflects an actual pause across every UPS pause path.
                 isPlaying: (_playback?.IsPlaying ?? false) && !(_playback?.IsPaused ?? false),
-                isMuted: vol <= 0.0,
+                // Explicit mute state (set in ToggleMute), NOT vol<=0 — volume also rides to 0
+                // during fades/pauses, which would otherwise flash the theme's mute icon.
+                isMuted: _upsVolumeBeforeMute >= 0.0,
                 progress: progress,
                 positionText: posText,
                 durationText: durText,

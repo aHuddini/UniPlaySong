@@ -131,6 +131,7 @@ namespace UniPlaySong.Controls
             st.ActiveMediaDurationText = s.DurationText;
             st.ActiveMediaVolume = s.Volume;
             st.ActiveMediaIsPlaying = s.IsPlaying;
+            st.ActiveMediaIsMuted = s.IsMuted;
             st.ActiveMediaSourceName = s.SourceName;
             st.ActiveMediaSourceKind = s.SourceKind;
             st.ActiveMediaHasMedia = s.HasActiveMedia;
