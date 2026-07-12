@@ -17,6 +17,10 @@ namespace UniPlaySong.Services.ActiveMedia
         private readonly ISpotifyClient _spotifyClient;
         private readonly FileLogger _fileLogger;
 
+        // Player volume captured when UPS music was muted, so unmute restores that exact level
+        // (which already includes MusicVolume + Calm Down attenuation). -1 = not currently muted.
+        private double _upsVolumeBeforeMute = -1.0;
+
         public event Action Changed;
 
         public ActiveMediaService(
@@ -175,13 +179,31 @@ namespace UniPlaySong.Services.ActiveMedia
 
         public void ToggleMute()
         {
-            // UPS-only for now: Spotify SMTC has no mute command in the client contract.
-            if (ResolveSource() == ActiveMediaSourceKind.Ups)
+            // UPS-only: Spotify's own volume is owned by Windows/SMTC, not UPS — out of scope
+            // here (the client contract has no mute command). This mutes ONLY UPS radio/game music.
+            if (ResolveSource() != ActiveMediaSourceKind.Ups) return;
+
+            double v = _playback?.GetInternalVolume() ?? 0.0;
+            if (v > 0.0)
             {
-                double v = _playback?.GetInternalVolume() ?? 0.0;
-                _playback?.SetInternalVolume(v > 0.0 ? 0.0 : 1.0);
-                RaiseChanged();
+                // Muting: remember the exact live level (bakes in MusicVolume + Calm Down), silence.
+                _upsVolumeBeforeMute = v;
+                _playback?.SetInternalVolume(0.0);
             }
+            else
+            {
+                // Unmuting: restore the saved level. Fall back to the target volume (GetVolume,
+                // = _targetVolume) if we have no saved value — NEVER a hardcoded 1.0, which was
+                // the "way louder / wipes Calm Down" bug. First press when already silent also
+                // lands here and restores a sane level instead of blasting to 100%.
+                double restore = _upsVolumeBeforeMute > 0.0
+                    ? _upsVolumeBeforeMute
+                    : (_playback?.GetVolume() ?? 0.0);
+                _playback?.SetInternalVolume(restore);
+                _upsVolumeBeforeMute = -1.0;
+            }
+            _fileLogger?.Debug($"[ActiveMedia] ToggleMute: {(v > 0.0 ? "muted" : "unmuted")} (was={v:F3}, saved={_upsVolumeBeforeMute:F3})");
+            RaiseChanged();
         }
 
         public void SetVolume(double volume0to100)
@@ -190,6 +212,8 @@ namespace UniPlaySong.Services.ActiveMedia
             {
                 double clamped = Math.Max(0.0, Math.Min(100.0, volume0to100));
                 _playback?.SetInternalVolume(clamped / 100.0);
+                // An explicit volume set clears any mute memory: the new level IS the level.
+                _upsVolumeBeforeMute = -1.0;
                 RaiseChanged();
             }
             // Spotify app volume not settable via the SMTC client contract — ignored.
