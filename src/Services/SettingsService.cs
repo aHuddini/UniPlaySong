@@ -205,8 +205,10 @@ namespace UniPlaySong.Services
         {
             bool changed = false;
 
-            // v1.3.8: Add Wallpaper Engine to default excluded apps
-            var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32" };
+            // v1.3.8: Add Wallpaper Engine to default excluded apps.
+            // v1.6.3: Add Sunshine game-streaming host — its audio-capture session mirrors system
+            // output, so UPS's own music reads back as "external audio" and pause-oscillates.
+            var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32", "sunshine", "sunshinesvc" };
             var currentExclusions = (settings.ExternalAudioExcludedApps ?? "")
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())

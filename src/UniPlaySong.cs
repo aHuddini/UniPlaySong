@@ -157,10 +157,7 @@ namespace UniPlaySong
         private int _externalAudioSilenceCount;
         private volatile bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
         private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
-        // Tracks setting value to know when to rebuild the exclusion cache. Starts null (never
-        // matches the setting, which defaults to "") so the FIRST poll always rebuilds — that
-        // rebuild is what merges the built-in exclusions (sunshine etc.) into the runtime set.
-        private string _externalAudioExcludedAppsRaw = null;
+        private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
         private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
         private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
         private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
@@ -2263,13 +2260,6 @@ namespace UniPlaySong
                             .Select(s => s.Trim().ToLowerInvariant())
                             .Where(s => s.Length > 0),
                         StringComparer.OrdinalIgnoreCase);
-                    // Built-in exclusions for known audio-mirror processes: their WASAPI session
-                    // level tracks system output (audio capture for game streaming), so UPS's own
-                    // music reads back as "external audio" and instant-pauses in a ~1s feedback
-                    // loop. Confirmed via the detection-source log: Sunshine game-streaming host.
-                    // Merged into the runtime set only — never written into the user's setting.
-                    _externalAudioExcludedPids.Add("sunshine");
-                    _externalAudioExcludedPids.Add("sunshinesvc");
                 }
 
                 float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
