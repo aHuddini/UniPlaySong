@@ -13,8 +13,13 @@ namespace UniPlaySong.Common
         private static readonly Guid CLSID_MMDeviceEnumerator = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
 
         // Detects if any non-self audio session is outputting above the peak threshold.
-        public static bool IsExternalAudioPlaying(int selfPid, float peakThreshold, HashSet<string> excludedProcessNames)
+        // detectedProcessName reports which process's session tripped the threshold (or
+        // "pid N" if the process can't be resolved) — used by the caller's detection log
+        // so reports can name the actual source (e.g. audio-enhancement software whose
+        // session mirrors system output and causes pause/resume feedback loops).
+        public static bool IsExternalAudioPlaying(int selfPid, float peakThreshold, HashSet<string> excludedProcessNames, out string detectedProcessName)
         {
+            detectedProcessName = null;
             IMMDeviceEnumerator enumerator = null;
             IMMDevice device = null;
 
@@ -72,7 +77,11 @@ namespace UniPlaySong.Common
                         {
                             meter.GetPeakValue(out float peak);
                             if (peak > peakThreshold)
+                            {
+                                try { detectedProcessName = Process.GetProcessById((int)pid).ProcessName; }
+                                catch { detectedProcessName = $"pid {pid}"; }
                                 return true;
+                            }
                         }
                     }
                     catch { }

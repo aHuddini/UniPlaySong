@@ -2264,7 +2264,7 @@ namespace UniPlaySong
 
                 float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
                 bool audioFound = Common.AudioSessionDetector.IsExternalAudioPlaying(
-                    _selfPid, peakThreshold, _externalAudioExcludedPids);
+                    _selfPid, peakThreshold, _externalAudioExcludedPids, out var externalAudioSource);
 
                 if (audioFound)
                 {
@@ -2303,7 +2303,7 @@ namespace UniPlaySong
                         {
                             _externalAudioDetected = true;
                             _externalAudioPausedInstantly = false;
-                            _fileLogger?.Debug("External audio detected, but Spotify is the active music — skipping ExternalAudio pause source (Spotify audio is expected, not external).");
+                            _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), but Spotify is the active music — skipping ExternalAudio pause source (Spotify audio is expected, not external).");
                             return;
                         }
 
@@ -2317,14 +2317,14 @@ namespace UniPlaySong
                         {
                             _externalAudioDetected = true;
                             _externalAudioPausedInstantly = false;
-                            _fileLogger?.Debug("External audio detected, but a game is currently launching/running — skipping ExternalAudio pause source (game audio is expected, not a real external source)");
+                            _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), but a game is currently launching/running — skipping ExternalAudio pause source (game audio is expected, not a real external source)");
                             return;
                         }
 
                         _externalAudioDetected = true;
                         _externalAudioPausedInstantly = _settings?.ExternalAudioInstantPause == true;
                         var useInstant = _externalAudioPausedInstantly;
-                        _fileLogger?.Debug($"External audio detected, pausing{(useInstant ? " (instant)" : "")}");
+                        _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), pausing{(useInstant ? " (instant)" : "")}");
                         DispatchPauseAction(() =>
                         {
                             if (useInstant)
