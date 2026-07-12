@@ -35,3 +35,6 @@ docs/plans/
 **/DefaultMusic/ANIKI REMAKE - Login OST.mp3
 
 nul
+
+# Unlocked .pext build script — exposes source-unlock mechanism, keep OUT of the repo
+scripts/build_unlocked_pext.ps1
