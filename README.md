@@ -23,6 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.6.3
 
 ### Fixed
+- **Music kept stopping after one song? Fixed.** On the default (non-effects) audio backend, game music could play a single track and then go silent instead of looping or moving to the next song. This affected a number of users since v1.5.9 and is now resolved.
 - **No more constant pause/resume loop when running Sunshine.** On PCs using Sunshine (game streaming), UniPlaySong could hear its own music as "other audio" and rapidly pause/resume itself. Sunshine is now excluded by default in the External Audio settings (you can edit the list any time).
 
 ### Added

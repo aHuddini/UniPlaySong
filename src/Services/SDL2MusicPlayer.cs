@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -31,7 +32,16 @@ namespace UniPlaySong.Services
         private string _resumeReloadPath = string.Empty;
         private TimeSpan _resumeReloadPosition = TimeSpan.Zero;
         private static bool _isSDLAudioInitialized = false;
-        private SDL2Mixer.MusicFinishedCallback _musicFinishedCallback;
+        // Mix_HookMusicFinished is ONE process-global hook. Installing it per-instance let the
+        // last-constructed player (the prewarmed jingle player, since v1.5.10) steal it from the
+        // main player, whose MediaEnded then never fired — music stopped after one song (issue #89).
+        // Install the hook ONCE with a static callback that dispatches to every live instance;
+        // each instance's OnMusicFinishedInternal gates on its own _isActive, and SDL2_mixer has
+        // a single music stream, so at most one instance handles it.
+        private static readonly object _instancesLock = new object();
+        private static readonly List<SDL2MusicPlayer> _instances = new List<SDL2MusicPlayer>();
+        private static SDL2Mixer.MusicFinishedCallback _staticMusicFinishedCallback; // rooted so GC never collects the native thunk
+        private static bool _musicFinishedHookInstalled;
         private readonly ErrorHandlerService _errorHandler;
         private readonly SettingsService _settingsService;
 
@@ -59,8 +69,32 @@ namespace UniPlaySong.Services
             _settingsService = settingsService;
             _enableIdleTeardown = enableIdleTeardown;
             InitializeSDL();
-            _musicFinishedCallback = OnMusicFinishedInternal;
-            SDL2Mixer.Mix_HookMusicFinished(Marshal.GetFunctionPointerForDelegate(_musicFinishedCallback));
+            lock (_instancesLock)
+            {
+                _instances.Add(this);
+                if (!_musicFinishedHookInstalled)
+                {
+                    _staticMusicFinishedCallback = OnMusicFinishedStatic;
+                    SDL2Mixer.Mix_HookMusicFinished(Marshal.GetFunctionPointerForDelegate(_staticMusicFinishedCallback));
+                    _musicFinishedHookInstalled = true;
+                }
+            }
+        }
+
+        // SDL2 invokes this on its audio thread whenever the (single, global) music stream ends.
+        // Route to every live instance; the _isActive gate inside OnMusicFinishedInternal ensures
+        // only the player that was actually playing dispatches MediaEnded.
+        private static void OnMusicFinishedStatic()
+        {
+            SDL2MusicPlayer[] players;
+            lock (_instancesLock)
+            {
+                players = _instances.ToArray();
+            }
+            foreach (var player in players)
+            {
+                player.OnMusicFinishedInternal();
+            }
         }
 
         private void InitializeSDL()
@@ -519,6 +553,10 @@ namespace UniPlaySong.Services
                     // Dispose managed state
                 }
 
+                lock (_instancesLock)
+                {
+                    _instances.Remove(this);
+                }
                 Close();
                 _isDisposed = true;
             }
