@@ -106,7 +106,8 @@ namespace UniPlaySong.Services.ActiveMedia
                 sourceKind: ActiveMediaSourceKind.Spotify,
                 sourceName: "Spotify",
                 isPlaying: playing,
-                isMuted: false,
+                // Windows audio-session mute state (drives the theme's ActiveMediaIsMuted binding).
+                isMuted: SpotifyAudioSession.IsMuted(),
                 progress: progress,
                 positionText: posText,
                 durationText: durText,
@@ -181,8 +182,16 @@ namespace UniPlaySong.Services.ActiveMedia
 
         public void ToggleMute()
         {
-            // UPS-only: Spotify's own volume is owned by Windows/SMTC, not UPS — out of scope
-            // here (the client contract has no mute command). This mutes ONLY UPS radio/game music.
+            // Spotify: mute at the Windows audio-session level (ISimpleAudioVolume) — SMTC has
+            // no mute command, so this is the only way. System-level, like the Volume Mixer.
+            if (ResolveSource() == ActiveMediaSourceKind.Spotify)
+            {
+                SpotifyAudioSession.ToggleMute();
+                RaiseChanged();
+                return;
+            }
+
+            // UPS: mute UPS's own radio/game music via the internal player volume.
             if (ResolveSource() != ActiveMediaSourceKind.Ups) return;
 
             double v = _playback?.GetInternalVolume() ?? 0.0;
