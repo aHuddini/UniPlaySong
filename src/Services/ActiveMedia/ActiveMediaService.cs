@@ -111,7 +111,9 @@ namespace UniPlaySong.Services.ActiveMedia
                 progress: progress,
                 positionText: posText,
                 durationText: durText,
-                volume: 0.0,
+                // Real Spotify session volume 0–100 (0 when muted). Was hardcoded 0, which made a
+                // volume-based theme mute icon (ActiveMediaVolume==0) show "muted" permanently.
+                volume: SpotifyAudioSession.GetEffectiveVolume() * 100.0,
                 canNext: true,
                 canPrevious: true);
         }

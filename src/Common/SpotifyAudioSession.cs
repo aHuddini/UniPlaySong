@@ -43,6 +43,23 @@ namespace UniPlaySong.Common
             });
         }
 
+        // Reads Spotify's session volume 0.0–1.0 (0 if muted or not found). Effective volume:
+        // returns 0 when muted so a volume-based theme icon (ActiveMediaVolume==0) also reflects
+        // the mute, and the real level otherwise.
+        public static double GetEffectiveVolume()
+        {
+            double result = 0.0;
+            WithSpotifyVolume(vol =>
+            {
+                vol.GetMute(out bool muted);
+                if (muted) { result = 0.0; return true; }
+                vol.GetMasterVolume(out float level);
+                result = level;
+                return true;
+            });
+            return result;
+        }
+
         // Enumerates render sessions, finds the Spotify-owned one, and runs an action against
         // its ISimpleAudioVolume. Returns false if Spotify has no session or anything throws.
         private static bool WithSpotifyVolume(Func<ISimpleAudioVolume, bool> action)
