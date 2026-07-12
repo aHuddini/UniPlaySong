@@ -9,7 +9,9 @@ Control UniPlaySong playback via Playnite's `playnite://` URI protocol. Works fr
 | Play / Resume | `playnite://uniplaysong/play` | Resume playback. No-op if already playing. |
 | Pause | `playnite://uniplaysong/pause` | Pause playback. No-op if already paused. |
 | Toggle Play/Pause | `playnite://uniplaysong/playpausetoggle` | Pauses if playing, resumes if paused. |
-| Skip | `playnite://uniplaysong/skip` | Skip to the next song. |
+| Skip / Next | `playnite://uniplaysong/skip` (alias: `next`) | Skip to the next song. |
+| Previous | `playnite://uniplaysong/previous` | Previous track (restarts the current song for UPS). |
+| Toggle Mute | `playnite://uniplaysong/togglemute` | Mute/unmute UPS music. Unmute restores the pre-mute volume. |
 | Restart | `playnite://uniplaysong/restart` | Restart the current song from the beginning. |
 | Stop | `playnite://uniplaysong/stop` | Stop playback entirely. |
 | Set Volume | `playnite://uniplaysong/volume/{0-100}` | Set volume to a value between 0 and 100. |

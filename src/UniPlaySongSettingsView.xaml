@@ -4729,15 +4729,11 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Game music stopping after one song on the default audio backend — it now loops and advances correctly again (issue #89).
+                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute buttons no longer jump the volume to 100% (or turn off Calm Down) on unmute — the volume from before muting is restored.
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> No more constant pause/resume loop when running Sunshine (game streaming) — it's now excluded by default in the External Audio settings.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> The debug log now names which app's audio triggered "Pause when other audio plays" — making unexpected pausing easy to diagnose.
+                                <Run FontWeight="SemiBold">Added:</Run> An ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

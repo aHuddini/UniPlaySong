@@ -20,16 +20,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.3
+## What's New - v1.6.4
 
 ### Fixed
-- **Music kept stopping after one song? Fixed.** On the default (non-effects) audio backend, game music could play a single track and then go silent instead of looping or moving to the next song. This affected a number of users since v1.5.9 and is now resolved.
-- **No more constant pause/resume loop when running Sunshine.** On PCs using Sunshine (game streaming), UniPlaySong could hear its own music as "other audio" and rapidly pause/resume itself. Sunshine is now excluded by default in the External Audio settings (you can edit the list any time).
+- **Theme mute button fixed.** On themes with a media-control mute button (like Aniki ReMake), muting then unmuting jumped the music to full volume and turned off Calm Down. Unmute now returns to the exact volume you had before muting.
 
-### Added
-- **Easier to diagnose unexpected pausing.** If "Pause when other audio plays" keeps triggering, the debug log now names which app's audio caused it — so you can spot and exclude a misbehaving app.
+### For Theme Developers
+- **New mute-state binding.** `ActiveMediaIsMuted` lets a theme's mute icon reflect real mute state instead of guessing from volume. See the Theme Integration Guide.
 
 ### Previous Version
+- **v1.6.3**: Fixed game music stopping after one song on the default audio backend (issue #89), and a pause/resume loop when running Sunshine.
+
+### Older
 - **v1.6.2**: Fixed "Pause when other audio plays" not working during game music when Spotify was your Default source.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.

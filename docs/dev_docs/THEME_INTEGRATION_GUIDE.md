@@ -699,6 +699,7 @@ Playnite can't inject theme XAML into a plugin control, so if you want your **ow
 | `ActiveMediaDurationText` | string "m:ss" | Total duration of the active source. |
 | `ActiveMediaVolume` | double (0–100) | Volume of the active source. |
 | `ActiveMediaIsPlaying` | bool | True when the active source is currently playing (drives your play/pause icon). |
+| `ActiveMediaIsMuted` | bool | True when the active source is muted (drives your mute icon). Prefer this over `ActiveMediaVolume == 0` — volume also reads 0 during fades/pauses, which would flash the mute icon. |
 | `ActiveMediaSourceName` | string | Friendly name of the active source ("UniPlaySong" / "Spotify"), empty when none. |
 | `ActiveMediaSourceKind` | enum `None`/`Ups`/`Spotify` | Which source is active, for source-icon logic. |
 | `ActiveMediaHasMedia` | bool | True when there's any active media — collapse your control when false. |

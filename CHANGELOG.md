@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.4] - Unreleased
+
+### Fixed
+
+- **Theme mute button now restores the previous volume instead of jumping to 100%.** A theme's media-control mute button (e.g. Aniki ReMake, which routes through its helper to UniPlaySong's `ToggleMute`) muted to 0 but *unmuted* to a hardcoded 100% — so a mute/unmute cycle left UPS radio/game music blaring at full volume and wiped Calm Down ("night mode") attenuation, which read as "the mute button is broken." Now the exact pre-mute volume is captured and restored on unmute (it already includes the user's Music Volume setting and any Calm Down attenuation); it falls back to the target volume, never a hardcoded 100%. `src/Services/ActiveMedia/ActiveMediaService.cs`. Tester-confirmed on Aniki ReMake media controls.
+
+### Added
+
+- **`ActiveMediaIsMuted` theme binding.** Themes can now bind their mute icon to an explicit muted-state property (`{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaIsMuted}`) instead of inferring it from `ActiveMediaVolume == 0` — volume also reads 0 during fades/pauses, which flashed the icon. Recommended alongside using the `playnite://uniplaysong/togglemute` URI as the primary mute path (a stable public contract) rather than reflecting into UPS internals. `src/UniPlaySongSettings.cs`, `src/Controls/ActiveMediaViewModel.cs`. See the Theme Integration Guide.
+
 ## [1.6.3] - Unreleased
 
 ### Fixed
