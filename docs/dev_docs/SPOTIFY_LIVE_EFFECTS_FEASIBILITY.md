@@ -2,7 +2,18 @@
 
 **Question:** Can UniPlaySong (a no-admin, no-installer, managed .NET Framework 4.6.2 Playnite plugin) apply its live audio effects (reverb/EQ via NAudio) to **Spotify's** audio — obtaining an isolated, clean PCM stream of Spotify's output — **without** requiring the user to install a third-party virtual audio cable?
 
-**Verdict:** **YES — natively, via Windows Process Loopback Capture. No virtual cable, no driver, no admin.** But it requires a small bundled native (C++/WinRT) shim and a modern-Windows floor. Not yet implemented — this is a scoping doc.
+**Verdict:** **YES — PROVEN end-to-end on real hardware.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. Requires a small bundled native (C++/WinRT) shim and a modern-Windows floor. The feature itself is not yet built — this documents the proven path.
+
+## Spike results (2026-07-12) — PROVEN
+
+A minimal C++/WinRT console (`scratchpad/spotloop_spike.cpp`, built with VS 2022 + Windows SDK 26100) targeting Spotify's process tree via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS` (INCLUDE_TARGET_PROCESS_TREE):
+
+- **Paused Spotify:** clocked 4.00s of frames, peak=0.0 (stream live, no audio rendered — expected).
+- **Playing Spotify:** `frames=175959 (3.99s @ 44100Hz), peak=0.384, RMS=0.057` → **NON-SILENT, no DRM block.** WAV written + confirmed by ear: clean, isolated Spotify audio, nothing else on the system.
+- **Process tree:** Spotify's window PID is the parent; the ~6 other Spotify processes are its children, so INCLUDE_TARGET_PROCESS_TREE on the window PID covers whichever child renders audio. (Confirmed via Win32_Process ParentProcessId.)
+- **Toolchain confirmed present:** VS 2022 Professional (MSVC 14.44) + Windows SDK 10.0.26100 with `audioclientactivationparams.h`.
+
+The single-variable proof: same code/API/PID, peak 0.0 (paused) → 0.384 (playing). The loopback taps the render stream exactly as documented.
 
 Cross-ref: [SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md) (SMTC transport control), [NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md) (the effect chain we'd feed).
 
@@ -62,16 +73,23 @@ Experimental, opt-in, clearly gated:
 3. **Managed side** — feed the shim's PCM callback into the existing NAudio effect chain (see NAUDIO_PIPELINE.md), output via `WasapiOut`. Mute Spotify's real session via the existing `SpotifyAudioSession` so only the processed stream is audible.
 4. **Lifecycle** — on stop/crash/disable, unmute Spotify (never leave it silent).
 
-## Next step: feasibility spike (before building the feature)
+## Feasibility spike — DONE (proven, see "Spike results" above)
 
-Prove the capture works end-to-end on a real machine — same evidence-first approach that proved the mute path:
+The spike is complete and successful. Reference implementation of the capture core is preserved at
+[`docs/dev_docs/spikes/spotloop_spike.cpp`](spikes/spotloop_spike.cpp) — the exact code that captured
+isolated Spotify PCM. It's the template for the production shim (it already does the async
+`ActivateAudioInterfaceAsync` dance, the activation-params blob, tree targeting, and the capture loop).
 
-1. Minimal C++/WinRT console/DLL from the MS ApplicationLoopback sample, targeting Spotify's PID with INCLUDE_TARGET_PROCESS_TREE.
-2. Confirm it captures **non-silent** Spotify PCM (DRM check) while Spotify plays.
-3. Confirm process-tree targeting grabs audio regardless of which Spotify child process renders.
-4. Measure rough latency.
+## Remaining work to ship the feature (all plumbing — the hard part is proven)
 
-If the spike captures clean Spotify audio → the effect-chain integration is "just" plumbing (we already own the DSP). If it returns silence (DRM) or the shim proves too heavy → stop, document, shelve.
+1. **Turn the spike into a shim DLL** (`UniPlaySong.SpotifyLoopback.dll`, C++/WinRT) — swap the WAV-writing capture loop for a callback surface: `StartCapture(pid) → callback(byte[] pcm, WAVEFORMATEX)` / `StopCapture()`. Build it as a proper VS C++ project (the spike was a one-file `cl` build).
+2. **Managed bridge** — P/Invoke the shim, marshal the PCM callback into a `WaveProvider`/`ISampleProvider` that feeds the existing NAudio effect chain ([NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md)).
+3. **Output + real-Spotify mute** — play the processed stream via `WasapiOut`; mute Spotify's own session with the existing [`SpotifyAudioSession`](../../src/Common/SpotifyAudioSession.cs) so only the effected version is audible. On stop/crash/disable, **unmute** (never leave Spotify silent).
+4. **Capability gate** — detect Windows build >= 20348; hide/disable the feature + hint below that.
+5. **Latency tuning** — measure and minimize buffering (spike used 200ms; production wants smaller).
+6. **Packaging** — ship the native DLL in the extension folder (a normal DLL, no install/admin), plus its VC++ redist consideration.
+
+Effort is bounded and de-risked: capture is proven, DSP already exists, mute already exists. The new surface is the shim + its managed marshalling.
 
 ---
 
