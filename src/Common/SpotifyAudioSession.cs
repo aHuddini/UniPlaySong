@@ -33,6 +33,17 @@ namespace UniPlaySong.Common
             });
         }
 
+        // Deterministic mute set (the effects invariant needs an explicit target, not a toggle).
+        // Returns true if Spotify's session was found and set.
+        public static bool SetMuted(bool muted)
+        {
+            return WithSpotifyVolume(vol =>
+            {
+                vol.SetMute(muted, ref _eventContext);
+                return true;
+            });
+        }
+
         // Reads Spotify's current session mute state (false if not found).
         public static bool IsMuted()
         {
