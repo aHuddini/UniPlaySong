@@ -206,6 +206,16 @@ namespace UniPlaySong.Services
             _preloadedFile = "";
         }
 
+        public void LoadExternalSource(NAudio.Wave.ISampleProvider source)
+        {
+            // no-op: external-source effects require the NAudio backend
+        }
+
+        public void StopExternalSource()
+        {
+            // no-op: external-source effects require the NAudio backend
+        }
+
         public void Play()
         {
             Play(default(TimeSpan));

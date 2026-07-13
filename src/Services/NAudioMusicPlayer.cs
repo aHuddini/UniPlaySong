@@ -64,6 +64,13 @@ namespace UniPlaySong.Services
         private string _secondarySource;
         public bool IsCrossfading => _secondaryInputVolume != null;
 
+        // External live-source chain (e.g. Spotify capture). Runs the SAME EffectsChain/viz
+        // as a file, but never EOFs so there's no SongEndDetector. Held in fields so the
+        // chain (and VisualizationDataProvider.Current) isn't GC'd while playing.
+        private ISampleProvider _externalInput;
+        private EffectsChain _externalEffects;
+        private VisualizationDataProvider _externalViz;
+
         private bool _isInMixer;
 
         // Preloaded file reader — created during fade-out to reduce Load() time
@@ -877,6 +884,46 @@ namespace UniPlaySong.Services
                 _audioFile.Dispose();
                 _audioFile = null;
             }
+        }
+
+        // Builds the effect/viz chain around an external live source (e.g. Spotify capture) and
+        // adds it to the persistent mixer — same downstream chain as a file, so effects/viz apply
+        // identically. No SongEndDetector (a live stream doesn't EOF). Format-normalized to the
+        // 44.1k stereo float mixer via the existing mono-to-stereo / resampler path. Mirrors the
+        // file-load chain (no mixer-wide lock — Load() doesn't use one either).
+        public void LoadExternalSource(ISampleProvider source)
+        {
+            StopExternalSource();
+            EnsurePersistentLayer();
+
+            _externalEffects = new EffectsChain(source, _settingsService);
+            int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
+            _externalViz = new VisualizationDataProvider(_externalEffects, fftSize, _settingsService.Current);
+            if (!SuppressVisualizationProvider)
+                VisualizationDataProvider.Current = _externalViz;
+
+            // Format normalization for mixer compatibility (44100Hz stereo float).
+            ISampleProvider tail = _externalViz;
+            if (tail.WaveFormat.Channels == 1)
+                tail = new MonoToStereoSampleProvider(tail);
+            if (tail.WaveFormat.SampleRate != MixerFormat.SampleRate)
+                tail = new WdlResamplingSampleProvider(tail, MixerFormat.SampleRate);
+
+            _externalInput = tail;
+            _mixer.AddMixerInput(_externalInput);
+        }
+
+        // Removes the external live source from the mixer and drops its chain references.
+        public void StopExternalSource()
+        {
+            if (_externalInput != null && _mixer != null)
+            {
+                try { _mixer.RemoveMixerInput(_externalInput); }
+                catch (Exception ex) { _fileLogger?.Debug($"[NAudio] StopExternalSource: {ex.Message}"); }
+            }
+            _externalInput = null;
+            _externalEffects = null;
+            _externalViz = null;
         }
 
         // Guarded removal from mixer — only calls RemoveMixerInput if actually in mixer
