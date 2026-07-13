@@ -893,6 +893,7 @@ namespace UniPlaySong.Services
         // file-load chain (no mixer-wide lock — Load() doesn't use one either).
         public void LoadExternalSource(ISampleProvider source)
         {
+            if (_isDisposed) return;
             StopExternalSource();
             EnsurePersistentLayer();
 
@@ -916,6 +917,7 @@ namespace UniPlaySong.Services
         // Removes the external live source from the mixer and drops its chain references.
         public void StopExternalSource()
         {
+            if (_isDisposed) return;
             if (_externalInput != null && _mixer != null)
             {
                 try { _mixer.RemoveMixerInput(_externalInput); }
@@ -923,6 +925,7 @@ namespace UniPlaySong.Services
             }
             _externalInput = null;
             _externalEffects = null;
+            _externalViz?.Dispose();
             _externalViz = null;
         }
 
