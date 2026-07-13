@@ -14,6 +14,9 @@ typedef void(__stdcall* PcmCallback)(void* user, const unsigned char* data, int 
 namespace {
     std::thread g_thread;
     std::atomic<bool> g_run{false};
+    // Start-handshake: 0=pending, 1=capture began, -1=failed. Start() waits on g_startEvt.
+    std::atomic<int> g_startResult{0};
+    HANDLE g_startEvt = nullptr;
 
     class ActivateHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>, FtmBase,
                                                 IActivateAudioInterfaceCompletionHandler> {
@@ -21,6 +24,7 @@ namespace {
         HANDLE done = CreateEvent(nullptr, TRUE, FALSE, nullptr);
         HRESULT hr = E_FAIL;
         ComPtr<IAudioClient> client;
+        ~ActivateHandler() { if (done) CloseHandle(done); }
         STDMETHOD(ActivateCompleted)(IActivateAudioInterfaceAsyncOperation* op) override {
             IUnknown* p = nullptr; HRESULT h = E_FAIL;
             op->GetActivateResult(&h, &p); hr = h;
@@ -28,6 +32,14 @@ namespace {
             SetEvent(done); return S_OK;
         }
     };
+
+    // Report the start outcome to a waiting Start() exactly once, and clear g_run on failure
+    // so IsCapturing() reports 0 and a later Start() can retry.
+    void SignalStart(int result) {
+        if (result < 0) g_run = false;
+        g_startResult = result;
+        if (g_startEvt) SetEvent(g_startEvt);
+    }
 
     void CaptureLoop(unsigned long pid, PcmCallback cb, void* user) {
         CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -41,22 +53,26 @@ namespace {
         auto handler = Make<ActivateHandler>();
         ComPtr<IActivateAudioInterfaceAsyncOperation> op;
         if (FAILED(ActivateAudioInterfaceAsync(VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
-                __uuidof(IAudioClient), &pv, handler.Get(), &op))) { CoUninitialize(); return; }
+                __uuidof(IAudioClient), &pv, handler.Get(), &op))) { SignalStart(-1); CoUninitialize(); return; }
         WaitForSingleObject(handler->done, 5000);
-        if (FAILED(handler->hr) || !handler->client) { CoUninitialize(); return; }
+        if (FAILED(handler->hr) || !handler->client) { SignalStart(-1); CoUninitialize(); return; }
         ComPtr<IAudioClient> client = handler->client;
 
+        // Shared-mode Initialize converts the engine stream to this requested format, so the
+        // callback can truthfully report these wfx fields. If the format were unsupported
+        // Initialize fails here and SignalStart(-1) surfaces it to Start().
         WAVEFORMATEX wfx = {};
         wfx.wFormatTag = WAVE_FORMAT_PCM; wfx.nChannels = 2; wfx.nSamplesPerSec = 44100;
         wfx.wBitsPerSample = 16; wfx.nBlockAlign = 4; wfx.nAvgBytesPerSec = 44100 * 4;
         if (FAILED(client->Initialize(AUDCLNT_SHAREMODE_SHARED,
                 AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                2000000, 0, &wfx, nullptr))) { CoUninitialize(); return; }
+                2000000, 0, &wfx, nullptr))) { SignalStart(-1); CoUninitialize(); return; }
         HANDLE evt = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         client->SetEventHandle(evt);
         ComPtr<IAudioCaptureClient> cap;
-        if (FAILED(client->GetService(IID_PPV_ARGS(&cap)))) { CoUninitialize(); return; }
-        client->Start();
+        if (FAILED(client->GetService(IID_PPV_ARGS(&cap)))) { SignalStart(-1); CloseHandle(evt); CoUninitialize(); return; }
+        if (FAILED(client->Start())) { SignalStart(-1); CloseHandle(evt); CoUninitialize(); return; }
+        SignalStart(1); // capture truly began
         while (g_run.load()) {
             WaitForSingleObject(evt, 200);
             UINT32 packet = 0; cap->GetNextPacketSize(&packet);
@@ -71,6 +87,7 @@ namespace {
             }
         }
         client->Stop();
+        CloseHandle(evt);
         CoUninitialize();
     }
 }
@@ -78,9 +95,18 @@ namespace {
 extern "C" __declspec(dllexport) int __stdcall SpotifyLoopback_Start(
         unsigned long pid, PcmCallback cb, void* user) {
     if (g_run.load()) return -1;
+    if (!g_startEvt) g_startEvt = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    ResetEvent(g_startEvt);
+    g_startResult = 0;
     g_run = true;
     g_thread = std::thread(CaptureLoop, pid, cb, user);
-    return 0;
+    // Wait until CaptureLoop reports capture began or failed (activation waits up to 5s internally).
+    WaitForSingleObject(g_startEvt, 8000);
+    if (g_startResult.load() == 1) return 0;
+    // Failed (or timed out): CaptureLoop already cleared g_run on failure; join the dead thread.
+    g_run = false;
+    if (g_thread.joinable()) g_thread.join();
+    return -1;
 }
 extern "C" __declspec(dllexport) void __stdcall SpotifyLoopback_Stop() {
     g_run = false;
