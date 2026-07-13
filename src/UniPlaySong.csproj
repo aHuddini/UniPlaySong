@@ -58,7 +58,7 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <Link>z.dll</Link>
         </None>
-        <!-- Spotify loopback native shim (x64) — loaded via P/Invoke by SpotifyLoopbackClient.cs -->
+        <!-- Spotify loopback native shim (x86 — Playnite is a 32-bit host) — loaded via P/Invoke by SpotifyLoopbackClient.cs -->
         <None Include="Audio\Native\SpotifyLoopback.dll">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <Link>SpotifyLoopback.dll</Link>
