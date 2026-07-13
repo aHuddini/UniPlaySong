@@ -198,6 +198,13 @@ namespace UniPlaySong.Services.Spotify
         private void WorkerLoop()
         {
             var buffer = new float[4096];
+            // Warm-up grace: native capture can take longer than one loop to report IsCapturing
+            // on a cold start, so we only treat !IsCapturing as death AFTER it's been confirmed
+            // alive once (armed). Un-armed after WarmupMaxIterations (~5s) = a start that never
+            // came alive; tear down so we don't loop forever un-armed. 5000ms / 10ms = 500 iters.
+            const int WarmupMaxIterations = 5000 / PumpIntervalMs;
+            bool watchdogArmed = false;
+            int iterations = 0;
             while (_workerRun)
             {
                 SpotifyLoopbackClient client;
@@ -208,9 +215,19 @@ namespace UniPlaySong.Services.Spotify
 
                 // Watchdog: capture died while we still think we're capturing -> unmute + re-eval.
                 // Runs off-thread so we don't re-enter our own _gate lock from inside StopCapture.
-                if (!client.IsCapturing)
+                if (client.IsCapturing)
+                {
+                    watchdogArmed = true; // capture confirmed alive; a later drop is real death
+                }
+                else if (watchdogArmed)
                 {
                     _fileLogger?.Warn("[SpotifyFx] capture died — unmuting + re-evaluating");
+                    ThreadPool.QueueUserWorkItem(_ => { Shutdown(); Evaluate(); });
+                    break;
+                }
+                else if (++iterations >= WarmupMaxIterations)
+                {
+                    _fileLogger?.Warn("[SpotifyFx] capture never started — tearing down");
                     ThreadPool.QueueUserWorkItem(_ => { Shutdown(); Evaluate(); });
                     break;
                 }
