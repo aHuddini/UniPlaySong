@@ -114,6 +114,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Spotify.SpotifySmtcClient _spotifyClient;
         private Services.Spotify.SpotifyControlService _spotifyControlService;
+        private Services.Spotify.SpotifyLiveEffectsHost _spotifyEffectsHost;
         private volatile bool _appStarted; // gates the Spotify radio engage until OnApplicationStarted
         private Services.NowPlayingPublisher _nowPlayingPublisher;
         private Services.SongMetadataService _publisherMetadata;
@@ -554,6 +555,10 @@ namespace UniPlaySong
             _appStarted = true;
             _spotifyControlService?.Recompute();
             TryAutoLaunchSpotify();
+
+            // Establish the Spotify effects state once at startup (Spotify may already be the
+            // active source with effects/visualizer on). Idempotent — safe if nothing applies.
+            _spotifyEffectsHost?.Evaluate();
 
             // Recompute the theme-override flag from the controls actually loaded in the theme we
             // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
@@ -1118,6 +1123,13 @@ namespace UniPlaySong
             _publisherMetadata = null;
             _activeMediaPollTimer?.Stop();
             _activeMediaViewModel?.Detach();
+            // Shut the effects host down BEFORE disposing the control service (unsubscribe first so
+            // no late NowPlayingChanged re-engages it) — stops capture, unmutes Spotify, drops the
+            // external source + pump thread. Guards against a stuck-muted Spotify across restarts.
+            if (_spotifyControlService != null)
+                _spotifyControlService.NowPlayingChanged -= OnSpotifyStateChangedForEffects;
+            _spotifyEffectsHost?.Shutdown();
+            _spotifyEffectsHost = null;
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;
             _spotifyClient?.Dispose();
@@ -1418,6 +1430,13 @@ namespace UniPlaySong
             }
         }
 
+        // Spotify active/inactive (or now-playing) changed — re-evaluate the effects invariant.
+        // Raised on the SMTC worker thread; the host serializes internally, so no marshalling.
+        private void OnSpotifyStateChangedForEffects()
+        {
+            _spotifyEffectsHost?.Evaluate();
+        }
+
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             // VideoIsPlaying and ThemeOverlayActive are handled by OnSettingsServicePropertyChanged
@@ -1457,6 +1476,19 @@ namespace UniPlaySong
             if (e.PropertyName == nameof(UniPlaySongSettings.ForceDefaultMusicOverride))
             {
                 _coordinator?.HandleForceDefaultMusicOverrideChange(_settings.ForceDefaultMusicOverride);
+                return;
+            }
+
+            // Spotify effects settings via a theme {PluginSettings} write (bypasses the whole-
+            // settings diff in OnSettingsServiceChanged). ApplyLiveEffectsToSpotify needs no
+            // backend swap (already-NAudio player), so a direct re-evaluate is correct. A theme
+            // write of LiveEffectsEnabled/ShowSpectrumVisualizer can't trigger the backend swap
+            // here (that lives in the diff path), but re-evaluating is still safe + idempotent.
+            if (e.PropertyName == nameof(UniPlaySongSettings.ApplyLiveEffectsToSpotify) ||
+                e.PropertyName == nameof(UniPlaySongSettings.LiveEffectsEnabled) ||
+                e.PropertyName == nameof(UniPlaySongSettings.ShowSpectrumVisualizer))
+            {
+                _spotifyEffectsHost?.Evaluate();
                 return;
             }
 
@@ -1753,10 +1785,27 @@ namespace UniPlaySong
                 bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
                     && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
                     && !e.NewSettings.EnableTrueCrossfade;
-                if (liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap)
+                bool backendSwap = liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap;
+                bool applyToSpotifyChanged = e.OldSettings.ApplyLiveEffectsToSpotify != e.NewSettings.ApplyLiveEffectsToSpotify;
+
+                if (backendSwap)
                 {
+                    // Carry-forward A/B: recreating the player disposes the current NAudio backend
+                    // and its external-source chain WITHOUT the coordinator knowing. Shut the host
+                    // down first (unmutes Spotify + drops the now-dead external source / stale viz
+                    // .Current) so we never leave Spotify muted against a disposed player. Re-evaluate
+                    // after the new player exists so effected output/pump re-attach to it.
+                    _spotifyEffectsHost?.Shutdown();
+
                     _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade}, CalmDown={e.NewSettings.CalmDownModeEnabled} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
+                }
+
+                // Re-evaluate the Spotify effects invariant whenever any of the three relevant
+                // settings changed (backend swap re-attaches, or ApplyToSpotify flips in place).
+                if (backendSwap || applyToSpotifyChanged)
+                {
+                    _spotifyEffectsHost?.Evaluate();
                 }
             }
 
@@ -2801,6 +2850,18 @@ namespace UniPlaySong
                 () => _appStarted);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
 
+            // Spotify live-effects host: owns THE SAFETY INVARIANT (Spotify muted iff we produce
+            // effected output). Feeds the coordinator real collaborators (loopback capture ->
+            // SpotifyCaptureSampleProvider -> the NAudio player's external-source chain) plus the
+            // viz-only silent pump + capture-death watchdog. Re-evaluated on Spotify state changes
+            // (NowPlayingChanged), on the three relevant settings, and once at startup.
+            _spotifyEffectsHost = new Services.Spotify.SpotifyLiveEffectsHost(
+                () => _settings,
+                () => _spotifyControlService?.IsSpotifyActive ?? false,
+                () => _currentMusicPlayer,
+                _fileLogger);
+            _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForEffects;
+
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
             // binding via {PluginSettings}. Runs in BOTH Desktop and Fullscreen (theme exposure is
             // the point). Uses its own SongMetadataService (the metadata cache is static/shared).
@@ -3204,6 +3265,12 @@ namespace UniPlaySong
 
                 _needsNAudioForFormat = true;
 
+                // Carry-forward A: this disposes/recreates the player. Tear down the effects host
+                // first so any external source + Spotify mute don't outlive the old backend.
+                // (Spotify-source suppresses game music, so this collision is unlikely — but the
+                // Shutdown is idempotent and cheap.) Re-evaluate after recreation, below.
+                _spotifyEffectsHost?.Shutdown();
+
                 // Stop current playback
                 _playbackService?.Stop();
 
@@ -3241,6 +3308,9 @@ namespace UniPlaySong
 
                 // Now load and play the GME file on the new NAudio player
                 _playbackService.LoadAndPlayFile(filePath);
+
+                // Re-establish the effects invariant against the new backend.
+                _spotifyEffectsHost?.Evaluate();
 
                 _fileLogger?.Debug("Player switched to NAudio for GME format");
             }
