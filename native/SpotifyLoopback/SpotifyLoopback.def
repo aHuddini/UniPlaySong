@@ -1,0 +1,5 @@
+LIBRARY SpotifyLoopback
+EXPORTS
+    SpotifyLoopback_Start
+    SpotifyLoopback_Stop
+    SpotifyLoopback_IsCapturing
