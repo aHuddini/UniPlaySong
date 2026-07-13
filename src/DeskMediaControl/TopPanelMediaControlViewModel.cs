@@ -476,6 +476,15 @@ namespace UniPlaySong.DeskMediaControl
                     return;
                 }
 
+                // Spotify as active source: route skip to Spotify's next-track (mirrors play/pause).
+                var spotify = _getSpotifyService?.Invoke();
+                if (spotify != null && spotify.IsSpotifyActive)
+                {
+                    _log?.Invoke("TopPanel: skipping Spotify track (Spotify is the active source)");
+                    spotify.SkipNext();
+                    return;
+                }
+
                 var playbackService = _getPlaybackService?.Invoke();
                 if (playbackService == null)
                 {
@@ -503,7 +512,12 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (_skipItem == null || _skipIcon == null) return;
 
-            _canSkip = playbackService?.CurrentGameSongCount >= 2
+            // Spotify as active source: skip routes to Spotify's next-track (SMTC), always available.
+            var spotify = _getSpotifyService?.Invoke();
+            bool spotifySkip = spotify != null && spotify.IsSpotifyActive;
+
+            _canSkip = spotifySkip
+                || playbackService?.CurrentGameSongCount >= 2
                 || playbackService?.IsPlayingPoolBasedDefault == true;
             _skipIcon.Opacity = _canSkip ? 1.0 : 0.3;
             _skipItem.Title = _canSkip
@@ -524,8 +538,9 @@ namespace UniPlaySong.DeskMediaControl
 
                     // Play/pause GLYPH: when Spotify is the active source, reflect SPOTIFY's transport
                     // state (UPS plays nothing in radio mode, so its own IsPlaying is always false).
-                    // The audio-reactive widgets below stay on UPS's own state — UPS has no audio buffer
-                    // for Spotify, so the visualizer/peak/progress would be blank for it regardless.
+                    // The visualizer/peak meter use the same Spotify-aware state (v1.6.5): the process-
+                    // loopback capture feeds them Spotify audio, so they react whenever Spotify plays.
+                    // The progress bar stays on UPS state — UPS doesn't know Spotify's track position.
                     var spotify = _getSpotifyService?.Invoke();
                     bool iconPlaying = (spotify != null && spotify.IsSpotifyActive)
                         ? spotify.IsSpotifyPlaying
@@ -540,12 +555,12 @@ namespace UniPlaySong.DeskMediaControl
                     bool vizEnabled = settings?.ShowSpectrumVisualizer == true;
                     if (_spectrumItem != null)
                         _spectrumItem.Visible = vizEnabled;
-                    _spectrumVisualizer?.SetActive(isPlaying && vizEnabled);
+                    _spectrumVisualizer?.SetActive(iconPlaying && vizEnabled);
 
                     bool peakEnabled = settings?.ShowPeakMeter == true;
                     if (_peakMeterItem != null)
                         _peakMeterItem.Visible = peakEnabled;
-                    _peakMeter?.SetActive(isPlaying && peakEnabled);
+                    _peakMeter?.SetActive(iconPlaying && peakEnabled);
 
                     // Progress bar active state
                     _progressBar?.SetActive(isPlaying);

@@ -23,6 +23,13 @@ namespace UniPlaySong.Services
         // Loads a media file (uses preloaded player if available)
         void Load(string filePath);
 
+        // Builds the effect/viz chain around an external live source (e.g. Spotify capture)
+        // and adds it to the mixer. NAudio only — SDL2 implements as a no-op.
+        void LoadExternalSource(NAudio.Wave.ISampleProvider source);
+
+        // Removes the external live source from the mixer. NAudio only — SDL2 no-op.
+        void StopExternalSource();
+
         void Play();
 
         // Starts playback from a specific position (default(TimeSpan) = from beginning)

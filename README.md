@@ -20,20 +20,16 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.4
+## What's New - v1.6.5
 
-### Fixed
-- **Theme mute button fixed.** On themes with a media-control mute button (like Aniki ReMake), muting then unmuting jumped the music to full volume and turned off Calm Down. Unmute now returns to the exact volume you had before muting.
-- **Theme mute button now works with Spotify.** Pressing mute while Spotify is playing now actually mutes Spotify (and the icon flips) — it mutes at the Windows level, just like Spotify's Volume Mixer entry.
+### Added
+- **Live Effects, Calm Down, and the Visualizer now work on Spotify.** Reverb/EQ, Calm Down Mode, and the spectrum visualizer used to only touch UniPlaySong's own music — now they run on Spotify too, no theme changes needed. Turn on **Apply Live Effects to Spotify** in the Live Effects tab. Requires Windows 10 build 20348 or newer.
+- **The mute button in Fullscreen themes now works while effects are on Spotify** (e.g. ANIKI ReMake) — mute/unmute cleanly even with Live Effects or Calm Down applied to Spotify.
 
-### For Theme Developers
-- **New mute-state binding.** `ActiveMediaIsMuted` lets a theme's mute icon reflect real mute state instead of guessing from volume. See the Theme Integration Guide.
+> **Known limitation:** skipping a Spotify track has no fade — it's an instant cut (a limitation of capturing Spotify). Pause/resume still fade normally.
 
 ### Previous Version
-- **v1.6.3**: Fixed game music stopping after one song on the default audio backend (issue #89), and a pause/resume loop when running Sunshine.
-
-### Older
-- **v1.6.2**: Fixed "Pause when other audio plays" not working during game music when Spotify was your Default source.
+- **v1.6.4**: Theme mute button fixed — unmuting no longer jumps to full volume (or disables Calm Down), it now works with Spotify, and there's a new `ActiveMediaIsMuted` binding for theme developers.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

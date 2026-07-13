@@ -2,7 +2,9 @@
 
 **Question:** Can UniPlaySong (a no-admin, no-installer, managed .NET Framework 4.6.2 Playnite plugin) apply its live audio effects (reverb/EQ via NAudio) to **Spotify's** audio — obtaining an isolated, clean PCM stream of Spotify's output — **without** requiring the user to install a third-party virtual audio cable?
 
-**Verdict:** **YES — PROVEN end-to-end on real hardware.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. Requires a small bundled native (C++/WinRT) shim and a modern-Windows floor. The feature itself is not yet built — this documents the proven path.
+**Verdict:** **YES — PROVEN, then SHIPPED in v1.6.5.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. The feature shipped in v1.6.5 (Live Effects + Calm Down + Visualizer on Spotify) using a small bundled C++/WinRT shim and a Windows 10 build 20348 floor.
+
+> **This doc is the feasibility research (the proven path).** For the SHIPPED architecture — the post-master output mixer, the −60 dB duck (not mute) because the tap is post-session-volume, the per-input fader/gate, and the issue-#81 idle-teardown guard — see the "External Source Path" section of [`NAUDIO_PIPELINE.md`](NAUDIO_PIPELINE.md).
 
 ## Spike results (2026-07-12) — PROVEN
 

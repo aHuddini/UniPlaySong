@@ -1,13 +1,21 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.5
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-13
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.5/UniPlaySong-1_6_5.pext'
+    Changelog:
+      - '[New Feature] Live Effects (reverb/EQ), Calm Down Mode, and the Spectrum Visualizer now work on Spotify, not just UniPlaySong''s own music. Turn on "Apply Live Effects to Spotify" in the Live Effects tab. Requires Windows 10 build 20348 or newer.'
+      - '[Improved] The mute button in Fullscreen themes (e.g. ANIKI ReMake) now works while effects are applied to Spotify — mute/unmute cleanly even with Live Effects or Calm Down on Spotify.'
+      - '[Known Issue] Skipping a Spotify track has no fade — it''s an instant cut (a limitation of capturing Spotify). Pause/resume still fade normally.'
   - Version: 1.6.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-12
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.4/UniPlaySong-1_6_4.pext'
     Changelog:
-      - '[Fix] Theme mute buttons no longer jump the volume to 100% (and wipe Calm Down) on unmute. The exact volume from before muting is now restored. Fixes the Aniki ReMake media-control mute.'
-      - '[Fix] Theme mute button now works when Spotify is playing — it mutes Spotify at the Windows audio-session level. The mute icon flips correctly too.'
-      - '[Theme] Added an ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state instead of inferring it from volume.'
+      - '[Theme Dev Fix] Theme mute buttons no longer jump the volume to 100% (and wipe Calm Down) on unmute. The exact volume from before muting is now restored. Fixes the Aniki ReMake media-control mute.'
+      - '[Theme Dev Fix] Theme mute button now works when Spotify is playing — it mutes Spotify at the Windows audio-session level. The mute icon flips correctly too.'
+      - '[Theme Dev Feature] Added an ActiveMediaIsMuted binding so themes can drive their mute icon from a real mute state from UPS instead of inferring it from volume.'
   - Version: 1.6.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-12

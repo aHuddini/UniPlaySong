@@ -1648,6 +1648,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,20"/>
 
+                    <CheckBox Content="Apply Live Effects to Spotify"
+                              IsChecked="{Binding Settings.ApplyLiveEffectsToSpotify}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,10,0,0"/>
+                    <TextBlock Text="Captures Spotify's audio and runs it through your effect chain — Spotify's own output is muted while active. Requires Windows 10 build 20348+."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,2,0,20"/>
+
                     <!-- Style Preset Section -->
                     <TextBlock Text="Style Preset" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="One-click styles that configure all effects at once. Set to 'None' for manual control."
@@ -4729,15 +4739,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute buttons no longer jump the volume to 100% (or turn off Calm Down) on unmute — the volume from before muting is restored.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute button now works with Spotify — it mutes Spotify at the Windows level, and the icon flips correctly.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> An ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state.
+                                <Run FontWeight="SemiBold">Added:</Run> Live Effects (reverb/EQ), Calm Down Mode, and the Spectrum Visualizer now work on Spotify, not just UniPlaySong's own music. Turn on "Apply Live Effects to Spotify" in the Live Effects tab; Calm Down applies to Spotify on its own, and the visualizer follows your existing Spectrum Visualizer setting. Requires Windows 10 build 20348 or newer.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

@@ -102,7 +102,7 @@ All NuGet packages are defined in `UniPlaySong.csproj` and automatically restore
 
 ## Native DLLs
 
-Native DLLs are required for SDL2 audio playback functionality. They are bundled with the extension package.
+Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotify live-effects capture. They are bundled with the extension package.
 
 ### SDL2.dll
 - **Purpose**: SDL2 core library for audio initialization
@@ -152,6 +152,18 @@ Native DLLs are required for SDL2 audio playback functionality. They are bundled
 - **Source repo**: [github.com/madler/zlib](https://github.com/madler/zlib)
 - **Copy to build output**: Automatic via `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`
 - **License**: zlib license (compatible with commercial use)
+
+### SpotifyLoopback.dll (v1.6.5+)
+- **Purpose**: Spotify live-effects capture shim — pulls Spotify's isolated PCM via Windows **Process Loopback Capture** so Live Effects / Calm Down / the Visualizer can run on Spotify audio (see [`NAUDIO_PIPELINE.md`](NAUDIO_PIPELINE.md) → "External Source Path"). Managed .NET can't do the async COM dance (`ActivateAudioInterfaceAsync` + completion handler), so a native shim is required.
+- **Origin**: **First-party** — written for UniPlaySong (C++/WinRT), not a third-party library.
+- **Architecture**: **x86 (32-bit) — required.** Playnite is a 32-bit host, so UniPlaySong (AnyCPU) loads as x86 and can only P/Invoke an x86 DLL. An x64 build fails with HRESULT `0x8007000B` (`ERROR_BAD_EXE_FORMAT`) at `LoadLibrary`.
+- **Location**: `src/Audio/Native/SpotifyLoopback.dll` (~104 KB)
+- **Source**: `native/SpotifyLoopback/` (`SpotifyLoopbackCapture.cpp`, `SpotifyLoopback.def`, `SpotifyLoopback.vcxproj`) — committed in-repo.
+- **Build**: `msbuild native/SpotifyLoopback/SpotifyLoopback.vcxproj /p:Configuration=Release /p:Platform=Win32` (VS 2022 v143 toolset, Windows SDK 10.0.26100). Links `ole32.lib` + `mmdevapi.lib`. The `.def` keeps the `__stdcall` exports **undecorated** (`_SpotifyLoopback_Start@12` → `SpotifyLoopback_Start`) so P/Invoke-by-name resolves on x86. Output → `native/SpotifyLoopback/Release/`, then copied to the location above.
+- **Exports**: `SpotifyLoopback_Start(pid, callback, user)` / `_Stop()` / `_IsCapturing()`. P/Invoked from `src/Common/SpotifyLoopbackClient.cs` (`CallingConvention.StdCall`).
+- **OS floor**: Windows 10 build 20348 (Process Loopback Capture unsupported below; the feature fails soft to dry Spotify — gated by `OsCapabilities.SupportsProcessLoopback`).
+- **Copy to build output + package**: `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`; bundled into the `.pext` by `scripts/package_extension.ps1` (mirrors the gme.dll/SDL2 copy steps).
+- **License**: MIT (UniPlaySong's own).
 
 ### DLL Loading
 

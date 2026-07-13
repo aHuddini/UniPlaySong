@@ -369,6 +369,7 @@ namespace UniPlaySong
         private int celebrationToastDurationSeconds = 8;
         private CelebrationToastTheme celebrationToastTheme = CelebrationToastTheme.Gold;
         private bool applyLiveEffectsToJingles = true;
+        private bool applyLiveEffectsToSpotify = false;
 
         // Gamification — Abandoned status (separate sound/toast from the celebration)
         private bool enableAbandonedSound = false;
@@ -1198,6 +1199,14 @@ namespace UniPlaySong
         {
             get => applyLiveEffectsToJingles;
             set { applyLiveEffectsToJingles = value; OnPropertyChanged(); }
+        }
+
+        // When enabled and Live Effects are active, Spotify's audio is captured and run through
+        // the NAudio effect chain (reverb, filters, etc.); Spotify's own output is muted while active.
+        public bool ApplyLiveEffectsToSpotify
+        {
+            get => applyLiveEffectsToSpotify;
+            set { applyLiveEffectsToSpotify = value; OnPropertyChanged(); }
         }
 
         // Fire a sound (and optionally a toast) when a game's completion status changes to "Abandoned".

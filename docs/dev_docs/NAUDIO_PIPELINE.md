@@ -56,6 +56,22 @@ The `SongEnded` event fires on the **audio thread**. `MediaEnded` is marshaled t
 
 If `WaveOutEvent` reports an error (hardware disconnect, driver crash), `OnPlaybackStopped` tears down the entire persistent layer. The next `Load()` call rebuilds it fresh via `EnsurePersistentLayer()`.
 
+### External Source Path (`LoadExternalSource`) — v1.6.5+
+
+`NAudioMusicPlayer.LoadExternalSource(ISampleProvider)` runs an **external** live provider (Spotify capture) through the same `EffectsChain` / `VisualizationDataProvider` / `CalmDownProcessor` classes as game music, so effects/visualizer/Calm Down apply identically. This is how Spotify gets them (v1.6.5): Windows Process Loopback capture → `SpotifyLoopbackClient` → `SpotifyCaptureSampleProvider` (the `ISampleProvider`) → `LoadExternalSource`.
+
+Two structural differences from the per-song chain (both learned the hard way during bring-up):
+
+1. **It plays on a second, post-master output mixer — NOT the game-music mixer.** `EnsurePersistentLayer` builds `_outputMixer` that combines the master-faded game chain (`_mixer → CalmDown → _volumeProvider`) *and* the external source, then feeds the device. The external input is added to `_outputMixer` **after** the master fader. This is deliberate: game-music pause sources (fullscreen theme overlays especially) ride `_volumeProvider` to 0, and radio mode never runs the game fader to bring it back — so an external source sharing the master would be silenced permanently. Post-master, it's immune. Its only knobs are its own per-input `SmoothVolumeSampleProvider` (`_externalVolume`, faded with the user's configured curves/durations) and a theme-overlay/video gate (`ExternalGateProvider` → `TargetExternalVolume`). It carries its **own** `CalmDownProcessor` because the game-music one is pre-master, which it bypasses.
+
+2. **No `SongEndDetectorSampleProvider`.** A live capture stream never EOFs, so there's no loop/advance to fire; `ExternalGateProvider` zero-fills to always return `count` (a partial read would make `MixingSampleProvider` auto-remove the input). Teardown is explicit via `StopExternalSource` (ramps the per-input volume to 0, then removes off-thread).
+
+The mute-and-replace physics: the loopback tap is **post** session-volume, so the coordinator ducks Spotify's session to 2⁻¹⁰ (not a hard mute — that would silence the capture) and `SpotifyCaptureSampleProvider` restores level with a power-of-2 makeup gain. Capture is 32-bit float.
+
+Idle audio-device teardown (issue #81) must NOT fire while effected Spotify is audible: `SleepCoordinator.isAudible` counts `SpotifyLiveEffectsHost.IsEffecting`, and lock/suspend shut the host down (unmuting Spotify) and rebuild on resume.
+
+See `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md` for the capture path and `SpotifyEffectsCoordinator`'s dry-output mute invariant.
+
 ## Volume Ramping (SmoothVolumeSampleProvider)
 
 ### Problem Solved

@@ -2,6 +2,8 @@
 
 Developer reference for UniPlaySong's Spotify control feature (v1.5.7, `dev`). Control-only: UPS never captures, mixes, stores, or processes Spotify audio — it only sends transport commands to the running Spotify desktop app and reads now-playing metadata.
 
+> **v1.6.5 — Live Effects & Visualizer on Spotify (Experimental, opt-in).** An opt-in path (`ApplyLiveEffectsToSpotify`, Live Effects tab, default off; visualizer couples to the existing Spectrum Visualizer setting) now *does* capture Spotify audio via Windows Process Loopback and run it through the shared NAudio effects/visualizer chain — see **Live Effects & Visualizer on Spotify** below. The control-only architecture documented here is unchanged and still the default; the effects path is layered on top of it.
+
 ## Why "control-only"
 
 Spotify's DRM + ToS (§IV.2 no stream-ripping, Policy §III.7 no-mixing) forbid capturing or remixing the audio stream. So UPS treats Spotify as an **external audio source it conducts**, not an audio source it plays. Consequences:
@@ -101,6 +103,16 @@ This is **Tier 1 (SMTC control)** — no OAuth, no Spotify Web API, no per-user 
 ## Future / available-but-unused SMTC surface
 
 The `GlobalSystemMediaTransportControlsSession` we already hold also exposes (all gated on the corresponding `Controls.IsXEnabled`): `TryStopAsync`, `TryChangeShuffleActiveAsync`, `TryChangeAutoRepeatModeAsync`, `TryChangePlaybackPositionAsync` (seek — Spotify support is inconsistent), and **read** access to `MediaProperties.Thumbnail` (album art, an `IRandomAccessStreamReference` decodable to a WPF bitmap) and `GetTimelineProperties()` (position/duration, updated on SMTC's own coarse cadence). These enable a richer mini-player / album-art surface — Desktop only, since Playnite's Top Panel and Sidebar don't render in Fullscreen.
+
+## Live Effects & Visualizer on Spotify (v1.6.5, Experimental)
+
+Opt-in path that lets UPS's Live Effects (reverb/EQ) and the Spectrum Visualizer operate on Spotify audio, the same way they operate on UPS's own game music. This is the one place UPS *does* capture Spotify audio — gated behind `ApplyLiveEffectsToSpotify` (effects) and the existing Spectrum Visualizer setting (visualizer), both off by default. Requires **Windows 10 build 20348+** (Process Loopback Capture); below that the feature is unavailable and Spotify plays dry.
+
+**Seam:** `SpotifyLoopback.dll` (bundled native shim; Process Loopback via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS`, `INCLUDE_TARGET_PROCESS_TREE` on Spotify's window PID) → `SpotifyLoopbackClient` (P/Invoke + ring buffer) → `SpotifyCaptureSampleProvider` (an `ISampleProvider`, normalized to 44100Hz stereo float) → `NAudioMusicPlayer.LoadExternalSource`, which runs it through the **same** `EffectsChain` / `VisualizationDataProvider` / persistent mixer as game music (no `SongEndDetector` — a live capture never ends). See `docs/dev_docs/NAUDIO_PIPELINE.md` → "External Source Path".
+
+**Safety invariant (`SpotifyEffectsCoordinator`):** hearing Spotify's raw output *and* the effected version at once would double the audio, so for the EFFECTS case Spotify's dry output is **muted iff UPS is producing effected output for it**, and **auto-unmuted on any stop** (effects disabled, capture stops/dies, UPS closes). The dry-output mute reuses `SpotifyAudioSession` (`ISimpleAudioVolume.SetMute` — the same audio-session mute as the v1.6.4 theme-mute work). The VISUALIZER case mutes **nothing**: it reacts to Spotify (dry or effected) with Spotify still audible. Error/unsupported-OS/mute-failure paths fall back to dry Spotify with no effects/viz.
+
+Full feasibility (proven end-to-end 2026-07-12) and design: `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`.
 
 ## Key files
 

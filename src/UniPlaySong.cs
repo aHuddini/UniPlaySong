@@ -114,6 +114,7 @@ namespace UniPlaySong
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Spotify.SpotifySmtcClient _spotifyClient;
         private Services.Spotify.SpotifyControlService _spotifyControlService;
+        private Services.Spotify.SpotifyLiveEffectsHost _spotifyEffectsHost;
         private volatile bool _appStarted; // gates the Spotify radio engage until OnApplicationStarted
         private Services.NowPlayingPublisher _nowPlayingPublisher;
         private Services.SongMetadataService _publisherMetadata;
@@ -554,6 +555,22 @@ namespace UniPlaySong
             _appStarted = true;
             _spotifyControlService?.Recompute();
             TryAutoLaunchSpotify();
+
+            // Establish the Spotify effects state once at startup (Spotify may already be the
+            // active source with effects/visualizer on). Idempotent — safe if nothing applies.
+            // Armed here (not earlier): settings-load events during InitializeServices would
+            // otherwise start effected output seconds before the theme binds its overlay flags,
+            // making Spotify audible during login views. Same gate as the radio engage above.
+            //
+            // Off the UI thread: the first Evaluate can start capture, whose native handshake
+            // (ActivateAudioInterfaceAsync) blocks up to several seconds — on the UI thread that
+            // stalls fullscreen theme load. The coordinator is already lock-serialized and safe
+            // to drive from any thread (the SMTC worker + watchdog already do).
+            if (_spotifyEffectsHost != null)
+            {
+                _spotifyEffectsHost.Armed = true;
+                EvaluateSpotifyEffectsAsync();
+            }
 
             // Recompute the theme-override flag from the controls actually loaded in the theme we
             // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
@@ -1118,6 +1135,13 @@ namespace UniPlaySong
             _publisherMetadata = null;
             _activeMediaPollTimer?.Stop();
             _activeMediaViewModel?.Detach();
+            // Shut the effects host down BEFORE disposing the control service (unsubscribe first so
+            // no late NowPlayingChanged re-engages it) — stops capture, unmutes Spotify, drops the
+            // external source + pump thread. Guards against a stuck-muted Spotify across restarts.
+            if (_spotifyControlService != null)
+                _spotifyControlService.NowPlayingChanged -= OnSpotifyStateChangedForEffects;
+            _spotifyEffectsHost?.Shutdown();
+            _spotifyEffectsHost = null;
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;
             _spotifyClient?.Dispose();
@@ -1418,6 +1442,25 @@ namespace UniPlaySong
             }
         }
 
+        // Spotify active/inactive (or now-playing) changed — re-evaluate the effects invariant.
+        // Raised from SpotifyControlService.Recompute, which runs on the UI THREAD (DispatcherTimer
+        // + playback events). Evaluate can start capture, whose native handshake blocks for up to
+        // several seconds — on the UI thread that stalls the theme when Spotify is opened
+        // mid-session. Run it off-thread; the host is lock-serialized and thread-safe.
+        private void OnSpotifyStateChangedForEffects()
+        {
+            EvaluateSpotifyEffectsAsync();
+        }
+
+        // Runs the effects-host Evaluate off the UI thread. Every Evaluate can start capture whose
+        // native handshake blocks for seconds; on the UI thread that stalls the theme. The host is
+        // lock-serialized (already driven from the SMTC/watchdog threads), so any thread is safe.
+        private void EvaluateSpotifyEffectsAsync()
+        {
+            var host = _spotifyEffectsHost;
+            if (host != null) System.Threading.ThreadPool.QueueUserWorkItem(_ => host.Evaluate());
+        }
+
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             // VideoIsPlaying and ThemeOverlayActive are handled by OnSettingsServicePropertyChanged
@@ -1457,6 +1500,19 @@ namespace UniPlaySong
             if (e.PropertyName == nameof(UniPlaySongSettings.ForceDefaultMusicOverride))
             {
                 _coordinator?.HandleForceDefaultMusicOverrideChange(_settings.ForceDefaultMusicOverride);
+                return;
+            }
+
+            // Spotify effects settings via a theme {PluginSettings} write (bypasses the whole-
+            // settings diff in OnSettingsServiceChanged). ApplyLiveEffectsToSpotify needs no
+            // backend swap (already-NAudio player), so a direct re-evaluate is correct. A theme
+            // write of LiveEffectsEnabled/ShowSpectrumVisualizer can't trigger the backend swap
+            // here (that lives in the diff path), but re-evaluating is still safe + idempotent.
+            if (e.PropertyName == nameof(UniPlaySongSettings.ApplyLiveEffectsToSpotify) ||
+                e.PropertyName == nameof(UniPlaySongSettings.LiveEffectsEnabled) ||
+                e.PropertyName == nameof(UniPlaySongSettings.ShowSpectrumVisualizer))
+            {
+                EvaluateSpotifyEffectsAsync();
                 return;
             }
 
@@ -1628,6 +1684,9 @@ namespace UniPlaySong
                     _fileLogger?.Debug("OnSettingsServicePropertyChanged: CalmDownMode toggle requires backend swap, recreating player");
                     RecreateMusicPlayerForLiveEffects();
                 }
+                // Calm Down alone can drive the Spotify effects path (duck + calmed copy), so
+                // re-evaluate the effects host on toggle even when no backend swap was needed.
+                EvaluateSpotifyEffectsAsync();
                 return;
             }
         }
@@ -1753,10 +1812,27 @@ namespace UniPlaySong
                 bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
                     && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
                     && !e.NewSettings.EnableTrueCrossfade;
-                if (liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap)
+                bool backendSwap = liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap;
+                bool applyToSpotifyChanged = e.OldSettings.ApplyLiveEffectsToSpotify != e.NewSettings.ApplyLiveEffectsToSpotify;
+
+                if (backendSwap)
                 {
+                    // Carry-forward A/B: recreating the player disposes the current NAudio backend
+                    // and its external-source chain WITHOUT the coordinator knowing. Shut the host
+                    // down first (unmutes Spotify + drops the now-dead external source / stale viz
+                    // .Current) so we never leave Spotify muted against a disposed player. Re-evaluate
+                    // after the new player exists so effected output/pump re-attach to it.
+                    _spotifyEffectsHost?.Shutdown();
+
                     _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade}, CalmDown={e.NewSettings.CalmDownModeEnabled} - recreating music player");
                     RecreateMusicPlayerForLiveEffects();
+                }
+
+                // Re-evaluate the Spotify effects invariant whenever any of the three relevant
+                // settings changed (backend swap re-attaches, or ApplyToSpotify flips in place).
+                if (backendSwap || applyToSpotifyChanged)
+                {
+                    EvaluateSpotifyEffectsAsync();
                 }
             }
 
@@ -2134,6 +2210,9 @@ namespace UniPlaySong
                         _dashboardPlaybackService?.PauseForSystem();
                     }
                     _sleepCoordinator?.OnLockOrSuspend("SessionLock"); // issue #81 — release devices regardless of pause pref
+                    // Device release tears down the effected-Spotify mixer; shut the host down so
+                    // Spotify unmutes (never left ducked + silent) and rebuilds on unlock.
+                    _spotifyEffectsHost?.Shutdown();
                 });
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
@@ -2159,6 +2238,8 @@ namespace UniPlaySong
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
+                    // Rebuild effected Spotify output on unlock (Shutdown ran on lock).
+                    EvaluateSpotifyEffectsAsync();
                 });
             }
         }
@@ -2187,6 +2268,11 @@ namespace UniPlaySong
                 // can sleep within its ~2s budget without waiting on a busy UI thread.
                 _sleepCoordinator?.OnLockOrSuspend("Suspend detected");
 
+                // The device release tears down the mixer hosting effected Spotify. Shut the effects
+                // host down too (unmutes Spotify — never leave it ducked + silent) and re-evaluate
+                // so it rebuilds cleanly on resume when the device comes back.
+                _spotifyEffectsHost?.Shutdown();
+
                 // Then mark playback paused via the same SystemLock source the lock path uses, so
                 // that on resume RemovePauseSource(SystemLock) drives the identical self-healing
                 // resume-at-position (the player already saved its position during device release).
@@ -2209,6 +2295,9 @@ namespace UniPlaySong
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
+                    // Rebuild effected Spotify output if it was active before suspend (Shutdown ran
+                    // on suspend); the host re-captures + re-attaches to the fresh device.
+                    EvaluateSpotifyEffectsAsync();
                 }));
             }
         }
@@ -2700,7 +2789,11 @@ namespace UniPlaySong
             _audioDeviceRegistry = new Services.AudioDeviceRegistry(_fileLogger);
             _sleepCoordinator = new Services.SleepCoordinator(
                 _audioDeviceRegistry,
-                isAudible: () => _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true,
+                // Audible if UPS game music is playing OR effected Spotify output is running — the
+                // latter plays through the persistent device while UPS's own player is idle (radio
+                // mode), so without this the idle timer would tear the device out from under it.
+                isAudible: () => (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true)
+                                 || _spotifyEffectsHost?.IsEffecting == true,
                 getIdleMinutes: () => _settings?.IdleAudioDeviceTeardownMinutes ?? 5,
                 _fileLogger);
             // Register the main player (it's an IAudioDeviceHolder via IMusicPlayer).
@@ -2800,6 +2893,18 @@ namespace UniPlaySong
                 _fileLogger,
                 () => _appStarted);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
+
+            // Spotify live-effects host: owns THE SAFETY INVARIANT (Spotify muted iff we produce
+            // effected output). Feeds the coordinator real collaborators (loopback capture ->
+            // SpotifyCaptureSampleProvider -> the NAudio player's external-source chain) plus the
+            // viz-only silent pump + capture-death watchdog. Re-evaluated on Spotify state changes
+            // (NowPlayingChanged), on the three relevant settings, and once at startup.
+            _spotifyEffectsHost = new Services.Spotify.SpotifyLiveEffectsHost(
+                () => _settings,
+                () => _spotifyControlService?.IsSpotifyActive ?? false,
+                () => _currentMusicPlayer,
+                _fileLogger);
+            _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForEffects;
 
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
             // binding via {PluginSettings}. Runs in BOTH Desktop and Fullscreen (theme exposure is
@@ -3204,6 +3309,12 @@ namespace UniPlaySong
 
                 _needsNAudioForFormat = true;
 
+                // Carry-forward A: this disposes/recreates the player. Tear down the effects host
+                // first so any external source + Spotify mute don't outlive the old backend.
+                // (Spotify-source suppresses game music, so this collision is unlikely — but the
+                // Shutdown is idempotent and cheap.) Re-evaluate after recreation, below.
+                _spotifyEffectsHost?.Shutdown();
+
                 // Stop current playback
                 _playbackService?.Stop();
 
@@ -3241,6 +3352,9 @@ namespace UniPlaySong
 
                 // Now load and play the GME file on the new NAudio player
                 _playbackService.LoadAndPlayFile(filePath);
+
+                // Re-establish the effects invariant against the new backend.
+                EvaluateSpotifyEffectsAsync();
 
                 _fileLogger?.Debug("Player switched to NAudio for GME format");
             }
