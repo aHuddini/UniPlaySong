@@ -234,6 +234,17 @@ if ($retroChiptuneFound) {
     Write-Host "  WARNING: Retro chiptune DLLs not found. .vgm and other chiptune formats will not work." -ForegroundColor Yellow
 }
 
+# Copy Spotify loopback native shim (required for Spotify live effects — loaded via P/Invoke)
+# In the build output via the csproj CopyToOutputDirectory entry. Fail-soft: plugin still loads without it.
+Write-Host "Copying Spotify loopback native shim..." -ForegroundColor Yellow
+$spotifyLoopbackPath = Join-Path $outputDir "SpotifyLoopback.dll"
+if (Test-Path $spotifyLoopbackPath) {
+    Copy-Item $spotifyLoopbackPath -Destination $packageDir -Force
+    Write-Host "  Copied: SpotifyLoopback.dll" -ForegroundColor Gray
+} else {
+    Write-Host "  WARNING: SpotifyLoopback.dll not found in build output. Spotify live effects will not work." -ForegroundColor Yellow
+}
+
 # Copy dependencies - Use lib\dll as primary source, fallback to build output
 Write-Host "Copying dependencies..." -ForegroundColor Yellow
 $dllLibDir = Join-Path $projectRoot "lib\dll"
