@@ -23,9 +23,10 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.6.5
 
 ### Added
-- **Live Effects and the Visualizer now work on Spotify (Experimental).** Reverb/EQ and the spectrum visualizer used to only touch UniPlaySong's own music — now they can run on Spotify too, no theme changes needed. Turn on **Apply Live Effects to Spotify (experimental)** in the Live Effects tab; the visualizer follows your existing Spectrum Visualizer setting.
-- While effects are on, Spotify's own unprocessed sound is muted so you only hear the effected version — it un-mutes automatically when you turn effects off, stop, or close Playnite. The visualizer reacts to Spotify with nothing muted.
-- Requires Windows 10 build 20348 or newer.
+- **Live Effects, Calm Down, and the Visualizer now work on Spotify.** Reverb/EQ, Calm Down Mode, and the spectrum visualizer used to only touch UniPlaySong's own music — now they run on Spotify too, no theme changes needed. Turn on **Apply Live Effects to Spotify** in the Live Effects tab. Requires Windows 10 build 20348 or newer.
+- **The mute button in Fullscreen themes now works while effects are on Spotify** (e.g. ANIKI ReMake) — mute/unmute cleanly even with Live Effects or Calm Down applied to Spotify.
+
+> **Known limitation:** skipping a Spotify track has no fade — it's an instant cut (a limitation of capturing Spotify). Pause/resume still fade normally.
 
 ### Previous Version
 - **v1.6.4**: Theme mute button fixed — unmuting no longer jumps to full volume (or disables Calm Down), it now works with Spotify, and there's a new `ActiveMediaIsMuted` binding for theme developers.

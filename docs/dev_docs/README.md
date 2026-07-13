@@ -177,6 +177,6 @@ If you have questions about the codebase or need clarification on documentation:
 
 ---
 
-**Last Updated**: 2026-07-10
-**Documentation Version**: 1.6.0
+**Last Updated**: 2026-07-13
+**Documentation Version**: 1.6.5
 

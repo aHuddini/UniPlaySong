@@ -5,8 +5,9 @@ Packages:
     ReleaseDate: 2026-07-13
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.5/UniPlaySong-1_6_5.pext'
     Changelog:
-      - '[New Feature] Live Effects (reverb/EQ) and the Spectrum Visualizer now work on Spotify, not just UniPlaySong''s own music — no theme changes needed. Turn on the new "Apply Live Effects to Spotify (experimental)" checkbox in the Live Effects tab; the visualizer follows your existing Spectrum Visualizer setting. Requires Windows 10 build 20348 or newer.'
-      - '[Improved] While effects are applied to Spotify, Spotify''s own unprocessed output is muted so you only hear the effected version — it un-mutes automatically the moment you turn effects off, stop, or close Playnite. The visualizer reacts to Spotify with nothing muted.'
+      - '[New Feature] Live Effects (reverb/EQ), Calm Down Mode, and the Spectrum Visualizer now work on Spotify, not just UniPlaySong''s own music. Turn on "Apply Live Effects to Spotify" in the Live Effects tab. Requires Windows 10 build 20348 or newer.'
+      - '[Improved] The mute button in Fullscreen themes (e.g. ANIKI ReMake) now works while effects are applied to Spotify — mute/unmute cleanly even with Live Effects or Calm Down on Spotify.'
+      - '[Known Issue] Skipping a Spotify track has no fade — it''s an instant cut (a limitation of capturing Spotify). Pause/resume still fade normally.'
   - Version: 1.6.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-12
