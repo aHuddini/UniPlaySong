@@ -87,6 +87,9 @@ namespace UniPlaySong.Common
 
         public int Read(byte[] buffer, int offset, int count) => _ring.Read(buffer, offset, count);
 
+        // Test seam: pushes PCM bytes into the ring exactly as the native callback would.
+        internal void PushForTest(byte[] pcm) => _ring.Write(pcm, 0, pcm.Length);
+
         // Top Spotify process (window/parent). Tree mode covers its children where the audio renders.
         private static uint ResolveSpotifyPid()
         {
