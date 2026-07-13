@@ -1,3 +1,21 @@
+// SpotifyLoopback — process-loopback audio capture shim for UniPlaySong.
+// Copyright (c) 2026 Huddini (UniPlaySong). SPDX-License-Identifier: MIT
+//
+// Licensed under the MIT License (see the LICENSE file in the UniPlaySong
+// repository: https://github.com/aHuddini/UniPlaySong). Original first-party
+// work — no third-party code; built solely against the Windows SDK.
+//
+// You may reuse this file in your own projects under the MIT terms. If you
+// ship it — inside UniPlaySong, a fork, or any unrelated project — the MIT
+// License requires you to keep this copyright notice and the license text.
+// Please credit "Huddini (UniPlaySong)" as the source.
+//
+// What it does: captures ONE process tree's rendered audio (Spotify) in
+// isolation via WASAPI Process Loopback (ActivateAudioInterfaceAsync +
+// AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS, INCLUDE_TARGET_PROCESS_TREE), then
+// streams 32-bit float PCM to a managed callback. No system-wide loopback,
+// no virtual cable, no driver, no admin. Min OS: Windows 10 build 20348.
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmdeviceapi.h>

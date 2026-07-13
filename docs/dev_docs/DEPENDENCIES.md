@@ -158,7 +158,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Origin**: **First-party** — written for UniPlaySong (C++/WinRT), not a third-party library.
 - **Architecture**: **x86 (32-bit) — required.** Playnite is a 32-bit host, so UniPlaySong (AnyCPU) loads as x86 and can only P/Invoke an x86 DLL. An x64 build fails with HRESULT `0x8007000B` (`ERROR_BAD_EXE_FORMAT`) at `LoadLibrary`.
 - **Location**: `src/Audio/Native/SpotifyLoopback.dll` (~104 KB)
-- **Source**: `native/SpotifyLoopback/` (`dllmain.cpp`, `SpotifyLoopback.def`, `SpotifyLoopback.vcxproj`) — committed in-repo.
+- **Source**: `native/SpotifyLoopback/` (`SpotifyLoopbackCapture.cpp`, `SpotifyLoopback.def`, `SpotifyLoopback.vcxproj`) — committed in-repo.
 - **Build**: `msbuild native/SpotifyLoopback/SpotifyLoopback.vcxproj /p:Configuration=Release /p:Platform=Win32` (VS 2022 v143 toolset, Windows SDK 10.0.26100). Links `ole32.lib` + `mmdevapi.lib`. The `.def` keeps the `__stdcall` exports **undecorated** (`_SpotifyLoopback_Start@12` → `SpotifyLoopback_Start`) so P/Invoke-by-name resolves on x86. Output → `native/SpotifyLoopback/Release/`, then copied to the location above.
 - **Exports**: `SpotifyLoopback_Start(pid, callback, user)` / `_Stop()` / `_IsCapturing()`. P/Invoked from `src/Common/SpotifyLoopbackClient.cs` (`CallingConvention.StdCall`).
 - **OS floor**: Windows 10 build 20348 (Process Loopback Capture unsupported below; the feature fails soft to dry Spotify — gated by `OsCapabilities.SupportsProcessLoopback`).

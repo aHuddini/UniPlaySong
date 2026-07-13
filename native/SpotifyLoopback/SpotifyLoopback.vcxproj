@@ -46,7 +46,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="SpotifyLoopbackCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SpotifyLoopback.def" />
