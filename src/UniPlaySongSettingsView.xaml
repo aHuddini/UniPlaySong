@@ -4739,15 +4739,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute buttons no longer jump the volume to 100% (or turn off Calm Down) on unmute — the volume from before muting is restored.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Theme mute button now works with Spotify — it mutes Spotify at the Windows level, and the icon flips correctly.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> An ActiveMediaIsMuted binding so themes can drive their mute icon from real mute state.
+                                <Run FontWeight="SemiBold">Added:</Run> Live Effects (reverb/EQ) and the Spectrum Visualizer now work on Spotify, not just UniPlaySong's own music. Turn on "Apply Live Effects to Spotify (experimental)" in the Live Effects tab; the visualizer follows your existing Spectrum Visualizer setting. Requires Windows 10 build 20348 or newer.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

@@ -56,6 +56,14 @@ The `SongEnded` event fires on the **audio thread**. `MediaEnded` is marshaled t
 
 If `WaveOutEvent` reports an error (hardware disconnect, driver crash), `OnPlaybackStopped` tears down the entire persistent layer. The next `Load()` call rebuilds it fresh via `EnsurePersistentLayer()`.
 
+### External Source Path (`LoadExternalSource`) — v1.6.5+
+
+`NAudioMusicPlayer.LoadExternalSource(ISampleProvider)` feeds an **external** provider through the same persistent layer as game music — the same `EffectsChain`, `VisualizationDataProvider`, and mixer — instead of an `AudioFileReader`/`OggFileReader`. This is how Spotify audio gets live effects/visualizer (v1.6.5): Windows Process Loopback capture → `SpotifyLoopbackClient` → `SpotifyCaptureSampleProvider` (the `ISampleProvider`) → `LoadExternalSource`.
+
+Difference from the per-song chain: **no `SongEndDetectorSampleProvider`** is inserted. A live capture stream never ends, so there is no EOF to detect and no loop/advance to fire — the provider is expected to return silence (never a partial read) when the source is quiet. The external source is still format-normalized to 44100Hz stereo float upstream (in `SpotifyCaptureSampleProvider`), so it needs no `MonoToStereo`/`WdlResampling` wrapper here. Teardown is explicit via `StopExternalSource` (there's no natural end to trigger it).
+
+See `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md` for the capture path and `SpotifyEffectsCoordinator`'s dry-output mute invariant.
+
 ## Volume Ramping (SmoothVolumeSampleProvider)
 
 ### Problem Solved

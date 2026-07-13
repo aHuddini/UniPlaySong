@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.5] - Unreleased
+
+### Added
+
+- **Live Effects and the Spectrum Visualizer now work on Spotify audio (Experimental, opt-in; Windows 10 build 20348+).** Previously reverb/EQ and the visualizer only touched UPS's own game/radio music — Spotify was control-only (SMTC transport commands, never captured). UniPlaySong can now capture Spotify's isolated PCM at the Windows level and run it through the **same** NAudio effect/visualizer chain as game music, with no theme changes required.
+  - **Capture path.** A bundled native `SpotifyLoopback.dll` shim uses Windows **Process Loopback Capture** (`ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS`, `INCLUDE_TARGET_PROCESS_TREE` on Spotify's window PID) to pull Spotify's clean, isolated output with no virtual audio cable, no driver, and no admin. `SpotifyLoopbackClient` (P/Invoke + ring buffer) → `SpotifyCaptureSampleProvider` (an `ISampleProvider` seam, resampled/format-normalized to the mixer's 44100Hz stereo float) → `NAudioMusicPlayer.LoadExternalSource`, which feeds the external provider through the existing `EffectsChain` / `VisualizationDataProvider` / persistent mixer. No `SongEndDetector` is inserted on the external path (a live capture stream never ends). Feasibility proven end-to-end 2026-07-12 — see `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`.
+  - **Effects safety invariant.** For the EFFECTS case, hearing both Spotify's raw output *and* the effected version would double the audio, so `SpotifyEffectsCoordinator` enforces: **Spotify's dry output is muted iff UPS is producing effected output for it**, and it **auto-unmutes on any stop** — effects disabled, capture stops/dies, or UPS closes. The dry-output mute reuses the existing `SpotifyAudioSession` (`ISimpleAudioVolume.SetMute`, the same Windows audio-session mute as the v1.6.4 theme-mute work). The VISUALIZER case mutes nothing — it reacts to Spotify (dry or effected) with Spotify still audible.
+  - **Opt-in surface.** New `ApplyLiveEffectsToSpotify` setting (Live Effects tab, default OFF, only usable when Live Effects is enabled). The visualizer-on-Spotify has **no** separate toggle — it couples to the existing Spectrum Visualizer setting. Below Windows 10 build 20348 the feature is unavailable (Process Loopback Capture unsupported); it fails soft to dry Spotify + no effects/viz.
+  - Files: `SpotifyLoopback.dll` (native shim, new), `src/Common/SpotifyLoopbackClient.cs`, `src/Audio/SpotifyCaptureSampleProvider.cs`, `src/Services/Spotify/SpotifyEffectsCoordinator.cs`, `src/Services/Spotify/SpotifyLiveEffectsHost.cs`, `src/Services/NAudioMusicPlayer.cs` (`LoadExternalSource`/`StopExternalSource`), `src/Common/SpotifyAudioSession.cs`, `src/UniPlaySongSettings.cs` (`ApplyLiveEffectsToSpotify`), Live Effects-tab UI. Design/feasibility: `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`.
+
 ## [1.6.4] - Unreleased
 
 ### Fixed
