@@ -230,6 +230,7 @@ namespace UniPlaySong
 
             // Reset master toggles
             s.LiveEffectsEnabled = true;
+            s.ApplyLiveEffectsToSpotify = false;
             s.ShowSpectrumVisualizer = true;
             s.ShowPeakMeter = false;
 

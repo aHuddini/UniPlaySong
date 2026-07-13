@@ -1648,6 +1648,16 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,20"/>
 
+                    <CheckBox Content="Apply Live Effects to Spotify (experimental)"
+                              IsChecked="{Binding Settings.ApplyLiveEffectsToSpotify}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"
+                              Margin="0,10,0,0"/>
+                    <TextBlock Text="Captures Spotify's audio and runs it through your effect chain — Spotify's own output is muted while active. Requires Windows 10 build 20348+."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,2,0,20"/>
+
                     <!-- Style Preset Section -->
                     <TextBlock Text="Style Preset" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
                     <TextBlock Text="One-click styles that configure all effects at once. Set to 'None' for manual control."
