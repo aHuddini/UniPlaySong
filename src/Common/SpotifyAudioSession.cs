@@ -44,6 +44,32 @@ namespace UniPlaySong.Common
             });
         }
 
+        // Sets Spotify's session master volume (0.0-1.0). Used by the live-effects duck:
+        // the process-loopback tap is post-session-volume, so a hard mute would silence the
+        // capture too — ducking to 2^-10 keeps the capture alive (restored by gain in the provider).
+        public static bool SetSessionVolume(float level)
+        {
+            return WithSpotifyVolume(vol =>
+            {
+                vol.SetMasterVolume(level, ref _eventContext);
+                return true;
+            });
+        }
+
+        // Reads Spotify's session master volume (fallback if not found). Ignores mute state —
+        // this is the raw slider level, used to save/restore around the effects duck.
+        public static float GetSessionVolume(float fallback = 1f)
+        {
+            float result = fallback;
+            bool found = WithSpotifyVolume(vol =>
+            {
+                vol.GetMasterVolume(out float level);
+                result = level;
+                return true;
+            });
+            return found ? result : fallback;
+        }
+
         // Reads Spotify's current session mute state (false if not found).
         public static bool IsMuted()
         {

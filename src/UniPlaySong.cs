@@ -558,7 +558,19 @@ namespace UniPlaySong
 
             // Establish the Spotify effects state once at startup (Spotify may already be the
             // active source with effects/visualizer on). Idempotent — safe if nothing applies.
-            _spotifyEffectsHost?.Evaluate();
+            // Armed here (not earlier): settings-load events during InitializeServices would
+            // otherwise start effected output seconds before the theme binds its overlay flags,
+            // making Spotify audible during login views. Same gate as the radio engage above.
+            //
+            // Off the UI thread: the first Evaluate can start capture, whose native handshake
+            // (ActivateAudioInterfaceAsync) blocks up to several seconds — on the UI thread that
+            // stalls fullscreen theme load. The coordinator is already lock-serialized and safe
+            // to drive from any thread (the SMTC worker + watchdog already do).
+            if (_spotifyEffectsHost != null)
+            {
+                _spotifyEffectsHost.Armed = true;
+                EvaluateSpotifyEffectsAsync();
+            }
 
             // Recompute the theme-override flag from the controls actually loaded in the theme we
             // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
@@ -1431,10 +1443,22 @@ namespace UniPlaySong
         }
 
         // Spotify active/inactive (or now-playing) changed — re-evaluate the effects invariant.
-        // Raised on the SMTC worker thread; the host serializes internally, so no marshalling.
+        // Raised from SpotifyControlService.Recompute, which runs on the UI THREAD (DispatcherTimer
+        // + playback events). Evaluate can start capture, whose native handshake blocks for up to
+        // several seconds — on the UI thread that stalls the theme when Spotify is opened
+        // mid-session. Run it off-thread; the host is lock-serialized and thread-safe.
         private void OnSpotifyStateChangedForEffects()
         {
-            _spotifyEffectsHost?.Evaluate();
+            EvaluateSpotifyEffectsAsync();
+        }
+
+        // Runs the effects-host Evaluate off the UI thread. Every Evaluate can start capture whose
+        // native handshake blocks for seconds; on the UI thread that stalls the theme. The host is
+        // lock-serialized (already driven from the SMTC/watchdog threads), so any thread is safe.
+        private void EvaluateSpotifyEffectsAsync()
+        {
+            var host = _spotifyEffectsHost;
+            if (host != null) System.Threading.ThreadPool.QueueUserWorkItem(_ => host.Evaluate());
         }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -1488,7 +1512,7 @@ namespace UniPlaySong
                 e.PropertyName == nameof(UniPlaySongSettings.LiveEffectsEnabled) ||
                 e.PropertyName == nameof(UniPlaySongSettings.ShowSpectrumVisualizer))
             {
-                _spotifyEffectsHost?.Evaluate();
+                EvaluateSpotifyEffectsAsync();
                 return;
             }
 
@@ -1660,6 +1684,9 @@ namespace UniPlaySong
                     _fileLogger?.Debug("OnSettingsServicePropertyChanged: CalmDownMode toggle requires backend swap, recreating player");
                     RecreateMusicPlayerForLiveEffects();
                 }
+                // Calm Down alone can drive the Spotify effects path (duck + calmed copy), so
+                // re-evaluate the effects host on toggle even when no backend swap was needed.
+                EvaluateSpotifyEffectsAsync();
                 return;
             }
         }
@@ -1805,7 +1832,7 @@ namespace UniPlaySong
                 // settings changed (backend swap re-attaches, or ApplyToSpotify flips in place).
                 if (backendSwap || applyToSpotifyChanged)
                 {
-                    _spotifyEffectsHost?.Evaluate();
+                    EvaluateSpotifyEffectsAsync();
                 }
             }
 
@@ -2183,6 +2210,9 @@ namespace UniPlaySong
                         _dashboardPlaybackService?.PauseForSystem();
                     }
                     _sleepCoordinator?.OnLockOrSuspend("SessionLock"); // issue #81 — release devices regardless of pause pref
+                    // Device release tears down the effected-Spotify mixer; shut the host down so
+                    // Spotify unmutes (never left ducked + silent) and rebuilds on unlock.
+                    _spotifyEffectsHost?.Shutdown();
                 });
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
@@ -2208,6 +2238,8 @@ namespace UniPlaySong
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
+                    // Rebuild effected Spotify output on unlock (Shutdown ran on lock).
+                    EvaluateSpotifyEffectsAsync();
                 });
             }
         }
@@ -2236,6 +2268,11 @@ namespace UniPlaySong
                 // can sleep within its ~2s budget without waiting on a busy UI thread.
                 _sleepCoordinator?.OnLockOrSuspend("Suspend detected");
 
+                // The device release tears down the mixer hosting effected Spotify. Shut the effects
+                // host down too (unmutes Spotify — never leave it ducked + silent) and re-evaluate
+                // so it rebuilds cleanly on resume when the device comes back.
+                _spotifyEffectsHost?.Shutdown();
+
                 // Then mark playback paused via the same SystemLock source the lock path uses, so
                 // that on resume RemovePauseSource(SystemLock) drives the identical self-healing
                 // resume-at-position (the player already saved its position during device release).
@@ -2258,6 +2295,9 @@ namespace UniPlaySong
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
+                    // Rebuild effected Spotify output if it was active before suspend (Shutdown ran
+                    // on suspend); the host re-captures + re-attaches to the fresh device.
+                    EvaluateSpotifyEffectsAsync();
                 }));
             }
         }
@@ -2749,7 +2789,11 @@ namespace UniPlaySong
             _audioDeviceRegistry = new Services.AudioDeviceRegistry(_fileLogger);
             _sleepCoordinator = new Services.SleepCoordinator(
                 _audioDeviceRegistry,
-                isAudible: () => _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true,
+                // Audible if UPS game music is playing OR effected Spotify output is running — the
+                // latter plays through the persistent device while UPS's own player is idle (radio
+                // mode), so without this the idle timer would tear the device out from under it.
+                isAudible: () => (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true)
+                                 || _spotifyEffectsHost?.IsEffecting == true,
                 getIdleMinutes: () => _settings?.IdleAudioDeviceTeardownMinutes ?? 5,
                 _fileLogger);
             // Register the main player (it's an IAudioDeviceHolder via IMusicPlayer).
@@ -3310,7 +3354,7 @@ namespace UniPlaySong
                 _playbackService.LoadAndPlayFile(filePath);
 
                 // Re-establish the effects invariant against the new backend.
-                _spotifyEffectsHost?.Evaluate();
+                EvaluateSpotifyEffectsAsync();
 
                 _fileLogger?.Debug("Player switched to NAudio for GME format");
             }

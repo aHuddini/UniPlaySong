@@ -10,7 +10,7 @@ namespace UniPlaySong.Tests.Services.Spotify
         // Test double capturing mute state + capture/output starts.
         private class Env
         {
-            public bool LiveEffects, ApplyToSpotify, Visualizer, SpotifyActive, OsCapable = true;
+            public bool LiveEffects, ApplyToSpotify, Visualizer, SpotifyActive, OsCapable = true, CalmDown;
             public bool? MutedNow;       // null = never touched
             public bool CaptureRunning, EffectedOutput;
             public bool MuteSucceeds = true;
@@ -26,7 +26,8 @@ namespace UniPlaySong.Tests.Services.Spotify
             startCapture: () => { e.CaptureRunning = true; return true; },
             stopCapture: () => e.CaptureRunning = false,
             startEffectedOutput: () => e.EffectedOutput = true,
-            stopEffectedOutput: () => e.EffectedOutput = false);
+            stopEffectedOutput: () => e.EffectedOutput = false,
+            isCalmDown: () => e.CalmDown);
 
         [Test]
         public void EffectsOnSpotify_MutesSpotify_AndOutputs()
@@ -46,6 +47,28 @@ namespace UniPlaySong.Tests.Services.Spotify
             Assert.That(e.CaptureRunning, Is.True);
             Assert.That(e.EffectedOutput, Is.False);
             Assert.That(e.MutedNow, Is.Not.EqualTo(true)); // dry Spotify -> not muted
+        }
+
+        [Test]
+        public void CalmDownAlone_MutesSpotify_AndOutputs()
+        {
+            // Calm Down on, Live Effects OFF — should still duck + produce effected (calmed) output.
+            var e = new Env { CalmDown = true, SpotifyActive = true };
+            Make(e).Evaluate();
+            Assert.That(e.CaptureRunning, Is.True);
+            Assert.That(e.EffectedOutput, Is.True);
+            Assert.That(e.MutedNow, Is.True);
+        }
+
+        [Test]
+        public void CalmDownOff_WithNothingElse_UnmutesSpotify()
+        {
+            var e = new Env { CalmDown = true, SpotifyActive = true };
+            var c = Make(e); c.Evaluate();
+            e.CalmDown = false; c.Evaluate();
+            Assert.That(e.EffectedOutput, Is.False);
+            Assert.That(e.CaptureRunning, Is.False);
+            Assert.That(e.MutedNow, Is.False);
         }
 
         [Test]

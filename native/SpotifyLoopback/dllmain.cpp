@@ -61,9 +61,11 @@ namespace {
         // Shared-mode Initialize converts the engine stream to this requested format, so the
         // callback can truthfully report these wfx fields. If the format were unsupported
         // Initialize fails here and SignalStart(-1) surfaces it to Start().
+        // IEEE float (not PCM16): the loopback tap is post-session-volume, so UPS ducks
+        // Spotify to 2^-10 and multiplies the capture by 1024 — lossless only in float.
         WAVEFORMATEX wfx = {};
-        wfx.wFormatTag = WAVE_FORMAT_PCM; wfx.nChannels = 2; wfx.nSamplesPerSec = 44100;
-        wfx.wBitsPerSample = 16; wfx.nBlockAlign = 4; wfx.nAvgBytesPerSec = 44100 * 4;
+        wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT; wfx.nChannels = 2; wfx.nSamplesPerSec = 44100;
+        wfx.wBitsPerSample = 32; wfx.nBlockAlign = 8; wfx.nAvgBytesPerSec = 44100 * 8;
         if (FAILED(client->Initialize(AUDCLNT_SHAREMODE_SHARED,
                 AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                 2000000, 0, &wfx, nullptr))) { SignalStart(-1); CoUninitialize(); return; }

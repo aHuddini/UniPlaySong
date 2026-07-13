@@ -57,13 +57,26 @@ namespace UniPlaySong.Services.Spotify
                 startCapture: StartCapture,
                 stopCapture: StopCapture,
                 startEffectedOutput: StartEffectedOutput,
-                stopEffectedOutput: StopEffectedOutput);
+                stopEffectedOutput: StopEffectedOutput,
+                isCalmDown: () => _getSettings()?.CalmDownModeEnabled ?? false);
         }
+
+        // Armed at OnApplicationStarted (set + Evaluate there). Until then Evaluate no-ops:
+        // settings-load events fire during InitializeServices, which otherwise starts effected
+        // Spotify output several seconds before the theme binds its overlay flags — audible
+        // during login views. Same gating rule as the Spotify radio engage (v1.5.8).
+        public bool Armed { get; set; }
+
+        // True while effected Spotify output is running (device is producing audio even though
+        // UPS's own game player is idle). The sleep coordinator checks this so idle device-release
+        // doesn't tear down the mixer out from under audible Spotify effects.
+        public bool IsEffecting => _effecting;
 
         // Public entry points — always serialized so concurrent triggers (settings, Spotify
         // state, watchdog) never interleave coordinator state transitions.
         public void Evaluate()
         {
+            if (!Armed) return;
             lock (_gate)
             {
                 try { _coordinator.Evaluate(); }
@@ -82,19 +95,31 @@ namespace UniPlaySong.Services.Spotify
 
         // --- coordinator collaborator funcs (all called under _gate) ---
 
-        // Carry-forward F: unmute (false) can transiently fail over COM. Retry a few times so a
-        // permanently-muted Spotify self-heals; mute (true) is best-effort single attempt (a mute
-        // failure just leaves Spotify dry -> the coordinator won't start effected output, safe).
+        // "Mute" is implemented as a volume DUCK, not a session mute: the process-loopback tap
+        // sits post-session-volume, so a hard mute (or volume 0) silences our own capture too.
+        // Duck to 2^-10 (~-60 dB, inaudible) and the provider multiplies by 1024 to restore —
+        // power-of-2 scaling in float is lossless. Restore retries a few times (carry-forward F)
+        // so a permanently-ducked Spotify self-heals; duck failure is safe (coordinator won't
+        // start effected output, Spotify stays audible dry).
+        internal const float DuckVolume = 0.0009765625f; // 2^-10
+        private float _volumeBeforeDuck = 1f;
+
         private bool SetMuted(bool muted)
         {
-            if (muted) return SpotifyAudioSession.SetMuted(true);
+            if (muted)
+            {
+                float current = SpotifyAudioSession.GetSessionVolume(1f);
+                // Don't save an already-ducked level (e.g. re-entry after a crash) as the restore target.
+                _volumeBeforeDuck = current > DuckVolume * 2 ? current : 1f;
+                return SpotifyAudioSession.SetSessionVolume(DuckVolume);
+            }
 
             for (int attempt = 0; attempt < 3; attempt++)
             {
-                if (SpotifyAudioSession.SetMuted(false)) return true;
+                if (SpotifyAudioSession.SetSessionVolume(_volumeBeforeDuck)) return true;
                 Thread.Sleep(30);
             }
-            _fileLogger?.Warn("[SpotifyFx] UNMUTE FAILED after retries — Spotify may be left muted; user can unmute in the Windows Volume Mixer.");
+            _fileLogger?.Warn("[SpotifyFx] VOLUME RESTORE FAILED after retries — Spotify may be left quiet; user can raise it in the Windows Volume Mixer.");
             return false;
         }
 
@@ -142,7 +167,20 @@ namespace UniPlaySong.Services.Spotify
                     var player = _getPlayer() as NAudioMusicPlayer;
                     if (player == null) throw new InvalidOperationException("effected output requires the NAudio backend");
 
-                    _provider = new SpotifyCaptureSampleProvider(_client);
+                    // Effects mode owns the viz: kill any pump tap (created in the pre-effecting
+                    // window) so its .Current can't shadow the player's external viz.
+                    DisposePumpViz();
+                    // The ring may hold pre-duck full-volume audio; 1024x gain on it = a blast.
+                    _client.FlushRing();
+                    _provider = new SpotifyCaptureSampleProvider(_client)
+                    {
+                        // Spotify's session is ducked to 2^-10 in effects mode; restore the level
+                        // (unity = 1/DuckVolume), plus a small +2 dB makeup so the effected copy
+                        // matches dry Spotify's perceived loudness (dry ignores MusicVolume; the
+                        // effected path is scaled by it). The provider clamps + the chain limiter
+                        // (0.9 threshold) protect loud tracks from clipping.
+                        GainCompensation = (1f / DuckVolume) * 1.26f
+                    };
                     player.LoadExternalSource(_provider);
                     _effecting = true; // mixer now pulls the provider; pump idles
                 }
@@ -163,6 +201,10 @@ namespace UniPlaySong.Services.Spotify
             lock (_stateLock)
             {
                 _effecting = false;
+                // Leaving effects mode: Spotify's volume gets restored, so the duck-compensation
+                // gain must go too — a viz-only pump reusing this provider would otherwise see
+                // 1024x clipped garbage.
+                if (_provider != null) _provider.GainCompensation = 1f;
                 try { (_getPlayer() as NAudioMusicPlayer)?.StopExternalSource(); }
                 catch (Exception ex) { _fileLogger?.Debug($"[SpotifyFx] StopExternalSource: {ex.Message}"); }
             }
@@ -253,7 +295,14 @@ namespace UniPlaySong.Services.Spotify
             lock (_stateLock)
             {
                 if (_client != client) return null; // capture changed under us
-                if (_pumpViz != null) return _pumpViz;
+                if (_effecting) return null;        // effects mode owns the viz — don't shadow it
+                if (_pumpViz != null)
+                {
+                    // Re-assert .Current: an effects->viz-only flip leaves it on the DISPOSED external viz.
+                    if (VisualizationDataProvider.Current != _pumpViz)
+                        VisualizationDataProvider.Current = _pumpViz;
+                    return _pumpViz;
+                }
                 if (_provider == null) _provider = new SpotifyCaptureSampleProvider(client);
                 int fftSize = _getSettings()?.VizFftSize ?? 1024;
                 _pumpViz = new VisualizationDataProvider(_provider, fftSize, _getSettings());

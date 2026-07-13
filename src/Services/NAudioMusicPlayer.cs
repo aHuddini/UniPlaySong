@@ -35,7 +35,8 @@ namespace UniPlaySong.Services
         // OR — issue #81 — by ReleaseAudioDevice() when the AudioDeviceRegistry releases
         // devices on idle/lock/suspend so Windows can sleep)
         private WaveOutEvent _outputDevice;
-        private MixingSampleProvider _mixer;
+        private MixingSampleProvider _mixer;              // game-music inputs, pre-master
+        private MixingSampleProvider _outputMixer;        // master + external source, feeds device
         private CalmDownProcessor _calmDownProcessor;
         private SmoothVolumeSampleProvider _volumeProvider;
         private bool _persistentLayerInitialized;
@@ -64,12 +65,16 @@ namespace UniPlaySong.Services
         private string _secondarySource;
         public bool IsCrossfading => _secondaryInputVolume != null;
 
-        // External live-source chain (e.g. Spotify capture). Runs the SAME EffectsChain/viz
-        // as a file, but never EOFs so there's no SongEndDetector. Held in fields so the
+        // External live-source chain (e.g. Spotify capture). Runs the SAME EffectsChain/viz as a
+        // file and goes through the SAME persistent mixer, but with its own per-input
+        // SmoothVolumeSampleProvider so it's audible regardless of the master fader, and never
+        // EOFs (the gate wrapper zero-fills) so there's no SongEndDetector. Held in fields so the
         // chain (and VisualizationDataProvider.Current) isn't GC'd while playing.
         private ISampleProvider _externalInput;
         private EffectsChain _externalEffects;
         private VisualizationDataProvider _externalViz;
+        private CalmDownProcessor _externalCalmDown;
+        private SmoothVolumeSampleProvider _externalVolume;
 
         private bool _isInMixer;
 
@@ -148,9 +153,16 @@ namespace UniPlaySong.Services
                 getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
                 getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
 
+            // Output mixer combines the master-faded game-music chain with any external live
+            // source. The external source is added here — POST master fader — so game-music pause
+            // sources (which ride _volumeProvider to 0, e.g. a fullscreen theme overlay) never
+            // silence it. It carries its own per-input volume + overlay gate for its own fades.
+            _outputMixer = new MixingSampleProvider(MixerFormat) { ReadFully = true };
+            _outputMixer.AddMixerInput(_volumeProvider);
+
             _outputDevice = new WaveOutEvent();
             _outputDevice.PlaybackStopped += OnPlaybackStopped;
-            _outputDevice.Init(_volumeProvider);
+            _outputDevice.Init(_outputMixer);
             _outputDevice.Play(); // Starts once, runs forever outputting silence until inputs added
 
             _persistentLayerInitialized = true;
@@ -172,6 +184,7 @@ namespace UniPlaySong.Services
                     _outputDevice = null;
                 }
                 _mixer = null;
+                _outputMixer = null;
                 _calmDownProcessor = null;
                 _volumeProvider = null;
                 _persistentLayerInitialized = false;
@@ -887,10 +900,12 @@ namespace UniPlaySong.Services
         }
 
         // Builds the effect/viz chain around an external live source (e.g. Spotify capture) and
-        // adds it to the persistent mixer — same downstream chain as a file, so effects/viz apply
-        // identically. No SongEndDetector (a live stream doesn't EOF). Format-normalized to the
-        // 44.1k stereo float mixer via the existing mono-to-stereo / resampler path. Mirrors the
-        // file-load chain (no mixer-wide lock — Load() doesn't use one either).
+        // adds it to the SAME persistent mixer as game music — identical EffectsChain/viz and the
+        // same SmoothVolumeSampleProvider fader, so fades, transitions, and pause-gating behave
+        // exactly like a file. The external input carries its OWN per-input volume (so it's audible
+        // regardless of the master fader, which game music drives and radio mode leaves at rest);
+        // a thin gate wrapper drives that volume's ramp from MusicVolume and the overlay/video
+        // flags. No SongEndDetector (a live stream doesn't EOF).
         public void LoadExternalSource(ISampleProvider source)
         {
             if (_isDisposed) return;
@@ -903,30 +918,123 @@ namespace UniPlaySong.Services
             if (!SuppressVisualizationProvider)
                 VisualizationDataProvider.Current = _externalViz;
 
-            // Format normalization for mixer compatibility (44100Hz stereo float).
             ISampleProvider tail = _externalViz;
             if (tail.WaveFormat.Channels == 1)
                 tail = new MonoToStereoSampleProvider(tail);
             if (tail.WaveFormat.SampleRate != MixerFormat.SampleRate)
                 tail = new WdlResamplingSampleProvider(tail, MixerFormat.SampleRate);
 
-            _externalInput = tail;
-            _mixer.AddMixerInput(_externalInput);
+            // Own CalmDownProcessor so Calm Down Mode applies to Spotify too. The game-music one is
+            // pre-master (which the external source bypasses), so it needs its own instance here.
+            _externalCalmDown = new CalmDownProcessor(tail, _settingsService);
+
+            // Per-input volume, ramped by the same class game music uses. Starts at 0 and fades in.
+            _externalVolume = new SmoothVolumeSampleProvider(
+                _externalCalmDown,
+                getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
+                getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
+            _externalVolume.Volume = 0f;
+
+            // Gate wrapper: drives _externalVolume's ramp from MusicVolume + overlay/video, and
+            // keeps returning `count` (zero-fill) so the mixer never auto-removes a live input.
+            _externalInput = new ExternalGateProvider(_externalVolume, this);
+
+            // Added to the OUTPUT mixer (post master fader), so game-music pause sources riding the
+            // master to 0 (fullscreen theme overlays especially) can't silence it. Its own per-input
+            // volume + overlay gate are its only knobs.
+            _outputMixer.AddMixerInput(_externalInput);
+            // Fade in over the user's configured fade-in duration (same as game music).
+            _externalVolume.SetTargetWithRamp(TargetExternalVolume(), (float)ExternalFadeInSeconds());
+            _fileLogger?.Debug($"[NAudio] External source added to output mixer ({tail.WaveFormat.SampleRate}/{tail.WaveFormat.Channels})");
         }
 
-        // Removes the external live source from the mixer and drops its chain references.
+        // Stops the external source with a real fade: ramp the per-input volume to 0, then remove
+        // it from the mixer off-thread once the ramp has drained. Fields clear immediately so a new
+        // source can load right away (brief overlap = a natural crossfade, same as game switching).
         public void StopExternalSource()
         {
             if (_isDisposed) return;
-            if (_externalInput != null && _mixer != null)
-            {
-                try { _mixer.RemoveMixerInput(_externalInput); }
-                catch (Exception ex) { _fileLogger?.Debug($"[NAudio] StopExternalSource: {ex.Message}"); }
-            }
+            var input = _externalInput;
+            var volume = _externalVolume;
+            var viz = _externalViz;
             _externalInput = null;
+            _externalVolume = null;
             _externalEffects = null;
-            _externalViz?.Dispose();
             _externalViz = null;
+
+            if (input == null || _outputMixer == null)
+            {
+                viz?.Dispose();
+                return;
+            }
+
+            // Fade out over the user's configured fade-out duration (same as game music).
+            float fadeOut = (float)ExternalFadeOutSeconds();
+            volume?.SetTargetWithRamp(0f, fadeOut);
+            var mixer = _outputMixer;
+            int waitMs = (int)(fadeOut * 1000) + 120; // ramp + small margin
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                System.Threading.Thread.Sleep(waitMs);
+                try { mixer.RemoveMixerInput(input); } catch { }
+                try { viz?.Dispose(); } catch { }
+            });
+        }
+
+        // The user's music volume 0..1, or 0 while a theme overlay / video is active (the gate the
+        // shared fader gives game music for free). The external gate wrapper polls this each buffer.
+        private float TargetExternalVolume()
+        {
+            var s = _settingsService.Current;
+            if (s?.ThemeOverlayActive == true || s?.VideoIsPlaying == true) return 0f;
+            return (float)((s?.MusicVolume ?? Constants.DefaultMusicVolume) / Constants.VolumeDivisor);
+        }
+
+        // External fades use the same user-configured durations as game music.
+        private double ExternalFadeInSeconds() => Math.Max(0.05, _settingsService.Current?.FadeInDuration ?? 0.85);
+        private double ExternalFadeOutSeconds() => Math.Max(0.05, _settingsService.Current?.FadeOutDuration ?? 0.7);
+
+        // True while the external per-input volume is mid-ramp — the gate must not re-target then.
+        internal bool ExternalVolumeRamping => _externalVolume?.IsRamping ?? false;
+
+        // Wraps the external per-input volume: re-targets its ramp whenever MusicVolume or the
+        // overlay/video gate changes, and guarantees a full `count` (zero-fill) so the mixer's
+        // partial-read auto-removal never drops a live stream.
+        private class ExternalGateProvider : ISampleProvider
+        {
+            private readonly SmoothVolumeSampleProvider _volume;
+            private readonly NAudioMusicPlayer _owner;
+            private float _rampedTarget = -1f; // the target of the ramp currently in flight
+
+            public ExternalGateProvider(SmoothVolumeSampleProvider volume, NAudioMusicPlayer owner)
+            {
+                _volume = volume;
+                _owner = owner;
+            }
+
+            public WaveFormat WaveFormat => _volume.WaveFormat;
+
+            public int Read(float[] buffer, int offset, int count)
+            {
+                // Track the desired target every buffer. Start a new ramp toward it once the
+                // previous ramp settles (starting one mid-ramp would restart from the current
+                // partial volume — this instead lets an overlay/volume change that arrived mid-fade
+                // apply cleanly the instant the fade finishes). Uses the user's fade-out duration
+                // for gate silences (overlay/video) and a short glide for volume-slider edits.
+                float target = _owner.TargetExternalVolume();
+                if (!_volume.IsRamping && target != _rampedTarget)
+                {
+                    // Silence (overlay/video) uses the fade-out curve+length; un-silence / volume
+                    // edits use a quick 0.2s glide so slider drags feel responsive.
+                    float dur = target <= 0.0001f ? (float)_owner.ExternalFadeOutSeconds() : 0.2f;
+                    _volume.SetTargetWithRamp(target, dur);
+                    _rampedTarget = target;
+                }
+
+                int read = _volume.Read(buffer, offset, count);
+                for (int i = read; i < count; i++) buffer[offset + i] = 0f; // keep the mixer input alive
+                return count;
+            }
         }
 
         // Guarded removal from mixer — only calls RemoveMixerInput if actually in mixer
@@ -1142,6 +1250,7 @@ namespace UniPlaySong.Services
         {
             if (!_isDisposed)
             {
+                StopExternalSource(); // before _isDisposed flips — its guard would no-op after
                 RemoveCurrentSongChain();
                 TearDownPersistentLayer();
 

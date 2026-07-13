@@ -8,7 +8,7 @@ namespace UniPlaySong.Services.Spotify
     // invariant is unit-testable without real audio/COM.
     public class SpotifyEffectsCoordinator
     {
-        private readonly Func<bool> _isLiveEffects, _isApplyToSpotify, _isVisualizer, _isSpotifyActive, _isOsCapable;
+        private readonly Func<bool> _isLiveEffects, _isApplyToSpotify, _isVisualizer, _isSpotifyActive, _isOsCapable, _isCalmDown;
         private readonly Func<bool, bool> _setMuted;      // returns success
         private readonly Func<bool> _startCapture;        // returns success
         private readonly Action _stopCapture, _startEffectedOutput, _stopEffectedOutput;
@@ -19,19 +19,23 @@ namespace UniPlaySong.Services.Spotify
             Func<bool> isLiveEffects, Func<bool> isApplyToSpotify, Func<bool> isVisualizer,
             Func<bool> isSpotifyActive, Func<bool> isOsCapable,
             Func<bool, bool> setMuted, Func<bool> startCapture, Action stopCapture,
-            Action startEffectedOutput, Action stopEffectedOutput)
+            Action startEffectedOutput, Action stopEffectedOutput,
+            Func<bool> isCalmDown = null)
         {
             _isLiveEffects = isLiveEffects; _isApplyToSpotify = isApplyToSpotify; _isVisualizer = isVisualizer;
             _isSpotifyActive = isSpotifyActive; _isOsCapable = isOsCapable;
             _setMuted = setMuted; _startCapture = startCapture; _stopCapture = stopCapture;
             _startEffectedOutput = startEffectedOutput; _stopEffectedOutput = stopEffectedOutput;
+            _isCalmDown = isCalmDown ?? (() => false);
         }
 
         // Re-reads all conditions and transitions to the correct state. Idempotent.
         public void Evaluate()
         {
             bool spotify = _isSpotifyActive() && _isOsCapable();
-            bool wantEffects = spotify && _isLiveEffects() && _isApplyToSpotify();
+            // Effected output (duck Spotify + play our processed copy) is wanted when either
+            // Live-Effects-to-Spotify OR Calm Down is on — both need the mute-and-replace path.
+            bool wantEffects = spotify && ((_isLiveEffects() && _isApplyToSpotify()) || _isCalmDown());
             bool wantCapture = spotify && (wantEffects || _isVisualizer());
 
             // 1. Tear down effected output first if it's no longer wanted (invariant: unmute on stop).

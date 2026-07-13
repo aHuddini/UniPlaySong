@@ -32,6 +32,8 @@ namespace UniPlaySong.Common
                 }
             }
 
+            public void Clear() { lock (_lock) { _readPos = 0; _writePos = 0; _count = 0; } }
+
             // Always writes `count` bytes; zero-fills whatever the buffer can't supply. Returns count.
             public int Read(byte[] dst, int offset, int count)
             {
@@ -57,7 +59,7 @@ namespace UniPlaySong.Common
         [DllImport("SpotifyLoopback.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern int SpotifyLoopback_IsCapturing();
 
-        private readonly RingBuffer _ring = new RingBuffer(44100 * 4 / 4); // ~250ms @ 44.1k/16/stereo
+        private readonly RingBuffer _ring = new RingBuffer(88200); // ~250ms @ 44.1k float32 stereo (352800 B/s)
         private PcmCallback _cbDelegate; // keep rooted against GC
         private volatile bool _started;
         private DateTime _lastCallback = DateTime.MinValue;
@@ -87,6 +89,10 @@ namespace UniPlaySong.Common
 
         public int Read(byte[] buffer, int offset, int count) => _ring.Read(buffer, offset, count);
 
+        // Drops buffered audio. Called when the duck engages — the ring may hold up to 250ms of
+        // PRE-duck full-volume samples, which the 1024x duck-compensation would turn into a blast.
+        public void FlushRing() => _ring.Clear();
+
         // Test seam: pushes PCM bytes into the ring exactly as the native callback would.
         internal void PushForTest(byte[] pcm) => _ring.Write(pcm, 0, pcm.Length);
 
@@ -108,7 +114,9 @@ namespace UniPlaySong.Common
         {
             _lastCallback = DateTime.Now;
             if (Format.SampleRate != sampleRate || Format.Channels != channels || Format.BitsPerSample != bits)
-                Format = new WaveFormat(sampleRate, bits, channels);
+                Format = bits == 32
+                    ? WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channels)  // shim requests IEEE float
+                    : new WaveFormat(sampleRate, bits, channels);
             if (data == IntPtr.Zero || byteCount <= 0) return; // silent packet
             var managed = new byte[byteCount];
             Marshal.Copy(data, managed, 0, byteCount);
