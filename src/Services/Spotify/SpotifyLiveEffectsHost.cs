@@ -103,19 +103,21 @@ namespace UniPlaySong.Services.Spotify
         {
             try
             {
-                SpotifyAudioSession.SetMuted(false);
-                // If volume still reads ducked, raise it back to the saved pre-duck level (or full).
-                float now = SpotifyAudioSession.GetSessionVolume(1f);
-                if (now <= DuckVolume * 2)
+                // UNCONDITIONAL — do not read-then-decide. Spotify's session volume reads are
+                // unreliable mid-teardown (the earlier read-gated version logged "volume already
+                // normal" and skipped the restore while Spotify was still ducked). At process exit
+                // we can't leave Spotify quiet under any circumstance, so always: clear the mute
+                // flag AND force session volume back to the saved pre-duck level (full if unknown).
+                // Retry a few times — the session enumeration can transiently miss during shutdown.
+                float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
+                bool okMute = false, okVol = false;
+                for (int attempt = 0; attempt < 5 && !(okMute && okVol); attempt++)
                 {
-                    float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
-                    SpotifyAudioSession.SetSessionVolume(restore);
-                    _fileLogger?.Debug($"[SpotifyFx] exit restore: unmuted + volume {now:F4} -> {restore:F4}");
+                    if (!okMute) okMute = SpotifyAudioSession.SetMuted(false);
+                    if (!okVol) okVol = SpotifyAudioSession.SetSessionVolume(restore);
+                    if (!(okMute && okVol)) Thread.Sleep(40);
                 }
-                else
-                {
-                    _fileLogger?.Debug("[SpotifyFx] exit restore: unmuted (volume already normal)");
-                }
+                _fileLogger?.Debug($"[SpotifyFx] exit restore: unmute={okMute} volume->{restore:F4}={okVol}");
             }
             catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] exit restore failed: {ex.Message}"); }
         }
@@ -188,6 +190,13 @@ namespace UniPlaySong.Services.Spotify
         {
             try
             {
+                // Let Spotify's session volume fully settle to the duck level (2^-10) BEFORE we
+                // build the output. Windows ramps a session-volume change over a few tens of ms;
+                // any sample captured mid-ramp is louder than 2^-10 and the 1024x makeup gain turns
+                // it into a pop. Sleeping here (outside the lock) + flushing after means only
+                // fully-ducked audio ever reaches the gain stage.
+                Thread.Sleep(120);
+
                 lock (_stateLock)
                 {
                     if (_client == null) throw new InvalidOperationException("capture not started");
@@ -197,7 +206,9 @@ namespace UniPlaySong.Services.Spotify
                     // Effects mode owns the viz: kill any pump tap (created in the pre-effecting
                     // window) so its .Current can't shadow the player's external viz.
                     DisposePumpViz();
-                    // The ring may hold pre-duck full-volume audio; 1024x gain on it = a blast.
+                    // Drop everything captured so far — the pre-duck and duck-settle samples that
+                    // the 1024x makeup gain would turn into a blast. Only post-settle (fully ducked)
+                    // audio flows from here, and the per-input fade-in ramps it up smoothly.
                     _client.FlushRing();
                     _provider = new SpotifyCaptureSampleProvider(_client)
                     {
