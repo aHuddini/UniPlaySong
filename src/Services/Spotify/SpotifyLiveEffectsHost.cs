@@ -84,20 +84,12 @@ namespace UniPlaySong.Services.Spotify
         public void Evaluate()
         {
             if (!Armed) return;
-            // DIAG (temporary): Evaluate rate + duration. A launch-churning Spotify could fire this
-            // repeatedly; capture start blocks, so a burst here = UI/worker stall.
-            var _dbgSw = System.Diagnostics.Stopwatch.StartNew();
             lock (_gate)
             {
                 try { _coordinator.Evaluate(); }
                 catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] Evaluate failed: {ex.Message}"); }
             }
-            _dbgSw.Stop();
-            _dbgEvalCount++;
-            if (_dbgSw.ElapsedMilliseconds > 20 || (_dbgEvalCount % 10) == 1)
-                _fileLogger?.Debug($"[SpotifyFx][DIAG] Evaluate #{_dbgEvalCount} {_dbgSw.ElapsedMilliseconds}ms");
         }
-        private long _dbgEvalCount;
 
         public void Shutdown()
         {
