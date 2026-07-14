@@ -102,6 +102,17 @@ namespace UniPlaySong.Services
                                     var duration = (np.IsEmpty || np.Duration <= TimeSpan.Zero)
                                         ? string.Empty
                                         : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
+
+                                    // Dedupe by track identity. Spotify's SMTC re-fires NowPlayingChanged
+                                    // on every position/state tick (many times per second), and without
+                                    // this each tick wrote a fresh album-art PNG to disk and republished a
+                                    // new path — hammering disk I/O and forcing the theme's now-playing
+                                    // <Image> to decode/reload constantly, which visibly slowed the theme.
+                                    // Same track since last publish => nothing to do.
+                                    var key = "spotify\n" + title + "\n" + artist + "\n" + album;
+                                    if (key == _lastPublishedKey) return;
+                                    _lastPublishedKey = key;
+
                                     var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
                                     if (string.IsNullOrEmpty(artPath))
                                     {

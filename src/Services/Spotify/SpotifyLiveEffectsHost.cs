@@ -19,6 +19,7 @@ namespace UniPlaySong.Services.Spotify
         private readonly Func<UniPlaySongSettings> _getSettings;
         private readonly Func<bool> _isSpotifyActive;
         private readonly Func<IMusicPlayer> _getPlayer; // current backend; effected output needs NAudio
+        private readonly Func<bool> _isDesktop;         // viz-only capture is pointless in Fullscreen
         private readonly FileLogger _fileLogger;
 
         private readonly object _gate = new object();     // serializes coordinator Evaluate/Shutdown
@@ -40,17 +41,23 @@ namespace UniPlaySong.Services.Spotify
             Func<UniPlaySongSettings> getSettings,
             Func<bool> isSpotifyActive,
             Func<IMusicPlayer> getPlayer,
-            FileLogger fileLogger)
+            FileLogger fileLogger,
+            Func<bool> isDesktop = null)
         {
             _getSettings = getSettings;
             _isSpotifyActive = isSpotifyActive;
             _getPlayer = getPlayer;
             _fileLogger = fileLogger;
+            _isDesktop = isDesktop ?? (() => true);
 
             _coordinator = new SpotifyEffectsCoordinator(
                 isLiveEffects: () => _getSettings()?.LiveEffectsEnabled ?? false,
                 isApplyToSpotify: () => _getSettings()?.ApplyLiveEffectsToSpotify ?? false,
-                isVisualizer: () => _getSettings()?.ShowSpectrumVisualizer ?? false,
+                // The spectrum visualizer only renders in Desktop mode, so in Fullscreen there's no
+                // point capturing + running the FFT pump for it — that's pure background CPU that
+                // slowed the theme. Gate viz-capture on being Desktop. (Effects-on-Spotify is a
+                // separate condition and still works in Fullscreen.)
+                isVisualizer: () => _isDesktop() && (_getSettings()?.ShowSpectrumVisualizer ?? false),
                 isSpotifyActive: () => _isSpotifyActive(),
                 isOsCapable: () => OsCapabilities.SupportsProcessLoopback,
                 setMuted: SetMuted,

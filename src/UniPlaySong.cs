@@ -2907,7 +2907,8 @@ namespace UniPlaySong
                 () => _settings,
                 () => _spotifyControlService?.IsSpotifyActive ?? false,
                 () => _currentMusicPlayer,
-                _fileLogger);
+                _fileLogger,
+                () => IsDesktop);
             _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForEffects;
 
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
