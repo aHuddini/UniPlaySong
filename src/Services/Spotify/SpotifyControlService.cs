@@ -107,6 +107,11 @@ namespace UniPlaySong.Services.Spotify
         {
             if (_disposed) return;
 
+            // DIAG (temporary): Recompute rate + duration + which thread. If this fires far more
+            // than every 2s, or takes long on the UI thread, it's the launch-lag source.
+            var _dbgSw = System.Diagnostics.Stopwatch.StartNew();
+            bool _dbgUi = System.Windows.Application.Current?.Dispatcher?.CheckAccess() == true;
+
             bool raiseNowPlaying;
             lock (_recomputeLock)
             {
@@ -116,7 +121,13 @@ namespace UniPlaySong.Services.Spotify
             // raising while _recomputeLock is held deadlocks against a UI thread that is itself
             // entering Recompute (playback event / timer) — the launch freeze with Spotify radio on.
             if (raiseNowPlaying) NowPlayingChanged?.Invoke();
+
+            _dbgSw.Stop();
+            _dbgRecomputeCount++;
+            if (_dbgSw.ElapsedMilliseconds > 20 || (_dbgRecomputeCount % 15) == 1)
+                _fileLogger?.Debug($"[Spotify][DIAG] Recompute #{_dbgRecomputeCount} {_dbgSw.ElapsedMilliseconds}ms ui={_dbgUi} raised={raiseNowPlaying}");
         }
+        private long _dbgRecomputeCount;
 
         // The Recompute body. Runs under _recomputeLock and returns whether NowPlayingChanged
         // should be raised — by Recompute, AFTER the lock is released. Never raise events here.
