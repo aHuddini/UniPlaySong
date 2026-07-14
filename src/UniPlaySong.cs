@@ -158,6 +158,8 @@ namespace UniPlaySong
         private int _externalAudioSilenceCount;
         private volatile bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
         private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
+        // Same set + "spotify" — used while UPS conducts Spotify so its own audio can't self-trigger the pause.
+        private HashSet<string> _externalAudioExcludedPidsWithSpotify = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "spotify" };
         private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
         private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
         private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
@@ -2353,11 +2355,24 @@ namespace UniPlaySong
                             .Select(s => s.Trim().ToLowerInvariant())
                             .Where(s => s.Length > 0),
                         StringComparer.OrdinalIgnoreCase);
+                    _externalAudioExcludedPidsWithSpotify = new HashSet<string>(
+                        _externalAudioExcludedPids, StringComparer.OrdinalIgnoreCase) { "spotify" };
                 }
+
+                // When UPS is conducting Spotify as the audible music, exclude Spotify's own
+                // session from DETECTION (instead of skipping all detections, which also ignored
+                // real external audio like a browser and never paused Spotify radio). Spotify's
+                // session can never trip, so no pause-oscillation; other apps detect normally and
+                // the standard pause path pauses Spotify via the lifecycle machinery.
+                bool spotifyIsAudible = _settings?.SpotifyActive == true
+                    && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
+                var exclusions = spotifyIsAudible && _externalAudioExcludedPidsWithSpotify != null
+                    ? _externalAudioExcludedPidsWithSpotify
+                    : _externalAudioExcludedPids;
 
                 float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
                 bool audioFound = Common.AudioSessionDetector.IsExternalAudioPlaying(
-                    _selfPid, peakThreshold, _externalAudioExcludedPids, out var externalAudioSource);
+                    _selfPid, peakThreshold, exclusions, out var externalAudioSource);
 
                 if (audioFound)
                 {
@@ -2366,39 +2381,9 @@ namespace UniPlaySong
 
                     if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
                     {
-                        // Don't treat Spotify as "external audio" when UPS is conducting it as
-                        // the active music. The audio we're hearing IS the music; adding
-                        // ExternalAudio would make IsPaused flip true → SpotifyControlService
-                        // pauses Spotify → silence → ExternalAudio clears → resume → audio
-                        // returns → pause again: an endless oscillation.
-                        //
-                        // Gate on IsPlayingDefaultMusic, NOT the bare SpotifyActive flag: Spotify
-                        // is only the AUDIBLE source when UPS is in the default-music gap conducting
-                        // it. When a game's own music is playing (IsPlayingDefaultMusic == false),
-                        // the audio is UPS's game music — a real external source (e.g. a browser)
-                        // must still pause it. SpotifyActive can strand true (a theme's Quick Access
-                        // mode-flip sets it, and no recompute clears it while game music plays
-                        // steadily); without this guard that stale flag disabled ExternalAudio
-                        // pause entirely during game music. Same expected-audio exemption as the
-                        // game-launching guard below.
-                        //
-                        // Spotify is the AUDIBLE source in two cases, and both must be exempt:
-                        //   1. Default-music gap — UPS is conducting Spotify because the game has no
-                        //      music (IsPlayingDefaultMusic).
-                        //   2. Spotify Radio Mode — Spotify is the radio source; UPS goes silent and
-                        //      lets Spotify play (IsPlayingDefaultMusic stays false here, so it must
-                        //      be checked separately or radio users get the pause-oscillation).
-                        // When a game's own music plays, neither is true → external audio (browser,
-                        // etc.) still pauses correctly.
-                        bool spotifyIsAudible = _settings?.SpotifyActive == true
-                            && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
-                        if (spotifyIsAudible)
-                        {
-                            _externalAudioDetected = true;
-                            _externalAudioPausedInstantly = false;
-                            _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), but Spotify is the active music — skipping ExternalAudio pause source (Spotify audio is expected, not external).");
-                            return;
-                        }
+                        // Spotify-as-active-music is handled at DETECTION (its session is in the
+                        // exclusion set while spotifyIsAudible), so a detection here is real
+                        // external audio and pauses normally — including pausing Spotify radio.
 
                         // Don't treat a launched game's own audio as "external." When
                         // GameStarting is active, the audio we're hearing is almost

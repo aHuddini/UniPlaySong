@@ -29,9 +29,6 @@ namespace UniPlaySong.Services
         // Spotify-track dedup key (title\nartist\nalbum). Separate from _lastPublishedKey, which
         // Publish() overwrites in its own format for the IsMusicChanged pulse.
         private string _lastSpotifyTrackKey;
-        // DIAG (temporary): prove the dedup is working. refresh = SMTC callbacks, skipped = deduped,
-        // published = real writes. Healthy = published climbs ONCE per track while refresh/skipped climb.
-        private long _dbgRefreshCount, _dbgDedupSkipCount, _dbgPublishCount;
         private DispatcherTimer _musicChangedResetTimer;
         // Short by design: only the true→false edge matters (a theme runs its own visible-duration
         // timer). Long enough that the true state is observed, short enough to re-arm quickly.
@@ -87,28 +84,13 @@ namespace UniPlaySong.Services
                         _spotifyClient?.RequestNowPlaying(np =>
                         {
                             if (_disposed) return;
-                            // Dedupe BEFORE fetching album art: Spotify's SMTC re-fires on every
-                            // position tick / 2s refresh, and the thumbnail fetch is a COM stream
-                            // open+copy each time. Same track as last publish -> skip it entirely.
-                            // MUST use its own field: Publish() overwrites _lastPublishedKey with a
-                            // different key format (title++artist for the IsMusicChanged pulse),
-                            // which silently defeated an earlier _lastPublishedKey-based check and
-                            // left the 2s republish (disk write + theme image reload) running.
+                            // Dedupe BEFORE the album-art fetch (a COM stream copy per call). Own
+                            // field — Publish() overwrites _lastPublishedKey in a different format.
                             {
                                 var t = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
                                 var a = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
                                 var al = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
-                                _dbgRefreshCount++; // DIAG: total Spotify Refresh callbacks
-                                if (t + "\n" + a + "\n" + al == _lastSpotifyTrackKey)
-                                {
-                                    _dbgDedupSkipCount++; // DIAG: skipped as same-track
-                                    // Log at most once per ~10s so we can SEE the dedup working
-                                    // without spamming. If this count climbs and publishCount does
-                                    // NOT, the freeze source (art write + republish) is gone.
-                                    if ((_dbgDedupSkipCount % 20) == 1)
-                                        _fileLogger?.Debug($"[NowPlaying][DIAG] dedup working: refresh={_dbgRefreshCount} skipped={_dbgDedupSkipCount} published={_dbgPublishCount} (track='{t}')");
-                                    return;
-                                }
+                                if (t + "\n" + a + "\n" + al == _lastSpotifyTrackKey) return;
                             }
                             _spotifyClient?.RequestAlbumArt(artBytes =>
                             {
@@ -132,17 +114,11 @@ namespace UniPlaySong.Services
                                         ? string.Empty
                                         : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
 
-                                    // Dedupe by track identity (own field — see the pre-fetch check
-                                    // above for why _lastPublishedKey cannot be used here). Same track
-                                    // since last publish => skip the PNG write + republish that were
-                                    // hammering disk I/O and forcing the theme's now-playing <Image>
-                                    // to decode/reload every 2s tick.
+                                    // Same track since last publish => skip the PNG write + republish.
                                     var key = title + "\n" + artist + "\n" + album;
-                                    if (key == _lastSpotifyTrackKey) { _dbgDedupSkipCount++; return; }
+                                    if (key == _lastSpotifyTrackKey) return;
                                     _lastSpotifyTrackKey = key;
 
-                                    _dbgPublishCount++; // DIAG: an ACTUAL publish (disk write + theme reload)
-                                    _fileLogger?.Debug($"[NowPlaying][DIAG] REAL PUBLISH #{_dbgPublishCount} (refresh={_dbgRefreshCount} skipped={_dbgDedupSkipCount}) track='{title}' — this is the ONLY line that should appear per track");
                                     var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
                                     if (string.IsNullOrEmpty(artPath))
                                     {

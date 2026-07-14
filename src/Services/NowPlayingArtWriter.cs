@@ -43,9 +43,6 @@ namespace UniPlaySong.Services
             {
                 Directory.CreateDirectory(_artDirectory);
                 var newPath = Path.Combine(_artDirectory, $"{_filePrefix}_{++_seq}.png");
-                // DIAG (temporary): every disk write of album art. If this climbs every ~2s for the
-                // SAME track, the now-playing dedup is NOT working and this is the theme-freeze source.
-                _fileLogger?.Debug($"[NowPlaying][DIAG] ART DISK WRITE #{_seq} ({bytes.Length} bytes) -> {Path.GetFileName(newPath)}");
                 File.WriteAllBytes(newPath, bytes);
                 // Delete the previous file now that the new one is safely on disk.
                 if (!string.IsNullOrEmpty(_lastWritten) && _lastWritten != newPath)

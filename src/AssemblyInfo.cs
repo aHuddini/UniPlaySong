@@ -7,5 +7,5 @@ using System.Runtime.InteropServices;
 // Version information - updated automatically by scripts from version.txt
 [assembly: AssemblyVersion("1.6.6")]
 [assembly: AssemblyFileVersion("1.6.6")]
-[assembly: AssemblyInformationalVersion("1.6.5")]
+[assembly: AssemblyInformationalVersion("1.6.6")]
 
