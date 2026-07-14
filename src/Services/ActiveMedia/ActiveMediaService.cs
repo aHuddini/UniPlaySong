@@ -106,14 +106,13 @@ namespace UniPlaySong.Services.ActiveMedia
                 sourceKind: ActiveMediaSourceKind.Spotify,
                 sourceName: "Spotify",
                 isPlaying: playing,
-                // Windows audio-session mute state (drives the theme's ActiveMediaIsMuted binding).
-                isMuted: SpotifyAudioSession.IsMuted(),
+                // Cached WASAPI reads — a live read here (this runs on the UI thread every ~2s) was
+                // a ~90ms stall while Spotify played. See SpotifyAudioSession cache.
+                isMuted: SpotifyAudioSession.IsMutedCached(),
                 progress: progress,
                 positionText: posText,
                 durationText: durText,
-                // Real Spotify session volume 0–100 (0 when muted). Was hardcoded 0, which made a
-                // volume-based theme mute icon (ActiveMediaVolume==0) show "muted" permanently.
-                volume: SpotifyAudioSession.GetEffectiveVolume() * 100.0,
+                volume: SpotifyAudioSession.GetEffectiveVolumeCached() * 100.0,
                 canNext: true,
                 canPrevious: true);
         }

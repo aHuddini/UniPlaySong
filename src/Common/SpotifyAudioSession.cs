@@ -24,6 +24,7 @@ namespace UniPlaySong.Common
         // Toggles Spotify's session mute; returns the NEW muted state (false on any failure).
         public static bool ToggleMute()
         {
+            InvalidateMuteVolumeCache();
             return WithSpotifyVolume(vol =>
             {
                 vol.GetMute(out bool muted);
@@ -37,6 +38,7 @@ namespace UniPlaySong.Common
         // Returns true if Spotify's session was found and set.
         public static bool SetMuted(bool muted)
         {
+            InvalidateMuteVolumeCache();
             return WithSpotifyVolume(vol =>
             {
                 vol.SetMute(muted, ref _eventContext);
@@ -49,6 +51,7 @@ namespace UniPlaySong.Common
         // capture too — ducking to 2^-10 keeps the capture alive (restored by gain in the provider).
         public static bool SetSessionVolume(float level)
         {
+            InvalidateMuteVolumeCache();
             return WithSpotifyVolume(vol =>
             {
                 vol.SetMasterVolume(level, ref _eventContext);
@@ -68,6 +71,61 @@ namespace UniPlaySong.Common
                 return true;
             });
             return found ? result : fallback;
+        }
+
+        // Cached (muted, volume) — one enumeration for both, ~1s TTL. Snapshot builders and theme
+        // bindings poll on the UI thread every ~2s; enumerating an ACTIVE Spotify session takes
+        // ~90ms, so a live read there was a 90ms UI stall per tick (worse while playing). The cache
+        // makes the read instant; the enumeration still happens, just at most ~1x/sec off the caller.
+        private static readonly object _cacheLock = new object();
+        private static bool _cachedMuted;
+        private static float _cachedVolume;
+        private static DateTime _cacheStampUtc = DateTime.MinValue;
+
+        private static void RefreshMuteVolumeCache()
+        {
+            bool m = false; float v = 0f;
+            WithSpotifyVolume(vol =>
+            {
+                vol.GetMute(out m);
+                vol.GetMasterVolume(out v);
+                return true;
+            });
+            lock (_cacheLock) { _cachedMuted = m; _cachedVolume = v; _cacheStampUtc = DateTime.UtcNow; }
+        }
+
+        private static int _refreshing; // 0/1 guard so only one background refresh runs at a time
+
+        // Never blocks the caller: returns the last cached value and kicks an OFF-THREAD refresh if
+        // stale. The COM enumeration (~90ms on an active session) thus never runs on the UI thread —
+        // callers get slightly stale mute/volume for up to ~1s, which is imperceptible for an icon.
+        private static void EnsureCacheFreshAsync()
+        {
+            bool stale;
+            lock (_cacheLock) stale = (DateTime.UtcNow - _cacheStampUtc) > TimeSpan.FromSeconds(1);
+            if (!stale) return;
+            if (System.Threading.Interlocked.CompareExchange(ref _refreshing, 1, 0) != 0) return;
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { RefreshMuteVolumeCache(); }
+                finally { System.Threading.Interlocked.Exchange(ref _refreshing, 0); }
+            });
+        }
+
+        // Cached mute state — never blocks; refreshes off-thread. Use in per-frame/poll paths.
+        public static bool IsMutedCached() { EnsureCacheFreshAsync(); lock (_cacheLock) return _cachedMuted; }
+
+        // Cached effective volume 0..1 (0 when muted) — never blocks. Use in per-frame/poll paths.
+        public static double GetEffectiveVolumeCached()
+        {
+            EnsureCacheFreshAsync();
+            lock (_cacheLock) return _cachedMuted ? 0.0 : _cachedVolume;
+        }
+
+        // Invalidate the cache so the next read reflects a change we just made (mute/duck toggle).
+        public static void InvalidateMuteVolumeCache()
+        {
+            lock (_cacheLock) _cacheStampUtc = DateTime.MinValue;
         }
 
         // Reads Spotify's current session mute state (false if not found).
