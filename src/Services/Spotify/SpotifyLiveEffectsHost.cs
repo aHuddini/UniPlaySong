@@ -103,21 +103,27 @@ namespace UniPlaySong.Services.Spotify
         {
             try
             {
-                // UNCONDITIONAL — do not read-then-decide. Spotify's session volume reads are
-                // unreliable mid-teardown (the earlier read-gated version logged "volume already
-                // normal" and skipped the restore while Spotify was still ducked). At process exit
-                // we can't leave Spotify quiet under any circumstance, so always: clear the mute
-                // flag AND force session volume back to the saved pre-duck level (full if unknown).
-                // Retry a few times — the session enumeration can transiently miss during shutdown.
+                // We CAN restore — the trick is not dying before Windows commits it. A WASAPI
+                // SetMasterVolume/SetMute call returns success the instant it's accepted, but the
+                // audio engine applies it a few ms later on its own thread. At process exit that
+                // window is fatal: the process terminates before the change lands, so Spotify stays
+                // ducked/muted. Fix: set, then READ BACK and confirm the value actually took — only
+                // stop once the session reports the restored level AND unmuted. This both proves it
+                // landed and holds the process the extra beat Windows needs to commit.
                 float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
-                bool okMute = false, okVol = false;
-                for (int attempt = 0; attempt < 5 && !(okMute && okVol); attempt++)
+                bool confirmed = false;
+                for (int attempt = 0; attempt < 12 && !confirmed; attempt++)
                 {
-                    if (!okMute) okMute = SpotifyAudioSession.SetMuted(false);
-                    if (!okVol) okVol = SpotifyAudioSession.SetSessionVolume(restore);
-                    if (!(okMute && okVol)) Thread.Sleep(40);
+                    SpotifyAudioSession.SetMuted(false);
+                    SpotifyAudioSession.SetSessionVolume(restore);
+                    Thread.Sleep(25); // give the audio engine time to apply before we read back
+
+                    bool muted = SpotifyAudioSession.IsMuted();
+                    float now = SpotifyAudioSession.GetSessionVolume(0f);
+                    // Confirmed when unmuted AND volume is at/near the target (not still ducked).
+                    confirmed = !muted && now >= restore * 0.9f && now > DuckVolume * 2;
                 }
-                _fileLogger?.Debug($"[SpotifyFx] exit restore: unmute={okMute} volume->{restore:F4}={okVol}");
+                _fileLogger?.Debug($"[SpotifyFx] exit restore: target={restore:F4} confirmed={confirmed}");
             }
             catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] exit restore failed: {ex.Message}"); }
         }
@@ -140,6 +146,7 @@ namespace UniPlaySong.Services.Spotify
                 float current = SpotifyAudioSession.GetSessionVolume(1f);
                 // Don't save an already-ducked level (e.g. re-entry after a crash) as the restore target.
                 _volumeBeforeDuck = current > DuckVolume * 2 ? current : 1f;
+                _fileLogger?.Debug($"[SpotifyFx] duck: saved pre-duck volume {_volumeBeforeDuck:F4}, ducking to {DuckVolume:F4}");
                 return SpotifyAudioSession.SetSessionVolume(DuckVolume);
             }
 
