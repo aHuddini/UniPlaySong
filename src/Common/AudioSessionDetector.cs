@@ -12,6 +12,34 @@ namespace UniPlaySong.Common
     {
         private static readonly Guid CLSID_MMDeviceEnumerator = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
 
+        // pid -> lowercase process name; GetProcessById is the poll's expensive call, PIDs are
+        // stable per process. ponytail: 30s expiry — a recycled PID can carry a stale name that long.
+        private static readonly Dictionary<uint, string> _pidNameCache = new Dictionary<uint, string>();
+        private static DateTime _pidCacheBuiltUtc = DateTime.MinValue;
+
+        private static string ResolveProcessNameCached(uint pid)
+        {
+            lock (_pidNameCache)
+            {
+                if ((DateTime.UtcNow - _pidCacheBuiltUtc) > TimeSpan.FromSeconds(30))
+                {
+                    _pidNameCache.Clear();
+                    _pidCacheBuiltUtc = DateTime.UtcNow;
+                }
+                if (_pidNameCache.TryGetValue(pid, out var cached)) return cached;
+
+                string name = null;
+                try
+                {
+                    using (var proc = Process.GetProcessById((int)pid))
+                        name = proc.ProcessName.ToLowerInvariant();
+                }
+                catch { }
+                _pidNameCache[pid] = name; // cache failures too — a dead pid stays dead this window
+                return name;
+            }
+        }
+
         // Detects if any non-self audio session is outputting above the peak threshold.
         // detectedProcessName reports which process's session tripped the threshold (or
         // "pid N" if the process can't be resolved) — used by the caller's detection log
@@ -59,30 +87,20 @@ namespace UniPlaySong.Common
                         int isSystemHr = control2.IsSystemSoundsSession();
                         if (isSystemHr == 0) continue;
 
-                        // Check exclusion list by process name
-                        if (excludedProcessNames != null && excludedProcessNames.Count > 0)
-                        {
-                            try
-                            {
-                                var proc = Process.GetProcessById((int)pid);
-                                if (excludedProcessNames.Contains(proc.ProcessName.ToLowerInvariant()))
-                                    continue;
-                            }
-                            catch { }
-                        }
-
-                        // Check audio meter via QI on the session control
+                        // Peak first (cheap COM read); resolve the process name only for a session
+                        // that trips — per-session GetProcessById every tick was a 300-1500ms poll.
                         var meter = control as IAudioMeterInformation;
-                        if (meter != null)
-                        {
-                            meter.GetPeakValue(out float peak);
-                            if (peak > peakThreshold)
-                            {
-                                try { detectedProcessName = Process.GetProcessById((int)pid).ProcessName; }
-                                catch { detectedProcessName = $"pid {pid}"; }
-                                return true;
-                            }
-                        }
+                        if (meter == null) continue;
+                        meter.GetPeakValue(out float peak);
+                        if (peak <= peakThreshold) continue;
+
+                        var name = ResolveProcessNameCached(pid);
+                        if (excludedProcessNames != null && excludedProcessNames.Count > 0
+                            && name != null && excludedProcessNames.Contains(name))
+                            continue;
+
+                        detectedProcessName = name ?? $"pid {pid}";
+                        return true;
                     }
                     catch { }
                     finally

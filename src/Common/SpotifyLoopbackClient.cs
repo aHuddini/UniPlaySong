@@ -19,10 +19,7 @@ namespace UniPlaySong.Common
             private readonly object _lock = new object();
             public RingBuffer(int capacity) { _buf = new byte[capacity]; }
 
-            // Chunked Buffer.BlockCopy (max two segments over the wrap point) instead of a per-byte
-            // loop — the capture writes ~350 KB/s and the mixer reads the same, so per-byte ops under
-            // the lock burned ~700k iterations/sec for no reason. Semantics unchanged: overflow drops
-            // the OLDEST bytes.
+            // Chunked copy, max two segments over the wrap; overflow drops the OLDEST bytes.
             public void Write(byte[] src, int offset, int len)
             {
                 if (len <= 0) return;
@@ -140,6 +137,9 @@ namespace UniPlaySong.Common
             catch { return 0; }
         }
 
+        // Reused marshal buffer — safe: one callback thread, ring copies out synchronously.
+        private byte[] _pcmScratch = new byte[8192];
+
         private void OnPcm(IntPtr user, IntPtr data, int byteCount, int sampleRate, int channels, int bits)
         {
             _lastCallback = DateTime.Now;
@@ -148,9 +148,9 @@ namespace UniPlaySong.Common
                     ? WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channels)  // shim requests IEEE float
                     : new WaveFormat(sampleRate, bits, channels);
             if (data == IntPtr.Zero || byteCount <= 0) return; // silent packet
-            var managed = new byte[byteCount];
-            Marshal.Copy(data, managed, 0, byteCount);
-            _ring.Write(managed, 0, byteCount);
+            if (_pcmScratch.Length < byteCount) _pcmScratch = new byte[byteCount];
+            Marshal.Copy(data, _pcmScratch, 0, byteCount);
+            _ring.Write(_pcmScratch, 0, byteCount);
         }
 
         public void Dispose() => Stop();
