@@ -19,16 +19,37 @@ namespace UniPlaySong.Common
             private readonly object _lock = new object();
             public RingBuffer(int capacity) { _buf = new byte[capacity]; }
 
+            // Chunked Buffer.BlockCopy (max two segments over the wrap point) instead of a per-byte
+            // loop — the capture writes ~350 KB/s and the mixer reads the same, so per-byte ops under
+            // the lock burned ~700k iterations/sec for no reason. Semantics unchanged: overflow drops
+            // the OLDEST bytes.
             public void Write(byte[] src, int offset, int len)
             {
+                if (len <= 0) return;
                 lock (_lock)
                 {
-                    for (int i = 0; i < len; i++)
+                    int cap = _buf.Length;
+                    if (len >= cap)
                     {
-                        if (_count == _buf.Length) { _readPos = (_readPos + 1) % _buf.Length; _count--; } // drop oldest on overflow
-                        _buf[_writePos] = src[offset + i];
-                        _writePos = (_writePos + 1) % _buf.Length; _count++;
+                        // Larger than the whole ring: keep only the newest `cap` bytes.
+                        offset += len - cap;
+                        len = cap;
+                        _readPos = 0; _writePos = 0; _count = 0;
                     }
+
+                    int overflow = _count + len - cap;
+                    if (overflow > 0)
+                    {
+                        _readPos = (_readPos + overflow) % cap; // drop oldest
+                        _count -= overflow;
+                    }
+
+                    int first = Math.Min(len, cap - _writePos);
+                    Buffer.BlockCopy(src, offset, _buf, _writePos, first);
+                    if (len > first)
+                        Buffer.BlockCopy(src, offset + first, _buf, 0, len - first);
+                    _writePos = (_writePos + len) % cap;
+                    _count += len;
                 }
             }
 
@@ -37,13 +58,22 @@ namespace UniPlaySong.Common
             // Always writes `count` bytes; zero-fills whatever the buffer can't supply. Returns count.
             public int Read(byte[] dst, int offset, int count)
             {
+                if (count <= 0) return 0;
                 lock (_lock)
                 {
-                    for (int i = 0; i < count; i++)
+                    int cap = _buf.Length;
+                    int avail = Math.Min(_count, count);
+                    if (avail > 0)
                     {
-                        if (_count > 0) { dst[offset + i] = _buf[_readPos]; _readPos = (_readPos + 1) % _buf.Length; _count--; }
-                        else dst[offset + i] = 0;
+                        int first = Math.Min(avail, cap - _readPos);
+                        Buffer.BlockCopy(_buf, _readPos, dst, offset, first);
+                        if (avail > first)
+                            Buffer.BlockCopy(_buf, 0, dst, offset + first, avail - first);
+                        _readPos = (_readPos + avail) % cap;
+                        _count -= avail;
                     }
+                    if (avail < count)
+                        Array.Clear(dst, offset + avail, count - avail); // underrun -> silence
                     return count;
                 }
             }

@@ -81,6 +81,17 @@ namespace UniPlaySong.Services
                         _spotifyClient?.RequestNowPlaying(np =>
                         {
                             if (_disposed) return;
+                            // Dedupe BEFORE fetching album art: Spotify's SMTC re-fires on every
+                            // position tick (many/sec), and the thumbnail fetch is a COM stream
+                            // open+copy each time. Same track as last publish -> skip it entirely.
+                            // (Read-only check here; _lastPublishedKey is only WRITTEN after a real
+                            // publish below, so a failed/raced fetch can't wedge the dedup.)
+                            {
+                                var t = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
+                                var a = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
+                                var al = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
+                                if ("spotify\n" + t + "\n" + a + "\n" + al == _lastPublishedKey) return;
+                            }
                             _spotifyClient?.RequestAlbumArt(artBytes =>
                             {
                                 if (_disposed) return;

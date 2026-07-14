@@ -354,20 +354,37 @@ namespace UniPlaySong.DeskMediaControl
 
         // Refreshes the Now Playing panel when Spotify's active state or track changes.
         // Shows Spotify track when active; restores the last UPS song when Spotify becomes inactive.
+        // Last Spotify state/track this handler acted on. SMTC re-fires NowPlayingChanged on every
+        // position tick (many/sec); without these each tick did a full UpdateIcons Dispatcher.Invoke
+        // on the UI thread plus a panel refresh — a constant UI-thread drip that hitched themes.
+        private string _lastSpotifyIconKey;
+        private string _lastSpotifyPanelKey;
+
         private void OnSpotifyNowPlayingChanged()
         {
-            // Refresh the play/pause glyph on every Spotify state/track change (this fires on SMTC
-            // playback-state events) so an external Spotify pause/play — or active→inactive — flips
-            // the icon. UpdateIcons reads Spotify's current state and marshals to the UI thread itself.
-            UpdateIcons();
-
+            // Refresh the play/pause glyph only when Spotify's STATE actually changed (play/pause
+            // flip, active/inactive). This event only signals Spotify changes, so gating on the
+            // Spotify snapshot is safe — UPS-side changes drive UpdateIcons from their own events.
             var spotify = _getSpotifyService?.Invoke();
-            if (spotify != null && spotify.IsSpotifyActive)
+            bool active = spotify != null && spotify.IsSpotifyActive;
+            var iconKey = active + "|" + (spotify?.IsSpotifyPlaying ?? false);
+            if (iconKey != _lastSpotifyIconKey)
+            {
+                _lastSpotifyIconKey = iconKey;
+                UpdateIcons();
+            }
+
+            if (active)
             {
                 // Fetch off-thread so we never block the UI with a synchronous SMTC call.
                 // The callback is marshaled back to the UI thread by the client.
                 spotify.RequestNowPlaying(np =>
                 {
+                    // Same track as last panel update -> skip the UI-thread panel refresh.
+                    var panelKey = np.IsEmpty ? string.Empty : (np.Title + "\n" + np.Artist);
+                    if (panelKey == _lastSpotifyPanelKey) return;
+                    _lastSpotifyPanelKey = panelKey;
+
                     if (!np.IsEmpty)
                         _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
                     else
@@ -380,7 +397,9 @@ namespace UniPlaySong.DeskMediaControl
                 return;
             }
 
-            // Spotify became inactive — restore UPS's current song info
+            // Spotify became inactive — restore UPS's current song info (and clear the panel key so
+            // the next Spotify activation always refreshes).
+            _lastSpotifyPanelKey = null;
             var upsSong = _metadataService?.CurrentSongInfo ?? SongInfo.Empty;
             _nowPlayingPanel?.UpdateSongInfo(upsSong);
         }
