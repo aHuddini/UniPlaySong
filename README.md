@@ -20,16 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.5
+## What's New - v1.6.6
 
-### Added
-- **Live Effects, Calm Down, and the Visualizer now work on Spotify.** Reverb/EQ, Calm Down Mode, and the spectrum visualizer used to only touch UniPlaySong's own music — now they run on Spotify too, no theme changes needed. Turn on **Apply Live Effects to Spotify** in the Live Effects tab. Requires Windows 10 build 20348 or newer.
-- **The mute button in Fullscreen themes now works while effects are on Spotify** (e.g. ANIKI ReMake) — mute/unmute cleanly even with Live Effects or Calm Down applied to Spotify.
-
-> **Known limitation:** skipping a Spotify track has no fade — it's an instant cut (a limitation of capturing Spotify). Pause/resume still fade normally.
+### Fixed
+- **Fixed lag issues involving Spotify being opened during specific conditions.**
 
 ### Previous Version
-- **v1.6.4**: Theme mute button fixed — unmuting no longer jumps to full volume (or disables Calm Down), it now works with Spotify, and there's a new `ActiveMediaIsMuted` binding for theme developers.
+- **v1.6.5**: Live Effects, Calm Down, and the Spectrum Visualizer now work on Spotify (not just UniPlaySong's own music). Turn on **Apply Live Effects to Spotify** in the Live Effects tab; requires Windows 10 build 20348 or newer.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

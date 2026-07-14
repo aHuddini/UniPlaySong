@@ -4,6 +4,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.6] - Unreleased
+
+### Fixed
+
+- **Fixed lag issues involving Spotify being opened during specific conditions.** With Spotify radio mode active and Spotify auto-launched by UniPlaySong (not already running), the UI hitched every ~2 seconds. Root cause: the 2s Spotify recompute ran on the UI thread and, through the now-playing snapshot, did two full WASAPI session enumerations (`SpotifyAudioSession.IsMuted()` + `GetEffectiveVolume()`) per tick — ~90ms while Spotify was actively playing (an idle/paused session was fast, hence the play-only symptom). Now the session mute/volume is cached (one enumeration for both, ~1s TTL, refreshed off the UI thread; the getter never blocks), and the cache is invalidated on our own mute/duck so the theme icon still updates immediately. `src/Common/SpotifyAudioSession.cs`, `src/Services/ActiveMedia/ActiveMediaService.cs`.
+
+### Performance
+
+- **Cut the theme-stutter surface in Spotify mode.** The external-audio detector no longer resolves a process name for every audio session every poll tick (it read the peak meter first and only resolved a name on a session that actually tripped, via a 30s pid→name cache) — that per-session `Process.GetProcessById` was a 300-1500ms poll on hook-heavy machines. The now-playing publisher's track dedup now actually fires (it was comparing against a field `Publish()` overwrites), so a same-track SMTC tick no longer wrote a fresh album-art PNG + republished every ~2s. TopPanel icon/panel refresh and the capture ring-buffer copies were also trimmed. `src/Common/AudioSessionDetector.cs`, `src/Common/SpotifyLoopbackClient.cs`, `src/Services/NowPlayingPublisher.cs`, `src/DeskMediaControl/TopPanelMediaControlViewModel.cs`.
+
+### Changed
+
+- **Spotify handed back to Windows on exit + smoother effect transitions.** On Playnite close, Spotify is unconditionally unmuted and its volume restored (read-back confirmed so the change lands before the process dies) — it could previously be left ducked/muted. The engage pop is gone (120ms duck-settle + ring flush before effected output starts). External-audio pause now works in Spotify mode (Spotify's own session is excluded at detection instead of skipping all detections, so real external audio still pauses Spotify radio). `src/Services/Spotify/SpotifyLiveEffectsHost.cs`, `src/Services/NAudioMusicPlayer.cs`, `src/UniPlaySong.cs`.
+
 ## [1.6.5] - Unreleased
 
 ### Added
