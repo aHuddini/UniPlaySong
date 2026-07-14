@@ -25,6 +25,7 @@ namespace UniPlaySong.Services.Spotify
         private bool _drivingSpotify;
         private bool _isActive;
         private bool _disposed;
+        private long _dbgRaiseCount; // DIAG (temporary): NowPlayingChanged fan-out rate
         private SpotifyRadioState _radioState;
         private bool _radioWasOn; // edge-detect radio engage
 
@@ -115,7 +116,16 @@ namespace UniPlaySong.Services.Spotify
             // Raised OUTSIDE the lock. Subscribers marshal to the UI thread (some synchronously);
             // raising while _recomputeLock is held deadlocks against a UI thread that is itself
             // entering Recompute (playback event / timer) — the launch freeze with Spotify radio on.
-            if (raiseNowPlaying) NowPlayingChanged?.Invoke();
+            if (raiseNowPlaying)
+            {
+                // DIAG (temporary): how often the NowPlayingChanged fan-out fires. Every subscriber
+                // (publisher, top panel, effects host) runs on each raise — if this is ~every 2s in
+                // steady radio playback, that's the poll cadence and consumers MUST dedup.
+                _dbgRaiseCount++;
+                if ((_dbgRaiseCount % 10) == 1)
+                    _fileLogger?.Debug($"[Spotify][DIAG] NowPlayingChanged raised x{_dbgRaiseCount} (every raise fans out to publisher+toppanel+effects)");
+                NowPlayingChanged?.Invoke();
+            }
         }
 
         // The Recompute body. Runs under _recomputeLock and returns whether NowPlayingChanged

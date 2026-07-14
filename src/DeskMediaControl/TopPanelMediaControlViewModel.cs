@@ -359,6 +359,8 @@ namespace UniPlaySong.DeskMediaControl
         // on the UI thread plus a panel refresh — a constant UI-thread drip that hitched themes.
         private string _lastSpotifyIconKey;
         private string _lastSpotifyPanelKey;
+        // DIAG (temporary): handler = total NowPlayingChanged calls; icon/panel = actual UI updates.
+        private long _dbgHandlerCount, _dbgIconUpdateCount, _dbgPanelUpdateCount;
 
         private void OnSpotifyNowPlayingChanged()
         {
@@ -367,10 +369,12 @@ namespace UniPlaySong.DeskMediaControl
             // Spotify snapshot is safe — UPS-side changes drive UpdateIcons from their own events.
             var spotify = _getSpotifyService?.Invoke();
             bool active = spotify != null && spotify.IsSpotifyActive;
+            _dbgHandlerCount++; // DIAG
             var iconKey = active + "|" + (spotify?.IsSpotifyPlaying ?? false);
             if (iconKey != _lastSpotifyIconKey)
             {
                 _lastSpotifyIconKey = iconKey;
+                _log?.Invoke($"[TopPanel][DIAG] icon UI update #{++_dbgIconUpdateCount} (of {_dbgHandlerCount} handler calls) — should be rare");
                 UpdateIcons();
             }
 
@@ -384,6 +388,7 @@ namespace UniPlaySong.DeskMediaControl
                     var panelKey = np.IsEmpty ? string.Empty : (np.Title + "\n" + np.Artist);
                     if (panelKey == _lastSpotifyPanelKey) return;
                     _lastSpotifyPanelKey = panelKey;
+                    _log?.Invoke($"[TopPanel][DIAG] panel UI update #{++_dbgPanelUpdateCount} track='{np.Title}' — should be once per track");
 
                     if (!np.IsEmpty)
                         _nowPlayingPanel?.UpdateSongInfo(new SongInfo(string.Empty, np.Title, np.Artist, np.Duration));
