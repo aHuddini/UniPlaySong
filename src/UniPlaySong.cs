@@ -1141,6 +1141,10 @@ namespace UniPlaySong
             if (_spotifyControlService != null)
                 _spotifyControlService.NowPlayingChanged -= OnSpotifyStateChangedForEffects;
             _spotifyEffectsHost?.Shutdown();
+            // Safety net: hand Spotify back to Windows unmuted + at normal volume regardless of
+            // coordinator state — the theme mute button can mute independently of the effects duck,
+            // and a state desync must never leave Spotify silent after Playnite closes.
+            _spotifyEffectsHost?.RestoreSpotifyForExit();
             _spotifyEffectsHost = null;
             _spotifyControlService?.Dispose();
             _spotifyControlService = null;

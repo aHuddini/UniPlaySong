@@ -93,6 +93,33 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
+        // Unconditional safety net for process exit: hand Spotify back to Windows in a usable
+        // state no matter what the coordinator thinks. Clears the WASAPI mute flag (which the
+        // theme mute button — SpotifyAudioSession.ToggleMute — can set independently of the
+        // effects duck) AND restores session volume if it's still ducked. Called from
+        // OnApplicationStopped after Shutdown(), so even a state desync or a mute set outside the
+        // coordinator can't leave Spotify muted/silent after Playnite closes.
+        public void RestoreSpotifyForExit()
+        {
+            try
+            {
+                SpotifyAudioSession.SetMuted(false);
+                // If volume still reads ducked, raise it back to the saved pre-duck level (or full).
+                float now = SpotifyAudioSession.GetSessionVolume(1f);
+                if (now <= DuckVolume * 2)
+                {
+                    float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
+                    SpotifyAudioSession.SetSessionVolume(restore);
+                    _fileLogger?.Debug($"[SpotifyFx] exit restore: unmuted + volume {now:F4} -> {restore:F4}");
+                }
+                else
+                {
+                    _fileLogger?.Debug("[SpotifyFx] exit restore: unmuted (volume already normal)");
+                }
+            }
+            catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] exit restore failed: {ex.Message}"); }
+        }
+
         // --- coordinator collaborator funcs (all called under _gate) ---
 
         // "Mute" is implemented as a volume DUCK, not a session mute: the process-loopback tap
