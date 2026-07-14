@@ -26,6 +26,9 @@ namespace UniPlaySong.Services
         // same track (Spotify re-publishes every couple seconds) does NOT re-fire, and a one-shot
         // UI-thread timer that flips IsMusicChanged back to false shortly after each real change.
         private string _lastPublishedKey;
+        // Spotify-track dedup key (title\nartist\nalbum). Separate from _lastPublishedKey, which
+        // Publish() overwrites in its own format for the IsMusicChanged pulse.
+        private string _lastSpotifyTrackKey;
         private DispatcherTimer _musicChangedResetTimer;
         // Short by design: only the true→false edge matters (a theme runs its own visible-duration
         // timer). Long enough that the true state is observed, short enough to re-arm quickly.
@@ -82,15 +85,17 @@ namespace UniPlaySong.Services
                         {
                             if (_disposed) return;
                             // Dedupe BEFORE fetching album art: Spotify's SMTC re-fires on every
-                            // position tick (many/sec), and the thumbnail fetch is a COM stream
+                            // position tick / 2s refresh, and the thumbnail fetch is a COM stream
                             // open+copy each time. Same track as last publish -> skip it entirely.
-                            // (Read-only check here; _lastPublishedKey is only WRITTEN after a real
-                            // publish below, so a failed/raced fetch can't wedge the dedup.)
+                            // MUST use its own field: Publish() overwrites _lastPublishedKey with a
+                            // different key format (title++artist for the IsMusicChanged pulse),
+                            // which silently defeated an earlier _lastPublishedKey-based check and
+                            // left the 2s republish (disk write + theme image reload) running.
                             {
                                 var t = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
                                 var a = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
                                 var al = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
-                                if ("spotify\n" + t + "\n" + a + "\n" + al == _lastPublishedKey) return;
+                                if (t + "\n" + a + "\n" + al == _lastSpotifyTrackKey) return;
                             }
                             _spotifyClient?.RequestAlbumArt(artBytes =>
                             {
@@ -114,15 +119,14 @@ namespace UniPlaySong.Services
                                         ? string.Empty
                                         : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
 
-                                    // Dedupe by track identity. Spotify's SMTC re-fires NowPlayingChanged
-                                    // on every position/state tick (many times per second), and without
-                                    // this each tick wrote a fresh album-art PNG to disk and republished a
-                                    // new path — hammering disk I/O and forcing the theme's now-playing
-                                    // <Image> to decode/reload constantly, which visibly slowed the theme.
-                                    // Same track since last publish => nothing to do.
-                                    var key = "spotify\n" + title + "\n" + artist + "\n" + album;
-                                    if (key == _lastPublishedKey) return;
-                                    _lastPublishedKey = key;
+                                    // Dedupe by track identity (own field — see the pre-fetch check
+                                    // above for why _lastPublishedKey cannot be used here). Same track
+                                    // since last publish => skip the PNG write + republish that were
+                                    // hammering disk I/O and forcing the theme's now-playing <Image>
+                                    // to decode/reload every 2s tick.
+                                    var key = title + "\n" + artist + "\n" + album;
+                                    if (key == _lastSpotifyTrackKey) return;
+                                    _lastSpotifyTrackKey = key;
 
                                     var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
                                     if (string.IsNullOrEmpty(artPath))
@@ -143,6 +147,10 @@ namespace UniPlaySong.Services
                         });
                         return; // publish happens in the async callbacks above
                     }
+
+                    // Not the Spotify path: clear the Spotify dedup key so the next Spotify
+                    // activation always publishes fresh.
+                    _lastSpotifyTrackKey = null;
 
                     var song = _metadata?.CurrentSongInfo;
                     if (song != null && !song.IsEmpty)
