@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.6/UniPlaySong-1_6_6.pext'
     Changelog:
       - '[Critical Fix] Fixed lag issues involving Spotify being opened during specific conditions.'
+      - '[Fixed] "Pause when other audio plays" now pauses Spotify when audio plays from another app while Spotify is your radio source.'
   - Version: 1.6.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-13
