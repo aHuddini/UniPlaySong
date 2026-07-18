@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.7
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-17
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.7/UniPlaySong-1_6_7.pext'
+    Changelog:
+      - '[Improved] Prepared UniPlaySong to integrate with the new upcoming plugin, FullReel. External pause/play commands now fully control Spotify when it''s your radio source.'
+      - '[Fixed] Spotify no longer auto-resumes over a held external pause when other audio starts and stops (e.g. pausing a video in another plugin).'
   - Version: 1.6.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-14

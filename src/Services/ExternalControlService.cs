@@ -14,6 +14,7 @@ namespace UniPlaySong.Services
         private readonly IPlayniteAPI _api;
         private readonly JingleService _jingleService;
         private readonly System.Func<UniPlaySongSettings> _getSettings;
+        private readonly System.Func<Spotify.SpotifyControlService> _getSpotify;
         private const string NotificationPrefix = "UniPlaySong_ExtCtrl";
 
         public ExternalControlService(
@@ -21,13 +22,15 @@ namespace UniPlaySong.Services
             IActiveMediaService activeMedia,
             IPlayniteAPI api,
             JingleService jingleService = null,
-            System.Func<UniPlaySongSettings> getSettings = null)
+            System.Func<UniPlaySongSettings> getSettings = null,
+            System.Func<Spotify.SpotifyControlService> getSpotify = null)
         {
             _playbackService = playbackService;
             _activeMedia = activeMedia;
             _api = api;
             _jingleService = jingleService;
             _getSettings = getSettings;
+            _getSpotify = getSpotify;
         }
 
         public void HandleCommand(PlayniteUriEventArgs args)
@@ -42,13 +45,27 @@ namespace UniPlaySong.Services
 
             switch (command)
             {
+                // When Spotify is the active radio source, the URI pause/play must reach SPOTIFY
+                // (via the manual-pause hold, so radio recompute and the external-audio detector
+                // won't auto-resume it) — UPS's own player is silent in that mode. Integrations
+                // like FullReel rely on pause meaning "whatever UPS is playing stays quiet".
                 case "play":
-                    _playbackService.NotifyManualStart();
-                    _playbackService.Resume();
+                    {
+                        var spotify = _getSpotify?.Invoke();
+                        if (spotify != null && spotify.IsSpotifyActive)
+                            spotify.ManualResume();
+                        _playbackService.NotifyManualStart();
+                        _playbackService.Resume();
+                    }
                     break;
 
                 case "pause":
-                    _playbackService.Pause();
+                    {
+                        var spotify = _getSpotify?.Invoke();
+                        if (spotify != null && spotify.IsSpotifyActive)
+                            spotify.ManualPause();
+                        _playbackService.Pause();
+                    }
                     break;
 
                 case "playpausetoggle":

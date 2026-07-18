@@ -152,17 +152,29 @@ namespace UniPlaySong.Services.Spotify
 
                 if (radioActive)
                 {
-                    // Not-yet-started counts as a lifecycle pause: holds the engage seed (Pause +
-                    // LifecyclePausedByUps) until OnApplicationStarted, so the radio starts exactly
-                    // once when the app is actually visible instead of during startup churn.
-                    bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false;
-                    bool spotifyPlaying = _client.IsPlaying;
-                    var (action, next) = SpotifyRadioDecision.Decide(
-                        radioOn: true, lifecyclePaused: lifecyclePaused,
-                        spotifyIsPlaying: spotifyPlaying, prev: _radioState);
-                    _radioState = next;
-                    if (action == SpotifyRadioAction.Play) _client.TryResume();   // non-blocking post
-                    else if (action == SpotifyRadioAction.Pause) _client.TryPause();
+                    // Manual pause hold (URI pause from FullReel, or an explicit ManualPause):
+                    // fully hands-off — the lifecycle state machine below would otherwise convert
+                    // an external-audio blip into a "UPS-owned pause" and dutifully RESUME Spotify
+                    // when the blip ends (e.g. the user pausing a FullReel video), trampling the
+                    // held pause. ManualResume clears the hold and restarts playback itself.
+                    if (_manualPauseHold)
+                    {
+                        // Intentionally no Decide/act this tick.
+                    }
+                    else
+                    {
+                        // Not-yet-started counts as a lifecycle pause: holds the engage seed (Pause +
+                        // LifecyclePausedByUps) until OnApplicationStarted, so the radio starts exactly
+                        // once when the app is actually visible instead of during startup churn.
+                        bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false;
+                        bool spotifyPlaying = _client.IsPlaying;
+                        var (action, next) = SpotifyRadioDecision.Decide(
+                            radioOn: true, lifecyclePaused: lifecyclePaused,
+                            spotifyIsPlaying: spotifyPlaying, prev: _radioState);
+                        _radioState = next;
+                        if (action == SpotifyRadioAction.Play) _client.TryResume();   // non-blocking post
+                        else if (action == SpotifyRadioAction.Pause) _client.TryPause();
+                    }
                 }
                 raiseNowPlaying = raiseNowPlaying || radioActive;
 
@@ -304,6 +316,36 @@ namespace UniPlaySong.Services.Spotify
                 // active music; harmless otherwise since the hold is checked alongside `active`).
                 // If it was paused we just resumed → release any hold.
                 _manualPauseHold = wasPlaying && _isActive;
+            }
+        }
+
+        // Explicit manual pause/resume (URI integrations like FullReel — a toggle would flip the
+        // wrong way if the state already matches). Same manual-pause-hold semantics as the toggle:
+        // pausing sets the hold so radio recompute won't auto-resume; resuming clears it.
+        public void ManualPause()
+        {
+            if (_disposed || _client == null) return;
+            lock (_recomputeLock)
+            {
+                _client.TryPause();
+                _manualPauseHold = _isActive;
+                // Sync the radio machine: this is a user pause, NOT a UPS lifecycle pause — so
+                // when the hold clears, the machine doesn't think it owes anyone a resume.
+                _radioState = new SpotifyRadioState { LifecyclePausedByUps = false, UserPausedExternally = true };
+                _fileLogger?.Debug($"[Spotify] ManualPause (URI): hold={_manualPauseHold}, active={_isActive}");
+            }
+        }
+
+        public void ManualResume()
+        {
+            if (_disposed || _client == null) return;
+            lock (_recomputeLock)
+            {
+                _manualPauseHold = false;
+                _client.TryResume();
+                // Playing again with no pending pauses — reset the radio machine to a clean state.
+                _radioState = new SpotifyRadioState { LifecyclePausedByUps = false, UserPausedExternally = false };
+                _fileLogger?.Debug("[Spotify] ManualResume (URI): hold cleared");
             }
         }
 

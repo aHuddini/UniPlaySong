@@ -4,7 +4,19 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.6.6] - Unreleased
+## [1.6.7] - 2026-07-17
+
+Prepare UniPlaySong to integrate with the new upcoming plugin, **FullReel**.
+
+### Improved
+
+- **URI pause/play now controls Spotify when it's the active radio source.** `playnite://uniplaysong/pause` previously paused only UPS's own (silent, in radio mode) player, leaving Spotify to the external-audio detector — so integrations like FullReel couldn't reliably silence music. `pause` now routes to Spotify via a new `SpotifyControlService.ManualPause()` (explicit, not a toggle) that sets the manual-pause hold; `play` clears it via `ManualResume()`. `src/Services/ExternalControlService.cs`, `src/Services/Spotify/SpotifyControlService.cs`.
+
+### Fixed
+
+- **Spotify no longer auto-resumes over a held URI pause.** The radio-mode lifecycle state machine converted an external-audio blip (e.g. pausing a FullReel video) into a "UPS-owned pause" and dutifully resumed Spotify when the blip ended — trampling the held pause. The radio path now goes fully hands-off while the manual hold is set, and ManualPause/ManualResume sync the radio state so the machine never "owes" a resume afterward.
+
+## [1.6.6] - 2026-07-14
 
 ### Fixed
 

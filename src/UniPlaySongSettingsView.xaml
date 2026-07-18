@@ -4739,7 +4739,10 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Fixed lag issues involving Spotify being opened during specific conditions.
+                                <Run FontWeight="SemiBold">Improved:</Run> Prepared UniPlaySong to integrate with the new upcoming plugin, FullReel — external pause/play commands now fully control Spotify radio.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Spotify no longer auto-resumes over a held external pause when other audio starts and stops.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

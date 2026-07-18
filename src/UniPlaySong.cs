@@ -2930,7 +2930,8 @@ namespace UniPlaySong
             // playpausetoggle/togglemute) can route through it; UPS-specific commands
             // (play/pause/stop/restart/volume) still go straight to _playbackService.
             _externalControlService = new Services.ExternalControlService(
-                _playbackService, _activeMediaService, _api, _jingleService, () => _settings);
+                _playbackService, _activeMediaService, _api, _jingleService, () => _settings,
+                () => _spotifyControlService);
 
             // 1s position poll — runs ONLY while there is active media and it is playing.
             _activeMediaPollTimer = new System.Windows.Threading.DispatcherTimer(

@@ -20,13 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.6
+## What's New - v1.6.7
 
-### Fixed
-- **Fixed lag issues involving Spotify being opened during specific conditions.**
+### Improved
+- **Prepared UniPlaySong to integrate with the upcoming FullReel plugin.** External pause/play commands now fully control Spotify when it's your radio source — music pauses and stays paused while another plugin (like FullReel's video player) asks it to, then resumes when it's done.
 
 ### Previous Version
-- **v1.6.5**: Live Effects, Calm Down, and the Spectrum Visualizer now work on Spotify (not just UniPlaySong's own music). Turn on **Apply Live Effects to Spotify** in the Live Effects tab; requires Windows 10 build 20348 or newer.
+- **v1.6.6**: Fixed lag issues involving Spotify being opened during specific conditions.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
