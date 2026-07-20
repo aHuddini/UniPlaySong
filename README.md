@@ -20,13 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.7
+## What's New - v1.6.8
 
-### Improved
-- **Prepared UniPlaySong to integrate with the upcoming FullReel plugin.** External pause/play commands now fully control Spotify when it's your radio source — music pauses and stays paused while another plugin (like FullReel's video player) asks it to, then resumes when it's done.
+### Docs
+- **Theme achievement sounds: name the files with one-word rarities.** If a theme provides per-rarity unlock sounds, the files in `audio/Achievements/` must be named `common`, `uncommon`, `rare`, `ultrarare`, `capstone` — one word, no hyphen or space. `Ultra-Rare.wav` won't be recognized (rename it `ultrarare.wav`); this was why some theme packs only played 4 of the 5 rarities.
 
 ### Previous Version
-- **v1.6.6**: Fixed lag issues involving Spotify being opened during specific conditions.
+- **v1.6.7**: Prepared UniPlaySong to integrate with the upcoming FullReel plugin — external pause/play now fully controls Spotify as a radio source.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

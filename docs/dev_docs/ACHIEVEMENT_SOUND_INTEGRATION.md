@@ -133,6 +133,21 @@ Custom        -> {Rarity}AchievementSoundPath (if set + exists)
                  ?? PA Starter Pack file for {rarity}
 ```
 
+The `{rarity}` filename basename is matched **exactly** (case-insensitive), so a theme's
+`audio/Achievements/` files must be named with these exact single-word basenames — no hyphen, no
+space, no separators:
+
+| Rarity    | Sound file (any of `.wav .mp3 .ogg .flac`) |
+|-----------|--------------------------------------------|
+| Common    | `common.wav`                               |
+| Uncommon  | `uncommon.wav`                             |
+| Rare      | `rare.wav`                                 |
+| UltraRare | `ultrarare.wav`                            |
+| Capstone  | `capstone.wav`                             |
+
+`ultrarare` is one word — `Ultra-Rare.wav` or `Ultra Rare.wav` will NOT match (the hyphen/space
+breaks the exact-name lookup) and that rarity silently falls back to the PA Starter Pack sound.
+
 If the pack yields nothing, the event falls back to the **master default sound**
 (`AchievementSoundType` / `SelectedAchievementJingle` / `AchievementSoundPath`, or a system beep). The
 master event itself still goes through `GetConfigForEvent` → `MasterAchievementConfig`. All achievement

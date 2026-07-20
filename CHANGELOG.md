@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.8] - 2026-07-20
+
+### Docs
+
+- **Clarified theme achievement-sound filenames.** Themes providing per-rarity sounds must name the files with the exact one-word rarity basenames in `audio/Achievements/` — `common`, `uncommon`, `rare`, `ultrarare`, `capstone` (`.wav/.mp3/.ogg/.flac`). The lookup matches the basename exactly (case-insensitive), so a separator breaks it: `Ultra-Rare.wav` / `Ultra Rare.wav` do NOT match and that rarity silently falls back to the PA Starter Pack sound. This only affects `ultrarare` (the sole multi-word rarity) — some theme packs shipped `Ultra-Rare.wav` and lost only that tier ("4/5 recognized"). Rename to `ultrarare.wav`. The rarity's user-facing display label stays "Ultra-Rare" (matching Playnite Achievements); only the file basename is one word. `docs/dev_docs/ACHIEVEMENT_SOUND_INTEGRATION.md`.
+
 ## [1.6.7] - 2026-07-17
 
 Prepare UniPlaySong to integrate with the new upcoming plugin, **FullReel**.
