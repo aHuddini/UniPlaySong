@@ -3547,8 +3547,11 @@
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,15"/>
 
+                            <!-- OneWay is load-bearing: TwoWay here ping-ponged with the radio below via
+                                 InverseBooleanConverter.ConvertBack until the UI stack overflowed (v1.6.8 crash).
+                                 The "custom" radio's TwoWay binding is the sole writer for this group. -->
                             <RadioButton Content="Use bundled database"
-                                         IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}}"
+                                         IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}, Mode=OneWay}"
                                          GroupName="HintsDatabase"
                                          Margin="0,5,0,5"/>
 

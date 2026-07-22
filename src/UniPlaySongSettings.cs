@@ -299,6 +299,20 @@ namespace UniPlaySong
 
     public class UniPlaySongSettings : ObservableObject
     {
+        // v1.6.8 crash tripwire. Reopening the settings dialog after a save StackOverflowed WPF
+        // (0xc00000fd) via a two-way binding feedback loop re-entering these setters. This hides the
+        // SDK's non-virtual OnPropertyChanged with a depth-guarded version: normal notification is
+        // unaffected (fan-out depth is 1-3), but a runaway loop is broken at depth 25 — well below the
+        // ~thousands of frames that overflow the UI stack — and logged with the offending property.
+        [System.ThreadStatic] private static int _pcDepth;
+        public new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string name = null)
+        {
+            if (_pcDepth > 25) { Common.CrashProbe.PropertyLoop(name, _pcDepth); return; }
+            _pcDepth++;
+            try { base.OnPropertyChanged(name); }
+            finally { _pcDepth--; }
+        }
+
         private bool enableMusic = true;
         private AudioState musicState = AudioState.Always;
         private bool autoPlayOnFirstLaunchDesktop = true;
@@ -1702,7 +1716,9 @@ namespace UniPlaySong
         public bool UseCustomHintsDatabase
         {
             get => useCustomHintsDatabase;
-            set { useCustomHintsDatabase = value; OnPropertyChanged(); }
+            // Equality-guarded: this property sat in the HintsDatabase radio-group binding loop
+            // (v1.6.8 reopen StackOverflow) — never re-raise PropertyChanged for an unchanged value.
+            set { if (useCustomHintsDatabase == value) return; useCustomHintsDatabase = value; OnPropertyChanged(); }
         }
 
         public string CustomHintsDatabasePath

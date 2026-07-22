@@ -27,6 +27,7 @@ namespace UniPlaySong
         // NowPlayingPublisher writes, exposed via UniPlaySong.Settings) while the card is shown,
         // and unsubscribes when it unloads so the handler doesn't outlive the dialog.
         private System.ComponentModel.INotifyPropertyChanged _liveSettingsForPreview;
+        private System.Windows.Window _previewHostWindow;
 
         private void NowPlayingPreview_OnLoaded(object sender, System.Windows.RoutedEventArgs e)
         {
@@ -38,15 +39,32 @@ namespace UniPlaySong
                 _liveSettingsForPreview = inpc;
                 inpc.PropertyChanged += LiveSettings_PropertyChanged;
                 vm.RefreshNowPlayingPreview(); // initial paint
+
+                // WPF does NOT reliably raise Unloaded when Playnite closes its settings window, so this
+                // subscription — and via it the whole view — would leak. Each reopen then stacks another
+                // stale view onto the one cached VM, and their binding updates re-enter until the 1 MB UI
+                // stack overflows (0xc00000fd). The host Window's Closed DOES fire, so release there too.
+                _previewHostWindow = System.Windows.Window.GetWindow(this);
+                if (_previewHostWindow != null) _previewHostWindow.Closed += PreviewHost_OnClosed;
             }
         }
 
-        private void NowPlayingPreview_OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
+        private void PreviewHost_OnClosed(object sender, System.EventArgs e) => ReleaseNowPlayingPreview();
+
+        private void NowPlayingPreview_OnUnloaded(object sender, System.Windows.RoutedEventArgs e) => ReleaseNowPlayingPreview();
+
+        // Idempotent: safe to call from Unloaded AND the host Window's Closed (whichever fires).
+        private void ReleaseNowPlayingPreview()
         {
             if (_liveSettingsForPreview != null)
             {
                 _liveSettingsForPreview.PropertyChanged -= LiveSettings_PropertyChanged;
                 _liveSettingsForPreview = null;
+            }
+            if (_previewHostWindow != null)
+            {
+                _previewHostWindow.Closed -= PreviewHost_OnClosed;
+                _previewHostWindow = null;
             }
         }
 

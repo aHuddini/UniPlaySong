@@ -24,6 +24,18 @@ namespace UniPlaySong
         private double _previewVolume;
         private CancellationTokenSource _audioScanCts;
 
+        // v1.6.8 crash tripwire — same depth guard as UniPlaySongSettings. The settings-reopen
+        // StackOverflow (0xc00000fd, WPF binding layer) could route through the VM's own
+        // notifications (e.g. the now-playing preview refresh); break + log a runaway loop here too.
+        [System.ThreadStatic] private static int _pcDepth;
+        public new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string name = null)
+        {
+            if (_pcDepth > 25) { Common.CrashProbe.PropertyLoop("VM:" + name, _pcDepth); return; }
+            _pcDepth++;
+            try { base.OnPropertyChanged(name); }
+            finally { _pcDepth--; }
+        }
+
         public UniPlaySongSettingsViewModel(UniPlaySong plugin)
         {
             this.plugin = plugin;
@@ -3153,7 +3165,10 @@ namespace UniPlaySong
             var savedSettings = plugin.LoadPluginSettings<UniPlaySongSettings>();
             if (savedSettings != null)
             {
-                settings = savedSettings;
+                // Go through the Settings PROPERTY (not the field): the setter unsubscribes
+                // OnSettingsPropertyChanged from the discarded object and re-subscribes to this one.
+                // Direct-assigning the field left the old settings object subscribed forever (leak).
+                Settings = savedSettings;
                 // DefaultMusicPath is NOT modified - it remains separate and untouched
             }
         }

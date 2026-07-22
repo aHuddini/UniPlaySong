@@ -4,7 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.6.8] - 2026-07-20
+## [1.6.8] - 2026-07-21
+
+### Fixed
+
+- **Settings-dialog reopen crash (silent Playnite kill).** Reopening UniPlaySong settings after a save could freeze and kill Playnite with nothing in the logs. Root cause: the "Search Hint Database" radio pair — two RadioButtons in one group, both TwoWay-bound to `UseCustomHintsDatabase`, one through `InverseBooleanConverter`. WPF's radio-group uncheck pushed an inverted value back through `ConvertBack`, the setter re-raised `PropertyChanged` for the unchanged value, and the two bindings ping-ponged until the 1 MB UI stack overflowed (0xc00000fd — uncatchable, hence no log; the only inverse-bool radio pair in the plugin, since `EnumToBooleanConverter` returns `Binding.DoNothing` on uncheck). Fix: the inverse-bound radio is now `Mode=OneWay` (the direct radio's TwoWay binding is the group's sole writer) and the setter is equality-guarded. A permanent depth-guard tripwire (`Common/CrashProbe.cs` + guarded `OnPropertyChanged` in settings and view model) now breaks and logs any future notification loop instead of crashing. `src/UniPlaySongSettingsView.xaml`, `src/UniPlaySongSettings.cs`.
+- **Settings-window subscription leak.** WPF doesn't reliably raise `Unloaded` when Playnite closes the settings window, so the now-playing preview's `PropertyChanged` subscription — and through it the whole closed view — leaked on every reopen. The subscription is now also released on the host window's `Closed` (idempotent with `Unloaded`). `LoadSettings` also re-assigns through the `Settings` property instead of the backing field, so the discarded settings object is unsubscribed rather than leaked. `src/UniPlaySongSettingsView.xaml.cs`, `src/UniPlaySongSettingsViewModel.cs`.
 
 ### Docs
 
