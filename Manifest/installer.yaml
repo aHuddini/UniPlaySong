@@ -5,10 +5,11 @@ Packages:
     ReleaseDate: 2026-07-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.8/UniPlaySong-1_6_8.pext'
     Changelog:
-      - '[Critical Fix] With "Pause on focus loss" enabled, game music no longer restarts from the beginning when you return to Playnite — it resumes where it left off (desktop and fullscreen).'
+      - '[Critical Fix] With "Pause on focus loss" enabled, game music no longer pause and restarts from the beginning when you return to Playnite — it resumes where it left off (desktop and fullscreen).'
       - '[Critical Fix] Music could get stuck paused after focus changes with the play button appearing dead — the top panel and external play commands now always resume.'
       - '[Critical Fix] Fixed a crash where reopening UniPlaySong settings after saving could freeze and kill Playnite with no error logged.'
       - '[Fixed] The settings window no longer leaks resources each time it is opened and closed.'
+      - '[Fix Attempt] When automatic music download fails for newly added games, the notification now names the failed games (not just a count) so you can retry them manually, and shows as an error so it''s harder to miss (issue #87).'
       - '[Docs] Theme achievement sounds must use one-word rarity filenames (common, uncommon, rare, ultrarare, capstone) — "Ultra-Rare.wav" is not recognized; rename it "ultrarare.wav".'
   - Version: 1.6.7
     RequiredApiVersion: 6.16.0

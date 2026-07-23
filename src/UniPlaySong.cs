@@ -915,6 +915,7 @@ namespace UniPlaySong
             var successCount = 0;
             var skipCount = 0;
             var failCount = 0;
+            var failedGames = new List<string>(); // issue #87: name the failures in the notification
 
             foreach (var game in games)
             {
@@ -936,6 +937,7 @@ namespace UniPlaySong
                     else
                     {
                         failCount++;
+                        failedGames.Add(game.Name);
                     }
 
                     // Rate limiting: wait between downloads to avoid throttling
@@ -945,6 +947,7 @@ namespace UniPlaySong
                 {
                     _fileLogger?.Error($"AutoDownload: Error processing '{game.Name}' - {ex.Message}", ex);
                     failCount++;
+                    failedGames.Add(game.Name);
                 }
             }
 
@@ -953,7 +956,9 @@ namespace UniPlaySong
             if (successCount > 0)
                 PlayDownloadCompleteSound();
 
-            // Show notification with results
+            // Show notification with results. Failures name the affected games (issue #87) —
+            // a bare count gave users nothing to act on — and use the Error type so they
+            // stand out in Playnite's notification panel instead of blending in as Info.
             if (successCount > 0 || failCount > 0)
             {
                 Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
@@ -962,10 +967,19 @@ namespace UniPlaySong
                                   $"• Downloaded: {successCount}\n" +
                                   $"• Skipped (already have music): {skipCount}\n" +
                                   $"• Failed: {failCount}";
+                    if (failedGames.Count > 0)
+                    {
+                        const int maxNames = 8; // keep the toast readable on big library imports
+                        var names = string.Join(", ", failedGames.Take(maxNames));
+                        if (failedGames.Count > maxNames)
+                            names += $" (+{failedGames.Count - maxNames} more)";
+                        message += $"\n• Failed games: {names}\n" +
+                                   "Retry via right-click → UniPlaySong → Download Music.";
+                    }
                     _api.Notifications.Add(new NotificationMessage(
                         "UniPlaySong_AutoDownload",
                         message,
-                        NotificationType.Info));
+                        failCount > 0 ? NotificationType.Error : NotificationType.Info));
                 }));
             }
         }

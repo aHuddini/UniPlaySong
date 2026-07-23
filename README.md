@@ -27,6 +27,9 @@ Built with the help of Claude Code and Cursor IDE
 - **Settings crash fixed.** Reopening UniPlaySong's settings after saving could freeze and crash Playnite with no error message. Settings now open instantly, every time.
 - **Settings window cleanup.** The settings window no longer leaks resources each time it's opened and closed.
 
+### Fix Attempt
+- **Fix attempt (issue #87): failed auto-downloads now tell you which games failed.** The notification after automatic music downloads lists the failed game names (not just a count) so you can retry them manually.
+
 ### Docs
 - **Theme achievement sounds: name the files with one-word rarities.** If a theme provides per-rarity unlock sounds, the files in `audio/Achievements/` must be named `common`, `uncommon`, `rare`, `ultrarare`, `capstone` — one word, no hyphen or space. `Ultra-Rare.wav` won't be recognized (rename it `ultrarare.wav`); this was why some theme packs only played 4 of the 5 rarities.
 
