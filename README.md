@@ -23,6 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.6.8
 
 ### Fixed
+- **Music no longer restarts when you come back to Playnite.** With "Pause on focus loss" on, game music now resumes right where it left off instead of starting over — and if it ever gets stuck paused, the play button will always bring it back.
 - **Settings crash fixed.** Reopening UniPlaySong's settings after saving could freeze and crash Playnite with no error message. Settings now open instantly, every time.
 - **Settings window cleanup.** The settings window no longer leaks resources each time it's opened and closed.
 

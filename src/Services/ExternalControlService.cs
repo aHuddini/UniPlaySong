@@ -55,6 +55,11 @@ namespace UniPlaySong.Services
                         if (spotify != null && spotify.IsSpotifyActive)
                             spotify.ManualResume();
                         _playbackService.NotifyManualStart();
+                        // Explicit external play also clears a stale FocusLoss — with the caller's
+                        // window (e.g. FullReel's WebView2) holding Win32 focus, OnApplicationActivate
+                        // never fires for the main window, so Resume() alone would leave FocusLoss
+                        // pinning playback paused.
+                        _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
                         _playbackService.Resume();
                     }
                     break;

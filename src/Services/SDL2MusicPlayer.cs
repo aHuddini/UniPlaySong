@@ -25,6 +25,12 @@ namespace UniPlaySong.Services
         private bool _isDisposed = false;
         private bool _isActive = false;
         private bool _isLoaded = false;
+        // v1.6.8: logical-pause parity with NAudio's _logicallyPaused. Pause() used to just drop
+        // _isActive, making a paused song indistinguishable from a loaded-but-never-started one —
+        // MusicPlaybackService's resume branches (gated on IsActive) then RESTARTED game music from
+        // 0:00 on every focus-loss round-trip instead of resuming. Paused-mid-playback now counts
+        // as active, same as NAudio, so resume routes through the fader's real Resume().
+        private bool _isPausedMidPlayback = false;
         private double _volume = 1.0;
         // issue #81: set when the device is released (idle/lock/suspend) while a song was loaded.
         // SDL frees the decoded music on teardown, so resume must reload from this path + seek back
@@ -133,6 +139,7 @@ namespace UniPlaySong.Services
             }
             _isLoaded = false;
             _isActive = false;
+            _isPausedMidPlayback = false;
             _source = string.Empty;
 
             // Free any preloaded handle too.
@@ -164,7 +171,9 @@ namespace UniPlaySong.Services
 
         public bool IsLoaded => _isLoaded;
 
-        public bool IsActive => _isActive && SDL2Mixer.Mix_PlayingMusic() == 1;
+        // Mix_PlayingMusic() reports 1 for a paused stream, so the paused flag keeps this true
+        // while paused mid-playback (NAudio parity — see _isPausedMidPlayback).
+        public bool IsActive => (_isActive || _isPausedMidPlayback) && SDL2Mixer.Mix_PlayingMusic() == 1;
 
         public TimeSpan? CurrentTime
         {
@@ -323,10 +332,12 @@ namespace UniPlaySong.Services
                 }
 
                 _isActive = true;
+                _isPausedMidPlayback = false;
             }
             catch (Exception ex)
             {
                 _isActive = false;
+                _isPausedMidPlayback = false;
                 _errorHandler?.HandleError(
                     ex,
                     context: "playing SDL2 music",
@@ -338,10 +349,11 @@ namespace UniPlaySong.Services
 
         public void Pause()
         {
-            if (IsActive)
+            if (_isActive && SDL2Mixer.Mix_PlayingMusic() == 1)
             {
                 SDL2Mixer.Mix_PauseMusic();
                 _isActive = false;
+                _isPausedMidPlayback = true;
             }
         }
 
@@ -356,10 +368,12 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            if (!IsActive && _isLoaded)
+            // Mix_ResumeMusic is a documented no-op on music that isn't paused.
+            if (_isLoaded && (_isPausedMidPlayback || !_isActive))
             {
                 SDL2Mixer.Mix_ResumeMusic();
                 _isActive = true;
+                _isPausedMidPlayback = false;
             }
             onReady?.Invoke();
         }
@@ -367,6 +381,7 @@ namespace UniPlaySong.Services
         public void Stop()
         {
             _isActive = false;
+            _isPausedMidPlayback = false;
             SDL2Mixer.Mix_HaltMusic();
         }
 

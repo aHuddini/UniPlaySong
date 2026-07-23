@@ -176,6 +176,13 @@ namespace UniPlaySong.Services
             if (_isPaused)
             {
                 NotifyManualStart();
+                // Explicit user play (top panel / media key) also clears a stale FocusLoss:
+                // if window activation landed in a sibling/WebView2 HWND, OnApplicationActivate's
+                // main-window guard never removes FocusLoss — removing only Manual would leave
+                // _isPaused true and make the play button look dead. Same precedent as the
+                // controller dialog's post-download clear. Order matters: remove FocusLoss first
+                // (no-op resume while Manual still holds), then Manual triggers the actual resume.
+                RemovePauseSource(PauseSource.FocusLoss);
                 RemovePauseSource(PauseSource.Manual);
             }
             else
@@ -363,6 +370,9 @@ namespace UniPlaySong.Services
                 else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
                     _fileLogger?.Debug($"Resume (instant): {source} removed (no pause sources remaining)");
+                    // A faded pause may have left the fader in its paused state; clear it so it
+                    // doesn't later report a stale HasPendingPlayAction (we resume without it here).
+                    _fader?.CancelFade();
                     _musicPlayer.Resume();
                     _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
                     OnPlaybackStateChanged?.Invoke();
@@ -2291,7 +2301,10 @@ namespace UniPlaySong.Services
         {
             try
             {
-                if (ShouldRestartForPreview() && _musicPlayer?.IsActive == true)
+                // !_isPaused: never restart/randomize a preview while any pause source holds
+                // playback (focus loss leaves this timer running, unlike manual Pause) — and with
+                // logical pause both backends now report IsActive while paused.
+                if (ShouldRestartForPreview() && _musicPlayer?.IsActive == true && !_isPaused)
                 {
                     _previewTimer.Stop();
 

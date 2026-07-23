@@ -299,6 +299,10 @@ namespace UniPlaySong.Players
         public void FadeIn()
         {
             _isFadingOut = false;
+            // Callers invoke FadeIn right after (re)starting playback themselves, so the player is
+            // audibly playing — a leftover paused flag here made HasPendingPlayAction go stale-true
+            // on the next Switch(), firing zombie load+plays on later pause-source removals.
+            _isPaused = false;
             _pauseAction = null;
             _stopAction = null;
             _playAction = null;
