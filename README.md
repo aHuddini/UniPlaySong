@@ -28,6 +28,7 @@ Built with the help of Claude Code and Cursor IDE
 - **Settings window cleanup.** The settings window no longer leaks resources each time it's opened and closed.
 
 ### Fix Attempt
+- **Fix attempt (pause on focus loss): music sometimes didn't auto-resume after a long time away.** Returning to Playnite could occasionally leave music paused until you pressed play — focus-return detection is now much more reliable.
 - **Fix attempt (issue #87): failed auto-downloads now tell you which games failed.** The notification after automatic music downloads lists the failed game names (not just a count) so you can retry them manually.
 
 ### Docs

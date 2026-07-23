@@ -205,6 +205,14 @@ namespace UniPlaySong
 
         private System.Windows.Threading.DispatcherTimer _focusVerifyTimer;
         private IntPtr _mainWindowHandle;
+        // Activate-side verify (counterpart of _focusVerifyTimer): when Application.Activated
+        // fires while GetForegroundWindow() still reports another HWND (foreground-transfer race
+        // after a long absence, or activation landing on a Playnite-owned sibling window),
+        // briefly re-poll for the main window instead of bailing — Application.Activated will
+        // NOT re-fire for within-app focus moves, so a one-shot bail stranded FocusLoss.
+        private System.Windows.Threading.DispatcherTimer _activateVerifyTimer;
+        private int _activateVerifyTicks;
+        private Window _mainWindowForActivate; // kept for unsubscribe on dispose
         private readonly System.Text.StringBuilder _classNameBuffer = new System.Text.StringBuilder(256);
 
         // Desktop top panel media control (play/pause button)
@@ -634,7 +642,16 @@ namespace UniPlaySong
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
             if (Application.Current.MainWindow != null)
+            {
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
+                // Also hook the MAIN WINDOW's own Activated: Application.Activated only fires on
+                // app-level inactive→active transitions, so returning to the main window from a
+                // Playnite-owned sibling (overlay/dialog/WebView2) never re-fires it — FocusLoss
+                // stayed stuck and music silently never resumed. Window.Activated does fire for
+                // within-app focus moves; the handler's own guard + verify timer keep it safe.
+                _mainWindowForActivate = Application.Current.MainWindow;
+                _mainWindowForActivate.Activated += OnApplicationActivate;
+            }
 
             _externalAudioPollTimer = new System.Timers.Timer(1500);
             _externalAudioPollTimer.Elapsed += OnExternalAudioPollTick;
@@ -1133,6 +1150,13 @@ namespace UniPlaySong
             // Unsubscribe from focus/minimize/lock events
             Application.Current.Deactivated -= OnApplicationDeactivate;
             Application.Current.Activated -= OnApplicationActivate;
+            if (_mainWindowForActivate != null)
+            {
+                _mainWindowForActivate.Activated -= OnApplicationActivate;
+                _mainWindowForActivate = null;
+            }
+            _activateVerifyTimer?.Stop();
+            _activateVerifyTimer = null;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _sleepCoordinator?.Stop();
@@ -2123,6 +2147,10 @@ namespace UniPlaySong
         // so we poll every 100ms until the foreground resolves to a real window.
         private void OnApplicationDeactivate(object sender, EventArgs e)
         {
+            // A genuine deactivation supersedes any pending activate re-check — without this,
+            // a stale verify tick could resume music right after the user left again.
+            _activateVerifyTimer?.Stop();
+
             if (_settings?.PauseOnFocusLoss != true)
                 return;
 
@@ -2196,12 +2224,23 @@ namespace UniPlaySong
             // Symmetric to the check OnFocusVerifyTick already does on the deactivate side.
             if (_mainWindowHandle != IntPtr.Zero && GetForegroundWindow() != _mainWindowHandle)
             {
-                // A sibling window got focus, not the main window — leave FocusLoss in
-                // place. The next genuine return to the main window will fire this
-                // handler again and pass the check.
+                // Not the main window (yet). This can be a genuine sibling activation
+                // (launcher — stay paused) OR a foreground-transfer race where Windows
+                // still reports the previous app for a few ms. A one-shot bail here
+                // stranded FocusLoss (Application.Activated never re-fires while the app
+                // stays active), so briefly re-poll before giving up (v1.6.8).
+                StartActivateVerify();
                 return;
             }
 
+            CompleteActivationResume();
+        }
+
+        // Clears the focus-loss pause once the main window is confirmed foreground.
+        // Idempotent: RemovePauseSource no-ops when absent, ConvertPauseSource checks
+        // Contains, and ResumeFromSystem is gated on its own system-pause flag.
+        private void CompleteActivationResume()
+        {
             if (_settings?.FocusLossStayPaused == true && _settings?.PauseOnFocusLoss == true)
             {
                 // Atomic swap: FocusLoss → Manual so play button can clear it naturally.
@@ -2214,6 +2253,36 @@ namespace UniPlaySong
                 _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
             }
             _dashboardPlaybackService?.ResumeFromSystem();
+        }
+
+        // Bounded re-check after an activation that didn't land on the main window: polls
+        // every 100ms for up to ~2s. Resolves the foreground-transfer race (clears within a
+        // tick or two) while still leaving FocusLoss in place for a genuine sibling overlay
+        // (launcher) that keeps focus past the window — issue #79 behavior preserved.
+        private void StartActivateVerify()
+        {
+            if (_activateVerifyTimer == null)
+            {
+                _activateVerifyTimer = new System.Windows.Threading.DispatcherTimer(
+                    System.Windows.Threading.DispatcherPriority.Normal);
+                _activateVerifyTimer.Interval = TimeSpan.FromMilliseconds(100);
+                _activateVerifyTimer.Tick += OnActivateVerifyTick;
+            }
+            _activateVerifyTicks = 0;
+            _activateVerifyTimer.Stop();
+            _activateVerifyTimer.Start();
+        }
+
+        private void OnActivateVerifyTick(object sender, EventArgs e)
+        {
+            if (GetForegroundWindow() == _mainWindowHandle)
+            {
+                _activateVerifyTimer?.Stop();
+                CompleteActivationResume();
+                return;
+            }
+            if (++_activateVerifyTicks >= 20)
+                _activateVerifyTimer?.Stop(); // sibling still holds focus — stay paused
         }
 
         // Handles Windows session lock/unlock (Win+L).
