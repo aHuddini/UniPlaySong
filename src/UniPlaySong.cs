@@ -2976,7 +2976,13 @@ namespace UniPlaySong
                 () => _spotifyControlService?.IsSpotifyActive ?? false,
                 () => _currentMusicPlayer,
                 _fileLogger,
-                () => IsDesktop);
+                () => IsDesktop,
+                // Evaluate runs on UI/SMTC-worker/watchdog threads — marshal the notification.
+                () => Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    _api.Notifications.Add(new NotificationMessage(
+                        "UniPlaySong_SpotifyFxOsUnsupported",
+                        "UniPlaySong: \"Apply Live Effects to Spotify\" (and Calm Down on Spotify) needs per-app audio capture, which requires Windows 11 or Windows 10 build 20348+. This PC's Windows version doesn't support it — Spotify will play normally, without effects.",
+                        NotificationType.Error)))));
             _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForEffects;
 
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme

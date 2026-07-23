@@ -42,13 +42,15 @@ namespace UniPlaySong.Services.Spotify
             Func<bool> isSpotifyActive,
             Func<IMusicPlayer> getPlayer,
             FileLogger fileLogger,
-            Func<bool> isDesktop = null)
+            Func<bool> isDesktop = null,
+            Action notifyOsUnsupported = null)
         {
             _getSettings = getSettings;
             _isSpotifyActive = isSpotifyActive;
             _getPlayer = getPlayer;
             _fileLogger = fileLogger;
             _isDesktop = isDesktop ?? (() => true);
+            _notifyOsUnsupported = notifyOsUnsupported;
 
             _coordinator = new SpotifyEffectsCoordinator(
                 isLiveEffects: () => _getSettings()?.LiveEffectsEnabled ?? false,
@@ -84,11 +86,31 @@ namespace UniPlaySong.Services.Spotify
         public void Evaluate()
         {
             if (!Armed) return;
+            NotifyIfOsUnsupported();
             lock (_gate)
             {
                 try { _coordinator.Evaluate(); }
                 catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] Evaluate failed: {ex.Message}"); }
             }
+        }
+
+        // Win10 below build 20348 has no process-loopback capture, so the coordinator's OS gate
+        // silently never engages — Spotify plays dry at full mixer volume while the user believes
+        // effects are on (seen in the wild on a Windows 10 gaming PC). Say so ONCE per session,
+        // and only when the user's settings actually ask for effects-on-Spotify and Spotify is
+        // the active source — a capable OS or an uninterested user never sees it.
+        private readonly Action _notifyOsUnsupported;
+        private bool _osNoticeShown;
+        private void NotifyIfOsUnsupported()
+        {
+            if (_osNoticeShown || OsCapabilities.SupportsProcessLoopback || !_isSpotifyActive()) return;
+            var s = _getSettings();
+            bool wantsEffects = (s?.LiveEffectsEnabled == true && s?.ApplyLiveEffectsToSpotify == true)
+                || s?.CalmDownModeEnabled == true;
+            if (!wantsEffects) return;
+            _osNoticeShown = true;
+            _fileLogger?.Warn("[SpotifyFx] This Windows build lacks process-loopback capture (needs 20348+) — Spotify plays without effects.");
+            try { _notifyOsUnsupported?.Invoke(); } catch { }
         }
 
         public void Shutdown()
@@ -151,9 +173,15 @@ namespace UniPlaySong.Services.Spotify
             if (muted)
             {
                 float current = SpotifyAudioSession.GetSessionVolume(1f);
-                // Don't save an already-ducked level (e.g. re-entry after a crash) as the restore target.
-                _volumeBeforeDuck = current > DuckVolume * 2 ? current : 1f;
-                _fileLogger?.Debug($"[SpotifyFx] duck: saved pre-duck volume {_volumeBeforeDuck:F4}, ducking to {DuckVolume:F4}");
+                // Don't save an already-ducked level as the restore target: re-entry after a crash
+                // AND the coordinator's per-evaluate duck re-assert both land here with the session
+                // already at DuckVolume — keep the previously saved level (field default 1f covers
+                // the fresh-start case).
+                if (current > DuckVolume * 2)
+                {
+                    _volumeBeforeDuck = current;
+                    _fileLogger?.Debug($"[SpotifyFx] duck: saved pre-duck volume {_volumeBeforeDuck:F4}, ducking to {DuckVolume:F4}");
+                }
                 return SpotifyAudioSession.SetSessionVolume(DuckVolume);
             }
 

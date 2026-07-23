@@ -9,6 +9,8 @@ Packages:
       - '[Critical Fix] Music could get stuck paused after focus changes with the play button appearing dead — the top panel and external play commands now always resume.'
       - '[Critical Fix] Fixed a crash where reopening UniPlaySong settings after saving could freeze and kill Playnite with no error logged.'
       - '[Fixed] The settings window no longer leaks resources each time it is opened and closed.'
+      - '[Fixed] Live Effects on Spotify now ducks every Spotify audio session on every output device — fixes Spotify staying unmuted (doubled audio) with effects on, on PCs with multiple audio devices or multiple Spotify processes.'
+      - '[Improved] If your Windows version can''t support Live Effects on Spotify (needs Windows 11 or Windows 10 build 20348+), UniPlaySong now shows a notification instead of silently playing Spotify without effects.'
       - '[Fix Attempt] Music sometimes stayed paused instead of auto-resuming when returning to Playnite after being away for a while — focus-return detection is now more reliable (part of the pause-on-focus-loss fixes).'
       - '[Fix Attempt] When automatic music download fails for newly added games, the notification now names the failed games (not just a count) so you can retry them manually, and shows as an error so it''s harder to miss (issue #87).'
       - '[Docs] Theme achievement sounds must use one-word rarity filenames (common, uncommon, rare, ultrarare, capstone) — "Ultra-Rare.wav" is not recognized; rename it "ultrarare.wav".'

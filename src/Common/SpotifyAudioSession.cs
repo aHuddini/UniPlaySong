@@ -11,10 +11,14 @@ namespace UniPlaySong.Common
     // no volume/mute, so the audio-session plane is the only way to mute Spotify.
     //
     // Direct COM interop (not NAudio) to avoid the STA/MTA InvalidCastException issues that
-    // AudioSessionDetector documents. Spotify runs several processes but only ONE owns the
-    // audio session; matching by process name on the enumerated sessions finds it (verified
-    // live: 7 Spotify processes, exactly 1 session). All calls fail-soft — if Spotify isn't
-    // running or the session is gone, they no-op and report unmuted.
+    // AudioSessionDetector documents. Spotify runs several processes and can own SEVERAL
+    // audio sessions at once — one per output device it has touched, per child PID, plus
+    // expired leftovers in the enumerator — and the live one is NOT always on the default
+    // endpoint (gaming PCs with headset/DAC/virtual devices). v1.6.8: writes therefore apply
+    // to EVERY Spotify session on EVERY active render device (hitting the extras is harmless;
+    // first-match-on-default-device ducked a dead session and left the real one at full
+    // volume), and reads prefer the ACTIVE session. All calls fail-soft — if Spotify isn't
+    // running or no session exists, they no-op and report unmuted.
     public static class SpotifyAudioSession
     {
         private static readonly Guid CLSID_MMDeviceEnumerator = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
@@ -22,41 +26,35 @@ namespace UniPlaySong.Common
         private const string SpotifyProcessName = "spotify";
 
         // Toggles Spotify's session mute; returns the NEW muted state (false on any failure).
+        // Reads the current state from the best session, then sets ALL sessions to the same
+        // value so they can't drift apart across devices.
         public static bool ToggleMute()
         {
             InvalidateMuteVolumeCache();
-            return WithSpotifyVolume(vol =>
-            {
-                vol.GetMute(out bool muted);
-                bool next = !muted;
-                vol.SetMute(next, ref _eventContext);
-                return next;
-            });
+            bool muted = false;
+            bool found = WithSpotifyVolume(vol => { vol.GetMute(out muted); return true; });
+            if (!found) return false;
+            bool next = !muted;
+            return WithAllSpotifySessions(vol => vol.SetMute(next, ref _eventContext)) && next;
         }
 
         // Deterministic mute set (the effects invariant needs an explicit target, not a toggle).
-        // Returns true if Spotify's session was found and set.
+        // Returns true if at least one Spotify session was found and set.
         public static bool SetMuted(bool muted)
         {
             InvalidateMuteVolumeCache();
-            return WithSpotifyVolume(vol =>
-            {
-                vol.SetMute(muted, ref _eventContext);
-                return true;
-            });
+            return WithAllSpotifySessions(vol => vol.SetMute(muted, ref _eventContext));
         }
 
-        // Sets Spotify's session master volume (0.0-1.0). Used by the live-effects duck:
-        // the process-loopback tap is post-session-volume, so a hard mute would silence the
-        // capture too — ducking to 2^-10 keeps the capture alive (restored by gain in the provider).
+        // Sets Spotify's session master volume (0.0-1.0) on EVERY Spotify session. Used by the
+        // live-effects duck: the process-loopback tap is post-session-volume, so a hard mute
+        // would silence the capture too — ducking to 2^-10 keeps the capture alive (restored by
+        // gain in the provider). Write-all is what makes the duck land on the session that
+        // actually carries audio regardless of PID or output device.
         public static bool SetSessionVolume(float level)
         {
             InvalidateMuteVolumeCache();
-            return WithSpotifyVolume(vol =>
-            {
-                vol.SetMasterVolume(level, ref _eventContext);
-                return true;
-            });
+            return WithAllSpotifySessions(vol => vol.SetMasterVolume(level, ref _eventContext));
         }
 
         // Reads Spotify's session master volume (fallback if not found). Ignores mute state —
@@ -155,73 +153,127 @@ namespace UniPlaySong.Common
             return result;
         }
 
-        // Enumerates render sessions, finds the Spotify-owned one, and runs an action against
-        // its ISimpleAudioVolume. Returns false if Spotify has no session or anything throws.
-        private static bool WithSpotifyVolume(Func<ISimpleAudioVolume, bool> action)
+        private const int AudioSessionStateActive = 1;
+
+        // Visits every Spotify-owned render session on every ACTIVE output device (not just the
+        // default endpoint — Spotify may be routed to a headset/DAC/virtual device).
+        // visit(volume, sessionState) returns true to keep enumerating, false to stop.
+        private static void VisitSpotifySessions(Func<ISimpleAudioVolume, int, bool> visit)
         {
             IMMDeviceEnumerator enumerator = null;
-            IMMDevice device = null;
+            IMMDeviceCollection devices = null;
             try
             {
                 var type = Type.GetTypeFromCLSID(CLSID_MMDeviceEnumerator);
                 enumerator = (IMMDeviceEnumerator)Activator.CreateInstance(type);
 
-                int hr = enumerator.GetDefaultAudioEndpoint(0 /*eRender*/, 1 /*eMultimedia*/, out device);
-                if (hr != 0 || device == null) return false;
+                int hr = enumerator.EnumAudioEndpoints(0 /*eRender*/, 1 /*DEVICE_STATE_ACTIVE*/, out devices);
+                if (hr != 0 || devices == null) return;
 
-                var iidSessionManager = typeof(IAudioSessionManager2).GUID;
-                hr = device.Activate(ref iidSessionManager, 0x17 /*CLSCTX_ALL*/, IntPtr.Zero, out object obj);
-                if (hr != 0 || obj == null) return false;
-
-                var sessionManager = (IAudioSessionManager2)obj;
-                hr = sessionManager.GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum);
-                if (hr != 0 || sessionEnum == null) return false;
-
-                sessionEnum.GetCount(out int count);
-
-                for (int i = 0; i < count; i++)
+                devices.GetCount(out int deviceCount);
+                for (int d = 0; d < deviceCount; d++)
                 {
-                    IAudioSessionControl control = null;
+                    IMMDevice device = null;
                     try
                     {
-                        sessionEnum.GetSession(i, out control);
-                        if (control == null) continue;
+                        if (devices.Item(d, out device) != 0 || device == null) continue;
 
-                        var control2 = control as IAudioSessionControl2;
-                        if (control2 == null) continue;
-
-                        control2.GetProcessId(out uint pid);
-                        if (pid == 0) continue;
-
-                        string name;
-                        try { name = Process.GetProcessById((int)pid).ProcessName; }
-                        catch { continue; }
-                        if (!string.Equals(name, SpotifyProcessName, StringComparison.OrdinalIgnoreCase))
+                        var iidSessionManager = typeof(IAudioSessionManager2).GUID;
+                        if (device.Activate(ref iidSessionManager, 0x17 /*CLSCTX_ALL*/, IntPtr.Zero, out object obj) != 0 || obj == null)
                             continue;
 
-                        // QI ISimpleAudioVolume off the session control (same as the meter QI
-                        // in AudioSessionDetector).
-                        if (control is ISimpleAudioVolume vol)
-                            return action(vol);
+                        var sessionManager = (IAudioSessionManager2)obj;
+                        if (sessionManager.GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum) != 0 || sessionEnum == null)
+                            continue;
+
+                        sessionEnum.GetCount(out int count);
+                        for (int i = 0; i < count; i++)
+                        {
+                            IAudioSessionControl control = null;
+                            try
+                            {
+                                sessionEnum.GetSession(i, out control);
+                                if (control == null) continue;
+
+                                var control2 = control as IAudioSessionControl2;
+                                if (control2 == null) continue;
+
+                                control2.GetProcessId(out uint pid);
+                                if (pid == 0) continue;
+
+                                string name;
+                                try { name = Process.GetProcessById((int)pid).ProcessName; }
+                                catch { continue; }
+                                if (!string.Equals(name, SpotifyProcessName, StringComparison.OrdinalIgnoreCase))
+                                    continue;
+
+                                control.GetState(out int state);
+
+                                // QI ISimpleAudioVolume off the session control (same as the meter QI
+                                // in AudioSessionDetector).
+                                if (control is ISimpleAudioVolume vol)
+                                {
+                                    if (!visit(vol, state)) return;
+                                }
+                            }
+                            catch { }
+                            finally
+                            {
+                                if (control != null) Marshal.ReleaseComObject(control);
+                            }
+                        }
                     }
                     catch { }
                     finally
                     {
-                        if (control != null) Marshal.ReleaseComObject(control);
+                        if (device != null) try { Marshal.ReleaseComObject(device); } catch { }
                     }
                 }
-
-                return false;
             }
-            catch
-            {
-                return false;
-            }
+            catch { }
             finally
             {
-                if (device != null) try { Marshal.ReleaseComObject(device); } catch { }
+                if (devices != null) try { Marshal.ReleaseComObject(devices); } catch { }
                 if (enumerator != null) try { Marshal.ReleaseComObject(enumerator); } catch { }
             }
+        }
+
+        // READ path: runs the action against ONE session — preferring an ACTIVE one (the session
+        // audibly rendering right now), falling back to any Spotify session. The fallback costs a
+        // second enumeration, but only when Spotify has no active session (idle) — and the cached
+        // read paths run off the UI thread anyway.
+        private static bool WithSpotifyVolume(Func<ISimpleAudioVolume, bool> action)
+        {
+            bool handled = false;
+            VisitSpotifySessions((vol, state) =>
+            {
+                if (state != AudioSessionStateActive) return true; // keep looking for an active one
+                try { handled = action(vol); } catch { }
+                return !handled;
+            });
+            if (!handled)
+            {
+                VisitSpotifySessions((vol, state) =>
+                {
+                    try { handled = action(vol); } catch { }
+                    return !handled;
+                });
+            }
+            return handled;
+        }
+
+        // WRITE path: applies to EVERY Spotify session on every device — the mute/duck must land
+        // on whichever session actually carries the audio, and hitting the extras is harmless.
+        // Returns true if at least one session was set.
+        private static bool WithAllSpotifySessions(Action<ISimpleAudioVolume> apply)
+        {
+            int applied = 0;
+            VisitSpotifySessions((vol, state) =>
+            {
+                try { apply(vol); applied++; } catch { }
+                return true;
+            });
+            return applied > 0;
         }
 
         #region COM Interfaces
@@ -229,8 +281,15 @@ namespace UniPlaySong.Common
         [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IMMDeviceEnumerator
         {
-            int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr devices);
+            int EnumAudioEndpoints(int dataFlow, int stateMask, out IMMDeviceCollection devices);
             int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice device);
+        }
+
+        [Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IMMDeviceCollection
+        {
+            int GetCount(out int count);
+            int Item(int index, out IMMDevice device);
         }
 
         [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

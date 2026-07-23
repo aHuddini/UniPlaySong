@@ -109,6 +109,18 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
+        public void WhileEffecting_ReassertsDuckOnEvaluate()
+        {
+            // A device switch spawns a fresh UNducked Spotify session mid-effects; the
+            // coordinator must re-duck on the next evaluate or the audio doubles (v1.6.8).
+            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true };
+            var c = Make(e); c.Evaluate();
+            e.MutedNow = false;              // simulate the duck being lost externally
+            c.Evaluate();
+            Assert.That(e.MutedNow, Is.True);
+        }
+
+        [Test]
         public void Shutdown_UnmutesEvenIfActive()
         {
             var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true };

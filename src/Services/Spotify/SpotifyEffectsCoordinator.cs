@@ -53,6 +53,13 @@ namespace UniPlaySong.Services.Spotify
                 if (_setMuted(true)) { _muted = true; _startEffectedOutput(); _effecting = true; }
                 // mute failed -> stay dry (no doubled audio)
             }
+
+            // 5. While effecting, re-assert the duck on every evaluate: Spotify (re)creates audio
+            //    sessions on output-device switches and lazily per device, and a fresh session
+            //    spawns at that device's stored app volume — UNducked, doubling the audio until
+            //    someone re-ducks it. _setMuted(true) is idempotent, writes every Spotify session,
+            //    and preserves the saved restore level, so this is cheap insurance.
+            if (wantEffects && _effecting && _muted) _setMuted(true);
         }
 
         private void StopEffected()

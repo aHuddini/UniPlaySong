@@ -26,6 +26,10 @@ Built with the help of Claude Code and Cursor IDE
 - **Music no longer restarts when you come back to Playnite.** With "Pause on focus loss" on, game music now resumes right where it left off instead of starting over — and if it ever gets stuck paused, the play button will always bring it back.
 - **Settings crash fixed.** Reopening UniPlaySong's settings after saving could freeze and crash Playnite with no error message. Settings now open instantly, every time.
 - **Settings window cleanup.** The settings window no longer leaks resources each time it's opened and closed.
+- **Live Effects on Spotify: reliable muting on multi-device PCs.** The effects duck now targets every Spotify audio session on every output device — fixes Spotify staying unmuted (doubled audio) with effects on.
+
+### Improved
+- **Clear notice on unsupported Windows versions.** If your PC can't support Live Effects on Spotify (needs Windows 11 or Windows 10 build 20348+), UniPlaySong now tells you instead of silently playing Spotify without effects.
 
 ### Fix Attempt
 - **Fix attempt (pause on focus loss): music sometimes didn't auto-resume after a long time away.** Returning to Playnite could occasionally leave music paused until you pressed play — focus-return detection is now much more reliable.
