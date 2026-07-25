@@ -30,7 +30,9 @@ jobs:
             exit 1
           fi
 
-          git remote add gitea "https://aHuddini:${GITEA_TOKEN}@gitea.com/aHuddini/UniPlaySong.git"
+          # Token is passed via git's credential protocol, never written to .git/config
+          git remote add gitea "https://gitea.com/aHuddini/UniPlaySong.git"
+          git config --local credential.helper '!f() { echo "username=aHuddini"; echo "password=${GITEA_TOKEN}"; }; f'
 
           push_all() {
             git push gitea --branches && git push gitea --tags
