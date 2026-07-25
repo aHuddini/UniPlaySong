@@ -94,6 +94,35 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
+        // Apply a live-effects preset/param change to the Spotify effected output WITHOUT a restart.
+        // The effect chain is baked into the provider at StartEffectedOutput -> LoadExternalSource,
+        // and nothing rebuilds it while already effecting (Evaluate no-ops on _effecting), so a preset
+        // change otherwise goes silent until Playnite restarts. Rebuild in place: this does NOT touch
+        // the coordinator's mute state, so Spotify stays ducked and the user hears a brief (~150ms)
+        // gap, then the new preset. On failure StartEffectedOutput's own catch shuts the host down
+        // cleanly (Spotify unmutes, dry audio returns).
+        public void RebuildEffectedOutput()
+        {
+            if (!Armed) return;
+            lock (_gate)
+            {
+                if (!_effecting) return; // only meaningful while effecting Spotify
+                try
+                {
+                    _fileLogger?.Debug("[SpotifyFx] rebuilding effected output for live-effects change (full re-evaluate)");
+                    // Replicate what a Playnite restart does (the user-confirmed working path): full
+                    // teardown then a fresh Evaluate that re-captures, re-ducks, and rebuilds the effect
+                    // chain from current settings. The lighter in-place Stop+Start left the output at the
+                    // ducked level with the makeup gain not fully restored (audible as "very faint"), so
+                    // it must go through the coordinator to re-establish the duck+gain pairing correctly.
+                    // Cost: a brief dry-Spotify blip during the ~0.5s gap while capture/duck re-establish.
+                    _coordinator.Shutdown();
+                    _coordinator.Evaluate();
+                }
+                catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] RebuildEffectedOutput failed: {ex.Message}"); }
+            }
+        }
+
         // Win10 below build 20348 has no process-loopback capture, so the coordinator's OS gate
         // silently never engages — Spotify plays dry at full mixer volume while the user believes
         // effects are on (seen in the wild on a Windows 10 gaming PC). Say so ONCE per session,
@@ -109,7 +138,7 @@ namespace UniPlaySong.Services.Spotify
                 || s?.CalmDownModeEnabled == true;
             if (!wantsEffects) return;
             _osNoticeShown = true;
-            _fileLogger?.Warn("[SpotifyFx] This Windows build lacks process-loopback capture (needs 20348+) — Spotify plays without effects.");
+            _fileLogger?.Warn("[SpotifyFx] This Windows build lacks process-loopback capture (needs Windows 10 build 19041 / version 2004+) — Spotify plays without effects.");
             try { _notifyOsUnsupported?.Invoke(); } catch { }
         }
 

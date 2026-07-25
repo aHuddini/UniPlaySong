@@ -1,5 +1,15 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.6.9
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-25
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.6.9/UniPlaySong-1_6_9.pext'
+    Changelog:
+      - '[New Feature] Live Effects, Calm Down, and the Spectrum Visualizer on Spotify now work on Windows 10 (version 2004 / 2020 update or newer), not just Windows 11.'
+      - '[Critical Fix] With Live Effects on Spotify, saving any setting no longer silences Spotify (or blanks the Now Playing display) until a restart.'
+      - '[Fixed] Music no longer starts and then instantly stops when switching between games quickly.'
+      - '[Fixed] Music reliably resumes after you exit a game and return to Playnite, including controller-only sessions.'
+      - '[Fixed] The audio device is no longer released while a game is running, which previously could interrupt music resume on game exit.'
   - Version: 1.6.8
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-22

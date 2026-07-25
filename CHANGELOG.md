@@ -4,6 +4,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.6.9] - 2026-07-25
+
+### Added
+
+- **Live Effects on Spotify now work on Windows 10 (version 2004 / build 19041+), not just Windows 11.** The WASAPI process-loopback capture UPS uses is *documented* as build 20348+, but it's actually present and usable since Windows 10 2004 (shipped projects like OBS win-capture-audio rely on this) — so the OS gate (`OsCapabilities.SupportsProcessLoopback`) was lowered from 20348 to 19041. Capture start still fails gracefully (stays dry, no doubled audio) if a given machine's process-loopback path doesn't actually work, so the lower floor is safe. The "unsupported Windows" notification now names 19041/2004 as the requirement. Tester-confirmed on Windows 10 22H2 (19045). `src/Common/OsCapabilities.cs`, `src/Services/Spotify/SpotifyLiveEffectsHost.cs`, `src/UniPlaySong.cs`.
+
+### Fixed
+
+- **Saving settings silenced Spotify Live Effects (and blanked the now-playing display).** Any settings save — even toggling debug logging — muted the effected Spotify output until a Playnite restart. Root cause: `SettingsService.UpdateSettings` swaps in a brand-new settings object on every save and carried none of the `[JsonIgnore]` runtime state forward, so now-playing fields AND the overlay/video gate flags (`ThemeOverlayActive` / `VideoIsPlaying`) reset to defaults; an overlay-heavy theme then re-stranded a gate flag true on the live object, and the external-source gate (`TargetExternalVolume`, read live per buffer) ramped Spotify to zero. Runtime `[JsonIgnore]` state is now carried across the swap (by reflection, so every runtime flag is covered), making a save transparent to runtime state. Also fixes now-playing blanking on save and the broader "settings-swap resets runtime state" class. `src/Services/SettingsService.cs`.
+- **"Songs start and end endlessly" / play-stop churn around song switches.** A song's natural EOF landing inside a switch's fade window advanced playback a second time — the fader's deferred switch-play and `OnMediaEnded` both started the next song, double-loading (one starts, is immediately `Close()`d, another loads). `MusicFader` now exposes `IsSwitchInFlight` (a play action armed but not yet run) and `OnMediaEnded` bails while a switch is in flight, so the switch owns the transition. `src/Players/MusicFader.cs`, `src/Services/MusicPlaybackService.cs`.
+- **Music didn't always resume after exiting a game.** `OnGameStopped` cleared stale window-state pause sources (FocusLoss/Minimized/SystemTray) on a single next-tick re-poll, which could miss a slow focus/window settle (Steam Big Picture, borderless games, driver hitches) and strand a pause. It now retries briefly (200 ms × ~3 s) until the window genuinely settles active/visible/un-minimized. `src/UniPlaySong.cs`.
+- **The audio device could be torn down while a game was running.** The idle sleep coordinator only checked whether music was audible, so with "Pause on game start" (or any pause during a game) the device released mid-game after the idle threshold — worst with controller-only sessions, which read as idle to Windows' keyboard/mouse-only idle detection. That wasted teardown/rebuild and broke clean resume on game exit. The coordinator now holds the device open while any game is running (a running game keeps Windows awake anyway). `src/Services/SleepCoordinator.cs`, `src/UniPlaySong.cs`.
+- **Live-effects preset changes now apply to Spotify without a restart.** Changing a Style / Reverb / chain-order preset while effecting Spotify rebuilds the effected output in place (the effect chain is otherwise baked when effected output starts). `src/Services/Spotify/SpotifyLiveEffectsHost.cs`, `src/UniPlaySong.cs`.
+
 ## [1.6.8] - 2026-07-22
 
 ### Fixed

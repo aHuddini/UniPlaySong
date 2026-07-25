@@ -20,26 +20,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.8
+## What's New - v1.6.9
+
+### Added
+- **Live Effects on Spotify now work on Windows 10.** Previously Windows 11 only — reverb/EQ, Calm Down, and the spectrum visualizer now apply to Spotify on Windows 10 (version 2004 / the 2020 update, or newer) too.
 
 ### Fixed
-- **Music no longer restarts when you come back to Playnite.** With "Pause on focus loss" on, game music now resumes right where it left off instead of starting over — and if it ever gets stuck paused, the play button will always bring it back.
-- **Settings crash fixed.** Reopening UniPlaySong's settings after saving could freeze and crash Playnite with no error message. Settings now open instantly, every time.
-- **Settings window cleanup.** The settings window no longer leaks resources each time it's opened and closed.
-- **Live Effects on Spotify: reliable muting on multi-device PCs.** The effects duck now targets every Spotify audio session on every output device — fixes Spotify staying unmuted (doubled audio) with effects on.
-
-### Improved
-- **Clear notice on unsupported Windows versions.** If your PC can't support Live Effects on Spotify (needs Windows 11 or Windows 10 build 20348+), UniPlaySong now tells you instead of silently playing Spotify without effects.
-
-### Fix Attempt
-- **Fix attempt (pause on focus loss): music sometimes didn't auto-resume after a long time away.** Returning to Playnite could occasionally leave music paused until you pressed play — focus-return detection is now much more reliable.
-- **Fix attempt (issue #87): failed auto-downloads now tell you which games failed.** The notification after automatic music downloads lists the failed game names (not just a count) so you can retry them manually.
-
-### Docs
-- **Theme achievement sounds: name the files with one-word rarities.** If a theme provides per-rarity unlock sounds, the files in `audio/Achievements/` must be named `common`, `uncommon`, `rare`, `ultrarare`, `capstone` — one word, no hyphen or space. `Ultra-Rare.wav` won't be recognized (rename it `ultrarare.wav`); this was why some theme packs only played 4 of the 5 rarities.
+- **Saving a setting no longer silences Spotify.** With Live Effects on Spotify, saving any setting (even something unrelated) used to mute Spotify and blank the Now Playing display until you restarted Playnite — fixed.
+- **No more music starting then instantly stopping** when you switch between games quickly.
+- **Music reliably resumes after you exit a game** and return to Playnite — including controller-only sessions.
+- **Live-effects presets apply to Spotify without a restart.**
 
 ### Previous Version
-- **v1.6.7**: Prepared UniPlaySong to integrate with the upcoming FullReel plugin — external pause/play now fully controls Spotify as a radio source.
+- **v1.6.8**: fixed game music restarting on focus return, a settings-dialog crash, and multi-device Spotify muting; failed auto-downloads now name the games.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

@@ -80,6 +80,27 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
+        public void IdleTick_GameRunning_HoldsDeviceOpen_ThenReleasesAfterExit()
+        {
+            var reg = new AudioDeviceRegistry(null);
+            var h = new FakeHolder();
+            reg.Register(h);
+            var gameRunning = new bool[] { true };
+            // Paused music (not audible) WHILE a game runs: must never tear down mid-game — even a
+            // controller-only session reads as idle to GetLastInputInfo, and teardown breaks resume.
+            var c = new SleepCoordinator(reg, () => false, () => 5, null, () => gameRunning[0]);
+            var t0 = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            Assert.IsFalse(c.IdleTick(t0));
+            Assert.IsFalse(c.IdleTick(t0.AddMinutes(10))); // game still running → held open
+            Assert.AreEqual(0, h.ReleaseCalls);
+            // Game exits: the idle clock reseeds at exit, then ages and releases after the threshold.
+            gameRunning[0] = false;
+            Assert.IsFalse(c.IdleTick(t0.AddMinutes(11))); // reseed baseline at game-exit
+            Assert.IsTrue(c.IdleTick(t0.AddMinutes(16)));  // 5min after exit → release
+            Assert.AreEqual(1, h.ReleaseCalls);
+        }
+
+        [Test]
         public void OnLockOrSuspend_ReleasesImmediately_RegardlessOfIdleSetting()
         {
             var (c, h, audible) = Build(0); // idle disabled

@@ -12,6 +12,7 @@ namespace UniPlaySong.Services
         private readonly AudioDeviceRegistry _registry;
         private readonly Func<bool> _isAudible;      // true when music is actively playing (not paused/stopped)
         private readonly Func<int> _getIdleMinutes;  // IdleAudioDeviceTeardownMinutes (0 disables idle release)
+        private readonly Func<bool> _isGameRunning;  // true while any game is running — hold the device open
         private readonly FileLogger _fileLogger;
 
         private DispatcherTimer _idleTimer;
@@ -19,11 +20,12 @@ namespace UniPlaySong.Services
         private bool _wasAudible;                    // last observed audible state
         private bool _seeded;                        // first IdleTick seeds the baseline at "now"
 
-        public SleepCoordinator(AudioDeviceRegistry registry, Func<bool> isAudible, Func<int> getIdleMinutes, FileLogger fileLogger)
+        public SleepCoordinator(AudioDeviceRegistry registry, Func<bool> isAudible, Func<int> getIdleMinutes, FileLogger fileLogger, Func<bool> isGameRunning = null)
         {
             _registry = registry;
             _isAudible = isAudible;
             _getIdleMinutes = getIdleMinutes;
+            _isGameRunning = isGameRunning ?? (() => false);
             _fileLogger = fileLogger;
             _wasAudible = false;
             _seeded = false;
@@ -44,9 +46,16 @@ namespace UniPlaySong.Services
             bool audible;
             try { audible = _isAudible?.Invoke() ?? false; } catch { audible = false; }
 
-            if (audible)
+            bool gameRunning;
+            try { gameRunning = _isGameRunning?.Invoke() ?? false; } catch { gameRunning = false; }
+
+            // A running game keeps Windows awake anyway, so releasing UPS's audio device buys no
+            // sleep — and tearing it down mid-game (common when PauseOnGameStart pauses the music,
+            // or a controller-only session reads as idle to GetLastInputInfo) breaks clean resume
+            // on game exit. Treat "game running" like audible: hold the device open, reset baseline.
+            if (audible || gameRunning)
             {
-                _idleBaselineUtc = nowUtc; // reset — actively playing is not idle
+                _idleBaselineUtc = nowUtc; // reset — actively playing (or in-game) is not idle
                 _wasAudible = true;
                 _seeded = true;
                 return false;

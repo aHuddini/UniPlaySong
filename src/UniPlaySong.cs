@@ -213,6 +213,11 @@ namespace UniPlaySong
         private System.Windows.Threading.DispatcherTimer _activateVerifyTimer;
         private int _activateVerifyTicks;
         private Window _mainWindowForActivate; // kept for unsubscribe on dispose
+        // Game-exit window-state verify: game exit (Steam BPM, borderless, driver hitches) doesn't
+        // always settle focus/visibility in one tick, so a single re-poll can miss and leave a stale
+        // FocusLoss/Minimized/SystemTray pinning music silent. Retry briefly until the window settles.
+        private System.Windows.Threading.DispatcherTimer _gameStopVerifyTimer;
+        private int _gameStopVerifyTicks;
         private readonly System.Text.StringBuilder _classNameBuffer = new System.Text.StringBuilder(256);
 
         // Desktop top panel media control (play/pause button)
@@ -537,18 +542,43 @@ namespace UniPlaySong
             // window-state pause sources whose condition no longer applies. Without this,
             // a stale FocusLoss/Minimized/SystemTray can survive past game exit and silence
             // music until the user changes selection or restarts Playnite.
-            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-            {
-                var window = Application.Current?.MainWindow;
-                if (window == null || _playbackService == null) return;
+            StartGameStopVerify();
+        }
 
-                if (window.IsActive)
-                    _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
-                if (window.IsVisible)
-                    _playbackService.RemovePauseSource(Models.PauseSource.SystemTray);
-                if (window.WindowState != WindowState.Minimized)
-                    _playbackService.RemovePauseSource(Models.PauseSource.Minimized);
-            }), System.Windows.Threading.DispatcherPriority.Background);
+        // Bounded retry (200ms × up to ~15 ticks ≈ 3s) that drops window-state pause sources once
+        // the main window genuinely settles active/visible/un-minimized after a game exits. Replaces
+        // a single next-tick re-poll that could miss a slow focus/window settle and strand a pause.
+        private void StartGameStopVerify()
+        {
+            if (_gameStopVerifyTimer == null)
+            {
+                _gameStopVerifyTimer = new System.Windows.Threading.DispatcherTimer(
+                    System.Windows.Threading.DispatcherPriority.Background)
+                { Interval = TimeSpan.FromMilliseconds(200) };
+                _gameStopVerifyTimer.Tick += OnGameStopVerifyTick;
+            }
+            _gameStopVerifyTicks = 0;
+            _gameStopVerifyTimer.Stop();
+            _gameStopVerifyTimer.Start();
+        }
+
+        private void OnGameStopVerifyTick(object sender, EventArgs e)
+        {
+            var window = Application.Current?.MainWindow;
+            if (window == null || _playbackService == null) { _gameStopVerifyTimer?.Stop(); return; }
+
+            if (window.IsActive)
+                _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
+            if (window.IsVisible)
+                _playbackService.RemovePauseSource(Models.PauseSource.SystemTray);
+            if (window.WindowState != WindowState.Minimized)
+                _playbackService.RemovePauseSource(Models.PauseSource.Minimized);
+
+            // Stop once the window is fully settled (all three conditions true) or after ~3s — the
+            // user may have legitimately alt-tabbed away, in which case we leave the pause in place.
+            bool settled = window.IsActive && window.IsVisible && window.WindowState != WindowState.Minimized;
+            if (settled || ++_gameStopVerifyTicks >= 15)
+                _gameStopVerifyTimer?.Stop();
         }
 
         /// <summary>
@@ -1157,6 +1187,8 @@ namespace UniPlaySong
             }
             _activateVerifyTimer?.Stop();
             _activateVerifyTimer = null;
+            _gameStopVerifyTimer?.Stop();
+            _gameStopVerifyTimer = null;
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _sleepCoordinator?.Stop();
@@ -1877,6 +1909,19 @@ namespace UniPlaySong
                 if (backendSwap || applyToSpotifyChanged)
                 {
                     EvaluateSpotifyEffectsAsync();
+                }
+
+                // A live-effects preset change (Style / Reverb / chain-order) rewrites the effect
+                // chain but does NOT swap the backend, so the block above won't rebuild — and while
+                // effecting Spotify the effected-output chain is baked at start, so the new preset
+                // can't apply and the output goes silent until a Playnite restart. Rebuild the
+                // effected output in place (Spotify stays ducked) so the new preset takes effect now.
+                bool effectPresetChanged = e.OldSettings.SelectedStylePreset != e.NewSettings.SelectedStylePreset
+                    || e.OldSettings.SelectedReverbPreset != e.NewSettings.SelectedReverbPreset
+                    || e.OldSettings.EffectChainPreset != e.NewSettings.EffectChainPreset;
+                if (!backendSwap && effectPresetChanged && _spotifyEffectsHost?.IsEffecting == true)
+                {
+                    System.Threading.ThreadPool.QueueUserWorkItem(_ => _spotifyEffectsHost?.RebuildEffectedOutput());
                 }
             }
 
@@ -2867,7 +2912,10 @@ namespace UniPlaySong
                 isAudible: () => (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true)
                                  || _spotifyEffectsHost?.IsEffecting == true,
                 getIdleMinutes: () => _settings?.IdleAudioDeviceTeardownMinutes ?? 5,
-                _fileLogger);
+                _fileLogger,
+                // Hold the audio device open while any game is running — never tear it down mid-game
+                // (a running game keeps Windows awake anyway, and teardown breaks clean resume on exit).
+                isGameRunning: () => _api?.Database?.Games?.Any(g => g.IsRunning) ?? false);
             // Register the main player (it's an IAudioDeviceHolder via IMusicPlayer).
             if (_currentMusicPlayer is Services.IAudioDeviceHolder mainHolder)
                 _audioDeviceRegistry.Register(mainHolder);
@@ -2981,7 +3029,7 @@ namespace UniPlaySong
                 () => Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                     _api.Notifications.Add(new NotificationMessage(
                         "UniPlaySong_SpotifyFxOsUnsupported",
-                        "UniPlaySong: \"Apply Live Effects to Spotify\" (and Calm Down on Spotify) needs per-app audio capture, which requires Windows 11 or Windows 10 build 20348+. This PC's Windows version doesn't support it — Spotify will play normally, without effects.",
+                        "UniPlaySong: \"Apply Live Effects to Spotify\" (and Calm Down on Spotify) needs per-app audio capture, which requires Windows 10 version 2004 (build 19041) or newer. This PC's Windows version doesn't support it — Spotify will play normally, without effects.",
                         NotificationType.Error)))));
             _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForEffects;
 

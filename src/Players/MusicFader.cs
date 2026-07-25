@@ -44,6 +44,13 @@ namespace UniPlaySong.Players
         // MusicPlaybackService checks this on RemovePauseSource to execute the orphaned action.
         public bool HasPendingPlayAction => _isPaused && _playAction != null;
 
+        // True while a song-switch's play action is armed but not yet executed (Switch() sets it;
+        // the deferred fade-out completion or Resume() consumes it). OnMediaEnded checks this so a
+        // song whose natural EOF lands inside the switch's fade window does NOT also auto-advance —
+        // the switch already starts the next song, and a second advance double-loads (song starts,
+        // gets Close()d, another loads: the "song starts then instantly ends" loop).
+        public bool IsSwitchInFlight => _playAction != null;
+
 
 
         public MusicFader(IMusicPlayer player, Func<double> getMusicVolume, Func<double> getFadeInDuration, Func<double> getFadeOutDuration, ErrorHandlerService errorHandler = null, FileLogger fileLogger = null)

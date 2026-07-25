@@ -106,6 +106,29 @@ namespace UniPlaySong.Services
 
             // Store old settings for comparison
             var oldSettings = _currentSettings;
+
+            // Carry forward runtime-only ([JsonIgnore]) state BEFORE the swap. A settings SAVE builds
+            // a fresh object and these fields aren't serialized, so without this every save reset them:
+            // it blanked the now-playing display AND reset the overlay/video gate flags
+            // (ThemeOverlayActive / VideoIsPlaying) that the Spotify effected-output gate reads live in
+            // TargetExternalVolume(). An overlay-heavy theme would then re-strand one of them true on the
+            // new object and mute the effected Spotify output until a Playnite restart. Copied while
+            // newSettings has no PropertyChanged subscribers yet, so it fires no spurious notifications.
+            if (oldSettings != null)
+            {
+                foreach (var prop in typeof(UniPlaySongSettings).GetProperties())
+                {
+                    if (!prop.CanRead || !prop.CanWrite) continue;
+                    bool isJsonIgnore = false;
+                    foreach (var attr in prop.GetCustomAttributes(true))
+                        if (attr.GetType().Name == "JsonIgnoreAttribute") { isJsonIgnore = true; break; }
+                    if (isJsonIgnore)
+                    {
+                        try { prop.SetValue(newSettings, prop.GetValue(oldSettings)); } catch { }
+                    }
+                }
+            }
+
             _currentSettings = newSettings;
 
             // Subscribe to new settings property changes

@@ -2420,6 +2420,16 @@ namespace UniPlaySong.Services
             {
                 try
                 {
+                    // A song-switch is mid-flight — its deferred play will start the next song. This
+                    // EOF is the OLD song ending inside the switch's fade window; advancing here too
+                    // would double-load (one song starts, is immediately closed, another loads — the
+                    // "song starts then instantly ends" loop). The switch owns the transition.
+                    if (_fader?.IsSwitchInFlight == true)
+                    {
+                        _fileLogger?.Debug("OnMediaEnded: Ignoring — song switch in flight (fader will start next song)");
+                        return;
+                    }
+
                     // Diagnostic: did the scheduled song-end fade actually fire before EOF?
                     var posAtEof = _musicPlayer?.CurrentTime?.TotalSeconds ?? -1;
                     var totalAtEof = _musicPlayer?.TotalTime?.TotalSeconds ?? -1;
