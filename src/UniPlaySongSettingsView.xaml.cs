@@ -223,6 +223,7 @@ namespace UniPlaySong
             if (s == null) return;
 
             s.PauseOnGameStart = true;
+            s.RadioPlaysThroughGames = false;
             s.PauseOnSystemLock = false;
             s.PauseOnFocusLoss = false;
             s.FocusLossStayPaused = false;

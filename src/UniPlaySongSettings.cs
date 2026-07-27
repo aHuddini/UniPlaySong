@@ -1306,6 +1306,7 @@ namespace UniPlaySong
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
         private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path (v1.5.8)
+        private bool radioPlaysThroughGames = false; // Radio Mode keeps playing during a game session instead of pausing
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
         private List<Guid> gamePropFilterSourceIds = new List<Guid>();
@@ -1562,6 +1563,15 @@ namespace UniPlaySong
         {
             get => radioCustomFolderPath;
             set { radioCustomFolderPath = value; OnPropertyChanged(); }
+        }
+
+        // Radio Mode keeps playing through a game session. Suppresses the game-session pause
+        // sources (GameStarting, FocusLoss, Minimized, SystemTray, Idle, ExternalAudio) while
+        // radio is what's playing. Independent of PauseOnGameStart. Public theme API.
+        public bool RadioPlaysThroughGames
+        {
+            get => radioPlaysThroughGames;
+            set { radioPlaysThroughGames = value; OnPropertyChanged(); }
         }
 
         // Which default music source to use: CustomFile, BundledPreset, CustomFolder, etc.

@@ -1412,6 +1412,14 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,4"/>
+                    <CheckBox Content="Except Radio Mode (radio plays through games)"
+                              IsChecked="{Binding Settings.RadioPlaysThroughGames}"
+                              Margin="20,0,0,5"/>
+                    <TextBlock Text="When enabled, Radio Mode (UPS pool or Spotify) keeps playing while a game is running instead of pausing. Applies only to Radio Mode — game-specific music still pauses. Works whether or not 'Pause on Game Launch' is enabled. Manual pause and screen lock still pause the radio."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,4"/>
                     <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. Only disable if you're using UPS in Radio Mode to play random library music over your game while the game's own audio is muted."
                                FontSize="11"
                                Foreground="#E08070"
