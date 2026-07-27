@@ -160,9 +160,24 @@ namespace UniPlaySong.Services
         // (Playnite restart). Used by MusicPlaybackCoordinator's Desktop auto-play lock.
         private bool _userHasManuallyStartedThisSession = false;
 
+        // True while a game is launching or running. Set from Playnite's game lifecycle
+        // events, independent of PauseOnGameStart, so the radio play-through exception and
+        // the external-audio game-exclusion both work regardless of that setting.
+        private bool _gameSessionActive = false;
+
         public bool IsPlaying => _musicPlayer?.IsActive ?? false;
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
+
+        public bool IsGameSessionActive => _gameSessionActive;
+
+        public void SetGameSessionActive(bool active)
+        {
+            if (_gameSessionActive == active) return;
+            _gameSessionActive = active;
+            _fileLogger?.Debug($"Game session {(active ? "started" : "ended")}");
+        }
+
         public TimeSpan? CurrentTime => _musicPlayer?.CurrentTime;
 
         public TimeSpan? GetCurrentSongTotalTime() => _musicPlayer?.TotalTime;

@@ -50,6 +50,8 @@ namespace DashboardTestApp
         public void AddPauseSourceImmediate(PauseSource source) => AddPauseSource(source);
         public void RemovePauseSourceImmediate(PauseSource source) => RemovePauseSource(source);
         public bool HasPauseSource(PauseSource source) => _pauseSources.Contains(source);
+        public bool IsGameSessionActive { get; private set; }
+        public void SetGameSessionActive(bool active) => IsGameSessionActive = active;
         public void PlayGameMusic(Game game) { }
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings) { }
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings, bool forceReload) { }

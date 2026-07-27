@@ -25,6 +25,12 @@ namespace UniPlaySong.Services
         void RemovePauseSourceImmediate(PauseSource source);  // Instant resume (no fade), tracks source
         bool HasPauseSource(PauseSource source);              // Peek the active pause-source set without mutating it
 
+        // True while a game is launching or running. Tracked independently of
+        // PauseSource.GameStarting, which may be suppressed (radio play-through) or
+        // never added at all (PauseOnGameStart off).
+        bool IsGameSessionActive { get; }
+        void SetGameSessionActive(bool active);
+
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);
         double GetVolume();

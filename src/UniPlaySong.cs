@@ -426,6 +426,9 @@ namespace UniPlaySong
             {
                 if (update.NewData.IsLaunching && !update.OldData.IsLaunching)
                 {
+                    // Unconditional: the session flag is independent of PauseOnGameStart so
+                    // radio play-through and game-audio exclusion work either way.
+                    _playbackService?.SetGameSessionActive(true);
                     if (_settings?.PauseOnGameStart == true)
                         _playbackService?.AddPauseSource(Models.PauseSource.GameStarting);
                     return;
@@ -433,6 +436,7 @@ namespace UniPlaySong
 
                 if (!update.NewData.IsRunning && update.OldData.IsRunning)
                 {
+                    _playbackService?.SetGameSessionActive(false);
                     _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
                     return;
                 }
@@ -527,6 +531,7 @@ namespace UniPlaySong
         // Fallback: ensures GameStarting pause source is removed even if ItemUpdated misses it
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
+            _playbackService?.SetGameSessionActive(false);
             _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
 
             // Playnite sets IsMusicMuted=false when a game stops (GamesEditor.Controllers_Stopped).
