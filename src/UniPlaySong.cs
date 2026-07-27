@@ -438,6 +438,7 @@ namespace UniPlaySong
                 {
                     _playbackService?.SetGameSessionActive(false);
                     _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+                    ResyncWindowStatePauseSources();
                     return;
                 }
 
@@ -533,6 +534,7 @@ namespace UniPlaySong
         {
             _playbackService?.SetGameSessionActive(false);
             _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+            ResyncWindowStatePauseSources();
 
             // Playnite sets IsMusicMuted=false when a game stops (GamesEditor.Controllers_Stopped).
             // Re-assert our suppression so native music doesn't come back after game exit.
@@ -584,6 +586,22 @@ namespace UniPlaySong
             bool settled = window.IsActive && window.IsVisible && window.WindowState != WindowState.Minimized;
             if (settled || ++_gameStopVerifyTicks >= 15)
                 _gameStopVerifyTimer?.Stop();
+        }
+
+        // A radio play-through session suppressed the window-state pause sources, so they were
+        // never added. Re-add whatever is genuinely true now that normal pausing resumes.
+        // Mirror of OnGameStopVerifyTick, which only ever removes.
+        private void ResyncWindowStatePauseSources()
+        {
+            var window = Application.Current?.MainWindow;
+            if (window == null || _playbackService == null) return;
+
+            if (!window.IsActive && _settings?.PauseOnFocusLoss == true)
+                _playbackService.AddPauseSource(Models.PauseSource.FocusLoss);
+            if (window.WindowState == WindowState.Minimized)
+                _playbackService.AddPauseSource(Models.PauseSource.Minimized);
+            if (!window.IsVisible)
+                _playbackService.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
         /// <summary>
@@ -2518,13 +2536,13 @@ namespace UniPlaySong
                         // exclusion set while spotifyIsAudible), so a detection here is real
                         // external audio and pauses normally — including pausing Spotify radio.
 
-                        // Don't treat a launched game's own audio as "external." When
-                        // GameStarting is active, the audio we're hearing is almost
+                        // Don't treat a launched game's own audio as "external." When a game
+                        // session is active, the audio we're hearing is almost
                         // certainly the game itself. Adding ExternalAudio on top creates
                         // a stuck state via KeepPausedAfterExternalAudio when the game
                         // audio oscillates (common with windowed games that produce
                         // intermittent silence — see user report 2026-06-06).
-                        if (_playbackService?.HasPauseSource(Models.PauseSource.GameStarting) == true)
+                        if (_playbackService?.IsGameSessionActive == true)
                         {
                             _externalAudioDetected = true;
                             _externalAudioPausedInstantly = false;
