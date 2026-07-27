@@ -1412,6 +1412,12 @@
                                Foreground="Gray"
                                TextWrapping="Wrap"
                                Margin="20,0,0,4"/>
+                    <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. If you want Radio Mode to keep playing over your game, leave this ON and tick 'Except Radio Mode' below instead."
+                               FontSize="11"
+                               Foreground="#E08070"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
                     <CheckBox Content="Except Radio Mode (radio plays through games)"
                               IsChecked="{Binding Settings.RadioPlaysThroughGames}"
                               Margin="20,0,0,5"/>
@@ -1419,13 +1425,7 @@
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="40,0,0,4"/>
-                    <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. Only disable if you're using UPS in Radio Mode to play random library music over your game while the game's own audio is muted."
-                               FontSize="11"
-                               Foreground="#E08070"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                               Margin="40,0,0,10"/>
 
                     <CheckBox Content="Pause music when Windows is locked"
                               IsChecked="{Binding Settings.PauseOnSystemLock}"
