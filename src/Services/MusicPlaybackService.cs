@@ -283,6 +283,12 @@ namespace UniPlaySong.Services
         /// <param name="source">The source requesting pause</param>
         public void AddPauseSource(PauseSource source)
         {
+            if (RadioPlayThroughPolicy.ShouldSuppress(source, _gameSessionActive, _isInRadioMode, _currentSettings))
+            {
+                _fileLogger?.Debug($"Pause: {source} suppressed — Radio Mode plays through game session");
+                return;
+            }
+
             bool wasPlaying = !_isPaused;
             _activePauseSources.Add(source);
 
@@ -353,6 +359,12 @@ namespace UniPlaySong.Services
         // Cancels any in-progress fade to avoid state conflicts.
         public void AddPauseSourceImmediate(PauseSource source)
         {
+            if (RadioPlayThroughPolicy.ShouldSuppress(source, _gameSessionActive, _isInRadioMode, _currentSettings))
+            {
+                _fileLogger?.Debug($"Pause (immediate): {source} suppressed — Radio Mode plays through game session");
+                return;
+            }
+
             bool wasPlaying = !_isPaused;
             _activePauseSources.Add(source);
 
