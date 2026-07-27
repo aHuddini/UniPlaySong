@@ -1,5 +1,17 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.7.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-07-27
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.0/UniPlaySong-1_7_0.pext'
+    Changelog:
+      - '[New Feature] Radio Mode can now play through your gaming sessions. Turn on "Except Radio Mode" under Pause on Game Launch and your radio (UPS song pool or Spotify) keeps playing while a game runs, instead of pausing. Game-specific music still pauses as normal.'
+      - '[New Feature] Manual pause and screen lock still stop the radio during a game, so you keep control.'
+      - '[New Feature] Theme developers can bind the new option, so themes can offer it as an in-theme toggle.'
+      - '[Critical Fix] Pausing for other apps'' audio no longer stops working for the rest of the session after a cancelled game launch (for example when a splash-screen plugin cancels it, or a game fails to start).'
+      - '[Fixed] A game''s own audio is no longer treated as another app''s audio when "Pause on Game Launch" is turned off.'
+      - '[Fixed] Returning from a game no longer applies a pause you had switched off in settings (minimize / system tray).'
+      - '[Fixed] Toggling a setting no longer takes effect only after you select another game.'
   - Version: 1.6.9
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-25

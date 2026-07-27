@@ -4,6 +4,31 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.7.0] - 2026-07-27
+
+### Added
+
+- **Radio Mode can play through a game session ("Pause Exception").** New opt-in setting `RadioPlaysThroughGames` (default off, Pauses tab, nested under Pause on Game Launch): while a game is running and Radio Mode is what's playing, the game-session pause sources are suppressed and the radio keeps going. Applies to both radio branches — the UPS pool and Spotify.
+
+  A game launch raises six pause sources, not one (`GameStarting`, `FocusLoss`, `Minimized`, `SystemTray`, `Idle`, `ExternalAudio`), and `_isPaused` is a flat `_activePauseSources.Count > 0`, so suppressing only `GameStarting` would have left five others pausing the radio. Rather than guard the ~12 call sites that add them, a single guard at the shared `AddPauseSource` / `AddPauseSourceImmediate` choke point consults a pure static rule (`RadioPlayThroughPolicy.ShouldSuppress`) and returns early. Because three consumers read `IsPaused` — the radio start guard, radio auto-advance, and Spotify's `lifecyclePaused` in `SpotifyControlService.RecomputeCore` — one guard covers pool radio and Spotify radio without touching any of them.
+
+  Scoping is `_gameSessionActive && RadioPlaysThroughGames && RadioModeEnabled && (_isInRadioMode || SpotifyRadioMode)`. That last term is what keeps the exception off game-specific music: when radio yields to an installed game's own music, `_isInRadioMode` goes false and normal pausing resumes. `Manual`, `SystemLock`, `Video`, `ThemeOverlay`, `Dashboard`, `Jingle`, `NsfPreview`, `Settings` and `ViewChange` are never suppressed. `ClearAllPauseSources` was deliberately left untouched — its preservation list already contains exactly the sources the guard prevents from entering the set, so the sweep is a no-op during a play-through session.
+
+  `PauseSource.GameStarting` could not be reused as the "is a game running" signal (it is gated by `PauseOnGameStart` and is itself suppressed), so `MusicPlaybackService` gained an explicit `_gameSessionActive` flag driven unconditionally from the game lifecycle edges. `src/Services/RadioPlayThroughPolicy.cs` (new), `src/Services/MusicPlaybackService.cs`, `src/Services/IMusicPlaybackService.cs`, `src/UniPlaySong.cs`, `src/UniPlaySongSettings.cs`, `src/UniPlaySongSettingsView.xaml`.
+
+- **`RadioPlaysThroughGames` is theme-bindable** via `{PluginSettings Plugin=UniPlaySong, Path=RadioPlaysThroughGames, Mode=TwoWay}`. No control class or `AddCustomElementSupport` entry needed — `AddSettingsSupport` already exposes every public settings property. Documented in `docs/dev_docs/THEME_INTEGRATION_GUIDE.md`.
+
+### Fixed
+
+- **`ExternalAudio` pausing died for the rest of the session after an aborted game launch.** Playnite's `GamesEditor.cancelStartup()` and its start-exception catch both clear `IsLaunching` without ever setting `IsRunning`, and raise `OnGameStartupCancelled` rather than `OnGameStopped` — so a session flag cleared only on the `IsRunning` falling edge and in `OnGameStopped` stayed stuck true. The signal it replaced self-healed by accident (`GameStarting` is not in `PreservedOnClear`, so any song start or game switch swept a stranded one); the new flag had no such net. Since the external-audio game-exclusion gate now keys on the session, a stuck flag silently disabled `PauseOnExternalAudio` until a game session completed normally. Added a third lifecycle branch for `IsLaunching` falling with `IsRunning` still false; verified dormant on normal launches because `Controllers_Started` sets `IsRunning=true` and `IsLaunching=false` in a single `Database.Games.Update`. Also covers the `Controllers_Stopped` / `CancelGameMonitoring` stop-during-launch shapes. `src/UniPlaySong.cs`.
+- **A launched game's own audio was treated as external audio when `PauseOnGameStart` was off.** The exclusion gate tested `HasPauseSource(GameStarting)`, which is never added for those users, so they got no exclusion at all. Now keys on `IsGameSessionActive`. Pre-existing bug, surfaced while making the gate survive the new suppression. `src/UniPlaySong.cs`.
+- **The game-exit window-state resync could add pauses the user had opted out of.** `ResyncWindowStatePauseSources` re-adds the sources the guard suppressed, but gated only `FocusLoss` on its setting — `Minimized` and `SystemTray` were added unconditionally, unlike every other add site in the file. Now gated on `PauseOnMinimize` / `PauseWhenInSystemTray`. The resync runs on every game exit regardless of the new feature, so this reached users who never enabled it. `src/UniPlaySong.cs`.
+- **Toggling a setting could take effect only intermittently.** `MusicPlaybackService._currentSettings` was assigned in exactly one place — inside `PlayGameMusic` — so after a settings save (which swaps the whole settings object) the service read a stale snapshot until the next game selection re-drove playback. Added a narrow `RefreshSettings` seam called from `OnSettingsServiceChanged`, which re-points the pointer and does nothing else; deliberately not fixed by widening the `musicSettingsChanged` diff set, which would have restarted the radio track as a side effect. Same settings-object-swap stale-capture class as the v1.6.9 `SettingsService` fix. `src/Services/MusicPlaybackService.cs`, `src/Services/IMusicPlaybackService.cs`, `src/UniPlaySong.cs`.
+
+### Changed
+
+- The red "Keep this ON for normal UPS behavior" warning under Pause on Game Launch now renders above the new checkbox rather than below it, and its closing sentence points at the new option instead of telling users to disable the parent — the workaround it described is what this release replaces. `src/UniPlaySongSettingsView.xaml`.
+
 ## [1.6.9] - 2026-07-25
 
 ### Added

@@ -15,6 +15,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Swap game music for the user's default music while a custom panel is open (tag editor, sidebar, etc.) — restore game music on close | `UPS_MusicControl_PauseGamePlayDefault` element (v1.5.3+) |
 | Bind UPS settings (Enable Music, Radio Mode, Calm Down, etc.) to checkboxes in your theme | `{PluginSettings}` markup (v1.4.6+) |
 | Switch the radio source (UPS pool ↔ Spotify) from Fullscreen | `SwitchRadioMode` bool via `{PluginSettings}` (v1.5.10+) |
+| Let Radio Mode keep playing during a game session instead of pausing | `RadioPlaysThroughGames` bool via `{PluginSettings}` (v1.7.0+) |
 | Ship a dedicated audio track that UPS plays as default music | `UPS_BackgroundAudio.mp3` in your theme's `audio/` folder (v1.5.2+) |
 | Ship per-rarity achievement unlock sounds | `audio/Achievements/{rarity}.wav` in your theme's folder (v1.5.10+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |

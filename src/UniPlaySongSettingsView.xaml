@@ -4750,10 +4750,16 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Improved:</Run> Prepared UniPlaySong to integrate with the new upcoming plugin, FullReel — external pause/play commands now fully control Spotify radio.
+                                <Run FontWeight="SemiBold">Added:</Run> Radio Mode can play through your gaming sessions — see "Except Radio Mode" under Pause on Game Launch. Game-specific music still pauses.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Spotify no longer auto-resumes over a held external pause when other audio starts and stops.
+                                <Run FontWeight="SemiBold">Added:</Run> Theme developers can bind the new option as an in-theme toggle.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Pausing for other apps' audio no longer stops working after a cancelled game launch.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Returning from a game no longer applies a minimize / system-tray pause you had switched off.
                             </TextBlock>
 
                             <TextBlock FontSize="11">

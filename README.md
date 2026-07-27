@@ -20,19 +20,18 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.6.9
+## What's New - v1.7.0
 
 ### Added
-- **Live Effects on Spotify now work on Windows 10.** Previously Windows 11 only — reverb/EQ, Calm Down, and the spectrum visualizer now apply to Spotify on Windows 10 (version 2004 / the 2020 update, or newer) too.
+- **Radio Mode can now play through your gaming sessions.** New option under Pause on Game Launch: "Except Radio Mode". Turn it on and your radio — the UPS song pool or Spotify — keeps playing while you're in a game, instead of pausing. Game-specific music still pauses as normal. Manual pause and screen lock still stop the radio.
+- **Theme developers can bind the new option**, so themes can expose it as an in-theme toggle.
 
 ### Fixed
-- **Saving a setting no longer silences Spotify.** With Live Effects on Spotify, saving any setting (even something unrelated) used to mute Spotify and blank the Now Playing display until you restarted Playnite — fixed.
-- **No more music starting then instantly stopping** when you switch between games quickly.
-- **Music reliably resumes after you exit a game** and return to Playnite — including controller-only sessions.
-- **Live-effects presets apply to Spotify without a restart.**
+- **External-audio pausing no longer breaks after a cancelled game launch.** If a game launch was cancelled (by a splash-screen plugin, or a failed launch), UniPlaySong could stop pausing for other apps' audio for the rest of the session.
+- **A game's own audio no longer counts as "external audio"** when Pause on Game Launch is turned off.
 
 ### Previous Version
-- **v1.6.8**: fixed game music restarting on focus return, a settings-dialog crash, and multi-device Spotify muting; failed auto-downloads now name the games.
+- **v1.6.9**: Live Effects on Spotify now work on Windows 10; fixed saving a setting silencing Spotify, music starting then instantly stopping, and music not resuming after exiting a game.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
