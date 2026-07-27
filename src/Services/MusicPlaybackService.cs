@@ -178,6 +178,16 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug($"Game session {(active ? "started" : "ended")}");
         }
 
+        // A settings save replaces the whole settings object, so the copy cached by the last
+        // PlayGameMusic goes stale — readers like the radio play-through guard would keep
+        // consulting the pre-save values until the next game selection. Re-point it here.
+        // Assignment only: no playback restart, no pause-set change, no PlayGameMusic.
+        public void RefreshSettings(UniPlaySongSettings settings)
+        {
+            if (settings == null) return;
+            _currentSettings = settings;
+        }
+
         public TimeSpan? CurrentTime => _musicPlayer?.CurrentTime;
 
         public TimeSpan? GetCurrentSongTotalTime() => _musicPlayer?.TotalTime;
@@ -457,11 +467,10 @@ namespace UniPlaySong.Services
             return false;
         }
 
-        // Read-only peek into the active pause-source set. Used by callers that need to
-        // gate behavior on whether a specific source is currently holding playback paused
-        // (e.g. the external-audio detector skips adding its own pause source while
-        // GameStarting is active, since the "external" audio is almost certainly the
-        // launched game itself).
+        // Read-only peek into the active pause-source set, for callers that need to gate
+        // behavior on whether a specific source is currently holding playback paused.
+        // No callers in src/ today — the external-audio detector's game-audio exclusion now
+        // keys on IsGameSessionActive instead. Kept as public interface surface.
         public bool HasPauseSource(PauseSource source) => _activePauseSources.Contains(source);
 
         /// <summary>

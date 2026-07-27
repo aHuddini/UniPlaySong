@@ -442,6 +442,20 @@ namespace UniPlaySong
                     return;
                 }
 
+                // Launch aborted: Playnite clears IsLaunching without ever setting IsRunning (an
+                // extension cancelled startup, or the play action threw) and raises no OnGameStopped.
+                // Unlike GameStarting, which ClearAllPauseSources sweeps, nothing else clears the
+                // session flag, so a stuck flag would disable external-audio pausing for the session.
+                // A normal launch is safe: Playnite sets IsRunning=true and IsLaunching=false in a
+                // single update, so the !IsRunning term is false and this branch can't misfire.
+                if (!update.NewData.IsLaunching && update.OldData.IsLaunching && !update.NewData.IsRunning)
+                {
+                    _playbackService?.SetGameSessionActive(false);
+                    _playbackService?.RemovePauseSource(Models.PauseSource.GameStarting);
+                    ResyncWindowStatePauseSources();
+                    return;
+                }
+
                 // Re-evaluate music when a game's install state changes (for MusicOnlyForInstalledGames)
                 if (update.NewData.IsInstalled != update.OldData.IsInstalled &&
                     _settings?.MusicOnlyForInstalledGames == true)
@@ -598,9 +612,9 @@ namespace UniPlaySong
 
             if (!window.IsActive && _settings?.PauseOnFocusLoss == true)
                 _playbackService.AddPauseSource(Models.PauseSource.FocusLoss);
-            if (window.WindowState == WindowState.Minimized)
+            if (_settings?.PauseOnMinimize == true && window.WindowState == WindowState.Minimized)
                 _playbackService.AddPauseSource(Models.PauseSource.Minimized);
-            if (!window.IsVisible)
+            if (_settings?.PauseWhenInSystemTray == true && !window.IsVisible)
                 _playbackService.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
@@ -1848,6 +1862,12 @@ namespace UniPlaySong
             if (_playbackService != null && e.NewSettings != null)
             {
                 _playbackService.SetVolume(e.NewSettings.MusicVolume / Constants.VolumeDivisor);
+
+                // Re-point the service's cached settings. A save hands out a new settings
+                // object; without this the service keeps reading the pre-save values until
+                // the next PlayGameMusic, which made toggles like RadioPlaysThroughGames
+                // apply only intermittently. Pointer swap only — no playback side effects.
+                _playbackService.RefreshSettings(e.NewSettings);
             }
 
             // Always update MediaElementsMonitor's settings reference on every settings change.

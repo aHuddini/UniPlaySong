@@ -31,6 +31,10 @@ namespace UniPlaySong.Services
         bool IsGameSessionActive { get; }
         void SetGameSessionActive(bool active);
 
+        // Re-points the service's cached settings object after a settings save (Playnite
+        // hands out a brand-new instance). Assignment only — never touches playback state.
+        void RefreshSettings(UniPlaySongSettings settings);
+
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);
         double GetVolume();

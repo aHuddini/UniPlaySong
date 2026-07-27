@@ -8,9 +8,10 @@ namespace UniPlaySong.Services
     // constructing MusicPlaybackService.
     public static class RadioPlayThroughPolicy
     {
-        // Sources a game session raises. These are the only ones the exception suppresses.
-        // Manual, SystemLock, Video, ThemeOverlay, Dashboard, Jingle, NsfPreview, Settings
-        // and ViewChange are deliberately absent — they must keep pausing.
+        // Sources a game session raises. These are the only ones the exception suppresses;
+        // every other PauseSource (Manual, SystemLock, Video, ThemeOverlay, Dashboard,
+        // Jingle, NsfPreview, Settings, ViewChange, DefaultMusicPreservation) is deliberately
+        // absent and must keep pausing.
         private static readonly HashSet<PauseSource> GameSessionSources = new HashSet<PauseSource>
         {
             PauseSource.GameStarting, PauseSource.FocusLoss, PauseSource.Minimized,
