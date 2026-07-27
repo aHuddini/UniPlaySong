@@ -277,7 +277,7 @@ Two-way sync is automatic — flipping a checkbox in the theme and flipping the 
 
 When Spotify is your active source, UniPlaySong auto-launches it on startup if it isn't already running (Experimental tab, off by default). If Spotify opens to a login screen and doesn't auto-play, your theme's transport controls (play/skip) let the user start playback manually once authenticated.
 
-### Radio plays through games (v1.6.6+)
+### Radio plays through games (v1.7.0+)
 
 `RadioPlaysThroughGames` (bool, default `false`) — when enabled, Radio Mode keeps playing while a game is running instead of pausing. Applies only to Radio Mode (UPS pool or Spotify); game-specific music still pauses. Independent of "Pause on Game Launch" — it works whether that setting is on or off.
 
