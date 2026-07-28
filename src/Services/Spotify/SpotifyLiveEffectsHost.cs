@@ -197,10 +197,24 @@ namespace UniPlaySong.Services.Spotify
         internal const float DuckVolume = 0.0009765625f; // 2^-10
         private float _volumeBeforeDuck = 1f;
 
+        // Re-assert throttle. The coordinator calls SetMuted(true) on EVERY Evaluate to catch an
+        // output-device switch spawning a fresh UNducked session — but each call costs two full
+        // multi-device COM enumerations (the GetSessionVolume read + the SetSessionVolume write),
+        // and with Spotify radio active every Recompute raises NowPlayingChanged -> Evaluate. On a
+        // game switch that burst made Spotify audibly choppy even though the track never changed.
+        // The FIRST duck (not yet asserted) always runs immediately; redundant re-asserts are capped,
+        // so a device switch still self-heals within one interval instead of on every event.
+        private static readonly TimeSpan DuckReassertInterval = TimeSpan.FromSeconds(5);
+        private bool _duckAsserted;
+        private DateTime _lastDuckAssertUtc = DateTime.MinValue;
+
         private bool SetMuted(bool muted)
         {
             if (muted)
             {
+                if (_duckAsserted && (DateTime.UtcNow - _lastDuckAssertUtc) < DuckReassertInterval)
+                    return true; // already ducked and asserted recently — skip the COM round-trips
+
                 float current = SpotifyAudioSession.GetSessionVolume(1f);
                 // Don't save an already-ducked level as the restore target: re-entry after a crash
                 // AND the coordinator's per-evaluate duck re-assert both land here with the session
@@ -211,9 +225,17 @@ namespace UniPlaySong.Services.Spotify
                     _volumeBeforeDuck = current;
                     _fileLogger?.Debug($"[SpotifyFx] duck: saved pre-duck volume {_volumeBeforeDuck:F4}, ducking to {DuckVolume:F4}");
                 }
-                return SpotifyAudioSession.SetSessionVolume(DuckVolume);
+                bool ducked = SpotifyAudioSession.SetSessionVolume(DuckVolume);
+                if (ducked)
+                {
+                    _duckAsserted = true;
+                    _lastDuckAssertUtc = DateTime.UtcNow;
+                }
+                return ducked;
             }
 
+            // Leaving the duck: clear the throttle so the next engage ducks immediately.
+            _duckAsserted = false;
             for (int attempt = 0; attempt < 3; attempt++)
             {
                 if (SpotifyAudioSession.SetSessionVolume(_volumeBeforeDuck)) return true;
