@@ -106,7 +106,7 @@ The `GlobalSystemMediaTransportControlsSession` we already hold also exposes (al
 
 ## Live Effects & Visualizer on Spotify (v1.6.5, Experimental)
 
-Opt-in path that lets UPS's Live Effects (reverb/EQ) and the Spectrum Visualizer operate on Spotify audio, the same way they operate on UPS's own game music. This is the one place UPS *does* capture Spotify audio — gated behind `ApplyLiveEffectsToSpotify` (effects) and the existing Spectrum Visualizer setting (visualizer), both off by default. Requires **Windows 10 build 20348+** (Process Loopback Capture); below that the feature is unavailable and Spotify plays dry.
+Opt-in path that lets UPS's Live Effects (reverb/EQ) and the Spectrum Visualizer operate on Spotify audio, the same way they operate on UPS's own game music. This is the one place UPS *does* capture Spotify audio — gated behind `ApplyLiveEffectsToSpotify` (effects) and the existing Spectrum Visualizer setting (visualizer), both off by default. Requires **Windows 10 version 2004 / build 19041+** (Process Loopback Capture); below that the feature is unavailable and Spotify plays dry, with a one-time notification explaining why.
 
 **Seam:** `SpotifyLoopback.dll` (bundled native shim; Process Loopback via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS`, `INCLUDE_TARGET_PROCESS_TREE` on Spotify's window PID) → `SpotifyLoopbackClient` (P/Invoke + ring buffer) → `SpotifyCaptureSampleProvider` (an `ISampleProvider`, normalized to 44100Hz stereo float) → `NAudioMusicPlayer.LoadExternalSource`, which runs it through the **same** `EffectsChain` / `VisualizationDataProvider` / persistent mixer as game music (no `SongEndDetector` — a live capture never ends). See `docs/dev_docs/NAUDIO_PIPELINE.md` → "External Source Path".
 

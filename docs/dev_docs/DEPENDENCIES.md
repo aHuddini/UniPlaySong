@@ -161,7 +161,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Source**: `native/SpotifyLoopback/` (`SpotifyLoopbackCapture.cpp`, `SpotifyLoopback.def`, `SpotifyLoopback.vcxproj`) — committed in-repo.
 - **Build**: `msbuild native/SpotifyLoopback/SpotifyLoopback.vcxproj /p:Configuration=Release /p:Platform=Win32` (VS 2022 v143 toolset, Windows SDK 10.0.26100). Links `ole32.lib` + `mmdevapi.lib`. The `.def` keeps the `__stdcall` exports **undecorated** (`_SpotifyLoopback_Start@12` → `SpotifyLoopback_Start`) so P/Invoke-by-name resolves on x86. Output → `native/SpotifyLoopback/Release/`, then copied to the location above.
 - **Exports**: `SpotifyLoopback_Start(pid, callback, user)` / `_Stop()` / `_IsCapturing()`. P/Invoked from `src/Common/SpotifyLoopbackClient.cs` (`CallingConvention.StdCall`).
-- **OS floor**: Windows 10 build 20348 (Process Loopback Capture unsupported below; the feature fails soft to dry Spotify — gated by `OsCapabilities.SupportsProcessLoopback`).
+- **OS floor**: Windows 10 version 2004 / build **19041** (Process Loopback Capture unsupported below; the feature fails soft to dry Spotify — gated by `OsCapabilities.SupportsProcessLoopback`). Microsoft documents the API as 20348+, but it is present and working from 2004 — lowered in v1.6.9 and tester-confirmed on Win10 22H2 (19045). Capture start still fails soft, so a machine that genuinely can't do it stays dry rather than doubling audio.
 - **Copy to build output + package**: `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`; bundled into the `.pext` by `scripts/package_extension.ps1` (mirrors the gme.dll/SDL2 copy steps).
 - **License**: MIT (UniPlaySong's own).
 

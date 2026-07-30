@@ -2,7 +2,7 @@
 
 **Question:** Can UniPlaySong (a no-admin, no-installer, managed .NET Framework 4.6.2 Playnite plugin) apply its live audio effects (reverb/EQ via NAudio) to **Spotify's** audio — obtaining an isolated, clean PCM stream of Spotify's output — **without** requiring the user to install a third-party virtual audio cable?
 
-**Verdict:** **YES — PROVEN, then SHIPPED in v1.6.5.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. The feature shipped in v1.6.5 (Live Effects + Calm Down + Visualizer on Spotify) using a small bundled C++/WinRT shim and a Windows 10 build 20348 floor.
+**Verdict:** **YES — PROVEN, then SHIPPED in v1.6.5.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. The feature shipped in v1.6.5 (Live Effects + Calm Down + Visualizer on Spotify) using a small bundled C++/WinRT shim. The OS floor was later corrected down to Windows 10 version 2004 / build 19041 in v1.6.9 (see Constraints).
 
 > **This doc is the feasibility research (the proven path).** For the SHIPPED architecture — the post-master output mixer, the −60 dB duck (not mute) because the tap is post-session-volume, the per-input fader/gate, and the issue-#81 idle-teardown guard — see the "External Source Path" section of [`NAUDIO_PIPELINE.md`](NAUDIO_PIPELINE.md).
 
@@ -48,7 +48,7 @@ Mute worked because it's a *control knob* (WASAPI session). Effects need the *sa
 
 ## Constraints (the honest caveats)
 
-1. **Minimum OS: Windows 10 build 20348** (Microsoft's stated floor — some community impls claim 19041/2004 works, but use 20348 to be safe). This is a **late Win10 build (~2021, 21H2 / Server 2022 era)**. Modern Win10/11 users have it; **older Win10 users are excluded** — the feature MUST detect the OS build and disable + hint below it.
+1. **Minimum OS: Windows 10 version 2004 / build 19041** — RESOLVED in v1.6.9. Microsoft documents the floor as 20348, and this doc originally chose 20348 "to be safe", but that excluded every consumer Windows 10 machine: retail Win10 tops out at **19045** (22H2), so 20348 effectively meant "Windows 11 only". The community claim was correct — the API ships working from 2004, as OBS `win-capture-audio` and `masonasons/AudioCapture` both rely on. The gate was lowered to 19041 and **tester-confirmed on Win10 22H2 (19045)**. Safe because capture start fails soft: a machine that genuinely can't do it stays dry instead of doubling audio.
 
 2. **Managed .NET cannot call it directly.** NAudio's `WasapiLoopbackCapture` is **system-mix-only** and does NOT support process loopback (NAudio issue #878, still open: https://github.com/naudio/NAudio/issues/878). The API needs `ActivateAudioInterfaceAsync` + the activation-params struct + an async COM completion handler — impractical from .NET Framework 4.6.2 P/Invoke.
    → **Requires a small bundled native C++/WinRT shim DLL.** This is a normal DLL UPS ships in its extension folder — NOT a driver, no install, no admin. Microsoft's ApplicationLoopback sample is the template.
@@ -70,7 +70,7 @@ Mute worked because it's a *control knob* (WASAPI session). Effects need the *sa
 
 Experimental, opt-in, clearly gated:
 
-1. **Detect capability** — Windows build >= 20348 AND the shim loads. Below that: feature hidden/disabled with a one-line hint.
+1. **Detect capability** — Windows build >= 19041 AND the shim loads. Below that: feature hidden/disabled with a one-line hint.
 2. **Native shim** (`UniPlaySong.SpotifyLoopback.dll`, C++/WinRT) — exposes a minimal managed-callable surface: `StartCapture(pid) → callback(byte[] pcm, WAVEFORMATEX)` / `StopCapture()`. Wraps `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS` (INCLUDE_TARGET_PROCESS_TREE, Spotify's main PID).
 3. **Managed side** — feed the shim's PCM callback into the existing NAudio effect chain (see NAUDIO_PIPELINE.md), output via `WasapiOut`. Mute Spotify's real session via the existing `SpotifyAudioSession` so only the processed stream is audible.
 4. **Lifecycle** — on stop/crash/disable, unmute Spotify (never leave it silent).
@@ -87,8 +87,8 @@ isolated Spotify PCM. It's the template for the production shim (it already does
 1. **Turn the spike into a shim DLL** (`UniPlaySong.SpotifyLoopback.dll`, C++/WinRT) — swap the WAV-writing capture loop for a callback surface: `StartCapture(pid) → callback(byte[] pcm, WAVEFORMATEX)` / `StopCapture()`. Build it as a proper VS C++ project (the spike was a one-file `cl` build).
 2. **Managed bridge** — P/Invoke the shim, marshal the PCM callback into a `WaveProvider`/`ISampleProvider` that feeds the existing NAudio effect chain ([NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md)).
 3. **Output + real-Spotify mute** — play the processed stream via `WasapiOut`; mute Spotify's own session with the existing [`SpotifyAudioSession`](../../src/Common/SpotifyAudioSession.cs) so only the effected version is audible. On stop/crash/disable, **unmute** (never leave Spotify silent).
-4. **Capability gate** — detect Windows build >= 20348; hide/disable the feature + hint below that.
-5. **Latency tuning** — measure and minimize buffering (spike used 200ms; production wants smaller).
+4. **Capability gate** — detect Windows build >= 19041; hide/disable the feature + hint below that.
+5. **Buffer sizing** — the shipped shim requests a **5s** WASAPI capture buffer (the spike used 200ms). That is CAPACITY, not latency: packets are still delivered as they arrive. 200ms proved far too small in production — the capture loop hands PCM to a *managed* callback, so any managed stall (a gen2 GC pause, a heavy Fullscreen theme view load) blocks it, WASAPI overflows, and the surplus is discarded at the source — audible as static. 5s matches OBS `win-capture-audio`; the managed ring is ~1s to accept the catch-up burst when the callback unblocks.
 6. **Packaging** — ship the native DLL in the extension folder (a normal DLL, no install/admin), plus its VC++ redist consideration.
 
 Effort is bounded and de-risked: capture is proven, DSP already exists, mute already exists. The new surface is the shim + its managed marshalling.

@@ -23,16 +23,15 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.7.0
 
 ### Added
-- **Radio Mode can now play through your gaming sessions.** New option under Pause on Game Launch: "Except Radio Mode". Turn it on and your radio — the UPS song pool or Spotify — keeps playing while you're in a game, instead of pausing. Game-specific music still pauses as normal. Manual pause and screen lock still stop the radio.
-- **Theme developers can bind the new option**, so themes can expose it as an in-theme toggle.
+- **Radio Mode can now play through your gaming sessions.** New option under Pause on Game Launch: "Except Radio Mode". Turn it on and your radio — the UPS song pool or Spotify — keeps playing while you're in a game, instead of pausing. Game-specific music still pauses as normal, and manual pause and screen lock still stop the radio. Theme developers can bind the option as an in-theme toggle.
+- **"Play music only on game select" now works with Radio Mode.** The radio plays while you browse, the selected game's music takes over when you open a game, and the radio resumes when you back out — for both the UPS song pool and Spotify. Opening the same game repeatedly picks a different song again.
 
 ### Fixed
-- **"Play music only on game select" now works with Radio Mode.** Previously it did nothing while radio was on. Now the radio plays while you browse, the selected game's music takes over when you open a game, and the radio resumes when you back out — for both the UPS song pool and Spotify. Opening the same game repeatedly also picks a different song again instead of replaying the same one.
-- **Taskbar media buttons now control Spotify** when Spotify is your radio source, instead of starting game music alongside it — and the play/pause icon shows the right state without lagging.
-- **No more static or crackling** with Live Effects on Spotify when a Fullscreen theme stalls.
-- **Smoother game switches** with Live Effects on Spotify.
-- **External-audio pausing no longer breaks after a cancelled game launch.** If a game launch was cancelled (by a splash-screen plugin, or a failed launch), UniPlaySong could stop pausing for other apps' audio for the rest of the session.
-- **A game's own audio no longer counts as "external audio"** when Pause on Game Launch is turned off.
+- **External-audio pausing no longer breaks after a cancelled game launch** (a splash-screen plugin cancelling it, or a game failing to start), which used to disable it for the rest of the session.
+- **Faster shutdown.** Closing Playnite could stall for seconds — longer the longer it had been open — even if you never use Spotify.
+- **Taskbar media buttons now control Spotify** when it's your radio source, instead of starting game music alongside it, and the play/pause icon shows the right state without lagging.
+- **Live Effects on Spotify:** no more static or crackling when a Fullscreen theme stalls, plus smoother game switches.
+- **Assorted pause fixes:** a game's own audio no longer counts as "external audio" when Pause on Game Launch is off, returning from a game no longer applies a pause you'd switched off, and setting changes apply immediately.
 
 ### Previous Version
 - **v1.6.9**: Live Effects on Spotify now work on Windows 10; fixed saving a setting silencing Spotify, music starting then instantly stopping, and music not resuming after exiting a game.
