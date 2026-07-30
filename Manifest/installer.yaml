@@ -5,13 +5,13 @@ Packages:
     ReleaseDate: 2026-07-30
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.0/UniPlaySong-1_7_0.pext'
     Changelog:
-      - '[New Feature] Radio Mode can now play through your gaming sessions. Turn on "Except Radio Mode" under Pause on Game Launch and your radio (UPS song pool or Spotify) keeps playing while a game runs, instead of pausing. Game-specific music still pauses as normal, and manual pause and screen lock still stop the radio so you keep control. Theme developers can bind the new option as an in-theme toggle.'
-      - '[New Feature] "Play music only on game select" now works with Radio Mode: the radio plays while you browse, the selected game''s music takes over when you open a game, and the radio resumes when you back out — for both the UPS song pool and Spotify. Opening the same game repeatedly picks a different song again.'
-      - '[Critical Fix] Pausing for other apps'' audio no longer stops working for the rest of the session after a cancelled game launch (for example when a splash-screen plugin cancels it, or a game fails to start).'
-      - '[Improved] Faster shutdown. Closing Playnite could stall for seconds — longer the longer it had been open — even if you never use Spotify.'
-      - '[Fixed] Taskbar media buttons now control Spotify when it''s your radio source, instead of starting game music alongside it, and the play/pause icon shows the correct state without lagging.'
-      - '[Fixed] Live Effects on Spotify: no more static or crackling when a Fullscreen theme stalls, plus smoother game switches.'
-      - '[Fixed] Assorted pause correctness: a game''s own audio is no longer treated as another app''s audio when "Pause on Game Launch" is off, returning from a game no longer applies a pause you had switched off (minimize / system tray), and toggling a setting takes effect immediately instead of only after selecting another game.'
+      - '[New Feature] Radio Mode can play through your gaming sessions — turn on "Except Radio Mode" under Pause on Game Launch. Manual pause and screen lock still stop it. Theme-bindable.'
+      - '[New Feature] "Play music only on game select" now works with Radio Mode: radio while you browse, the game''s own music when you open it, radio again when you back out — and a fresh song each time.'
+      - '[Critical Fix] Pausing for other apps'' audio no longer stops working for the rest of the session after a cancelled game launch.'
+      - '[Improved] Faster shutdown — closing Playnite could stall for seconds, and got worse the longer it had been open.'
+      - '[Fixed] Taskbar media buttons now control Spotify when it''s your radio source, with a correct play/pause icon.'
+      - '[Fixed] Live Effects on Spotify: no more static when a Fullscreen theme stalls, plus smoother game switches.'
+      - '[Fixed] Pause correctness: game audio counted as "external audio", pauses you had switched off returning after a game, and settings needing a game change to take effect.'
   - Version: 1.6.9
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-25
