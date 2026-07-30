@@ -12,6 +12,7 @@ namespace DashboardTestApp
 
         public bool IsPlaying { get; set; }
         public bool IsPaused => _pauseSources.Count > 0;
+        public bool IsRadioYieldedToGameMusic { get; set; }
         public bool IsLoaded { get; set; }
         public TimeSpan? CurrentTime { get; set; }
         public string CurrentSongPath { get; set; }

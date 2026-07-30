@@ -169,6 +169,12 @@ namespace UniPlaySong.Services
         public bool IsPaused => _isPaused;
         public bool IsLoaded => _musicPlayer?.IsLoaded ?? false;
 
+        // Set from PlayGameMusic's radio-yield decision on every call, so it tracks the current
+        // browsing-vs-selected state: Details view with a game that has songs -> true (Spotify ducks),
+        // back to List / radio resumes -> false (Spotify resumes, since UPS owns that pause).
+        private bool _radioYieldedToGameMusic;
+        public bool IsRadioYieldedToGameMusic => _radioYieldedToGameMusic;
+
         public bool IsGameSessionActive => _gameSessionActive;
 
         public void SetGameSessionActive(bool active)
@@ -761,8 +767,31 @@ namespace UniPlaySong.Services
             // so UPS never plays a competing track. SpotifyRadioMode is a DERIVED expression
             // (RadioModeEnabled && RadioMusicSource == Spotify), so it is true only when RadioMode is
             // also on; StartRadioPlayback's Spotify guard ensures the pool never starts for this source.
+            // "Play Only on Game Select" + Radio Mode: in Fullscreen Details view the user has
+            // explicitly opened a game, so the radio yields to that game's own music — exactly the role
+            // default music plays when radio is off. Returning to List view resumes the radio (the
+            // radio branch restarts it; for Spotify, SpotifyControlService owns the resume). Both radio
+            // branches below return early, so without this the setting was unreachable whenever radio
+            // was on. Fullscreen-only: GetActiveFullscreenView() is null in Desktop.
+            bool radioYieldsToSelectedGame = RadioGameSelectPolicy.ShouldYieldToSelectedGame(
+                isFullscreenDetailsView: GetActiveFullscreenView() == FullscreenView.Details,
+                selectedGameSongCount: settings?.PlayOnlyOnGameSelect == true && settings?.RadioModeEnabled == true
+                    ? _fileService.GetAvailableSongs(game).Count   // only pay for the lookup when it can matter
+                    : 0,
+                settings: settings);
+            _radioYieldedToGameMusic = radioYieldsToSelectedGame;
+
             if (settings?.SpotifyRadioMode == true)
             {
+                if (radioYieldsToSelectedGame)
+                {
+                    // Fall through to normal playback. UPS starting its own audio flips IsPlaying true,
+                    // which SpotifyControlService reads as a lifecycle pause and pauses Spotify — it
+                    // OWNS that pause, so it resumes Spotify once UPS goes quiet again on List return.
+                    _fileLogger?.Debug($"SpotifyRadioMode: yielding to selected game {game.Name} (PlayOnlyOnGameSelect, Details view)");
+                    goto playNormal;
+                }
+
                 // Idempotency (FREEZE FIX): Playnite calls PlayGameMusic repeatedly for the SAME game
                 // (launch, video-stop, minimize-restore, manual play). If we are already suppressed for
                 // this same game (it's current AND UPS is silent), return without doing anything.
@@ -807,6 +836,17 @@ namespace UniPlaySong.Services
             // Radio Mode: plays from the radio pool, but yields to installed games with their own music.
             if (settings?.RadioModeEnabled == true && !forceReload)
             {
+                if (radioYieldsToSelectedGame)
+                {
+                    // Clearing radio state is what lets the radio RESTART when the user backs out to
+                    // List view: that call re-enters this branch with !_isInRadioMode, so the
+                    // StartRadioPlayback below fires again.
+                    _fileLogger?.Debug($"RadioMode: yielding to selected game {game.Name} (PlayOnlyOnGameSelect, Details view)");
+                    _isInRadioMode = false;
+                    _lastRadioSongPath = null;
+                    goto playNormal;
+                }
+
                 // Installed game with music overrides radio — fall through to normal playback
                 if (settings?.MusicOnlyForInstalledGames == true && game.IsInstalled == true)
                 {
@@ -882,26 +922,13 @@ namespace UniPlaySong.Services
                 bool clearedForListView = false;
                 if (songs.Count > 0 && settings?.PlayOnlyOnGameSelect == true)
                 {
-                    try
+                    var fsView = GetActiveFullscreenView();
+                    _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect check — FullscreenView={fsView}, Songs={songs.Count}");
+                    if (fsView == FullscreenView.List)
                     {
-                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
-                        {
-                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
-                            var api = plugin?.PlayniteApi;
-                            var mode = api?.ApplicationInfo?.Mode;
-                            var fsView = mode == ApplicationMode.Fullscreen ? api.MainView.ActiveFullscreenView : (FullscreenView?)null;
-                            _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect check — Mode={mode}, FullscreenView={fsView}, Songs={songs.Count}");
-                            if (mode == ApplicationMode.Fullscreen && fsView == FullscreenView.List)
-                            {
-                                _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect — List view active, clearing {songs.Count} game songs for default music");
-                                songs.Clear();
-                                clearedForListView = true;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect check failed: {ex.Message}");
+                        _fileLogger?.Debug($"PlayGameMusic: PlayOnlyOnGameSelect — List view active, clearing {songs.Count} game songs for default music");
+                        songs.Clear();
+                        clearedForListView = true;
                     }
                 }
 
@@ -1231,9 +1258,13 @@ namespace UniPlaySong.Services
                 // is a deliberate act and should pick a new random song, even when the game ID hasn't
                 // changed. Without this, repeat Details-entries for the same game would fall through
                 // to the alphabetical FirstOrDefault() branch in SelectSongToPlay.
+                // radioYieldsToSelectedGame covers the radio equivalent: while browsing, the RADIO is
+                // the ambient layer (not default music), so _isPlayingDefaultMusic is false and this
+                // would otherwise never arm — every Details entry replayed the same alphabetically
+                // first song. Entering Details from radio is the same deliberate act, so randomize.
+                // RandomizeOnEverySelect still gates the actual pick inside SelectSongToPlay.
                 bool forceRandomizeOnDetailsEntry =
-                    _isPlayingDefaultMusic
-                    && _currentGameId == gameId
+                    ((_isPlayingDefaultMusic && _currentGameId == gameId) || radioYieldsToSelectedGame)
                     && songs.Count > 1
                     && !clearedForListView;
 
@@ -2136,6 +2167,28 @@ namespace UniPlaySong.Services
         }
 
         // Marks song start time and starts preview timer if preview mode is enabled for game music
+        // Active Fullscreen view, or null in Desktop mode / when the API isn't reachable. Used by the
+        // "Play Only on Game Select" paths, which are Fullscreen-only concepts — a null result means
+        // the feature does not apply, which is why Desktop never yields or clears.
+        private FullscreenView? GetActiveFullscreenView()
+        {
+            try
+            {
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    var api = plugin?.PlayniteApi;
+                    if (api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen)
+                        return api.MainView.ActiveFullscreenView;
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"GetActiveFullscreenView failed: {ex.Message}");
+            }
+            return null;
+        }
+
         private void MarkSongStart()
         {
             _songStartTime = DateTime.Now;

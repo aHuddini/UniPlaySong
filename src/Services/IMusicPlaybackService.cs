@@ -72,6 +72,13 @@ namespace UniPlaySong.Services
         bool IsPaused { get; }
         bool IsLoaded { get; }
 
+        // True while Radio Mode has yielded to a selected game's own music (PlayOnlyOnGameSelect in
+        // Fullscreen Details view). SpotifyControlService treats this as a lifecycle pause so Spotify
+        // ducks out instead of playing over the game track. Must be an EXPLICIT flag: it cannot be
+        // inferred from IsPlaying, which by the IMusicPlayer.IsActive invariant counts a
+        // paused-mid-playback song as active — a stale loaded song would then pause Spotify forever.
+        bool IsRadioYieldedToGameMusic { get; }
+
         // True when the user has explicitly started music at least once in the
         // current Playnite session via any manual-play path (top panel, media
         // key, dashboard, external control). Resets on Playnite restart.

@@ -166,7 +166,14 @@ namespace UniPlaySong.Services.Spotify
                         // Not-yet-started counts as a lifecycle pause: holds the engage seed (Pause +
                         // LifecyclePausedByUps) until OnApplicationStarted, so the radio starts exactly
                         // once when the app is actually visible instead of during startup churn.
-                        bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false;
+                        // The radio yielding to a selected game's own music also counts as a lifecycle
+                        // pause: Spotify must duck out rather than play over the game track, and because
+                        // UPS owns this pause Decide issues the Resume automatically on List return.
+                        // Uses the EXPLICIT yield flag, never IsPlaying — IsPlaying maps to
+                        // IMusicPlayer.IsActive, which counts a paused-mid-playback song as active, so a
+                        // stale loaded song would hold Spotify paused indefinitely.
+                        bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false
+                                               || _playback?.IsRadioYieldedToGameMusic == true;
                         bool spotifyPlaying = _client.IsPlaying;
                         var (action, next) = SpotifyRadioDecision.Decide(
                             radioOn: true, lifecyclePaused: lifecyclePaused,
