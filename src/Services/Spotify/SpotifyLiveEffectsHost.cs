@@ -170,9 +170,21 @@ namespace UniPlaySong.Services.Spotify
                 // landed and holds the process the extra beat Windows needs to commit.
                 float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
                 bool confirmed = false;
-                for (int attempt = 0; attempt < 12 && !confirmed; attempt++)
+                int attempts = 0;
+                for (; attempts < 12 && !confirmed; attempts++)
                 {
-                    SpotifyAudioSession.SetMuted(false);
+                    // SetMuted reports whether ANY Spotify session was found. If none exists there is
+                    // nothing to restore, and the readback below can never confirm (GetSessionVolume
+                    // returns the 0f fallback, so `now >= restore * 0.9f` is never true) — which meant
+                    // every shutdown burned all 12 attempts: 300ms of sleeps plus ~70 full
+                    // multi-device COM enumerations, for users who never even use Spotify. This is on
+                    // the unconditional shutdown path, so bail the moment we know there's no session.
+                    bool found = SpotifyAudioSession.SetMuted(false);
+                    if (!found)
+                    {
+                        _fileLogger?.Debug("[SpotifyFx] exit restore: no Spotify session — nothing to restore");
+                        return;
+                    }
                     SpotifyAudioSession.SetSessionVolume(restore);
                     Thread.Sleep(25); // give the audio engine time to apply before we read back
 
@@ -181,7 +193,7 @@ namespace UniPlaySong.Services.Spotify
                     // Confirmed when unmuted AND volume is at/near the target (not still ducked).
                     confirmed = !muted && now >= restore * 0.9f && now > DuckVolume * 2;
                 }
-                _fileLogger?.Debug($"[SpotifyFx] exit restore: target={restore:F4} confirmed={confirmed}");
+                _fileLogger?.Debug($"[SpotifyFx] exit restore: target={restore:F4} confirmed={confirmed} attempts={attempts}");
             }
             catch (Exception ex) { _fileLogger?.Warn($"[SpotifyFx] exit restore failed: {ex.Message}"); }
         }

@@ -164,6 +164,25 @@ namespace UniPlaySong.Common
             IMMDeviceCollection devices = null;
             try
             {
+                // Resolve Spotify's PIDs ONCE per enumeration instead of calling
+                // Process.GetProcessById per session. That per-session lookup was the dominant cost
+                // here and it got worse the longer the machine ran: it opens a process handle for
+                // EVERY audio session on EVERY render device (not just Spotify's), never disposes it
+                // (a leaked handle per session per enumeration), and THROWS for the dead PIDs of
+                // expired sessions — which accumulate over a long Spotify run. Now it's a cheap
+                // integer set lookup: no per-session handles, no exceptions, no leak.
+                var spotifyPids = new System.Collections.Generic.HashSet<uint>();
+                try
+                {
+                    foreach (var p in Process.GetProcessesByName(SpotifyProcessName))
+                    {
+                        try { spotifyPids.Add((uint)p.Id); } catch { }
+                        p.Dispose();
+                    }
+                }
+                catch { }
+                if (spotifyPids.Count == 0) return; // Spotify isn't running — nothing to enumerate for
+
                 var type = Type.GetTypeFromCLSID(CLSID_MMDeviceEnumerator);
                 enumerator = (IMMDeviceEnumerator)Activator.CreateInstance(type);
 
@@ -201,11 +220,7 @@ namespace UniPlaySong.Common
                                 control2.GetProcessId(out uint pid);
                                 if (pid == 0) continue;
 
-                                string name;
-                                try { name = Process.GetProcessById((int)pid).ProcessName; }
-                                catch { continue; }
-                                if (!string.Equals(name, SpotifyProcessName, StringComparison.OrdinalIgnoreCase))
-                                    continue;
+                                if (!spotifyPids.Contains(pid)) continue;
 
                                 control.GetState(out int state);
 
