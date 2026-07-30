@@ -758,11 +758,20 @@ namespace UniPlaySong
                     _taskbarMediaControls.PlayPauseClicked += OnMediaKeyPlayPause;
                     _taskbarMediaControls.NextClicked += OnMediaKeyNext;
                     _taskbarMediaControls.PreviousClicked += OnMediaKeyPrevious;
-                    bool isPlaying = _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true;
+                    bool isPlaying = IsSpotifyTheActiveMediaSource()
+                        ? _spotifyControlService?.IsSpotifyPlaying == true
+                        : (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true);
                     _taskbarMediaControls.Attach(isPlaying);
                     _playbackService.OnPlaybackStateChanged += OnTaskbarPlaybackStateChanged;
                     _playbackService.OnMusicStarted += OnTaskbarMusicStarted;
                     _playbackService.OnMusicStopped += OnTaskbarMusicStopped;
+                    // Spotify's own play/pause never touches UPS's playback state, so with only the
+                    // subscriptions above the thumbnail icon refreshed just when some UNRELATED UPS
+                    // event happened to fire — the icon lagged badly behind Spotify. Track Spotify's
+                    // state too. (_spotifyControlService exists here: InitializeServices runs in the
+                    // constructor, well before OnApplicationStarted.)
+                    if (_spotifyControlService != null)
+                        _spotifyControlService.NowPlayingChanged += OnSpotifyStateChangedForTaskbar;
                 }
                 catch (Exception ex)
                 {
@@ -1271,6 +1280,8 @@ namespace UniPlaySong
                 _playbackService.OnPlaybackStateChanged -= OnTaskbarPlaybackStateChanged;
                 _playbackService.OnMusicStarted -= OnTaskbarMusicStarted;
                 _playbackService.OnMusicStopped -= OnTaskbarMusicStopped;
+                if (_spotifyControlService != null)
+                    _spotifyControlService.NowPlayingChanged -= OnSpotifyStateChangedForTaskbar;
                 _taskbarMediaControls.Detach();
                 _taskbarMediaControls = null;
             }
@@ -2767,8 +2778,28 @@ namespace UniPlaySong
 
         #region Media Key Handlers
 
+        // Spotify-vs-UPS transport routing for the media keys AND the taskbar thumbnail buttons —
+        // they share these handlers. ONLY the Spotify branch is new: when Spotify is not the active
+        // source these fall through to the original UPS-player logic unchanged, guard included.
+        // (Routing everything through ActiveMediaService.PlayPause() dropped that
+        // "IsPlaying || IsLoaded" guard, so a press with nothing loaded pinned a sticky Manual pause
+        // source and playback stayed silent — hence the deliberately narrow branch here.)
+        // Same signal ActiveMediaService.ResolveSource() uses, and it's a cached, non-blocking read.
+        private bool IsSpotifyTheActiveMediaSource() => _spotifyControlService?.IsSpotifyActive == true;
+
         private void OnMediaKeyPlayPause()
         {
+            if (IsSpotifyTheActiveMediaSource())
+            {
+                // Spotify owns the audio here; UPS's player is suppressed but still loaded, so driving
+                // _playbackService started UPS game music ALONGSIDE Spotify. Route through
+                // ActiveMediaService so SpotifyControlService's manual pause/resume bookkeeping stays
+                // authoritative and theme transport bindings refresh with it.
+                _activeMediaService?.PlayPause();
+                _topPanelMediaControl?.UpdateIcons();
+                return;
+            }
+
             if (_playbackService == null) return;
 
             if (_playbackService.IsPaused)
@@ -2786,13 +2817,15 @@ namespace UniPlaySong
 
         private void OnMediaKeyNext()
         {
-            _playbackService?.SkipToNextSong();
+            if (IsSpotifyTheActiveMediaSource()) _activeMediaService?.Next();
+            else _playbackService?.SkipToNextSong();
             _topPanelMediaControl?.UpdateIcons();
         }
 
         private void OnMediaKeyPrevious()
         {
-            _playbackService?.RestartCurrentSong();
+            if (IsSpotifyTheActiveMediaSource()) _activeMediaService?.Previous();
+            else _playbackService?.RestartCurrentSong();
             _topPanelMediaControl?.UpdateIcons();
         }
 
@@ -2800,8 +2833,26 @@ namespace UniPlaySong
 
         private void OnTaskbarPlaybackStateChanged()
         {
-            bool isPlaying = _playbackService?.IsPlaying == true && _playbackService?.IsPaused != true;
+            // Match the transport routing above: with Spotify active UPS's own player is suppressed,
+            // so reading it alone left the thumbnail button stuck on "Play" while Spotify was audibly
+            // playing. IsSpotifyPlaying is the client's cached volatile state — no SMTC round-trip,
+            // safe on this frequently-raised handler.
+            bool isPlaying = IsSpotifyTheActiveMediaSource()
+                ? _spotifyControlService?.IsSpotifyPlaying == true
+                : (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true);
             _taskbarMediaControls?.UpdatePlaybackState(isPlaying);
+        }
+
+        // NowPlayingChanged is raised outside SpotifyControlService's lock and can arrive on the SMTC
+        // worker/threadpool. ThumbButtonInfo.ImageSource is a DependencyObject property, so the
+        // refresh has to run on the UI thread. BeginInvoke, never a synchronous Invoke: a sync
+        // marshal from an SMTC callback thread can deadlock against a UI thread already inside
+        // Recompute — the launch-freeze class this codebase has been bitten by before.
+        private void OnSpotifyStateChangedForTaskbar()
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess()) { OnTaskbarPlaybackStateChanged(); return; }
+            dispatcher.BeginInvoke(new Action(OnTaskbarPlaybackStateChanged));
         }
 
         private void OnTaskbarMusicStarted(UniPlaySongSettings settings)
