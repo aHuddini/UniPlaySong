@@ -5,13 +5,13 @@ Packages:
     ReleaseDate: 2026-07-30
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.0/UniPlaySong-1_7_0.pext'
     Changelog:
-      - '[New Feature] Radio Mode can play through your gaming sessions — turn on "Except Radio Mode" under Pause on Game Launch. Manual pause and screen lock still stop it. Theme-bindable.'
+      - '[New Feature] Radio Mode can play through your gaming sessions — turn on "Except Radio Mode" under Pause on Game Launch. Manual pause and screen lock pause still stop it. Theme-bindable.'
       - '[New Feature] "Play music only on game select" now works with Radio Mode: radio while you browse, the game''s own music when you open it, radio again when you back out — and a fresh song each time.'
       - '[Critical Fix] Pausing for other apps'' audio no longer stops working for the rest of the session after a cancelled game launch.'
-      - '[Improved] Faster shutdown — closing Playnite could stall for seconds, and got worse the longer it had been open.'
+      - '[Fixed] Faster shutdown — closing Playnite could stall for seconds, and sometimes got worse the longer it had been open.'
       - '[Fixed] Taskbar media buttons now control Spotify when it''s your radio source, with a correct play/pause icon.'
-      - '[Fixed] Live Effects on Spotify: no more static when a Fullscreen theme stalls, plus smoother game switches.'
-      - '[Fixed] Pause correctness: game audio counted as "external audio", pauses you had switched off returning after a game, and settings needing a game change to take effect.'
+      - '[Fixed] Live Effects on Spotify: reduced unusual static noise when a Fullscreen theme stalls, plus smoother game switches.'
+      - '[Fixed] Pause correctness: game audio sometimes counted as "external audio" pausing UPS. Some pauses you had switched off returned enabled after launching a game.'
   - Version: 1.6.9
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-25
