@@ -14,7 +14,9 @@
 // isolation via WASAPI Process Loopback (ActivateAudioInterfaceAsync +
 // AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS, INCLUDE_TARGET_PROCESS_TREE), then
 // streams 32-bit float PCM to a managed callback. No system-wide loopback,
-// no virtual cable, no driver, no admin. Min OS: Windows 10 build 20348.
+// no virtual cable, no driver, no admin. Min OS: Windows 10 version 2004
+// (build 19041) — the API is documented as 20348+ but ships working in 2004,
+// which is what OsCapabilities.SupportsProcessLoopback gates on (v1.6.9).
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -84,9 +86,16 @@ namespace {
         WAVEFORMATEX wfx = {};
         wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT; wfx.nChannels = 2; wfx.nSamplesPerSec = 44100;
         wfx.wBitsPerSample = 32; wfx.nBlockAlign = 8; wfx.nAvgBytesPerSec = 44100 * 8;
+        // 5s buffer (5 * 10^7 hundred-ns), matching OBS win-capture-audio. This is CAPACITY, not
+        // latency — packets are still delivered as they arrive, so a big buffer costs nothing but
+        // memory. It was 200ms, and that was the binding constraint behind audible static/dropouts:
+        // the capture loop hands PCM to a MANAGED callback, so any managed stall (a gen2 GC pause, a
+        // heavy Fullscreen-theme view load) blocks this thread, WASAPI overflows, and the overflowed
+        // audio is DISCARDED at the source — no downstream buffer can recover it. 5s of headroom
+        // absorbs those stalls instead of dropping samples.
         if (FAILED(client->Initialize(AUDCLNT_SHAREMODE_SHARED,
                 AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                2000000, 0, &wfx, nullptr))) { SignalStart(-1); CoUninitialize(); return; }
+                50000000, 0, &wfx, nullptr))) { SignalStart(-1); CoUninitialize(); return; }
         HANDLE evt = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         client->SetEventHandle(evt);
         ComPtr<IAudioCaptureClient> cap;
