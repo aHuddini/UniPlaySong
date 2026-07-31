@@ -175,6 +175,12 @@ namespace UniPlaySong.Services
         private bool _radioYieldedToGameMusic;
         public bool IsRadioYieldedToGameMusic => _radioYieldedToGameMusic;
 
+        // Bumped by every call that changes what SHOULD be playing (PlayGameMusic, Stop,
+        // FadeOutAndStop). A deferred start captures the value at schedule time and aborts if it
+        // no longer matches — so a warm-up that lands after the user has already moved on is
+        // dropped instead of stomping the newer song.
+        private int _playbackGeneration;
+
         public bool IsGameSessionActive => _gameSessionActive;
 
         public void SetGameSessionActive(bool active)
@@ -674,6 +680,9 @@ namespace UniPlaySong.Services
 
         public void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload)
         {
+            // Any decision about what to play supersedes a deferred start still in flight.
+            System.Threading.Interlocked.Increment(ref _playbackGeneration);
+
             if (game == null)
             {
                 // v1.5.0 (Bug A defense-in-depth): even if the coordinator
@@ -1492,24 +1501,7 @@ namespace UniPlaySong.Services
 
                     _currentSongPath = null;
 
-                    _musicPlayer.Load(newSongPath);
-                    _musicPlayer.Volume = 0;
-                    _currentSongPath = newSongPath;
-                    ClearAllPauseSources();
-
-                    if (_isPaused)
-                    {
-                        _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
-                        OnMusicStarted?.Invoke(settings);
-                    }
-                    else
-                    {
-                        _musicPlayer.Play();
-                        MarkSongStart();
-                        _fader.FadeIn();
-                        _fileLogger?.Debug($"Playing (initial): {Path.GetFileName(newSongPath)}");
-                        OnMusicStarted?.Invoke(settings);
-                    }
+                    StartWithFadeIn(newSongPath, settings);
                 }
             }
             catch (Exception ex)
@@ -1527,6 +1519,7 @@ namespace UniPlaySong.Services
         {
             try
             {
+                System.Threading.Interlocked.Increment(ref _playbackGeneration);
                 _crossfadeCoordinator?.Cancel();
                 StopPreviewTimer();
                 CancelSongEndFade();
@@ -1555,6 +1548,7 @@ namespace UniPlaySong.Services
 
         private void FadeOutAndStop()
         {
+            System.Threading.Interlocked.Increment(ref _playbackGeneration);
             CancelSongEndFade();
             bool playerActive = (_musicPlayer?.IsLoaded ?? false) || (_musicPlayer?.IsActive ?? false);
 
@@ -2209,6 +2203,74 @@ namespace UniPlaySong.Services
                 try { player.PreLoad(filePath); }
                 catch (Exception ex) { _fileLogger?.Debug($"Preload skipped for {Path.GetFileName(filePath)}: {ex.Message}"); }
             });
+        }
+
+        // Starts a song that has NO outgoing track to fade out — first play after silence, and the
+        // radio's yield to a selected game in Fullscreen Details view. Because there is no fade-out,
+        // there is no window for SchedulePreload to warm the decoder in, so this path used to call
+        // Load() cold on the UI thread: 192ms of reader-build for a long mp3, measured in the field.
+        // That block is what tears the Spotify live-effects output (the capture and its replay both
+        // need the UI thread to stay responsive) and stalls Fullscreen navigation.
+        //
+        // So build the reader on a worker first, then come back to the UI thread to do the mixer
+        // wiring and start playback — Load() then finds the preloaded reader and costs ~0ms.
+        // Everything observable stays in the original order; only the file I/O moves off-thread.
+        private void StartWithFadeIn(string newSongPath, UniPlaySongSettings settings)
+        {
+            var player = _musicPlayer;
+            var dispatcher = Application.Current?.Dispatcher;
+
+            // No dispatcher (tests, headless) — behave exactly as before.
+            if (player == null || dispatcher == null)
+            {
+                StartWithFadeInCore(newSongPath, settings);
+                return;
+            }
+
+            int generation = System.Threading.Volatile.Read(ref _playbackGeneration);
+
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { player.PreLoad(newSongPath); }
+                catch (Exception ex) { _fileLogger?.Debug($"Preload skipped for {Path.GetFileName(newSongPath)}: {ex.Message}"); }
+
+                dispatcher.BeginInvoke(new Action(() =>
+                {
+                    // The user moved on (new game, stop, fade-out) while we were warming up, or the
+                    // backend was swapped underneath us — the newer decision owns playback now.
+                    if (System.Threading.Volatile.Read(ref _playbackGeneration) != generation)
+                    {
+                        _fileLogger?.Debug($"Deferred start superseded: {Path.GetFileName(newSongPath)}");
+                        return;
+                    }
+                    if (!ReferenceEquals(_musicPlayer, player)) return;
+
+                    StartWithFadeInCore(newSongPath, settings);
+                }));
+            });
+        }
+
+        // The original synchronous body. Load() is cheap here when the warm-up landed, and falls
+        // back to building the reader itself when it didn't — same result either way.
+        private void StartWithFadeInCore(string newSongPath, UniPlaySongSettings settings)
+        {
+            _musicPlayer.Load(newSongPath);
+            _musicPlayer.Volume = 0;
+            _currentSongPath = newSongPath;
+            ClearAllPauseSources();
+
+            if (_isPaused)
+            {
+                _fileLogger?.Debug($"Loaded (manual pause active): {Path.GetFileName(newSongPath)}");
+                OnMusicStarted?.Invoke(settings);
+                return;
+            }
+
+            _musicPlayer.Play();
+            MarkSongStart();
+            _fader.FadeIn();
+            _fileLogger?.Debug($"Playing (initial): {Path.GetFileName(newSongPath)}");
+            OnMusicStarted?.Invoke(settings);
         }
 
         private void MarkSongStart()
