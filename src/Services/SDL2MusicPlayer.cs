@@ -37,6 +37,8 @@ namespace UniPlaySong.Services
         // (NAudio can just rebuild the mixer; SDL cannot). Consumed + cleared by ReloadFromDeviceRelease().
         private string _resumeReloadPath = string.Empty;
         private TimeSpan _resumeReloadPosition = TimeSpan.Zero;
+        // Guards the preload slot: PreLoad runs on a worker thread, Load consumes it on the UI thread.
+        private readonly object _preloadLock = new object();
         private static bool _isSDLAudioInitialized = false;
         // Mix_HookMusicFinished is ONE process-global hook. Installing it per-instance let the
         // last-constructed player (the prewarmed jingle player, since v1.5.10) steal it from the
@@ -211,23 +213,26 @@ namespace UniPlaySong.Services
 
         public string Source => _source;
 
+        // Called on a WORKER thread so the decode doesn't block the UI during navigation. Deliberately
+        // does NOT call InitializeSDL(): opening the device (Mix_OpenAudio) off-thread while the UI
+        // thread is playing is the kind of SDL2 threading hazard this file already documents. If the
+        // device is closed (idle teardown), skip — Load() reopens it on the UI thread as before.
+        // Preload is only an optimisation, so bailing out is always safe.
         public void PreLoad(string filePath)
         {
-            EnsureNotDisposed();
-            InitializeSDL(); // re-opens the device if the idle timer tore it down
-            if (_preloadedMusic != IntPtr.Zero)
-            {
-                SDL2Mixer.Mix_FreeMusic(_preloadedMusic);
-                _preloadedMusic = IntPtr.Zero;
-                _preloadedPath = string.Empty;
-            }
+            if (_isDisposed || !_isSDLAudioInitialized || string.IsNullOrEmpty(filePath)) return;
 
-            _preloadedMusic = SDL2Mixer.Mix_LoadMUS(filePath);
-            if (_preloadedMusic == IntPtr.Zero)
+            IntPtr loaded = SDL2Mixer.Mix_LoadMUS(filePath);
+            if (loaded == IntPtr.Zero) return; // failed — Load() will do it the normal way
+
+            IntPtr displaced;
+            lock (_preloadLock)
             {
-                throw new Exception($"Failed to load music! SDL Error: {SDL2.SDL_GetError()}");
+                displaced = _preloadedMusic;
+                _preloadedMusic = loaded;
+                _preloadedPath = filePath;
             }
-            _preloadedPath = filePath;
+            if (displaced != IntPtr.Zero) SDL2Mixer.Mix_FreeMusic(displaced);
         }
 
         public void Load(string filePath)
@@ -239,26 +244,24 @@ namespace UniPlaySong.Services
 
                 Close();
 
-                if (_preloadedMusic != IntPtr.Zero)
+                // Claim the preload under the lock — PreLoad runs on a worker thread and could land
+                // at any moment, so the slot must never be observed half-swapped. Mix_FreeMusic is
+                // called outside the lock. (This also drops a latent use-after-free the old code
+                // carried: it freed _preloadedMusic and then assigned that freed pointer to _music.
+                // Only unreachable because Close() above zeroes _music first.)
+                IntPtr claimed = IntPtr.Zero, stalePreload = IntPtr.Zero;
+                lock (_preloadLock)
                 {
-                    if (_preloadedPath == filePath)
+                    if (_preloadedMusic != IntPtr.Zero)
                     {
-                        // Swap to preloaded music
-                        if (_music != IntPtr.Zero)
-                        {
-                            SDL2Mixer.Mix_FreeMusic(_preloadedMusic);
-                        }
-                        _music = _preloadedMusic;
-                        _preloadedMusic = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        // Preloaded different file, free it
-                        SDL2Mixer.Mix_FreeMusic(_preloadedMusic);
+                        if (_preloadedPath == filePath) claimed = _preloadedMusic;
+                        else stalePreload = _preloadedMusic; // preloaded a different song (user moved on)
                         _preloadedMusic = IntPtr.Zero;
                         _preloadedPath = string.Empty;
                     }
                 }
+                if (stalePreload != IntPtr.Zero) SDL2Mixer.Mix_FreeMusic(stalePreload);
+                if (claimed != IntPtr.Zero) _music = claimed;
 
                 if (_music == IntPtr.Zero)
                 {

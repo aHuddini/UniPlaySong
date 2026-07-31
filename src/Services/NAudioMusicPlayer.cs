@@ -78,7 +78,11 @@ namespace UniPlaySong.Services
 
         private bool _isInMixer;
 
-        // Preloaded file reader — created during fade-out to reduce Load() time
+        // Preloaded file reader — built during fade-out so Load() doesn't pay for it.
+        // Guarded because PreLoad now runs on a worker thread (building the reader is ~57ms of
+        // file I/O that used to block the UI thread mid-navigation) while Load() consumes it on
+        // the UI thread. The lock only ever covers the field swap, never the expensive build.
+        private readonly object _preloadLock = new object();
         private WaveStream _preloadedAudioFile;
         private string _preloadedPath;
 
@@ -214,27 +218,35 @@ namespace UniPlaySong.Services
             {
                 var sw = Stopwatch.StartNew();
 
-                if (_preloadedAudioFile != null)
-                {
-                    _preloadedAudioFile.Dispose();
-                    _preloadedAudioFile = null;
-                    _preloadedPath = null;
-                }
+                // Build OUTSIDE the lock — this is the expensive part and must not block Load().
+                WaveStream reader = string.IsNullOrEmpty(filePath) ? null : CreateAudioReader(filePath);
 
-                if (!string.IsNullOrEmpty(filePath))
+                // Swap in under the lock, then dispose whatever it displaced outside it.
+                WaveStream displaced;
+                lock (_preloadLock)
                 {
-                    _preloadedAudioFile = CreateAudioReader(filePath);
-                    _preloadedPath = filePath;
+                    displaced = _preloadedAudioFile;
+                    _preloadedAudioFile = reader;
+                    _preloadedPath = reader != null ? filePath : null;
                 }
+                displaced?.Dispose();
 
                 sw.Stop();
                 _fileLogger?.Debug($"[NAudio] PreLoad: {sw.ElapsedMilliseconds}ms — {System.IO.Path.GetFileName(filePath)}");
             }
             catch (Exception ex)
             {
+                // Preload is purely an optimisation: on any failure leave the slot empty and let
+                // Load() build the reader itself, exactly as it did before preloading existed.
                 Logger.Error(ex, $"[{LogPrefix}] Failed to preload: {filePath}");
-                _preloadedAudioFile = null;
-                _preloadedPath = null;
+                WaveStream stale;
+                lock (_preloadLock)
+                {
+                    stale = _preloadedAudioFile;
+                    _preloadedAudioFile = null;
+                    _preloadedPath = null;
+                }
+                stale?.Dispose();
             }
         }
 
@@ -256,25 +268,27 @@ namespace UniPlaySong.Services
                 EnsurePersistentLayer();
                 long persistMs = sw.ElapsedMilliseconds;
 
-                // Use preloaded AudioFileReader if path matches, otherwise load fresh
+                // Use the preloaded reader if the path matches, otherwise load fresh. Claim it under
+                // the lock so a worker-thread PreLoad landing at this exact moment can't be observed
+                // half-swapped; the stale reader is disposed (and any fresh build happens) outside it.
                 bool usedPreload = false;
-                if (_preloadedAudioFile != null && _preloadedPath == filePath)
+                WaveStream stalePreload = null;
+                lock (_preloadLock)
                 {
-                    _audioFile = _preloadedAudioFile;
+                    if (_preloadedAudioFile != null && _preloadedPath == filePath)
+                    {
+                        _audioFile = _preloadedAudioFile;
+                        usedPreload = true;
+                    }
+                    else
+                    {
+                        stalePreload = _preloadedAudioFile; // preloaded a different song (user moved on)
+                    }
                     _preloadedAudioFile = null;
                     _preloadedPath = null;
-                    usedPreload = true;
                 }
-                else
-                {
-                    if (_preloadedAudioFile != null)
-                    {
-                        _preloadedAudioFile.Dispose();
-                        _preloadedAudioFile = null;
-                        _preloadedPath = null;
-                    }
-                    _audioFile = CreateAudioReader(filePath);
-                }
+                stalePreload?.Dispose();
+                if (!usedPreload) _audioFile = CreateAudioReader(filePath);
                 long readerMs = sw.ElapsedMilliseconds;
 
                 _effectsChain = new EffectsChain((ISampleProvider)_audioFile, _settingsService);

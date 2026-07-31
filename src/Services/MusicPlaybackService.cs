@@ -1352,7 +1352,7 @@ namespace UniPlaySong.Services
                                 },
                                 preloadAction: () =>
                                 {
-                                    _musicPlayer.PreLoad(songToPlay);
+                                    SchedulePreload(songToPlay);
                                 },
                                 playAction: () =>
                                 {
@@ -1434,7 +1434,7 @@ namespace UniPlaySong.Services
                         },
                         preloadAction: () =>
                         {
-                            _musicPlayer.PreLoad(newSongPath);
+                            SchedulePreload(newSongPath);
                         },
                         playAction: () =>
                         {
@@ -1751,7 +1751,7 @@ namespace UniPlaySong.Services
                     OnSongChanged?.Invoke(nextSong);
                     _fader?.Switch(
                         stopAction: () => { _musicPlayer?.Close(); },
-                        preloadAction: () => { _musicPlayer?.PreLoad(nextSong); },
+                        preloadAction: () => { SchedulePreload(nextSong); },
                         playAction: () =>
                         {
                             _musicPlayer?.Load(nextSong);
@@ -1819,7 +1819,7 @@ namespace UniPlaySong.Services
                     },
                     preloadAction: () =>
                     {
-                        _musicPlayer?.PreLoad(nextGameSong);
+                        SchedulePreload(nextGameSong);
                     },
                     playAction: () =>
                     {
@@ -1961,7 +1961,7 @@ namespace UniPlaySong.Services
                     },
                     preloadAction: () =>
                     {
-                        _musicPlayer.PreLoad(nextSong);
+                        SchedulePreload(nextSong);
                     },
                     playAction: () =>
                     {
@@ -2187,6 +2187,28 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"GetActiveFullscreenView failed: {ex.Message}");
             }
             return null;
+        }
+
+        // Warms the next song's decoder on a WORKER thread during the fade-out. Building the reader
+        // costs ~57ms of file I/O that Load() otherwise paid ON THE UI THREAD at the moment of the
+        // switch — the hitch felt while navigating a Fullscreen library. MusicFader fires this on its
+        // first fade tick (~50ms in), so with the default 0.3s fade-out the worker has ~250ms of
+        // runway before the deferred Load() wants the reader.
+        //
+        // Purely an optimisation and never load-bearing: if the worker is slow, fails, or the user
+        // navigates on to a different game, Load() just builds the reader itself exactly as before
+        // (and disposes any preload that no longer matches). Nothing here can break playback.
+        private void SchedulePreload(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return;
+            var player = _musicPlayer;
+            if (player == null) return;
+
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { player.PreLoad(filePath); }
+                catch (Exception ex) { _fileLogger?.Debug($"Preload skipped for {Path.GetFileName(filePath)}: {ex.Message}"); }
+            });
         }
 
         private void MarkSongStart()
@@ -2446,7 +2468,7 @@ namespace UniPlaySong.Services
                         },
                         preloadAction: () =>
                         {
-                            _musicPlayer.PreLoad(songToPlay);
+                            SchedulePreload(songToPlay);
                         },
                         playAction: () =>
                         {
