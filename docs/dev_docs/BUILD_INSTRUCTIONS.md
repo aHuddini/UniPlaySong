@@ -184,7 +184,9 @@ The packaged `.pext` file will be created in the project root directory with a n
 UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890_1_0_6.pext
 ```
 
-See `docs/VERSIONING.md` for details on the version management system.
+**Version management:** `version.txt` in the project root is the single source of truth. The
+packaging script reads it and overwrites the `Version:` field in `extension.yaml`, so bump
+`version.txt` only — never edit `extension.yaml` by hand.
 
 ## Next Steps
 

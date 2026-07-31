@@ -430,7 +430,7 @@ Point release focused on a reported game-stop pause-source bug, defensive cleanu
 
 ## [1.5.0] - 2026-05-18
 
-> Detailed release notes (full feature breakdown, module structure, upgrade notes) live in `docs/release_notes/v1.5.0.md`.
+> Detailed release notes (full feature breakdown, module structure, upgrade notes): [v1.5.0 release](https://github.com/aHuddini/UniPlaySong/releases/tag/1.5.0).
 
 Quality-of-life and integration release. Four user-visible features land in this version: a per-game music dashboard with stylized backdrop and color theming, a smooth one-click "calm down" mode for ambient music, a randomize-on-startup option for bundled tracks, and a portable Settings Backup tab for moving your UPS config between machines.
 
@@ -468,7 +468,7 @@ Quality-of-life and integration release. Four user-visible features land in this
 
 ## [1.4.6] - 2026-05-09
 
-> Detailed release notes (test scenarios, full bug context) live in `docs/release_notes/v1.4.6-beta1.md`. Theme integration deep-dive in `docs/dev_docs/THEME_INTEGRATION_GUIDE.md` and `docs/dev_docs/TECHNICAL_REFERENCE.md`.
+> Detailed release notes (test scenarios, full bug context): [v1.4.6-beta release](https://github.com/aHuddini/UniPlaySong/releases/tag/1.4.6-beta). Theme integration deep-dive in [THEME_INTEGRATION_GUIDE.md](docs/dev_docs/THEME_INTEGRATION_GUIDE.md).
 
 ### Added
 - **Theme integration via `{PluginSettings}` markup.** Themes can bind UPS settings (`EnableMusic`, `EnableDefaultMusic`, `RadioModeEnabled`, `PlayOnlyOnGameSelect`) directly from XAML — no custom UPS element required, no theme crash if UPS isn't installed. Validated end-to-end against the [Aniki ReMake](https://github.com/Mike-Aniki/Aniki-ReMake) theme. Replaces an earlier reverted approach that added bindable properties to `UPS_MusicControl` (crashed themes with load-order errors). The legacy `UPS_MusicControl` element remains supported for pause/resume bindings.
@@ -485,7 +485,7 @@ Quality-of-life and integration release. Four user-visible features land in this
 
 ## [1.4.5] - 2026-04-23
 
-> Detailed release notes (full context, benchmark numbers, before/after logs) live in `docs/release_notes/v1.4.5-beta1.md`.
+> Detailed release notes (full context, benchmark numbers, before/after logs): [v1.4.5-beta release](https://github.com/aHuddini/UniPlaySong/releases/tag/1.4.5-beta).
 
 ### Added
 - **yt-dlp version display in Settings → Downloads** — passive readout next to the path field (e.g. `✓ Found · v2025.12.08`), cached by `(path, mtime)` so in-place yt-dlp updates re-probe correctly.
@@ -706,7 +706,7 @@ Quality-of-life and integration release. Four user-visible features land in this
 - **Open Game Index** - New button in Settings → Editing → File Management opens `_game-index.txt` directly in the default text editor. Shows a helpful prompt if the index hasn't been generated yet. The "Original File Management" section has been renamed to "File Management".
 
 ### Added
-- **Localization Infrastructure** - Foundation for community translation support. Implements WPF `ResourceDictionary` locale loading at startup (`LoadLocalization()`): detects system locale, tries to load a matching `Localization/{locale}.xaml` file compiled into the assembly, falls back to `en_US.xaml`. `ResourceProvider.GetString(key)` helper provides safe fallback to the key name if a string is missing. English reference file (`src/Localization/en_US.xaml`) defines the canonical key contract with ~30 seed strings. String extraction from C# dialogs and XAML labels is deferred until a translator is available. See `docs/plans/2026-03-08-localization-plan.md` for the full extraction plan.
+- **Localization Infrastructure** - Foundation for community translation support. Implements WPF `ResourceDictionary` locale loading at startup (`LoadLocalization()`): detects system locale, tries to load a matching `Localization/{locale}.xaml` file compiled into the assembly, falls back to `en_US.xaml`. `ResourceProvider.GetString(key)` helper provides safe fallback to the key name if a string is missing. English reference file (`src/Localization/en_US.xaml`) defines the canonical key contract with ~30 seed strings. String extraction from C# dialogs and XAML labels is deferred until a translator is available. See `docs/archive/plans/2026-03-08-localization-plan.md` for the full extraction plan.
 
 ## [1.3.4] - 2026-03-07
 
@@ -947,7 +947,7 @@ GitHub suspended this account in February 2026 without notice or explanation. Th
 ## [1.1.9] - 2026-01-13
 
 ### Added
-- **Theme Integration (UPS_MusicControl)** ([#43](https://github.com/aHuddini/UniPlaySong/issues/43)) — `PluginControl` for theme developers to pause/resume music via XAML Tag bindings. New `PauseSource.ThemeOverlay` and `PauseSource.Video` for independent pause tracking. See [Theme Integration Guide](docs/THEME_INTEGRATION_GUIDE.md). Designed for ANIKI REMAKE compatibility.
+- **Theme Integration (UPS_MusicControl)** ([#43](https://github.com/aHuddini/UniPlaySong/issues/43)) — `PluginControl` for theme developers to pause/resume music via XAML Tag bindings. New `PauseSource.ThemeOverlay` and `PauseSource.Video` for independent pause tracking. See [Theme Integration Guide](docs/dev_docs/THEME_INTEGRATION_GUIDE.md). Designed for ANIKI REMAKE compatibility.
 
 ### Credits
 - Thanks to **Mike Aniki** for guidance and ANIKI REMAKE testing.

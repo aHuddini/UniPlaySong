@@ -18,6 +18,8 @@ docs/dev_docs/roadmaps/
 CLAUDE.md
 .superpowers/
 docs/superpowers/
+# Working plans are local-only; the shipped ones that predate this rule are
+# tracked under docs/archive/plans/.
 docs/plans/
 
 # Bundled jingle audio files (not distributed in repo due to licensing)

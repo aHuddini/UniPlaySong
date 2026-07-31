@@ -18,6 +18,11 @@ This document provides detailed technical references for key variables, logic, a
 10. [Audio Normalization](#audio-normalization)
 11. [Download Manager](#download-manager)
 12. [Theme Integration](#theme-integration)
+13. [Theme Integration Internals (UPS_MusicControl)](#theme-integration-internals-ups_musiccontrol)
+14. [Debugging Tips](#debugging-tips)
+
+> Theme **developer** documentation (XAML you put in a theme) lives in
+> [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md). This file documents UPS internals.
 
 ---
 
@@ -1329,7 +1334,7 @@ Why: the multi-source pause stack often holds unrelated pause sources when overl
 
 ---
 
-## Theme Integration (UPS_MusicControl)
+## Theme Integration Internals (UPS_MusicControl)
 
 ### Overview
 
@@ -1519,27 +1524,10 @@ private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
 
 ### Theme Usage
 
-**Basic Example**:
-```xml
-<ContentControl x:Name="UPS_MusicControl"
-    Tag="{Binding ElementName=MyOverlay, Path=IsVisible}" />
-```
-
-**DataTrigger Example**:
-```xml
-<ContentControl x:Name="UPS_MusicControl">
-    <ContentControl.Style>
-        <Style TargetType="ContentControl">
-            <Setter Property="Tag" Value="False"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=IntroVideo, Path=Tag}" Value="Playing">
-                    <Setter Property="Tag" Value="True"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-    </ContentControl.Style>
-</ContentControl>
-```
+Theme-facing XAML for `UPS_MusicControl` — quick start, `DataTrigger`/`MultiDataTrigger` styles,
+Radio Mode gating, and the ANIKI REMAKE reference — lives in
+[THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md). That guide is the one kept current for
+theme developers; this section covers only how UPS implements the control internally.
 
 ### Debugging Theme Integration
 

@@ -14,131 +14,36 @@ UniPlaySong is a Playnite extension that provides console-like game music previe
 
 ## Project Structure
 
-```
-UniPlaySong/
-├── src/                       # All C# source code
-│   ├── Common/                    # Shared utilities and constants
-│   │   ├── Constants.cs           # Centralized constants (volumes, paths, durations)
-│   │   ├── DialogHelper.cs        # Centralized dialog window creation
-│   │   ├── FileLogger.cs          # File-based logging utility
-│   │   ├── PlayniteThemeHelper.cs # Playnite theme integration helpers
-│   │   ├── PrimarySongManager.cs  # Primary song selection logic
-│   │   └── RelayCommand.cs        # MVVM command pattern implementation
-│   │
-│   ├── DeskMediaControl/          # Desktop mode media controls + Music Dashboard
-│   │   ├── MediaControlIcons.cs           # IcoFont icon constants for media buttons
-│   │   ├── TopPanelMediaControlViewModel.cs # ViewModel for play/pause and skip buttons
-│   │   ├── MusicLibraryView.xaml          # Full-page Music Library Dashboard UI
-│   │   ├── MusicLibraryView.xaml.cs       # Dashboard code-behind (visualizer, tabs, glow)
-│   │   ├── MusicLibraryViewModel.cs       # Dashboard ViewModel (game list, tabs, playback)
-│   │   ├── ProgressWidthConverter.cs      # Progress bar width MultiBinding converter
-│   │   ├── SpectrumVisualizerControl.cs   # Spectrum visualizer (multi-instance safe)
-│   │   ├── PeakMeterControl.cs            # Peak meter visualization
-│   │   └── SongTitleCleaner.cs            # Filename → title/artist parser
-│   │
-│   ├── Downloaders/               # Music download implementations
-│   │   ├── IDownloader.cs         # Downloader interface
-│   │   ├── IDownloadManager.cs    # Download manager interface
-│   │   ├── DownloadManager.cs     # Central download coordinator
-│   │   ├── KHInsiderDownloader.cs # KHInsider source implementation
-│   │   ├── YouTubeDownloader.cs   # YouTube source implementation
-│   │   └── YouTubeClient.cs       # YouTube API client
-│   │
-│   ├── Models/                    # Data structures
-│   │   ├── Album.cs               # Album/soundtrack model
-│   │   ├── GameCardItem.cs        # Display model for dashboard game grid cards
-│   │   ├── SongListItem.cs        # Display model for dashboard song lists
-│   │   ├── Song.cs                # Individual song model
-│   │   ├── GameMusic.cs           # Game music association model
-│   │   ├── Source.cs              # Download source enum
-│   │   ├── DownloadItem.cs        # Download item model
-│   │   ├── FailedDownload.cs      # Failed download tracking
-│   │   ├── AudioState.cs          # Audio playback state enum
-│   │   ├── NormalizationSettings.cs # Audio normalization configuration
-│   │   └── WaveformTrim/          # Precise trim models
-│   │       ├── TrimWindow.cs      # Trim selection model (start/end times)
-│   │       └── WaveformData.cs    # Waveform samples for display
-│   │
-│   ├── Monitors/                  # UI integration and monitoring
-│   │   ├── WindowMonitor.cs       # Window state monitoring for theme support
-│   │   ├── MediaElementsMonitor.cs # Video playback detection
-│   │   └── GameContextBindingFactory.cs # Game context binding
-│   │
-│   ├── Audio/                     # NAudio audio processing pipeline
-│   │   ├── EffectsChain.cs        # Reverb + echo + EQ pipeline (style presets)
-│   │   ├── OggFileReader.cs       # NVorbis-based OGG Vorbis reader (WaveStream + ISampleProvider)
-│   │   ├── GmeReader.cs           # Game Music Emu retro chiptune reader (WaveStream + ISampleProvider, v1.4.0+)
-│   │   ├── GmeNative.cs           # P/Invoke bindings for gme.dll (v1.4.0+)
-│   │   ├── SmoothVolumeSampleProvider.cs # Per-sample curve ramp (5 fade curves)
-│   │   └── VisualizationDataProvider.cs  # FFT + peak/RMS tap for spectrum visualizer
-│   │
-│   ├── Players/                   # Audio playback implementations
-│   │   ├── IMusicPlayer.cs        # Music player interface
-│   │   ├── MusicPlayer.cs         # WPF MediaPlayer implementation (fallback)
-│   │   ├── SDL2MusicPlayer.cs     # SDL2 implementation (default)
-│   │   ├── NAudioMusicPlayer.cs   # NAudio implementation (Live Effects/Visualizer)
-│   │   ├── MusicFader.cs          # Volume ramp monitor + action dispatcher
-│   │   └── SDL/                   # SDL2 P/Invoke wrappers
-│   │       ├── SDL.cs             # SDL2 core library bindings
-│   │       └── SDL_mixer.cs       # SDL2_mixer audio library bindings
-│   │
-│   ├── Services/                  # Core business logic services
-│   │   ├── MusicPlaybackService.cs        # High-level playback orchestration
-│   │   ├── IMusicPlaybackService.cs       # Playback service interface
-│   │   ├── DashboardPlaybackService.cs    # Independent NAudio player for Music Dashboard
-│   │   ├── IDashboardPlaybackService.cs   # Dashboard playback interface
-│   │   ├── MusicPlaybackCoordinator.cs    # Central playback decision coordinator
-│   │   ├── IMusicPlaybackCoordinator.cs   # Coordinator interface
-│   │   ├── GameMusicFileService.cs        # File system operations for game music
-│   │   ├── SettingsService.cs             # Settings management and persistence
-│   │   ├── ErrorHandlerService.cs         # Centralized error handling
-│   │   ├── DownloadDialogService.cs       # Download dialog orchestration
-│   │   ├── SearchCacheService.cs          # Search result caching
-│   │   ├── AudioNormalizationService.cs   # Audio normalization (EBU R128)
-│   │   ├── INormalizationService.cs       # Normalization service interface
-│   │   ├── AudioTrimService.cs            # Silence trimming service
-│   │   ├── ITrimService.cs                # Trim service interface
-│   │   ├── WaveformTrimService.cs         # Precise waveform-based trimming (NAudio + FFmpeg)
-│   │   ├── IWaveformTrimService.cs        # Waveform trim service interface
-│   │   ├── ExternalControlService.cs      # URI-based external playback control
-│   │   └── Controller/                    # Controller support services
-│   │       ├── IControllerInputReceiver.cs # Interface for SDK controller event receivers
-│   │       ├── ControllerEventRouter.cs   # Stack-based SDK event router
-│   │       ├── ControllerDetectionService.cs # Controller presence detection
-│   │       └── VisualEnhancementService.cs # Visual feedback for controller
-│   │
-│   ├── Menus/                     # Playnite menu integration
-│   │   ├── GameMenuHandler.cs     # Game context menu handler
-│   │   └── MainMenuHandler.cs     # Main menu handler
-│   │
-│   ├── Handlers/                  # Dialog and operation handlers
-│   │   ├── ControllerDialogHandler.cs      # Controller-friendly dialog operations
-│   │   ├── NormalizationDialogHandler.cs   # Audio normalization dialog operations
-│   │   ├── TrimDialogHandler.cs            # Silence trimming dialog operations
-│   │   └── WaveformTrimDialogHandler.cs    # Precise waveform trim dialog operations
-│   │
-│   ├── Views/                     # WPF UI views
-│   │   ├── DownloadDialogView.xaml           # Download dialog UI
-│   │   ├── SimpleControllerDialog.xaml       # Controller-optimized download dialog
-│   │   ├── ControllerFilePickerDialog.xaml   # Controller file picker
-│   │   ├── ControllerDeleteSongsDialog.xaml  # Controller delete dialog
-│   │   ├── NormalizationProgressDialog.xaml  # Normalization progress UI
-│   │   ├── WaveformTrimDialog.xaml           # Desktop waveform trim dialog
-│   │   └── ControllerWaveformTrimDialog.xaml # Controller waveform trim dialog
-│   │
-│   ├── ViewModels/                # MVVM view models
-│   │   └── DownloadDialogViewModel.cs     # Download dialog view model
-│   │
-│   ├── DefaultMusic/              # Bundled ambient preset audio files
-│   ├── Jingles/                   # Bundled celebration jingle audio files
-│   ├── UniPlaySong.csproj         # Project file
-│   └── UniPlaySong.cs             # Main plugin entry point
-│
-├── UniPlaySong.sln            # Solution file (stays at root)
-├── extension.yaml             # Extension manifest
-├── version.txt                # Version (single source of truth)
-└── scripts/                   # Build and packaging scripts
-```
+All C# source lives under `src/`. Counts below are indicative of relative weight, not exact —
+this map is deliberately directory-level, because the per-file tree it replaced had drifted out
+of date (it was missing five directories that had existed for months). Use it to find the right
+neighbourhood, then let the compiler and search tell you the rest.
+
+| Directory | Scale | What lives there |
+|---|---|---|
+| `Services/` | ~74 files | The bulk of the plugin. Playback (`MusicPlaybackService`, `MusicPlaybackCoordinator`), both audio backends (`NAudioMusicPlayer`, `SDL2MusicPlayer`), Spotify (`Services/Spotify/`), downloads, normalization, trimming, settings. |
+| `Common/` | ~34 files | Shared utilities: `Constants`, `FileLogger`, `DialogHelper`, `PlayniteThemeHelper`, WASAPI/COM helpers. |
+| `Views/` | 19 + 18 XAML | Dialogs. Desktop and controller-first variants are currently separate implementations (e.g. `AmplifyDialog` vs `ControllerAmplifyDialog`). |
+| `Models/` | ~15 files | Data structures and enums, including `PauseSource`. |
+| `Audio/` | ~14 files | DSP: `EffectsChain`, sample providers, and the native shim binding under `Audio/Native/`. |
+| `Controls/` | 11 + 7 XAML | Theme-facing custom elements registered via `AddCustomElementSupport` — `UPS_MusicControl` and friends. |
+| `DeskMediaControl/` | 11 + 1 XAML | Desktop top-panel media controls and the Music Library Dashboard. |
+| `Downloaders/` | ~8 files | KHInsider and YouTube sources behind `IDownloader`. |
+| `Handlers/` | ~8 files | Playnite event handling split out of the plugin entry point. |
+| `Features/` | 6 + 2 XAML | Self-contained features (e.g. `MusicInfoCard/`) with their own Views/ViewModels. |
+| `IconGlow/` | ~6 files | Sidebar and list hover glow effects. |
+| `ViewModels/` | ~5 files | MVVM view models for the larger dialogs. |
+| `Monitors/` | ~4 files | External-state watchers, including the video detector. |
+| `Players/` | ~3 files | `MusicFader` and playback-timing helpers. |
+| `Menus/` | ~2 files | Game and main-menu item construction. |
+| `Localization/` | 1 XAML | `en_US.xaml` string resources (extraction still pending). |
+| `DefaultMusic/`, `Jingles/`, `Images/` | assets | Bundled audio and image assets, no code. |
+
+**Entry point:** `src/UniPlaySong.cs` — the `GenericPlugin` subclass. At ~6,600 lines it is the
+largest single file in the project; its `#region` blocks act as de-facto module boundaries.
+
+**Root files:** `UniPlaySong.sln`, `extension.yaml` (manifest — generated, do not hand-edit),
+`version.txt` (version single source of truth), `scripts/` (build and packaging).
 
 ## Core Architecture Components
 
@@ -810,7 +715,7 @@ The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following
 ## Related Documentation
 
 - [NAudio Pipeline](NAUDIO_PIPELINE.md) — Persistent mixer, volume ramping, visualization, fade curves
-- [NAudio Audio Artifact Fix](../plans/2026-02-22-naudio-smooth-volume-design.md) — Design doc for the per-sample ramp that eliminated tremolo artifacts
+- [NAudio Audio Artifact Fix](../archive/plans/2026-02-22-naudio-smooth-volume-design.md) — Design doc for the per-sample ramp that eliminated tremolo artifacts (archived)
 
 ## Future Architecture Improvement Ideas
 
