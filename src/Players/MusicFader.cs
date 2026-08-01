@@ -65,7 +65,13 @@ namespace UniPlaySong.Players
             // DispatcherTimer polls at 50ms to detect ramp completion and fire actions.
             // The actual volume ramping happens per-sample on the audio thread (NAudio)
             // or via the player's own DispatcherTimer (SDL2/WPF).
-            _fadeTimer = new DispatcherTimer(DispatcherPriority.Normal)
+            //
+            // Input priority (5), not Normal (9): this tick only polls a volume the audio side is
+            // already driving, so it must not outrank Render (7) — at Normal it preempted the
+            // render pass ~20x/sec for the whole fade, which is exactly when Fullscreen navigation
+            // is busiest. Completion is detected from the player's volume, so a late tick detects
+            // the same thing a moment later rather than missing it.
+            _fadeTimer = new DispatcherTimer(DispatcherPriority.Input)
             {
                 Interval = TimeSpan.FromMilliseconds(50)
             };

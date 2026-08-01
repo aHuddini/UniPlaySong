@@ -317,7 +317,10 @@ namespace UniPlaySong.Services
 
             if (_rampTimer == null)
             {
-                _rampTimer = new DispatcherTimer(DispatcherPriority.Normal)
+                // Render priority (7), not Normal (9) — same reasoning as SDL2MusicPlayer:
+                // progress is wall-clock derived, so a late tick costs step granularity, not
+                // correctness, and the ramp stops outranking the render pass during navigation.
+                _rampTimer = new DispatcherTimer(DispatcherPriority.Render)
                 {
                     Interval = TimeSpan.FromMilliseconds(RampIntervalMs)
                 };

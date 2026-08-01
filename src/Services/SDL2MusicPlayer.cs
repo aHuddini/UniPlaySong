@@ -423,7 +423,12 @@ namespace UniPlaySong.Services
 
             if (_rampTimer == null)
             {
-                _rampTimer = new DispatcherTimer(DispatcherPriority.Normal)
+                // Render priority (7), not Normal (9): at ~60 ticks/sec for the length of every
+                // fade, a Normal-priority timer preempts the render pass and input handling —
+                // felt as stutter while navigating a Fullscreen library. OnRampTick derives
+                // progress from wall-clock elapsed time, not from a tick count, so a delayed tick
+                // produces a coarser volume step but the same completion time and final volume.
+                _rampTimer = new DispatcherTimer(DispatcherPriority.Render)
                 {
                     Interval = TimeSpan.FromMilliseconds(RampIntervalMs)
                 };
