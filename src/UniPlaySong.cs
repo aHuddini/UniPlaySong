@@ -85,6 +85,8 @@ namespace UniPlaySong
         private IMusicPlaybackService _playbackService;
         private IDownloadManager _downloadManager;
         private GameMusicFileService _fileService;
+        private Services.SongPoolProvider _songPoolProvider;
+        private Services.MigrationProgressRunner _migrationRunner;
         private Services.ITrailerAudioService _trailerAudioService;
         private ErrorHandlerService _errorHandler;
         private GameMenuHandler _gameMenuHandler;
@@ -256,6 +258,8 @@ namespace UniPlaySong
             _api = api;
             _httpClient = new HttpClient();
             _htmlWeb = new HtmlWeb();
+            // Needs nothing but the API, and the settings dialog can invoke it at any time.
+            _migrationRunner = new Services.MigrationProgressRunner(_api);
 
             try
             {
@@ -2979,6 +2983,9 @@ namespace UniPlaySong
             _errorHandler = new ErrorHandlerService(Logger, _fileLogger, _api);
 
             _fileService = new GameMusicFileService(gamesPath, _errorHandler, () => _settings, emlGamesPath);
+            // Reads _fileService through a lambda, not a captured reference — this field is
+            // reassigned when the music path changes.
+            _songPoolProvider = new Services.SongPoolProvider(_api, () => _fileService, _fileLogger);
 
             // Trailer-audio extraction service: demuxes EML VideoTrailer.mp4 audio for
             // no-music games when DefaultMusicSource.DeferToTrailerAudio is selected.
@@ -4145,238 +4152,20 @@ namespace UniPlaySong
 
         #region Music Migration
 
-        /// <summary>
-        /// Run a migration operation with progress dialog
-        /// </summary>
+        // Implementation lives in MigrationProgressRunner (Services/MigrationProgressRunner.cs).
+        // These stay public because UniPlaySongSettingsViewModel calls them through the plugin.
         public void RunMigrationWithProgress(
             string title,
             Func<IProgress<Services.MigrationProgress>, System.Threading.CancellationToken, System.Threading.Tasks.Task<Services.MigrationBatchResult>> migrationTask)
-        {
-            try
-            {
-                // Create progress dialog
-                var progressDialog = new Views.MigrationProgressDialog();
-                progressDialog.SetTitle(title);
+            => _migrationRunner.RunMigrationWithProgress(title, migrationTask);
 
-                var window = Common.DialogHelper.CreateFixedDialog(
-                    PlayniteApi,
-                    title,
-                    progressDialog,
-                    width: 550,
-                    height: 450);
-
-                Common.DialogHelper.AddFocusReturnHandler(window, PlayniteApi, "migration dialog close");
-
-                // Start migration asynchronously
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
-                    {
-                        var progress = new Progress<Services.MigrationProgress>(p =>
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                progressDialog.ReportProgress(p);
-                            }));
-                        });
-
-                        var result = await migrationTask(progress, progressDialog.CancellationToken);
-
-                        // Report completion
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            progressDialog.ReportCompletion(result);
-
-                            // Show summary message after a short delay
-                            if (!result.WasCancelled)
-                            {
-                                var message = $"Migration Complete!\n\n" +
-                                            $"Games processed: {result.TotalGames}\n" +
-                                            $"Files copied: {result.TotalFilesCopied}\n" +
-                                            $"Files skipped (already exist): {result.TotalFilesSkipped}\n" +
-                                            $"Failed: {result.FailedGames}";
-
-                                PlayniteApi.Dialogs.ShowMessage(message, "Migration Complete");
-                            }
-                        }));
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowMessage("Migration was cancelled.", "Migration Cancelled");
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex, "Error during migration");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during migration: {ex.Message}", "Migration Error");
-                        }));
-                    }
-                });
-
-                // Show dialog (blocks until closed)
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error showing migration progress dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Migration Error");
-            }
-        }
-
-        /// <summary>
-        /// Run a delete operation with progress dialog (no completion report)
-        /// </summary>
         public void RunDeleteWithProgress(
             string title,
             Func<IProgress<Services.MigrationProgress>, System.Threading.CancellationToken, System.Threading.Tasks.Task<Services.PlayniteSoundDeleteResult>> deleteTask)
-        {
-            try
-            {
-                // Create progress dialog
-                var progressDialog = new Views.MigrationProgressDialog();
-                progressDialog.SetTitle(title);
+            => _migrationRunner.RunDeleteWithProgress(title, deleteTask);
 
-                var window = Common.DialogHelper.CreateFixedDialog(
-                    PlayniteApi,
-                    title,
-                    progressDialog,
-                    width: 550,
-                    height: 450);
-
-                Common.DialogHelper.AddFocusReturnHandler(window, PlayniteApi, "delete dialog close");
-
-                // Start delete asynchronously
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
-                    {
-                        var progress = new Progress<Services.MigrationProgress>(p =>
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                progressDialog.ReportProgress(p);
-                            }));
-                        });
-
-                        var result = await deleteTask(progress, progressDialog.CancellationToken);
-
-                        // Report completion as a batch result for UI
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            var batchResult = new Services.MigrationBatchResult
-                            {
-                                TotalGames = result.TotalGames,
-                                SuccessfulGames = result.GamesProcessed,
-                                FailedGames = result.GamesFailed,
-                                TotalFilesCopied = result.FilesDeleted, // Using FilesDeleted for display
-                                WasCancelled = result.WasCancelled
-                            };
-                            progressDialog.ReportCompletion(batchResult);
-
-                            if (!result.WasCancelled)
-                            {
-                                var message = $"Delete Complete!\n\n" +
-                                            $"Games processed: {result.GamesProcessed}\n" +
-                                            $"Files deleted: {result.FilesDeleted}\n" +
-                                            $"Folders removed: {result.FoldersDeleted}\n" +
-                                            $"Failed: {result.FilesFailed}";
-
-                                PlayniteApi.Dialogs.ShowMessage(message, "Delete Complete");
-                            }
-                        }));
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowMessage("Delete operation was cancelled.", "Delete Cancelled");
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex, "Error during delete");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            PlayniteApi.Dialogs.ShowErrorMessage($"Error during delete: {ex.Message}", "Delete Error");
-                        }));
-                    }
-                });
-
-                // Show dialog (blocks until closed)
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error showing delete progress dialog");
-                PlayniteApi.Dialogs.ShowErrorMessage($"Error showing progress dialog: {ex.Message}", "Delete Error");
-            }
-        }
-
-        /// <summary>
-        /// Runs game music tag scanning with progress dialog.
-        /// </summary>
         public void RunTagScanWithProgress(Services.GameMusicTagService tagService)
-        {
-            try
-            {
-                var progressOptions = new GlobalProgressOptions("Scanning games for music status...", true)
-                {
-                    IsIndeterminate = false
-                };
-
-                _api.Dialogs.ActivateGlobalProgress((args) =>
-                {
-                    try
-                    {
-                        var progress = new Progress<Services.TagScanProgress>(p =>
-                        {
-                            args.CurrentProgressValue = p.ProcessedCount;
-                            args.ProgressMaxValue = p.TotalCount;
-                            args.Text = $"Scanning: {p.CurrentGame}\n({p.ProcessedCount}/{p.TotalCount})";
-                        });
-
-                        var task = tagService.ScanAndTagAllGamesAsync(progress, args.CancelToken);
-                        task.Wait(args.CancelToken);
-                        var result = task.Result;
-
-                        if (!args.CancelToken.IsCancellationRequested)
-                        {
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                _api.Dialogs.ShowMessage(
-                                    $"Tag scan complete!\n\n" +
-                                    $"Games scanned: {result.TotalGames}\n" +
-                                    $"With music: {result.GamesWithMusic}\n" +
-                                    $"Without music: {result.GamesWithoutMusic}\n" +
-                                    $"Tags updated: {result.GamesModified}",
-                                    "Scan Complete");
-                            }));
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // User cancelled, do nothing
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex, "Error during tag scan");
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            _api.Dialogs.ShowErrorMessage($"Error during scan: {ex.Message}", "Scan Error");
-                        }));
-                    }
-                }, progressOptions);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error showing tag scan progress");
-                _api.Dialogs.ShowErrorMessage($"Error: {ex.Message}", "Scan Error");
-            }
-        }
+            => _migrationRunner.RunTagScanWithProgress(tagService);
 
         #endregion
 
@@ -5783,158 +5572,13 @@ namespace UniPlaySong
 
         #region Default Song Pool
 
-        // Provides song pools for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
+        // Pool building lives in SongPoolProvider (Services/SongPoolProvider.cs). These wrappers
+        // exist because they are handed to MusicPlaybackService as delegates at three call sites.
         private List<string> GetDefaultSongPool(DefaultMusicSource source, UniPlaySongSettings settings)
-        {
-            var songs = new List<string>();
-
-            switch (source)
-            {
-                case DefaultMusicSource.CustomFolder:
-                    var folder = settings?.DefaultMusicFolderPath;
-                    if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
-                    {
-                        try
-                        {
-                            songs = Directory.GetFiles(folder)
-                                .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
-                                .ToList();
-                        }
-                        catch (Exception ex)
-                        {
-                            _fileLogger?.Warn($"Error scanning custom folder '{folder}': {ex.Message}");
-                        }
-                    }
-                    break;
-
-                case DefaultMusicSource.RandomGame:
-                    var allGames = _api?.Database?.Games;
-                    if (allGames != null)
-                    {
-                        foreach (var game in allGames)
-                        {
-                            var gameSongs = _fileService.GetAvailableSongs(game);
-                            if (gameSongs.Count > 0)
-                                songs.AddRange(gameSongs);
-                        }
-                    }
-                    break;
-
-                case DefaultMusicSource.CustomRotation:
-                    var gameIds = settings?.CustomRotationGameIds;
-                    if (gameIds != null && _api?.Database?.Games != null)
-                    {
-                        foreach (var gameId in gameIds)
-                        {
-                            var game = _api.Database.Games[gameId];
-                            if (game != null)
-                            {
-                                var gameSongs = _fileService.GetAvailableSongs(game);
-                                if (gameSongs.Count > 0)
-                                    songs.AddRange(gameSongs);
-                            }
-                        }
-                    }
-                    break;
-
-                case DefaultMusicSource.CompletionStatusPool:
-                    var statusIds = settings?.DefaultMusicStatusPoolIds;
-                    if (statusIds != null && statusIds.Count > 0 && _api?.Database?.Games != null)
-                    {
-                        var statusIdSet = new System.Collections.Generic.HashSet<Guid>(statusIds);
-                        foreach (var poolGame in _api.Database.Games)
-                        {
-                            if (statusIdSet.Contains(poolGame.CompletionStatusId))
-                            {
-                                var gameSongs = _fileService.GetAvailableSongs(poolGame);
-                                if (gameSongs.Count > 0)
-                                    songs.AddRange(gameSongs);
-                            }
-                        }
-                    }
-                    break;
-            }
-
-            return songs;
-        }
+            => _songPoolProvider.GetDefaultSongPool(source, settings);
 
         private List<string> GetRadioSongPool(RadioMusicSource source, UniPlaySongSettings settings)
-        {
-            var songs = new List<string>();
-
-            switch (source)
-            {
-                case RadioMusicSource.FullLibrary:
-                    // Every downloaded song across the entire library
-                    if (_api?.Database?.Games != null)
-                    {
-                        foreach (var game in _api.Database.Games)
-                        {
-                            var gameSongs = _fileService.GetAvailableSongs(game);
-                            if (gameSongs.Count > 0)
-                                songs.AddRange(gameSongs);
-                        }
-                    }
-                    break;
-
-                case RadioMusicSource.CustomFolder:
-                    // Radio's own folder; falls back to the Default Music folder when unset (v1.5.8 —
-                    // preserves pre-decouple behavior for users who never picked a radio-specific folder).
-                    var folder = settings?.RadioCustomFolderPath;
-                    if (string.IsNullOrWhiteSpace(folder))
-                        folder = settings?.DefaultMusicFolderPath;
-                    if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
-                    {
-                        try
-                        {
-                            songs = Directory.GetFiles(folder)
-                                .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
-                                .ToList();
-                        }
-                        catch (Exception ex)
-                        {
-                            _fileLogger?.Warn($"RadioMode: Error scanning custom folder '{folder}': {ex.Message}");
-                        }
-                    }
-                    break;
-
-                case RadioMusicSource.CustomRotation:
-                    var gameIds = settings?.CustomRotationGameIds;
-                    if (gameIds != null && _api?.Database?.Games != null)
-                    {
-                        foreach (var gameId in gameIds)
-                        {
-                            var game = _api.Database.Games[gameId];
-                            if (game != null)
-                            {
-                                var gameSongs = _fileService.GetAvailableSongs(game);
-                                if (gameSongs.Count > 0)
-                                    songs.AddRange(gameSongs);
-                            }
-                        }
-                    }
-                    break;
-
-                case RadioMusicSource.CompletionStatusPool:
-                    var statusIds = settings?.DefaultMusicStatusPoolIds;
-                    if (statusIds != null && statusIds.Count > 0 && _api?.Database?.Games != null)
-                    {
-                        var statusIdSet = new System.Collections.Generic.HashSet<Guid>(statusIds);
-                        foreach (var poolGame in _api.Database.Games)
-                        {
-                            if (statusIdSet.Contains(poolGame.CompletionStatusId))
-                            {
-                                var gameSongs = _fileService.GetAvailableSongs(poolGame);
-                                if (gameSongs.Count > 0)
-                                    songs.AddRange(gameSongs);
-                            }
-                        }
-                    }
-                    break;
-            }
-
-            return songs;
-        }
+            => _songPoolProvider.GetRadioSongPool(source, settings);
 
         #endregion
 
