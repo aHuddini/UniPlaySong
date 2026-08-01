@@ -17,7 +17,7 @@ namespace UniPlaySong.ViewModels
 {
     public class DownloadFromUrlViewModel : System.Collections.Generic.ObservableObject
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "DownloadFromUrl";
 
         private static readonly Regex YoutubeVideoRegex = new Regex(

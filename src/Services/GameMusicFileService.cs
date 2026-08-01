@@ -14,7 +14,7 @@ namespace UniPlaySong.Services
     // Service for managing game music files and directories
     public class GameMusicFileService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly string _baseMusicPath;
         private readonly string _emlGamesPath;
         private readonly ErrorHandlerService _errorHandler;

@@ -18,7 +18,7 @@ namespace UniPlaySong.Services
     // This eliminates the ~70ms UI-thread freeze from WaveOutEvent lifecycle on every game switch.
     public class NAudioMusicPlayer : IMusicPlayer, IDisposable
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "NAudioPlayer";
         private FileLogger _fileLogger;
 

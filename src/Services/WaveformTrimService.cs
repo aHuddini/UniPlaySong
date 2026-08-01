@@ -15,7 +15,7 @@ namespace UniPlaySong.Services
     // Waveform generation and precise audio trimming using NAudio and FFmpeg
     public class WaveformTrimService : IWaveformTrimService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "PreciseTrim";
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;

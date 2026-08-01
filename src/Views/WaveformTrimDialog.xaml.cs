@@ -20,7 +20,7 @@ namespace UniPlaySong.Views
 {
     public partial class WaveformTrimDialog : UserControl
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "PreciseTrim:Desktop";
 
         private IPlayniteAPI _playniteApi;

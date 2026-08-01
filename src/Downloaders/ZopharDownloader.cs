@@ -17,7 +17,7 @@ namespace UniPlaySong.Downloaders
     // Zophar.net downloader (VGM archive with emulated formats and MP3s)
     public class ZopharDownloader : IDownloader
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Zophar";
         private const string ZopharBaseUrl = "https://www.zophar.net/";
         private const string ZopharFileBaseUrl = "https://fi.zophar.net/";

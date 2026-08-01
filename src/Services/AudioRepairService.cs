@@ -59,7 +59,7 @@ namespace UniPlaySong.Services
     // Detects and repairs audio files causing SDL_mixer errors via FFmpeg probe/re-encode
     public class AudioRepairService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;
         private readonly string _backupBasePath;

@@ -12,7 +12,7 @@ namespace UniPlaySong.Services
     // Manages game music status tags (adds/removes based on whether music is downloaded)
     public class GameMusicTagService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly IPlayniteAPI _playniteApi;
         private readonly GameMusicFileService _fileService;
 

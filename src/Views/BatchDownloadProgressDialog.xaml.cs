@@ -18,7 +18,7 @@ namespace UniPlaySong.Views
     /// </summary>
     public partial class BatchDownloadProgressDialog : UserControl
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private CancellationTokenSource _cancellationTokenSource;
         private ObservableCollection<BatchDownloadItem> _downloadItems;
         private readonly object _lockObject = new object();

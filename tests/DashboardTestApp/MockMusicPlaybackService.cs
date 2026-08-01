@@ -59,6 +59,7 @@ namespace DashboardTestApp
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings) { }
         public void PlayGameMusic(Game game, global::UniPlaySong.UniPlaySongSettings settings, bool forceReload) { }
         public void Stop() { IsPlaying = false; }
+        public void Shutdown() { IsPlaying = false; }
         public void Pause() { }
         public void Resume() { }
         public void PauseImmediate() { }

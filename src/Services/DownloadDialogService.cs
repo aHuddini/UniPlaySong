@@ -21,7 +21,7 @@ namespace UniPlaySong.Services
     // Service for showing download dialogs
     public class DownloadDialogService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "DownloadDialog";
 
         private readonly IPlayniteAPI _playniteApi;

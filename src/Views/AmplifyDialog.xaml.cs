@@ -16,7 +16,7 @@ namespace UniPlaySong.Views
 {
     public partial class AmplifyDialog : UserControl
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Amplify:Desktop";
 
         private IPlayniteAPI _playniteApi;

@@ -14,7 +14,7 @@ namespace UniPlaySong.Handlers
     // Handles audio normalization dialog operations (extracted from UniPlaySong.cs)
     public class NormalizationDialogHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly INormalizationService _normalizationService;

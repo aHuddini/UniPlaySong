@@ -39,10 +39,14 @@ namespace UniPlaySong.Services
             _fileLogger = fileLogger;
             _getSettings = getSettings;
 
-            // Subscribe to song changes
+            // Subscribe to song changes. Named handlers, not lambdas — a lambda cannot be passed to
+            // -= later, so ResubscribeToService below would have no way to detach from the service
+            // it is leaving.
             _playbackService.OnSongChanged += OnSongChangedAsync;
-            _playbackService.OnMusicStopped += _ => ClearCurrentSongInfo();
+            _playbackService.OnMusicStopped += OnMusicStoppedHandler;
         }
+
+        private void OnMusicStoppedHandler(UniPlaySongSettings _) => ClearCurrentSongInfo();
 
         /// <summary>
         /// Resubscribe to a new playback service (e.g., after Live Effects toggle).
@@ -51,11 +55,25 @@ namespace UniPlaySong.Services
         {
             if (newPlaybackService == null) return;
 
+            // Detach from the service we are leaving. Without this the old service — which a
+            // backend swap keeps alive until its timers are stopped — carried on driving metadata
+            // extraction, so the work per song change multiplied with every swap.
+            //
+            // Deliberately NOT short-circuited when the service is unchanged: this method is also
+            // the "refresh my cached info" entry point (see the CurrentSongPath read below), and
+            // callers rely on that even when re-attaching to the same instance. Detach-then-attach
+            // is idempotent, so it doubles as the guard against subscribing twice.
+            if (_playbackService != null)
+            {
+                _playbackService.OnSongChanged -= OnSongChangedAsync;
+                _playbackService.OnMusicStopped -= OnMusicStoppedHandler;
+            }
+
             // Update the service reference so IsPlayingDefaultMusic check works correctly
             _playbackService = newPlaybackService;
 
             newPlaybackService.OnSongChanged += OnSongChangedAsync;
-            newPlaybackService.OnMusicStopped += _ => ClearCurrentSongInfo();
+            newPlaybackService.OnMusicStopped += OnMusicStoppedHandler;
 
             // Update cached info if there's a current song
             var currentPath = newPlaybackService.CurrentSongPath;

@@ -13,7 +13,7 @@ namespace UniPlaySong.IconGlow
     // top two non-adjacent buckets. Colors are HSV-boosted for visibility.
     public class IconColorExtractor
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private static readonly Color DefaultColor1 = Color.FromRgb(100, 149, 237); // Cornflower blue
         private static readonly Color DefaultColor2 = Color.FromRgb(180, 100, 255); // Purple
 

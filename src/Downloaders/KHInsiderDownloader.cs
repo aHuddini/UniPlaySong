@@ -16,7 +16,7 @@ namespace UniPlaySong.Downloaders
     // KHInsider downloader (downloads.khinsider.com)
     public class KHInsiderDownloader : IDownloader
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "KHInsider";
         private const string KhInsiderBaseUrl = "https://downloads.khinsider.com/";
 

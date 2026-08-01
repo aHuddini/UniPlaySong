@@ -18,7 +18,7 @@ namespace UniPlaySong.Controls
     // MusicControl's UpdateMute().
     public partial class MusicControlPauseGamePlayDefault : PluginUserControl, INotifyPropertyChanged
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private static UniPlaySongSettings _settings;
         private static readonly List<MusicControlPauseGamePlayDefault> _instances = new List<MusicControlPauseGamePlayDefault>();

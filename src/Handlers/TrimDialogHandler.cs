@@ -17,7 +17,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class TrimDialogHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly ITrimService _trimService;

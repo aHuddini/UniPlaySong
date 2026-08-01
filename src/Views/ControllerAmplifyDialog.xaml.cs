@@ -23,7 +23,7 @@ namespace UniPlaySong.Views
     /// </summary>
     public partial class ControllerAmplifyDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Amplify:Controller";
 
         // D-pad debouncing for file selection

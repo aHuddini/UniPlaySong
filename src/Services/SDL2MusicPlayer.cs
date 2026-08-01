@@ -69,7 +69,7 @@ namespace UniPlaySong.Services
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
 
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         public SDL2MusicPlayer(ErrorHandlerService errorHandler = null, SettingsService settingsService = null, bool enableIdleTeardown = false)
         {

@@ -13,7 +13,7 @@ namespace UniPlaySong.Handlers
     // Handles bulk audio format conversion dialog operations
     public class ConversionDialogHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly AudioConversionService _conversionService;

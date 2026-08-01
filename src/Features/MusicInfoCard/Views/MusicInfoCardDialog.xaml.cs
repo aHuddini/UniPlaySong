@@ -27,7 +27,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
     // to neutral purple when no icon is available (placeholder shown).
     public partial class MusicInfoCardDialog : UserControl
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Delay (ms) before the indeterminate progress bar appears. Reads
         // that complete before this never flash the loader — common for

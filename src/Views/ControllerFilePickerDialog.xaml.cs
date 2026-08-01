@@ -20,7 +20,7 @@ namespace UniPlaySong.Views
     /// </summary>
     public partial class ControllerFilePickerDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "FilePicker";
 
         // D-pad debouncing - prevents double-input from both controller and WPF processing

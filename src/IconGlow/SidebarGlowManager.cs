@@ -17,7 +17,7 @@ namespace UniPlaySong.IconGlow
     // DotTrail: colored dots on a Canvas overlay that bounce with audio energy.
     class SidebarGlowManager
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IconColorExtractor _colorExtractor;
         private readonly SettingsService _settingsService;

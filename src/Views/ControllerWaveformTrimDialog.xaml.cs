@@ -25,7 +25,7 @@ namespace UniPlaySong.Views
     /// </summary>
     public partial class ControllerWaveformTrimDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "PreciseTrim:Controller";
 
         // D-pad debouncing for file selection (300ms for reliable single-item navigation)

@@ -14,7 +14,7 @@ namespace UniPlaySong.Services
     // Audio amplification service using NAudio for analysis and FFmpeg for processing
     public class AudioAmplifyService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Amplify";
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;

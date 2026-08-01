@@ -16,7 +16,7 @@ namespace UniPlaySong.Services
     // FFmpeg-based bulk audio format conversion
     public class AudioConversionService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly FileLogger _fileLogger;
 
         public AudioConversionService(FileLogger fileLogger = null)

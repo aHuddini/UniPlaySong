@@ -23,7 +23,7 @@ namespace UniPlaySong.Handlers
     // to PreservedOriginals/<GameId>/ before any new files are written.
     public class HesSplitHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "HesSplit";
 
         private readonly IPlayniteAPI _playniteApi;

@@ -23,7 +23,7 @@ namespace UniPlaySong.Common
     // suffix "zpdnekdrzrea0" is constant for Spotify's official Store package on every machine.
     public static class SpotifyLauncher
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Version-independent AppUserModelId for the Store Spotify package. PackageFamilyName is stable
         // across machines/versions (only the version segment of the install folder changes); "!Spotify"

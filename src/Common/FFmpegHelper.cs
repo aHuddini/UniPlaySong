@@ -8,7 +8,7 @@ namespace UniPlaySong.Common
     // FFmpeg validation and common operations
     public static class FFmpegHelper
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         /// <summary>
         /// Validates that FFmpeg is available and executable at the specified path

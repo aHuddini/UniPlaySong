@@ -150,7 +150,7 @@ namespace UniPlaySong.Common
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger()?.Error(ex, "PlayniteThemeHelper: Error finding theme achievement sound");
+                global::UniPlaySong.Common.GatedLogger.Get()?.Error(ex, "PlayniteThemeHelper: Error finding theme achievement sound");
                 return null;
             }
         }
@@ -198,7 +198,7 @@ namespace UniPlaySong.Common
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger()?.Error(ex, "PlayniteThemeHelper: Error reading active theme status");
+                global::UniPlaySong.Common.GatedLogger.Get()?.Error(ex, "PlayniteThemeHelper: Error reading active theme status");
                 return info;
             }
         }
@@ -254,7 +254,7 @@ namespace UniPlaySong.Common
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger()?.Error(ex, "PlayniteThemeHelper: Error finding UPS audio file");
+                global::UniPlaySong.Common.GatedLogger.Get()?.Error(ex, "PlayniteThemeHelper: Error finding UPS audio file");
                 return null;
             }
         }

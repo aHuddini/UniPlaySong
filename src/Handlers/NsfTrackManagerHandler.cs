@@ -18,7 +18,7 @@ namespace UniPlaySong.Handlers
     // the song cache on commit so the new mini-NSFs are picked up.
     public class NsfTrackManagerHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "NsfTrackManager";
 
         private readonly IPlayniteAPI _playniteApi;

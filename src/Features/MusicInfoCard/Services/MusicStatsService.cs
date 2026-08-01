@@ -22,7 +22,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
     // handler depends on the IMusicStatsProvider interface.
     public class MusicStatsService : IMusicStatsProvider
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Extensions that the GME backend handles. These have to be probed
         // via GmeReader (not TagLib) for duration. Matches the chiptune

@@ -21,7 +21,7 @@ namespace UniPlaySong.IconGlow
     // Intensity source: NAudio spectrum (3-band FFT) > NAudio RMS/peak > sine pulse > static.
     public class IconGlowManager
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly SettingsService _settingsService;
         private readonly IconColorExtractor _colorExtractor = new IconColorExtractor();

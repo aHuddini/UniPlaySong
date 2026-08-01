@@ -12,7 +12,7 @@ namespace UniPlaySong.Services
     /// </summary>
     public class AmplifyPreviewPlayer : IDisposable
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "AmplifyPreview";
 
         private MusicPlayer _player;

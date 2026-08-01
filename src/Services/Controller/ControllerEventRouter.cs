@@ -11,7 +11,7 @@ namespace UniPlaySong.Services.Controller
     // take over input and restore the parent dialog when they close.
     public class ControllerEventRouter
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly Stack<IControllerInputReceiver> _receiverStack = new Stack<IControllerInputReceiver>();
         private readonly object _lock = new object();
         private readonly Common.FileLogger _fileLogger;

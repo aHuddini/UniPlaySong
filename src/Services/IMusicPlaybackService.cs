@@ -11,6 +11,10 @@ namespace UniPlaySong.Services
         void PlayGameMusic(Game game, UniPlaySongSettings settings);
         void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload);
         void Stop();
+
+        // Stops every timer this service owns so it can be collected once it is replaced.
+        // Call on the outgoing service during a backend swap.
+        void Shutdown();
         void Pause();
         void Resume();
         void PauseImmediate(); // Instant pause (no fade), for notification sounds

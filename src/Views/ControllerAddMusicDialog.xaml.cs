@@ -18,7 +18,7 @@ namespace UniPlaySong.Views
     // Two-screen flow: folder selection → file selection within chosen folder.
     public partial class ControllerAddMusicDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private DateTime _lastDpadNavigationTime = DateTime.MinValue;
         private const int DpadDebounceMs = 150;

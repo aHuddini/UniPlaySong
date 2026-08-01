@@ -292,7 +292,7 @@ namespace UniPlaySong.Views
             try
             {
                 // Use LogManager to get logger (safer than accessing plugin instance)
-                return LogManager.GetLogger();
+                return global::UniPlaySong.Common.GatedLogger.Get();
             }
             catch
             {

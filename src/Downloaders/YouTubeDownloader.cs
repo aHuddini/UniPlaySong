@@ -15,7 +15,7 @@ namespace UniPlaySong.Downloaders
     // YouTube downloader (requires yt-dlp and ffmpeg)
     public class YouTubeDownloader : IDownloader
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "YouTubeDownloader";
         private const string YouTubeBaseUrl = "https://www.youtube.com";
 

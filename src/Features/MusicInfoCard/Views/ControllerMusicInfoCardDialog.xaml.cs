@@ -28,7 +28,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
     // explicitly is the close button (B / Back / Escape).
     public partial class ControllerMusicInfoCardDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const int LoaderGraceMs = 200;
 
         private CancellationTokenSource _cts;

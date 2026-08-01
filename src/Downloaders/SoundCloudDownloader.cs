@@ -15,7 +15,7 @@ namespace UniPlaySong.Downloaders
     // SoundCloud downloader (hints-only, uses yt-dlp)
     public class SoundCloudDownloader : IDownloader
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "SoundCloudDownloader";
         private const string SoundCloudBaseUrl = "https://soundcloud.com/";
 

@@ -99,7 +99,7 @@ namespace UniPlaySong.ViewModels
     /// </summary>
     public class BatchManualDownloadViewModel : INotifyPropertyChanged
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "BatchManualDownload";
 
         private readonly IPlayniteAPI _playniteApi;

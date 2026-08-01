@@ -24,7 +24,7 @@ namespace UniPlaySong.Views
     /// </summary>
     public partial class SimpleControllerDialog : UserControl, IControllerInputReceiver
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "ControllerDownload";
 
         // D-pad debouncing - prevents double-input from both controller and WPF processing

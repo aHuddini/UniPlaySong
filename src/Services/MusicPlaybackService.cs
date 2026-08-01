@@ -15,7 +15,7 @@ namespace UniPlaySong.Services
     // High-level service for managing music playback for games
     public class MusicPlaybackService : IMusicPlaybackService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Static Random instance to avoid allocations and duplicate sequences
         private static readonly Random _random = new Random();
@@ -1512,6 +1512,34 @@ namespace UniPlaySong.Services
                     showUserMessage: false
                 );
                 _fileLogger?.Error($"Error: {ex.Message}", ex);
+            }
+        }
+
+        // Releases everything that would otherwise keep this instance alive after it stops being
+        // the active service — a backend swap replaces the service wholesale (Live Effects,
+        // Visualizer and Crossfade toggles, and the GME auto-switch that fires during ordinary
+        // browsing), and the old one used to be dropped on the floor still running.
+        //
+        // A started DispatcherTimer is held by the Dispatcher's timer list, which is a strong
+        // reference: an orphan with any of these four still ticking is never collected and keeps
+        // driving a player that was disposed during the swap. Stopping them is what actually makes
+        // the instance collectable.
+        public void Shutdown()
+        {
+            try
+            {
+                System.Threading.Interlocked.Increment(ref _playbackGeneration);
+
+                StopPreviewTimer();
+                CancelSongEndFade();
+                _crossfadeCoordinator?.Cancel();
+                _fader?.CancelFade();
+
+                _fileLogger?.Debug("MusicPlaybackService: shutdown — timers stopped");
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"MusicPlaybackService shutdown error: {ex.Message}", ex);
             }
         }
 

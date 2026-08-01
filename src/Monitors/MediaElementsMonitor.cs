@@ -38,7 +38,7 @@ namespace UniPlaySong.Monitors
         }
         readonly static private Dictionary<WeakReference, TimeSpan> mediaElementPositions = new Dictionary<WeakReference, TimeSpan>(new WeakTargetComparer());
 
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         static public void Attach(IPlayniteAPI api, UniPlaySongSettings settings)
         {

@@ -21,7 +21,7 @@ namespace UniPlaySong.ViewModels
     /// </summary>
     public class DownloadDialogViewModel : ObservableObject
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "DownloadDialog";
 
         private readonly IPlayniteAPI _playniteApi;

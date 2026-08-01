@@ -15,7 +15,7 @@ namespace UniPlaySong.Monitors
     /// </summary>
     public class WindowMonitor
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private static IMusicPlaybackService _playbackService;
         private static ErrorHandlerService _errorHandler;
         private static bool _classHandlerRegistered;

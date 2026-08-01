@@ -13,7 +13,7 @@ namespace UniPlaySong.Controls
     // Theme integration control: Tag="True" pauses music via ThemeOverlayActive
     public partial class MusicControl : PluginUserControl, INotifyPropertyChanged
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private static UniPlaySongSettings _settings;
         private static readonly List<MusicControl> _musicControls = new List<MusicControl>();

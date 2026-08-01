@@ -15,7 +15,7 @@ namespace UniPlaySong.Services
     // their result and worded their summary, so they now share one implementation.
     public class MigrationProgressRunner
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly IPlayniteAPI _api;
 
         public MigrationProgressRunner(IPlayniteAPI api)

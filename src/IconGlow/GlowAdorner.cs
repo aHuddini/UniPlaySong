@@ -17,7 +17,7 @@ namespace UniPlaySong.IconGlow
     // Each layer is drawn twice (color1 offset + color2 offset) for gradient effect.
     public static class GlowRenderer
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         public static BitmapSource RenderGlow(ImageSource iconSource, Color color1, Color color2,
             double blurSigma, double displayWidth, double displayHeight, double intensity = 1.8)

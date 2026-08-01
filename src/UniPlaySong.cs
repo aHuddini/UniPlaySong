@@ -33,7 +33,7 @@ namespace UniPlaySong
     /// </summary>
     public class UniPlaySong : GenericPlugin
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private static readonly int _selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
         private readonly IPlayniteAPI _api;
         private readonly FileLogger _fileLogger;
@@ -269,7 +269,9 @@ namespace UniPlaySong
                 // next to the .exe) instead of a hardcoded %AppData%\Playnite.
                 _fileLogger = new FileLogger(extensionPath, _api.Paths.ConfigurationPath);
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
-                _fileLogger.Info($"=== UniPlaySong v{version} Starting ===");
+                // Lifecycle, not Info: this line survives the debug gate so a log from a user
+                // running without debug logging still identifies the build it came from.
+                _fileLogger.Lifecycle($"=== UniPlaySong v{version} Starting ===");
 
                 // Initialize bundled preset and jingle services
                 Services.BundledPresetService.Initialize(extensionPath);
@@ -3465,6 +3467,10 @@ namespace UniPlaySong
                 // Recreate playback service with new player
                 var oldService = _playbackService;
                 bool preserveManualStart = oldService?.UserHasManuallyStartedThisSession == true;
+                // Stop the outgoing service's timers before dropping it. A running DispatcherTimer
+                // is rooted by the Dispatcher, so an un-shut-down orphan stays alive and keeps
+                // ticking against the player disposed just above.
+                oldService?.Shutdown();
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
@@ -3556,6 +3562,7 @@ namespace UniPlaySong
 
                 // Recreate playback service
                 var oldService = _playbackService;
+                oldService?.Shutdown(); // see the sibling swap above — orphaned timers root the instance
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());

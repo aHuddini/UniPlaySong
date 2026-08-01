@@ -19,7 +19,7 @@ namespace UniPlaySong.IconGlow
     //   2. Selected: full SkiaSharp glow with Grid wrapper (or DropShadowEffect in subtle mode)
     public class ListHoverGlowManager
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly SettingsService _settingsService;
         private readonly IconColorExtractor _colorExtractor;

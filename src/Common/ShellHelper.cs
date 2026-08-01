@@ -8,7 +8,7 @@ namespace UniPlaySong.Common
     // without leaking Process handles.
     public static class ShellHelper
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Opens a folder (or file path) in Windows Explorer.
         //

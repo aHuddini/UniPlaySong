@@ -17,7 +17,7 @@ namespace UniPlaySong.Services
     // Audio normalization using FFmpeg loudnorm filter (two-pass)
     public class AudioNormalizationService : INormalizationService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly ErrorHandlerService _errorHandler;
         private readonly IMusicPlaybackService _playbackService;
         private readonly string _backupBasePath;

@@ -12,7 +12,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class AmplifyDialogHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Amplify";
 
         private readonly IPlayniteAPI _playniteApi;

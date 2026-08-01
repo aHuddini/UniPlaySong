@@ -13,7 +13,7 @@ namespace UniPlaySong.Services
     // Bidirectional music file migration between PlayniteSound and UniPlaySong
     public class MigrationService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "Migration";
 
         // Audio file extensions to migrate (excludes metadata files like .json)

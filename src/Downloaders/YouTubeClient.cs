@@ -16,7 +16,7 @@ namespace UniPlaySong.Downloaders
     // Client for YouTube's internal API (search + playlist retrieval)
     public class YouTubeClient
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "YouTube";
 
         private readonly HttpClient _httpClient;

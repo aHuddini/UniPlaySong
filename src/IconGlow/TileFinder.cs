@@ -13,7 +13,7 @@ namespace UniPlaySong.IconGlow
     // NOT the list item icons which may be hidden or belong to non-selected games.
     public static class TileFinder
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Finds the PART_ImageIcon Image control in the game overview panel.
         // First looks for PART_ControlGameView (the overview panel), then searches within it.

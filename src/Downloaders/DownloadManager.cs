@@ -17,7 +17,7 @@ namespace UniPlaySong.Downloaders
     // Manages music downloads from various sources
     public class DownloadManager : IDownloadManager
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private const string LogPrefix = "DownloadManager";
         private static readonly TimeSpan MaxSongLength = new TimeSpan(0, Constants.MaxPreviewSongLengthMinutes, 0);
         private static readonly TimeSpan MaxAllowedDuration = new TimeSpan(0, Constants.MaxAllowedSongDurationMinutes, 0);

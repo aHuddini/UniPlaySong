@@ -16,7 +16,7 @@ namespace UniPlaySong.Handlers
     /// </summary>
     public class ControllerDialogHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly GameMusicFileService _fileService;

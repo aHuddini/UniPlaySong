@@ -117,7 +117,7 @@ namespace UniPlaySong
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger().Error(ex, "Error setting IsRestartRequired");
+                global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error setting IsRestartRequired");
             }
         });
 
@@ -2765,7 +2765,7 @@ namespace UniPlaySong
                 StatsId3Coverage = "Error";
                 StatsReducibleSpace = "Error";
                 StatsBitrateDistribution = "Error scanning library";
-                LogManager.GetLogger().Error(ex, "Error scanning library stats");
+                global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error scanning library stats");
             }
         }
 
@@ -2959,7 +2959,7 @@ namespace UniPlaySong
             catch (Exception ex)
             {
                 CacheStatsText = $"Cache: Error loading stats";
-                LogManager.GetLogger().Error(ex, "Error updating cache stats");
+                global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error updating cache stats");
             }
         }
 

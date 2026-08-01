@@ -51,7 +51,7 @@ namespace UniPlaySong.Services
     // Priority: 1. Custom file (if set)  2. Bundled  3. User hints merged on top.
     public class SearchHintsService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly string _bundledHintsPath;
         private readonly string _userHintsPath;
         private readonly string _autoSearchDatabasePath;

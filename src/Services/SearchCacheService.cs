@@ -103,7 +103,7 @@ namespace UniPlaySong.Services
     // Caches search results to optimize KHInsider -> YouTube fallback
     public class SearchCacheService
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private readonly string _cacheFilePath;
         private readonly object _cacheLock = new object();
         private SearchCacheData _cache;

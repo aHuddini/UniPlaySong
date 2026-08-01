@@ -130,7 +130,20 @@ namespace UniPlaySong.Common
             }
         }
 
+        // Gated like Debug: with debug logging off, UniPlaySong.log keeps only WARN and ERROR.
+        // Info is progress narration — useful while diagnosing, noise the rest of the time.
         public void Info(string message)
+        {
+            if (IsDebugEnabled != null && !IsDebugEnabled())
+            {
+                return;
+            }
+            Log("INFO", message);
+        }
+
+        // Ungated. For the handful of lines a log is useless without — chiefly the version
+        // banner, since a bug report against an unknown build cannot be acted on.
+        public void Lifecycle(string message)
         {
             Log("INFO", message);
         }

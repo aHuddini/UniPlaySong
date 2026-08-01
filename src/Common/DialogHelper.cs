@@ -25,7 +25,7 @@ namespace UniPlaySong.Common
             public void OnControllerButtonReleased(ControllerInput button) { }
         }
 
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // ============================================================================
         // Color Constants

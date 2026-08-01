@@ -21,7 +21,7 @@ namespace UniPlaySong.Features.MusicInfoCard
     // call Show(game) from the right-click menu wiring.
     public class MusicInfoCardHandler
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly IMusicStatsProvider _statsProvider;

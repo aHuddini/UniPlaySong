@@ -13,7 +13,7 @@ namespace UniPlaySong.Players
     // The timer does NOT step volume — it only monitors and dispatches actions.
     public class MusicFader : IDisposable
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         private readonly IMusicPlayer _player;
         private readonly Func<double> _getMusicVolume;

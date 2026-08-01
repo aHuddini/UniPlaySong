@@ -12,7 +12,7 @@ namespace UniPlaySong.Common
     // breaking the loop before it overflows. Logging is capped so a loop can't flood extensions.log.
     public static class CrashProbe
     {
-        private static readonly ILogger _log = LogManager.GetLogger();
+        private static readonly ILogger _log = global::UniPlaySong.Common.GatedLogger.Get();
         private static int _trips;
 
         public static void PropertyLoop(string property, int depth)

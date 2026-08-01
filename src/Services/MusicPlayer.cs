@@ -14,7 +14,7 @@ namespace UniPlaySong.Services
     /// </summary>
     public class MusicPlayer : IMusicPlayer
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
+        private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         
         private MediaPlayer _mediaPlayer;
         private MediaTimeline _timeLine;
