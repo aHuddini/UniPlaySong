@@ -36,6 +36,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 | [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md) | Known edge cases and deliberately deferred fixes. Written around v1.4.x — verify against current code before acting on it. |
 | [PERF_OPTIMIZATION_PLAN.md](PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
+| [QUICK_START_PROFILES.md](QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. Not built yet. |
 
 ## Other locations
 
