@@ -34,6 +34,35 @@ This buys three things:
 **Applying must be reversible.** Snapshot the owned keys before writing, and offer Undo for the rest
 of the settings session. A profile that cannot be backed out of is a trap.
 
+## Profiles are differentiated by PLAYBACK BEHAVIOUR, not by console branding
+
+The names are a shorthand for a *way music behaves*, and that is what distinguishes one profile from
+the next. "PS3 style" means hover-to-play — move the highlight, music follows. That is a different
+profile from select-to-play, where music only starts once you drill into a game's details view.
+Branding is the label; the trigger is the substance.
+
+Reading the settings, the behaviour splits along two independent dimensions:
+
+**When does music trigger?**
+
+| Setting | Behaviour |
+|---|---|
+| (none set) | **Hover** — music follows the highlight as you browse. The PS3 feel. |
+| `PlayOnlyOnGameSelect` | **Select** — music starts only on explicit A-button select / details view. Default music plays while browsing. Fullscreen only. |
+| `EnablePreviewMode` + `PreviewDuration` | **Clip** — plays a fixed-length snippet rather than the whole track. Composes with either of the above. |
+
+**Which games qualify?**
+
+| Setting | Filter |
+|---|---|
+| `MusicOnlyForInstalledGames` | installed games only; the rest fall through to default music |
+| `NostalgiaMode` + `NostalgiaStatusIds` | only games with chosen completion statuses |
+| `GamePropFilterEnabled` + platform/genre/source ids | only games matching those properties |
+| `FilterModeEnabled` | only while a named Playnite filter preset is active |
+
+These are orthogonal — any trigger combines with any qualifier — which is exactly why the settings
+UI makes them hard to discover. A profile's job is to pick a sensible pairing and name it.
+
 ## Desktop vs Fullscreen is the primary axis
 
 This is the organising idea, and it is grounded in the code rather than taste:
@@ -50,47 +79,66 @@ the profiles in each column differ in ways the other mode cannot express.
 
 ### Fullscreen profiles (couch / controller)
 
-| Profile | Idea |
-|---|---|
-| **Console Preview (PS3 style)** | Music on explicit select, short preview clip, snappy fades. The classic console-menu feel. |
-| **Console Continuous (PS5 style)** | Same select-to-play, but full tracks and longer crossfade — less clipped, more ambient. |
-| **Jukebox / Radio** | Radio plays continuously through browsing *and* game sessions. No per-game switching. |
-| **Quiet Fullscreen** | Music only when a game is opened, no default music while browsing. |
+| Profile | Trigger | Qualifier |
+|---|---|---|
+| **Hover Preview (PS3 style)** | Hover — music follows the highlight | all games |
+| **Select to Play** | Select — only on details view | all games |
+| **Hover Preview, Installed Only** | Hover | installed games only |
+| **Select to Play, Installed Only** | Select | installed games only |
+| **Jukebox / Radio** | radio plays through browsing and games | n/a |
+| **Quiet** | Select, no default music while browsing | all games |
+
+The first four are the grid that matters: two triggers × two qualifiers. That pairing is the thing
+users currently have to discover by finding two unrelated checkboxes on two different tabs.
 
 ### Desktop profiles (mouse / keyboard)
 
-| Profile | Idea |
-|---|---|
-| **Ambient Background** | Default music runs while you work; game music on selection; media controls visible. |
-| **On-Demand** | Nothing auto-plays. Music starts when you press play. For users who find UPS too eager. |
-| **Jukebox / Radio** | Same as its Fullscreen sibling — radio is mode-agnostic. |
-| **Full Experience** | Everything on: per-game music, default music, visualizer, live effects. A demo of what UPS does. |
+| Profile | Trigger | Qualifier |
+|---|---|---|
+| **Hover Preview** | Hover — music follows selection | all games |
+| **Hover Preview, Installed Only** | Hover | installed games only |
+| **Ambient Background** | default music runs; game music on selection | all games |
+| **On-Demand** | nothing auto-plays; press play to start | all games |
+| **Jukebox / Radio** | radio plays continuously | n/a |
+
+Desktop has no **Select to Play** variants: `PlayOnlyOnGameSelect` is Fullscreen-only, so the trigger
+does not exist there. That asymmetry is real and the page should not pretend otherwise.
 
 `Jukebox / Radio` deliberately appears in both columns with the same key set — radio genuinely does
 not care about mode, and hiding it from one column would be arbitrary.
+
+**Clip vs full track** is deliberately *not* a separate profile in either column. It composes with
+every trigger, so it belongs as a toggle on the Quick Start page ("play a short preview clip")
+rather than doubling the profile count.
 
 ## Key sets — TO BE AGREED
 
 Values below are a proposal, not a decision. Everything here already exists as a setting; the
 question is only what each profile should set it to.
 
-### Console Preview (PS3 style) — Fullscreen
+Note that **no profile sets `MusicVolume`** — decided, see Resolved questions.
+
+### Hover Preview (PS3 style) — Fullscreen
 
 | Setting | Value | Why |
 |---|---|---|
-| `MusicState` | `FullscreenOnly` | it is a Fullscreen profile |
-| `PlayOnlyOnGameSelect` | `true` | the defining behaviour — select, don't browse-play |
-| `EnablePreviewMode` | `true` | the 30-second-clip feel |
-| `PreviewDuration` | 30s | |
+| `PlayOnlyOnGameSelect` | `false` | the defining behaviour — music follows the highlight |
+| `MusicOnlyForInstalledGames` | `false` | every game plays |
+| `EnableDefaultMusic` | `true` | something plays where a game has no music |
+| `RandomizeOnEverySelect` | `true` | a different track each time you land on a game |
 | `FadeInDuration` / `FadeOutDuration` | short | snappy, console-menu transitions |
-| `EnableDefaultMusic` | `true` | something plays while browsing |
-| `RandomizeOnEverySelect` | `true` | a different track each time you open a game |
 | `StopAfterSongEnds` | `false` | |
 | `RadioModeEnabled` | `false` | radio would override per-game music |
 
-### Console Continuous (PS5 style) — Fullscreen
+### Select to Play — Fullscreen
 
-As above, except `EnablePreviewMode = false` and longer fades. Full tracks rather than clips.
+Identical, except `PlayOnlyOnGameSelect = true`. Browsing plays default music; a game's own music
+starts when you open it.
+
+### …, Installed Only — both triggers
+
+Either of the two above plus `MusicOnlyForInstalledGames = true`. Uninstalled games fall through to
+default music.
 
 ### Jukebox / Radio — both modes
 
@@ -125,15 +173,23 @@ As above, except `EnablePreviewMode = false` and longer fades. Full tracks rathe
 Everything above plus `ShowSpectrumVisualizer` and live effects on. Note this forces the NAudio
 backend, which is a real consequence worth stating in the UI rather than applying silently.
 
-## Open questions
+## Resolved questions
 
-1. **Does a profile own `MusicVolume`?** Leaning no — volume is personal and mode-independent, and
-   overwriting it is the most annoying thing a profile could do.
-2. **Should Full Experience be a profile at all**, given it forces a backend switch? It might belong
-   as a "try everything" button with an explicit warning rather than a peer of the others.
-3. **Where does the page live** — a Quick Start tab, or a panel on About (the new first tab)?
-4. **First-run behaviour.** Offer Quick Start automatically on first install? Powerful, but it must be
-   dismissible and must never apply anything without a click.
+1. **`MusicVolume` is never owned by a profile.** Volume is personal and mode-independent; a profile
+   overwriting it would be the most irritating thing it could do.
+2. **Full Experience is not a peer profile.** It forces the NAudio backend (visualizer and live
+   effects both require it), which is too large a side effect to apply from a one-click tile
+   alongside behavioural profiles. If it ships at all it is a separate "try everything" action with
+   an explicit warning about the backend switch.
+3. **Its own Quick Start tab**, not a panel on About.
+4. **No first-run prompt.** Quick Start is discoverable, never automatic.
+
+## Still open
+
+- **Tab position.** Quick Start presumably belongs at or near the front, which competes with About
+  and Setup for the first slot. Current order starts About, Setup, General.
+- **Whether the clip toggle lives on the page** or is left to the Playback tab. Listed as a page-level
+  toggle above, but it is the one piece of the design not yet argued through.
 
 ## What this does not solve
 
