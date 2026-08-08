@@ -6,7 +6,8 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
     Changelog:
       - '[New Setting] Setup Tab: yt-dlp and FFmpeg setup are in one page for user convenience.'
-      - '[Improved] Settings: long tabs now use collapsible sections, options moved to the tab you would look for them on, tabs reordered with About and Setup first, and sections renamed (Games Completed Status, Games Abandoned Status, PlayniteAchievements Unlocks, Window Focus, Music Library Tagging).'
+      - '[Improved] Settings tabs: long tabs now use collapsible sections, options moved to the tab you would look for them on, and tabs reordered with About and Setup first.'
+      - '[Improved] Settings renames: Games Completed Status, Games Abandoned Status, PlayniteAchievements Unlocks, Window Focus, and Music Library Tagging.'
       - '[Fixed] Experimental tab: Reset skipped media key control and the two fade curve settings.'
       - '[Improved] Smoother library navigation in Fullscreen.'
       - '[Fixed] Switching audio engine left the previous engine running in the background.'
