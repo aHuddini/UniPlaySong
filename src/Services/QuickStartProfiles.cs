@@ -65,9 +65,9 @@ namespace UniPlaySong.Services
         // mean the same profile behaves differently for two users.
         private static Dictionary<string, object> PerGameBase() => new Dictionary<string, object>
         {
-            // Owned explicitly, not assumed: Ambient Background turns EnableMusic OFF to suppress
-            // game music, so a profile switched to afterwards has to turn it back on or the user
-            // would silently keep Ambient's suppression under a tile that promises game music.
+            // Owned explicitly so a profile always leaves the plugin switched on. A brief earlier
+            // build had Ambient Background set this false; anyone who applied it gets repaired by
+            // applying any profile now, rather than being left with UPS reading as disabled.
             { nameof(UniPlaySongSettings.EnableMusic), true },
             { nameof(UniPlaySongSettings.RadioModeEnabled), false },
             { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
@@ -135,18 +135,19 @@ namespace UniPlaySong.Services
                 Id = AmbientDesktop,
                 Name = "Ambient Background",
                 Mode = QuickStartMode.Desktop,
-                Summary = "One continuous background track while you work. Selecting a game does not interrupt it.",
-                // "Ambient" means the bed never breaks. Letting game music take over on selection
-                // made it exactly as reactive as Hover Preview, which is the profile next to it —
-                // the two were not actually different.
+                Summary = "Default music runs continuously while you work, picking up where it left off. A game's own music takes over when you select one.",
+                // Deliberately does NOT switch game music off. An earlier version set
+                // EnableMusic=false to stop game music interrupting the bed, which worked but abused
+                // the plugin's master on/off toggle to mean "default music only" — a user opening
+                // the General tab would find UniPlaySong reading as disabled.
                 //
-                // EnableMusic=false + EnableDefaultMusic=true is the engine's supported way to say
-                // "default music only": PlayGameMusic clears the game's songs and falls through to
-                // the default source. ForceDefaultMusicOverride would be the wrong tool — it is
-                // Fullscreen-only by invariant and is ignored in Desktop.
+                // There is no persisted setting for "default music wins" in Desktop:
+                // ForceDefaultMusicOverride is the switch for that idea, but it is [JsonIgnore]
+                // runtime-only state driven by theme XAML, and it is ignored outside Fullscreen
+                // anyway. So this profile does what UPS actually supports — a continuous bed that
+                // RESUMES rather than restarts, via DefaultMusicContinueSameSong.
                 Values = Merge(PerGameBase(), new Dictionary<string, object>
                 {
-                    { nameof(UniPlaySongSettings.EnableMusic), false },
                     { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
                     // Slow fades suit a background bed; the point is not to be noticed.
                     { nameof(UniPlaySongSettings.FadeInDuration), 1.0 },
@@ -173,8 +174,7 @@ namespace UniPlaySong.Services
         // it, so the fallback only surfaces when the radio genuinely cannot play.
         private static Dictionary<string, object> JukeboxValues() => new Dictionary<string, object>
         {
-            // Jukebox does not build on PerGameBase, so it owns EnableMusic itself for the same
-            // reason: switching here from Ambient Background must not inherit its suppression.
+            // Jukebox does not build on PerGameBase, so it owns EnableMusic for the same reason.
             { nameof(UniPlaySongSettings.EnableMusic), true },
             { nameof(UniPlaySongSettings.RadioModeEnabled), true },
             { nameof(UniPlaySongSettings.EnableDefaultMusic), true },

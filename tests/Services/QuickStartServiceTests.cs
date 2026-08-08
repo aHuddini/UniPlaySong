@@ -236,32 +236,30 @@ namespace UniPlaySong.Tests.Services
             }
         }
 
-        // Ambient means the bed never breaks. EnableMusic=false + EnableDefaultMusic=true is the
-        // engine's supported "default music only" path.
+        // Ambient is a continuous bed that RESUMES rather than restarts. It deliberately does not
+        // switch game music off — EnableMusic is the plugin master toggle, not a "default only" flag.
         [Test]
-        public void Ambient_PlaysDefaultMusicWithoutGameMusicInterrupting()
+        public void Ambient_KeepsAContinuousBedWithoutDisablingThePlugin()
         {
             _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
 
-            Assert.IsFalse(_s.EnableMusic, "game music must not take over the bed");
+            Assert.IsTrue(_s.EnableMusic, "the master toggle must never be used to mean default-music-only");
             Assert.IsTrue(_s.EnableDefaultMusic);
-            Assert.IsTrue(_s.DefaultMusicContinueSameSong, "the bed must not restart");
+            Assert.IsTrue(_s.DefaultMusicContinueSameSong, "the bed resumes rather than restarting");
+            Assert.IsTrue(_s.RandomizeDefaultMusicOnEnd);
             Assert.IsFalse(_s.RadioModeEnabled);
         }
 
-        // Every other tile promises game music, so each must undo Ambient's suppression.
+        // No profile may leave the plugin switched off; this also repairs anyone who applied the
+        // brief earlier build where Ambient set EnableMusic=false.
         [Test]
-        public void SwitchingAwayFromAmbient_RestoresGameMusic()
+        public void NoProfile_LeavesTheMasterToggleOff()
         {
-            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
-            Assert.IsFalse(_s.EnableMusic);
-
-            foreach (var id in new[] { QuickStartProfiles.HoverPreviewDesktop, QuickStartProfiles.HoverPreviewFullscreen,
-                                       QuickStartProfiles.SelectToPlayFullscreen, QuickStartProfiles.JukeboxDesktop })
+            foreach (var p in QuickStartProfiles.All)
             {
                 var s = new UniPlaySongSettings { EnableMusic = false };
-                new QuickStartService().Apply(s, P(id), JukeboxSource.Library, false, false, false);
-                Assert.IsTrue(s.EnableMusic, $"{id} must turn game music back on");
+                new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnableMusic, $"{p.Id} left EnableMusic off");
             }
         }
 
