@@ -327,7 +327,8 @@
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#1FFFFFFF"/>
-                            <Setter Property="BorderBrush" Value="#664CC2FF"/>
+                            <!-- Neutral hover, so the only coloured mark on a row is the active rail. -->
+                            <Setter Property="BorderBrush" Value="#59FFFFFF"/>
                         </Trigger>
                     </Style.Triggers>
                 </Style>
@@ -336,9 +337,10 @@
                     <Border Style="{StaticResource QsCard}">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <!-- Accent rail: a fixed 3px column so every row aligns whether or
-                                     not it is the active one. -->
-                                <ColumnDefinition Width="3"/>
+                                <!-- Active rail: a fixed 4px column so every row aligns whether or not it is
+                                     lit. Wider than the 3px section-header bars because this one
+                                     carries state, not structure. -->
+                                <ColumnDefinition Width="4"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
