@@ -356,35 +356,6 @@ namespace UniPlaySong
             ShowButtonFeedback(sender, "Reset!");
         }
 
-        private void ResetExperimentalTab_Click(object sender, RoutedEventArgs e)
-        {
-            var s = ConfirmAndGetSettings("Experimental");
-            if (s == null) return;
-
-            s.IconGlowPreset = IconGlowPreset.Custom;
-            s.EnableIconGlow = false;
-            s.EnableIconGlowPulse = true;
-            s.EnableIconGlowSpin = false;
-            s.EnableIconGlowSpinAcceleration = false;
-            s.EnableListIconGlow = false;
-            s.SubtleListGlow = false;
-            s.IconGlowSpinSpeed = 20.0;
-            s.IconGlowIntensity = 1.8;
-            s.IconGlowSize = 6.0;
-            s.IconGlowPulseSpeed = 1.5;
-            s.IconGlowAudioSensitivity = 2.0;
-            s.EnableSidebarGlow = false;
-            s.SidebarGlowMode = SidebarGlowMode.Breathing;
-            s.ShowMusicDashboard = false;
-            s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
-            s.AutoLaunchSpotifyOnStartup = false;
-            s.SpotifyExePath = string.Empty;
-            s.EnableMediaKeyControl = false;
-            s.NaudioFadeInCurve = FadeCurveType.Quadratic;
-            s.NaudioFadeOutCurve = FadeCurveType.Cubic;
-            ShowButtonFeedback(sender, "Reset!");
-        }
-
         // Theme Support tab (v1.5.6): PS5-Experience compatibility + theme-developer
         // overlay/video pause opt-outs. Moved out of the Experimental tab.
         private void ResetThemeSupportTab_Click(object sender, RoutedEventArgs e)
