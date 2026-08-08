@@ -45,10 +45,11 @@ namespace UniPlaySong.Services
         // Ids are persisted in ActiveQuickStartProfile, so they must stay stable even if a display
         // name changes.
         public const string HoverPreviewFullscreen = "fs-hover";
+        public const string HoverFullTrackFullscreen = "fs-hover-full";
         public const string SelectToPlayFullscreen = "fs-select";
-        public const string LibraryBackgroundFullscreen = "fs-libbg";
         public const string JukeboxFullscreen = "fs-jukebox";
         public const string HoverPreviewDesktop = "dt-hover";
+        public const string HoverFullTrackDesktop = "dt-hover-full";
         // Id kept as dt-ambient though the tile is now "Background Mode (Default Music)" — ids are
         // persisted, so renaming one would orphan ActiveQuickStartProfile on existing installs.
         public const string AmbientDesktop = "dt-ambient";
@@ -77,57 +78,83 @@ namespace UniPlaySong.Services
             { nameof(UniPlaySongSettings.DefaultMusicContinueSameSong), true },
             { nameof(UniPlaySongSettings.StopAfterSongEnds), false },
             { nameof(UniPlaySongSettings.RandomizeOnEverySelect), true },
+            // Owned so a tile cannot inherit the clip setting from a Hover tile applied earlier.
+            // Hover Short Clip overrides this back to true via ClipValues.
+            { nameof(UniPlaySongSettings.EnablePreviewMode), false },
         };
+
+        // Hover: music follows the highlight, with short fades because browsing changes tracks often
+        // and long fades smear into each other.
+        private static Dictionary<string, object> HoverBase() => Merge(PerGameBase(), new Dictionary<string, object>
+        {
+            { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), false },
+            { nameof(UniPlaySongSettings.FadeInDuration), 0.3 },
+            { nameof(UniPlaySongSettings.FadeOutDuration), 0.2 },
+        });
+
+        // Same, minus PlayOnlyOnGameSelect — it is Fullscreen-only, so writing it in Desktop would
+        // store a value the mode cannot act on.
+        private static Dictionary<string, object> HoverBaseDesktop() => Merge(PerGameBase(), new Dictionary<string, object>
+        {
+            { nameof(UniPlaySongSettings.FadeInDuration), 0.3 },
+            { nameof(UniPlaySongSettings.FadeOutDuration), 0.2 },
+        });
+
+        // Clip vs full track. Owned EXPLICITLY either way rather than left alone: EnablePreviewMode
+        // persists, so a tile that stayed silent about it would inherit whatever the user last had
+        // and two people applying the same tile would hear different things. Being explicit is also
+        // what makes the Short Clip / Full Track pair mean anything — otherwise they would differ by
+        // a setting neither of them owns.
+        private static Dictionary<string, object> ClipValues(bool clip) => clip
+            ? new Dictionary<string, object>
+            {
+                { nameof(UniPlaySongSettings.EnablePreviewMode), true },
+                { nameof(UniPlaySongSettings.PreviewDuration), Common.Constants.DefaultPreviewDuration },
+            }
+            : new Dictionary<string, object>
+            {
+                { nameof(UniPlaySongSettings.EnablePreviewMode), false },
+            };
 
         private static readonly List<QuickStartProfile> _all = new List<QuickStartProfile>
         {
             new QuickStartProfile
             {
                 Id = HoverPreviewFullscreen,
-                Name = "Hover Preview (PS3 style)",
+                Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Music follows the highlight as you browse. Games with no music of their own fall back to your default music.",
-                Values = Merge(PerGameBase(), new Dictionary<string, object>
-                {
-                    { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), false },
-                    // Short fades: browsing changes tracks often, so long fades smear together.
-                    { nameof(UniPlaySongSettings.FadeInDuration), 0.3 },
-                    { nameof(UniPlaySongSettings.FadeOutDuration), 0.2 },
-                })
+                Summary = "Music follows the highlight as you browse, playing a 30-second snippet of each game's track rather than the whole thing.",
+                Values = Merge(HoverBase(), ClipValues(true))
+            },
+            new QuickStartProfile
+            {
+                Id = HoverFullTrackFullscreen,
+                Name = "Hover Preview, Full Track",
+                Mode = QuickStartMode.Fullscreen,
+                Summary = "Music follows the highlight as you browse, and each game's track plays in full.",
+                Values = Merge(HoverBase(), ClipValues(false))
             },
             new QuickStartProfile
             {
                 Id = SelectToPlayFullscreen,
                 Name = "Select to Play",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Browsing stays on your default music. A game's own music starts when you open it.",
+                Summary = "Your default music plays while you browse the library. Opening a game switches to its own music, and backing out returns to the background track.",
+                // A separate "Library Background" tile was tried and removed: it differed from this
+                // one by exactly two settings — the default source and its randomize flag — which is
+                // a checkbox, not a way of listening.
+                //
+                // Its bundled-preset pin was NOT folded in here. Doing that overwrote a CustomFolder
+                // the user had deliberately chosen, which the declared-keys principle exists to
+                // prevent, and a test caught it. Apply already guarantees a playable fallback: an
+                // unconfigured source falls back to the bundled preset on its own, so a user with no
+                // default music set still gets one, and a user who picked their own keeps it.
                 Values = Merge(PerGameBase(), new Dictionary<string, object>
                 {
                     { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), true },
+                    { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
                     // Longer than Hover: a track change here is a deliberate act, not a side effect
                     // of moving the highlight, so it can afford to breathe.
-                    { nameof(UniPlaySongSettings.FadeInDuration), Common.Constants.DefaultFadeInDuration },
-                    { nameof(UniPlaySongSettings.FadeOutDuration), Common.Constants.DefaultFadeOutDuration },
-                })
-            },
-            new QuickStartProfile
-            {
-                Id = LibraryBackgroundFullscreen,
-                Name = "Library Background (Default Music), Game Music In Details",
-                Mode = QuickStartMode.Fullscreen,
-                Summary = "A bundled ambient track plays while you browse the library. Opening a game switches to its own music, and backing out returns to the background track.",
-                // Select-to-play, but pinned to the bundled preset as the browsing bed rather than
-                // leaving it to whatever default source the user happens to have. That pairing is
-                // the point of the tile: Select to Play alone does not say what you hear while
-                // browsing, which is most of the time.
-                //
-                // Fullscreen only: PlayOnlyOnGameSelect is gated on GetActiveFullscreenView(), which
-                // returns null in Desktop, so this trigger cannot fire there at all.
-                Values = Merge(PerGameBase(), new Dictionary<string, object>
-                {
-                    { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), true },
-                    { nameof(UniPlaySongSettings.DefaultMusicSourceOption), DefaultMusicSource.BundledPreset },
-                    { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
                     { nameof(UniPlaySongSettings.FadeInDuration), Common.Constants.DefaultFadeInDuration },
                     { nameof(UniPlaySongSettings.FadeOutDuration), Common.Constants.DefaultFadeOutDuration },
                 })
@@ -144,16 +171,18 @@ namespace UniPlaySong.Services
             new QuickStartProfile
             {
                 Id = HoverPreviewDesktop,
-                Name = "Hover Preview (PS3 style)",
+                Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Music follows your selection. Games with no music of their own fall back to your default music.",
-                Values = Merge(PerGameBase(), new Dictionary<string, object>
-                {
-                    // Not owned on Desktop — PlayOnlyOnGameSelect is Fullscreen-only, so setting it
-                    // here would write a value the mode cannot act on.
-                    { nameof(UniPlaySongSettings.FadeInDuration), 0.3 },
-                    { nameof(UniPlaySongSettings.FadeOutDuration), 0.2 },
-                })
+                Summary = "Music follows your selection, playing a 30-second snippet of each game's track rather than the whole thing.",
+                Values = Merge(HoverBaseDesktop(), ClipValues(true))
+            },
+            new QuickStartProfile
+            {
+                Id = HoverFullTrackDesktop,
+                Name = "Hover Preview, Full Track",
+                Mode = QuickStartMode.Desktop,
+                Summary = "Music follows your selection, and each game's track plays in full.",
+                Values = Merge(HoverBaseDesktop(), ClipValues(false))
             },
             new QuickStartProfile
             {
@@ -208,6 +237,7 @@ namespace UniPlaySong.Services
             { nameof(UniPlaySongSettings.RadioModeEnabled), true },
             { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
             { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), false },
+            { nameof(UniPlaySongSettings.EnablePreviewMode), false },
             { nameof(UniPlaySongSettings.RadioMusicSource), RadioMusicSource.FullLibrary },
         };
 

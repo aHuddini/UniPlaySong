@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using UniPlaySong;
+using UniPlaySong.Common;
 using UniPlaySong.Services;
 
 namespace UniPlaySong.Tests.Services
@@ -21,10 +22,57 @@ namespace UniPlaySong.Tests.Services
         private QuickStartProfile P(string id) => QuickStartProfiles.ById(id);
 
         [Test]
-        public void Catalogue_HasFourFullscreenAndThreeDesktopTiles()
+        public void Catalogue_HasFourTilesPerMode()
         {
             Assert.AreEqual(4, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
-            Assert.AreEqual(3, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
+            Assert.AreEqual(4, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
+        }
+
+        // The Short Clip / Full Track pair is the reason EnablePreviewMode must be owned explicitly.
+        [Test]
+        public void HoverShortClip_EnablesPreviewMode()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+
+            Assert.IsTrue(_s.EnablePreviewMode);
+            Assert.AreEqual(Constants.DefaultPreviewDuration, _s.PreviewDuration);
+            Assert.IsFalse(_s.PlayOnlyOnGameSelect, "still hover, not select");
+        }
+
+        [Test]
+        public void HoverFullTrack_TurnsPreviewModeOff()
+        {
+            _s.EnablePreviewMode = true; // user had clips on
+            _svc.Apply(_s, P(QuickStartProfiles.HoverFullTrackFullscreen), JukeboxSource.Library, false, false, false);
+
+            Assert.IsFalse(_s.EnablePreviewMode, "full track means the whole song");
+            Assert.IsFalse(_s.PlayOnlyOnGameSelect);
+        }
+
+        // EnablePreviewMode persists, so a tile that stayed silent about it would inherit whatever
+        // was applied before and two users would hear different things from the same tile.
+        [Test]
+        public void EveryProfile_OwnsPreviewModeSoItCannotLeakBetweenTiles()
+        {
+            foreach (var p in QuickStartProfiles.All)
+                Assert.IsTrue(p.Values.ContainsKey(nameof(UniPlaySongSettings.EnablePreviewMode)),
+                    $"{p.Id} does not declare EnablePreviewMode");
+        }
+
+        [Test]
+        public void SwitchingFromShortClipToAnyOtherTile_ClearsPreviewMode()
+        {
+            foreach (var p in QuickStartProfiles.All.Where(x =>
+                x.Id != QuickStartProfiles.HoverPreviewFullscreen && x.Id != QuickStartProfiles.HoverPreviewDesktop))
+            {
+                var s = new UniPlaySongSettings();
+                var svc = new QuickStartService();
+                svc.Apply(s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnablePreviewMode);
+
+                svc.Apply(s, p, JukeboxSource.Library, false, false, false);
+                Assert.IsFalse(s.EnablePreviewMode, $"{p.Id} inherited the clip setting");
+            }
         }
 
         // Background Mode is the one tile that deliberately switches game music off.
@@ -49,20 +97,6 @@ namespace UniPlaySong.Tests.Services
                 new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
                 Assert.IsTrue(s.EnableMusic, $"{p.Id} must turn game music back on");
             }
-        }
-
-        // The details-view trigger only fires in Fullscreen, so this tile must not appear on Desktop.
-        [Test]
-        public void LibraryBackground_IsFullscreenOnlyAndPairsPresetWithSelectToPlay()
-        {
-            var p = P(QuickStartProfiles.LibraryBackgroundFullscreen);
-            Assert.AreEqual(QuickStartMode.Fullscreen, p.Mode);
-
-            _svc.Apply(_s, p, JukeboxSource.Library, false, false, false);
-
-            Assert.IsTrue(_s.PlayOnlyOnGameSelect, "game music waits for the details view");
-            Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption, "browsing has a known bed");
-            Assert.IsTrue(_s.EnableMusic, "game music still plays, just only in details");
         }
 
         [Test]
