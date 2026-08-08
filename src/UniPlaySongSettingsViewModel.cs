@@ -196,8 +196,48 @@ namespace UniPlaySong
             {
                 var p = Services.QuickStartProfiles.ById(Settings?.ActiveQuickStartProfile);
                 if (p == null) return "None applied yet";
+                // The "— modified" suffix moved to ActiveProfileState, which is shown as a coloured
+                // badge beside this; repeating it here would say the same thing twice.
+                return $"{p.Name} ({p.Mode})";
+            }
+        }
+
+        // Colour for the active-profile line, so the three states are distinguishable at a glance
+        // rather than by reading to the end of the sentence. Exposed as a brush from the view model
+        // instead of a XAML trigger on the label text, because the label is a composed string —
+        // matching on it would break the moment a profile is renamed.
+        //   grey  = no profile applied
+        //   green = a profile is applied and its settings are intact
+        //   amber = applied but something it owns has since been changed
+        public System.Windows.Media.Brush ActiveProfileBrush
+        {
+            get
+            {
+                var p = Services.QuickStartProfiles.ById(Settings?.ActiveQuickStartProfile);
+                if (p == null)
+                    return new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(0x9A, 0xA0, 0xA6));
+
                 var modified = _quickStart.IsModified(Settings, JukeboxSource, QuickStartInstalledOnly, QuickStartPlayThroughGames, QuickStartAddReverb);
-                return modified ? $"{p.Name} ({p.Mode}) — modified" : $"{p.Name} ({p.Mode})";
+                // Amber rather than red: a modified profile is a normal state — the user tuned
+                // something afterwards — not an error to be alarmed by.
+                return modified
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE0, 0xA8, 0x30))
+                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x5C, 0xB8, 0x5C));
+            }
+        }
+
+        // Short status word shown beside the label, so the colour is not the only signal — colour
+        // alone would be invisible to anyone who cannot distinguish the two.
+        public string ActiveProfileState
+        {
+            get
+            {
+                var p = Services.QuickStartProfiles.ById(Settings?.ActiveQuickStartProfile);
+                if (p == null) return string.Empty;
+                return _quickStart.IsModified(Settings, JukeboxSource, QuickStartInstalledOnly, QuickStartPlayThroughGames, QuickStartAddReverb)
+                    ? "MODIFIED"
+                    : "ACTIVE";
             }
         }
 
@@ -245,6 +285,8 @@ namespace UniPlaySong
         private void RefreshQuickStart()
         {
             OnPropertyChanged(nameof(ActiveProfileLabel));
+            OnPropertyChanged(nameof(ActiveProfileBrush));
+            OnPropertyChanged(nameof(ActiveProfileState));
             OnPropertyChanged(nameof(CanUndoQuickStart));
             OnPropertyChanged(nameof(CanRestoreQuickStartOriginal));
             // All four checkboxes read from the live settings, so every one has to be re-read after

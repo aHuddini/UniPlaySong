@@ -345,9 +345,22 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock Text="ACTIVE PROFILE" FontSize="9" Foreground="#7A8085"
-                                           FontWeight="SemiBold" Margin="0,0,0,2"/>
-                                <TextBlock Text="{Binding ActiveProfileLabel}" FontSize="13" FontWeight="SemiBold"
-                                           TextWrapping="Wrap"/>
+                                           FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Colour-coded status: green when the applied profile is
+                                         intact, amber once one of its settings has been changed,
+                                         grey when none is applied. The word is shown as well as the
+                                         colour, so the state is not conveyed by colour alone. -->
+                                    <Border Background="{Binding ActiveProfileBrush}" CornerRadius="3"
+                                            Padding="6,1" Margin="0,0,8,0" VerticalAlignment="Center"
+                                            Visibility="{Binding ActiveProfileState, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding ActiveProfileState}" FontSize="9"
+                                                   FontWeight="Bold" Foreground="#101214"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding ActiveProfileLabel}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{Binding ActiveProfileBrush}"
+                                               TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button Content="Undo" Padding="10,4" FontSize="11" MinWidth="60"
