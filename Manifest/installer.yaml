@@ -5,7 +5,11 @@ Packages:
     ReleaseDate: 2026-08-08
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
     Changelog:
-      - '[Improved] Settings reorganised — a new Setup tab puts yt-dlp and FFmpeg in one place, long tabs group into collapsible sections, and options now sit on the tab they belong to.'
+      - '[New] Setup tab — yt-dlp and FFmpeg now live in one place instead of being split across the Downloads and Editing tabs. Set them once and everything that needs them works.'
+      - '[Improved] Long settings tabs now group into collapsible sections instead of one long scroll: Media Controls, Music Library Tagging and Performance on General; Random Game Picker on Playback; Bulk Actions and File Management on Editing; Download and Library Automations on Downloads; Import and Export on Migration; Delete Actions and Cleanup on Cleanup.'
+      - '[Improved] Clearer section names — Gamification now reads "Games Completed Status", "Games Abandoned Status" and "PlayniteAchievements Unlocks"; the Pauses tab''s "Window State" is now "Window Focus"; General''s "Music Status Tags" is now "Music Library Tagging".'
+      - '[Improved] Options moved to where you would look for them. Play Music State, Automatic Playback on First Launch and Do not play music on startup now sit at the top of Playback; the theme/trailer video pause option moved to Theme Support. Tabs are reordered so About and Setup come first, with Downloads beside Editing and Backup beside Migration.'
+      - '[Fixed] The Experimental tab''s Reset button skipped three of its own settings — media key control and the two NAudio fade curves kept their old values instead of resetting.'
       - '[Improved] Smoother library navigation in Fullscreen — preparing the next song no longer happens on the drawing thread, and the fade timers no longer take priority over drawing and controller input.'
       - '[Fixed] Switching audio engine — turning Live Effects, the Visualizer or Crossfade on or off, or opening a game with retro chiptune music — left the previous engine running in the background.'
       - '[Improved] Much quieter logging. With debug logging off, UPS now writes only errors to Playnite''s shared log instead of hundreds of routine lines.'
