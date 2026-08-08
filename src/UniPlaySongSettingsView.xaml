@@ -308,6 +308,11 @@
                             <Button Content="Undo last apply" Margin="15,0,0,0" Padding="8,3" FontSize="11"
                                     Command="{Binding UndoQuickStart}"
                                     IsEnabled="{Binding CanUndoQuickStart}"/>
+                            <!-- Steps back to the settings the user had before ANY profile, not just
+                                 the last one, and clears the active profile. Not a factory reset. -->
+                            <Button Content="Reset to my settings" Margin="8,0,0,0" Padding="8,3" FontSize="11"
+                                    Command="{Binding RestoreQuickStartOriginal}"
+                                    IsEnabled="{Binding CanRestoreQuickStartOriginal}"/>
                         </StackPanel>
                     </Border>
 

@@ -134,20 +134,36 @@ differ by one setting are a *checkbox on the page*, not a tile of their own.
 
 | Profile | What it does |
 |---|---|
-| **Hover Preview (PS3 style)** | Music follows the highlight as you browse. Default music fills games with none. |
+| **Hover Preview (PS3 style)** | Music follows the highlight as you browse. |
 | **Select to Play** | Browsing stays on default music; a game's own music starts when you open it. |
-| **Jukebox / Radio** | One continuous mix instead of per-game music. Source picked on the tile: your library or Spotify. Default music stays on as a safety net for an empty pool. |
+| **Library Background (Default Music), Game Music In Details** | Bundled ambient track while browsing; the game's own music in the details view. |
+| **Radio Mode (Random Game Music)** | One continuous mix instead of per-game music. Library or Spotify. |
 
 ### Desktop profiles (mouse / keyboard)
 
 | Profile | What it does |
 |---|---|
-| **Hover Preview (PS3 style)** | Music follows your selection. Default music fills games with none. |
-| **Ambient Background** | One continuous background track. Selecting a game does not interrupt it. |
-| **Jukebox / Radio** | One continuous mix. Source picked on the tile: your library or Spotify. |
+| **Hover Preview (PS3 style)** | Music follows your selection. |
+| **Background Mode (Default Music)** | One bundled ambient track the whole time; game music OFF so nothing interrupts it. |
+| **Radio Mode (Random Game Music)** | One continuous mix. Library or Spotify. |
 
-Three tiles each. Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is Fullscreen-only —
+Four Fullscreen tiles, three Desktop. Desktop has no **Select to Play** or **Library Background**
+because `PlayOnlyOnGameSelect` is Fullscreen-only —
 a real asymmetry the page should show rather than fake.
+
+### Reset to my settings
+
+Alongside Undo. Undo steps back exactly one apply; this steps back to the settings the user had
+**before the first profile of the session**, and clears the active profile so no tile reads as
+current. Trying three tiles in a row still returns to where they started rather than to whichever
+tile they tried second.
+
+It restores across the *union* of every key any profile can write, not just the last profile's keys.
+Without that, Background Mode's `EnableMusic = false` would survive a reset triggered from a
+different tile.
+
+Deliberately **not** a factory reset: it restores the user's own values, and touches only keys
+profiles can write. Volume, tool paths and pause rules are as untouched here as during an apply.
 
 ### The page-level checkboxes
 

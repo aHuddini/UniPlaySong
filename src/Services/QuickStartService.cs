@@ -21,6 +21,30 @@ namespace UniPlaySong.Services
         private Dictionary<string, object> _undoValues;
         private string _undoProfileId;
 
+        // The user's settings as they were before the FIRST profile of this session was applied.
+        // Undo steps back one apply; this steps back to "no profile at all". Captured once and then
+        // left alone, so trying three tiles in a row still returns to where they started rather than
+        // to whichever tile they tried second.
+        private Dictionary<string, object> _originalValues;
+        private bool _originalCaptured;
+
+        public bool CanRestoreOriginal => _originalCaptured && _originalValues != null;
+
+        // Union of every key any profile can touch, plus the page-level modifiers. Restoring has to
+        // cover the whole surface rather than just the last profile's keys — otherwise switching
+        // from a tile that owns EnableMusic to one that does not would leave that key stranded.
+        private static IEnumerable<string> AllOwnedKeys()
+        {
+            var keys = new HashSet<string>();
+            foreach (var p in QuickStartProfiles.All)
+                foreach (var k in p.Values.Keys)
+                    keys.Add(k);
+            keys.Add(QuickStartProfiles.InstalledOnlyKey);
+            keys.Add(QuickStartProfiles.PlayThroughGamesKey);
+            foreach (var k in QuickStartProfiles.ReverbValues(true).Keys) keys.Add(k);
+            return keys;
+        }
+
         public QuickStartService(FileLogger fileLogger = null)
         {
             _fileLogger = fileLogger;
@@ -83,6 +107,15 @@ namespace UniPlaySong.Services
                         "falling back to the bundled preset so the profile has something to play.");
                 }
 
+                // Captured once, before the first apply of the session, across the FULL owned
+                // surface — so "Reset to Defaults" returns to what the user had rather than to
+                // whichever tile they happened to try first.
+                if (!_originalCaptured)
+                {
+                    _originalValues = Snapshot(settings, AllOwnedKeys());
+                    _originalCaptured = true;
+                }
+
                 _undoValues = Snapshot(settings, values.Keys);
                 _undoProfileId = settings.ActiveQuickStartProfile;
 
@@ -123,6 +156,38 @@ namespace UniPlaySong.Services
             catch (Exception ex)
             {
                 _fileLogger?.Error($"QuickStart: undo failed: {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        // Puts every profile-owned setting back to what the user had before the first profile was
+        // applied, and clears the active profile so no tile is marked as current. Distinct from
+        // Undo, which steps back exactly one apply: this is "forget I touched Quick Start".
+        //
+        // Deliberately NOT a factory reset — it restores the USER's settings, not UPS defaults, and
+        // touches only the keys profiles can write. Volume, tool paths and pause rules are as
+        // untouched here as they are during an apply.
+        public bool RestoreOriginal(UniPlaySongSettings settings)
+        {
+            if (settings == null || !CanRestoreOriginal) return false;
+
+            try
+            {
+                foreach (var kv in _originalValues)
+                    TrySet(settings, kv.Key, kv.Value);
+
+                settings.ActiveQuickStartProfile = string.Empty;
+
+                // A further undo would put back a profile the user has just asked to forget.
+                _undoValues = null;
+                _undoProfileId = null;
+
+                _fileLogger?.Info($"QuickStart: restored {_originalValues.Count} settings to their pre-profile values");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Error($"QuickStart: restore failed: {ex.Message}", ex);
                 return false;
             }
         }

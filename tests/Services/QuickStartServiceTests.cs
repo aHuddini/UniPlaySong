@@ -21,10 +21,48 @@ namespace UniPlaySong.Tests.Services
         private QuickStartProfile P(string id) => QuickStartProfiles.ById(id);
 
         [Test]
-        public void Catalogue_HasThreeTilesPerMode()
+        public void Catalogue_HasFourFullscreenAndThreeDesktopTiles()
         {
-            Assert.AreEqual(3, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
+            Assert.AreEqual(4, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
             Assert.AreEqual(3, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
+        }
+
+        // Background Mode is the one tile that deliberately switches game music off.
+        [Test]
+        public void BackgroundMode_TurnsGameMusicOffAndPinsTheBundledPreset()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
+
+            Assert.IsFalse(_s.EnableMusic, "game music is off so nothing interrupts the background track");
+            Assert.IsTrue(_s.EnableDefaultMusic);
+            Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption);
+            Assert.IsFalse(_s.RadioModeEnabled);
+        }
+
+        // Every other tile promises game music, so each must undo Background Mode's suppression.
+        [Test]
+        public void SwitchingAwayFromBackgroundMode_RestoresGameMusic()
+        {
+            foreach (var p in QuickStartProfiles.All.Where(x => x.Id != QuickStartProfiles.AmbientDesktop))
+            {
+                var s = new UniPlaySongSettings { EnableMusic = false };
+                new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnableMusic, $"{p.Id} must turn game music back on");
+            }
+        }
+
+        // The details-view trigger only fires in Fullscreen, so this tile must not appear on Desktop.
+        [Test]
+        public void LibraryBackground_IsFullscreenOnlyAndPairsPresetWithSelectToPlay()
+        {
+            var p = P(QuickStartProfiles.LibraryBackgroundFullscreen);
+            Assert.AreEqual(QuickStartMode.Fullscreen, p.Mode);
+
+            _svc.Apply(_s, p, JukeboxSource.Library, false, false, false);
+
+            Assert.IsTrue(_s.PlayOnlyOnGameSelect, "game music waits for the details view");
+            Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption, "browsing has a known bed");
+            Assert.IsTrue(_s.EnableMusic, "game music still plays, just only in details");
         }
 
         [Test]
@@ -236,33 +274,6 @@ namespace UniPlaySong.Tests.Services
             }
         }
 
-        // Ambient is a continuous bed that RESUMES rather than restarts. It deliberately does not
-        // switch game music off — EnableMusic is the plugin master toggle, not a "default only" flag.
-        [Test]
-        public void Ambient_KeepsAContinuousBedWithoutDisablingThePlugin()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
-
-            Assert.IsTrue(_s.EnableMusic, "the master toggle must never be used to mean default-music-only");
-            Assert.IsTrue(_s.EnableDefaultMusic);
-            Assert.IsTrue(_s.DefaultMusicContinueSameSong, "the bed resumes rather than restarting");
-            Assert.IsTrue(_s.RandomizeDefaultMusicOnEnd);
-            Assert.IsFalse(_s.RadioModeEnabled);
-        }
-
-        // No profile may leave the plugin switched off; this also repairs anyone who applied the
-        // brief earlier build where Ambient set EnableMusic=false.
-        [Test]
-        public void NoProfile_LeavesTheMasterToggleOff()
-        {
-            foreach (var p in QuickStartProfiles.All)
-            {
-                var s = new UniPlaySongSettings { EnableMusic = false };
-                new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
-                Assert.IsTrue(s.EnableMusic, $"{p.Id} left EnableMusic off");
-            }
-        }
-
         // In the radio branch, MusicOnlyForInstalledGames makes radio YIELD to installed games with
         // music — which would break the one thing Jukebox promises.
         [Test]
@@ -337,6 +348,81 @@ namespace UniPlaySong.Tests.Services
 
             _svc.Undo(_s);
             Assert.IsFalse(_s.LiveEffectsEnabled, "undo must back out the backend-forcing change too");
+        }
+
+        // "Reset to my settings" steps back to before the FIRST profile, not the last one.
+        [Test]
+        public void RestoreOriginal_ReturnsToPreProfileSettingsAfterSeveralApplies()
+        {
+            _s.PlayOnlyOnGameSelect = true;
+            _s.EnableDefaultMusic = false;
+            _s.RadioModeEnabled = true;
+            _s.MusicOnlyForInstalledGames = true;
+
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Spotify, false, true, true);
+            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
+
+            Assert.IsTrue(_svc.CanRestoreOriginal);
+            Assert.IsTrue(_svc.RestoreOriginal(_s));
+
+            Assert.IsTrue(_s.PlayOnlyOnGameSelect, "back to the user's value, not the first tile's");
+            Assert.IsFalse(_s.EnableDefaultMusic);
+            Assert.IsTrue(_s.RadioModeEnabled);
+            Assert.IsTrue(_s.MusicOnlyForInstalledGames);
+            Assert.AreEqual(string.Empty, _s.ActiveQuickStartProfile, "no tile should be marked current");
+        }
+
+        // Restoring must cover the full owned surface, not just the last profile's keys — otherwise
+        // Background Mode's EnableMusic=false would survive a reset.
+        [Test]
+        public void RestoreOriginal_UndoesKeysTheLastProfileDidNotOwn()
+        {
+            // LiveEffectsEnabled defaults to TRUE, so start from an explicitly-off user state to
+            // prove the restore returns the USER's value rather than a profile's or a default.
+            _s.EnableMusic = true;
+            _s.LiveEffectsEnabled = false;
+            _s.SelectedStylePreset = StylePreset.HuddiniRetroRadio;
+
+            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, true);
+            Assert.IsFalse(_s.EnableMusic);
+            Assert.IsTrue(_s.LiveEffectsEnabled, "the reverb checkbox turned it on");
+            Assert.AreEqual(StylePreset.HuddiniRehearsal, _s.SelectedStylePreset);
+
+            _svc.RestoreOriginal(_s);
+
+            Assert.IsTrue(_s.EnableMusic, "the master toggle must come back");
+            Assert.IsFalse(_s.LiveEffectsEnabled, "reverb goes back to how the user had it");
+            Assert.AreEqual(StylePreset.HuddiniRetroRadio, _s.SelectedStylePreset, "and so does their preset");
+        }
+
+        [Test]
+        public void RestoreOriginal_LeavesUnownedSettingsAlone()
+        {
+            _s.MusicVolume = 42;
+            _s.FFmpegPath = @"C:\tools\ffmpeg.exe";
+
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewDesktop), JukeboxSource.Library, false, false, false);
+            _svc.RestoreOriginal(_s);
+
+            Assert.AreEqual(42, _s.MusicVolume, "reset is not a factory reset");
+            Assert.AreEqual(@"C:\tools\ffmpeg.exe", _s.FFmpegPath);
+        }
+
+        [Test]
+        public void RestoreOriginal_UnavailableBeforeAnyProfileIsApplied()
+        {
+            Assert.IsFalse(_svc.CanRestoreOriginal);
+            Assert.IsFalse(_svc.RestoreOriginal(_s));
+        }
+
+        [Test]
+        public void RestoreOriginal_ClearsUndoSoItCannotReapplyAForgottenProfile()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.SelectToPlayFullscreen), JukeboxSource.Library, false, false, false);
+            _svc.RestoreOriginal(_s);
+
+            Assert.IsFalse(_svc.CanUndo);
         }
 
         [Test]

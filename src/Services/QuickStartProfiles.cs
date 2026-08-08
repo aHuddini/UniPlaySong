@@ -46,8 +46,11 @@ namespace UniPlaySong.Services
         // name changes.
         public const string HoverPreviewFullscreen = "fs-hover";
         public const string SelectToPlayFullscreen = "fs-select";
+        public const string LibraryBackgroundFullscreen = "fs-libbg";
         public const string JukeboxFullscreen = "fs-jukebox";
         public const string HoverPreviewDesktop = "dt-hover";
+        // Id kept as dt-ambient though the tile is now "Background Mode (Default Music)" — ids are
+        // persisted, so renaming one would orphan ActiveQuickStartProfile on existing installs.
         public const string AmbientDesktop = "dt-ambient";
         public const string JukeboxDesktop = "dt-jukebox";
 
@@ -109,8 +112,30 @@ namespace UniPlaySong.Services
             },
             new QuickStartProfile
             {
+                Id = LibraryBackgroundFullscreen,
+                Name = "Library Background (Default Music), Game Music In Details",
+                Mode = QuickStartMode.Fullscreen,
+                Summary = "A bundled ambient track plays while you browse the library. Opening a game switches to its own music, and backing out returns to the background track.",
+                // Select-to-play, but pinned to the bundled preset as the browsing bed rather than
+                // leaving it to whatever default source the user happens to have. That pairing is
+                // the point of the tile: Select to Play alone does not say what you hear while
+                // browsing, which is most of the time.
+                //
+                // Fullscreen only: PlayOnlyOnGameSelect is gated on GetActiveFullscreenView(), which
+                // returns null in Desktop, so this trigger cannot fire there at all.
+                Values = Merge(PerGameBase(), new Dictionary<string, object>
+                {
+                    { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), true },
+                    { nameof(UniPlaySongSettings.DefaultMusicSourceOption), DefaultMusicSource.BundledPreset },
+                    { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
+                    { nameof(UniPlaySongSettings.FadeInDuration), Common.Constants.DefaultFadeInDuration },
+                    { nameof(UniPlaySongSettings.FadeOutDuration), Common.Constants.DefaultFadeOutDuration },
+                })
+            },
+            new QuickStartProfile
+            {
                 Id = JukeboxFullscreen,
-                Name = "Jukebox / Radio",
+                Name = "Radio Mode (Random Game Music)",
                 Mode = QuickStartMode.Fullscreen,
                 Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
                 Values = JukeboxValues()
@@ -133,21 +158,25 @@ namespace UniPlaySong.Services
             new QuickStartProfile
             {
                 Id = AmbientDesktop,
-                Name = "Ambient Background",
+                Name = "Background Mode (Default Music)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Default music runs continuously while you work, picking up where it left off. A game's own music takes over when you select one.",
-                // Deliberately does NOT switch game music off. An earlier version set
-                // EnableMusic=false to stop game music interrupting the bed, which worked but abused
-                // the plugin's master on/off toggle to mean "default music only" — a user opening
-                // the General tab would find UniPlaySong reading as disabled.
+                Summary = "One bundled ambient track plays the whole time. Game music is off, so nothing interrupts it.",
+                // Game music genuinely off. EnableMusic=false + EnableDefaultMusic=true is the
+                // engine's supported "default music only" path — PlayGameMusic clears the game's
+                // songs and falls through to the default source.
                 //
-                // There is no persisted setting for "default music wins" in Desktop:
-                // ForceDefaultMusicOverride is the switch for that idea, but it is [JsonIgnore]
-                // runtime-only state driven by theme XAML, and it is ignored outside Fullscreen
-                // anyway. So this profile does what UPS actually supports — a continuous bed that
-                // RESUMES rather than restarts, via DefaultMusicContinueSameSong.
+                // Known cost, accepted deliberately: the General tab's "Enable Music" checkbox then
+                // reads as unchecked, which looks like the plugin is off rather than deliberately in
+                // background mode. The alternative was a new persisted DefaultMusicOnly flag; using
+                // the existing toggle was chosen instead. Every other tile owns EnableMusic=true, so
+                // switching away from this one restores game music.
+                //
+                // ForceDefaultMusicOverride is NOT the tool for this: it is [JsonIgnore] runtime-only
+                // state driven by theme XAML, reset on every load, and ignored outside Fullscreen.
                 Values = Merge(PerGameBase(), new Dictionary<string, object>
                 {
+                    { nameof(UniPlaySongSettings.EnableMusic), false },
+                    { nameof(UniPlaySongSettings.DefaultMusicSourceOption), DefaultMusicSource.BundledPreset },
                     { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
                     // Slow fades suit a background bed; the point is not to be noticed.
                     { nameof(UniPlaySongSettings.FadeInDuration), 1.0 },
@@ -157,7 +186,7 @@ namespace UniPlaySong.Services
             new QuickStartProfile
             {
                 Id = JukeboxDesktop,
-                Name = "Jukebox / Radio",
+                Name = "Radio Mode (Random Game Music)",
                 Mode = QuickStartMode.Desktop,
                 Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
                 Values = JukeboxValues()

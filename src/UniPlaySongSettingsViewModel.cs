@@ -216,10 +216,26 @@ namespace UniPlaySong
             if (_quickStart.Undo(Settings)) RefreshQuickStart();
         });
 
+        public bool CanRestoreQuickStartOriginal => _quickStart.CanRestoreOriginal;
+
+        public ICommand RestoreQuickStartOriginal => new Common.RelayCommand<object>((a) =>
+        {
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                "Put the playback settings back to how they were before you applied a Quick Start profile?\n\n" +
+                "No profile will be marked as active. This only affects the settings Quick Start can change — " +
+                "your volume, tool paths, pause rules and effects are untouched either way.",
+                "Reset to your settings",
+                System.Windows.MessageBoxButton.YesNo);
+            if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+            if (_quickStart.RestoreOriginal(Settings)) RefreshQuickStart();
+        });
+
         private void RefreshQuickStart()
         {
             OnPropertyChanged(nameof(ActiveProfileLabel));
             OnPropertyChanged(nameof(CanUndoQuickStart));
+            OnPropertyChanged(nameof(CanRestoreQuickStartOriginal));
             OnPropertyChanged(nameof(QuickStartInstalledOnly));
             OnPropertyChanged(nameof(QuickStartPlayThroughGames));
         }
