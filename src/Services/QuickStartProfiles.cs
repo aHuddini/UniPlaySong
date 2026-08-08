@@ -77,7 +77,7 @@ namespace UniPlaySong.Services
             new QuickStartProfile
             {
                 Id = HoverPreviewFullscreen,
-                Name = "Hover Preview",
+                Name = "Hover Preview (PS3 style)",
                 Mode = QuickStartMode.Fullscreen,
                 Summary = "Music follows the highlight as you browse. Games with no music of their own fall back to your default music.",
                 Values = Merge(PerGameBase(), new Dictionary<string, object>
@@ -115,7 +115,7 @@ namespace UniPlaySong.Services
             new QuickStartProfile
             {
                 Id = HoverPreviewDesktop,
-                Name = "Hover Preview",
+                Name = "Hover Preview (PS3 style)",
                 Mode = QuickStartMode.Desktop,
                 Summary = "Music follows your selection. Games with no music of their own fall back to your default music.",
                 Values = Merge(PerGameBase(), new Dictionary<string, object>

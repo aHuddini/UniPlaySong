@@ -3,7 +3,9 @@
 A Quick Start page that configures UPS for a way of using it, in one click, instead of making a new
 user visit six tabs to discover what the plugin can do. Landing page for the settings UI.
 
-**Status:** design, not built. Decisions below are settled; the value tables are the part to argue with.
+**Status:** BUILT. Shipped in `Services/QuickStartProfiles.cs` (the catalogue),
+`Services/QuickStartService.cs` (apply / undo / drift), the Quick Start tab, and
+`tests/Services/QuickStartServiceTests.cs`. This document is the rationale; the code is the truth.
 
 ---
 
@@ -123,21 +125,26 @@ differ by one setting are a *checkbox on the page*, not a tile of their own.
 
 | Profile | What it does |
 |---|---|
-| **Hover Preview** | Music follows your selection. Default music fills games with none. |
+| **Hover Preview (PS3 style)** | Music follows your selection. Default music fills games with none. |
 | **Ambient Background** | Default music runs continuously; game music takes over on selection. |
 | **Jukebox / Radio** | One continuous mix. Source picked on the tile: your library or Spotify. |
 
 Three tiles each. Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is Fullscreen-only —
 a real asymmetry the page should show rather than fake.
 
-### The two page-level checkboxes
+### The page-level checkboxes
 
 These apply on top of whichever tile is chosen, so they are checkboxes rather than more tiles:
 
 - **Only play music for installed games** — the `MusicOnlyForInstalledGames` qualifier
 - **Keep playing during games** — `RadioPlaysThroughGames`, only meaningful with the Jukebox tile
+- **Use Spotify as the Jukebox source** — `RadioMusicSource`, likewise Jukebox-only
+- **Add reverb** — `LiveEffectsEnabled` + `StylePreset.HuddiniRehearsal`, the "wide stereo, rich
+  reverb, live rehearsal room" preset. UPS ships no "Concert"; Rehearsal is the closest to that
+  intent. Unchecking owns only the master toggle, so a user's own preset survives rather than being
+  reset. The UI states that this forces the NAudio backend rather than switching engines silently.
 
-Everything else — completion-status filters, property filters, Preview Mode, volume, effects —
+Everything else — completion-status filters, property filters, Preview Mode, volume, other effects —
 stays on its own tab. Quick Start gets you a working setup; it is not a second settings screen.
 
 ### Dropped from the earlier draft
@@ -273,8 +280,10 @@ backend, which is a real consequence worth stating in the UI rather than applyin
 
 ## Still open
 
-- **Naming.** "Hover Preview (PS3 style)" carries the console shorthand that made the idea land, but
-  ties UPS to a console it has no relationship with. Worth deciding before it appears in a release.
+Nothing blocking. Naming is settled: the tiles carry the "(PS3 style)" shorthand in both modes,
+because it is what makes the behaviour click for a reader — a hover-to-play console menu is a thing
+people have used, where "Hover Preview" alone is abstract. The persisted ids (fs-hover, dt-hover)
+deliberately do NOT contain it, so the label can change later without orphaning installs.
 
 ## What this does not solve
 
