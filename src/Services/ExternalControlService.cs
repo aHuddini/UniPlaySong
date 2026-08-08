@@ -45,20 +45,18 @@ namespace UniPlaySong.Services
 
             switch (command)
             {
-                // When Spotify is the active radio source, the URI pause/play must reach SPOTIFY
-                // (via the manual-pause hold, so radio recompute and the external-audio detector
-                // won't auto-resume it) — UPS's own player is silent in that mode. Integrations
-                // like FullReel rely on pause meaning "whatever UPS is playing stays quiet".
+                // When Spotify is the active radio source, the URI pause/play must reach SPOTIFY (via the manual-pause hold, so
+                // radio recompute and the external-audio detector won't auto-resume it) — UPS's own player is silent in that
+                // mode. Integrations like FullReel rely on pause meaning "whatever UPS is playing stays quiet".
                 case "play":
                     {
                         var spotify = _getSpotify?.Invoke();
                         if (spotify != null && spotify.IsSpotifyActive)
                             spotify.ManualResume();
                         _playbackService.NotifyManualStart();
-                        // Explicit external play also clears a stale FocusLoss — with the caller's
-                        // window (e.g. FullReel's WebView2) holding Win32 focus, OnApplicationActivate
-                        // never fires for the main window, so Resume() alone would leave FocusLoss
-                        // pinning playback paused.
+                        // Explicit external play also clears a stale FocusLoss — with the caller's window (e.g. FullReel's WebView2)
+                        // holding Win32 focus, OnApplicationActivate never fires for the main window, so Resume() alone would leave
+                        // FocusLoss pinning playback paused.
                         _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
                         _playbackService.Resume();
                     }
@@ -107,10 +105,9 @@ namespace UniPlaySong.Services
                 // Achievement/trophy unlock sound — fired by external plugins (e.g. Playnite
                 // Achievements) via playnite://uniplaysong/playniteachievements/{rarity}, where
                 // {rarity} is common | uncommon | rare | ultrarare | capstone. Namespaced under the
-                // source plugin so other integrations can add their own path later. All rarities play
-                // the same achievement sound for now (per-rarity override sounds are a planned
-                // follow-up). Plays on the dedicated jingle player, so it works over a running game
-                // and no-ops when the achievement-sound setting is off.
+                // source plugin so other integrations can add their own path later. All rarities play the same achievement
+                // sound for now (per-rarity override sounds are a planned follow-up). Plays on the dedicated jingle player, so
+                // it works over a running game and no-ops when the achievement-sound setting is off.
                 case "playniteachievements":
                     HandlePlayniteAchievement(args.Arguments);
                     break;

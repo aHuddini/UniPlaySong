@@ -26,11 +26,10 @@ namespace UniPlaySong.Downloaders
         private string _customCookiesFilePath;
         private readonly ErrorHandlerService _errorHandler;
 
-        // FFmpeg version-check cache. Probing ffmpeg -version on every DownloadSong call
-        // adds ~30-50ms per song; for a 50-track preview session that's 1.5-2.5s of
-        // redundant work probing the same binary. Cache by (path, last-write-time) so
-        // an in-place ffmpeg update busts the cache. Reset on UpdateSettings when the
-        // user picks a different ffmpeg path.
+        // FFmpeg version-check cache. Probing ffmpeg -version on every DownloadSong call adds ~30-50ms per song; for a
+        // 50-track preview session that's 1.5-2.5s of redundant work probing the same binary. Cache by (path,
+        // last-write-time) so an in-place ffmpeg update busts the cache. Reset on UpdateSettings when the user picks a
+        // different ffmpeg path.
         private string _ffmpegProbedPath = null;
         private long _ffmpegProbedMtimeTicks = 0;
 
@@ -44,13 +43,11 @@ namespace UniPlaySong.Downloaders
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
-        // Live-updates the settings-driven fields without recreating the downloader.
-        // Called by DownloadManager.UpdateSettings when the user changes yt-dlp path /
-        // ffmpeg path / cookie mode / custom cookies file in settings. Fixes a
-        // stale-reference bug where dialog code paths (DownloadDialogService,
-        // ControllerDialogHandler) held the old DownloadManager instance when settings
-        // changed, so new YouTube download attempts went through the OLD config even after
-        // the user fixed their configuration.
+        // Live-updates the settings-driven fields without recreating the downloader. Called by
+        // DownloadManager.UpdateSettings when the user changes yt-dlp path / ffmpeg path / cookie mode / custom cookies
+        // file in settings. Fixes a stale-reference bug where dialog code paths (DownloadDialogService,
+        // ControllerDialogHandler) held the old DownloadManager instance when settings changed, so new YouTube download
+        // attempts went through the OLD config even after the user fixed their configuration.
         public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
         {
             // Bust the ffmpeg version-check cache when the path changes so the new binary
@@ -294,30 +291,27 @@ namespace UniPlaySong.Downloaders
                     ? string.Empty
                     : " --sleep-requests 0.3";
 
-                // Concurrent fragments: YouTube serves audio in DASH fragments (~5s chunks).
-                // -N 4 fetches up to 4 in parallel. Only meaningful for FULL downloads where
-                // multi-minute audio is fragmented; previews are 40-second single-segment
-                // HTTP range requests that don't fragment, so the flag is a no-op for them.
-                // Bumped from 3 to 4 to test if the extra parallelism helps on full songs.
-                // Combined with BatchDownloadService.MaxConcurrentDownloads=3, upper bound is
-                // 3*4=12 simultaneous HTTPS connections — still well within reasonable.
+                // Concurrent fragments: YouTube serves audio in DASH fragments (~5s chunks). -N 4 fetches up to 4 in parallel.
+                // Only meaningful for FULL downloads where multi-minute audio is fragmented; previews are 40-second
+                // single-segment HTTP range requests that don't fragment, so the flag is a no-op for them. Bumped from 3 to 4
+                // to test if the extra parallelism helps on full songs. Combined with
+                // BatchDownloadService.MaxConcurrentDownloads=3, upper bound is 3*4=12 simultaneous HTTPS connections — still
+                // well within reasonable.
                 var concurrentFragments = isPreview ? string.Empty : " --concurrent-fragments 4";
 
-                // Prefer free formats (opus/webm over m4a/aac at same quality). Affects
-                // source-format selection BEFORE the --audio-format mp3 conversion; on
-                // previews the source-format choice doesn't impact wall-clock meaningfully
-                // (40-second clip), so dropped on the preview path. Kept on full downloads
-                // where the slightly smaller container/decode does add up across an album.
+                // Prefer free formats (opus/webm over m4a/aac at same quality). Affects source-format selection BEFORE the
+                // --audio-format mp3 conversion; on previews the source-format choice doesn't impact wall-clock meaningfully
+                // (40-second clip), so dropped on the preview path. Kept on full downloads where the slightly smaller
+                // container/decode does add up across an album.
                 var preferFreeFormats = isPreview ? string.Empty : " --prefer-free-formats";
 
                 // Anti-bot detection: player_client selection.
                 //
                 // COOKIE MODE: leave player_client unset entirely. yt-dlp auto-skips
-                // android/ios when cookies are present (those clients don't carry cookies),
-                // so forcing `android,ios,web` collapses to web-only and triggers the nsig JS
-                // challenge — which fails outright for users without a JS runtime (Deno).
-                // yt-dlp's own default rotation includes cookie-compatible clients
-                // (web_safari etc.) and adapts as YouTube changes faster than we ship; trust it.
+                // android/ios when cookies are present (those clients don't carry cookies), so forcing `android,ios,web`
+                // collapses to web-only and triggers the nsig JS challenge — which fails outright for users without a JS
+                // runtime (Deno). yt-dlp's own default rotation includes cookie-compatible clients (web_safari etc.) and adapts
+                // as YouTube changes faster than we ship; trust it.
                 //
                 // NO-COOKIE MODE: explicitly select clients because yt-dlp's 2026 defaults
                 // (android_vr,web,web_safari) were observed hitting 403/SABR walls in the
@@ -330,13 +324,11 @@ namespace UniPlaySong.Downloaders
                     ? string.Empty
                     : " --extractor-args \"youtube:player_client=android,ios,web\"";
 
-                // Post-processor args ensure SDL_mixer / NAudio compatibility (-ar 48000 -ac 2).
-                // Single-pass MP3 postprocessor: folds the SDL/NAudio compatibility resample
-                // (-ar 48000 -ac 2) into yt-dlp's first encode pass. Saves ~1-2s per song
-                // on full downloads versus the prior two-pass form (`ffmpeg:-ar 48000 -ac 2`,
-                // which re-encoded the already-encoded mp3). Promoted to always-on after
-                // shipping behind the experimental setting in this release with no bug
-                // reports — the syntax is well-formed, ffmpeg accepts it, output plays.
+                // Post-processor args ensure SDL_mixer / NAudio compatibility (-ar 48000 -ac 2). Single-pass MP3 postprocessor:
+                // folds the SDL/NAudio compatibility resample (-ar 48000 -ac 2) into yt-dlp's first encode pass. Saves ~1-2s
+                // per song on full downloads versus the prior two-pass form (`ffmpeg:-ar 48000 -ac 2`, which re-encoded the
+                // already-encoded mp3). Promoted to always-on after shipping behind the experimental setting in this release
+                // with no bug reports — the syntax is well-formed, ffmpeg accepts it, output plays.
                 var postProcessorArgs = " --postprocessor-args \"ExtractAudio+ffmpeg_o:-ar 48000 -ac 2\"";
 
                 // Always-on performance flags (no quality / compatibility impact):
@@ -371,22 +363,19 @@ namespace UniPlaySong.Downloaders
                     // For previews: download only first 30 seconds instead of full track + trim
                     var sectionLimit = isPreview ? " --download-sections \"*0:00-0:40\"" : "";
 
-                    // Keep stderr diagnostics visible even for previews — prior --no-warnings
-                    // --quiet --no-progress combo silenced all output, so when YouTube bot
-                    // detection / cookie / JS-runtime failures hit on preview-only flows
-                    // (most common user interaction), there was nothing in the log to diagnose.
-                    // --no-playlist prevents an entire channel being downloaded when the URL
-                    // happens to be a playlist URL for a game soundtrack.
+                    // Keep stderr diagnostics visible even for previews — prior --no-warnings --quiet --no-progress combo
+                    // silenced all output, so when YouTube bot detection / cookie / JS-runtime failures hit on preview-only flows
+                    // (most common user interaction), there was nothing in the log to diagnose. --no-playlist prevents an entire
+                    // channel being downloaded when the URL happens to be a playlist URL for a game soundtrack.
                     var previewFlags = " --no-playlist";
 
                     arguments = $"-x --audio-format mp3 --audio-quality {quality}{antiBotOptions}{rateLimitOptions}{concurrentFragments}{preferFreeFormats}{postProcessorArgs}{performanceFlags}{sectionLimit}{previewFlags} --ffmpeg-location=\"{_ffmpegPath}\" -o \"{pathWithoutExt}.%(ext)s\" {YouTubeBaseUrl}/watch?v={song.Id}";
                 }
 
-                // Ensure the target directory exists before yt-dlp tries to write to it.
-                // The previous .writetest probe (write a sentinel, delete it, log result) was
-                // dropped — yt-dlp itself surfaces a clear error if the directory is unwritable,
-                // so the probe was duplicating disk I/O and AV-scanner work for no diagnostic
-                // value the failed download wouldn't already provide.
+                // Ensure the target directory exists before yt-dlp tries to write to it. The previous .writetest probe (write a
+                // sentinel, delete it, log result) was dropped — yt-dlp itself surfaces a clear error if the directory is
+                // unwritable, so the probe was duplicating disk I/O and AV-scanner work for no diagnostic value the failed
+                // download wouldn't already provide.
                 var targetDir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(targetDir))
                 {
@@ -592,10 +581,9 @@ namespace UniPlaySong.Downloaders
                     
                 }
 
-                // yt-dlp may add extension, check if file exists with various extensions.
-                // .mp4 and .aac added for the fast-preview path (audio-format=m4a may yield
-                // either depending on source format; .mp4 specifically when source is format
-                // 18 and yt-dlp's audio-only extract didn't fully demux).
+                // yt-dlp may add extension, check if file exists with various extensions. .mp4 and .aac added for the
+                // fast-preview path (audio-format=m4a may yield either depending on source format; .mp4 specifically when
+                // source is format 18 and yt-dlp's audio-only extract didn't fully demux).
                 if (!File.Exists(path))
                 {
                     var pathWithoutExt2 = Path.ChangeExtension(path, null);
@@ -612,14 +600,11 @@ namespace UniPlaySong.Downloaders
                         }
                     }
 
-                    // Pattern-match fallback for unusual yt-dlp output filenames.
-                    // ONLY runs if the explicit-extensions loop above didn't already move
-                    // a file into place. Without this guard, the pattern match found the
-                    // freshly-moved <hash>.mp3 from the loop above, deleted it as a "stale
-                    // duplicate", then tried to move it from the (now-deleted) source path
-                    // — surfacing as FileNotFoundException. Bug exposed by the v1.4.5
-                    // preview-fast-path change which routinely produces .m4a output that
-                    // exercises the rename fallback for the first time.
+                    // Pattern-match fallback for unusual yt-dlp output filenames. ONLY runs if the explicit-extensions loop above
+                    // didn't already move a file into place. Without this guard, the pattern match found the freshly-moved
+                    // <hash>.mp3 from the loop above, deleted it as a "stale duplicate", then tried to move it from the
+                    // (now-deleted) source path — surfacing as FileNotFoundException. Bug exposed by the v1.4.5 preview-fast-path
+                    // change which routinely produces .m4a output that exercises the rename fallback for the first time.
                     if (!File.Exists(path))
                     {
                         var downloadDirectory = Path.GetDirectoryName(path);
@@ -643,10 +628,9 @@ namespace UniPlaySong.Downloaders
                 if (File.Exists(path))
                 {
                     var fileInfo = new FileInfo(path);
-                    // Parse yt-dlp's "Downloading 1 format(s): <N>" line so we know which
-                    // format yt-dlp picked (18=mp4 video+audio, 140=m4a audio-only,
-                    // 251=opus audio-only, etc). Useful when diagnosing PO Token issues
-                    // or when YouTube changes default format selection.
+                    // Parse yt-dlp's "Downloading 1 format(s): <N>" line so we know which format yt-dlp picked (18=mp4 video+audio,
+                    // 140=m4a audio-only, 251=opus audio-only, etc). Useful when diagnosing PO Token issues or when YouTube changes
+                    // default format selection.
                     string format = null;
                     if (!string.IsNullOrEmpty(output))
                     {

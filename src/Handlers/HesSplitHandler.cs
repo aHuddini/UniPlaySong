@@ -10,17 +10,14 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    // Single-action handler that splits a multi-track HES file (PC Engine /
-    // TurboGrafx-16) into individual mini-HES files, one per track listed in
-    // the file's M3U sidecar. Each mini-HES has its first_track header byte
-    // patched to point at one specific song; UPS then sees N independent
-    // .hes files in the music folder, each playing a single track when
-    // loaded by GmeReader.
+    // Single-action handler that splits a multi-track HES file (PC Engine / TurboGrafx-16) into individual mini-HES
+    // files, one per track listed in the file's M3U sidecar. Each mini-HES has its first_track header byte patched
+    // to point at one specific song; UPS then sees N independent .hes files in the music folder, each playing a
+    // single track when loaded by GmeReader.
     //
-    // No dialog: this is a fire-and-forget menu action. User confirmation
-    // shows track count + preservation behavior; execution is sequential
-    // and reports a summary message at the end. The original .hes is copied
-    // to PreservedOriginals/<GameId>/ before any new files are written.
+    // No dialog: this is a fire-and-forget menu action. User confirmation shows track count + preservation
+    // behavior; execution is sequential and reports a summary message at the end. The original .hes is copied to
+    // PreservedOriginals/<GameId>/ before any new files are written.
     public class HesSplitHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();

@@ -23,16 +23,15 @@ namespace UniPlaySong.Services
         // Handles theme overlay state changes (pause/resume music; separate from video to prevent conflicts)
         void HandleThemeOverlayChange(bool isActive);
 
-        // Handles ForceDefaultMusicOverride flag changes from the
-        // UPS_MusicControl_PauseGamePlayDefault element or {PluginSettings} bindings.
-        // When true: re-trigger playback so the user hears default music swap in immediately.
-        // When false: re-trigger so the current game's own music comes back.
+        // Handles ForceDefaultMusicOverride flag changes from the UPS_MusicControl_PauseGamePlayDefault element or
+        // {PluginSettings} bindings. When true: re-trigger playback so the user hears default music swap in
+        // immediately. When false: re-trigger so the current game's own music comes back.
         void HandleForceDefaultMusicOverrideChange(bool isActive);
 
-        // Re-applies the current ForceDefaultMusicOverride state on control load, even when
-        // the flag value didn't change (so the edge-triggered change event was swallowed).
-        // Used by UPS_MusicControl_PauseGamePlayDefault when it enters the visual tree late
-        // (login-gated host) to make its Tag intent win over Playnite's forced game selection.
+        // Re-applies the current ForceDefaultMusicOverride state on control load, even when the flag value didn't
+        // change (so the edge-triggered change event was swallowed). Used by UPS_MusicControl_PauseGamePlayDefault when
+        // it enters the visual tree late (login-gated host) to make its Tag intent win over Playnite's forced game
+        // selection.
         void HandleForceDefaultMusicOverrideLoaded();
 
         bool IsFirstSelect();

@@ -4,10 +4,10 @@ namespace UniPlaySong.Services
     // Mirrors RadioPlayThroughPolicy / SpotifyRadioDecision so the rule is unit-testable without
     // constructing MusicPlaybackService.
     //
-    // Both radio branches in PlayGameMusic return early (Spotify radio suppresses UPS; pool radio
-    // keeps playing and ignores game switches), which sits ABOVE the PlayOnlyOnGameSelect gate in the
-    // normal-playback path — so before this the setting was unreachable whenever radio was on. This
-    // decides whether those branches instead fall through to normal game playback.
+    // Both radio branches in PlayGameMusic return early (Spotify radio suppresses UPS; pool radio keeps playing and
+    // ignores game switches), which sits ABOVE the PlayOnlyOnGameSelect gate in the normal-playback path — so
+    // before this the setting was unreachable whenever radio was on. This decides whether those branches instead
+    // fall through to normal game playback.
     public static class RadioGameSelectPolicy
     {
         // True when the radio (UPS pool or Spotify) must yield to the selected game's own music.

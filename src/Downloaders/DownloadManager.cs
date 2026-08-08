@@ -56,12 +56,11 @@ namespace UniPlaySong.Downloaders
             Cleanup();
         }
 
-        // Live-updates the YouTube + SoundCloud downloader configs (yt-dlp path, ffmpeg path,
-        // cookie mode, custom cookies file, encoding mode) without replacing this
-        // DownloadManager instance. Called from UniPlaySong.OnSettingsChanged when any of
-        // those settings change, so downstream services (DownloadDialogService,
-        // ControllerDialogHandler) that hold a reference to THIS DownloadManager keep
-        // working with the new settings — no stale reference problem.
+        // Live-updates the YouTube + SoundCloud downloader configs (yt-dlp path, ffmpeg path, cookie mode, custom
+        // cookies file, encoding mode) without replacing this DownloadManager instance. Called from
+        // UniPlaySong.OnSettingsChanged when any of those settings change, so downstream services
+        // (DownloadDialogService, ControllerDialogHandler) that hold a reference to THIS DownloadManager keep working
+        // with the new settings — no stale reference problem.
         public void UpdateSettings(string ytDlpPath, string ffmpegPath, CookieMode cookieMode, string customCookiesFilePath)
         {
             (_ytDownloader as YouTubeDownloader)?.UpdateSettings(ytDlpPath, ffmpegPath, cookieMode, customCookiesFilePath);
@@ -394,10 +393,9 @@ namespace UniPlaySong.Downloaders
 
         private Album CreateAlbumFromKHInsiderSlug(string albumSlug, string gameName)
         {
-            // Create an album entry for the KHInsider album slug
-            // KHInsiderDownloader.GetSongsFromAlbum builds URL as: BaseUrl + album.Id
-            // Album IDs from search are stored as "game-soundtracks/album/{slug}"
-            // So we need to prefix the slug with the path
+            // Create an album entry for the KHInsider album slug KHInsiderDownloader.GetSongsFromAlbum builds URL as:
+            // BaseUrl + album.Id Album IDs from search are stored as "game-soundtracks/album/{slug}" So we need to prefix
+            // the slug with the path
             var albumId = $"game-soundtracks/album/{albumSlug}";
             return new Album
             {

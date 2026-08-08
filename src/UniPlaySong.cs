@@ -131,14 +131,12 @@ namespace UniPlaySong
         private Services.AudioDeviceRegistry _audioDeviceRegistry;
         private Services.SleepCoordinator _sleepCoordinator;
 
-        // Gate for events that could start music during or after OnApplicationStopped.
-        // Playnite's teardown sequence can fire late events (theme overlay changes from
-        // a dismiss-animation, video state from an unloading MediaElement, etc.) AFTER
-        // OnApplicationStopped has run. Without this gate, those events call through
-        // to the coordinator which loads a new song — audibly, for ~1s before the
-        // process terminates. Repro: user in Fullscreen on a game with default music,
-        // exits to Desktop; theme's exit animation clears its overlay post-shutdown,
-        // UPS loads the game's music and plays the fade-in intro during process exit.
+        // Gate for events that could start music during or after OnApplicationStopped. Playnite's teardown sequence can
+        // fire late events (theme overlay changes from a dismiss-animation, video state from an unloading MediaElement,
+        // etc.) AFTER OnApplicationStopped has run. Without this gate, those events call through to the coordinator
+        // which loads a new song — audibly, for ~1s before the process terminates. Repro: user in Fullscreen on a
+        // game with default music, exits to Desktop; theme's exit animation clears its overlay post-shutdown, UPS loads
+        // the game's music and plays the fade-in intro during process exit.
         private volatile bool _isShuttingDown;
         private IconGlow.IconGlowManager _iconGlowManager;
         private IconGlow.ListHoverGlowManager _listHoverGlowManager;
@@ -206,11 +204,11 @@ namespace UniPlaySong
 
         private System.Windows.Threading.DispatcherTimer _focusVerifyTimer;
         private IntPtr _mainWindowHandle;
-        // Activate-side verify (counterpart of _focusVerifyTimer): when Application.Activated
-        // fires while GetForegroundWindow() still reports another HWND (foreground-transfer race
-        // after a long absence, or activation landing on a Playnite-owned sibling window),
-        // briefly re-poll for the main window instead of bailing — Application.Activated will
-        // NOT re-fire for within-app focus moves, so a one-shot bail stranded FocusLoss.
+        // Activate-side verify (counterpart of _focusVerifyTimer): when Application.Activated fires while
+        // GetForegroundWindow() still reports another HWND (foreground-transfer race after a long absence, or
+        // activation landing on a Playnite-owned sibling window), briefly re-poll for the main window instead of
+        // bailing — Application.Activated will NOT re-fire for within-app focus moves, so a one-shot bail stranded
+        // FocusLoss.
         private System.Windows.Threading.DispatcherTimer _activateVerifyTimer;
         private int _activateVerifyTicks;
         private Window _mainWindowForActivate; // kept for unsubscribe on dispose
@@ -237,10 +235,10 @@ namespace UniPlaySong
         private UniPlaySongSettings _settings => _settingsService?.Current;
 
         // Public alias of _settings exposed for Playnite's {PluginSettings Plugin=UniPlaySong, Path=...}
-        // markup extension. Themes bind against plugin.Settings.<Property> via the SettingsRoot prefix
-        // configured in AddSettingsSupport (see InitializeServices). Read-only — themes never reassign
-        // the whole object, only individual properties on it. Setter not needed; the property itself
-        // raises PropertyChanged via UniPlaySongSettings's INotifyPropertyChanged.
+        // markup extension. Themes bind against plugin.Settings.<Property> via the SettingsRoot prefix configured in
+        // AddSettingsSupport (see InitializeServices). Read-only — themes never reassign the whole object, only
+        // individual properties on it. Setter not needed; the property itself raises PropertyChanged via
+        // UniPlaySongSettings's INotifyPropertyChanged.
         public UniPlaySongSettings Settings => _settings;
 
         private readonly HttpClient _httpClient;
@@ -338,10 +336,9 @@ namespace UniPlaySong
                 ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact" }
             });
 
-            // Register settings support for theme integration via Playnite's
-            // {PluginSettings} markup extension (v1.4.6+). Themes bind any
-            // UniPlaySongSettings property directly without needing a custom
-            // <UPS:MusicControl> element in the visual tree:
+            // Register settings support for theme integration via Playnite's {PluginSettings} markup extension (v1.4.6+).
+            // Themes bind any UniPlaySongSettings property directly without needing a custom <UPS:MusicControl> element in
+            // the visual tree:
             //
             //   <CheckBox IsChecked="{PluginSettings Plugin=UniPlaySong,
             //                                       Path=EnableMusic,
@@ -444,12 +441,11 @@ namespace UniPlaySong
                     return;
                 }
 
-                // Launch aborted: Playnite clears IsLaunching without ever setting IsRunning (an
-                // extension cancelled startup, or the play action threw) and raises no OnGameStopped.
-                // Unlike GameStarting, which ClearAllPauseSources sweeps, nothing else clears the
-                // session flag, so a stuck flag would disable external-audio pausing for the session.
-                // A normal launch is safe: Playnite sets IsRunning=true and IsLaunching=false in a
-                // single update, so the !IsRunning term is false and this branch can't misfire.
+                // Launch aborted: Playnite clears IsLaunching without ever setting IsRunning (an extension cancelled startup,
+                // or the play action threw) and raises no OnGameStopped. Unlike GameStarting, which ClearAllPauseSources
+                // sweeps, nothing else clears the session flag, so a stuck flag would disable external-audio pausing for the
+                // session. A normal launch is safe: Playnite sets IsRunning=true and IsLaunching=false in a single update, so
+                // the !IsRunning term is false and this branch can't misfire.
                 if (!update.NewData.IsLaunching && update.OldData.IsLaunching && !update.NewData.IsRunning)
                 {
                     _playbackService?.SetGameSessionActive(false);
@@ -560,11 +556,10 @@ namespace UniPlaySong
             }
 
             // Defensive: game exit doesn't always produce a clean OnApplicationActivate
-            // (Steam BPM, fullscreen-borderless games, sound-driver hitches, focus-verify
-            // timer races). Re-poll window state on the next UI tick and drop any
-            // window-state pause sources whose condition no longer applies. Without this,
-            // a stale FocusLoss/Minimized/SystemTray can survive past game exit and silence
-            // music until the user changes selection or restarts Playnite.
+            // (Steam BPM, fullscreen-borderless games, sound-driver hitches, focus-verify timer races). Re-poll window
+            // state on the next UI tick and drop any window-state pause sources whose condition no longer applies. Without
+            // this, a stale FocusLoss/Minimized/SystemTray can survive past game exit and silence music until the user
+            // changes selection or restarts Playnite.
             StartGameStopVerify();
         }
 
@@ -633,28 +628,25 @@ namespace UniPlaySong
             _spotifyControlService?.Recompute();
             TryAutoLaunchSpotify();
 
-            // Establish the Spotify effects state once at startup (Spotify may already be the
-            // active source with effects/visualizer on). Idempotent — safe if nothing applies.
-            // Armed here (not earlier): settings-load events during InitializeServices would
-            // otherwise start effected output seconds before the theme binds its overlay flags,
-            // making Spotify audible during login views. Same gate as the radio engage above.
+            // Establish the Spotify effects state once at startup (Spotify may already be the active source with
+            // effects/visualizer on). Idempotent — safe if nothing applies. Armed here (not earlier): settings-load
+            // events during InitializeServices would otherwise start effected output seconds before the theme binds its
+            // overlay flags, making Spotify audible during login views. Same gate as the radio engage above.
             //
-            // Off the UI thread: the first Evaluate can start capture, whose native handshake
-            // (ActivateAudioInterfaceAsync) blocks up to several seconds — on the UI thread that
-            // stalls fullscreen theme load. The coordinator is already lock-serialized and safe
-            // to drive from any thread (the SMTC worker + watchdog already do).
+            // Off the UI thread: the first Evaluate can start capture, whose native handshake (ActivateAudioInterfaceAsync)
+            // blocks up to several seconds — on the UI thread that stalls fullscreen theme load. The coordinator is
+            // already lock-serialized and safe to drive from any thread (the SMTC worker + watchdog already do).
             if (_spotifyEffectsHost != null)
             {
                 _spotifyEffectsHost.Armed = true;
                 EvaluateSpotifyEffectsAsync();
             }
 
-            // Recompute the theme-override flag from the controls actually loaded in the theme we
-            // started in. Switching Desktop<->Fullscreen is a separate process launch and theme
-            // changes require a restart, so this fires fresh each time. A theme with no override
-            // control resolves the flag to false (game music plays — prevents a stale true leaking
-            // in from a previous theme like PS5-Experience → Aniki); a theme whose control already
-            // loaded keeps its Tag, so the Welcome Hub's "play default music" intent is preserved.
+            // Recompute the theme-override flag from the controls actually loaded in the theme we started in. Switching
+            // Desktop<->Fullscreen is a separate process launch and theme changes require a restart, so this fires fresh
+            // each time. A theme with no override control resolves the flag to false (game music plays — prevents a stale
+            // true leaking in from a previous theme like PS5-Experience → Aniki); a theme whose control already loaded
+            // keeps its Tag, so the Welcome Hub's "play default music" intent is preserved.
             Controls.MusicControlPauseGamePlayDefault.SyncOverrideFromLiveControls();
 
             LoadLocalization();
@@ -668,10 +660,9 @@ namespace UniPlaySong
                 _settingsService?.LoadSettings();
             }
 
-            // ResetSkipStateForModeSwitch removed from here — the reset is already handled
-            // inside HandleGameSelected (first-time fullscreen detection). Calling it again
-            // in OnApplicationStarted caused a double-skip: the auto-select consumed the first
-            // skip, then this reset re-armed _firstSelect, forcing users to select twice.
+            // ResetSkipStateForModeSwitch removed from here — the reset is already handled inside HandleGameSelected
+            // (first-time fullscreen detection). Calling it again in OnApplicationStarted caused a double-skip: the
+            // auto-select consumed the first skip, then this reset re-armed _firstSelect, forcing users to select twice.
 
             if (_settings?.ThemeCompatibleSilentSkip == true && IsFullscreen)
             {
@@ -711,10 +702,9 @@ namespace UniPlaySong
             if (Application.Current.MainWindow != null)
             {
                 _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
-                // Also hook the MAIN WINDOW's own Activated: Application.Activated only fires on
-                // app-level inactive→active transitions, so returning to the main window from a
-                // Playnite-owned sibling (overlay/dialog/WebView2) never re-fires it — FocusLoss
-                // stayed stuck and music silently never resumed. Window.Activated does fire for
+                // Also hook the MAIN WINDOW's own Activated: Application.Activated only fires on app-level inactive→active
+                // transitions, so returning to the main window from a Playnite-owned sibling (overlay/dialog/WebView2) never
+                // re-fires it — FocusLoss stayed stuck and music silently never resumed. Window.Activated does fire for
                 // within-app focus moves; the handler's own guard + verify timer keep it safe.
                 _mainWindowForActivate = Application.Current.MainWindow;
                 _mainWindowForActivate.Activated += OnApplicationActivate;
@@ -1314,10 +1304,9 @@ namespace UniPlaySong
 
             if (args.State == ControllerInputState.Pressed)
             {
-                // Embedded media-controller buttons: Playnite only auto-clicks its own internal
-                // ButtonEx on the confirm press, so our plugin Buttons need this bridge. Only when
-                // no UPS modal owns input (a dialog's own A/B handling takes precedence) and the
-                // confirm button (A, or B if Swap Confirm/Cancel is on) is pressed. If a focused
+                // Embedded media-controller buttons: Playnite only auto-clicks its own internal ButtonEx on the confirm press,
+                // so our plugin Buttons need this bridge. Only when no UPS modal owns input (a dialog's own A/B handling takes
+                // precedence) and the confirm button (A, or B if Swap Confirm/Cancel is on) is pressed. If a focused
                 // confirm-target button handles it, don't also route to the modal stack.
                 if (_controllerEventRouter?.HasActiveReceiver != true
                     && args.Button == GetFullscreenConfirmButton())
@@ -1355,11 +1344,10 @@ namespace UniPlaySong
             return ControllerInput.A;
         }
 
-        // "Play Only on Game Select" — fires on every Fullscreen List ↔ Details toggle.
-        // Event-driven (SDK 6.16.0+), replaces the previous 200ms polling DispatcherTimer.
-        // Playnite invokes this synchronously from the GameDetailsVisible property setter
-        // (FullscreenAppViewModel), so the work here must stay lightweight — we just call
-        // PlayGameMusic, which does its own async/dispatcher work internally.
+        // "Play Only on Game Select" — fires on every Fullscreen List ↔ Details toggle. Event-driven (SDK 6.16.0+),
+        // replaces the previous 200ms polling DispatcherTimer. Playnite invokes this synchronously from the
+        // GameDetailsVisible property setter (FullscreenAppViewModel), so the work here must stay lightweight — we
+        // just call PlayGameMusic, which does its own async/dispatcher work internally.
         public override void OnFullscreenViewChanged(OnFullscreenViewChangedArgs args)
         {
             // Same defense as OnSettingsServicePropertyChanged: don't start music from a
@@ -1402,10 +1390,9 @@ namespace UniPlaySong
             return _coordinator.ShouldPlayMusic(game);
         }
 
-        // Extracts dominant colors from a game's artwork for the Dynamic visualizer themes.
-        // V1 (Game Art): v6 simple histogram, user-configurable slider params.
-        // Alt Algo: v7 advanced algorithm (center-weighted + bucket merging + diversity bonus).
-        // Vibrant Vibes: v7 + vivid mode with hardcoded aggressive params.
+        // Extracts dominant colors from a game's artwork for the Dynamic visualizer themes. V1 (Game Art): v6 simple
+        // histogram, user-configurable slider params. Alt Algo: v7 advanced algorithm (center-weighted + bucket merging
+        // + diversity bonus). Vibrant Vibes: v7 + vivid mode with hardcoded aggressive params.
         private void UpdateDynamicVisualizerColors(Game game)
         {
             bool isV1 = _settings?.VizColorTheme == (int)VizColorTheme.Dynamic;
@@ -1609,11 +1596,10 @@ namespace UniPlaySong
                 return;
             }
 
-            // Spotify effects settings via a theme {PluginSettings} write (bypasses the whole-
-            // settings diff in OnSettingsServiceChanged). ApplyLiveEffectsToSpotify needs no
-            // backend swap (already-NAudio player), so a direct re-evaluate is correct. A theme
-            // write of LiveEffectsEnabled/ShowSpectrumVisualizer can't trigger the backend swap
-            // here (that lives in the diff path), but re-evaluating is still safe + idempotent.
+            // Spotify effects settings via a theme {PluginSettings} write (bypasses the whole- settings diff in
+            // OnSettingsServiceChanged). ApplyLiveEffectsToSpotify needs no backend swap (already-NAudio player), so a
+            // direct re-evaluate is correct. A theme write of LiveEffectsEnabled/ShowSpectrumVisualizer can't trigger the
+            // backend swap here (that lives in the diff path), but re-evaluating is still safe + idempotent.
             if (e.PropertyName == nameof(UniPlaySongSettings.ApplyLiveEffectsToSpotify) ||
                 e.PropertyName == nameof(UniPlaySongSettings.LiveEffectsEnabled) ||
                 e.PropertyName == nameof(UniPlaySongSettings.ShowSpectrumVisualizer))
@@ -1623,13 +1609,11 @@ namespace UniPlaySong
             }
 
             // Per-property writes from theme {PluginSettings} markup bypass UpdateSettings()
-            // entirely — they mutate _currentSettings.<Prop> directly via INotifyPropertyChanged,
-            // so OnSettingsServiceChanged (the whole-settings-replaced diff event) never fires
-            // and its handlers for EnableMusic/RadioMode/etc. are unreachable from theme
-            // toggles. Mirror the relevant diff-event logic here for the four settings the
-            // {PluginSettings} integration exposes (EnableMusic, EnableDefaultMusic,
-            // RadioModeEnabled, PlayOnlyOnGameSelect) so theme checkboxes round-trip
-            // correctly.
+            // entirely — they mutate _currentSettings.<Prop> directly via INotifyPropertyChanged, so
+            // OnSettingsServiceChanged (the whole-settings-replaced diff event) never fires and its handlers for
+            // EnableMusic/RadioMode/etc. are unreachable from theme toggles. Mirror the relevant diff-event logic here for
+            // the four settings the {PluginSettings} integration exposes (EnableMusic, EnableDefaultMusic,
+            // RadioModeEnabled, PlayOnlyOnGameSelect) so theme checkboxes round-trip correctly.
             //
             // The desktop settings dialog still flows through OnSettingsServiceChanged
             // (BeginEdit + EndEdit + UpdateSettings), so this code path is theme-only —
@@ -1653,11 +1637,9 @@ namespace UniPlaySong
                     // ON -> OFF: route through PlayGameMusic so the default-music
                     // fallback can fire (when EnableDefaultMusic=true). PlayGameMusic's
                     // EnableMusic=off branch (MusicPlaybackService line ~740) clears
-                    // game songs and adds the configured default source. If both
-                    // EnableMusic and EnableDefaultMusic are off, PlayGameMusic stops
-                    // playback on its own (line 850). Just calling Stop() here would
-                    // skip the default fallback entirely — that was the v1.4.6 beta1
-                    // bug where toggling Game Music off silenced ambient too.
+                    // game songs and adds the configured default source. If both EnableMusic and EnableDefaultMusic are off,
+                    // PlayGameMusic stops playback on its own (line 850). Just calling Stop() here would skip the default fallback
+                    // entirely — that was the v1.4.6 beta1 bug where toggling Game Music off silenced ambient too.
                     if (game != null)
                     {
                         _playbackService.PlayGameMusic(game, _settings, true);
@@ -1686,11 +1668,9 @@ namespace UniPlaySong
                 _fileLogger?.Debug($"OnSettingsServicePropertyChanged: RadioModeEnabled={_settings.RadioModeEnabled} (theme write)");
                 if (_settings.RadioModeEnabled)
                 {
-                    // OFF -> ON: enter radio directly. PlayGameMusic with forceReload=true
-                    // would skip the radio branch entirely (line 614: `&& !forceReload`),
-                    // so we'd just reload game music and never enter the pool. Calling
-                    // StartRadioPlayback bypasses that conflict and matches what game-
-                    // switch entry does internally.
+                    // OFF -> ON: enter radio directly. PlayGameMusic with forceReload=true would skip the radio branch entirely
+                    // (line 614: `&& !forceReload`), so we'd just reload game music and never enter the pool. Calling
+                    // StartRadioPlayback bypasses that conflict and matches what game- switch entry does internally.
                     //
                     // Honor MusicOnlyForInstalledGames yield: if the user is on an
                     // installed game with its own music, radio should defer to game music
@@ -1709,11 +1689,10 @@ namespace UniPlaySong
                     {
                         if (_settings.RadioMusicSource == RadioMusicSource.Spotify)
                         {
-                            // Spotify is the radio source: there is no UPS pool to start — instead the
-                            // currently-playing game music must STOP so Spotify plays alone. Routing
-                            // through PlayGameMusic (no forceReload) hits the SpotifyRadioMode
-                            // suppression branch (fade-out + suppress). Without this, toggling the
-                            // theme's Radio Mode ON left game music playing alongside Spotify.
+                            // Spotify is the radio source: there is no UPS pool to start — instead the currently-playing game music must
+                            // STOP so Spotify plays alone. Routing through PlayGameMusic (no forceReload) hits the SpotifyRadioMode
+                            // suppression branch (fade-out + suppress). Without this, toggling the theme's Radio Mode ON left game music
+                            // playing alongside Spotify.
                             if (game != null) _playbackService.PlayGameMusic(game, _settings);
                             else _playbackService.Stop(); // no game context — just silence UPS
                             _spotifyControlService?.Recompute(); // engage Spotify now, not on the next poll
@@ -1773,12 +1752,10 @@ namespace UniPlaySong
             }
 
             // v1.5.0: Calm Down Mode theme binding. The CalmDownProcessor self-reacts
-            // to setting changes by reading CalmDownModeEnabled in its audio Read() —
-            // so the per-song chain doesn't need rebuilding. But if Calm Down is being
-            // turned ON while the player is currently SDL2 (no Live Effects, no Viz,
-            // no Peak Meter, no Crossfade), we must rebuild as NAudio so the processor
-            // can be hosted. Mirrors the diff-event logic in OnSettingsServiceChanged
-            // for backend swaps.
+            // to setting changes by reading CalmDownModeEnabled in its audio Read() — so the per-song chain doesn't need
+            // rebuilding. But if Calm Down is being turned ON while the player is currently SDL2 (no Live Effects, no Viz,
+            // no Peak Meter, no Crossfade), we must rebuild as NAudio so the processor can be hosted. Mirrors the
+            // diff-event logic in OnSettingsServiceChanged for backend swaps.
             if (e.PropertyName == nameof(UniPlaySongSettings.CalmDownModeEnabled))
             {
                 _fileLogger?.Debug($"OnSettingsServicePropertyChanged: CalmDownModeEnabled={_settings.CalmDownModeEnabled} (theme write)");
@@ -1804,13 +1781,11 @@ namespace UniPlaySong
         {
             // Coordinator subscribes directly to SettingsService - no manual update needed
 
-            // Resolve the game to re-react against. Prefer Playnite's current selection
-            // (covers the typical "user is browsing the library" case), but fall back to
-            // whatever game UPS is currently playing music for. Without the fallback, every
-            // settings flip silently no-ops in Fullscreen until the user manually focuses a
-            // game card — which made the new theme {PluginSettings} toggles feel broken
-            // (toggle did nothing on the home view, only "woke up" after the user navigated
-            // to a game). _playbackService.CurrentGame is the most recent game music was
+            // Resolve the game to re-react against. Prefer Playnite's current selection (covers the typical "user is
+            // browsing the library" case), but fall back to whatever game UPS is currently playing music for. Without the
+            // fallback, every settings flip silently no-ops in Fullscreen until the user manually focuses a game card —
+            // which made the new theme {PluginSettings} toggles feel broken (toggle did nothing on the home view, only
+            // "woke up" after the user navigated to a game). _playbackService.CurrentGame is the most recent game music was
             // started for, so it's a sensible substitute when SelectedGames is empty.
             Game ResolveContextGame()
             {
@@ -1854,10 +1829,9 @@ namespace UniPlaySong
             {
                 _playbackService.SetVolume(e.NewSettings.MusicVolume / Constants.VolumeDivisor);
 
-                // Re-point the service's cached settings. A save hands out a new settings
-                // object; without this the service keeps reading the pre-save values until
-                // the next PlayGameMusic, which made toggles like RadioPlaysThroughGames
-                // apply only intermittently. Pointer swap only — no playback side effects.
+                // Re-point the service's cached settings. A save hands out a new settings object; without this the service
+                // keeps reading the pre-save values until the next PlayGameMusic, which made toggles like
+                // RadioPlaysThroughGames apply only intermittently. Pointer swap only — no playback side effects.
                 _playbackService.RefreshSettings(e.NewSettings);
             }
 
@@ -1895,12 +1869,10 @@ namespace UniPlaySong
 
                 if (downloadSettingsChanged && _downloadManager != null)
                 {
-                    // Live-update the existing DownloadManager instead of recreating it.
-                    // Dialog handlers (DownloadDialogService, ControllerDialogHandler) hold
-                    // a reference to THIS _downloadManager instance, so replacing it would
-                    // leave those handlers with a stale config — the actual bug we hit when
-                    // a user changed YtDlpPath / cookie settings mid-session and YouTube
-                    // downloads kept using the old settings.
+                    // Live-update the existing DownloadManager instead of recreating it. Dialog handlers (DownloadDialogService,
+                    // ControllerDialogHandler) hold a reference to THIS _downloadManager instance, so replacing it would leave
+                    // those handlers with a stale config — the actual bug we hit when a user changed YtDlpPath / cookie settings
+                    // mid-session and YouTube downloads kept using the old settings.
                     _downloadManager.UpdateSettings(
                         e.NewSettings?.YtDlpPath,
                         e.NewSettings?.FFmpegPath,
@@ -1914,10 +1886,9 @@ namespace UniPlaySong
                 bool peakMeterToggled = e.OldSettings.ShowPeakMeter != e.NewSettings.ShowPeakMeter;
                 bool crossfadeToggled = e.OldSettings.EnableTrueCrossfade != e.NewSettings.EnableTrueCrossfade;
                 // v1.5.0: Calm Down forces NAudio (SDL2 has no post-mixer hook). Only trigger
-                // backend swap when the toggle would actually flip the SDL2/NAudio choice —
-                // i.e. when no other NAudio-requiring feature is already on. If Live Effects
-                // is already on, the player is already NAudio and the processor activates
-                // simply by reading CalmDownModeEnabled in its Read() — no rebuild needed.
+                // backend swap when the toggle would actually flip the SDL2/NAudio choice — i.e. when no other
+                // NAudio-requiring feature is already on. If Live Effects is already on, the player is already NAudio and the
+                // processor activates simply by reading CalmDownModeEnabled in its Read() — no rebuild needed.
                 bool calmDownChanged = e.OldSettings.CalmDownModeEnabled != e.NewSettings.CalmDownModeEnabled;
                 bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
                     && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
@@ -1927,11 +1898,10 @@ namespace UniPlaySong
 
                 if (backendSwap)
                 {
-                    // Carry-forward A/B: recreating the player disposes the current NAudio backend
-                    // and its external-source chain WITHOUT the coordinator knowing. Shut the host
-                    // down first (unmutes Spotify + drops the now-dead external source / stale viz
-                    // .Current) so we never leave Spotify muted against a disposed player. Re-evaluate
-                    // after the new player exists so effected output/pump re-attach to it.
+                    // Carry-forward A/B: recreating the player disposes the current NAudio backend and its external-source chain
+                    // WITHOUT the coordinator knowing. Shut the host down first (unmutes Spotify + drops the now-dead external
+                    // source / stale viz .Current) so we never leave Spotify muted against a disposed player. Re-evaluate after the
+                    // new player exists so effected output/pump re-attach to it.
                     _spotifyEffectsHost?.Shutdown();
 
                     _fileLogger?.Debug($"Player backend change: LiveEffects={e.NewSettings.LiveEffectsEnabled}, Visualizer={e.NewSettings.ShowSpectrumVisualizer}, PeakMeter={e.NewSettings.ShowPeakMeter}, Crossfade={e.NewSettings.EnableTrueCrossfade}, CalmDown={e.NewSettings.CalmDownModeEnabled} - recreating music player");
@@ -1945,10 +1915,9 @@ namespace UniPlaySong
                     EvaluateSpotifyEffectsAsync();
                 }
 
-                // A live-effects preset change (Style / Reverb / chain-order) rewrites the effect
-                // chain but does NOT swap the backend, so the block above won't rebuild — and while
-                // effecting Spotify the effected-output chain is baked at start, so the new preset
-                // can't apply and the output goes silent until a Playnite restart. Rebuild the
+                // A live-effects preset change (Style / Reverb / chain-order) rewrites the effect chain but does NOT swap the
+                // backend, so the block above won't rebuild — and while effecting Spotify the effected-output chain is baked
+                // at start, so the new preset can't apply and the output goes silent until a Playnite restart. Rebuild the
                 // effected output in place (Spotify stays ducked) so the new preset takes effect now.
                 bool effectPresetChanged = e.OldSettings.SelectedStylePreset != e.NewSettings.SelectedStylePreset
                     || e.OldSettings.SelectedReverbPreset != e.NewSettings.SelectedReverbPreset
@@ -1993,11 +1962,10 @@ namespace UniPlaySong
                 }
 
                 // Radio Mode toggle handler — when flipped mid-playback (theme {PluginSettings}
-                // binding or Fullscreen Extensions menu), the player must react. Without this,
-                // the current track keeps playing until natural end, then silence (no auto-
-                // advance because _isInRadioMode was never set true). PlayGameMusic only
-                // enters the radio branch on game switch, so settings-driven flips need their
-                // own kick. Mirrors the radio entry/exit logic from PlayGameMusic.
+                // binding or Fullscreen Extensions menu), the player must react. Without this, the current track keeps playing
+                // until natural end, then silence (no auto- advance because _isInRadioMode was never set true). PlayGameMusic
+                // only enters the radio branch on game switch, so settings-driven flips need their own kick. Mirrors the radio
+                // entry/exit logic from PlayGameMusic.
                 bool radioModeChanged = e.OldSettings.RadioModeEnabled != e.NewSettings.RadioModeEnabled;
                 // Source switch while radio stays on (e.g. pool → Spotify in the dialog) must also
                 // re-enter: without it the old source keeps playing alongside the new one.
@@ -2027,10 +1995,9 @@ namespace UniPlaySong
                         {
                             if (e.NewSettings.RadioMusicSource == RadioMusicSource.Spotify)
                             {
-                                // Spotify is the radio source: no UPS pool to start — the playing
-                                // game/pool music must STOP so Spotify plays alone. PlayGameMusic
-                                // (no forceReload) hits the SpotifyRadioMode suppression branch
-                                // (fade-out + suppress). Same fix as the theme-toggle path.
+                                // Spotify is the radio source: no UPS pool to start — the playing game/pool music must STOP so Spotify plays
+                                // alone. PlayGameMusic (no forceReload) hits the SpotifyRadioMode suppression branch (fade-out + suppress).
+                                // Same fix as the theme-toggle path.
                                 _fileLogger?.Debug("RadioMode ON via dialog (Spotify source) — suppressing UPS music");
                                 if (game != null) _playbackService.PlayGameMusic(game, e.NewSettings);
                                 else _playbackService.Stop();
@@ -2103,16 +2070,12 @@ namespace UniPlaySong
             }
 
             // v1.5.0: silent migration of the deprecated NativeTheme source.
-            // Users who previously selected "Use Playnite native theme music"
-            // were experiencing audible overlap because UPS and Playnite
-            // both tried to play the same background.mp3 file. v1.5.0
-            // ships Shades of Orange (the same track Playnite's default
-            // Fullscreen theme uses) as a bundled preset, so the user's
-            // intent ("I want vanilla-theme ambient") is preserved by
-            // routing through BundledPreset instead. SelectedBundledPreset
-            // is left untouched — if the user picked a different bundled
-            // track previously, we keep their choice; otherwise the
-            // validation block below ensures a sensible fallback.
+            // Users who previously selected "Use Playnite native theme music" were experiencing audible overlap because UPS
+            // and Playnite both tried to play the same background.mp3 file. v1.5.0 ships Shades of Orange (the same track
+            // Playnite's default Fullscreen theme uses) as a bundled preset, so the user's intent ("I want vanilla-theme
+            // ambient") is preserved by routing through BundledPreset instead. SelectedBundledPreset is left untouched —
+            // if the user picked a different bundled track previously, we keep their choice; otherwise the validation block
+            // below ensures a sensible fallback.
 #pragma warning disable CS0618
             if (_settings.DefaultMusicSourceOption == DefaultMusicSource.NativeTheme)
             {
@@ -2214,10 +2177,9 @@ namespace UniPlaySong
                 _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
-        // Handles application losing focus.
-        // If ignore-brief is enabled, checks if focus went to the task switcher overlay.
-        // ForegroundStaging is transitional (appears while alt-tab overlay is visible),
-        // so we poll every 100ms until the foreground resolves to a real window.
+        // Handles application losing focus. If ignore-brief is enabled, checks if focus went to the task switcher
+        // overlay. ForegroundStaging is transitional (appears while alt-tab overlay is visible), so we poll every 100ms
+        // until the foreground resolves to a real window.
         private void OnApplicationDeactivate(object sender, EventArgs e)
         {
             // A genuine deactivation supersedes any pending activate re-check — without this,
@@ -2287,21 +2249,18 @@ namespace UniPlaySong
             // Cancel pending focus verification — focus returned before the check fired
             _focusVerifyTimer?.Stop();
 
-            // v1.5.3 — issue #79 fix. Application.Activated fires when ANY window owned
-            // by Playnite gets focus, not just the main window. The Keyboard Launcher
-            // (a global hotkey-triggered Spotlight-style overlay) is a sibling window
-            // that activates while Playnite's main window stays in the background.
-            // Same goes for any Playnite-owned modal dialog opened from another app.
-            // Without this guard, music would resume the moment the launcher opens
-            // even though the user isn't actually looking at Playnite's main window.
-            // Symmetric to the check OnFocusVerifyTick already does on the deactivate side.
+            // v1.5.3 — issue #79 fix. Application.Activated fires when ANY window owned by Playnite gets focus, not just
+            // the main window. The Keyboard Launcher (a global hotkey-triggered Spotlight-style overlay) is a sibling
+            // window that activates while Playnite's main window stays in the background. Same goes for any Playnite-owned
+            // modal dialog opened from another app. Without this guard, music would resume the moment the launcher opens
+            // even though the user isn't actually looking at Playnite's main window. Symmetric to the check
+            // OnFocusVerifyTick already does on the deactivate side.
             if (_mainWindowHandle != IntPtr.Zero && GetForegroundWindow() != _mainWindowHandle)
             {
-                // Not the main window (yet). This can be a genuine sibling activation
-                // (launcher — stay paused) OR a foreground-transfer race where Windows
-                // still reports the previous app for a few ms. A one-shot bail here
-                // stranded FocusLoss (Application.Activated never re-fires while the app
-                // stays active), so briefly re-poll before giving up (v1.6.8).
+                // Not the main window (yet). This can be a genuine sibling activation (launcher — stay paused) OR a
+                // foreground-transfer race where Windows still reports the previous app for a few ms. A one-shot bail here
+                // stranded FocusLoss (Application.Activated never re-fires while the app stays active), so briefly re-poll
+                // before giving up (v1.6.8).
                 StartActivateVerify();
                 return;
             }
@@ -2328,10 +2287,9 @@ namespace UniPlaySong
             _dashboardPlaybackService?.ResumeFromSystem();
         }
 
-        // Bounded re-check after an activation that didn't land on the main window: polls
-        // every 100ms for up to ~2s. Resolves the foreground-transfer race (clears within a
-        // tick or two) while still leaving FocusLoss in place for a genuine sibling overlay
-        // (launcher) that keeps focus past the window — issue #79 behavior preserved.
+        // Bounded re-check after an activation that didn't land on the main window: polls every 100ms for up to ~2s.
+        // Resolves the foreground-transfer race (clears within a tick or two) while still leaving FocusLoss in place
+        // for a genuine sibling overlay (launcher) that keeps focus past the window — issue #79 behavior preserved.
         private void StartActivateVerify()
         {
             if (_activateVerifyTimer == null)
@@ -2393,10 +2351,9 @@ namespace UniPlaySong
                         RestoreIdleVolume();
                     }
 
-                    // Always remove — HashSet.Remove is a no-op if not present. Removing SystemLock
-                    // drives fader.Resume() → player.Resume(), which rebuilds the device released on
-                    // lock and seeks back to the saved position (see NAudioMusicPlayer.Resume). No
-                    // explicit restore/reload needed — that would restart the track from the start.
+                    // Always remove — HashSet.Remove is a no-op if not present. Removing SystemLock drives fader.Resume() →
+                    // player.Resume(), which rebuilds the device released on lock and seeks back to the saved position (see
+                    // NAudioMusicPlayer.Resume). No explicit restore/reload needed — that would restart the track from the start.
                     _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
                     _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
@@ -2435,11 +2392,10 @@ namespace UniPlaySong
                 // so it rebuilds cleanly on resume when the device comes back.
                 _spotifyEffectsHost?.Shutdown();
 
-                // Then mark playback paused via the same SystemLock source the lock path uses, so
-                // that on resume RemovePauseSource(SystemLock) drives the identical self-healing
-                // resume-at-position (the player already saved its position during device release).
-                // AddPauseSource sets the pause flag synchronously, so it survives even if the UI
-                // thread doesn't finish the fade before the machine freezes.
+                // Then mark playback paused via the same SystemLock source the lock path uses, so that on resume
+                // RemovePauseSource(SystemLock) drives the identical self-healing resume-at-position (the player already saved
+                // its position during device release). AddPauseSource sets the pause flag synchronously, so it survives even if
+                // the UI thread doesn't finish the fade before the machine freezes.
                 Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
                     _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
@@ -2515,11 +2471,10 @@ namespace UniPlaySong
                         _externalAudioExcludedPids, StringComparer.OrdinalIgnoreCase) { "spotify" };
                 }
 
-                // When UPS is conducting Spotify as the audible music, exclude Spotify's own
-                // session from DETECTION (instead of skipping all detections, which also ignored
-                // real external audio like a browser and never paused Spotify radio). Spotify's
-                // session can never trip, so no pause-oscillation; other apps detect normally and
-                // the standard pause path pauses Spotify via the lifecycle machinery.
+                // When UPS is conducting Spotify as the audible music, exclude Spotify's own session from DETECTION (instead of
+                // skipping all detections, which also ignored real external audio like a browser and never paused Spotify
+                // radio). Spotify's session can never trip, so no pause-oscillation; other apps detect normally and the
+                // standard pause path pauses Spotify via the lifecycle machinery.
                 bool spotifyIsAudible = _settings?.SpotifyActive == true
                     && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
                 var exclusions = spotifyIsAudible && _externalAudioExcludedPidsWithSpotify != null
@@ -2541,11 +2496,9 @@ namespace UniPlaySong
                         // exclusion set while spotifyIsAudible), so a detection here is real
                         // external audio and pauses normally — including pausing Spotify radio.
 
-                        // Don't treat a launched game's own audio as "external." When a game
-                        // session is active, the audio we're hearing is almost
-                        // certainly the game itself. Adding ExternalAudio on top creates
-                        // a stuck state via KeepPausedAfterExternalAudio when the game
-                        // audio oscillates (common with windowed games that produce
+                        // Don't treat a launched game's own audio as "external." When a game session is active, the audio we're hearing
+                        // is almost certainly the game itself. Adding ExternalAudio on top creates a stuck state via
+                        // KeepPausedAfterExternalAudio when the game audio oscillates (common with windowed games that produce
                         // intermittent silence — see user report 2026-06-06).
                         if (_playbackService?.IsGameSessionActive == true)
                         {
@@ -2579,13 +2532,11 @@ namespace UniPlaySong
                         var wasInstant = _externalAudioPausedInstantly;
                         _externalAudioPausedInstantly = false;
 
-                        // Desktop-only: honor "keep paused after external audio" — when on,
-                        // UPS stays paused until the user manually resumes (media keys,
-                        // top panel toggle). In Fullscreen, we always auto-resume regardless
-                        // of this setting since there's no persistent on-screen unpause
-                        // control in Fullscreen. Note: manual resume paths (TopPanelMediaControl,
-                        // MusicLibrary) explicitly call RemovePauseSource(ExternalAudio) as part
-                        // of their play action, so resume still works — just not automatically.
+                        // Desktop-only: honor "keep paused after external audio" — when on, UPS stays paused until the user manually
+                        // resumes (media keys, top panel toggle). In Fullscreen, we always auto-resume regardless of this setting since
+                        // there's no persistent on-screen unpause control in Fullscreen. Note: manual resume paths
+                        // (TopPanelMediaControl, MusicLibrary) explicitly call RemovePauseSource(ExternalAudio) as part of their play
+                        // action, so resume still works — just not automatically.
                         bool stayPaused = IsDesktop && _settings?.KeepPausedAfterExternalAudio == true;
                         if (stayPaused)
                         {
@@ -2765,10 +2716,9 @@ namespace UniPlaySong
         {
             if (IsSpotifyTheActiveMediaSource())
             {
-                // Spotify owns the audio here; UPS's player is suppressed but still loaded, so driving
-                // _playbackService started UPS game music ALONGSIDE Spotify. Route through
-                // ActiveMediaService so SpotifyControlService's manual pause/resume bookkeeping stays
-                // authoritative and theme transport bindings refresh with it.
+                // Spotify owns the audio here; UPS's player is suppressed but still loaded, so driving _playbackService started
+                // UPS game music ALONGSIDE Spotify. Route through ActiveMediaService so SpotifyControlService's manual
+                // pause/resume bookkeeping stays authoritative and theme transport bindings refresh with it.
                 _activeMediaService?.PlayPause();
                 _topPanelMediaControl?.UpdateIcons();
                 return;
@@ -2807,10 +2757,9 @@ namespace UniPlaySong
 
         private void OnTaskbarPlaybackStateChanged()
         {
-            // Match the transport routing above: with Spotify active UPS's own player is suppressed,
-            // so reading it alone left the thumbnail button stuck on "Play" while Spotify was audibly
-            // playing. IsSpotifyPlaying is the client's cached volatile state — no SMTC round-trip,
-            // safe on this frequently-raised handler.
+            // Match the transport routing above: with Spotify active UPS's own player is suppressed, so reading it alone
+            // left the thumbnail button stuck on "Play" while Spotify was audibly playing. IsSpotifyPlaying is the client's
+            // cached volatile state — no SMTC round-trip, safe on this frequently-raised handler.
             bool isPlaying = IsSpotifyTheActiveMediaSource()
                 ? _spotifyControlService?.IsSpotifyPlaying == true
                 : (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true);
@@ -2818,10 +2767,10 @@ namespace UniPlaySong
         }
 
         // NowPlayingChanged is raised outside SpotifyControlService's lock and can arrive on the SMTC
-        // worker/threadpool. ThumbButtonInfo.ImageSource is a DependencyObject property, so the
-        // refresh has to run on the UI thread. BeginInvoke, never a synchronous Invoke: a sync
-        // marshal from an SMTC callback thread can deadlock against a UI thread already inside
-        // Recompute — the launch-freeze class this codebase has been bitten by before.
+        // worker/threadpool. ThumbButtonInfo.ImageSource is a DependencyObject property, so the refresh has to run on
+        // the UI thread. BeginInvoke, never a synchronous Invoke: a sync marshal from an SMTC callback thread can
+        // deadlock against a UI thread already inside Recompute — the launch-freeze class this codebase has been
+        // bitten by before.
         private void OnSpotifyStateChangedForTaskbar()
         {
             var dispatcher = Application.Current?.Dispatcher;
@@ -3012,10 +2961,9 @@ namespace UniPlaySong
                 _errorHandler,
                 _fileLogger,
                 _audioDeviceRegistry, // issue #81 — unregister on jingle-player dispose
-                // Lightweight factory for EXTERNAL notification sounds (achievement/URI): always a
-                // plain SDL2 player, never the NAudio Live-Effects pipeline. SDL2's device is opened
-                // once (shared init), so these fire near-instantly instead of paying the ~130ms
-                // NAudio persistent-layer setup that Live-Effects jingles incur.
+                // Lightweight factory for EXTERNAL notification sounds (achievement/URI): always a plain SDL2 player, never the
+                // NAudio Live-Effects pipeline. SDL2's device is opened once (shared init), so these fire near-instantly
+                // instead of paying the ~130ms NAudio persistent-layer setup that Live-Effects jingles incur.
                 //
                 // Device model (issue #81): SDL2's audio device is PROCESS-WIDE — one shared device
                 // (static Mix_OpenAudio/Mix_CloseAudio), not one per player. This player is its own
@@ -3025,11 +2973,10 @@ namespace UniPlaySong
                 //     can't accidentally kill the main player's audio;
                 //   - it must NOT close the shared device itself (that would); only the main,
                 //     teardown-enabled player may.
-                // We still Register it so the #81 idle/lock/suspend release SEES its open device via
-                // IsAnyDeviceOpen — the actual close is then performed by the main player on the
-                // shared device. Net: an achievement sound that opened the device is torn down after
-                // IdleAudioDeviceTeardownMinutes (Experimental) just like any other playback, and it
-                // never blocks Windows sleep.
+                // We still Register it so the #81 idle/lock/suspend release SEES its open device via IsAnyDeviceOpen — the
+                // actual close is then performed by the main player on the shared device. Net: an achievement sound that opened
+                // the device is torn down after IdleAudioDeviceTeardownMinutes (Experimental) just like any other playback, and
+                // it never blocks Windows sleep.
                 () =>
                 {
                     var player = new Services.SDL2MusicPlayer(_errorHandler);
@@ -3060,14 +3007,11 @@ namespace UniPlaySong
                 _fileLogger,
                 () => IsFullscreen,
                 () => IsDesktop,
-                // Selected-game resolver with fallback. SelectedGames is empty when the
-                // user is on Aniki's Welcome Hub, on the home view between filter changes,
-                // or any other "no game card focused" state. Without the fallback,
-                // recovery handlers (HandleThemeOverlayChange, HandleLoginDismiss,
-                // HandleViewChange, HandleVideoStateChange) silently bail when the
-                // overlay/video clears, leaving the user in silence until they manually
-                // focus a game. _playbackService.CurrentGame is the most-recent game
-                // music was playing for, so it's a sensible substitute.
+                // Selected-game resolver with fallback. SelectedGames is empty when the user is on Aniki's Welcome Hub, on the
+                // home view between filter changes, or any other "no game card focused" state. Without the fallback, recovery
+                // handlers (HandleThemeOverlayChange, HandleLoginDismiss, HandleViewChange, HandleVideoStateChange) silently
+                // bail when the overlay/video clears, leaving the user in silence until they manually focus a game.
+                // _playbackService.CurrentGame is the most-recent game music was playing for, so it's a sensible substitute.
                 () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
             );
             _fileLogger?.Debug("MusicPlaybackCoordinator initialized");
@@ -3084,11 +3028,10 @@ namespace UniPlaySong
                 () => _appStarted);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
 
-            // Spotify live-effects host: owns THE SAFETY INVARIANT (Spotify muted iff we produce
-            // effected output). Feeds the coordinator real collaborators (loopback capture ->
-            // SpotifyCaptureSampleProvider -> the NAudio player's external-source chain) plus the
-            // viz-only silent pump + capture-death watchdog. Re-evaluated on Spotify state changes
-            // (NowPlayingChanged), on the three relevant settings, and once at startup.
+            // Spotify live-effects host: owns THE SAFETY INVARIANT (Spotify muted iff we produce effected output). Feeds
+            // the coordinator real collaborators (loopback capture -> SpotifyCaptureSampleProvider -> the NAudio player's
+            // external-source chain) plus the viz-only silent pump + capture-death watchdog. Re-evaluated on Spotify state
+            // changes (NowPlayingChanged), on the three relevant settings, and once at startup.
             _spotifyEffectsHost = new Services.Spotify.SpotifyLiveEffectsHost(
                 () => _settings,
                 () => _spotifyControlService?.IsSpotifyActive ?? false,
@@ -3272,13 +3215,12 @@ namespace UniPlaySong
             }
         }
 
-        // Resolves the currently-playing game's cover-art file path for the now-playing fallback
-        // (used when a game-music track has no embedded album art). Cover, then background; returns
-        // null on any miss. The same image-resolution pattern the dashboard uses. Fail-safe.
-        // Resolves the cover for a now-playing track. Prefers the game that OWNS the track (parsed
-        // from its ...\Games\{GameId}\ path) so pool/radio songs show THEIR game's cover, not the
-        // selected game's; also works when CurrentGame is null (radio never sets it). Falls back to
-        // the selected/current game for non-game-owned files (custom folder, bundled presets).
+        // Resolves the currently-playing game's cover-art file path for the now-playing fallback (used when a
+        // game-music track has no embedded album art). Cover, then background; returns null on any miss. The same
+        // image-resolution pattern the dashboard uses. Fail-safe. Resolves the cover for a now-playing track. Prefers
+        // the game that OWNS the track (parsed from its ...\Games\{GameId}\ path) so pool/radio songs show THEIR game's
+        // cover, not the selected game's; also works when CurrentGame is null (radio never sets it). Falls back to the
+        // selected/current game for non-game-owned files (custom folder, bundled presets).
         private string ResolveGameCoverPathForTrack(string songFilePath)
         {
             try
@@ -3507,10 +3449,9 @@ namespace UniPlaySong
 
                 _needsNAudioForFormat = true;
 
-                // Carry-forward A: this disposes/recreates the player. Tear down the effects host
-                // first so any external source + Spotify mute don't outlive the old backend.
-                // (Spotify-source suppresses game music, so this collision is unlikely — but the
-                // Shutdown is idempotent and cheap.) Re-evaluate after recreation, below.
+                // Carry-forward A: this disposes/recreates the player. Tear down the effects host first so any external source
+                // + Spotify mute don't outlive the old backend. (Spotify-source suppresses game music, so this collision is
+                // unlikely — but the Shutdown is idempotent and cheap.) Re-evaluate after recreation, below.
                 _spotifyEffectsHost?.Shutdown();
 
                 // Stop current playback
@@ -3665,10 +3606,9 @@ namespace UniPlaySong
             }
         }
 
-        // Returns the multiplier to pass to SetVolumeMultiplier, combining Playnite's
-        // BackgroundVolume slider with the user's optional FullscreenVolumeBoostPercent.
-        // Clamped to [0.0, 1.0] so it can never exceed 100%. Boost of 0 (default) gives
-        // back the raw Playnite value — behavior identical to pre-v1.4.2.
+        // Returns the multiplier to pass to SetVolumeMultiplier, combining Playnite's BackgroundVolume slider with the
+        // user's optional FullscreenVolumeBoostPercent. Clamped to [0.0, 1.0] so it can never exceed 100%. Boost of 0
+        // (default) gives back the raw Playnite value — behavior identical to pre-v1.4.2.
         private double GetFullscreenVolumeMultiplier()
         {
             double boost = 1.0 + ((_settings?.FullscreenVolumeBoostPercent ?? 0) / 100.0);
@@ -3787,10 +3727,9 @@ namespace UniPlaySong
             }
         }
 
-        // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected.
-        // Uses GlobalPaused so new providers (created per song) auto-inherit the state.
-        // In fullscreen mode the desktop visualizer is not visible, so FFT is wasted CPU.
-        // When fullscreen visualizer support is added, remove or make this mode-aware.
+        // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected. Uses GlobalPaused so new
+        // providers (created per song) auto-inherit the state. In fullscreen mode the desktop visualizer is not
+        // visible, so FFT is wasted CPU. When fullscreen visualizer support is added, remove or make this mode-aware.
         private void PauseFftProcessing(bool pause)
         {
             Audio.VisualizationDataProvider.GlobalPaused = pause;
@@ -3831,10 +3770,9 @@ namespace UniPlaySong
         //     catch { try { SDL2MixerWrapper.Mix_HaltMusic(); } catch { } }
         // }
 
-        // Primary suppression via official SDK API — no reflection, no SDL manipulation.
-        // IsMusicMuted is [JsonIgnore] so it auto-resets on Playnite restart (no cleanup needed).
-        // Falls through to SuppressNativeMusic_PNS() as belt-and-suspenders for race conditions
-        // where music loads after IsMusicMuted is set.
+        // Primary suppression via official SDK API — no reflection, no SDL manipulation. IsMusicMuted is [JsonIgnore]
+        // so it auto-resets on Playnite restart (no cleanup needed). Falls through to SuppressNativeMusic_PNS() as
+        // belt-and-suspenders for race conditions where music loads after IsMusicMuted is set.
         private void SuppressNativeMusic()
         {
             if (_api.ApplicationInfo.Mode != ApplicationMode.Fullscreen
@@ -4189,11 +4127,10 @@ namespace UniPlaySong
             if (_spotifyClient?.IsAvailable != true || _spotifyControlService == null)
                 return actions;
 
-            // Route through the control SERVICE, not the client, so manual Play/Pause manages the
-            // hands-off "manual pause hold" — otherwise a manual pause while Spotify is the active
-            // music is instantly auto-resumed on the next recompute.
-            // Labels are bare (no "Spotify:" prefix) because they live in the dedicated "Spotify"
-            // submenu (see GetGameMenuItems); the submenu header already provides the context.
+            // Route through the control SERVICE, not the client, so manual Play/Pause manages the hands-off "manual pause
+            // hold" — otherwise a manual pause while Spotify is the active music is instantly auto-resumed on the next
+            // recompute. Labels are bare (no "Spotify:" prefix) because they live in the dedicated "Spotify" submenu (see
+            // GetGameMenuItems); the submenu header already provides the context.
             actions.Add(("Skip to next track", () => _spotifyControlService?.SkipNext()));
             actions.Add(("Previous track", () => _spotifyControlService?.SkipPrevious()));
             actions.Add(("Play/Pause", () => _spotifyControlService?.ToggleManualPlayPause()));
@@ -4214,12 +4151,11 @@ namespace UniPlaySong
         // Experimental: on startup, if Spotify is the active source and the desktop app isn't
         // running, launch it (file path / spotify: URI / Store AUMID), then run a 15s dual-goal
         // watch: ENGAGE when the SMTC session registers (standard Recompute sends Play; toast at the
-        // 10s mark if no session), and MINIMIZE Spotify's window whenever it appears (+ re-assert
-        // Playnite foreground in Fullscreen). The two goals are decoupled because Spotify's session
-        // usually registers BEFORE its window renders on a cold start.
-        // All blocking work (Process.Start + watch loop) runs on the Spotify worker thread — NEVER
-        // the UI thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called
-        // once from OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
+        // 10s mark if no session), and MINIMIZE Spotify's window whenever it appears (+ re-assert Playnite foreground
+        // in Fullscreen). The two goals are decoupled because Spotify's session usually registers BEFORE its window
+        // renders on a cold start. All blocking work (Process.Start + watch loop) runs on the Spotify worker thread —
+        // NEVER the UI thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called once from
+        // OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
         private void TryAutoLaunchSpotify()
         {
             var settings = _settings;
@@ -4256,10 +4192,9 @@ namespace UniPlaySong
                     //      could yank focus if the user tabbed away.
                     // Exits early only when BOTH goals are met.
                     // restoreForeground: in Fullscreen we must actively pull Playnite back to the front
-                    // AFTER minimizing Spotify — and keep doing it for a while, because Playnite's own
-                    // Fullscreen startup (theme intro video, login/hub overlay) keeps grabbing focus for
-                    // ~15-20s after launch, stealing it back from a single restore. We re-assert each
-                    // tick until Playnite is confirmed foreground (self-limiting), then stop.
+                    // AFTER minimizing Spotify — and keep doing it for a while, because Playnite's own Fullscreen startup (theme
+                    // intro video, login/hub overlay) keeps grabbing focus for ~15-20s after launch, stealing it back from a single
+                    // restore. We re-assert each tick until Playnite is confirmed foreground (self-limiting), then stop.
                     bool restoreForeground = IsFullscreen;
                     bool minimized = false;
                     bool engaged = false;
@@ -4276,11 +4211,10 @@ namespace UniPlaySong
                             _fileLogger?.Debug($"[AutoLaunch] t={i}s minimize attempt -> {(minimized ? "MINIMIZED" : "window not found yet")}");
                         }
 
-                        // Re-assert Playnite foreground each tick after minimize (Fullscreen only),
-                        // continuing even once it briefly sticks — Playnite's theme-intro (video +
-                        // login/hub overlay) keeps stealing focus for ~15-20s, so a one-shot restore
-                        // loses to the LAST steal. Runs on the UI thread; we wait briefly for the result
-                        // so foregroundSettled reflects the actual post-restore state for the exit check.
+                        // Re-assert Playnite foreground each tick after minimize (Fullscreen only), continuing even once it briefly
+                        // sticks — Playnite's theme-intro (video + login/hub overlay) keeps stealing focus for ~15-20s, so a one-shot
+                        // restore loses to the LAST steal. Runs on the UI thread; we wait briefly for the result so foregroundSettled
+                        // reflects the actual post-restore state for the exit check.
                         if (minimized && restoreForeground)
                         {
                             bool settledThisTick = false;
@@ -4308,10 +4242,9 @@ namespace UniPlaySong
                             ShowSpotifyNotRunningToast();
                         }
 
-                        // All goals met. In Fullscreen, don't exit on foreground-settled before ~8s —
-                        // the theme intro keeps stealing focus for ~15-20s, so an early exit would stop
-                        // re-asserting and lose to a later steal. After the churn window, exit once
-                        // Playnite is confirmed foreground.
+                        // All goals met. In Fullscreen, don't exit on foreground-settled before ~8s — the theme intro keeps stealing
+                        // focus for ~15-20s, so an early exit would stop re-asserting and lose to a later steal. After the churn
+                        // window, exit once Playnite is confirmed foreground.
                         if (engaged && minimized && (!restoreForeground || (foregroundSettled && i >= 8)))
                             return;
                     }
@@ -4326,10 +4259,10 @@ namespace UniPlaySong
         }
 
         // Brings Playnite back to the foreground after the auto-launch minimizes Spotify (Fullscreen)
-        // and returns true if Playnite IS now the foreground window (so the caller can stop retrying).
-        // Resolves the window handle AT CALL TIME on the UI thread: _mainWindowHandle is assigned
-        // LATER in OnApplicationStarted than the auto-launch dispatch, so an eager capture at dispatch
-        // time reads IntPtr.Zero and the restore silently no-ops (the original Fullscreen focus bug).
+        // and returns true if Playnite IS now the foreground window (so the caller can stop retrying). Resolves the
+        // window handle AT CALL TIME on the UI thread: _mainWindowHandle is assigned LATER in OnApplicationStarted than
+        // the auto-launch dispatch, so an eager capture at dispatch time reads IntPtr.Zero and the restore silently
+        // no-ops (the original Fullscreen focus bug).
         private bool RestorePlayniteForegroundAndCheck()
         {
             try
@@ -4461,14 +4394,10 @@ namespace UniPlaySong
                 });
 
                 // v1.5.0: Music Info Card — opens a per-game stats dialog.
-                // Lives at the parent menu level (above the divider) so it
-                // sits next to the count/size info line as a "see more"
-                // affordance. Picks Desktop vs Fullscreen flavor internally.
-                // No emoji prefix — Playnite Desktop's right-click menu can
-                // silently drop items whose Description starts with chars it
-                // can't render through its font fallback chain; Fullscreen
-                // controller dialogs render emojis fine because they use a
-                // different UI surface.
+                // Lives at the parent menu level (above the divider) so it sits next to the count/size info line as a "see
+                // more" affordance. Picks Desktop vs Fullscreen flavor internally. No emoji prefix — Playnite Desktop's
+                // right-click menu can silently drop items whose Description starts with chars it can't render through its font
+                // fallback chain; Fullscreen controller dialogs render emojis fine because they use a different UI surface.
                 items.Add(new GameMenuItem
                 {
                     Description = "Music Info Card",
@@ -4850,9 +4779,8 @@ namespace UniPlaySong
         {
             var items = new List<MainMenuItem>();
 
-            // "UniPlaySong Settings" opens the WPF settings dialog — that works in
-            // Desktop but isn't meaningful in Fullscreen (no keyboard/mouse, no WPF
-            // dialog rendering). Hide it in Fullscreen; the quick-settings sub-menu
+            // "UniPlaySong Settings" opens the WPF settings dialog — that works in Desktop but isn't meaningful in
+            // Fullscreen (no keyboard/mouse, no WPF dialog rendering). Hide it in Fullscreen; the quick-settings sub-menu
             // below replaces it for Fullscreen users.
             if (IsDesktop)
             {
@@ -4870,11 +4798,10 @@ namespace UniPlaySong
                 Action = _ => _gameMenuHandler.ExportLibraryPlaylist()
             });
 
-            // Spotify transport commands — only when a controllable Spotify session is present.
-            // Same actions as the game menu (one source of truth). MenuSection "@" places them at
-            // the TOP of the Fullscreen Extensions menu (not nested under a UniPlaySong submenu), so
-            // they carry a "Spotify: " prefix for context (the shared action labels are bare, since
-            // the game menu nests them under a "Spotify" submenu that already provides context).
+            // Spotify transport commands — only when a controllable Spotify session is present. Same actions as the game
+            // menu (one source of truth). MenuSection "@" places them at the TOP of the Fullscreen Extensions menu (not
+            // nested under a UniPlaySong submenu), so they carry a "Spotify: " prefix for context (the shared action labels
+            // are bare, since the game menu nests them under a "Spotify" submenu that already provides context).
             foreach (var (label, action) in GetSpotifyMenuActions())
             {
                 items.Add(new MainMenuItem
@@ -4916,13 +4843,11 @@ namespace UniPlaySong
             if (_settings == null) return items;
 
             // --- Boolean toggles -------------------------------------------------
-            // Each setter receives the new value and applies it via UpdateSettingsFromMenu,
-            // which clones the current settings, mutates the clone, and pushes it through
-            // SettingsService.UpdateSettings — this fires the diff-based SettingsChanged
-            // event that downstream handlers (player-backend recreation for Live Effects,
-            // coordinator reconciliation for mode changes) depend on. Directly mutating
-            // _settings would fire PropertyChanged but NOT the diff event, so side effects
-            // like backend switching wouldn't run.
+            // Each setter receives the new value and applies it via UpdateSettingsFromMenu, which clones the current
+            // settings, mutates the clone, and pushes it through SettingsService.UpdateSettings — this fires the
+            // diff-based SettingsChanged event that downstream handlers (player-backend recreation for Live Effects,
+            // coordinator reconciliation for mode changes) depend on. Directly mutating _settings would fire
+            // PropertyChanged but NOT the diff event, so side effects like backend switching wouldn't run.
 
             // Enable Music is the master switch — most useful when a Fullscreen
             // user wants to silence game music without leaving the controller-
@@ -4932,10 +4857,9 @@ namespace UniPlaySong
                 isOn: _settings.EnableMusic,
                 setter: v => UpdateSettingsFromMenu(s => s.EnableMusic = v)));
 
-            // Default Music is the fallback layer — when on (default), UPS plays
-            // ambient/preset music for games that have no music folder. Pairing
-            // this toggle next to "Enable Game Music" exposes the layer split:
-            // both off = full silence, only Game off = ambient continues.
+            // Default Music is the fallback layer — when on (default), UPS plays ambient/preset music for games that have
+            // no music folder. Pairing this toggle next to "Enable Game Music" exposes the layer split: both off = full
+            // silence, only Game off = ambient continues.
             items.Add(BuildToggle(
                 label: "Enable Default Music",
                 isOn: _settings.EnableDefaultMusic,
@@ -5024,12 +4948,10 @@ namespace UniPlaySong
             return items;
         }
 
-        // Toggle menu item builder. State is embedded in the description so the
-        // next menu open shows the new value. Action mutates the setting; the
-        // settings PropertyChanged handler propagates any side-effects.
-        // MenuSection "@" anchors the item inside Extensions > UniPlaySong.
-        // [UPS] prefix is user-requested so the items read as UniPlaySong items
-        // at-a-glance in Playnite's Fullscreen Extensions list.
+        // Toggle menu item builder. State is embedded in the description so the next menu open shows the new value.
+        // Action mutates the setting; the settings PropertyChanged handler propagates any side-effects. MenuSection "@"
+        // anchors the item inside Extensions > UniPlaySong. [UPS] prefix is user-requested so the items read as
+        // UniPlaySong items at-a-glance in Playnite's Fullscreen Extensions list.
         private MainMenuItem BuildToggle(string label, bool isOn, Action<bool> setter)
         {
             return new MainMenuItem
@@ -5040,13 +4962,12 @@ namespace UniPlaySong
             };
         }
 
-        // Applies a settings change from the Fullscreen quick-settings menu via the
-        // SettingsService's diff-based UpdateSettings path. Clones the current settings
-        // (JSON roundtrip — same pattern as UniPlaySongSettingsViewModel), applies the
-        // mutation, pushes through the service. This fires SettingsChanged (the diff
-        // event), which is what downstream handlers like RecreateMusicPlayerForLiveEffects
-        // listen for. Direct _settings mutation would skip that event and leave the
-        // player backend out of sync when Live Effects is toggled from the menu.
+        // Applies a settings change from the Fullscreen quick-settings menu via the SettingsService's diff-based
+        // UpdateSettings path. Clones the current settings (JSON roundtrip — same pattern as
+        // UniPlaySongSettingsViewModel), applies the mutation, pushes through the service. This fires SettingsChanged
+        // (the diff event), which is what downstream handlers like RecreateMusicPlayerForLiveEffects listen for. Direct
+        // _settings mutation would skip that event and leave the player backend out of sync when Live Effects is
+        // toggled from the menu.
         private void UpdateSettingsFromMenu(Action<UniPlaySongSettings> mutate)
         {
             try
@@ -5062,10 +4983,9 @@ namespace UniPlaySong
                 // and the default-music reload logic depend on it).
                 _settingsService.UpdateSettings(clone, source: "FullscreenQuickMenu");
 
-                // Also persist to disk — the settings dialog's EndEdit does this via
-                // plugin.SavePluginSettings, but there's no EndEdit gate from the
-                // Fullscreen menu. Without this, the change propagates in-memory but
-                // is lost on next Playnite restart.
+                // Also persist to disk — the settings dialog's EndEdit does this via plugin.SavePluginSettings, but there's
+                // no EndEdit gate from the Fullscreen menu. Without this, the change propagates in-memory but is lost on next
+                // Playnite restart.
                 SavePluginSettings(clone);
                 _fileLogger?.Debug("UpdateSettingsFromMenu: settings saved to disk");
             }
@@ -5075,10 +4995,9 @@ namespace UniPlaySong
             }
         }
 
-        // Readable label for the DefaultMusicSource enum — the raw enum values
-        // (CustomFile, NativeTheme, etc.) are less friendly than what the
-        // Settings dropdown shows. Kept local to this method set; if we ever
-        // need these in the settings UI dropdown itself, promote to a shared helper.
+        // Readable label for the DefaultMusicSource enum — the raw enum values (CustomFile, NativeTheme, etc.) are
+        // less friendly than what the Settings dropdown shows. Kept local to this method set; if we ever need these in
+        // the settings UI dropdown itself, promote to a shared helper.
         private static string FormatDefaultMusicSource(DefaultMusicSource source)
         {
             switch (source)

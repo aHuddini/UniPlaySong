@@ -4,14 +4,13 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    // Writes the current track's album art to a file, so it can be exposed to themes as a path
-    // string (UniPlaySongSettings.NowPlayingAlbumArtPath). Each write produces a UNIQUE file path
-    // (rolling counter) and deletes the previously-written file, so the path string genuinely
-    // changes per track. This defeats WPF's BitmapImage URI cache: a theme's
-    // <Image Source="{PluginSettings ... Path=NowPlayingAlbumArtPath}"/> would otherwise serve the
-    // first track's art forever when the file content changes but the path string does not.
-    // All operations are fail-safe (never throw); on any failure the returned path is "" and the
-    // caller treats the track as having no art.
+    // Writes the current track's album art to a file, so it can be exposed to themes as a path string
+    // (UniPlaySongSettings.NowPlayingAlbumArtPath). Each write produces a UNIQUE file path (rolling counter) and
+    // deletes the previously-written file, so the path string genuinely changes per track. This defeats WPF's
+    // BitmapImage URI cache: a theme's <Image Source="{PluginSettings ... Path=NowPlayingAlbumArtPath}"/> would
+    // otherwise serve the first track's art forever when the file content changes but the path string does not. All
+    // operations are fail-safe (never throw); on any failure the returned path is "" and the caller treats the
+    // track as having no art.
     public class NowPlayingArtWriter
     {
         private readonly FileLogger _fileLogger;
@@ -32,10 +31,10 @@ namespace UniPlaySong.Services
             _filePrefix = Path.GetFileNameWithoutExtension(Constants.NowPlayingArtFileName);
         }
 
-        // Write raw image bytes (e.g. a Spotify SMTC thumbnail) to a fresh, unique file. Returns the
-        // new file path on success, "" on null/empty input or any IO failure. On success the OLD
-        // file is best-effort deleted (so art files don't accumulate). Each path is unique, so no
-        // theme can be mid-read on the new path — a plain write is safe (no temp+move needed).
+        // Write raw image bytes (e.g. a Spotify SMTC thumbnail) to a fresh, unique file. Returns the new file path on
+        // success, "" on null/empty input or any IO failure. On success the OLD file is best-effort deleted (so art
+        // files don't accumulate). Each path is unique, so no theme can be mid-read on the new path — a plain write
+        // is safe (no temp+move needed).
         public string WriteBytes(byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0) return string.Empty;

@@ -47,10 +47,9 @@ namespace UniPlaySong.Services
             return Path.Combine(_baseMusicPath, gameId);
         }
 
-        // Returns true if ExtraMetadataLoader has a trailer video for this game.
-        // EML stores trailers at <Config>\ExtraMetadata\Games\{GameId}\VideoTrailer.mp4
-        // (or VideoMicrotrailer.mp4). _emlGamesPath is the <Config>\ExtraMetadata\Games
-        // root, supplied by the caller from the SDK ConfigurationPath so this resolves
+        // Returns true if ExtraMetadataLoader has a trailer video for this game. EML stores trailers at
+        // <Config>\ExtraMetadata\Games\{GameId}\VideoTrailer.mp4 (or VideoMicrotrailer.mp4). _emlGamesPath is the
+        // <Config>\ExtraMetadata\Games root, supplied by the caller from the SDK ConfigurationPath so this resolves
         // correctly on portable installs.
         public bool HasTrailerVideo(Game game)
         {

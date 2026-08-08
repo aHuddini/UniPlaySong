@@ -8,11 +8,9 @@ namespace UniPlaySong.Audio
     // Parses the Game Music Emu extended-M3U sidecar format used to label
     // tracks inside a multi-track HES (PC Engine / TurboGrafx-16) file.
     //
-    // The HES header itself only declares `first_track` — there is no
-    // total-songs field. Tracks are scattered across the 0-255 index space.
-    // Conventionally an .m3u sidecar with the same basename is shipped
-    // alongside the .hes (Zophar's Domain, VGMRips, etc.) to enumerate
-    // the real track indices and titles.
+    // The HES header itself only declares `first_track` — there is no total-songs field. Tracks are scattered
+    // across the 0-255 index space. Conventionally an .m3u sidecar with the same basename is shipped alongside the
+    // .hes (Zophar's Domain, VGMRips, etc.) to enumerate the real track indices and titles.
     //
     // M3U row format (one per track):
     //   <basename>.hes::HES,$<HEX_TRACK>,<title>,<mm:ss>,<loop_start>,<loop_count>
@@ -28,10 +26,9 @@ namespace UniPlaySong.Audio
     {
         public const string SidecarExtension = ".m3u";
 
-        // Returns the parsed track list for an .hes file by looking for a
-        // sibling .m3u sidecar with the same basename. Returns an empty list
-        // when no sidecar exists, the file is unreadable, or no rows parse.
-        // Never throws — safe to call from the playback hot path.
+        // Returns the parsed track list for an .hes file by looking for a sibling .m3u sidecar with the same basename.
+        // Returns an empty list when no sidecar exists, the file is unreadable, or no rows parse. Never throws — safe
+        // to call from the playback hot path.
         public static List<HesTrackEntry> LoadFor(string hesPath)
         {
             try

@@ -6,9 +6,8 @@ using UniPlaySong.Services.Spotify;
 
 namespace UniPlaySong.Services.ActiveMedia
 {
-    // Resolves the single audible active source and routes transport to it.
-    // Spotify-active-wins precedence: reuses SpotifyControlService.IsSpotifyActive.
-    // External source is Spotify-only in this build; the resolution seam is
+    // Resolves the single audible active source and routes transport to it. Spotify-active-wins precedence: reuses
+    // SpotifyControlService.IsSpotifyActive. External source is Spotify-only in this build; the resolution seam is
     // ResolveSource() — widening to any SMTC app happens there later.
     public class ActiveMediaService : IActiveMediaService
     {
@@ -40,11 +39,10 @@ namespace UniPlaySong.Services.ActiveMedia
             {
                 // Pause/resume/mute/volume transitions.
                 _playback.OnPlaybackStateChanged += RaiseChanged;
-                // Game-music song load/switch: OnPlaybackStateChanged does NOT fire for a
-                // plain song change, so without these the snapshot (and HasActiveMedia,
-                // which gates element visibility) would never refresh for game music —
-                // elements would stay collapsed/stale. Spotify already refreshes via
-                // NowPlayingChanged; these give UPS's own player the equivalent signal.
+                // Game-music song load/switch: OnPlaybackStateChanged does NOT fire for a plain song change, so without these
+                // the snapshot (and HasActiveMedia, which gates element visibility) would never refresh for game music —
+                // elements would stay collapsed/stale. Spotify already refreshes via NowPlayingChanged; these give UPS's own
+                // player the equivalent signal.
                 _playback.OnMusicStarted += OnMusicStarted;
                 _playback.OnSongChanged += OnSongChanged;
             }
@@ -137,11 +135,10 @@ namespace UniPlaySong.Services.ActiveMedia
                 hasActiveMedia: true,
                 sourceKind: ActiveMediaSourceKind.Ups,
                 sourceName: "UniPlaySong",
-                // IsPlaying alone is the raw backend "stream active" flag, which stays true when
-                // UPS is logically paused (pause sources + fader ride volume to 0 but the NAudio
-                // persistent mixer keeps the stream active). That left theme play/pause icons stuck
-                // on the "pause" glyph after pausing UPS game music. Gate on the logical pause state
-                // so ActiveMediaIsPlaying reflects an actual pause across every UPS pause path.
+                // IsPlaying alone is the raw backend "stream active" flag, which stays true when UPS is logically paused (pause
+                // sources + fader ride volume to 0 but the NAudio persistent mixer keeps the stream active). That left theme
+                // play/pause icons stuck on the "pause" glyph after pausing UPS game music. Gate on the logical pause state so
+                // ActiveMediaIsPlaying reflects an actual pause across every UPS pause path.
                 isPlaying: (_playback?.IsPlaying ?? false) && !(_playback?.IsPaused ?? false),
                 // Explicit mute state (set in ToggleMute), NOT vol<=0 — volume also rides to 0
                 // during fades/pauses, which would otherwise flash the theme's mute icon.
@@ -154,12 +151,11 @@ namespace UniPlaySong.Services.ActiveMedia
                 canPrevious: true);
         }
 
-        // Spotify transport MUST route through SpotifyControlService, not the raw client:
-        // SpotifyControlService owns the two-flag pause/ownership state machine (radio
-        // engage/disengage + "respect a pause made in the app"). Calling _spotifyClient
-        // directly bypasses that bookkeeping, which left UserPausedExternally stuck true
-        // and Spotify unable to resume until an app restart. UPS's own player has no such
-        // shared state, so it's driven directly.
+        // Spotify transport MUST route through SpotifyControlService, not the raw client: SpotifyControlService owns
+        // the two-flag pause/ownership state machine (radio engage/disengage + "respect a pause made in the app").
+        // Calling _spotifyClient directly bypasses that bookkeeping, which left UserPausedExternally stuck true and
+        // Spotify unable to resume until an app restart. UPS's own player has no such shared state, so it's driven
+        // directly.
         public void PlayPause()
         {
             if (ResolveSource() == ActiveMediaSourceKind.Spotify) _spotifyControl?.ToggleManualPlayPause();

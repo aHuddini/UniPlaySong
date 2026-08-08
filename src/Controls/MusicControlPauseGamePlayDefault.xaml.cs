@@ -10,12 +10,10 @@ using Playnite.SDK.Controls;
 
 namespace UniPlaySong.Controls
 {
-    // v1.5.3 theme-integration sibling of MusicControl. Tag=True on any active
-    // instance flips ForceDefaultMusicOverride=true, which makes PlayGameMusic
-    // skip the current game's own songs and fall through to the default-music
-    // branch. Tag=False reverts to game music. Multiple instances stack via OR
-    // (if ANY instance has Tag=True, the override is active) — same pattern as
-    // MusicControl's UpdateMute().
+    // v1.5.3 theme-integration sibling of MusicControl. Tag=True on any active instance flips
+    // ForceDefaultMusicOverride=true, which makes PlayGameMusic skip the current game's own songs and fall through
+    // to the default-music branch. Tag=False reverts to game music. Multiple instances stack via OR (if ANY
+    // instance has Tag=True, the override is active) — same pattern as MusicControl's UpdateMute().
     public partial class MusicControlPauseGamePlayDefault : PluginUserControl, INotifyPropertyChanged
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -65,22 +63,20 @@ namespace UniPlaySong.Controls
             //   - logout→login: e.g. log out on a game (game music), log back in at the
             //     Welcome Hub (Tag should be True → default music) — stale Tag would keep
             //     game music.
-            // Deferring to DispatcherPriority.Loaded lets the Tag binding settle first, then
-            // UpdateOverride() reads the fresh Tag and we re-assert the resulting state
-            // unconditionally (both game→default and default→game) so the theme's current
-            // intent always wins over whatever was playing before.
+            // Deferring to DispatcherPriority.Loaded lets the Tag binding settle first, then UpdateOverride() reads the
+            // fresh Tag and we re-assert the resulting state unconditionally (both game→default and default→game) so
+            // the theme's current intent always wins over whatever was playing before.
             Application.Current?.Dispatcher?.BeginInvoke(
                 System.Windows.Threading.DispatcherPriority.Loaded,
                 new Action(() =>
                 {
                     try
                     {
-                        // If UpdateOverride() changed the flag, the settings PropertyChanged
-                        // already re-triggered playback (HandleForceDefaultMusicOverrideChange).
-                        // Only re-assert explicitly when it did NOT change — the edge-triggered
-                        // notification is swallowed in that case (e.g. a reused control instance
-                        // on logout→login whose flag was already at the target value), so we must
-                        // apply the current override state ourselves. This avoids a double-play.
+                        // If UpdateOverride() changed the flag, the settings PropertyChanged already re-triggered playback
+                        // (HandleForceDefaultMusicOverrideChange). Only re-assert explicitly when it did NOT change — the
+                        // edge-triggered notification is swallowed in that case (e.g. a reused control instance on logout→login whose
+                        // flag was already at the target value), so we must apply the current override state ourselves. This avoids a
+                        // double-play.
                         bool changed = UpdateOverride();
                         if (!changed
                             && Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
@@ -107,11 +103,10 @@ namespace UniPlaySong.Controls
             UpdateOverride();
         }
 
-        // If ANY active instance has Tag=True, ForceDefaultMusicOverride=true.
-        // Returns true if the override flag value changed (which fires PropertyChanged →
-        // HandleForceDefaultMusicOverrideChange → PlayGameMusic on its own). Returns false
-        // if the value was unchanged (caller may need to re-assert playback explicitly,
-        // since no PropertyChanged fires in that case).
+        // If ANY active instance has Tag=True, ForceDefaultMusicOverride=true. Returns true if the override flag value
+        // changed (which fires PropertyChanged → HandleForceDefaultMusicOverrideChange → PlayGameMusic on its own).
+        // Returns false if the value was unchanged (caller may need to re-assert playback explicitly, since no
+        // PropertyChanged fires in that case).
         private static bool UpdateOverride()
         {
             bool active = _instances.Count(c => ConvertTagToBool(c.Tag)) > 0;
@@ -133,19 +128,17 @@ namespace UniPlaySong.Controls
         // Recompute the override flag from the live, currently-loaded controls — without
         // clearing the registry. Called once per launch (OnApplicationStarted).
         //
-        // This is the leak guard: ForceDefaultMusicOverride is [JsonIgnore] (starts false), but
-        // its writer (_settings) is static, so a stale true could otherwise carry across a
-        // theme/mode reload into a theme that has NO override control (e.g. PS5-Experience →
-        // Aniki), suppressing all game music. Recomputing here from _instances forces the flag
-        // back to the truth for the theme we actually started in: no control loaded → false
-        // (game music plays); a control present in the current theme → its Tag wins.
+        // This is the leak guard: ForceDefaultMusicOverride is [JsonIgnore] (starts false), but its writer (_settings)
+        // is static, so a stale true could otherwise carry across a theme/mode reload into a theme that has NO override
+        // control (e.g. PS5-Experience → Aniki), suppressing all game music. Recomputing here from _instances forces
+        // the flag back to the truth for the theme we actually started in: no control loaded → false (game music
+        // plays); a control present in the current theme → its Tag wins.
         //
-        // Why recompute instead of _instances.Clear() + force-false: in a Fullscreen-with-theme
-        // launch the override control's OnLoaded runs and sets its Tag BEFORE OnApplicationStarted
-        // fires (~400ms earlier in practice). Clearing here would deregister that live control and
-        // clobber its legitimate Tag=true at the Welcome Hub, so the theme's "play default music"
-        // intent was lost. Statics are fresh per process (mode/theme switch = restart), so there
-        // is no prior-process instance to clear anyway — only the current theme's live controls.
+        // Why recompute instead of _instances.Clear() + force-false: in a Fullscreen-with-theme launch the override
+        // control's OnLoaded runs and sets its Tag BEFORE OnApplicationStarted fires (~400ms earlier in practice).
+        // Clearing here would deregister that live control and clobber its legitimate Tag=true at the Welcome Hub, so
+        // the theme's "play default music" intent was lost. Statics are fresh per process (mode/theme switch =
+        // restart), so there is no prior-process instance to clear anyway — only the current theme's live controls.
         public static void SyncOverrideFromLiveControls()
         {
             UpdateOverride();

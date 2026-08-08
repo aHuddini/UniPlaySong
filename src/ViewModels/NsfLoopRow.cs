@@ -3,11 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace UniPlaySong.ViewModels
 {
-    // One row in the Edit Loops tab of the NSF Track Manager dialog.
-    // LoopSecondsInput is two-way bound to a TextBox; empty string means
-    // "no override, use default 150s". Validation computes IsValid and
-    // ValidationMessage live; the dialog uses IsValid to show/hide the
-    // red-border style and to gate the Save command.
+    // One row in the Edit Loops tab of the NSF Track Manager dialog. LoopSecondsInput is two-way bound to a
+    // TextBox; empty string means "no override, use default 150s". Validation computes IsValid and
+    // ValidationMessage live; the dialog uses IsValid to show/hide the red-border style and to gate the Save
+    // command.
     public sealed class NsfLoopRow : INotifyPropertyChanged
     {
         public const int MinLoopSeconds = 5;

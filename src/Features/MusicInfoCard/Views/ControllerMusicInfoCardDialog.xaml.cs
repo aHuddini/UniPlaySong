@@ -251,10 +251,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             FadeInStatsPanel();
         }
 
-        // Playlist tracks always use the fixed amber chip so they remain
-        // visually distinguishable regardless of per-game accent color.
-        // Standard files use the icon-derived accent when set, else the
-        // fallback purple.
+        // Playlist tracks always use the fixed amber chip so they remain visually distinguishable regardless of
+        // per-game accent color. Standard files use the icon-derived accent when set, else the fallback purple.
         private static readonly SolidColorBrush PlaylistChipBrush =
             CreateFrozenBrush(0xFF, 0xB7, 0x4D);
         private static readonly SolidColorBrush DefaultStandardChipBrush =
@@ -267,11 +265,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             return brush;
         }
 
-        // Same projection as the Desktop dialog. Kept duplicated rather
-        // than shared because the row anonymous types are dialog-private
-        // and the chip backgrounds differ by font size only — extracting
-        // them into a shared helper would force a real ViewModel type
-        // and isn't worth the indirection for two short methods.
+        // Same projection as the Desktop dialog. Kept duplicated rather than shared because the row anonymous types are
+        // dialog-private and the chip backgrounds differ by font size only — extracting them into a shared helper
+        // would force a real ViewModel type and isn't worth the indirection for two short methods.
         private void RenderSongList(MusicStats stats)
         {
             if (stats.Songs == null || stats.Songs.Count == 0) return;

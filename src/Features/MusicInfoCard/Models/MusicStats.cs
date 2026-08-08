@@ -5,10 +5,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
 {
     // Aggregate statistics computed for a single Game's music folder.
     //
-    // Immutable record; populated once by MusicStatsService and consumed by
-    // the dialog views. Optional fields are nullable so a partially-failed
-    // aggregation (e.g. all chiptunes, no TagLib bitrate available) still
-    // renders cleanly — the views check HasValue and hide the row.
+    // Immutable record; populated once by MusicStatsService and consumed by the dialog views. Optional fields are
+    // nullable so a partially-failed aggregation (e.g. all chiptunes, no TagLib bitrate available) still renders
+    // cleanly — the views check HasValue and hide the row.
     public sealed class MusicStats
     {
         // Game whose folder was scanned. Convenience for the views — saves
@@ -34,10 +33,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
         // count is format-agnostic). 0 when no playlists are present.
         public int PlaylistFileCount { get; set; }
 
-        // Total track count across all M3U sidecars. For "1 song = 1 file"
-        // games this equals FileCount; for HES-heavy games it can exceed
-        // FileCount substantially. Dialog shows both numbers when they
-        // differ ("12 files containing 47 tracks").
+        // Total track count across all M3U sidecars. For "1 song = 1 file" games this equals FileCount; for HES-heavy
+        // games it can exceed FileCount substantially. Dialog shows both numbers when they differ ("12 files containing
+        // 47 tracks").
         public int PlaylistTrackCount { get; set; }
 
         // ===== Duration =====
@@ -47,10 +45,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
         // TimeSpan.Zero when nothing parsed.
         public TimeSpan TotalDuration { get; set; }
 
-        // Longest single playable unit. For non-playlist files this is the
-        // file itself. For playlist files (multi-track HES), each TRACK
-        // is considered separately — the longest is whichever track inside
-        // any playlist had the longest M3U-declared duration.
+        // Longest single playable unit. For non-playlist files this is the file itself. For playlist files (multi-track
+        // HES), each TRACK is considered separately — the longest is whichever track inside any playlist had the
+        // longest M3U-declared duration.
         public (string Title, TimeSpan Duration)? LongestTrack { get; set; }
 
         // Shortest playable unit, same scoping as LongestTrack.
@@ -73,17 +70,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
 
         // ===== Format breakdown =====
 
-        // Map of file extension (".mp3", ".hes", etc., lowercase with the
-        // leading dot) → count of files with that extension. Useful for
-        // a small table in the dialog. Sorted by descending count by the
-        // view layer, not here.
+        // Map of file extension (".mp3", ".hes", etc., lowercase with the leading dot) → count of files with that
+        // extension. Useful for a small table in the dialog. Sorted by descending count by the view layer, not here.
         public Dictionary<string, int> FormatBreakdown { get; set; } = new Dictionary<string, int>();
 
-        // Per-song / per-track entries rendered as a scrollable list in the
-        // dialog. Sorted alphabetically by Title (case-insensitive) by the
-        // service. For HES files with M3U sidecars, each M3U track is its
-        // own entry — so a 12-track .hes contributes 12 rows here, not 1.
-        // For everything else, one entry per file.
+        // Per-song / per-track entries rendered as a scrollable list in the dialog. Sorted alphabetically by Title
+        // (case-insensitive) by the service. For HES files with M3U sidecars, each M3U track is its own entry — so a
+        // 12-track .hes contributes 12 rows here, not 1. For everything else, one entry per file.
         public List<SongEntry> Songs { get; set; } = new List<SongEntry>();
     }
 
@@ -106,10 +99,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
         // text on zero-duration rows.
         public TimeSpan Duration { get; set; }
 
-        // On-disk size in bytes. For HES playlist tracks this is the
-        // size of the parent .hes file, repeated across all its tracks
-        // (each track lives inside one file). View can dedupe by file
-        // path if it wants to show "physical bytes" instead.
+        // On-disk size in bytes. For HES playlist tracks this is the size of the parent .hes file, repeated across all
+        // its tracks (each track lives inside one file). View can dedupe by file path if it wants to show "physical
+        // bytes" instead.
         public long FileSizeBytes { get; set; }
 
         // True when this entry is one track inside a multi-track HES

@@ -352,11 +352,11 @@ namespace UniPlaySong.DeskMediaControl
             _nowPlayingPanel?.SetEmbeddedDuration(duration);
         }
 
-        // Refreshes the Now Playing panel when Spotify's active state or track changes.
-        // Shows Spotify track when active; restores the last UPS song when Spotify becomes inactive.
-        // Last Spotify state/track this handler acted on. SMTC re-fires NowPlayingChanged on every
-        // position tick (many/sec); without these each tick did a full UpdateIcons Dispatcher.Invoke
-        // on the UI thread plus a panel refresh — a constant UI-thread drip that hitched themes.
+        // Refreshes the Now Playing panel when Spotify's active state or track changes. Shows Spotify track when
+        // active; restores the last UPS song when Spotify becomes inactive. Last Spotify state/track this handler acted
+        // on. SMTC re-fires NowPlayingChanged on every position tick (many/sec); without these each tick did a full
+        // UpdateIcons Dispatcher.Invoke on the UI thread plus a panel refresh — a constant UI-thread drip that
+        // hitched themes.
         private string _lastSpotifyIconKey;
         private string _lastSpotifyPanelKey;
 
@@ -434,10 +434,9 @@ namespace UniPlaySong.DeskMediaControl
                     return;
                 }
 
-                // When Spotify is the active source (Radio Mode), the play/pause button controls
-                // SPOTIFY via SMTC — not UPS's own (silent) player. Same path as the "SPOTIFY:
-                // PAUSE/PLAY" menu. Pausing here is a user pause the two-flag radio logic respects
-                // (it won't auto-resume); playing clears it. Both react off the UI thread via the worker.
+                // When Spotify is the active source (Radio Mode), the play/pause button controls SPOTIFY via SMTC — not UPS's
+                // own (silent) player. Same path as the "SPOTIFY: PAUSE/PLAY" menu. Pausing here is a user pause the two-flag
+                // radio logic respects (it won't auto-resume); playing clears it. Both react off the UI thread via the worker.
                 var spotify = _getSpotifyService?.Invoke();
                 if (spotify != null && spotify.IsSpotifyActive)
                 {
@@ -555,11 +554,10 @@ namespace UniPlaySong.DeskMediaControl
                     var playbackService = _getPlaybackService?.Invoke();
                     bool isPlaying = playbackService?.IsPlaying == true && playbackService?.IsPaused != true;
 
-                    // Play/pause GLYPH: when Spotify is the active source, reflect SPOTIFY's transport
-                    // state (UPS plays nothing in radio mode, so its own IsPlaying is always false).
-                    // The visualizer/peak meter use the same Spotify-aware state (v1.6.5): the process-
-                    // loopback capture feeds them Spotify audio, so they react whenever Spotify plays.
-                    // The progress bar stays on UPS state — UPS doesn't know Spotify's track position.
+                    // Play/pause GLYPH: when Spotify is the active source, reflect SPOTIFY's transport state (UPS plays nothing in
+                    // radio mode, so its own IsPlaying is always false). The visualizer/peak meter use the same Spotify-aware state
+                    // (v1.6.5): the process- loopback capture feeds them Spotify audio, so they react whenever Spotify plays. The
+                    // progress bar stays on UPS state — UPS doesn't know Spotify's track position.
                     var spotify = _getSpotifyService?.Invoke();
                     bool iconPlaying = (spotify != null && spotify.IsSpotifyActive)
                         ? spotify.IsSpotifyPlaying

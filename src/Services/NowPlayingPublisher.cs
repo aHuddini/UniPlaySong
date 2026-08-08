@@ -6,10 +6,10 @@ using UniPlaySong.Services.Spotify;
 
 namespace UniPlaySong.Services
 {
-    // Publishes live now-playing data (title, artist, album-art path) onto UniPlaySongSettings so
-    // theme devs can bind it via {PluginSettings}. A thin coordination layer (like SpotifyControlService):
-    // observes existing now-playing events, resolves the active source, writes the art file, and sets
-    // the three settings properties. Owns nothing else.
+    // Publishes live now-playing data (title, artist, album-art path) onto UniPlaySongSettings so theme devs can
+    // bind it via {PluginSettings}. A thin coordination layer (like SpotifyControlService): observes existing
+    // now-playing events, resolves the active source, writes the art file, and sets the three settings properties.
+    // Owns nothing else.
     public class NowPlayingPublisher : IDisposable
     {
         private readonly SongMetadataService _metadata;
@@ -35,11 +35,11 @@ namespace UniPlaySong.Services
         private static readonly TimeSpan MusicChangedPulse = TimeSpan.FromMilliseconds(750);
 
         // getGameCoverArtPath: takes the playing track's file path (null for Spotify) and returns a
-        // game cover-art file path (or null/""), used as a fallback when the track has no embedded
-        // art or Spotify exposes no album art. The resolver prefers the game that OWNS the track
-        // (parsed from its ...\Games\{GameId}\ path — so pool/radio songs get THEIR game's cover),
-        // then the selected game. Resolved at the composition root (where the Playnite API lives) so
-        // the publisher stays decoupled. Optional — null disables the fallback (♪ placeholder shows).
+        // game cover-art file path (or null/""), used as a fallback when the track has no embedded art or Spotify
+        // exposes no album art. The resolver prefers the game that OWNS the track (parsed from its ...\Games\{GameId}\
+        // path — so pool/radio songs get THEIR game's cover), then the selected game. Resolved at the composition
+        // root (where the Playnite API lives) so the publisher stays decoupled. Optional — null disables the fallback
+        // (♪ placeholder shows).
         public NowPlayingPublisher(
             SongMetadataService metadata,
             SpotifyControlService spotify,
@@ -225,10 +225,10 @@ namespace UniPlaySong.Services
             if (changed) PulseMusicChanged(s);
         }
 
-        // Flip IsMusicChanged true now, then back to false after a short delay. The reset runs on a
-        // UI-thread DispatcherTimer so the property change is raised on the UI thread (this method may
-        // be called from an off-thread Spotify callback); both the initial set and the timer arming are
-        // marshalled via the dispatcher. Re-arming restarts the window so rapid changes still end false.
+        // Flip IsMusicChanged true now, then back to false after a short delay. The reset runs on a UI-thread
+        // DispatcherTimer so the property change is raised on the UI thread (this method may be called from an
+        // off-thread Spotify callback); both the initial set and the timer arming are marshalled via the dispatcher.
+        // Re-arming restarts the window so rapid changes still end false.
         private void PulseMusicChanged(UniPlaySongSettings s)
         {
             if (s == null) return;

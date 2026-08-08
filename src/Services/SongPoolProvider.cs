@@ -11,10 +11,9 @@ namespace UniPlaySong.Services
     // Radio Mode pool. Lifted out of UniPlaySong.cs, where the two switch statements sat side by
     // side and repeated the same four lookups with one-word differences.
     //
-    // The two pools resolve different settings but share their gathering strategies, so each
-    // strategy lives in one place here. That matters for CompletionStatusPool in particular: it
-    // has to be handled in BOTH pools, and when the cases were duplicated it was easy to add a
-    // source to one switch and forget the other.
+    // The two pools resolve different settings but share their gathering strategies, so each strategy lives in one
+    // place here. That matters for CompletionStatusPool in particular: it has to be handled in BOTH pools, and when
+    // the cases were duplicated it was easy to add a source to one switch and forget the other.
     public class SongPoolProvider
     {
         private readonly IPlayniteAPI _api;

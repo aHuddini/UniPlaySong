@@ -294,11 +294,11 @@ namespace UniPlaySong
 
     public class UniPlaySongSettings : ObservableObject
     {
-        // v1.6.8 crash tripwire. Reopening the settings dialog after a save StackOverflowed WPF
-        // (0xc00000fd) via a two-way binding feedback loop re-entering these setters. This hides the
-        // SDK's non-virtual OnPropertyChanged with a depth-guarded version: normal notification is
-        // unaffected (fan-out depth is 1-3), but a runaway loop is broken at depth 25 — well below the
-        // ~thousands of frames that overflow the UI stack — and logged with the offending property.
+        // v1.6.8 crash tripwire. Reopening the settings dialog after a save StackOverflowed WPF (0xc00000fd) via a
+        // two-way binding feedback loop re-entering these setters. This hides the SDK's non-virtual OnPropertyChanged
+        // with a depth-guarded version: normal notification is unaffected (fan-out depth is 1-3), but a runaway loop is
+        // broken at depth 25 — well below the ~thousands of frames that overflow the UI stack — and logged with the
+        // offending property.
         [System.ThreadStatic] private static int _pcDepth;
         public new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string name = null)
         {
@@ -486,10 +486,9 @@ namespace UniPlaySong
             set { musicVolume = Math.Max(Constants.MinMusicVolume, Math.Min(Constants.MaxMusicVolume, value)); OnPropertyChanged(); }
         }
 
-        // Small perceptual boost applied on top of Playnite's Fullscreen BackgroundVolume
-        // multiplier (which otherwise stacks multiplicatively with MusicVolume and feels
-        // noticeably quieter than desktop mode). Range 0–20 percent. Default 0 = no change.
-        // Only active in Fullscreen mode; Desktop mode ignores this setting.
+        // Small perceptual boost applied on top of Playnite's Fullscreen BackgroundVolume multiplier (which otherwise
+        // stacks multiplicatively with MusicVolume and feels noticeably quieter than desktop mode). Range 0–20
+        // percent. Default 0 = no change. Only active in Fullscreen mode; Desktop mode ignores this setting.
         public int FullscreenVolumeBoostPercent
         {
             get => fullscreenVolumeBoostPercent;
@@ -564,10 +563,10 @@ namespace UniPlaySong
             set { videoIsPlaying = value; OnPropertyChanged(); }
         }
 
-        // Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings). This is separate
-        // from VideoIsPlaying to prevent MediaElementsMonitor from overriding theme pause requests. Music is
-        // paused if EITHER VideoIsPlaying OR ThemeOverlayActive is true. Runtime-only state — excluded from
-        // serialization so it always starts false.
+        // Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings). This is separate from
+        // VideoIsPlaying to prevent MediaElementsMonitor from overriding theme pause requests. Music is paused if
+        // EITHER VideoIsPlaying OR ThemeOverlayActive is true. Runtime-only state — excluded from serialization so it
+        // always starts false.
         [JsonIgnore]
         public bool ThemeOverlayActive
         {
@@ -575,10 +574,9 @@ namespace UniPlaySong
             set { themeOverlayActive = value; OnPropertyChanged(); }
         }
 
-        // v1.5.3 theme-integration trigger: when true, UPS skips game music and
-        // plays default music instead. Driven by the UPS_MusicControl_PauseGamePlayDefault
-        // element via Tag=True, or by theme XAML via {PluginSettings} binding.
-        // Runtime-only state — excluded from serialization so it always starts false.
+        // v1.5.3 theme-integration trigger: when true, UPS skips game music and plays default music instead. Driven by
+        // the UPS_MusicControl_PauseGamePlayDefault element via Tag=True, or by theme XAML via {PluginSettings}
+        // binding. Runtime-only state — excluded from serialization so it always starts false.
         [JsonIgnore]
         public bool ForceDefaultMusicOverride
         {
@@ -615,10 +613,10 @@ namespace UniPlaySong
             set { nowPlayingArtist = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        // Live FILE PATH to the current track's album art (PNG/image), or "" when no art is available.
-        // Exposed as a path string (not ImageSource) so themes load it in their own WPF context:
-        // <Image Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"/>.
-        // Track art, falling back to the game's cover for game music. Set by NowPlayingPublisher.
+        // Live FILE PATH to the current track's album art (PNG/image), or "" when no art is available. Exposed as a
+        // path string (not ImageSource) so themes load it in their own WPF context: <Image Source="{PluginSettings
+        // Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"/>. Track art, falling back to the game's cover for game
+        // music. Set by NowPlayingPublisher.
         [JsonIgnore]
         public string NowPlayingAlbumArtPath
         {
@@ -657,13 +655,12 @@ namespace UniPlaySong
             set { nowPlayingDuration = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        // Transient "the track just changed" pulse for theme animations. Set true by
-        // NowPlayingPublisher the moment the now-playing track changes (song→song, silence→song,
-        // song→silence, or a source switch), then auto-reset to false a moment later. It is the
-        // true→false EDGE that matters, not the duration: a theme binds a DataTrigger to it to fire
-        // an animation on each change, and the reset lets the next change re-trigger. [JsonIgnore]
-        // runtime state — bind via {PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}.
-        // Never fires on a mere re-publish of the same track.
+        // Transient "the track just changed" pulse for theme animations. Set true by NowPlayingPublisher the moment the
+        // now-playing track changes (song→song, silence→song, song→silence, or a source switch), then auto-reset
+        // to false a moment later. It is the true→false EDGE that matters, not the duration: a theme binds a
+        // DataTrigger to it to fire an animation on each change, and the reset lets the next change re-trigger.
+        // [JsonIgnore] runtime state — bind via {PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}. Never fires
+        // on a mere re-publish of the same track.
         [JsonIgnore]
         public bool IsMusicChanged
         {
@@ -812,14 +809,11 @@ namespace UniPlaySong
             set { enableDebugLogging = value; OnPropertyChanged(); }
         }
 
-        // v1.5.3 (issue #81): minutes UPS waits after going idle (no song loaded,
-        // no pending fade, no active game switch) before tearing down its persistent
-        // audio device. Closing the device releases the Windows audio session that
-        // would otherwise keep the system awake. Default 5 minutes balances "fast
-        // enough for autosuspend users" against "first song after wake-up costs
-        // ~70ms latency to reopen the device."
-        // 0 = disabled (device stays open forever — the pre-v1.5.3 behavior).
-        // Valid range: 0-60.
+        // v1.5.3 (issue #81): minutes UPS waits after going idle (no song loaded, no pending fade, no active game
+        // switch) before tearing down its persistent audio device. Closing the device releases the Windows audio
+        // session that would otherwise keep the system awake. Default 5 minutes balances "fast enough for autosuspend
+        // users" against "first song after wake-up costs ~70ms latency to reopen the device." 0 = disabled (device
+        // stays open forever — the pre-v1.5.3 behavior). Valid range: 0-60.
         public int IdleAudioDeviceTeardownMinutes
         {
             get => idleAudioDeviceTeardownMinutes;
@@ -879,11 +873,10 @@ namespace UniPlaySong
             set { pauseOnExternalAudio = value; OnPropertyChanged(); }
         }
 
-        // When enabled, external audio stopping does NOT auto-resume UPS music — the user
-        // manually resumes via media keys, top panel toggle, or the Fullscreen extensions
-        // menu. Desktop-only: the external-audio poll ignores this setting in Fullscreen
-        // mode (Fullscreen always auto-resumes). Default false preserves the existing
-        // two-way auto-toggle behavior.
+        // When enabled, external audio stopping does NOT auto-resume UPS music — the user manually resumes via media
+        // keys, top panel toggle, or the Fullscreen extensions menu. Desktop-only: the external-audio poll ignores this
+        // setting in Fullscreen mode (Fullscreen always auto-resumes). Default false preserves the existing two-way
+        // auto-toggle behavior.
         public bool KeepPausedAfterExternalAudio
         {
             get => keepPausedAfterExternalAudio;
@@ -1309,32 +1302,30 @@ namespace UniPlaySong
             }
         }
 
-        // PS5-Experience theme compatibility. That theme drives the
-        // UPS_MusicControl_PauseGamePlayDefault Tag from a focus-driven trigger that flickers
-        // True/False within milliseconds as focus settles, which made UPS thrash playback
-        // (game music briefly broke through at the Welcome Hub). When enabled, UPS debounces
-        // the override so only the settled value is applied. Off by default — only needed for
-        // themes whose play-default-music trigger flickers with focus.
+        // PS5-Experience theme compatibility. That theme drives the UPS_MusicControl_PauseGamePlayDefault Tag from a
+        // focus-driven trigger that flickers True/False within milliseconds as focus settles, which made UPS thrash
+        // playback (game music briefly broke through at the Welcome Hub). When enabled, UPS debounces the override so
+        // only the settled value is applied. Off by default — only needed for themes whose play-default-music trigger
+        // flickers with focus.
         public bool PS5ThemeCompatMode
         {
             get => ps5ThemeCompatMode;
             set { ps5ThemeCompatMode = value; OnPropertyChanged(); }
         }
 
-        // Theme-developer option (default true). When false, a theme's overlay (driven by the
-        // UPS_MusicControl Tag → ThemeOverlayActive) does NOT pause UPS music. Off only when a
-        // theme developer instructs the user to — some themes raise the overlay Tag for views
-        // where music should keep playing.
+        // Theme-developer option (default true). When false, a theme's overlay (driven by the UPS_MusicControl Tag →
+        // ThemeOverlayActive) does NOT pause UPS music. Off only when a theme developer instructs the user to — some
+        // themes raise the overlay Tag for views where music should keep playing.
         public bool PauseOnThemeOverlay
         {
             get => pauseOnThemeOverlay;
             set { pauseOnThemeOverlay = value; OnPropertyChanged(); }
         }
 
-        // Theme-developer option (default true). When false, theme <MediaElement> videos do NOT
-        // pause UPS music. UPS auto-pauses for any unmuted theme video; some themes use decorative
-        // background videos (e.g. on trophy/menu/login screens) that shouldn't stop the music.
-        // Off only when a theme developer instructs the user to.
+        // Theme-developer option (default true). When false, theme <MediaElement> videos do NOT pause UPS music. UPS
+        // auto-pauses for any unmuted theme video; some themes use decorative background videos (e.g. on
+        // trophy/menu/login screens) that shouldn't stop the music. Off only when a theme developer instructs the user
+        // to.
         public bool PauseOnThemeVideo
         {
             get => pauseOnThemeVideo;
@@ -1544,11 +1535,10 @@ namespace UniPlaySong
         }
 
         // v1.5.0: when true, BundledPresetService picks a random bundled preset once
-        // at Playnite startup and uses it for the whole session — the SelectedBundledPreset
-        // value above is ignored while this flag is on (UI greys it out via
-        // IsBundledPresetPickerEnabled). Single pick per session so the ambient track
-        // stays consistent across game switches; users get variety across sessions
-        // without the chaos of per-game-switch re-randomization.
+        // at Playnite startup and uses it for the whole session — the SelectedBundledPreset value above is ignored
+        // while this flag is on (UI greys it out via IsBundledPresetPickerEnabled). Single pick per session so the
+        // ambient track stays consistent across game switches; users get variety across sessions without the chaos of
+        // per-game-switch re-randomization.
         public bool RandomizeBundledTrackOnStartup
         {
             get => randomizeBundledTrackOnStartup;
@@ -1573,11 +1563,9 @@ namespace UniPlaySong
             }
         }
 
-        // Drives IsEnabled for the manual preset picker in Settings → Playback.
-        // Picker is interactive only when default music is enabled AND the user has
-        // NOT switched to random-pick mode. When randomization is on, the manual
-        // pick is irrelevant — picker greys out so the user understands their
-        // selection is being ignored.
+        // Drives IsEnabled for the manual preset picker in Settings → Playback. Picker is interactive only when
+        // default music is enabled AND the user has NOT switched to random-pick mode. When randomization is on, the
+        // manual pick is irrelevant — picker greys out so the user understands their selection is being ignored.
         [JsonIgnore]
         public bool IsBundledPresetPickerEnabled => enableDefaultMusic && !randomizeBundledTrackOnStartup;
 
@@ -1809,14 +1797,12 @@ namespace UniPlaySong
             set { randomizeOnMusicEnd = value; OnPropertyChanged(); }
         }
 
-        // Controls whether pool-based default music sources (RandomGame, CustomFolder,
-        // CustomRotation, CompletionStatusPool) auto-advance to a new random track when
-        // the current one ends. Default true preserves existing "radio-like" behavior.
-        // When false, the initial track loops indefinitely — matches the user's persistent
-        // default-music intent when pairing RandomGame with MusicOnlyForInstalledGames:
-        // one track is picked as the browsing backdrop and stays put until the user
-        // navigates to an installed game (which triggers game music naturally).
-        // Orthogonal to RandomizeOnMusicEnd, which only affects GAME music auto-advance.
+        // Controls whether pool-based default music sources (RandomGame, CustomFolder, CustomRotation,
+        // CompletionStatusPool) auto-advance to a new random track when the current one ends. Default true preserves
+        // existing "radio-like" behavior. When false, the initial track loops indefinitely — matches the user's
+        // persistent default-music intent when pairing RandomGame with MusicOnlyForInstalledGames: one track is picked
+        // as the browsing backdrop and stays put until the user navigates to an installed game (which triggers game
+        // music naturally). Orthogonal to RandomizeOnMusicEnd, which only affects GAME music auto-advance.
         public bool RandomizeDefaultMusicOnEnd
         {
             get => randomizeDefaultMusicOnEnd;
@@ -1839,10 +1825,9 @@ namespace UniPlaySong
         }
 
         private bool enableTrueCrossfade = false;
-        // When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd / pool-based
-        // default music) the next song starts playing simultaneously with the current song fading out, for a
-        // DJ-style overlap. Replaces the sequential FadeOutBeforeSongEnd behavior. NAudio-only; enabling
-        // forces NAudio backend.
+        // When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd / pool-based default music)
+        // the next song starts playing simultaneously with the current song fading out, for a DJ-style overlap.
+        // Replaces the sequential FadeOutBeforeSongEnd behavior. NAudio-only; enabling forces NAudio backend.
         public bool EnableTrueCrossfade
         {
             get => enableTrueCrossfade;
@@ -2038,12 +2023,10 @@ namespace UniPlaySong
         private int reverbHfDampingMax = 50;        // 30-70 (displayed as 0.30-0.70)
 
         // v1.5.0: Calm Down Mode. When on, the post-mixer CalmDownProcessor applies
-        // a low-pass filter (CalmDownLowPassCutoffHz) and volume attenuation
-        // (CalmDownVolumeMultiplier) with an S-curve crossfade over
-        // CalmDownTransitionDurationSeconds so toggling sounds gradual. The four
-        // tuning params are not exposed in the UI — they're tweakable via settings
-        // file for power users. Fullscreen-only toggle lives in the Quick Settings
-        // menu; setting also forces the NAudio backend (SDL2 can't host the processor).
+        // a low-pass filter (CalmDownLowPassCutoffHz) and volume attenuation (CalmDownVolumeMultiplier) with an S-curve
+        // crossfade over CalmDownTransitionDurationSeconds so toggling sounds gradual. The four tuning params are not
+        // exposed in the UI — they're tweakable via settings file for power users. Fullscreen-only toggle lives in
+        // the Quick Settings menu; setting also forces the NAudio backend (SDL2 can't host the processor).
         public bool CalmDownModeEnabled
         {
             get => calmDownModeEnabled;
@@ -2487,10 +2470,10 @@ namespace UniPlaySong
             set { vizBassGravityBias = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        // FFT window size for spectrum analysis (512, 1024, or 2048). Higher = better frequency resolution
-        // but slower temporal response. 512: ~86Hz/bin, ~11.6ms window — snappy but coarse bass 1024:
-        // ~43Hz/bin, ~23ms window — balanced 2048: ~21.5Hz/bin, ~46ms window — precise but slower attack
-        // Requires song restart to take effect.
+        // FFT window size for spectrum analysis (512, 1024, or 2048). Higher = better frequency resolution but slower
+        // temporal response. 512: ~86Hz/bin, ~11.6ms window — snappy but coarse bass 1024: ~43Hz/bin, ~23ms window
+        // — balanced 2048: ~21.5Hz/bin, ~46ms window — precise but slower attack Requires song restart to take
+        // effect.
         public int VizFftSize
         {
             get => vizFftSize;

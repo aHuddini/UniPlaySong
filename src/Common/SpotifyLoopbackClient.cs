@@ -5,10 +5,10 @@ using NAudio.Wave;
 
 namespace UniPlaySong.Common
 {
-    // Managed side of the Spotify process-loopback capture. P/Invokes SpotifyLoopback.dll,
-    // marshals native PCM callbacks into a ring buffer, exposes it as bytes + WaveFormat.
-    // Falls silent (zero-fill) on underrun rather than glitching. Raises CaptureStopped if
-    // the native callback stops while we still think we're capturing (capture died).
+    // Managed side of the Spotify process-loopback capture. P/Invokes SpotifyLoopback.dll, marshals native PCM
+    // callbacks into a ring buffer, exposes it as bytes + WaveFormat. Falls silent (zero-fill) on underrun rather
+    // than glitching. Raises CaptureStopped if the native callback stops while we still think we're capturing
+    // (capture died).
     public class SpotifyLoopbackClient : IDisposable
     {
         // --- lock-free-enough single-producer/single-consumer byte ring ---
@@ -86,10 +86,10 @@ namespace UniPlaySong.Common
         [DllImport("SpotifyLoopback.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern int SpotifyLoopback_IsCapturing();
 
-        // ~1s @ 44.1k float32 stereo (352800 B/s). Was 250ms: too small to absorb the burst the
-        // native shim delivers when a managed stall (GC pause / heavy theme view) unblocks its
-        // callback, so the surplus was dropped and the gap surfaced as static. Pairs with the shim's
-        // 5s WASAPI buffer — that keeps the samples, this accepts them on the way back out.
+        // ~1s @ 44.1k float32 stereo (352800 B/s). Was 250ms: too small to absorb the burst the native shim delivers
+        // when a managed stall (GC pause / heavy theme view) unblocks its callback, so the surplus was dropped and the
+        // gap surfaced as static. Pairs with the shim's 5s WASAPI buffer — that keeps the samples, this accepts them
+        // on the way back out.
         private readonly RingBuffer _ring = new RingBuffer(352800);
         private PcmCallback _cbDelegate; // keep rooted against GC
         private volatile bool _started;

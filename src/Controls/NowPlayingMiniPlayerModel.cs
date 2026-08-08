@@ -12,10 +12,10 @@ namespace UniPlaySong.Controls
     // over inheritance: the views set this as their DataContext rather than subclassing a control
     // base (a XAML-rooted derived control base is not visible to WPF's markup-compile pass).
     //
-    // Reads settings through SettingsService.Current (never a captured object): a settings SAVE
-    // replaces the whole settings object (UpdateSettings), so a captured reference goes stale and
-    // the view freezes until restart. We track SettingsChanged and move our PropertyChanged handler
-    // onto the new object (same pattern as SidebarGlowManager).
+    // Reads settings through SettingsService.Current (never a captured object): a settings SAVE replaces the whole
+    // settings object (UpdateSettings), so a captured reference goes stale and the view freezes until restart. We
+    // track SettingsChanged and move our PropertyChanged handler onto the new object (same pattern as
+    // SidebarGlowManager).
     public class NowPlayingMiniPlayerModel : INotifyPropertyChanged
     {
         private readonly ISettingsProvider _svc;

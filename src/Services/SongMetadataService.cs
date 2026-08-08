@@ -52,10 +52,9 @@ namespace UniPlaySong.Services
             // backend swap keeps alive until its timers are stopped — carried on driving metadata
             // extraction, so the work per song change multiplied with every swap.
             //
-            // Deliberately NOT short-circuited when the service is unchanged: this method is also
-            // the "refresh my cached info" entry point (see the CurrentSongPath read below), and
-            // callers rely on that even when re-attaching to the same instance. Detach-then-attach
-            // is idempotent, so it doubles as the guard against subscribing twice.
+            // Deliberately NOT short-circuited when the service is unchanged: this method is also the "refresh my cached
+            // info" entry point (see the CurrentSongPath read below), and callers rely on that even when re-attaching to
+            // the same instance. Detach-then-attach is idempotent, so it doubles as the guard against subscribing twice.
             if (_playbackService != null)
             {
                 _playbackService.OnSongChanged -= OnSongChangedAsync;

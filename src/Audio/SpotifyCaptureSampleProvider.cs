@@ -4,11 +4,10 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Audio
 {
-    // Presents Spotify's captured PCM (from SpotifyLoopbackClient) as an IEEE-float
-    // ISampleProvider at the capture's sample rate/channels. This is the "seam" — downstream
-    // (EffectsChain, VisualizationDataProvider, mixer resample/mono-to-stereo) treats it
-    // identically to an AudioFileReader. The shim delivers 32-bit float; a 16-bit path is
-    // kept as a fallback. Underrun -> silence (the client already zero-fills).
+    // Presents Spotify's captured PCM (from SpotifyLoopbackClient) as an IEEE-float ISampleProvider at the
+    // capture's sample rate/channels. This is the "seam" — downstream (EffectsChain, VisualizationDataProvider,
+    // mixer resample/mono-to-stereo) treats it identically to an AudioFileReader. The shim delivers 32-bit float; a
+    // 16-bit path is kept as a fallback. Underrun -> silence (the client already zero-fills).
     public class SpotifyCaptureSampleProvider : ISampleProvider
     {
         private readonly SpotifyLoopbackClient _client;

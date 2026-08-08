@@ -40,11 +40,10 @@ namespace UniPlaySong.Common
             }
         }
 
-        // Detects if any non-self audio session is outputting above the peak threshold.
-        // detectedProcessName reports which process's session tripped the threshold (or
-        // "pid N" if the process can't be resolved) — used by the caller's detection log
-        // so reports can name the actual source (e.g. audio-enhancement software whose
-        // session mirrors system output and causes pause/resume feedback loops).
+        // Detects if any non-self audio session is outputting above the peak threshold. detectedProcessName reports
+        // which process's session tripped the threshold (or "pid N" if the process can't be resolved) — used by the
+        // caller's detection log so reports can name the actual source (e.g. audio-enhancement software whose session
+        // mirrors system output and causes pause/resume feedback loops).
         public static bool IsExternalAudioPlaying(int selfPid, float peakThreshold, HashSet<string> excludedProcessNames, out string detectedProcessName)
         {
             detectedProcessName = null;

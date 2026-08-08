@@ -7,15 +7,13 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    // Storage-side maintenance for the music library: measuring what is on disk, finding orphaned
-    // and oversized files, and deleting them. This was the bulk of UniPlaySong.cs's "Cleanup
-    // Operations" region, where it reached the plugin class for nothing but an API handle, a
-    // logger and the music path.
+    // Storage-side maintenance for the music library: measuring what is on disk, finding orphaned and oversized
+    // files, and deleting them. This was the bulk of UniPlaySong.cs's "Cleanup Operations" region, where it reached
+    // the plugin class for nothing but an API handle, a logger and the music path.
     //
-    // Three neighbours in that region deliberately stayed behind, because they are not storage
-    // work and do depend on plugin state: settings reset/import (live settings object plus
-    // SavePluginSettings), the snapshot export (needs IsFullscreen), and FactoryReset (spans both
-    // concerns and clears the search cache).
+    // Three neighbours in that region deliberately stayed behind, because they are not storage work and do depend
+    // on plugin state: settings reset/import (live settings object plus SavePluginSettings), the snapshot export
+    // (needs IsFullscreen), and FactoryReset (spans both concerns and clears the search cache).
     //
     // Every method reports rather than throws — each is wired to a settings-dialog button, so a
     // failure has to come back as a result the UI can display.
@@ -429,10 +427,9 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Apply settings imported from a JSON file (Backup tab → Import Settings).
-        // The settings object passed in has already been merged by SettingsBackupService
-        // (machine-specific paths preserved from current settings, imported values merged
-        // on top). This method pushes the merged object through SettingsService so all
+        // Apply settings imported from a JSON file (Backup tab → Import Settings). The settings object passed in has
+        // already been merged by SettingsBackupService (machine-specific paths preserved from current settings,
+        // imported values merged on top). This method pushes the merged object through SettingsService so all
         // downstream subscribers react and persists to disk.
     }
 }

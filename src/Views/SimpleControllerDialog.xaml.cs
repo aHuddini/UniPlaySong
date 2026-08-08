@@ -1336,16 +1336,13 @@ namespace UniPlaySong.Views
                                             // (StopCurrentPreview would have tried to Resume, but we want a fresh start)
                                             _wasGameMusicPlaying = false;
 
-                                            // Clear any pause sources that accumulated during the download subprocess.
-                                            // yt-dlp / ffmpeg subprocesses can briefly steal focus from Playnite on
-                                            // some systems in Fullscreen, which triggers OnApplicationDeactivate →
-                                            // PauseSource.FocusLoss. If FocusLossStayPaused is on (v1.4.2 feature),
-                                            // the FocusLoss source is then converted to Manual on focus return —
-                                            // which ClearAllPauseSources preserves and auto-resume paths don't clear.
-                                            // The net effect is that after a Fullscreen download, music stays silent
-                                            // for every subsequent game switch until the user manually presses Play.
-                                            // Post-download we're explicitly starting music on the user's behalf, so
-                                            // clear those transient sources before PlayGameMusic runs.
+                                            // Clear any pause sources that accumulated during the download subprocess. yt-dlp / ffmpeg subprocesses can
+                                            // briefly steal focus from Playnite on some systems in Fullscreen, which triggers OnApplicationDeactivate →
+                                            // PauseSource.FocusLoss. If FocusLossStayPaused is on (v1.4.2 feature), the FocusLoss source is then converted
+                                            // to Manual on focus return — which ClearAllPauseSources preserves and auto-resume paths don't clear. The net
+                                            // effect is that after a Fullscreen download, music stays silent for every subsequent game switch until the
+                                            // user manually presses Play. Post-download we're explicitly starting music on the user's behalf, so clear
+                                            // those transient sources before PlayGameMusic runs.
                                             _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
                                             _playbackService.Resume(); // clears PauseSource.Manual if present
 
@@ -1591,10 +1588,9 @@ namespace UniPlaySong.Views
                         if (TryDpadNavigation()) NavigateList(1);
                         break;
                     case ControllerInput.DPadLeft:
-                        // On album selection, DPadLeft cycles BACKWARD through variant
-                        // keywords (OST → Soundtrack → Music → Theme) and immediately
-                        // re-runs the search with the newly selected variant. No-op on
-                        // other steps so controller input for other screens is unaffected.
+                        // On album selection, DPadLeft cycles BACKWARD through variant keywords (OST → Soundtrack → Music →
+                        // Theme) and immediately re-runs the search with the newly selected variant. No-op on other steps so controller
+                        // input for other screens is unaffected.
                         if (TryDpadNavigation() && _currentStep == DialogStep.AlbumSelection)
                             CycleSearchVariant(-1);
                         break;
@@ -1677,10 +1673,9 @@ namespace UniPlaySong.Views
 
         #region Search Variant Buttons (v1.4.5)
 
-        // User clicked one of OST / Soundtrack / Music / Theme at the bottom-left of the dialog.
-        // Re-runs the album search against the same source but with the clicked suffix appended
-        // to the game name. No keyboard needed — controller users can refine their search with
-        // a single A-press on any variant button.
+        // User clicked one of OST / Soundtrack / Music / Theme at the bottom-left of the dialog. Re-runs the album
+        // search against the same source but with the clicked suffix appended to the game name. No keyboard needed —
+        // controller users can refine their search with a single A-press on any variant button.
         private void VariantButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             try

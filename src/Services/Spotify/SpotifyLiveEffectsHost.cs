@@ -70,10 +70,9 @@ namespace UniPlaySong.Services.Spotify
                 isCalmDown: () => _getSettings()?.CalmDownModeEnabled ?? false);
         }
 
-        // Armed at OnApplicationStarted (set + Evaluate there). Until then Evaluate no-ops:
-        // settings-load events fire during InitializeServices, which otherwise starts effected
-        // Spotify output several seconds before the theme binds its overlay flags — audible
-        // during login views. Same gating rule as the Spotify radio engage (v1.5.8).
+        // Armed at OnApplicationStarted (set + Evaluate there). Until then Evaluate no-ops: settings-load events fire
+        // during InitializeServices, which otherwise starts effected Spotify output several seconds before the theme
+        // binds its overlay flags — audible during login views. Same gating rule as the Spotify radio engage (v1.5.8).
         public bool Armed { get; set; }
 
         // True while effected Spotify output is running (device is producing audio even though
@@ -123,11 +122,10 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
-        // Win10 below build 20348 has no process-loopback capture, so the coordinator's OS gate
-        // silently never engages — Spotify plays dry at full mixer volume while the user believes
-        // effects are on (seen in the wild on a Windows 10 gaming PC). Say so ONCE per session,
-        // and only when the user's settings actually ask for effects-on-Spotify and Spotify is
-        // the active source — a capable OS or an uninterested user never sees it.
+        // Win10 below build 20348 has no process-loopback capture, so the coordinator's OS gate silently never engages
+        // — Spotify plays dry at full mixer volume while the user believes effects are on (seen in the wild on a
+        // Windows 10 gaming PC). Say so ONCE per session, and only when the user's settings actually ask for
+        // effects-on-Spotify and Spotify is the active source — a capable OS or an uninterested user never sees it.
         private readonly Action _notifyOsUnsupported;
         private bool _osNoticeShown;
         private void NotifyIfOsUnsupported()
@@ -151,34 +149,31 @@ namespace UniPlaySong.Services.Spotify
             }
         }
 
-        // Unconditional safety net for process exit: hand Spotify back to Windows in a usable
-        // state no matter what the coordinator thinks. Clears the WASAPI mute flag (which the
-        // theme mute button — SpotifyAudioSession.ToggleMute — can set independently of the
-        // effects duck) AND restores session volume if it's still ducked. Called from
-        // OnApplicationStopped after Shutdown(), so even a state desync or a mute set outside the
-        // coordinator can't leave Spotify muted/silent after Playnite closes.
+        // Unconditional safety net for process exit: hand Spotify back to Windows in a usable state no matter what the
+        // coordinator thinks. Clears the WASAPI mute flag (which the theme mute button —
+        // SpotifyAudioSession.ToggleMute — can set independently of the effects duck) AND restores session volume if
+        // it's still ducked. Called from OnApplicationStopped after Shutdown(), so even a state desync or a mute set
+        // outside the coordinator can't leave Spotify muted/silent after Playnite closes.
         public void RestoreSpotifyForExit()
         {
             try
             {
-                // We CAN restore — the trick is not dying before Windows commits it. A WASAPI
-                // SetMasterVolume/SetMute call returns success the instant it's accepted, but the
-                // audio engine applies it a few ms later on its own thread. At process exit that
-                // window is fatal: the process terminates before the change lands, so Spotify stays
-                // ducked/muted. Fix: set, then READ BACK and confirm the value actually took — only
-                // stop once the session reports the restored level AND unmuted. This both proves it
-                // landed and holds the process the extra beat Windows needs to commit.
+                // We CAN restore — the trick is not dying before Windows commits it. A WASAPI SetMasterVolume/SetMute call
+                // returns success the instant it's accepted, but the audio engine applies it a few ms later on its own thread.
+                // At process exit that window is fatal: the process terminates before the change lands, so Spotify stays
+                // ducked/muted. Fix: set, then READ BACK and confirm the value actually took — only stop once the session
+                // reports the restored level AND unmuted. This both proves it landed and holds the process the extra beat
+                // Windows needs to commit.
                 float restore = _volumeBeforeDuck > DuckVolume * 2 ? _volumeBeforeDuck : 1f;
                 bool confirmed = false;
                 int attempts = 0;
                 for (; attempts < 12 && !confirmed; attempts++)
                 {
-                    // SetMuted reports whether ANY Spotify session was found. If none exists there is
-                    // nothing to restore, and the readback below can never confirm (GetSessionVolume
-                    // returns the 0f fallback, so `now >= restore * 0.9f` is never true) — which meant
-                    // every shutdown burned all 12 attempts: 300ms of sleeps plus ~70 full
-                    // multi-device COM enumerations, for users who never even use Spotify. This is on
-                    // the unconditional shutdown path, so bail the moment we know there's no session.
+                    // SetMuted reports whether ANY Spotify session was found. If none exists there is nothing to restore, and the
+                    // readback below can never confirm (GetSessionVolume returns the 0f fallback, so `now >= restore * 0.9f` is
+                    // never true) — which meant every shutdown burned all 12 attempts: 300ms of sleeps plus ~70 full multi-device
+                    // COM enumerations, for users who never even use Spotify. This is on the unconditional shutdown path, so bail
+                    // the moment we know there's no session.
                     bool found = SpotifyAudioSession.SetMuted(false);
                     if (!found)
                     {
@@ -209,13 +204,12 @@ namespace UniPlaySong.Services.Spotify
         internal const float DuckVolume = 0.0009765625f; // 2^-10
         private float _volumeBeforeDuck = 1f;
 
-        // Re-assert throttle. The coordinator calls SetMuted(true) on EVERY Evaluate to catch an
-        // output-device switch spawning a fresh UNducked session — but each call costs two full
-        // multi-device COM enumerations (the GetSessionVolume read + the SetSessionVolume write),
-        // and with Spotify radio active every Recompute raises NowPlayingChanged -> Evaluate. On a
-        // game switch that burst made Spotify audibly choppy even though the track never changed.
-        // The FIRST duck (not yet asserted) always runs immediately; redundant re-asserts are capped,
-        // so a device switch still self-heals within one interval instead of on every event.
+        // Re-assert throttle. The coordinator calls SetMuted(true) on EVERY Evaluate to catch an output-device switch
+        // spawning a fresh UNducked session — but each call costs two full multi-device COM enumerations (the
+        // GetSessionVolume read + the SetSessionVolume write), and with Spotify radio active every Recompute raises
+        // NowPlayingChanged -> Evaluate. On a game switch that burst made Spotify audibly choppy even though the track
+        // never changed. The FIRST duck (not yet asserted) always runs immediately; redundant re-asserts are capped, so
+        // a device switch still self-heals within one interval instead of on every event.
         private static readonly TimeSpan DuckReassertInterval = TimeSpan.FromSeconds(5);
         private bool _duckAsserted;
         private DateTime _lastDuckAssertUtc = DateTime.MinValue;
@@ -228,10 +222,9 @@ namespace UniPlaySong.Services.Spotify
                     return true; // already ducked and asserted recently — skip the COM round-trips
 
                 float current = SpotifyAudioSession.GetSessionVolume(1f);
-                // Don't save an already-ducked level as the restore target: re-entry after a crash
-                // AND the coordinator's per-evaluate duck re-assert both land here with the session
-                // already at DuckVolume — keep the previously saved level (field default 1f covers
-                // the fresh-start case).
+                // Don't save an already-ducked level as the restore target: re-entry after a crash AND the coordinator's
+                // per-evaluate duck re-assert both land here with the session already at DuckVolume — keep the previously
+                // saved level (field default 1f covers the fresh-start case).
                 if (current > DuckVolume * 2)
                 {
                     _volumeBeforeDuck = current;
@@ -317,11 +310,10 @@ namespace UniPlaySong.Services.Spotify
                     _client.FlushRing();
                     _provider = new SpotifyCaptureSampleProvider(_client)
                     {
-                        // Spotify's session is ducked to 2^-10 in effects mode; restore the level
-                        // (unity = 1/DuckVolume), plus a small +2 dB makeup so the effected copy
-                        // matches dry Spotify's perceived loudness (dry ignores MusicVolume; the
-                        // effected path is scaled by it). The provider clamps + the chain limiter
-                        // (0.9 threshold) protect loud tracks from clipping.
+                        // Spotify's session is ducked to 2^-10 in effects mode; restore the level (unity = 1/DuckVolume), plus a small
+                        // +2 dB makeup so the effected copy matches dry Spotify's perceived loudness (dry ignores MusicVolume; the
+                        // effected path is scaled by it). The provider clamps + the chain limiter (0.9 threshold) protect loud tracks
+                        // from clipping.
                         GainCompensation = (1f / DuckVolume) * 1.26f
                     };
                     player.LoadExternalSource(_provider);
@@ -383,10 +375,9 @@ namespace UniPlaySong.Services.Spotify
         private void WorkerLoop()
         {
             var buffer = new float[4096];
-            // Warm-up grace: native capture can take longer than one loop to report IsCapturing
-            // on a cold start, so we only treat !IsCapturing as death AFTER it's been confirmed
-            // alive once (armed). Un-armed after WarmupMaxIterations (~5s) = a start that never
-            // came alive; tear down so we don't loop forever un-armed. 5000ms / 10ms = 500 iters.
+            // Warm-up grace: native capture can take longer than one loop to report IsCapturing on a cold start, so we only
+            // treat !IsCapturing as death AFTER it's been confirmed alive once (armed). Un-armed after WarmupMaxIterations
+            // (~5s) = a start that never came alive; tear down so we don't loop forever un-armed. 5000ms / 10ms = 500 iters.
             const int WarmupMaxIterations = 5000 / PumpIntervalMs;
             bool watchdogArmed = false;
             int iterations = 0;

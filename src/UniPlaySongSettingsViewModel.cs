@@ -160,14 +160,13 @@ namespace UniPlaySong
         // Bundled "Default" achievement pack (Trophy Notif + Platinum) for the achievement sound pickers
         public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
 
-        // Plays a sound preview. Always tears down the previous player and builds a fresh one, and
-        // gates Play() on MediaOpened — WPF MediaPlayer.Open is async, so playing immediately can
-        // replay the previously-loaded file (the "preview doesn't update when I change the option"
-        // bug). Gating on MediaOpened guarantees the just-selected file is what plays.
-        // Persistent preview player: created once and reused. Reusing the same MediaPlayer keeps the
-        // Windows Media Foundation session warm, so only the FIRST preview pays the ~1-2s cold-start
-        // cost; later clicks play near-instantly. We never Close() it (that tears the session down and
-        // makes the next Open cold again) — we Stop() and re-Open the new source instead.
+        // Plays a sound preview. Always tears down the previous player and builds a fresh one, and gates Play() on
+        // MediaOpened — WPF MediaPlayer.Open is async, so playing immediately can replay the previously-loaded file
+        // (the "preview doesn't update when I change the option" bug). Gating on MediaOpened guarantees the
+        // just-selected file is what plays. Persistent preview player: created once and reused. Reusing the same
+        // MediaPlayer keeps the Windows Media Foundation session warm, so only the FIRST preview pays the ~1-2s
+        // cold-start cost; later clicks play near-instantly. We never Close() it (that tears the session down and makes
+        // the next Open cold again) — we Stop() and re-Open the new source instead.
         private void PlayPreview(string filePath)
         {
             _previewVolume = Settings.MusicVolume / 100.0;
@@ -1263,11 +1262,10 @@ namespace UniPlaySong
                 {
                     var playbackService = plugin.GetPlaybackService();
 
-                    // When UPS isn't playing a file of its own (e.g. Spotify is the active music —
-                    // UPS stays silent during the gap), fall back to the unified now-playing title
-                    // the NowPlayingPublisher resolved. That's the same data the album art below
-                    // reflects, so the ticker no longer says "(No song playing)" during Spotify.
-                    // UPS's OWN playback keeps the richer legacy display below (duration, default).
+                    // When UPS isn't playing a file of its own (e.g. Spotify is the active music — UPS stays silent during the
+                    // gap), fall back to the unified now-playing title the NowPlayingPublisher resolved. That's the same data the
+                    // album art below reflects, so the ticker no longer says "(No song playing)" during Spotify. UPS's OWN playback
+                    // keeps the richer legacy display below (duration, default).
                     if (playbackService == null || !playbackService.IsPlaying
                         || string.IsNullOrEmpty(playbackService.CurrentSongPath))
                     {
@@ -2983,10 +2981,10 @@ namespace UniPlaySong
         private string _ffmpegStatus = "";
         public string FfmpegStatus { get => _ffmpegStatus; set { _ffmpegStatus = value; OnPropertyChanged(); } }
 
-        // Trailer-audio (Experimental) availability — gates the DeferToTrailerAudio setting.
-        // Evaluated on settings open in UpdateToolValidation(). The feature needs FFmpeg to
-        // extract trailer audio, so the option is disabled (and a note shown) when FFmpeg
-        // is not configured. Mirror is exposed so the "Requires FFmpeg" note can bind to it.
+        // Trailer-audio (Experimental) availability — gates the DeferToTrailerAudio setting. Evaluated on settings
+        // open in UpdateToolValidation(). The feature needs FFmpeg to extract trailer audio, so the option is disabled
+        // (and a note shown) when FFmpeg is not configured. Mirror is exposed so the "Requires FFmpeg" note can bind to
+        // it.
         private bool _isTrailerAudioAvailable;
         public bool IsTrailerAudioAvailable
         {
@@ -3007,11 +3005,10 @@ namespace UniPlaySong
         public bool IsTrailerAudioEnabled =>
             IsTrailerAudioAvailable && (Settings?.EnableDefaultMusic == true);
 
-        // Cached version probe — avoids re-running yt-dlp.exe --version on every settings open.
-        // Keyed by (path, last-write-time). Path-only caching missed in-place updates: when a
-        // user replaces yt-dlp.exe with a newer binary at the same path, the cache returned the
-        // stale version. Adding mtime to the key catches both Browse-to-same-path and
-        // "user updated yt-dlp without re-Browsing" cases. File.GetLastWriteTimeUtc is a cheap
+        // Cached version probe — avoids re-running yt-dlp.exe --version on every settings open. Keyed by (path,
+        // last-write-time). Path-only caching missed in-place updates: when a user replaces yt-dlp.exe with a newer
+        // binary at the same path, the cache returned the stale version. Adding mtime to the key catches both
+        // Browse-to-same-path and "user updated yt-dlp without re-Browsing" cases. File.GetLastWriteTimeUtc is a cheap
         // syscall — doesn't trigger AV scans the way reading the file would.
         private string _cachedYtDlpVersionPath = null;
         private long _cachedYtDlpVersionMtimeTicks = 0;
@@ -3050,10 +3047,9 @@ namespace UniPlaySong
             var ffmpegConfigured = !string.IsNullOrWhiteSpace(ffmpeg) && File.Exists(ffmpeg);
             FfmpegStatus = ffmpegConfigured ? "✓ Found" : "✗ Not found";
 
-            // Trailer-audio extraction needs FFmpeg configured. Use the same cheap path check
-            // as the status label above (no process spawn) so the gate and the label agree and
-            // opening Settings never stalls. A present-but-broken FFmpeg is handled at runtime:
-            // extraction fails and the game falls back to silence.
+            // Trailer-audio extraction needs FFmpeg configured. Use the same cheap path check as the status label above (no
+            // process spawn) so the gate and the label agree and opening Settings never stalls. A present-but-broken FFmpeg
+            // is handled at runtime: extraction fails and the game falls back to silence.
             IsTrailerAudioAvailable = ffmpegConfigured;
             TrailerAudioFFmpegMissing = !ffmpegConfigured;
         }

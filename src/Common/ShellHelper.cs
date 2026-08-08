@@ -26,9 +26,8 @@ namespace UniPlaySong.Common
             try
             {
                 // UseShellExecute=true routes through ShellExecuteEx — this is the path
-                // that lets the existing Explorer shell host handle the request rather
-                // than spawning a fresh explorer.exe child. The using-dispose immediately
-                // releases the .NET Process handle since we don't need to track the
+                // that lets the existing Explorer shell host handle the request rather than spawning a fresh explorer.exe
+                // child. The using-dispose immediately releases the .NET Process handle since we don't need to track the
                 // spawned process at all.
                 using (Process.Start(new ProcessStartInfo
                 {

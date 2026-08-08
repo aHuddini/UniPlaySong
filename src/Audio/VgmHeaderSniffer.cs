@@ -34,11 +34,10 @@ namespace UniPlaySong.Audio
             public string UnsupportedChip { get; set; }  // null if all chips are GME-compatible
         }
 
-        // Reads the VGM header, decompressing if the file is gzipped (.vgz).
-        // Returns a result with UnsupportedChip set if the file uses any chip GME can't emulate.
-        // Returns IsValidVgm=false if the file doesn't look like VGM at all — caller should
-        // proceed and let GME handle the error (which may succeed for non-VGM formats this
-        // class wasn't asked about).
+        // Reads the VGM header, decompressing if the file is gzipped (.vgz). Returns a result with UnsupportedChip set
+        // if the file uses any chip GME can't emulate. Returns IsValidVgm=false if the file doesn't look like VGM at
+        // all — caller should proceed and let GME handle the error (which may succeed for non-VGM formats this class
+        // wasn't asked about).
         public static VgmSniffResult Inspect(string filePath)
         {
             var result = new VgmSniffResult();
@@ -57,11 +56,9 @@ namespace UniPlaySong.Audio
                 result.IsValidVgm = true;
                 result.Version = ReadUInt32LE(header, 0x08);
 
-                // Walk the chip-clock offsets. Any non-zero value (masked to clear the
-                // high dual-chip / sub-type flags) means the file uses that chip.
-                // We enumerate ONLY the unsupported ones — the supported trio
-                // (SN76489 / YM2413 / YM2612) doesn't need to be checked, because
-                // if they're used we're fine.
+                // Walk the chip-clock offsets. Any non-zero value (masked to clear the high dual-chip / sub-type flags) means
+                // the file uses that chip. We enumerate ONLY the unsupported ones — the supported trio (SN76489 / YM2413 /
+                // YM2612) doesn't need to be checked, because if they're used we're fine.
                 string first = FindFirstUnsupportedChip(header);
                 result.UnsupportedChip = first;
             }
@@ -136,12 +133,10 @@ namespace UniPlaySong.Audio
                 | (buf[offset + 3] << 24));
         }
 
-        // Returns the friendly name of the first unsupported chip found in the header,
-        // or null if the only chip clocks set are GME-compatible (SN76489 / YM2413 / YM2612).
-        // Each entry: (offset, friendly name, introduced in VGM version).
-        // We only flag chips whose offset is within the bytes we actually read AND within
-        // the range the file's declared version supports (so older VGM files don't trip
-        // on uninitialized bytes past their header).
+        // Returns the friendly name of the first unsupported chip found in the header, or null if the only chip clocks
+        // set are GME-compatible (SN76489 / YM2413 / YM2612). Each entry: (offset, friendly name, introduced in VGM
+        // version). We only flag chips whose offset is within the bytes we actually read AND within the range the
+        // file's declared version supports (so older VGM files don't trip on uninitialized bytes past their header).
         private static string FindFirstUnsupportedChip(byte[] header)
         {
             uint version = ReadUInt32LE(header, 0x08);

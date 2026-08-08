@@ -23,20 +23,18 @@ namespace UniPlaySong.Services
         AchievementCapstone     // capstoneachievement   (perfect / 100%)
     }
 
-    // Owns jingle playback lifecycle: creates a dedicated player for each fire,
-    // coordinates pause/resume of the main music via IMusicPlaybackService,
-    // and preserves the NAudio visualization provider across the jingle window.
-    // UniPlaySong detects the Playnite event (OnItemUpdated); this service
-    // decides whether/what/how to play.
+    // Owns jingle playback lifecycle: creates a dedicated player for each fire, coordinates pause/resume of the
+    // main music via IMusicPlaybackService, and preserves the NAudio visualization provider across the jingle
+    // window. UniPlaySong detects the Playnite event (OnItemUpdated); this service decides whether/what/how to play.
     public class JingleService
     {
         private readonly IMusicPlaybackService _playbackService;
         private readonly Func<IMusicPlayer> _createJinglePlayer;
-        // Separate, deliberately lightweight factory for EXTERNAL notification sounds (achievement
-        // unlocks fired via URI, etc.). Always a plain SDL2 player — never the NAudio Live-Effects
-        // pipeline, whose per-fire persistent-layer setup added ~130ms latency and whose reverb/viz
-        // machinery is pointless for a short notification "ding" fired over a running game. Kept
-        // wholly separate from the regular jingle path so the completion/abandoned system is unaffected.
+        // Separate, deliberately lightweight factory for EXTERNAL notification sounds (achievement unlocks fired via
+        // URI, etc.). Always a plain SDL2 player — never the NAudio Live-Effects pipeline, whose per-fire
+        // persistent-layer setup added ~130ms latency and whose reverb/viz machinery is pointless for a short
+        // notification "ding" fired over a running game. Kept wholly separate from the regular jingle path so the
+        // completion/abandoned system is unaffected.
         private readonly Func<IMusicPlayer> _createLightweightPlayer;
         private readonly ErrorHandlerService _errorHandler;
         private readonly FileLogger _fileLogger;
@@ -308,10 +306,9 @@ namespace UniPlaySong.Services
             _playbackService?.ResumeFromJingle();
         }
 
-        // Plays a jingle file. Pauses the main music via IMusicPlaybackService,
-        // spawns a dedicated player via the factory delegate, saves the viz
-        // provider (NAudio case) so it can be restored on cleanup, wires
-        // MediaEnded to trigger resume of the main music.
+        // Plays a jingle file. Pauses the main music via IMusicPlaybackService, spawns a dedicated player via the
+        // factory delegate, saves the viz provider (NAudio case) so it can be restored on cleanup, wires MediaEnded to
+        // trigger resume of the main music.
         private void Play(string filePath, UniPlaySongSettings settings)
         {
             // Pause the main music instantly (dedicated Jingle source, preserves position)
@@ -319,10 +316,10 @@ namespace UniPlaySong.Services
 
             try
             {
-                // Reuse the PERSISTENT jingle player across fires. Disposing it per-jingle (the old
-                // behavior) tore down the NAudio audio device every time, so the next jingle paid a
-                // ~700ms cold device-reopen whenever nothing else (e.g. Spotify) kept the endpoint warm.
-                // We only rebuild when the backend must change (Live Effects toggled between fires).
+                // Reuse the PERSISTENT jingle player across fires. Disposing it per-jingle (the old behavior) tore down the
+                // NAudio audio device every time, so the next jingle paid a ~700ms cold device-reopen whenever nothing else
+                // (e.g. Spotify) kept the endpoint warm. We only rebuild when the backend must change (Live Effects toggled
+                // between fires).
                 bool wantEffects = _jingleWantsLiveEffects?.Invoke() ?? _jinglePlayerUsesLiveEffects;
                 if (_jinglePlayer != null && wantEffects != _jinglePlayerUsesLiveEffects)
                     DisposeJinglePlayer();
@@ -419,10 +416,10 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Builds the persistent jingle player and opens its audio device ahead of the first jingle,
-        // so that first completion/abandoned sound doesn't pay the ~700ms cold endpoint-open. Safe to
-        // call repeatedly (no-op if the player already exists with the right backend). Call at startup
-        // and after idle-exit (issue #81). Never plays anything.
+        // Builds the persistent jingle player and opens its audio device ahead of the first jingle, so that first
+        // completion/abandoned sound doesn't pay the ~700ms cold endpoint-open. Safe to call repeatedly (no-op if the
+        // player already exists with the right backend). Call at startup and after idle-exit (issue #81). Never plays
+        // anything.
         public void PrewarmJinglePlayer()
         {
             try

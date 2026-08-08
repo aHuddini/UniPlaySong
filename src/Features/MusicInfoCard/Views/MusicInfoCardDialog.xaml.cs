@@ -16,15 +16,13 @@ using UniPlaySong.IconGlow;
 
 namespace UniPlaySong.Features.MusicInfoCard.Views
 {
-    // Desktop dialog for the Music Info Card. Opens immediately with a
-    // loading indicator and populates the stats panel when the background
-    // computation completes. Closing the dialog cancels the in-flight
-    // computation so TagLib reads abort cleanly on large folders.
+    // Desktop dialog for the Music Info Card. Opens immediately with a loading indicator and populates the stats
+    // panel when the background computation completes. Closing the dialog cancels the in-flight computation so
+    // TagLib reads abort cleanly on large folders.
     //
-    // Visual style ported from BeautyCons: a per-game accent color is
-    // extracted from the icon image and threaded through the accent strip,
-    // icon glow effect, format chips, and headline color tint. Falls back
-    // to neutral purple when no icon is available (placeholder shown).
+    // Visual style ported from BeautyCons: a per-game accent color is extracted from the icon image and threaded
+    // through the accent strip, icon glow effect, format chips, and headline color tint. Falls back to neutral
+    // purple when no icon is available (placeholder shown).
     public partial class MusicInfoCardDialog : UserControl
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -72,10 +70,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 BlurredBackdrop.Source = backdropSnapshot;
             }
 
-            // Load icon + extract color synchronously — image decoding for
-            // a single icon is cheap (<10ms typically) and the color is
-            // needed before the panels fade in. If anything fails, the
-            // placeholder note glyph stays visible and accent stays default.
+            // Load icon + extract color synchronously — image decoding for a single icon is cheap (<10ms typically) and
+            // the color is needed before the panels fade in. If anything fails, the placeholder note glyph stays visible
+            // and accent stays default.
             TryApplyGameIconAndAccent();
 
             Loaded += OnDialogLoaded;
@@ -118,13 +115,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             }
         }
 
-        // Threads the extracted color through the controls that should
-        // adopt it: the accent strip at the top of the card, the icon's
-        // DropShadowEffect glow, the subtitle label, the format chips in
-        // the song list, and a very-low-alpha whole-card tint that gives
-        // the entire dialog a matching mood. The headline numerals keep
-        // their hardcoded tri-color palette so they remain consistent
-        // across games (visual anchor for "Files / Duration / Size").
+        // Threads the extracted color through the controls that should adopt it: the accent strip at the top of the
+        // card, the icon's DropShadowEffect glow, the subtitle label, the format chips in the song list, and a
+        // very-low-alpha whole-card tint that gives the entire dialog a matching mood. The headline numerals keep their
+        // hardcoded tri-color palette so they remain consistent across games (visual anchor for "Files / Duration /
+        // Size").
         private void ApplyAccentColor(Color color)
         {
             _accentBrush = new SolidColorBrush(color);
@@ -138,11 +133,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             HeaderSubtitle.Foreground = _accentBrush;
             IconGlowEffect.Color = color;
 
-            // Whole-card tint at ~5% alpha (alpha=13 of 255). Bumped
-            // from 3% — the blurred background image is now dimmer
-            // (Opacity 0.40), so the tint layer needs to carry a bit
-            // more of the per-game color signal. Still well below the
-            // ~10% level that previously made the card feel saturated.
+            // Whole-card tint at ~5% alpha (alpha=13 of 255). Bumped from 3% — the blurred background image is now dimmer
+            // (Opacity 0.40), so the tint layer needs to carry a bit more of the per-game color signal. Still well below
+            // the ~10% level that previously made the card feel saturated.
             var tintColor = Color.FromArgb(13, color.R, color.G, color.B);
             var tintBrush = new SolidColorBrush(tintColor);
             tintBrush.Freeze();
@@ -275,10 +268,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             FadeInStatsPanel();
         }
 
-        // Brushes used by song-list rows. Playlist tracks always use the
-        // fixed amber so they remain visually distinguishable regardless
-        // of the per-game accent. Standard files use the accent when set
-        // (icon-derived), else the fallback purple — done in RenderSongList.
+        // Brushes used by song-list rows. Playlist tracks always use the fixed amber so they remain visually
+        // distinguishable regardless of the per-game accent. Standard files use the accent when set (icon-derived),
+        // else the fallback purple — done in RenderSongList.
         private static readonly SolidColorBrush PlaylistChipBrush =
             CreateFrozenBrush(0xFF, 0xB7, 0x4D);
         private static readonly SolidColorBrush DefaultStandardChipBrush =
@@ -291,11 +283,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             return brush;
         }
 
-        // Songs list — populated from MusicStats.Songs (already sorted by
-        // title in the service). Each row is an anonymous projection so
-        // the DataTemplate can bind without a separate ViewModel type.
-        // ChipBackground is a Brush (not a string) so the Border.Background
-        // binding resolves directly without a converter.
+        // Songs list — populated from MusicStats.Songs (already sorted by title in the service). Each row is an
+        // anonymous projection so the DataTemplate can bind without a separate ViewModel type. ChipBackground is a
+        // Brush (not a string) so the Border.Background binding resolves directly without a converter.
         private void RenderSongList(MusicStats stats)
         {
             if (stats.Songs == null || stats.Songs.Count == 0) return;
@@ -323,10 +313,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             SongListPanel.Visibility = Visibility.Visible;
         }
 
-        // Smooth fade-in for the entire stats panel after population —
-        // 250ms is fast enough to feel snappy but long enough to register
-        // visually so users know fresh content arrived. Driven by Opacity
-        // since StatsPanel starts at 0 in XAML.
+        // Smooth fade-in for the entire stats panel after population — 250ms is fast enough to feel snappy but long
+        // enough to register visually so users know fresh content arrived. Driven by Opacity since StatsPanel starts at
+        // 0 in XAML.
         private void FadeInStatsPanel()
         {
             var anim = new DoubleAnimation
@@ -363,13 +352,10 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             Window.GetWindow(this)?.Close();
         }
 
-        // Drag-to-move replacement for the missing Playnite titlebar.
-        // Calls Window.DragMove which is the standard WPF idiom for
-        // custom chrome — it processes input until the user releases
-        // the mouse button. Wrapped in try/catch because DragMove
-        // throws InvalidOperationException if called when the mouse
-        // has already been released (race condition between click +
-        // release happening faster than the event marshals through).
+        // Drag-to-move replacement for the missing Playnite titlebar. Calls Window.DragMove which is the standard WPF
+        // idiom for custom chrome — it processes input until the user releases the mouse button. Wrapped in try/catch
+        // because DragMove throws InvalidOperationException if called when the mouse has already been released (race
+        // condition between click + release happening faster than the event marshals through).
         private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (e.ChangedButton != System.Windows.Input.MouseButton.Left) return;

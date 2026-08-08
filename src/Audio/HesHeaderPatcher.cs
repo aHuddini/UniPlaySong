@@ -3,12 +3,10 @@ using System.IO;
 
 namespace UniPlaySong.Audio
 {
-    // Generates per-track mini-HES files that each select a single song from
-    // the original multi-track HES by patching byte 5 (first_track) in the
-    // 16-byte header tag block. The HES format has no total_songs field —
-    // first_track alone determines which song dispatches, so a single-byte
-    // patch is sufficient. The full code blob and bank data are preserved
-    // so the game's player code can still decode the requested track.
+    // Generates per-track mini-HES files that each select a single song from the original multi-track HES by
+    // patching byte 5 (first_track) in the 16-byte header tag block. The HES format has no total_songs field —
+    // first_track alone determines which song dispatches, so a single-byte patch is sufficient. The full code blob
+    // and bank data are preserved so the game's player code can still decode the requested track.
     //
     // Mirrors the pattern used by NsfHeaderPatcher (which patches NSF byte 7,
     // starting_song). HES dispatch on first_track is verified against the
@@ -45,11 +43,10 @@ namespace UniPlaySong.Audio
             return bytes[FirstTrackOffset];
         }
 
-        // Returns a new byte array tagged to play only the requested track index
-        // (0-255). Original bytes are not modified. The caller is responsible for
-        // confirming the trackIndex actually corresponds to a real track in the
-        // source file's M3U sidecar — patching to a non-existent index produces
-        // silence (the dispatch jumps into uninitialized memory).
+        // Returns a new byte array tagged to play only the requested track index (0-255). Original bytes are not
+        // modified. The caller is responsible for confirming the trackIndex actually corresponds to a real track in the
+        // source file's M3U sidecar — patching to a non-existent index produces silence (the dispatch jumps into
+        // uninitialized memory).
         public static byte[] PatchForTrack(byte[] originalBytes, int trackIndex)
         {
             if (!IsValidHesHeader(originalBytes))

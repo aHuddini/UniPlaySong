@@ -5,10 +5,9 @@ using UniPlaySong.Features.MusicInfoCard.Models;
 
 namespace UniPlaySong.Features.MusicInfoCard.Services
 {
-    // Computes a Game's music statistics. The async signature is the
-    // testable boundary — dialog views depend on this interface, not the
-    // concrete service, so a mock provider can drive the UI in tests
-    // without touching disk or TagLib.
+    // Computes a Game's music statistics. The async signature is the testable boundary — dialog views depend on
+    // this interface, not the concrete service, so a mock provider can drive the UI in tests without touching disk
+    // or TagLib.
     public interface IMusicStatsProvider
     {
         // Builds a MusicStats snapshot for the given game. The result is

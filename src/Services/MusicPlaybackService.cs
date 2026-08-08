@@ -135,12 +135,11 @@ namespace UniPlaySong.Services
         private readonly HashSet<PauseSource> _activePauseSources = new HashSet<PauseSource>();
         private bool _isPaused => _activePauseSources.Count > 0;
 
-        // Sources that survive ClearAllPauseSources(): environmental/session state owned by
-        // their own handlers (window events, session lock/suspend, external-audio + idle
-        // detectors, video, theme overlay, dashboard). Only those handlers know when the
-        // condition ends, so a transient song-start clear must NOT drop them.
-        // SystemLock is included so a game switch or deferred-play while the machine is locked
-        // (issue #81) can't wipe the lock-pause and resume audio behind the lock screen.
+        // Sources that survive ClearAllPauseSources(): environmental/session state owned by their own handlers (window
+        // events, session lock/suspend, external-audio + idle detectors, video, theme overlay, dashboard). Only those
+        // handlers know when the condition ends, so a transient song-start clear must NOT drop them. SystemLock is
+        // included so a game switch or deferred-play while the machine is locked (issue #81) can't wipe the lock-pause
+        // and resume audio behind the lock screen.
         private static readonly HashSet<PauseSource> PreservedOnClear = new HashSet<PauseSource>
         {
             PauseSource.FocusLoss, PauseSource.Minimized, PauseSource.SystemTray,
@@ -175,10 +174,9 @@ namespace UniPlaySong.Services
         private bool _radioYieldedToGameMusic;
         public bool IsRadioYieldedToGameMusic => _radioYieldedToGameMusic;
 
-        // Bumped by every call that changes what SHOULD be playing (PlayGameMusic, Stop,
-        // FadeOutAndStop). A deferred start captures the value at schedule time and aborts if it
-        // no longer matches — so a warm-up that lands after the user has already moved on is
-        // dropped instead of stomping the newer song.
+        // Bumped by every call that changes what SHOULD be playing (PlayGameMusic, Stop, FadeOutAndStop). A deferred
+        // start captures the value at schedule time and aborts if it no longer matches — so a warm-up that lands
+        // after the user has already moved on is dropped instead of stomping the newer song.
         private int _playbackGeneration;
 
         public bool IsGameSessionActive => _gameSessionActive;
@@ -190,10 +188,9 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug($"Game session {(active ? "started" : "ended")}");
         }
 
-        // A settings save replaces the whole settings object, so the copy cached by the last
-        // PlayGameMusic goes stale — readers like the radio play-through guard would keep
-        // consulting the pre-save values until the next game selection. Re-point it here.
-        // Assignment only: no playback restart, no pause-set change, no PlayGameMusic.
+        // A settings save replaces the whole settings object, so the copy cached by the last PlayGameMusic goes stale
+        // — readers like the radio play-through guard would keep consulting the pre-save values until the next game
+        // selection. Re-point it here. Assignment only: no playback restart, no pause-set change, no PlayGameMusic.
         public void RefreshSettings(UniPlaySongSettings settings)
         {
             if (settings == null) return;
@@ -213,12 +210,11 @@ namespace UniPlaySong.Services
             if (_isPaused)
             {
                 NotifyManualStart();
-                // Explicit user play (top panel / media key) also clears a stale FocusLoss:
-                // if window activation landed in a sibling/WebView2 HWND, OnApplicationActivate's
-                // main-window guard never removes FocusLoss — removing only Manual would leave
-                // _isPaused true and make the play button look dead. Same precedent as the
-                // controller dialog's post-download clear. Order matters: remove FocusLoss first
-                // (no-op resume while Manual still holds), then Manual triggers the actual resume.
+                // Explicit user play (top panel / media key) also clears a stale FocusLoss: if window activation landed in a
+                // sibling/WebView2 HWND, OnApplicationActivate's main-window guard never removes FocusLoss — removing only
+                // Manual would leave _isPaused true and make the play button look dead. Same precedent as the controller
+                // dialog's post-download clear. Order matters: remove FocusLoss first (no-op resume while Manual still holds),
+                // then Manual triggers the actual resume.
                 RemovePauseSource(PauseSource.FocusLoss);
                 RemovePauseSource(PauseSource.Manual);
             }
@@ -441,10 +437,9 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Interrupted-switch recovery: a pause arrived during a song-switch fade-out and
-        // orphaned the fader's pending play action. Resume the fader to run the pending
-        // load+play. Identical for faded and instant removal — only the log suffix differs.
-        // Returns true if it handled the resume.
+        // Interrupted-switch recovery: a pause arrived during a song-switch fade-out and orphaned the fader's pending
+        // play action. Resume the fader to run the pending load+play. Identical for faded and instant removal — only
+        // the log suffix differs. Returns true if it handled the resume.
         private bool TryResumePendingPlayAction(PauseSource source, string logSuffix)
         {
             if (_fader?.HasPendingPlayAction == true)
@@ -479,10 +474,9 @@ namespace UniPlaySong.Services
             return false;
         }
 
-        // Read-only peek into the active pause-source set, for callers that need to gate
-        // behavior on whether a specific source is currently holding playback paused.
-        // No callers in src/ today — the external-audio detector's game-audio exclusion now
-        // keys on IsGameSessionActive instead. Kept as public interface surface.
+        // Read-only peek into the active pause-source set, for callers that need to gate behavior on whether a specific
+        // source is currently holding playback paused. No callers in src/ today — the external-audio detector's
+        // game-audio exclusion now keys on IsGameSessionActive instead. Kept as public interface surface.
         public bool HasPauseSource(PauseSource source) => _activePauseSources.Contains(source);
 
         /// <summary>
@@ -556,10 +550,9 @@ namespace UniPlaySong.Services
             switch (settings.DefaultMusicSourceOption)
             {
                 // v1.5.0: NativeTheme deprecated. v1.5.2: legacy handler no-ops.
-                // Settings migration on load rewrites NativeTheme → BundledPreset, so this
-                // case should never fire. If hand-edited settings bypass the migration,
-                // returning false here means the path is treated as "not the default music
-                // path" — harmless fall-through to the regular game-music logic.
+                // Settings migration on load rewrites NativeTheme → BundledPreset, so this case should never fire. If
+                // hand-edited settings bypass the migration, returning false here means the path is treated as "not the default
+                // music path" — harmless fall-through to the regular game-music logic.
 #pragma warning disable CS0618
                 case DefaultMusicSource.NativeTheme:
                     return false;
@@ -653,10 +646,9 @@ namespace UniPlaySong.Services
                 // navigates from a theme overlay (welcome hub / login)
                 // directly to a game card with EnableMusic=off +
                 // EnableDefaultMusic=on, this path loads default music
-                // and immediately Plays + FadeIns even though ThemeOverlay
-                // is still an active pause source. The DefaultMusicPreservation
-                // source is about to be removed below, so we ignore it
-                // when computing "other sources active".
+                // and immediately Plays + FadeIns even though ThemeOverlay is still an active pause source. The
+                // DefaultMusicPreservation source is about to be removed below, so we ignore it when computing "other sources
+                // active".
                 bool otherSourcesActive = _activePauseSources.Count > 0 &&
                     !(_activePauseSources.Count == 1 && _activePauseSources.Contains(PauseSource.DefaultMusicPreservation));
 
@@ -685,13 +677,10 @@ namespace UniPlaySong.Services
 
             if (game == null)
             {
-                // v1.5.0 (Bug A defense-in-depth): even if the coordinator
-                // misses the IsPlayingDefaultMusic guard at HandleGameSelected,
-                // protect default-music continuity here. Default music is
-                // session-persistent — a null-game call must not wipe it.
-                // The coordinator-level guard at MusicPlaybackCoordinator.cs:158
-                // is the primary defense; this is the safety net for any
-                // future callers that bypass the coordinator (settings
+                // v1.5.0 (Bug A defense-in-depth): even if the coordinator misses the IsPlayingDefaultMusic guard at
+                // HandleGameSelected, protect default-music continuity here. Default music is session-persistent — a
+                // null-game call must not wipe it. The coordinator-level guard at MusicPlaybackCoordinator.cs:158 is the
+                // primary defense; this is the safety net for any future callers that bypass the coordinator (settings
                 // handlers, theme overlay recovery paths, etc.).
                 if (_isPlayingDefaultMusic && settings?.EnableDefaultMusic == true)
                 {
@@ -716,11 +705,10 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // Defensive sweep: NsfPreview is a modal-dialog pause source that must not
-            // survive a game switch. If the dialog closed via an unusual path (e.g. host
-            // window force-close), the source can leak and silently block all future
-            // auto-advance via OnMediaEnded's _isPaused early-return. Clearing here on
-            // every game switch acts as a safety net without affecting normal flow.
+            // Defensive sweep: NsfPreview is a modal-dialog pause source that must not survive a game switch. If the dialog
+            // closed via an unusual path (e.g. host window force-close), the source can leak and silently block all future
+            // auto-advance via OnMediaEnded's _isPaused early-return. Clearing here on every game switch acts as a safety
+            // net without affecting normal flow.
             if (_activePauseSources.Contains(PauseSource.NsfPreview))
             {
                 _fileLogger?.Debug("PlayGameMusic: clearing leaked NsfPreview pause source");
@@ -763,25 +751,22 @@ namespace UniPlaySong.Services
             }
 
             // NOTE: Spotify default-source suppression is NOT done here. Doing it from a flag
-            // (SpotifyActive) at this point caused a stale-read race: switching from a no-music
-            // game (Spotify active) to a game WITH music read the previous game's SpotifyActive=true
-            // and suppressed the new game's music before SpotifyControlService recomputed. Instead,
-            // suppression is driven purely by THIS game's song count: a game with songs plays them
-            // (and SpotifyControlService pauses Spotify on its next recompute); a game with no songs
-            // falls through to the default-music switch, whose DefaultMusicSource.Spotify case marks
-            // the gap and plays nothing. So a with-music game is never wrongly suppressed.
+            // (SpotifyActive) at this point caused a stale-read race: switching from a no-music game (Spotify active) to a
+            // game WITH music read the previous game's SpotifyActive=true and suppressed the new game's music before
+            // SpotifyControlService recomputed. Instead, suppression is driven purely by THIS game's song count: a game
+            // with songs plays them (and SpotifyControlService pauses Spotify on its next recompute); a game with no songs
+            // falls through to the default-music switch, whose DefaultMusicSource.Spotify case marks the gap and plays
+            // nothing. So a with-music game is never wrongly suppressed.
 
-            // Spotify Radio Mode: Spotify REPLACES all game music (the audio is Spotify's, conducted
-            // by SpotifyControlService). Fires for EVERY game — including games with their own songs —
-            // so UPS never plays a competing track. SpotifyRadioMode is a DERIVED expression
-            // (RadioModeEnabled && RadioMusicSource == Spotify), so it is true only when RadioMode is
-            // also on; StartRadioPlayback's Spotify guard ensures the pool never starts for this source.
-            // "Play Only on Game Select" + Radio Mode: in Fullscreen Details view the user has
-            // explicitly opened a game, so the radio yields to that game's own music — exactly the role
-            // default music plays when radio is off. Returning to List view resumes the radio (the
-            // radio branch restarts it; for Spotify, SpotifyControlService owns the resume). Both radio
-            // branches below return early, so without this the setting was unreachable whenever radio
-            // was on. Fullscreen-only: GetActiveFullscreenView() is null in Desktop.
+            // Spotify Radio Mode: Spotify REPLACES all game music (the audio is Spotify's, conducted by
+            // SpotifyControlService). Fires for EVERY game — including games with their own songs — so UPS never plays
+            // a competing track. SpotifyRadioMode is a DERIVED expression (RadioModeEnabled && RadioMusicSource ==
+            // Spotify), so it is true only when RadioMode is also on; StartRadioPlayback's Spotify guard ensures the pool
+            // never starts for this source. "Play Only on Game Select" + Radio Mode: in Fullscreen Details view the user
+            // has explicitly opened a game, so the radio yields to that game's own music — exactly the role default music
+            // plays when radio is off. Returning to List view resumes the radio (the radio branch restarts it; for Spotify,
+            // SpotifyControlService owns the resume). Both radio branches below return early, so without this the setting
+            // was unreachable whenever radio was on. Fullscreen-only: GetActiveFullscreenView() is null in Desktop.
             bool radioYieldsToSelectedGame = RadioGameSelectPolicy.ShouldYieldToSelectedGame(
                 isFullscreenDetailsView: GetActiveFullscreenView() == FullscreenView.Details,
                 selectedGameSongCount: settings?.PlayOnlyOnGameSelect == true && settings?.RadioModeEnabled == true
@@ -812,12 +797,11 @@ namespace UniPlaySong.Services
                     return;
                 }
 
-                // Genuine transition: fade out any current UPS track and stay silent. We deliberately
-                // fire NO state-change events (OnPlaybackStateChanged/OnSongChanged/OnMusicStarted) —
-                // each such event synchronously drives SpotifyControlService.Recompute, and the flood
-                // from repeated PlayGameMusic calls froze Playnite. SpotifyControlService picks up
-                // SpotifyRadioMode via its own triggers (client events + timer), and Spotify (the user's
-                // open app) keeps playing; UPS's only job here is to not play a competing game track.
+                // Genuine transition: fade out any current UPS track and stay silent. We deliberately fire NO state-change
+                // events (OnPlaybackStateChanged/OnSongChanged/OnMusicStarted) — each such event synchronously drives
+                // SpotifyControlService.Recompute, and the flood from repeated PlayGameMusic calls froze Playnite.
+                // SpotifyControlService picks up SpotifyRadioMode via its own triggers (client events + timer), and Spotify
+                // (the user's open app) keeps playing; UPS's only job here is to not play a competing game track.
                 _fileLogger?.Debug($"SpotifyRadioMode: suppressing game music for {game.Name} — Spotify is the source");
                 _currentGameId = game.Id.ToString();
                 _currentGame = game;
@@ -832,12 +816,11 @@ namespace UniPlaySong.Services
                         _currentSongPath = null;
                     });
                 }
-                // Clear the now-playing metadata so it doesn't stay stuck on the last game song
-                // while Spotify is the source (and, critically, so turning radio OFF later re-reads
-                // a CLEARED SongMetadataService rather than republishing the stale pre-radio song).
-                // OnMusicStopped is flood-safe here: SpotifyControlService subscribes to
-                // OnPlaybackStateChanged/OnSongChanged (which we deliberately do NOT fire), NOT to
-                // OnMusicStopped — so this clears metadata + refreshes icons without re-entering Recompute.
+                // Clear the now-playing metadata so it doesn't stay stuck on the last game song while Spotify is the source
+                // (and, critically, so turning radio OFF later re-reads a CLEARED SongMetadataService rather than republishing
+                // the stale pre-radio song). OnMusicStopped is flood-safe here: SpotifyControlService subscribes to
+                // OnPlaybackStateChanged/OnSongChanged (which we deliberately do NOT fire), NOT to OnMusicStopped — so this
+                // clears metadata + refreshes icons without re-entering Recompute.
                 OnMusicStopped?.Invoke(settings);
                 return;
             }
@@ -894,10 +877,10 @@ namespace UniPlaySong.Services
                 var songs = _fileService.GetAvailableSongs(game);
                 _fileLogger?.Debug(() => $"[Perf] PlayGameMusic: GetAvailableSongs took {sw.ElapsedMilliseconds}ms ({songs.Count} songs for {game.Name})");
 
-                // INVARIANT (not a leak-patch): the override is a Fullscreen Welcome-Hub concept and
-                // must NEVER suppress game music in Desktop, even when the flag is legitimately true.
-                // This is independent of the override's lifecycle correctness (Tasks 1-2); keep it
-                // permanently. Mode is resolved the same way as the PlayOnlyOnGameSelect block below.
+                // INVARIANT (not a leak-patch): the override is a Fullscreen Welcome-Hub concept and must NEVER suppress game
+                // music in Desktop, even when the flag is legitimately true. This is independent of the override's lifecycle
+                // correctness (Tasks 1-2); keep it permanently. Mode is resolved the same way as the PlayOnlyOnGameSelect block
+                // below.
                 if (songs.Count > 0 && settings?.ForceDefaultMusicOverride == true)
                 {
                     bool isFullscreen = false;
@@ -1000,12 +983,10 @@ namespace UniPlaySong.Services
                 }
 
                 // EnableMusic=off + EnableDefaultMusic=on: skip game music so the default-
-                // music fallback below can fire. Without this, a game with its own music
-                // folder swallows the EnableDefaultMusic toggle entirely — game music is
-                // suppressed by the EnableMusic check at line 850 (no default added to
-                // songs, so hasDefaultMusic=false, so we stop), and bundled/native/pool
-                // sources never get a chance to add their fallback. Clearing here lets
-                // the default-music block at line 744 add the configured ambient source.
+                // music fallback below can fire. Without this, a game with its own music folder swallows the EnableDefaultMusic
+                // toggle entirely — game music is suppressed by the EnableMusic check at line 850 (no default added to songs,
+                // so hasDefaultMusic=false, so we stop), and bundled/native/pool sources never get a chance to add their
+                // fallback. Clearing here lets the default-music block at line 744 add the configured ambient source.
                 if (songs.Count > 0 && settings?.EnableMusic == false && settings?.EnableDefaultMusic == true)
                 {
                     _fileLogger?.Info($"PlayGameMusic: {game.Name} — EnableMusic=off, falling through to default music");
@@ -1020,11 +1001,9 @@ namespace UniPlaySong.Services
                     switch (settings.DefaultMusicSourceOption)
                     {
                         // v1.5.0: NativeTheme deprecated. v1.5.2: legacy handler no-ops.
-                        // Settings migration rewrites NativeTheme → BundledPreset on load,
-                        // so this case should never fire. If hand-edited settings bypass
-                        // the migration, adding nothing to `songs` results in silence (no
-                        // default music) rather than a crash — user can fix by re-selecting
-                        // a source in Settings → Playback.
+                        // Settings migration rewrites NativeTheme → BundledPreset on load, so this case should never fire. If
+                        // hand-edited settings bypass the migration, adding nothing to `songs` results in silence (no default music)
+                        // rather than a crash — user can fix by re-selecting a source in Settings → Playback.
 #pragma warning disable CS0618
                         case DefaultMusicSource.NativeTheme:
 #pragma warning restore CS0618
@@ -1119,10 +1098,9 @@ namespace UniPlaySong.Services
                             // Spotify is the default-music source: there is no local file to play.
                             // Mark UPS as "in a default-music gap" so SpotifyControlService computes
                             // SpotifyActive=true and conducts the Spotify desktop app. UPS itself
-                            // plays nothing. We set the flag and return early so the no-songs path
-                            // below does not FadeOutAndStop+reset it. If Spotify is unavailable,
-                            // SpotifyControlService leaves SpotifyActive false and UPS stays silent
-                            // for this game (graceful — same as any default source with nothing to play).
+                            // plays nothing. We set the flag and return early so the no-songs path below does not FadeOutAndStop+reset it.
+                            // If Spotify is unavailable, SpotifyControlService leaves SpotifyActive false and UPS stays silent for this
+                            // game (graceful — same as any default source with nothing to play).
                             _fileLogger?.Debug($"No game music for {game.Name}; Spotify is the default source — marking default-music gap (Spotify conducts).");
                             // Gracefully fade out UPS's own current track (if any) so Spotify becomes
                             // the only audio. Entering the gap from a game that HAD music would
@@ -1134,12 +1112,10 @@ namespace UniPlaySong.Services
                             // callback that re-asserts the gap flags, so the order can't break the
                             // load-bearing invariant (IsPlayingDefaultMusic must end true).
                             CancelSongEndFade();
-                            // Establish the default-music gap FLAGS synchronously (before any re-entrant
-                            // PlayGameMusic), but defer the Spotify-resume trigger until UPS audio has
-                            // finished fading out, so Spotify doesn't blast in over the still-fading game
-                            // track. SpotifyControlService computes SpotifyActive=true from
-                            // IsPlayingDefaultMusic; subsequent PlayGameMusic calls hit the SpotifyActive
-                            // suppression guard and stay silent.
+                            // Establish the default-music gap FLAGS synchronously (before any re-entrant PlayGameMusic), but defer the
+                            // Spotify-resume trigger until UPS audio has finished fading out, so Spotify doesn't blast in over the
+                            // still-fading game track. SpotifyControlService computes SpotifyActive=true from IsPlayingDefaultMusic;
+                            // subsequent PlayGameMusic calls hit the SpotifyActive suppression guard and stay silent.
                             _currentGameId = gameId;
                             _currentGame = game;
                             _isPlayingDefaultMusic = true;
@@ -1148,12 +1124,10 @@ namespace UniPlaySong.Services
                             if ((_musicPlayer?.IsLoaded ?? false) || (_musicPlayer?.IsActive ?? false))
                             {
                                 StopPreviewTimer();
-                                // Fade UPS's track out first; only when the fade-out completes do we
-                                // close the player AND trigger the recompute that resumes Spotify — a
-                                // clean handoff (UPS fades down, then Spotify comes in, no overlap).
-                                // We do NOT use FadeOutAndStop()'s own callback semantics that null
-                                // _currentGame / reset _isPlayingDefaultMusic, so the gap flags above
-                                // survive (IsPlayingDefaultMusic must end true).
+                                // Fade UPS's track out first; only when the fade-out completes do we close the player AND trigger the recompute
+                                // that resumes Spotify — a clean handoff (UPS fades down, then Spotify comes in, no overlap). We do NOT use
+                                // FadeOutAndStop()'s own callback semantics that null _currentGame / reset _isPlayingDefaultMusic, so the gap
+                                // flags above survive (IsPlayingDefaultMusic must end true).
                                 _fader?.FadeOutAndStop(() =>
                                 {
                                     _musicPlayer?.Close();
@@ -1218,11 +1192,10 @@ namespace UniPlaySong.Services
                 var previousGameId = _currentGameId;
                 var isNewGame = previousGameId == null || previousGameId != gameId;
 
-                // When PlayOnlyOnGameSelect cleared game songs because we're in List view, this call
-                // is a "prep" call that plays default music until the user enters Details view.
-                // Skip updating _currentGameId so the subsequent Details-view call still sees this
-                // game as "new" and the RandomizeOnEverySelect path can fire. Otherwise, the first
-                // alphabetical game song plays every time (no randomization on Details-view entry).
+                // When PlayOnlyOnGameSelect cleared game songs because we're in List view, this call is a "prep" call that
+                // plays default music until the user enters Details view. Skip updating _currentGameId so the subsequent
+                // Details-view call still sees this game as "new" and the RandomizeOnEverySelect path can fire. Otherwise, the
+                // first alphabetical game song plays every time (no randomization on Details-view entry).
                 if (!clearedForListView)
                 {
                     _currentGameId = gameId;
@@ -1261,17 +1234,15 @@ namespace UniPlaySong.Services
                     _fileLogger?.Debug($"PlayGameMusic: Updated settings (TargetVolume: {_targetVolume}, FadeInDuration: {_fadeInDuration}, FadeOutDuration: {_fadeOutDuration})");
                 }
 
-                // "Play Only on Game Select" — when the user enters Details view for a game they were
-                // just browsing in List view, we're currently playing default music for THIS game.
-                // Treat that as a fresh selection for randomization purposes: each Details-view entry
-                // is a deliberate act and should pick a new random song, even when the game ID hasn't
-                // changed. Without this, repeat Details-entries for the same game would fall through
-                // to the alphabetical FirstOrDefault() branch in SelectSongToPlay.
-                // radioYieldsToSelectedGame covers the radio equivalent: while browsing, the RADIO is
-                // the ambient layer (not default music), so _isPlayingDefaultMusic is false and this
-                // would otherwise never arm — every Details entry replayed the same alphabetically
-                // first song. Entering Details from radio is the same deliberate act, so randomize.
-                // RandomizeOnEverySelect still gates the actual pick inside SelectSongToPlay.
+                // "Play Only on Game Select" — when the user enters Details view for a game they were just browsing in List
+                // view, we're currently playing default music for THIS game. Treat that as a fresh selection for randomization
+                // purposes: each Details-view entry is a deliberate act and should pick a new random song, even when the game
+                // ID hasn't changed. Without this, repeat Details-entries for the same game would fall through to the
+                // alphabetical FirstOrDefault() branch in SelectSongToPlay. radioYieldsToSelectedGame covers the radio
+                // equivalent: while browsing, the RADIO is the ambient layer (not default music), so _isPlayingDefaultMusic is
+                // false and this would otherwise never arm — every Details entry replayed the same alphabetically first song.
+                // Entering Details from radio is the same deliberate act, so randomize. RandomizeOnEverySelect still gates the
+                // actual pick inside SelectSongToPlay.
                 bool forceRandomizeOnDetailsEntry =
                     ((_isPlayingDefaultMusic && _currentGameId == gameId) || radioYieldsToSelectedGame)
                     && songs.Count > 1
@@ -1290,13 +1261,11 @@ namespace UniPlaySong.Services
                 // UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time.
                 bool isDefaultMusic = IsDefaultMusicPath(songToPlay, settings);
 
-                // A real game track is about to play → we are NOT in a default-music gap.
-                // Reset the flag unconditionally here. The later reset (in the shouldFadeOut
-                // block) is gated on UPS's own player being active, which is FALSE when the
-                // previous "default music" was a Spotify gap (UPS's player was closed while
-                // Spotify played). Without this, _isPlayingDefaultMusic stayed true after a
-                // Spotify-gap → game-with-music switch, so SpotifyControlService kept Spotify
-                // active and played over the game's music.
+                // A real game track is about to play → we are NOT in a default-music gap. Reset the flag unconditionally
+                // here. The later reset (in the shouldFadeOut block) is gated on UPS's own player being active, which is FALSE
+                // when the previous "default music" was a Spotify gap (UPS's player was closed while Spotify played). Without
+                // this, _isPlayingDefaultMusic stayed true after a Spotify-gap → game-with-music switch, so
+                // SpotifyControlService kept Spotify active and played over the game's music.
                 if (!isDefaultMusic)
                 {
                     bool wasSpotifyGap = _isPlayingDefaultMusic && settings?.SpotifyActive == true;
@@ -1515,10 +1484,10 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Releases everything that would otherwise keep this instance alive after it stops being
-        // the active service — a backend swap replaces the service wholesale (Live Effects,
-        // Visualizer and Crossfade toggles, and the GME auto-switch that fires during ordinary
-        // browsing), and the old one used to be dropped on the floor still running.
+        // Releases everything that would otherwise keep this instance alive after it stops being the active service —
+        // a backend swap replaces the service wholesale (Live Effects, Visualizer and Crossfade toggles, and the GME
+        // auto-switch that fires during ordinary browsing), and the old one used to be dropped on the floor still
+        // running.
         //
         // A started DispatcherTimer is held by the Dispatcher's timer list, which is a strong
         // reference: an orphan with any of these four still ticking is never collected and keeps
@@ -1677,11 +1646,9 @@ namespace UniPlaySong.Services
             _activePauseSources.Add(PauseSource.Jingle);
         }
 
-        // Resumes music after jingle ends with a smooth fade-in.
-        // For GME, Resume is async (gme_seek can take seconds on a long track); the
-        // onReady callback defers FadeIn until the seek completes and the mixer
-        // input is back, so the fade-in ramp actually corresponds to audible audio
-        // instead of ramping volume against a silent mixer.
+        // Resumes music after jingle ends with a smooth fade-in. For GME, Resume is async (gme_seek can take seconds on
+        // a long track); the onReady callback defers FadeIn until the seek completes and the mixer input is back, so
+        // the fade-in ramp actually corresponds to audible audio instead of ramping volume against a silent mixer.
         public void ResumeFromJingle()
         {
             _activePauseSources.Remove(PauseSource.Jingle);
@@ -1716,10 +1683,9 @@ namespace UniPlaySong.Services
         {
             _crossfadeCoordinator?.Cancel();
 
-            // Also tear down any in-flight crossfade on the player side. The coordinator
-            // cancel above only stops polling; if the crossfade has already fired, the
-            // secondary input is live in the mixer and needs explicit cleanup before we
-            // load a new song — otherwise the secondary keeps ramping over the new song.
+            // Also tear down any in-flight crossfade on the player side. The coordinator cancel above only stops polling;
+            // if the crossfade has already fired, the secondary input is live in the mixer and needs explicit cleanup
+            // before we load a new song — otherwise the secondary keeps ramping over the new song.
             if (_musicPlayer is NAudioMusicPlayer naudioForSkip)
             {
                 naudioForSkip.CancelCrossfade();
@@ -1861,10 +1827,9 @@ namespace UniPlaySong.Services
 
             _crossfadeCoordinator?.Cancel();
 
-            // Also tear down any in-flight crossfade on the player side. The coordinator
-            // cancel above only stops polling; if the crossfade has already fired, the
-            // secondary input is live in the mixer and needs explicit cleanup before we
-            // load a new song — otherwise the secondary keeps ramping over the new song.
+            // Also tear down any in-flight crossfade on the player side. The coordinator cancel above only stops polling;
+            // if the crossfade has already fired, the secondary input is live in the mixer and needs explicit cleanup
+            // before we load a new song — otherwise the secondary keeps ramping over the new song.
             if (_musicPlayer is NAudioMusicPlayer naudioForRestart)
             {
                 naudioForRestart.CancelCrossfade();
@@ -2188,10 +2153,10 @@ namespace UniPlaySong.Services
             return firstSong;
         }
 
-        // Marks song start time and starts preview timer if preview mode is enabled for game music
-        // Active Fullscreen view, or null in Desktop mode / when the API isn't reachable. Used by the
-        // "Play Only on Game Select" paths, which are Fullscreen-only concepts — a null result means
-        // the feature does not apply, which is why Desktop never yields or clears.
+        // Marks song start time and starts preview timer if preview mode is enabled for game music Active Fullscreen
+        // view, or null in Desktop mode / when the API isn't reachable. Used by the "Play Only on Game Select" paths,
+        // which are Fullscreen-only concepts — a null result means the feature does not apply, which is why Desktop
+        // never yields or clears.
         private FullscreenView? GetActiveFullscreenView()
         {
             try
@@ -2211,11 +2176,10 @@ namespace UniPlaySong.Services
             return null;
         }
 
-        // Warms the next song's decoder on a WORKER thread during the fade-out. Building the reader
-        // costs ~57ms of file I/O that Load() otherwise paid ON THE UI THREAD at the moment of the
-        // switch — the hitch felt while navigating a Fullscreen library. MusicFader fires this on its
-        // first fade tick (~50ms in), so with the default 0.3s fade-out the worker has ~250ms of
-        // runway before the deferred Load() wants the reader.
+        // Warms the next song's decoder on a WORKER thread during the fade-out. Building the reader costs ~57ms of file
+        // I/O that Load() otherwise paid ON THE UI THREAD at the moment of the switch — the hitch felt while
+        // navigating a Fullscreen library. MusicFader fires this on its first fade tick (~50ms in), so with the default
+        // 0.3s fade-out the worker has ~250ms of runway before the deferred Load() wants the reader.
         //
         // Purely an optimisation and never load-bearing: if the worker is slow, fails, or the user
         // navigates on to a different game, Load() just builds the reader itself exactly as before
@@ -2233,12 +2197,11 @@ namespace UniPlaySong.Services
             });
         }
 
-        // Starts a song that has NO outgoing track to fade out — first play after silence, and the
-        // radio's yield to a selected game in Fullscreen Details view. Because there is no fade-out,
-        // there is no window for SchedulePreload to warm the decoder in, so this path used to call
-        // Load() cold on the UI thread: 192ms of reader-build for a long mp3, measured in the field.
-        // That block is what tears the Spotify live-effects output (the capture and its replay both
-        // need the UI thread to stay responsive) and stalls Fullscreen navigation.
+        // Starts a song that has NO outgoing track to fade out — first play after silence, and the radio's yield to a
+        // selected game in Fullscreen Details view. Because there is no fade-out, there is no window for
+        // SchedulePreload to warm the decoder in, so this path used to call Load() cold on the UI thread: 192ms of
+        // reader-build for a long mp3, measured in the field. That block is what tears the Spotify live-effects output
+        // (the capture and its replay both need the UI thread to stay responsive) and stalls Fullscreen navigation.
         //
         // So build the reader on a worker first, then come back to the UI thread to do the mixer
         // wiring and start playback — Load() then finds the preloaded reader and costs ~0ms.
@@ -2313,10 +2276,9 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"Preview timer started: {Path.GetFileName(_currentSongPath)} ({_currentSettings.PreviewDuration}s)");
             }
 
-            // Dispatch between legacy sequential fade-out-before-end (existing behavior, used
-            // when EnableTrueCrossfade is off) and true crossfade (new feature). When the
-            // setting is off, the sequential path runs exactly as it did in v1.4.3 — the
-            // isolation contract.
+            // Dispatch between legacy sequential fade-out-before-end (existing behavior, used when EnableTrueCrossfade is
+            // off) and true crossfade (new feature). When the setting is off, the sequential path runs exactly as it did in
+            // v1.4.3 — the isolation contract.
             if (_currentSettings?.EnableTrueCrossfade == true && _musicPlayer is NAudioMusicPlayer)
             {
                 _crossfadeCoordinator?.ScheduleCrossfade(PickNextSongForCrossfade);
@@ -2394,10 +2356,9 @@ namespace UniPlaySong.Services
             return candidate;
         }
 
-        // Fires on the UI thread when a crossfade completes and the secondary song has
-        // taken over as primary. Unlike OnMediaEnded, we don't pick a NEXT song here —
-        // the promoted song IS the "new current." Just update state and schedule the
-        // crossfade for the song AFTER this one.
+        // Fires on the UI thread when a crossfade completes and the secondary song has taken over as primary. Unlike
+        // OnMediaEnded, we don't pick a NEXT song here — the promoted song IS the "new current." Just update state
+        // and schedule the crossfade for the song AFTER this one.
         private void OnCrossfadePromoted(object sender, EventArgs e)
         {
             try
@@ -2465,11 +2426,10 @@ namespace UniPlaySong.Services
                 _songEndFadeTimer = null;
                 if (_musicPlayer?.IsActive == true && !_isPaused)
                 {
-                    // Ramp duration = remaining time to EOF, so the fade finishes AT the
-                    // song's natural end, not several seconds before it. Without the override,
-                    // the fader uses the global FadeOutDuration (for game-switch fades) which
-                    // can be much shorter than FadeOutBeforeSongEndDuration, leaving a silent
-                    // tail — or longer, cutting the ramp off past EOF.
+                    // Ramp duration = remaining time to EOF, so the fade finishes AT the song's natural end, not several seconds
+                    // before it. Without the override, the fader uses the global FadeOutDuration (for game-switch fades) which can
+                    // be much shorter than FadeOutBeforeSongEndDuration, leaving a silent tail — or longer, cutting the ramp off
+                    // past EOF.
                     var posNow = _musicPlayer?.CurrentTime?.TotalSeconds ?? -1;
                     var totalNow = _musicPlayer?.TotalTime?.TotalSeconds ?? -1;
                     _fileLogger?.Debug($"[SongEndFade] Fading out {Path.GetFileName(_currentSongPath)} over {fadeDuration}s (ramp ends at song EOF) — timer fired at pos={posNow:F2}s / total={totalNow:F2}s");
@@ -2621,10 +2581,9 @@ namespace UniPlaySong.Services
             {
                 try
                 {
-                    // A song-switch is mid-flight — its deferred play will start the next song. This
-                    // EOF is the OLD song ending inside the switch's fade window; advancing here too
-                    // would double-load (one song starts, is immediately closed, another loads — the
-                    // "song starts then instantly ends" loop). The switch owns the transition.
+                    // A song-switch is mid-flight — its deferred play will start the next song. This EOF is the OLD song ending
+                    // inside the switch's fade window; advancing here too would double-load (one song starts, is immediately
+                    // closed, another loads — the "song starts then instantly ends" loop). The switch owns the transition.
                     if (_fader?.IsSwitchInFlight == true)
                     {
                         _fileLogger?.Debug("OnMediaEnded: Ignoring — song switch in flight (fader will start next song)");
@@ -2674,11 +2633,9 @@ namespace UniPlaySong.Services
                         return;
                     }
 
-                    // Auto-advance for pool-based default music (radio mode).
-                    // Gated on RandomizeDefaultMusicOnEnd — when false, the user wants
-                    // the initially-picked default track to persist (loop) instead of
-                    // hopping between games on every song end. Falls through to the
-                    // loop path below, which restarts the current track.
+                    // Auto-advance for pool-based default music (radio mode). Gated on RandomizeDefaultMusicOnEnd — when false,
+                    // the user wants the initially-picked default track to persist (loop) instead of hopping between games on every
+                    // song end. Falls through to the loop path below, which restarts the current track.
                     if (_isCurrentSongDefaultMusic && IsPlayingPoolBasedDefault && _defaultSongPoolProvider != null
                         && _currentSettings?.RandomizeDefaultMusicOnEnd == true)
                     {
@@ -2737,12 +2694,10 @@ namespace UniPlaySong.Services
                         }
                     }
 
-                    // Loop / preview-restart paths below:
-                    // If SongEndFade fired right before natural EOF, the fader is mid-fade-out
-                    // when we hit this branch. The fade-out ramp keeps running on the audio thread
-                    // and parks volume at 0. We must cancel the pending SongEndFade timer AND tell
-                    // the fader to transition back to fade-in, otherwise the restarted song plays
-                    // against a volume provider stuck at 0 (inaudible until Pause→Play recovers).
+                    // Loop / preview-restart paths below: If SongEndFade fired right before natural EOF, the fader is mid-fade-out
+                    // when we hit this branch. The fade-out ramp keeps running on the audio thread and parks volume at 0. We must
+                    // cancel the pending SongEndFade timer AND tell the fader to transition back to fade-in, otherwise the
+                    // restarted song plays against a volume provider stuck at 0 (inaudible until Pause→Play recovers).
                     CancelSongEndFade();
 
                     if (ShouldRestartForPreview())

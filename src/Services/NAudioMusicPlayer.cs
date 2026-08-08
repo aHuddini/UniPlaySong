@@ -12,10 +12,10 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    // NAudio-based music player with persistent mixer architecture.
-    // A single WaveOutEvent + MixingSampleProvider lives for the lifetime of the player.
-    // Songs are swapped via AddMixerInput/RemoveMixerInput — no device create/destroy per song.
-    // This eliminates the ~70ms UI-thread freeze from WaveOutEvent lifecycle on every game switch.
+    // NAudio-based music player with persistent mixer architecture. A single WaveOutEvent + MixingSampleProvider
+    // lives for the lifetime of the player. Songs are swapped via AddMixerInput/RemoveMixerInput — no device
+    // create/destroy per song. This eliminates the ~70ms UI-thread freeze from WaveOutEvent lifecycle on every game
+    // switch.
     public class NAudioMusicPlayer : IMusicPlayer, IDisposable
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -65,11 +65,10 @@ namespace UniPlaySong.Services
         private string _secondarySource;
         public bool IsCrossfading => _secondaryInputVolume != null;
 
-        // External live-source chain (e.g. Spotify capture). Runs the SAME EffectsChain/viz as a
-        // file and goes through the SAME persistent mixer, but with its own per-input
-        // SmoothVolumeSampleProvider so it's audible regardless of the master fader, and never
-        // EOFs (the gate wrapper zero-fills) so there's no SongEndDetector. Held in fields so the
-        // chain (and VisualizationDataProvider.Current) isn't GC'd while playing.
+        // External live-source chain (e.g. Spotify capture). Runs the SAME EffectsChain/viz as a file and goes through
+        // the SAME persistent mixer, but with its own per-input SmoothVolumeSampleProvider so it's audible regardless
+        // of the master fader, and never EOFs (the gate wrapper zero-fills) so there's no SongEndDetector. Held in
+        // fields so the chain (and VisualizationDataProvider.Current) isn't GC'd while playing.
         private ISampleProvider _externalInput;
         private EffectsChain _externalEffects;
         private VisualizationDataProvider _externalViz;
@@ -78,10 +77,10 @@ namespace UniPlaySong.Services
 
         private bool _isInMixer;
 
-        // Preloaded file reader — built during fade-out so Load() doesn't pay for it.
-        // Guarded because PreLoad now runs on a worker thread (building the reader is ~57ms of
-        // file I/O that used to block the UI thread mid-navigation) while Load() consumes it on
-        // the UI thread. The lock only ever covers the field swap, never the expensive build.
+        // Preloaded file reader — built during fade-out so Load() doesn't pay for it. Guarded because PreLoad now
+        // runs on a worker thread (building the reader is ~57ms of file I/O that used to block the UI thread
+        // mid-navigation) while Load() consumes it on the UI thread. The lock only ever covers the field swap, never
+        // the expensive build.
         private readonly object _preloadLock = new object();
         private WaveStream _preloadedAudioFile;
         private string _preloadedPath;
@@ -157,10 +156,10 @@ namespace UniPlaySong.Services
                 getFadeInCurve: () => _settingsService.Current?.NaudioFadeInCurve ?? FadeCurveType.Quadratic,
                 getFadeOutCurve: () => _settingsService.Current?.NaudioFadeOutCurve ?? FadeCurveType.Cubic);
 
-            // Output mixer combines the master-faded game-music chain with any external live
-            // source. The external source is added here — POST master fader — so game-music pause
-            // sources (which ride _volumeProvider to 0, e.g. a fullscreen theme overlay) never
-            // silence it. It carries its own per-input volume + overlay gate for its own fades.
+            // Output mixer combines the master-faded game-music chain with any external live source. The external source is
+            // added here — POST master fader — so game-music pause sources (which ride _volumeProvider to 0, e.g. a
+            // fullscreen theme overlay) never silence it. It carries its own per-input volume + overlay gate for its own
+            // fades.
             _outputMixer = new MixingSampleProvider(MixerFormat) { ReadFully = true };
             _outputMixer.AddMixerInput(_volumeProvider);
 
@@ -319,18 +318,15 @@ namespace UniPlaySong.Services
                     normalized = new WdlResamplingSampleProvider(normalized, MixerFormat.SampleRate);
                 }
 
-                // When crossfade is enabled, wrap the normalized chain in a per-input volume
-                // provider so this song can be ramped independently of any other mixer input.
-                // When crossfade is OFF this wrap is SKIPPED entirely — pipeline shape matches
-                // v1.4.3 exactly. This is the isolation contract.
+                // When crossfade is enabled, wrap the normalized chain in a per-input volume provider so this song can be
+                // ramped independently of any other mixer input. When crossfade is OFF this wrap is SKIPPED entirely —
+                // pipeline shape matches v1.4.3 exactly. This is the isolation contract.
                 if (_settingsService.Current?.EnableTrueCrossfade == true)
                 {
-                    // Crossfade uses Linear ramps, NOT the user's fade-in/out curves.
-                    // The user's curves are tuned for song start/end transitions where
-                    // you want a gentle ease. DJ-style crossfade needs equal-volume
-                    // overlap throughout the window, which Linear delivers. Cubic/Quadratic
-                    // would keep primary near-full for most of the ramp and make the
-                    // overlap inaudible until the last couple of seconds.
+                    // Crossfade uses Linear ramps, NOT the user's fade-in/out curves. The user's curves are tuned for song
+                    // start/end transitions where you want a gentle ease. DJ-style crossfade needs equal-volume overlap throughout
+                    // the window, which Linear delivers. Cubic/Quadratic would keep primary near-full for most of the ramp and make
+                    // the overlap inaudible until the last couple of seconds.
                     _primaryInputVolume = new SmoothVolumeSampleProvider(
                         normalized,
                         getFadeInCurve: () => FadeCurveType.Linear,
@@ -410,9 +406,8 @@ namespace UniPlaySong.Services
         // Position is saved so resume can seek back (song advances at vol=0 otherwise).
         public void Pause()
         {
-            // If a GME background seek is running, reading _audioFile.CurrentTime would
-            // block the UI thread on GmeReader's internal lock until the seek finishes
-            // (hundreds of ms to seconds). Use the known seek target as the paused
+            // If a GME background seek is running, reading _audioFile.CurrentTime would block the UI thread on GmeReader's
+            // internal lock until the seek finishes (hundreds of ms to seconds). Use the known seek target as the paused
             // position instead — when the seek completes the emu will be there anyway.
             TimeSpan? inFlightTarget;
             lock (_seekStateLock)
@@ -434,21 +429,19 @@ namespace UniPlaySong.Services
                 _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={_isInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
             }
 
-            // For GME: detach the mixer input so the audio thread stops calling gme_play().
-            // Without this, the emulator keeps advancing at real-time speed during the
-            // pause, and Resume's gme_seek back to _pausedPosition becomes an expensive
-            // backward-seek (rewind to track start + fast-forward — 6+ seconds on long
-            // tracks). Detaching freezes the emu at _pausedPosition so Resume can re-add
-            // the input with no seek required (or a trivial no-op seek).
+            // For GME: detach the mixer input so the audio thread stops calling gme_play(). Without this, the emulator
+            // keeps advancing at real-time speed during the pause, and Resume's gme_seek back to _pausedPosition becomes an
+            // expensive backward-seek (rewind to track start + fast-forward — 6+ seconds on long tracks). Detaching
+            // freezes the emu at _pausedPosition so Resume can re-add the input with no seek required (or a trivial no-op
+            // seek).
             if (_audioFile is GmeReader)
             {
                 RemoveSongFromMixer();
             }
 
-            // If crossfading and secondary is also a GME reader, detach it too so its
-            // emulator freezes at the current position rather than advancing during pause.
-            // Non-GME secondaries don't need this — NAudio's mixer just stops reading them
-            // when logically paused (they'll resume naturally on Resume).
+            // If crossfading and secondary is also a GME reader, detach it too so its emulator freezes at the current
+            // position rather than advancing during pause. Non-GME secondaries don't need this — NAudio's mixer just
+            // stops reading them when logically paused (they'll resume naturally on Resume).
             if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
             {
                 try { _mixer.RemoveMixerInput(_secondaryMixerInput); }
@@ -465,17 +458,16 @@ namespace UniPlaySong.Services
         // Logical resume — seeks back to saved position, then the fader ramps volume up.
         // If the song ended while paused (short track EOF), re-adds to mixer from saved position.
         //
-        // For GmeReader the seek is offloaded to a background thread: gme_seek() replays
-        // emulation from track start to the target position and can block the caller for
-        // many seconds on a long track — doing that on the UI thread freezes Playnite.
-        // In that case this method returns immediately; onReady fires on the UI thread
-        // when the seek completes and the mixer input is back in place.
+        // For GmeReader the seek is offloaded to a background thread: gme_seek() replays emulation from track start to
+        // the target position and can block the caller for many seconds on a long track — doing that on the UI thread
+        // freezes Playnite. In that case this method returns immediately; onReady fires on the UI thread when the seek
+        // completes and the mixer input is back in place.
         public void Resume(Action onReady = null)
         {
-            // issue #81: if the persistent audio device was released (idle/lock/suspend), the mixer +
-            // output were disposed while the song reader (_audioFile) + its mixer input survived. Rebuild
-            // the device and re-add the input BEFORE seeking/fading, otherwise the fade-in ramp runs
-            // against a null volume provider and stays stuck at 0 (silent resume). Resumes at position.
+            // issue #81: if the persistent audio device was released (idle/lock/suspend), the mixer + output were disposed
+            // while the song reader (_audioFile) + its mixer input survived. Rebuild the device and re-add the input BEFORE
+            // seeking/fading, otherwise the fade-in ramp runs against a null volume provider and stays stuck at 0 (silent
+            // resume). Resumes at position.
             if (!_persistentLayerInitialized && _audioFile != null)
             {
                 _isInMixer = false; // the old mixer is gone; the input is not in the new one yet
@@ -537,9 +529,8 @@ namespace UniPlaySong.Services
             var targetPosition = _pausedPosition;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
 
-            // Coalesce check first: if a seek to the same target is already in flight
-            // (rapid pause-resume-pause-resume while GME is mid-seek), don't kick a
-            // second Task or try the fast-path (reading CurrentTime would block on the
+            // Coalesce check first: if a seek to the same target is already in flight (rapid pause-resume-pause-resume
+            // while GME is mid-seek), don't kick a second Task or try the fast-path (reading CurrentTime would block on the
             // GME lock anyway). Append onReady to the existing callback list.
             lock (_seekStateLock)
             {
@@ -558,12 +549,10 @@ namespace UniPlaySong.Services
                 }
             }
 
-            // Fast path: the emu is already at (or within 100ms of) the target. This is
-            // the common case now that Pause() detaches the mixer input — the emu was
-            // frozen at _pausedPosition, so no seek is needed. Just re-add to the mixer
-            // and invoke onReady synchronously. No Task.Run, no UI stutter, no fade-in
-            // delay. Non-trivial seeks (user scrub, future seek-to-position APIs) still
-            // fall through to the background path.
+            // Fast path: the emu is already at (or within 100ms of) the target. This is the common case now that Pause()
+            // detaches the mixer input — the emu was frozen at _pausedPosition, so no seek is needed. Just re-add to the
+            // mixer and invoke onReady synchronously. No Task.Run, no UI stutter, no fade-in delay. Non-trivial seeks (user
+            // scrub, future seek-to-position APIs) still fall through to the background path.
             var currentEmuPosition = gmeReader.CurrentTime;
             var drift = Math.Abs((currentEmuPosition - targetPosition).TotalMilliseconds);
             if (drift < 100)
@@ -637,14 +626,11 @@ namespace UniPlaySong.Services
                         _seekCallbacks = null;
                     }
 
-                    // If a Pause arrived during the seek, the queued onReady callbacks
-                    // are stale — they belong to a Resume intent that has been superseded.
-                    // Firing them would call the fader's FadeIn against a detached mixer
-                    // input (no audio) and, worse, poison the fader's _isPaused state so
-                    // the NEXT Resume takes the "reversing incomplete fade-out" branch and
-                    // never actually re-adds the mixer input. Discard the callbacks and
-                    // leave the player in the paused state — the next Resume will kick a
-                    // fresh seek and its onReady will fire normally.
+                    // If a Pause arrived during the seek, the queued onReady callbacks are stale — they belong to a Resume intent
+                    // that has been superseded. Firing them would call the fader's FadeIn against a detached mixer input (no audio)
+                    // and, worse, poison the fader's _isPaused state so the NEXT Resume takes the "reversing incomplete fade-out"
+                    // branch and never actually re-adds the mixer input. Discard the callbacks and leave the player in the paused
+                    // state — the next Resume will kick a fresh seek and its onReady will fire normally.
                     if (_logicallyPaused)
                     {
                         _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms but Pause arrived mid-seek; discarding {callbacks?.Count ?? 0} stale onReady callback(s), waiting for next Resume");
@@ -874,10 +860,10 @@ namespace UniPlaySong.Services
         // Does NOT touch the persistent layer (device/mixer/volume provider).
         private void RemoveCurrentSongChain()
         {
-            // If a crossfade is in progress, tear down the secondary input first so it doesn't
-            // stay orphaned in the mixer after primary is removed. This protects Close(), game-
-            // switch paths (fader.Switch -> stopAction -> Close), and Load-replace paths that all
-            // funnel through here. Skip/Restart paths already call CancelCrossfade explicitly.
+            // If a crossfade is in progress, tear down the secondary input first so it doesn't stay orphaned in the mixer
+            // after primary is removed. This protects Close(), game- switch paths (fader.Switch -> stopAction -> Close),
+            // and Load-replace paths that all funnel through here. Skip/Restart paths already call CancelCrossfade
+            // explicitly.
             if (IsCrossfading)
             {
                 CancelCrossfade();
@@ -1025,11 +1011,10 @@ namespace UniPlaySong.Services
 
             public int Read(float[] buffer, int offset, int count)
             {
-                // Track the desired target every buffer. Start a new ramp toward it once the
-                // previous ramp settles (starting one mid-ramp would restart from the current
-                // partial volume — this instead lets an overlay/volume change that arrived mid-fade
-                // apply cleanly the instant the fade finishes). Uses the user's fade-out duration
-                // for gate silences (overlay/video) and a short glide for volume-slider edits.
+                // Track the desired target every buffer. Start a new ramp toward it once the previous ramp settles (starting
+                // one mid-ramp would restart from the current partial volume — this instead lets an overlay/volume change
+                // that arrived mid-fade apply cleanly the instant the fade finishes). Uses the user's fade-out duration for
+                // gate silences (overlay/video) and a short glide for volume-slider edits.
                 float target = _owner.TargetExternalVolume();
                 if (!_volume.IsRamping && target != _rampedTarget)
                 {
@@ -1063,16 +1048,14 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Called on the audio thread when song reaches EOF.
-        // MixingSampleProvider auto-removes the input on partial read (read < count),
-        // so _isInMixer must be set false here. MediaEnded is marshaled to the UI thread.
-        // Also clears _logicallyPaused so IsActive returns false — this lets the fader's
-        // stall detection kick in if the song ended during a fade-out pause.
+        // Called on the audio thread when song reaches EOF. MixingSampleProvider auto-removes the input on partial read
+        // (read < count), so _isInMixer must be set false here. MediaEnded is marshaled to the UI thread. Also clears
+        // _logicallyPaused so IsActive returns false — this lets the fader's stall detection kick in if the song
+        // ended during a fade-out pause.
         //
-        // When a crossfade is in progress (secondary is playing concurrently), this is the
-        // PRIMARY song's EOF. Instead of raising MediaEnded (which would trigger auto-advance
-        // and pick ANOTHER next song), we promote the secondary to primary via Dispatcher
-        // and emit CrossfadePromoted for MusicPlaybackService to refresh its state.
+        // When a crossfade is in progress (secondary is playing concurrently), this is the PRIMARY song's EOF. Instead
+        // of raising MediaEnded (which would trigger auto-advance and pick ANOTHER next song), we promote the secondary
+        // to primary via Dispatcher and emit CrossfadePromoted for MusicPlaybackService to refresh its state.
         private void OnSongEnded()
         {
             _isInMixer = false;
@@ -1105,10 +1088,9 @@ namespace UniPlaySong.Services
             }
         }
 
-        // UI-thread promotion: secondary becomes the new primary. Called after primary's
-        // SongEndDetector fires (MixingSampleProvider has already auto-removed primary).
-        // Field swaps secondary → primary, re-wires SongEndDetector subscription,
-        // takes over the visualizer slot, and emits CrossfadePromoted for
+        // UI-thread promotion: secondary becomes the new primary. Called after primary's SongEndDetector fires
+        // (MixingSampleProvider has already auto-removed primary). Field swaps secondary → primary, re-wires
+        // SongEndDetector subscription, takes over the visualizer slot, and emits CrossfadePromoted for
         // MusicPlaybackService to refresh its state.
         private void PromoteSecondaryToPrimary()
         {
@@ -1183,10 +1165,10 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Raised on the UI thread after a crossfade completes and the secondary song has been promoted to
-        // primary. MusicPlaybackService subscribes to update its current-song state and schedule the NEXT
-        // crossfade. Different from MediaEnded: MediaEnded means "pick next song"; CrossfadePromoted means
-        // "the already-picked next song has taken over."
+        // Raised on the UI thread after a crossfade completes and the secondary song has been promoted to primary.
+        // MusicPlaybackService subscribes to update its current-song state and schedule the NEXT crossfade. Different
+        // from MediaEnded: MediaEnded means "pick next song"; CrossfadePromoted means "the already-picked next song has
+        // taken over."
         public event EventHandler CrossfadePromoted;
 
         // Device-level error (hardware disconnect, driver crash, etc.)

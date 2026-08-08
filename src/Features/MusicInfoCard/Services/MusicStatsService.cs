@@ -13,10 +13,9 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Features.MusicInfoCard.Services
 {
-    // Default IMusicStatsProvider implementation. Reads file metadata via
-    // TagLib for standard audio formats and via GmeReader / HesM3uParser
-    // for chiptune formats. Aggregates everything into a MusicStats DTO
-    // on a background thread.
+    // Default IMusicStatsProvider implementation. Reads file metadata via TagLib for standard audio formats and via
+    // GmeReader / HesM3uParser for chiptune formats. Aggregates everything into a MusicStats DTO on a background
+    // thread.
     //
     // Module-local. No outside-of-feature consumers of this class — the
     // handler depends on the IMusicStatsProvider interface.
@@ -24,11 +23,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
-        // Extensions that the GME backend handles. These have to be probed
-        // via GmeReader (not TagLib) for duration. Matches the chiptune
-        // entries in Constants.SupportedAudioExtensionsLowercase but is
-        // duplicated here so the module stays self-contained — changing
-        // the global list won't silently break stats.
+        // Extensions that the GME backend handles. These have to be probed via GmeReader (not TagLib) for duration.
+        // Matches the chiptune entries in Constants.SupportedAudioExtensionsLowercase but is duplicated here so the
+        // module stays self-contained — changing the global list won't silently break stats.
         private static readonly HashSet<string> ChiptuneExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             ".vgm", ".vgz", ".spc", ".nsf", ".nsfe", ".gbs", ".gym", ".hes", ".kss", ".sap", ".ay"
@@ -77,10 +74,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                     else
                         stats.FormatBreakdown[ext] = 1;
 
-                    // Branch by format. The three branches below each set
-                    // their contribution to TotalDuration and to the
-                    // longest/shortest comparison. None modifies anything
-                    // outside this scope so failures don't pollute totals.
+                    // Branch by format. The three branches below each set their contribution to TotalDuration and to the
+                    // longest/shortest comparison. None modifies anything outside this scope so failures don't pollute totals.
                     if (ChiptuneExtensions.Contains(ext))
                     {
                         ProcessChiptuneFile(filePath, ext, stats, ref longest, ref shortest);
@@ -179,20 +174,16 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                 var tracks = HesM3uParser.LoadFor(filePath);
                 if (tracks != null && tracks.Count > 0)
                 {
-                    // Playlist-aware: each M3U track counts separately for
-                    // playlist counts, duration aggregation, and longest/
-                    // shortest. The HES file itself still counts as one
-                    // FileCount entry (already incremented in caller).
+                    // Playlist-aware: each M3U track counts separately for playlist counts, duration aggregation, and longest/
+                    // shortest. The HES file itself still counts as one FileCount entry (already incremented in caller).
                     stats.PlaylistFileCount++;
                     stats.PlaylistTrackCount += tracks.Count;
 
                     var baseName = Path.GetFileNameWithoutExtension(filePath);
                     foreach (var track in tracks)
                     {
-                        // M3U DurationMs is nullable — missing mm:ss field.
-                        // We sum a default of 0 for missing durations so
-                        // they don't poison the longest/shortest comparison
-                        // (CompareTrack skips zero durations for shortest).
+                        // M3U DurationMs is nullable — missing mm:ss field. We sum a default of 0 for missing durations so they don't
+                        // poison the longest/shortest comparison (CompareTrack skips zero durations for shortest).
                         var durMs = track.DurationMs ?? 0;
                         var duration = TimeSpan.FromMilliseconds(durMs);
                         stats.TotalDuration += duration;

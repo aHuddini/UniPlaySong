@@ -25,9 +25,9 @@ namespace UniPlaySong.Services
         private bool _isLoaded = false;
         // v1.6.8: logical-pause parity with NAudio's _logicallyPaused. Pause() used to just drop
         // _isActive, making a paused song indistinguishable from a loaded-but-never-started one —
-        // MusicPlaybackService's resume branches (gated on IsActive) then RESTARTED game music from
-        // 0:00 on every focus-loss round-trip instead of resuming. Paused-mid-playback now counts
-        // as active, same as NAudio, so resume routes through the fader's real Resume().
+        // MusicPlaybackService's resume branches (gated on IsActive) then RESTARTED game music from 0:00 on every
+        // focus-loss round-trip instead of resuming. Paused-mid-playback now counts as active, same as NAudio, so
+        // resume routes through the fader's real Resume().
         private bool _isPausedMidPlayback = false;
         private double _volume = 1.0;
         // issue #81: set when the device is released (idle/lock/suspend) while a song was loaded.
@@ -211,11 +211,10 @@ namespace UniPlaySong.Services
 
         public string Source => _source;
 
-        // Called on a WORKER thread so the decode doesn't block the UI during navigation. Deliberately
-        // does NOT call InitializeSDL(): opening the device (Mix_OpenAudio) off-thread while the UI
-        // thread is playing is the kind of SDL2 threading hazard this file already documents. If the
-        // device is closed (idle teardown), skip — Load() reopens it on the UI thread as before.
-        // Preload is only an optimisation, so bailing out is always safe.
+        // Called on a WORKER thread so the decode doesn't block the UI during navigation. Deliberately does NOT call
+        // InitializeSDL(): opening the device (Mix_OpenAudio) off-thread while the UI thread is playing is the kind of
+        // SDL2 threading hazard this file already documents. If the device is closed (idle teardown), skip — Load()
+        // reopens it on the UI thread as before. Preload is only an optimisation, so bailing out is always safe.
         public void PreLoad(string filePath)
         {
             if (_isDisposed || !_isSDLAudioInitialized || string.IsNullOrEmpty(filePath)) return;
@@ -421,11 +420,10 @@ namespace UniPlaySong.Services
 
             if (_rampTimer == null)
             {
-                // Render priority (7), not Normal (9): at ~60 ticks/sec for the length of every
-                // fade, a Normal-priority timer preempts the render pass and input handling —
-                // felt as stutter while navigating a Fullscreen library. OnRampTick derives
-                // progress from wall-clock elapsed time, not from a tick count, so a delayed tick
-                // produces a coarser volume step but the same completion time and final volume.
+                // Render priority (7), not Normal (9): at ~60 ticks/sec for the length of every fade, a Normal-priority timer
+                // preempts the render pass and input handling — felt as stutter while navigating a Fullscreen library.
+                // OnRampTick derives progress from wall-clock elapsed time, not from a tick count, so a delayed tick produces a
+                // coarser volume step but the same completion time and final volume.
                 _rampTimer = new DispatcherTimer(DispatcherPriority.Render)
                 {
                     Interval = TimeSpan.FromMilliseconds(RampIntervalMs)

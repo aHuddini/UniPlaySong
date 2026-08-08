@@ -36,14 +36,13 @@ namespace UniPlaySong.Services
             LoadSettings();
         }
 
-        // True only when settings were genuinely read from disk (or no config exists — a real
-        // first run). False when a config file EXISTS but failed to load: the in-memory defaults
-        // are then a stand-in and must NEVER be auto-saved over the user's file. Automatic saves
-        // (OnLibraryUpdated timestamps, startup migrations) check this; user-initiated saves
-        // (settings dialog, imports) do not — an explicit save is user intent.
-        // Root cause this guards against: a transient load failure on a .pext update-restart put
-        // defaults in memory, and the OnLibraryUpdated timestamp save persisted them ~6s later —
-        // silently wiping the user's settings (seen as "radio mode resets after updating").
+        // True only when settings were genuinely read from disk (or no config exists — a real first run). False when
+        // a config file EXISTS but failed to load: the in-memory defaults are then a stand-in and must NEVER be
+        // auto-saved over the user's file. Automatic saves (OnLibraryUpdated timestamps, startup migrations) check
+        // this; user-initiated saves (settings dialog, imports) do not — an explicit save is user intent. Root cause
+        // this guards against: a transient load failure on a .pext update-restart put defaults in memory, and the
+        // OnLibraryUpdated timestamp save persisted them ~6s later — silently wiping the user's settings (seen as
+        // "radio mode resets after updating").
         public bool SettingsLoadedFromDisk { get; private set; }
 
         public void LoadSettings()
@@ -107,13 +106,12 @@ namespace UniPlaySong.Services
             // Store old settings for comparison
             var oldSettings = _currentSettings;
 
-            // Carry forward runtime-only ([JsonIgnore]) state BEFORE the swap. A settings SAVE builds
-            // a fresh object and these fields aren't serialized, so without this every save reset them:
-            // it blanked the now-playing display AND reset the overlay/video gate flags
-            // (ThemeOverlayActive / VideoIsPlaying) that the Spotify effected-output gate reads live in
-            // TargetExternalVolume(). An overlay-heavy theme would then re-strand one of them true on the
-            // new object and mute the effected Spotify output until a Playnite restart. Copied while
-            // newSettings has no PropertyChanged subscribers yet, so it fires no spurious notifications.
+            // Carry forward runtime-only ([JsonIgnore]) state BEFORE the swap. A settings SAVE builds a fresh object and
+            // these fields aren't serialized, so without this every save reset them: it blanked the now-playing display AND
+            // reset the overlay/video gate flags (ThemeOverlayActive / VideoIsPlaying) that the Spotify effected-output
+            // gate reads live in TargetExternalVolume(). An overlay-heavy theme would then re-strand one of them true on
+            // the new object and mute the effected Spotify output until a Playnite restart. Copied while newSettings has no
+            // PropertyChanged subscribers yet, so it fires no spurious notifications.
             if (oldSettings != null)
             {
                 foreach (var prop in typeof(UniPlaySongSettings).GetProperties())
@@ -248,12 +246,11 @@ namespace UniPlaySong.Services
             }
 
             // v1.5.10: achievement sounds moved to the pack model. The master default sound keeps
-            // its BundledJingle picker; older configs may point it at a celebration-pack file
-            // ("Streets of Rage ...") that isn't in the achievement pack, leaving the ComboBox blank.
-            // Reset a master SelectedAchievementJingle that isn't a valid achievement-pack file to
-            // the bundled default. The per-rarity Selected*Jingle fields are gone (replaced by
-            // AchievementSoundPack, which defaults to PAStarterPack via its backing field, so old
-            // configs missing the key adopt it automatically). Idempotent.
+            // its BundledJingle picker; older configs may point it at a celebration-pack file ("Streets of Rage ...") that
+            // isn't in the achievement pack, leaving the ComboBox blank. Reset a master SelectedAchievementJingle that
+            // isn't a valid achievement-pack file to the bundled default. The per-rarity Selected*Jingle fields are gone
+            // (replaced by AchievementSoundPack, which defaults to PAStarterPack via its backing field, so old configs
+            // missing the key adopt it automatically). Idempotent.
             var achievementFiles = new HashSet<string>(
                 BundledJingleService.GetAchievementJingles().Select(j => j.File),
                 StringComparer.OrdinalIgnoreCase);

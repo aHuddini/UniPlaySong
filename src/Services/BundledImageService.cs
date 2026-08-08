@@ -2,10 +2,10 @@ using System.IO;
 
 namespace UniPlaySong.Services
 {
-    // Resolves bundled UI art (currently the achievement rarity badges) shipped in the extension's
-    // Images/ folder. Initialized once at startup with the extension install path, same pattern as
-    // BundledJingleService. The badge PNGs are derived from the Playnite Achievements plugin's badge
-    // SVGs (MIT, (c) Justin Delano) — see NOTICES.txt.
+    // Resolves bundled UI art (currently the achievement rarity badges) shipped in the extension's Images/ folder.
+    // Initialized once at startup with the extension install path, same pattern as BundledJingleService. The badge
+    // PNGs are derived from the Playnite Achievements plugin's badge SVGs (MIT, (c) Justin Delano) — see
+    // NOTICES.txt.
     public static class BundledImageService
     {
         private static string _imagesDirectory;

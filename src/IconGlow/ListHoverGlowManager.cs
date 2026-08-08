@@ -118,10 +118,9 @@ namespace UniPlaySong.IconGlow
             // Fade out old glow, then unwrap after fade completes (avoids flicker on previous icon)
             FadeOutAndClearSelectedGlow();
 
-            // Delay lets Playnite finish updating the visual tree for the newly
-            // selected game (icon load, template application, layout) before we
-            // try to find and wrap the icon.  Without this, the icon element may
-            // not be ready or the layout pass exposes a bare icon frame.
+            // Delay lets Playnite finish updating the visual tree for the newly selected game (icon load, template
+            // application, layout) before we try to find and wrap the icon.  Without this, the icon element may not be
+            // ready or the layout pass exposes a bare icon frame.
             _glowTimer?.Stop();
             _glowTimer = new System.Windows.Threading.DispatcherTimer
             {

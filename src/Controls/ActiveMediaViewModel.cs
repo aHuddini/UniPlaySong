@@ -10,15 +10,15 @@ using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Controls
 {
-    // Thin shared ViewModel over IActiveMediaService. Proxies now-playing metadata
-    // from settings (like NowPlayingMiniPlayerModel), adds transport commands + timeline
-    // state, and mirrors the snapshot back into the settings ActiveMedia* props for
-    // decoupled {PluginSettings} binding. One instance shared by all UPS media elements.
+    // Thin shared ViewModel over IActiveMediaService. Proxies now-playing metadata from settings (like
+    // NowPlayingMiniPlayerModel), adds transport commands + timeline state, and mirrors the snapshot back into the
+    // settings ActiveMedia* props for decoupled {PluginSettings} binding. One instance shared by all UPS media
+    // elements.
     //
-    // Settings are read through SettingsService.Current (never a captured object): a settings
-    // SAVE replaces the whole settings object, so a captured reference goes stale and the
-    // element freezes until restart. We track SettingsChanged and move our metadata
-    // PropertyChanged handler onto the new object (same pattern as SidebarGlowManager).
+    // Settings are read through SettingsService.Current (never a captured object): a settings SAVE replaces the
+    // whole settings object, so a captured reference goes stale and the element freezes until restart. We track
+    // SettingsChanged and move our metadata PropertyChanged handler onto the new object (same pattern as
+    // SidebarGlowManager).
     public class ActiveMediaViewModel : INotifyPropertyChanged
     {
         private readonly ISettingsProvider _svc;
@@ -109,9 +109,8 @@ namespace UniPlaySong.Controls
 
         private void OnServiceChanged()
         {
-            // GetSnapshot() is a cheap, fail-safe read — fine on the calling thread
-            // (may be a non-UI SMTC/WinRT callback thread). Everything that follows
-            // touches settings/PropertyChanged and must run on the UI thread, so it's
+            // GetSnapshot() is a cheap, fail-safe read — fine on the calling thread (may be a non-UI SMTC/WinRT callback
+            // thread). Everything that follows touches settings/PropertyChanged and must run on the UI thread, so it's
             // marshalled via OnUi (never a synchronous Dispatcher.Invoke).
             _snap = _service?.GetSnapshot() ?? ActiveMediaSnapshot.Empty;
             OnUi(() =>

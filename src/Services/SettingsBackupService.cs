@@ -21,10 +21,9 @@ namespace UniPlaySong.Services
     // (JsonConvert.SerializeObject + PopulateObject round-trip).
     public static class SettingsBackupService
     {
-        // Settings excluded from JSON export entirely — these are machine-specific
-        // (tool paths, library-specific GUIDs, OAuth state) and shouldn't travel
-        // between machines. On import, the importer's existing values for these
-        // fields are preserved (the import is a "merge in non-machine-specific values").
+        // Settings excluded from JSON export entirely — these are machine-specific (tool paths, library-specific
+        // GUIDs, OAuth state) and shouldn't travel between machines. On import, the importer's existing values for
+        // these fields are preserved (the import is a "merge in non-machine-specific values").
         private static readonly string[] MachineSpecificFields = new[]
         {
             "YtDlpPath",
@@ -36,9 +35,8 @@ namespace UniPlaySong.Services
             // Future: add LastfmSessionKey here when Feature 6 (Last.fm Scrobbling) lands
         };
 
-        // Settings whose value should be redacted in Markdown snapshots (shown as
-        // "*****"). The field name itself is still listed so support requests are
-        // informative ("yes, Last.fm is configured") without leaking secrets.
+        // Settings whose value should be redacted in Markdown snapshots (shown as "*****"). The field name itself is
+        // still listed so support requests are informative ("yes, Last.fm is configured") without leaking secrets.
         // Initially empty; Feature 6 (Last.fm Scrobbling) will add LastfmSessionKey.
         private static readonly string[] SensitiveFields = new string[0];
 
@@ -76,10 +74,9 @@ namespace UniPlaySong.Services
         }
 
         // === JSON Import ===
-        // Reads a .json file, deserializes into a fresh settings instance, then
-        // preserves the current settings' machine-specific paths. Returns the merged
-        // settings object ready to push through SettingsService.UpdateSettings().
-        // Throws on missing file, malformed JSON, or schema-incompatible content.
+        // Reads a .json file, deserializes into a fresh settings instance, then preserves the current settings'
+        // machine-specific paths. Returns the merged settings object ready to push through
+        // SettingsService.UpdateSettings(). Throws on missing file, malformed JSON, or schema-incompatible content.
         public static UniPlaySongSettings ImportFromJson(string filePath, UniPlaySongSettings currentSettings)
         {
             if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("File path required", nameof(filePath));
@@ -140,10 +137,9 @@ namespace UniPlaySong.Services
         }
 
         // === Markdown Snapshot Export ===
-        // Writes a human-readable .md file describing the user's UPS configuration.
-        // Intended for support requests, personal notes, or "audit my UPS setup" use cases.
-        // Includes derived state (game counts, music storage) that JSON intentionally excludes.
-        // Sensitive values redacted as "*****".
+        // Writes a human-readable .md file describing the user's UPS configuration. Intended for support requests,
+        // personal notes, or "audit my UPS setup" use cases. Includes derived state (game counts, music storage) that
+        // JSON intentionally excludes. Sensitive values redacted as "*****".
         public static string ExportToMarkdown(
             UniPlaySongSettings settings,
             string filePath,
@@ -315,11 +311,10 @@ namespace UniPlaySong.Services
             return File.Exists(path) ? "✓ Found" : "✗ Not Found";
         }
 
-        // Sanitize a path for human-readable Markdown export: replace user-specific
-        // prefixes with environment variable placeholders so users can safely share
-        // the snapshot without leaking their Windows username or custom install
-        // location. The placeholders are conventional (%AppData%, %UserProfile%) and
-        // recognizable to anyone reading a support request.
+        // Sanitize a path for human-readable Markdown export: replace user-specific prefixes with environment variable
+        // placeholders so users can safely share the snapshot without leaking their Windows username or custom install
+        // location. The placeholders are conventional (%AppData%, %UserProfile%) and recognizable to anyone reading a
+        // support request.
         //
         // Replacement order matters — longest prefix first so we match the most
         // specific known path before falling back to a shorter prefix.

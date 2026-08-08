@@ -7,13 +7,11 @@ using WindowsMediaController;
 
 namespace UniPlaySong.Services.Spotify
 {
-    // SMTC implementation of ISpotifyClient. Finds the Spotify media session by
-    // case-insensitive substring on its id (works for both the Win32 "Spotify.exe"
-    // and Store "SpotifyAB.SpotifyMusic_...!Spotify" builds), and pauses/resumes it
-    // via the OS. All Spotify interaction is funneled here and individually wrapped,
-    // so any failure surfaces as "unavailable" rather than throwing.
-    // All blocking SMTC calls (.GetAwaiter().GetResult()) run on the worker thread,
-    // never on the caller/UI thread.
+    // SMTC implementation of ISpotifyClient. Finds the Spotify media session by case-insensitive substring on its
+    // id (works for both the Win32 "Spotify.exe" and Store "SpotifyAB.SpotifyMusic_...!Spotify" builds), and
+    // pauses/resumes it via the OS. All Spotify interaction is funneled here and individually wrapped, so any
+    // failure surfaces as "unavailable" rather than throwing. All blocking SMTC calls (.GetAwaiter().GetResult())
+    // run on the worker thread, never on the caller/UI thread.
     public class SpotifySmtcClient : ISpotifyClient, IDisposable
     {
         private readonly FileLogger _fileLogger;
@@ -67,11 +65,11 @@ namespace UniPlaySong.Services.Spotify
 
         private void OnSessionsChanged(MediaManager.MediaSession session) { RefreshCache(); AvailabilityChanged?.Invoke(); }
         private void OnPlaybackChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionPlaybackInfo info) { RefreshCache(); AvailabilityChanged?.Invoke(); }
-        // The OS pushes this when the current track's metadata changes (a track change). Without this
-        // subscription the now-playing UI never learned Spotify changed tracks (the mini-player went
-        // stale). Fan out through the existing AvailabilityChanged → SpotifyControlService.Recompute →
-        // NowPlayingChanged → NowPlayingPublisher chain, which refreshes now-playing. Cheap handler:
-        // it only raises the event; the publisher does the (already-existing) metadata fetch.
+        // The OS pushes this when the current track's metadata changes (a track change). Without this subscription the
+        // now-playing UI never learned Spotify changed tracks (the mini-player went stale). Fan out through the
+        // existing AvailabilityChanged → SpotifyControlService.Recompute → NowPlayingChanged →
+        // NowPlayingPublisher chain, which refreshes now-playing. Cheap handler: it only raises the event; the
+        // publisher does the (already-existing) metadata fetch.
         private void OnMediaPropertyChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionMediaProperties props) => AvailabilityChanged?.Invoke();
 
         // Recompute the cached availability/playing snapshot from the current Spotify session.
@@ -195,9 +193,8 @@ namespace UniPlaySong.Services.Spotify
             var s = FindSpotify(); if (s == null) return;
             try
             {
-                // Resolve intent from current state and route to the capability-gated
-                // play/pause commands rather than a blind TryTogglePlayPause: the raw
-                // toggle can silently no-op while paused, which (via SpotifyControlService's
+                // Resolve intent from current state and route to the capability-gated play/pause commands rather than a blind
+                // TryTogglePlayPause: the raw toggle can silently no-op while paused, which (via SpotifyControlService's
                 // pause-hold state machine) could leave Spotify stuck unable to resume.
                 var info = s.ControlSession?.GetPlaybackInfo();
                 bool isPlaying = info?.PlaybackStatus
@@ -242,11 +239,10 @@ namespace UniPlaySong.Services.Spotify
                 // Position is reported relative to StartTime.
                 var position = tl.Position - tl.StartTime;
 
-                // SMTC only refreshes Position when Spotify pushes an update (track change, seek,
-                // pause/play) — it does NOT tick between pushes, so a raw read is stale and the bar
-                // moves in jumps. While playing, extrapolate: add the wall-clock elapsed since the
-                // timeline was last updated. Zero extra SMTC calls — pure arithmetic. Paused tracks
-                // are left frozen (correct). Clamped to [0, duration].
+                // SMTC only refreshes Position when Spotify pushes an update (track change, seek, pause/play) — it does NOT
+                // tick between pushes, so a raw read is stale and the bar moves in jumps. While playing, extrapolate: add the
+                // wall-clock elapsed since the timeline was last updated. Zero extra SMTC calls — pure arithmetic. Paused
+                // tracks are left frozen (correct). Clamped to [0, duration].
                 if (_cachedPlaying)
                 {
                     var elapsed = DateTimeOffset.UtcNow - tl.LastUpdatedTime;

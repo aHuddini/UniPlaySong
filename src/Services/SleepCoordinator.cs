@@ -49,10 +49,10 @@ namespace UniPlaySong.Services
             bool gameRunning;
             try { gameRunning = _isGameRunning?.Invoke() ?? false; } catch { gameRunning = false; }
 
-            // A running game keeps Windows awake anyway, so releasing UPS's audio device buys no
-            // sleep — and tearing it down mid-game (common when PauseOnGameStart pauses the music,
-            // or a controller-only session reads as idle to GetLastInputInfo) breaks clean resume
-            // on game exit. Treat "game running" like audible: hold the device open, reset baseline.
+            // A running game keeps Windows awake anyway, so releasing UPS's audio device buys no sleep — and tearing it
+            // down mid-game (common when PauseOnGameStart pauses the music, or a controller-only session reads as idle to
+            // GetLastInputInfo) breaks clean resume on game exit. Treat "game running" like audible: hold the device open,
+            // reset baseline.
             if (audible || gameRunning)
             {
                 _idleBaselineUtc = nowUtc; // reset — actively playing (or in-game) is not idle

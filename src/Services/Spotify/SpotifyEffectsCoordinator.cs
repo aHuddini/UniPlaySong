@@ -2,10 +2,9 @@ using System;
 
 namespace UniPlaySong.Services.Spotify
 {
-    // Owns the Spotify live-effects/visualizer lifecycle and THE SAFETY INVARIANT:
-    // Spotify's dry output is muted iff we are producing effected output. Any stop of
-    // effected output unmutes immediately. Collaborators are injected as funcs so the
-    // invariant is unit-testable without real audio/COM.
+    // Owns the Spotify live-effects/visualizer lifecycle and THE SAFETY INVARIANT: Spotify's dry output is muted
+    // iff we are producing effected output. Any stop of effected output unmutes immediately. Collaborators are
+    // injected as funcs so the invariant is unit-testable without real audio/COM.
     public class SpotifyEffectsCoordinator
     {
         private readonly Func<bool> _isLiveEffects, _isApplyToSpotify, _isVisualizer, _isSpotifyActive, _isOsCapable, _isCalmDown;

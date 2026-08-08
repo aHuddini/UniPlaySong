@@ -5,13 +5,12 @@ using System.Windows.Input;
 
 namespace UniPlaySong.Controls
 {
-    // Makes a plain WPF Button respond to the Fullscreen gamepad "confirm" press (A, or B when
-    // the user has Swap Confirm/Cancel on). Playnite's Fullscreen only auto-clicks its OWN
-    // ButtonEx on the A press — that control is internal to Playnite.FullscreenApp and not in the
-    // SDK, so a plugin control's plain Button never fires from the gamepad. UniPlaySong already
-    // observes the press via the SDK's OnControllerButtonStateChanged; ConfirmFocused() bridges it
-    // to whichever confirm-target Button currently holds keyboard focus (exactly what ButtonEx does
-    // internally). Mouse/touch clicks are unaffected — this only adds the gamepad path.
+    // Makes a plain WPF Button respond to the Fullscreen gamepad "confirm" press (A, or B when the user has Swap
+    // Confirm/Cancel on). Playnite's Fullscreen only auto-clicks its OWN ButtonEx on the A press — that control
+    // is internal to Playnite.FullscreenApp and not in the SDK, so a plugin control's plain Button never fires from
+    // the gamepad. UniPlaySong already observes the press via the SDK's OnControllerButtonStateChanged;
+    // ConfirmFocused() bridges it to whichever confirm-target Button currently holds keyboard focus (exactly what
+    // ButtonEx does internally). Mouse/touch clicks are unaffected — this only adds the gamepad path.
     //
     // Usage in a control's XAML: <Button local:GamepadConfirm.IsTarget="True" Command="..."/>
     public static class GamepadConfirm

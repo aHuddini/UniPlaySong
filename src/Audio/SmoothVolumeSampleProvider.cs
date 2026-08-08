@@ -3,11 +3,10 @@ using NAudio.Wave;
 
 namespace UniPlaySong.Audio
 {
-    // Per-sample volume ramp with configurable curves for NAudio pipeline.
-    // The fader calls SetTargetWithRamp() once per fade phase.
-    // The audio thread applies the selected curve per-sample — no discrete steps,
-    // no timer jitter, no rate-of-change discontinuities through reverb.
-    // The fader polls Volume (getter) to detect when the ramp completes.
+    // Per-sample volume ramp with configurable curves for NAudio pipeline. The fader calls SetTargetWithRamp() once
+    // per fade phase. The audio thread applies the selected curve per-sample — no discrete steps, no timer
+    // jitter, no rate-of-change discontinuities through reverb. The fader polls Volume (getter) to detect when the
+    // ramp completes.
     public class SmoothVolumeSampleProvider : ISampleProvider
     {
         private readonly ISampleProvider _source;

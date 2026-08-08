@@ -43,9 +43,8 @@ namespace UniPlaySong.Services
         // preset. new Random() defaults to TickCount which collides on fast restarts.
         private static readonly Random _random = new Random(Guid.NewGuid().GetHashCode());
 
-        // Callback for persisting settings after a fresh random pick. Wired up by
-        // UniPlaySong during construction so the service stays decoupled from the
-        // plugin/Playnite SDK. Without persistence, LastRandomizedBundledPreset
+        // Callback for persisting settings after a fresh random pick. Wired up by UniPlaySong during construction so
+        // the service stays decoupled from the plugin/Playnite SDK. Without persistence, LastRandomizedBundledPreset
         // wouldn't survive Playnite restart, defeating the anti-repeat logic.
         private static Action<UniPlaySongSettings> _persistSettingsCallback;
         public static void SetPersistSettingsCallback(Action<UniPlaySongSettings> callback)
@@ -114,11 +113,10 @@ namespace UniPlaySong.Services
         }
 
         // v1.5.0: returns the effective preset filename for the current session.
-        // When RandomizeBundledTrackOnStartup is on, picks one preset randomly the
-        // FIRST time this is called per session and caches it for the rest of the
-        // session — so the user gets variety across Playnite restarts but consistent
-        // ambient music within a single session. When the flag is off, returns the
-        // user's manually-picked SelectedBundledPreset.
+        // When RandomizeBundledTrackOnStartup is on, picks one preset randomly the FIRST time this is called per
+        // session and caches it for the rest of the session — so the user gets variety across Playnite restarts but
+        // consistent ambient music within a single session. When the flag is off, returns the user's manually-picked
+        // SelectedBundledPreset.
         //
         // Falls back to SelectedBundledPreset if the random pool is empty or the
         // pick fails for any reason — defensive default.
@@ -168,10 +166,9 @@ namespace UniPlaySong.Services
         }
 
         // v1.5.0: clears the cached session random pick so the next call to
-        // GetEffectivePresetFilename re-rolls. Called by the settings-change handler
-        // when RandomizeBundledTrackOnStartup is toggled so each toggle ON gets a
-        // fresh roll (instead of reusing a stale cached pick from earlier in the
-        // session).
+        // GetEffectivePresetFilename re-rolls. Called by the settings-change handler when
+        // RandomizeBundledTrackOnStartup is toggled so each toggle ON gets a fresh roll (instead of reusing a stale
+        // cached pick from earlier in the session).
         public static void ResetSessionRandomPick()
         {
             _sessionRandomPresetFilename = null;

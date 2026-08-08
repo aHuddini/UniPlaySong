@@ -2331,10 +2331,9 @@ namespace UniPlaySong.IconGlow
         }
 
         // --- Equalizer Grid mode ---
-        // Tiled grid of horizontal bars extending from the left edge. Each bar's width
-        // is driven by layered sine waves — sin(time + sin(col + time + rowMod) + TWO_PI * i / n).
-        // Creates a rippling wave pattern across the grid. Color is per-column with
-        // red/blue channels driven by column index, matching the shader's color scheme.
+        // Tiled grid of horizontal bars extending from the left edge. Each bar's width is driven by layered sine waves
+        // — sin(time + sin(col + time + rowMod) + TWO_PI * i / n). Creates a rippling wave pattern across the grid.
+        // Color is per-column with red/blue channels driven by column index, matching the shader's color scheme.
 
         private void InjectEqualizerGrid()
         {

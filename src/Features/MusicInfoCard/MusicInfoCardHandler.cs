@@ -47,13 +47,11 @@ namespace UniPlaySong.Features.MusicInfoCard
         // or Fullscreen view based on the construction-time _isFullscreen
         // flag (Playnite mode doesn't change mid-session).
         //
-        // Window strategy: a raw transparent WPF Window (same pattern as
-        // toasts/controller dialogs) rather than Playnite's CreateWindow.
-        // This gives us full control over chrome, corners, transparency,
-        // and lets the WPF BlurEffect on the backdrop image render
-        // properly. Trade-off: we lose Playnite's titlebar — replaced by
-        // a custom title strip + close glyph inside the dialog XAML,
-        // with drag-to-move on the title strip via Window.DragMove.
+        // Window strategy: a raw transparent WPF Window (same pattern as toasts/controller dialogs) rather than
+        // Playnite's CreateWindow. This gives us full control over chrome, corners, transparency, and lets the WPF
+        // BlurEffect on the backdrop image render properly. Trade-off: we lose Playnite's titlebar — replaced by a
+        // custom title strip + close glyph inside the dialog XAML, with drag-to-move on the title strip via
+        // Window.DragMove.
         //
         // The card uses the game's BackgroundImage (when set) as a
         // heavily-blurred backdrop layer inside the dialog. Falls back
@@ -141,10 +139,9 @@ namespace UniPlaySong.Features.MusicInfoCard
             }
         }
 
-        // Loads the game's BackgroundImage (preferred) or CoverImage as a
-        // BitmapSource for the dialog's blurred backdrop layer. Returns
-        // null when neither exists or the file is missing/unreadable —
-        // the dialog falls back to its solid-dark Background in that case.
+        // Loads the game's BackgroundImage (preferred) or CoverImage as a BitmapSource for the dialog's blurred
+        // backdrop layer. Returns null when neither exists or the file is missing/unreadable — the dialog falls back
+        // to its solid-dark Background in that case.
         //
         // BitmapImage is created with OnLoad caching so the underlying
         // FileStream releases immediately (Playnite can rename/replace

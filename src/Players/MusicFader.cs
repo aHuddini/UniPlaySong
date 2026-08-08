@@ -7,10 +7,9 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Players
 {
-    // Music fader: delegates per-sample volume ramping to the audio thread via SetVolumeRamp().
-    // DispatcherTimer at Normal priority polls for ramp completion and triggers phase transitions
-    // (stop/play actions for song switches, pause actions, etc.).
-    // The timer does NOT step volume — it only monitors and dispatches actions.
+    // Music fader: delegates per-sample volume ramping to the audio thread via SetVolumeRamp(). DispatcherTimer at
+    // Normal priority polls for ramp completion and triggers phase transitions (stop/play actions for song
+    // switches, pause actions, etc.). The timer does NOT step volume — it only monitors and dispatches actions.
     public class MusicFader : IDisposable
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -45,10 +44,10 @@ namespace UniPlaySong.Players
         public bool HasPendingPlayAction => _isPaused && _playAction != null;
 
         // True while a song-switch's play action is armed but not yet executed (Switch() sets it;
-        // the deferred fade-out completion or Resume() consumes it). OnMediaEnded checks this so a
-        // song whose natural EOF lands inside the switch's fade window does NOT also auto-advance —
-        // the switch already starts the next song, and a second advance double-loads (song starts,
-        // gets Close()d, another loads: the "song starts then instantly ends" loop).
+        // the deferred fade-out completion or Resume() consumes it). OnMediaEnded checks this so a song whose natural
+        // EOF lands inside the switch's fade window does NOT also auto-advance — the switch already starts the next
+        // song, and a second advance double-loads (song starts, gets Close()d, another loads: the "song starts then
+        // instantly ends" loop).
         public bool IsSwitchInFlight => _playAction != null;
 
 
@@ -66,11 +65,10 @@ namespace UniPlaySong.Players
             // The actual volume ramping happens per-sample on the audio thread (NAudio)
             // or via the player's own DispatcherTimer (SDL2/WPF).
             //
-            // Input priority (5), not Normal (9): this tick only polls a volume the audio side is
-            // already driving, so it must not outrank Render (7) — at Normal it preempted the
-            // render pass ~20x/sec for the whole fade, which is exactly when Fullscreen navigation
-            // is busiest. Completion is detected from the player's volume, so a late tick detects
-            // the same thing a moment later rather than missing it.
+            // Input priority (5), not Normal (9): this tick only polls a volume the audio side is already driving, so it
+            // must not outrank Render (7) — at Normal it preempted the render pass ~20x/sec for the whole fade, which is
+            // exactly when Fullscreen navigation is busiest. Completion is detected from the player's volume, so a late
+            // tick detects the same thing a moment later rather than missing it.
             _fadeTimer = new DispatcherTimer(DispatcherPriority.Input)
             {
                 Interval = TimeSpan.FromMilliseconds(50)
@@ -266,12 +264,10 @@ namespace UniPlaySong.Players
                     _player.Volume = 0;
                     _fileLogger?.Debug($"[Fader] Resume() — vol after set: {_player.Volume:F4}");
 
-                    // Use the player's onReady callback so fade-in starts only once the
-                    // player is actually producing audio. For most backends this is
-                    // synchronous (callback fires before Resume returns). For NAudio+GME
-                    // the callback fires on the UI thread after the background gme_seek
-                    // completes — without this, we'd ramp volume against a silent mixer
-                    // and the user would hear the song snap in at full volume later.
+                    // Use the player's onReady callback so fade-in starts only once the player is actually producing audio. For
+                    // most backends this is synchronous (callback fires before Resume returns). For NAudio+GME the callback fires
+                    // on the UI thread after the background gme_seek completes — without this, we'd ramp volume against a silent
+                    // mixer and the user would hear the song snap in at full volume later.
                     _player.Resume(onReady: () =>
                     {
                         _fileLogger?.Debug($"[Fader] Resume() onReady — player producing audio, starting fade-in ramp, vol={_player.Volume:F4}");
@@ -291,12 +287,10 @@ namespace UniPlaySong.Players
             EnsureTimer();
         }
 
-        // Fades volume to zero with no stop/pause action.
-        // Used for pre-song-end fade: the player reaches natural EOF at vol=0,
-        // then OnMediaEnded fires normally to handle the auto-advance.
-        // Optional overrideDurationSeconds lets callers (SongEndFade) set the ramp
-        // length to match the time remaining before EOF, so the fade finishes exactly
-        // at song end rather than much earlier (which would leave a silent tail).
+        // Fades volume to zero with no stop/pause action. Used for pre-song-end fade: the player reaches natural EOF at
+        // vol=0, then OnMediaEnded fires normally to handle the auto-advance. Optional overrideDurationSeconds lets
+        // callers (SongEndFade) set the ramp length to match the time remaining before EOF, so the fade finishes
+        // exactly at song end rather than much earlier (which would leave a silent tail).
         public void FadeOut(double? overrideDurationSeconds = null)
         {
             _isFadingOut = true;

@@ -4,12 +4,11 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services.Spotify
 {
-    // Policy layer ("the conductor"). Observes the music engine's audible state and
-    // conducts the Spotify client to match, without modifying the engine. Computes
-    // SpotifyActive (radio = always; default-source = only in a default-music gap).
-    // When Spotify is the active music UPS drives it: PLAY when active and not
-    // lifecycle-paused; PAUSE when a game with its own music takes over, the mode turns
-    // off, or a lifecycle pause (game launch, video, focus loss, lock) is in effect.
+    // Policy layer ("the conductor"). Observes the music engine's audible state and conducts the Spotify client to
+    // match, without modifying the engine. Computes SpotifyActive (radio = always; default-source = only in a
+    // default-music gap). When Spotify is the active music UPS drives it: PLAY when active and not
+    // lifecycle-paused; PAUSE when a game with its own music takes over, the mode turns off, or a lifecycle pause
+    // (game launch, video, focus loss, lock) is in effect.
     public class SpotifyControlService : IDisposable
     {
         private readonly IMusicPlaybackService _playback;
@@ -18,20 +17,20 @@ namespace UniPlaySong.Services.Spotify
         private readonly FileLogger _fileLogger;
         private readonly Func<bool> _isAppReady;
 
-        // True once UPS has taken control of Spotify playback (the first time Spotify needs
-        // to play for UPS's purposes). While true, UPS drives Spotify play/pause to match
-        // "is Spotify the active music + not lifecycle-paused". Released when Spotify stops
-        // being the active music, so the user regains free control until UPS next needs it.
+        // True once UPS has taken control of Spotify playback (the first time Spotify needs to play for UPS's
+        // purposes). While true, UPS drives Spotify play/pause to match "is Spotify the active music + not
+        // lifecycle-paused". Released when Spotify stops being the active music, so the user regains free control until
+        // UPS next needs it.
         private bool _drivingSpotify;
         private bool _isActive;
         private bool _disposed;
         private SpotifyRadioState _radioState;
         private bool _radioWasOn; // edge-detect radio engage
 
-        // User pressed Pause via the menu while Spotify was the active music. While this holds,
-        // UPS goes hands-off (issues no play/pause commands) so the user's pause sticks instead of
-        // being instantly auto-resumed. Cleared when the user toggles back to play, or when Spotify
-        // stops being the active music (a fresh takeover should start playing again).
+        // User pressed Pause via the menu while Spotify was the active music. While this holds, UPS goes hands-off
+        // (issues no play/pause commands) so the user's pause sticks instead of being instantly auto-resumed. Cleared
+        // when the user toggles back to play, or when Spotify stops being the active music (a fresh takeover should
+        // start playing again).
         private bool _manualPauseHold;
 
         // Serializes Recompute() across the event (UI thread), AvailabilityChanged
@@ -72,11 +71,10 @@ namespace UniPlaySong.Services.Spotify
             if (_playback != null) _playback.OnPlaybackStateChanged += Recompute;
             if (_client != null) _client.AvailabilityChanged += Recompute;
 
-            // Spec-mandated periodic refresh: ticks on the UI thread (DispatcherTimer),
-            // catching missed availability/close events. Recompute() is idempotent.
-            // 2s: the SMTC library's events are unreliable around app startup, so this poll
-            // bounds how late Spotify radio engages once Spotify becomes available. Each tick
-            // is cheap (lock + cached volatile reads; commands are non-blocking worker posts).
+            // Spec-mandated periodic refresh: ticks on the UI thread (DispatcherTimer), catching missed availability/close
+            // events. Recompute() is idempotent. 2s: the SMTC library's events are unreliable around app startup, so this
+            // poll bounds how late Spotify radio engages once Spotify becomes available. Each tick is cheap (lock + cached
+            // volatile reads; commands are non-blocking worker posts).
             _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _refreshTimer.Tick += (s, e) => Recompute();
             _refreshTimer.Start();
@@ -85,15 +83,14 @@ namespace UniPlaySong.Services.Spotify
         private bool ComputeActive(UniPlaySongSettings s)
         {
             if (s == null || _client == null || !_client.IsAvailable) return false;
-            // SpotifyRadioMode is derived (RadioModeEnabled=true AND RadioMusicSource=Spotify).
-            // When it is true the pool-radio branch in MusicPlaybackService does not run because
-            // a guard in StartRadioPlayback prevents the pool from starting while Spotify
-            // is the active radio source — Spotify alone is the source.
+            // SpotifyRadioMode is derived (RadioModeEnabled=true AND RadioMusicSource=Spotify). When it is true the
+            // pool-radio branch in MusicPlaybackService does not run because a guard in StartRadioPlayback prevents the
+            // pool from starting while Spotify is the active radio source — Spotify alone is the source.
             if (s.SpotifyRadioMode) return true;
-            // A UPS radio POOL is playing (RadioModeEnabled with a non-Spotify source): UPS owns the
-            // music, so Spotify is NOT active even if the default-music source happens to be Spotify.
-            // Without this, switching radio Spotify->UPS pool sets IsPlayingDefaultMusic=true and the
-            // gap-fill below would immediately RESUME the Spotify we just paused on disengage.
+            // A UPS radio POOL is playing (RadioModeEnabled with a non-Spotify source): UPS owns the music, so Spotify is
+            // NOT active even if the default-music source happens to be Spotify. Without this, switching radio Spotify->UPS
+            // pool sets IsPlayingDefaultMusic=true and the gap-fill below would immediately RESUME the Spotify we just
+            // paused on disengage.
             if (_playback?.IsInRadioMode == true) return false;
             if (s.DefaultMusicSourceOption == DefaultMusicSource.Spotify
                 && _playback?.IsPlayingDefaultMusic == true) return true;
@@ -137,13 +134,12 @@ namespace UniPlaySong.Services.Spotify
                     raiseNowPlaying = true;
                 }
 
-                // Engage edge: radio just turned on (toggled on, or a fresh process started with it
-                // on — e.g. a Desktop↔Fullscreen switch). Seed "UPS owns a pause" so the first Decide
-                // issues a single Resume to START the radio, even if Spotify is currently paused —
-                // enabling radio / entering a mode with it on means "I want music now". The ownership
-                // resume clears the flags, so AFTER this initial start, a pause the user makes in the
-                // Spotify app (or via the Top Panel button) is tracked as UserPausedExternally and
-                // respected (radio won't auto-resume it) until the user resumes.
+                // Engage edge: radio just turned on (toggled on, or a fresh process started with it on — e.g. a
+                // Desktop↔Fullscreen switch). Seed "UPS owns a pause" so the first Decide issues a single Resume to START the
+                // radio, even if Spotify is currently paused — enabling radio / entering a mode with it on means "I want
+                // music now". The ownership resume clears the flags, so AFTER this initial start, a pause the user makes in the
+                // Spotify app (or via the Top Panel button) is tracked as UserPausedExternally and respected (radio won't
+                // auto-resume it) until the user resumes.
                 if (!_radioWasOn)
                 {
                     _radioWasOn = true;
@@ -152,11 +148,10 @@ namespace UniPlaySong.Services.Spotify
 
                 if (radioActive)
                 {
-                    // Manual pause hold (URI pause from FullReel, or an explicit ManualPause):
-                    // fully hands-off — the lifecycle state machine below would otherwise convert
-                    // an external-audio blip into a "UPS-owned pause" and dutifully RESUME Spotify
-                    // when the blip ends (e.g. the user pausing a FullReel video), trampling the
-                    // held pause. ManualResume clears the hold and restarts playback itself.
+                    // Manual pause hold (URI pause from FullReel, or an explicit ManualPause): fully hands-off — the lifecycle
+                    // state machine below would otherwise convert an external-audio blip into a "UPS-owned pause" and dutifully
+                    // RESUME Spotify when the blip ends (e.g. the user pausing a FullReel video), trampling the held pause.
+                    // ManualResume clears the hold and restarts playback itself.
                     if (_manualPauseHold)
                     {
                         // Intentionally no Decide/act this tick.
@@ -168,10 +163,9 @@ namespace UniPlaySong.Services.Spotify
                         // once when the app is actually visible instead of during startup churn.
                         // The radio yielding to a selected game's own music also counts as a lifecycle
                         // pause: Spotify must duck out rather than play over the game track, and because
-                        // UPS owns this pause Decide issues the Resume automatically on List return.
-                        // Uses the EXPLICIT yield flag, never IsPlaying — IsPlaying maps to
-                        // IMusicPlayer.IsActive, which counts a paused-mid-playback song as active, so a
-                        // stale loaded song would hold Spotify paused indefinitely.
+                        // UPS owns this pause Decide issues the Resume automatically on List return. Uses the EXPLICIT yield flag,
+                        // never IsPlaying — IsPlaying maps to IMusicPlayer.IsActive, which counts a paused-mid-playback song as
+                        // active, so a stale loaded song would hold Spotify paused indefinitely.
                         bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false
                                                || _playback?.IsRadioYieldedToGameMusic == true;
                         bool spotifyPlaying = _client.IsPlaying;
@@ -188,20 +182,19 @@ namespace UniPlaySong.Services.Spotify
                 return raiseNowPlaying; // radio handled — do NOT run the gap-fill machinery
             }
 
-            // Radio (Spotify) just turned off — the user disabled Radio Mode or switched the source
-            // away from Spotify. If UPS was driving Spotify, PAUSE it so it doesn't keep playing
-            // alongside whatever takes over (pool radio, game music). This is a deliberate disengage,
-            // so pausing is correct (distinct from the "respect external pause" rule, which governs
-            // pauses DURING active Spotify radio). All SMTC calls are non-blocking posts.
+            // Radio (Spotify) just turned off — the user disabled Radio Mode or switched the source away from Spotify. If
+            // UPS was driving Spotify, PAUSE it so it doesn't keep playing alongside whatever takes over (pool radio, game
+            // music). This is a deliberate disengage, so pausing is correct (distinct from the "respect external pause"
+            // rule, which governs pauses DURING active Spotify radio). All SMTC calls are non-blocking posts.
             if (_radioWasOn)
             {
                 _radioWasOn = false;
                 _radioState = default(SpotifyRadioState);
                 _fileLogger?.Debug($"[Spotify] radio disengage: _isActive={_isActive}, IsPlaying={_client?.IsPlaying} — pausing Spotify");
-                // Pause Spotify whenever UPS was driving radio and Spotify is still playing — NOT gated
-                // on the internal _isActive flag, which an intervening gap-fill Recompute may have
-                // already cleared (leaving Spotify playing on after a source switch). If Spotify is
-                // audibly playing on our way out of radio, stop it so it doesn't overlap the pool.
+                // Pause Spotify whenever UPS was driving radio and Spotify is still playing — NOT gated on the internal
+                // _isActive flag, which an intervening gap-fill Recompute may have already cleared (leaving Spotify playing on
+                // after a source switch). If Spotify is audibly playing on our way out of radio, stop it so it doesn't overlap
+                // the pool.
                 if (_isActive || _client?.IsPlaying == true)
                 {
                     _client?.TryPause();
@@ -214,16 +207,14 @@ namespace UniPlaySong.Services.Spotify
             // ---- GAP-FILL PATH (unchanged) ----
             bool active = ComputeActive(s);
 
-            // Spotify should be PLAYING when it is the active music AND UPS isn't in a
-            // pause state (game launch, video, focus loss, lock, etc.). Otherwise it
-            // should be PAUSED — either because a game with its own music took over
+            // Spotify should be PLAYING when it is the active music AND UPS isn't in a pause state (game launch, video,
+            // focus loss, lock, etc.). Otherwise it should be PAUSED — either because a game with its own music took over
             // (active=false) or because a lifecycle pause is in effect.
             bool wantSpotifyPlaying = active && _playback?.IsPaused != true;
 
-            // "Entering the gap" edge: Spotify is becoming the active music this tick
-            // (false→true). Captured BEFORE _isActive is mutated below. Used to fire the
-            // skip-on-gap behavior exactly once per game switch into the gap, not on every
-            // periodic recompute while already active.
+            // "Entering the gap" edge: Spotify is becoming the active music this tick (false→true). Captured BEFORE
+            // _isActive is mutated below. Used to fire the skip-on-gap behavior exactly once per game switch into the gap,
+            // not on every periodic recompute while already active.
             bool enteringActive = active && !_isActive;
 
             if (active != _isActive)
@@ -233,30 +224,26 @@ namespace UniPlaySong.Services.Spotify
                 raiseNowPlaying = true;
             }
 
-            // Manual pause hold: the user paused Spotify from the menu while it was the
-            // active music. Go fully hands-off — issue NO play/pause this tick — so their
-            // pause sticks instead of being auto-resumed. We keep _drivingSpotify (we still
-            // own the music slot), and the hold is cleared on the !active transition below
-            // (a fresh takeover plays again) or when the user toggles back to play.
+            // Manual pause hold: the user paused Spotify from the menu while it was the active music. Go fully hands-off
+            // — issue NO play/pause this tick — so their pause sticks instead of being auto-resumed. We keep
+            // _drivingSpotify (we still own the music slot), and the hold is cleared on the !active transition below (a
+            // fresh takeover plays again) or when the user toggles back to play.
             if (_manualPauseHold && active)
             {
                 // Hands off — issue no command this tick (see field comment). Intentionally empty.
             }
-            // Drive Spotify toward the desired state. We only command Spotify while we
-            // are (or were) the one driving it (_drivingSpotify) so we never fight a
-            // user's own manual Spotify control before UPS has taken the wheel: the
+            // Drive Spotify toward the desired state. We only command Spotify while we are (or were) the one driving it
+            // (_drivingSpotify) so we never fight a user's own manual Spotify control before UPS has taken the wheel: the
             // first time Spotify needs to PLAY for our purposes, we take the wheel.
             else if (wantSpotifyPlaying)
             {
                 // SpotifySkipOnGap: advance Spotify to a new track — a fresh song — only when
-                // Spotify is FRESHLY taking over the music from a non-Spotify state (a game
-                // with its own music, or startup). The guard is !_drivingSpotify: that flag
-                // stays true the whole time Spotify is the active music, INCLUDING across
-                // consecutive no-music games, and is only released when a game-with-music or a
-                // lifecycle pause takes the wheel away. So no-music → no-music does NOT skip
-                // (we were already driving Spotify); only game-with-music → no-music does.
-                // TrySkipNext also starts playback if paused; if skip is unavailable (end of
-                // queue, no autoplay) we fall back to resume so the gap is never silent.
+                // Spotify is FRESHLY taking over the music from a non-Spotify state (a game with its own music, or startup).
+                // The guard is !_drivingSpotify: that flag stays true the whole time Spotify is the active music, INCLUDING
+                // across consecutive no-music games, and is only released when a game-with-music or a lifecycle pause takes the
+                // wheel away. So no-music → no-music does NOT skip (we were already driving Spotify); only game-with-music
+                // → no-music does. TrySkipNext also starts playback if paused; if skip is unavailable (end of queue, no
+                // autoplay) we fall back to resume so the gap is never silent.
                 if (enteringActive && !_drivingSpotify && s?.SpotifySkipOnGap == true)
                 {
                     bool skipped = _client?.TrySkipNext() ?? false;
@@ -271,21 +258,17 @@ namespace UniPlaySong.Services.Spotify
             }
             else if (_drivingSpotify)
             {
-                // Spotify should be paused (game music took over, mode off, or a lifecycle
-                // pause). We pause UNCONDITIONALLY — NOT gated on _client.IsPlaying — because
-                // gating caused a race: when a no-music game (gap) is immediately followed by
-                // a game WITH music (e.g. on a Fullscreen→Desktop mode switch), our just-issued
-                // TryResume may not have flipped Spotify's SMTC status to Playing yet. With the
-                // old IsPlaying gate, the pause was skipped AND the wheel released; then Spotify
-                // actually started and nothing was driving it, so it played over the game forever.
-                // TryPause() self-guards via IsPauseEnabled, so calling it when Spotify isn't
-                // (yet) playing is a safe no-op; SMTC serializes our resume+pause and the pause
-                // wins because it is issued last.
+                // Spotify should be paused (game music took over, mode off, or a lifecycle pause). We pause UNCONDITIONALLY —
+                // NOT gated on _client.IsPlaying — because gating caused a race: when a no-music game (gap) is immediately
+                // followed by a game WITH music (e.g. on a Fullscreen→Desktop mode switch), our just-issued TryResume may not
+                // have flipped Spotify's SMTC status to Playing yet. With the old IsPlaying gate, the pause was skipped AND the
+                // wheel released; then Spotify actually started and nothing was driving it, so it played over the game forever.
+                // TryPause() self-guards via IsPauseEnabled, so calling it when Spotify isn't (yet) playing is a safe no-op;
+                // SMTC serializes our resume+pause and the pause wins because it is issued last.
                 _client?.TryPause();
-                // When Spotify is no longer the active music at all, release the wheel so
-                // the user can freely control Spotify again until UPS next needs it. Also clear
-                // any manual pause hold so the NEXT time Spotify becomes the active music it
-                // starts playing (a fresh takeover shouldn't inherit a stale held-pause).
+                // When Spotify is no longer the active music at all, release the wheel so the user can freely control Spotify
+                // again until UPS next needs it. Also clear any manual pause hold so the NEXT time Spotify becomes the active
+                // music it starts playing (a fresh takeover shouldn't inherit a stale held-pause).
                 if (!active) { _drivingSpotify = false; _manualPauseHold = false; }
             }
 
@@ -307,11 +290,10 @@ namespace UniPlaySong.Services.Spotify
             _client?.RequestNowPlaying(onResult);
         }
 
-        // Manual Play/Pause from the menu. Routes through the SERVICE (not the client directly) so
-        // we can manage the manual-pause hold: pausing while Spotify is the active music would
-        // otherwise be auto-resumed on the next recompute. Toggling to PAUSE sets the hold (UPS
-        // goes hands-off); toggling back to PLAY clears it and resumes. When Spotify is NOT the
-        // active music, there's no hold to manage — just toggle.
+        // Manual Play/Pause from the menu. Routes through the SERVICE (not the client directly) so we can manage the
+        // manual-pause hold: pausing while Spotify is the active music would otherwise be auto-resumed on the next
+        // recompute. Toggling to PAUSE sets the hold (UPS goes hands-off); toggling back to PLAY clears it and resumes.
+        // When Spotify is NOT the active music, there's no hold to manage — just toggle.
         public void ToggleManualPlayPause()
         {
             if (_disposed || _client == null) return;

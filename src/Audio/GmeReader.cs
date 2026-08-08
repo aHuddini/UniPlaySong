@@ -24,11 +24,10 @@ namespace UniPlaySong.Audio
         private short[] _shortBuffer;
         private bool _disposed;
 
-        // Multi-track HES support. When the file is .hes AND a sibling .m3u sidecar
-        // exists, _hesTracks holds the parsed track list and Read() auto-advances
-        // through them in M3U order, so the entire file plays as one continuous
-        // stream that NAudio sees as a single song. Empty/null for non-HES paths
-        // and HES files without a sidecar (legacy single-track behavior).
+        // Multi-track HES support. When the file is .hes AND a sibling .m3u sidecar exists, _hesTracks holds the parsed
+        // track list and Read() auto-advances through them in M3U order, so the entire file plays as one continuous
+        // stream that NAudio sees as a single song. Empty/null for non-HES paths and HES files without a sidecar
+        // (legacy single-track behavior).
         private List<HesTrackEntry> _hesTracks;
         private int _hesCurrentIndex;     // position within _hesTracks
         // Accumulated playtime in ms from prior HES tracks (for global Position reporting).
@@ -36,20 +35,18 @@ namespace UniPlaySong.Audio
         // to convert "current track pos" → "position into the whole file".
         private int _hesPriorTracksMs;
 
-        // GME's C API is NOT thread-safe on a single emu handle. The audio thread calls
-        // Read() -> gme_play() while the UI thread can call Position/CurrentTime setters
-        // -> gme_seek() (expensive: GME rewinds and fast-forwards from track start, can
-        // take hundreds of milliseconds). Without a lock, concurrent gme_play/gme_seek
-        // on the same handle corrupts emulator state and leaves the reader silent.
+        // GME's C API is NOT thread-safe on a single emu handle. The audio thread calls Read() -> gme_play() while the
+        // UI thread can call Position/CurrentTime setters -> gme_seek() (expensive: GME rewinds and fast-forwards from
+        // track start, can take hundreds of milliseconds). Without a lock, concurrent gme_play/gme_seek on the same
+        // handle corrupts emulator state and leaves the reader silent.
         private readonly object _gmeLock = new object();
 
         public GmeReader(string fileName)
         {
-            // Pre-flight: for .vgm / .vgz, peek the header and reject files whose
-            // chip references GME can't emulate (e.g. YM2610 Neo Geo, YM2151 arcade).
-            // Without this check, GME opens the file successfully but produces silence
-            // because it has no emulator for those chips. Failing fast lets the
-            // playback service log a clear reason and skip the track.
+            // Pre-flight: for .vgm / .vgz, peek the header and reject files whose chip references GME can't emulate (e.g.
+            // YM2610 Neo Geo, YM2151 arcade). Without this check, GME opens the file successfully but produces silence
+            // because it has no emulator for those chips. Failing fast lets the playback service log a clear reason and
+            // skip the track.
             var ext = Path.GetExtension(fileName);
             if (ext != null &&
                 (ext.Equals(".vgm", StringComparison.OrdinalIgnoreCase) ||
@@ -65,9 +62,8 @@ namespace UniPlaySong.Audio
                 }
             }
 
-            // For NSF files, honor the header's starting_song byte (offset 7, 1-based).
-            // This is how single-track mini-NSFs produced by NsfHeaderPatcher signal
-            // which song in the shared 6502 code blob to play. GME's gme_start_track
+            // For NSF files, honor the header's starting_song byte (offset 7, 1-based). This is how single-track mini-NSFs
+            // produced by NsfHeaderPatcher signal which song in the shared 6502 code blob to play. GME's gme_start_track
             // overrides the header default, so we must explicitly pass the patched index.
             //
             // For HES files, two sub-cases:
@@ -175,9 +171,8 @@ namespace UniPlaySong.Audio
                     _playLengthMs = overrideMs.Value;
             }
 
-            // For multi-track HES, _playLengthMs reported above came from gme_track_info
-            // for just the first track. Replace with the sum of all M3U track durations
-            // so NAudio's Length/TotalTime reflect the actual file playtime. Tracks
+            // For multi-track HES, _playLengthMs reported above came from gme_track_info for just the first track. Replace
+            // with the sum of all M3U track durations so NAudio's Length/TotalTime reflect the actual file playtime. Tracks
             // without a duration in the M3U fall back to the GME default (2.5 minutes).
             if (_hesTracks != null && _hesTracks.Count > 0)
             {
@@ -258,18 +253,15 @@ namespace UniPlaySong.Audio
             }
         }
 
-        // ISampleProvider.Read — the hot path used by NAudio's mixer pipeline.
-        // Generates int16 samples from GME, converts to float32 in-place.
-        // EOF is signaled by returning 0 when play_length is reached OR GME reports
-        // an explicit track-end (short NSF jingles, tracks with end markers).
+        // ISampleProvider.Read — the hot path used by NAudio's mixer pipeline. Generates int16 samples from GME,
+        // converts to float32 in-place. EOF is signaled by returning 0 when play_length is reached OR GME reports an
+        // explicit track-end (short NSF jingles, tracks with end markers).
         //
         // CRITICAL: NAudio's MixingSampleProvider auto-removes any input that returns
-        // fewer samples than requested (`read < count`), assuming it has hit EOF.
-        // For multi-track HES we MUST keep filling the buffer across track boundaries
-        // — never return a partial read while more tracks remain in the M3U. The loop
-        // below advances to the next M3U track inside the same Read() call and continues
-        // filling, so the mixer always sees a fully-populated buffer until the very last
-        // track ends.
+        // fewer samples than requested (`read < count`), assuming it has hit EOF. For multi-track HES we MUST keep
+        // filling the buffer across track boundaries — never return a partial read while more tracks remain in the
+        // M3U. The loop below advances to the next M3U track inside the same Read() call and continues filling, so the
+        // mixer always sees a fully-populated buffer until the very last track ends.
         public int Read(float[] buffer, int offset, int count)
         {
             lock (_gmeLock)
@@ -287,11 +279,9 @@ namespace UniPlaySong.Audio
                     // play_length for everything else)?
                     if (posMs >= _effectiveEndMs)
                     {
-                        // Try to advance to the next HES track inside the same Read call
-                        // so the mixer sees a continuous stream. If TryAdvance returns
-                        // false, the file is genuinely done — break and return whatever
-                        // we've already produced (which may be a partial read; that's
-                        // the real EOF signal).
+                        // Try to advance to the next HES track inside the same Read call so the mixer sees a continuous stream. If
+                        // TryAdvance returns false, the file is genuinely done — break and return whatever we've already produced
+                        // (which may be a partial read; that's the real EOF signal).
                         if (!TryAdvanceHesTrack())
                             break;
 
@@ -322,10 +312,9 @@ namespace UniPlaySong.Audio
 
                     totalProduced += toRead;
 
-                    // Honor GME's internal track-end signal for short NSFs with explicit
-                    // end markers. Guarded by a 2-second minimum to avoid false EOF during
-                    // chip-init silence. For HES this collapses _effectiveEndMs early so
-                    // the next loop iteration triggers the auto-advance branch above.
+                    // Honor GME's internal track-end signal for short NSFs with explicit end markers. Guarded by a 2-second minimum
+                    // to avoid false EOF during chip-init silence. For HES this collapses _effectiveEndMs early so the next loop
+                    // iteration triggers the auto-advance branch above.
                     if (posMs >= 2000 && GmeNative.gme_track_ended(_emu) != 0)
                         _effectiveEndMs = GmeNative.gme_tell(_emu);
                 }
@@ -334,11 +323,10 @@ namespace UniPlaySong.Audio
             }
         }
 
-        // For multi-track HES files with an M3U sidecar: when the current track ends,
-        // start the next M3U entry, accumulate its duration into the global offset,
-        // and reset _effectiveEndMs to the new track's duration. Returns true while
-        // there are more tracks to play, false after the last one (real EOF).
-        // Caller MUST hold _gmeLock.
+        // For multi-track HES files with an M3U sidecar: when the current track ends, start the next M3U entry,
+        // accumulate its duration into the global offset, and reset _effectiveEndMs to the new track's duration.
+        // Returns true while there are more tracks to play, false after the last one (real EOF). Caller MUST hold
+        // _gmeLock.
         private bool TryAdvanceHesTrack()
         {
             if (_hesTracks == null || _hesTracks.Count == 0) return false;

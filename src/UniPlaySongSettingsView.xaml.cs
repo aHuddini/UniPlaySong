@@ -40,10 +40,10 @@ namespace UniPlaySong
                 inpc.PropertyChanged += LiveSettings_PropertyChanged;
                 vm.RefreshNowPlayingPreview(); // initial paint
 
-                // WPF does NOT reliably raise Unloaded when Playnite closes its settings window, so this
-                // subscription — and via it the whole view — would leak. Each reopen then stacks another
-                // stale view onto the one cached VM, and their binding updates re-enter until the 1 MB UI
-                // stack overflows (0xc00000fd). The host Window's Closed DOES fire, so release there too.
+                // WPF does NOT reliably raise Unloaded when Playnite closes its settings window, so this subscription — and
+                // via it the whole view — would leak. Each reopen then stacks another stale view onto the one cached VM, and
+                // their binding updates re-enter until the 1 MB UI stack overflows (0xc00000fd). The host Window's Closed DOES
+                // fire, so release there too.
                 _previewHostWindow = System.Windows.Window.GetWindow(this);
                 if (_previewHostWindow != null) _previewHostWindow.Closed += PreviewHost_OnClosed;
             }
@@ -704,10 +704,9 @@ namespace UniPlaySong
         }
 
         // === Backup tab: Settings Import/Export (v1.5.0) ===
-        // All three handlers share the same shape: get settings, ask user for a path
-        // via Playnite SDK Dialogs, delegate the actual work to SettingsBackupService,
-        // surface a result dialog. Errors caught here and surfaced friendlier to the
-        // user than letting an exception bubble into the settings host.
+        // All three handlers share the same shape: get settings, ask user for a path via Playnite SDK Dialogs, delegate
+        // the actual work to SettingsBackupService, surface a result dialog. Errors caught here and surfaced friendlier
+        // to the user than letting an exception bubble into the settings host.
 
         private void ExportSettingsJson_Click(object sender, RoutedEventArgs e)
         {

@@ -12,10 +12,9 @@ using UniPlaySong.ViewModels;
 
 namespace UniPlaySong.Handlers
 {
-    // Orchestrates the NSF Track Manager dialog for a single game.
-    // Finds .nsf files in the game's music folder, opens the splitter UI,
-    // pauses main UPS playback while the dialog is open, and invalidates
-    // the song cache on commit so the new mini-NSFs are picked up.
+    // Orchestrates the NSF Track Manager dialog for a single game. Finds .nsf files in the game's music folder,
+    // opens the splitter UI, pauses main UPS playback while the dialog is open, and invalidates the song cache on
+    // commit so the new mini-NSFs are picked up.
     public class NsfTrackManagerHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -61,11 +60,10 @@ namespace UniPlaySong.Handlers
                     return;
                 }
 
-                // Classify each NSF. Splittable masters have total_songs > 1 AND != 255.
-                // The 255 value is a recovery sentinel applied to files where the original
-                // total_songs got lost during earlier buggy splits — practically these are
-                // minis, not splittable. All .nsf files (regardless of total_songs) are
-                // candidates for Edit Loops, since loop overrides are file-agnostic.
+                // Classify each NSF. Splittable masters have total_songs > 1 AND != 255. The 255 value is a recovery sentinel
+                // applied to files where the original total_songs got lost during earlier buggy splits — practically these
+                // are minis, not splittable. All .nsf files (regardless of total_songs) are candidates for Edit Loops, since
+                // loop overrides are file-agnostic.
                 var splittableMasters = new List<string>();
                 foreach (var path in nsfs)
                 {
@@ -156,13 +154,11 @@ namespace UniPlaySong.Handlers
             }
             finally
             {
-                // Always restore the game's music — the handler called Stop() at dialog-open
-                // to silence the main player, so simply removing the pause source isn't enough
-                // to resume playback (no song is loaded). Calling PlayGameMusic is safe on
-                // both commit and cancel paths: it reloads the folder and starts playing,
-                // picking up any freshly-split mini-NSFs or updated loop overrides on commit,
-                // or just restoring the prior state on cancel. PlayGameMusic also sweeps any
-                // stale NsfPreview pause source itself (defensive path added earlier).
+                // Always restore the game's music — the handler called Stop() at dialog-open to silence the main player, so
+                // simply removing the pause source isn't enough to resume playback (no song is loaded). Calling PlayGameMusic
+                // is safe on both commit and cancel paths: it reloads the folder and starts playing, picking up any
+                // freshly-split mini-NSFs or updated loop overrides on commit, or just restoring the prior state on cancel.
+                // PlayGameMusic also sweeps any stale NsfPreview pause source itself (defensive path added earlier).
                 _playbackService?.RemovePauseSource(PauseSource.NsfPreview);
                 if (game != null)
                     _playbackService?.PlayGameMusic(game);

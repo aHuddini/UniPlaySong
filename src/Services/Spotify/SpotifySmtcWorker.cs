@@ -9,11 +9,10 @@ namespace UniPlaySong.Services.Spotify
     // of pause/resume posts never thrashes Spotify.
     public enum SpotifyControlIntent { None, Play, Pause }
 
-    // Owns a single long-lived background thread that executes blocking SMTC actions OFF the
-    // UI thread. Callers post work from any thread and return immediately; nothing here ever
-    // blocks the caller. The worker has no WinRT dependency — the client supplies the SMTC
-    // lambdas — so it is fully unit-testable and reusable. Fail-safe: a throwing action is
-    // caught and logged; the worker never dies.
+    // Owns a single long-lived background thread that executes blocking SMTC actions OFF the UI thread. Callers
+    // post work from any thread and return immediately; nothing here ever blocks the caller. The worker has no
+    // WinRT dependency — the client supplies the SMTC lambdas — so it is fully unit-testable and reusable.
+    // Fail-safe: a throwing action is caught and logged; the worker never dies.
     public class SpotifySmtcWorker : IDisposable
     {
         private readonly FileLogger _fileLogger;

@@ -3,11 +3,10 @@ using System.IO;
 
 namespace UniPlaySong.Audio
 {
-    // Generates per-track mini-NSFs that each select a single song from the
-    // original multi-track NSF by patching byte 7 (starting_song) in the
-    // 128-byte header. total_songs is LEFT UNCHANGED so the 6502 program
-    // code blob's internal track indices remain valid — GME still sees N
-    // tracks, but GmeReader picks the one identified by starting_song.
+    // Generates per-track mini-NSFs that each select a single song from the original multi-track NSF by patching
+    // byte 7 (starting_song) in the 128-byte header. total_songs is LEFT UNCHANGED so the 6502 program code blob's
+    // internal track indices remain valid — GME still sees N tracks, but GmeReader picks the one identified by
+    // starting_song.
     internal static class NsfHeaderPatcher
     {
         // NSF magic: "NESM" + 0x1A

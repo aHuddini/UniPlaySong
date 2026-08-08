@@ -76,17 +76,16 @@ namespace UniPlaySong.Services
         bool IsPaused { get; }
         bool IsLoaded { get; }
 
-        // True while Radio Mode has yielded to a selected game's own music (PlayOnlyOnGameSelect in
-        // Fullscreen Details view). SpotifyControlService treats this as a lifecycle pause so Spotify
-        // ducks out instead of playing over the game track. Must be an EXPLICIT flag: it cannot be
-        // inferred from IsPlaying, which by the IMusicPlayer.IsActive invariant counts a
-        // paused-mid-playback song as active — a stale loaded song would then pause Spotify forever.
+        // True while Radio Mode has yielded to a selected game's own music (PlayOnlyOnGameSelect in Fullscreen Details
+        // view). SpotifyControlService treats this as a lifecycle pause so Spotify ducks out instead of playing over
+        // the game track. Must be an EXPLICIT flag: it cannot be inferred from IsPlaying, which by the
+        // IMusicPlayer.IsActive invariant counts a paused-mid-playback song as active — a stale loaded song would
+        // then pause Spotify forever.
         bool IsRadioYieldedToGameMusic { get; }
 
-        // True when the user has explicitly started music at least once in the
-        // current Playnite session via any manual-play path (top panel, media
-        // key, dashboard, external control). Resets on Playnite restart.
-        // Used by MusicPlaybackCoordinator to gate the Desktop session auto-play lock.
+        // True when the user has explicitly started music at least once in the current Playnite session via any
+        // manual-play path (top panel, media key, dashboard, external control). Resets on Playnite restart. Used by
+        // MusicPlaybackCoordinator to gate the Desktop session auto-play lock.
         bool UserHasManuallyStartedThisSession { get; }
 
         // Marks the session-flag true. Call from manual-play UI paths ONLY.
@@ -126,10 +125,9 @@ namespace UniPlaySong.Services
         // Used by CrossfadeCoordinator to compute remaining time.
         System.TimeSpan? GetCurrentSongCurrentTime();
 
-        // Starts a crossfade from the currently-playing song into the next song, with both
-        // audible simultaneously over the crossfade duration. No-op if the current backend
-        // doesn't support crossfade (SDL2) or if already crossfading. Called by
-        // CrossfadeCoordinator only; user-facing code should not call this directly.
+        // Starts a crossfade from the currently-playing song into the next song, with both audible simultaneously over
+        // the crossfade duration. No-op if the current backend doesn't support crossfade (SDL2) or if already
+        // crossfading. Called by CrossfadeCoordinator only; user-facing code should not call this directly.
         void StartCrossfadeIntoNext(string nextPath, double durationSeconds);
 
         bool IsPlayingDefaultMusic { get; } // true if playing default/fallback music

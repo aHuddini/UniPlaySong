@@ -164,10 +164,10 @@ namespace UniPlaySong.Common
         }
 
         // --- Minimize Spotify's window after auto-launch (so it doesn't sit on top of Playnite) ---
-        // Spotify has no "start minimized" option, so we find its main window post-launch and minimize
-        // it. ShowWindow(SW_MINIMIZE) on another app's window is NOT subject to the SetForegroundWindow
-        // foreground-lock, so this is reliable; Playnite naturally becomes foreground once Spotify
-        // minimizes. Works for both Win32 and Store installs (the UI is a normal top-level HWND).
+        // Spotify has no "start minimized" option, so we find its main window post-launch and minimize it.
+        // ShowWindow(SW_MINIMIZE) on another app's window is NOT subject to the SetForegroundWindow foreground-lock, so
+        // this is reliable; Playnite naturally becomes foreground once Spotify minimizes. Works for both Win32 and
+        // Store installs (the UI is a normal top-level HWND).
 
         private const int SW_MINIMIZE = 6;
 
@@ -218,12 +218,11 @@ namespace UniPlaySong.Common
         // Spotify in Fullscreen mode: minimizing Spotify hands focus to the desktop rather than back to
         // the Playnite fullscreen window, leaving controller input dead until the user clicks.
         //
-        // A plain SetForegroundWindow is SILENTLY DENIED by Windows when a different process just held
-        // the foreground (it flashes the taskbar instead) — the classic foreground-lock. The reliable
-        // bypass is AttachThreadInput: temporarily attach our thread's input queue to the CURRENT
-        // foreground window's thread, which makes Windows treat our SetForegroundWindow as coming from
-        // the focused thread, so it's allowed. Detach afterward. Must run on the UI thread.
-        // Fail-safe. No-op on IntPtr.Zero.
+        // A plain SetForegroundWindow is SILENTLY DENIED by Windows when a different process just held the foreground
+        // (it flashes the taskbar instead) — the classic foreground-lock. The reliable bypass is AttachThreadInput:
+        // temporarily attach our thread's input queue to the CURRENT foreground window's thread, which makes Windows
+        // treat our SetForegroundWindow as coming from the focused thread, so it's allowed. Detach afterward. Must run
+        // on the UI thread. Fail-safe. No-op on IntPtr.Zero.
         public static void BringWindowToForeground(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return;

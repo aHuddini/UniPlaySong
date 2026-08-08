@@ -46,11 +46,10 @@ namespace UniPlaySong.Common
             return WithAllSpotifySessions(vol => vol.SetMute(muted, ref _eventContext));
         }
 
-        // Sets Spotify's session master volume (0.0-1.0) on EVERY Spotify session. Used by the
-        // live-effects duck: the process-loopback tap is post-session-volume, so a hard mute
-        // would silence the capture too — ducking to 2^-10 keeps the capture alive (restored by
-        // gain in the provider). Write-all is what makes the duck land on the session that
-        // actually carries audio regardless of PID or output device.
+        // Sets Spotify's session master volume (0.0-1.0) on EVERY Spotify session. Used by the live-effects duck: the
+        // process-loopback tap is post-session-volume, so a hard mute would silence the capture too — ducking to
+        // 2^-10 keeps the capture alive (restored by gain in the provider). Write-all is what makes the duck land on
+        // the session that actually carries audio regardless of PID or output device.
         public static bool SetSessionVolume(float level)
         {
             InvalidateMuteVolumeCache();
@@ -71,10 +70,10 @@ namespace UniPlaySong.Common
             return found ? result : fallback;
         }
 
-        // Cached (muted, volume) — one enumeration for both, ~1s TTL. Snapshot builders and theme
-        // bindings poll on the UI thread every ~2s; enumerating an ACTIVE Spotify session takes
-        // ~90ms, so a live read there was a 90ms UI stall per tick (worse while playing). The cache
-        // makes the read instant; the enumeration still happens, just at most ~1x/sec off the caller.
+        // Cached (muted, volume) — one enumeration for both, ~1s TTL. Snapshot builders and theme bindings poll on
+        // the UI thread every ~2s; enumerating an ACTIVE Spotify session takes ~90ms, so a live read there was a 90ms
+        // UI stall per tick (worse while playing). The cache makes the read instant; the enumeration still happens,
+        // just at most ~1x/sec off the caller.
         private static readonly object _cacheLock = new object();
         private static bool _cachedMuted;
         private static float _cachedVolume;
@@ -164,13 +163,11 @@ namespace UniPlaySong.Common
             IMMDeviceCollection devices = null;
             try
             {
-                // Resolve Spotify's PIDs ONCE per enumeration instead of calling
-                // Process.GetProcessById per session. That per-session lookup was the dominant cost
-                // here and it got worse the longer the machine ran: it opens a process handle for
-                // EVERY audio session on EVERY render device (not just Spotify's), never disposes it
-                // (a leaked handle per session per enumeration), and THROWS for the dead PIDs of
-                // expired sessions — which accumulate over a long Spotify run. Now it's a cheap
-                // integer set lookup: no per-session handles, no exceptions, no leak.
+                // Resolve Spotify's PIDs ONCE per enumeration instead of calling Process.GetProcessById per session. That
+                // per-session lookup was the dominant cost here and it got worse the longer the machine ran: it opens a process
+                // handle for EVERY audio session on EVERY render device (not just Spotify's), never disposes it (a leaked
+                // handle per session per enumeration), and THROWS for the dead PIDs of expired sessions — which accumulate
+                // over a long Spotify run. Now it's a cheap integer set lookup: no per-session handles, no exceptions, no leak.
                 var spotifyPids = new System.Collections.Generic.HashSet<uint>();
                 try
                 {
@@ -253,10 +250,9 @@ namespace UniPlaySong.Common
             }
         }
 
-        // READ path: runs the action against ONE session — preferring an ACTIVE one (the session
-        // audibly rendering right now), falling back to any Spotify session. The fallback costs a
-        // second enumeration, but only when Spotify has no active session (idle) — and the cached
-        // read paths run off the UI thread anyway.
+        // READ path: runs the action against ONE session — preferring an ACTIVE one (the session audibly rendering
+        // right now), falling back to any Spotify session. The fallback costs a second enumeration, but only when
+        // Spotify has no active session (idle) — and the cached read paths run off the UI thread anyway.
         private static bool WithSpotifyVolume(Func<ISimpleAudioVolume, bool> action)
         {
             bool handled = false;

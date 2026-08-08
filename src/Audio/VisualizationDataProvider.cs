@@ -36,10 +36,9 @@ namespace UniPlaySong.Audio
         private readonly float[] _hannWindow;
         private readonly float[] _smoothedSpectrum;
 
-        // Per-bin temporal smoothing: bass gets slightly slower smoothing (weighty),
-        // treble gets faster smoothing (sparkly). Linearly interpolated across bins.
-        // Alphas are scaled based on FFT size — larger windows need higher alphas
-        // to compensate for less-frequent updates.
+        // Per-bin temporal smoothing: bass gets slightly slower smoothing (weighty), treble gets faster smoothing
+        // (sparkly). Linearly interpolated across bins. Alphas are scaled based on FFT size — larger windows need
+        // higher alphas to compensate for less-frequent updates.
         private readonly float[] _riseAlpha;
         private readonly float[] _fallAlpha;
 

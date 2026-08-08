@@ -92,9 +92,8 @@ namespace UniPlaySong.DeskMediaControl
         private readonly float[] _bleedBuffer = new float[BarCount];
         private readonly float[] _bleedOrig = new float[BarCount];
 
-        // UI-side smoothing — second pass of asymmetric EMA (fast rise, smooth fall).
-        // This smooths the post-bleed signal before the peak-hold animation,
-        // removing frame-to-frame jitter while preserving sharp beat attacks.
+        // UI-side smoothing — second pass of asymmetric EMA (fast rise, smooth fall). This smooths the post-bleed
+        // signal before the peak-hold animation, removing frame-to-frame jitter while preserving sharp beat attacks.
         // Rise/fall alphas are configurable via VizSmoothRise / VizSmoothFall settings.
         private readonly float[] _smoothedTarget = new float[BarCount];
 

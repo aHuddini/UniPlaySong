@@ -5,15 +5,14 @@ namespace UniPlaySong.Common
 {
     // ILogger wrapper that keeps Playnite's SHARED extension.log quiet during normal use.
     //
-    // extension.log is not ours — every installed extension writes to it, and a user opening it to
-    // diagnose an unrelated problem should not have to scroll past hundreds of UPS lines. With
-    // debug logging off this drops Trace/Debug/Info/Warn and lets only Error through, which is what
-    // a bug report actually needs. Turning Enable Debug Logging on restores everything.
+    // extension.log is not ours — every installed extension writes to it, and a user opening it to diagnose an
+    // unrelated problem should not have to scroll past hundreds of UPS lines. With debug logging off this drops
+    // Trace/Debug/Info/Warn and lets only Error through, which is what a bug report actually needs. Turning Enable
+    // Debug Logging on restores everything.
     //
-    // Gating happens HERE rather than at the ~200 call sites because almost none of the classes
-    // holding an ILogger also hold a FileLogger — routing each call individually would mean
-    // threading a second logger through roughly forty classes. Swapping the factory in the field
-    // initialiser gates all of them with one line per file.
+    // Gating happens HERE rather than at the ~200 call sites because almost none of the classes holding an ILogger
+    // also hold a FileLogger — routing each call individually would mean threading a second logger through
+    // roughly forty classes. Swapping the factory in the field initialiser gates all of them with one line per file.
     //
     // Warn is gated here but NOT in FileLogger: warnings still land in UniPlaySong.log (our own
     // file, low volume), so support keeps that signal without noising up Playnite's log.
