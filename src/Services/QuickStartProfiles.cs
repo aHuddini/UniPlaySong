@@ -190,7 +190,7 @@ namespace UniPlaySong.Services
                 Id = HoverPreviewFullscreen,
                 Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Music follows the highlight as you browse, playing a 30-second snippet that loops for as long as you stay on a game.",
+                Summary = "Music follows the highlight, looping a 30-second clip of each game's track.",
                 Values = Merge(HoverBase(), ClipValues(true))
             },
             new QuickStartProfile
@@ -198,7 +198,7 @@ namespace UniPlaySong.Services
                 Id = HoverFullTrackFullscreen,
                 Name = "Hover Preview, Full Track",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Music follows the highlight as you browse, and each game's track plays in full.",
+                Summary = "Music follows the highlight, playing each game's track in full.",
                 Values = Merge(HoverBase(), ClipValues(false))
             },
             new QuickStartProfile
@@ -206,7 +206,7 @@ namespace UniPlaySong.Services
                 Id = SelectToPlayFullscreen,
                 Name = "Select to Play",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Your default music plays while you browse the library. Opening a game switches to its own music, and backing out returns to the background track.",
+                Summary = "Default music while you browse; a game's own music when you open it.",
                 // A separate "Library Background" tile was tried and removed: it differed from this
                 // one by exactly two settings — the default source and its randomize flag — which is
                 // a checkbox, not a way of listening.
@@ -231,7 +231,7 @@ namespace UniPlaySong.Services
                 Id = HuddiniShowcaseFullscreen,
                 Name = "Huddini Showcase",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Huddini's personal setup — crossfades, live effects, volume boost and randomised bundled ambience. Plays in both modes and only for installed games. Sets your volume, which no other option does.",
+                Summary = "Everything on: crossfades, live effects, volume boost, installed games only. Also sets your volume.",
                 Values = ShowcaseValues()
             },
             new QuickStartProfile
@@ -239,7 +239,7 @@ namespace UniPlaySong.Services
                 Id = JukeboxFullscreen,
                 Name = "Radio Mode (Random Game Music)",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
+                Summary = "One continuous mix instead of per-game music. Library or Spotify.",
                 Values = JukeboxValues()
             },
 
@@ -248,7 +248,7 @@ namespace UniPlaySong.Services
                 Id = HoverPreviewDesktop,
                 Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Music follows your selection, playing a 30-second snippet that loops for as long as you stay on a game.",
+                Summary = "Music follows your selection, looping a 30-second clip of each game's track.",
                 Values = Merge(HoverBaseDesktop(), ClipValues(true))
             },
             new QuickStartProfile
@@ -256,7 +256,7 @@ namespace UniPlaySong.Services
                 Id = HoverFullTrackDesktop,
                 Name = "Hover Preview, Full Track",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Music follows your selection, and each game's track plays in full.",
+                Summary = "Music follows your selection, playing each game's track in full.",
                 Values = Merge(HoverBaseDesktop(), ClipValues(false))
             },
             new QuickStartProfile
@@ -264,7 +264,7 @@ namespace UniPlaySong.Services
                 Id = AmbientDesktop,
                 Name = "Background Mode (Default Music)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "One bundled ambient track plays the whole time. Game music is off, so nothing interrupts it.",
+                Summary = "One ambient track the whole time. Game music off, so nothing interrupts it.",
                 // Game music genuinely off. EnableMusic=false + EnableDefaultMusic=true is the
                 // engine's supported "default music only" path — PlayGameMusic clears the game's
                 // songs and falls through to the default source.
@@ -292,7 +292,7 @@ namespace UniPlaySong.Services
                 Id = HuddiniShowcaseDesktop,
                 Name = "Huddini Showcase",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Huddini's personal setup — crossfades, live effects, volume boost and randomised bundled ambience. Plays in both modes and only for installed games. Sets your volume, which no other option does.",
+                Summary = "Everything on: crossfades, live effects, volume boost, installed games only. Also sets your volume.",
                 Values = ShowcaseValues()
             },
             new QuickStartProfile
@@ -300,7 +300,7 @@ namespace UniPlaySong.Services
                 Id = JukeboxDesktop,
                 Name = "Radio Mode (Random Game Music)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
+                Summary = "One continuous mix instead of per-game music. Library or Spotify.",
                 Values = JukeboxValues()
             },
         };
