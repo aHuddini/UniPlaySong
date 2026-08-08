@@ -325,6 +325,199 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,10"/>
 
+                    <Separator Margin="0,15"/>
+
+                    <!-- Music Library Tagging -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Media Controls (Desktop)" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                        <CheckBox Content="Show Media Controls on Panel (Desktop)"
+                                  IsChecked="{Binding Settings.ShowDesktopMediaControls}"
+                                  Command="{Binding SetRestartRequired}"
+                                  CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                                  Margin="0,5"/>
+                        <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                            <Run Foreground="Gray">Displays the play/pause and skip buttons on Playnite's Top Panel.</Run>
+                            <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                        </TextBlock>
+    
+                        <CheckBox Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
+                                  IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
+                                  Command="{Binding SetRestartRequired}"
+                                  CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                                  Margin="0,5"/>
+                        <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
+                            <Run Foreground="Gray">Adds Media Controls to Playnite's taskbar hover preview.</Run>
+                            <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                        </TextBlock>
+    
+                        <CheckBox Content="Show Now Playing on Panel (Desktop)"
+                                  IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
+                                  Command="{Binding SetRestartRequired}"
+                                  CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                                  Margin="0,5"/>
+                        <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
+                            <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnight's Top Panel.</Run>
+                            <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                        </TextBlock>
+    
+                        <CheckBox Content="Hide Now Playing for default music"
+                                  IsChecked="{Binding Settings.HideNowPlayingForDefaultMusic}"
+                                  IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                                  Margin="20,5,0,0"/>
+                        <TextBlock Text="When enabled, the Now Playing panel is hidden when a game has no downloaded music and default/fallback music is playing"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="40,0,0,10"/>
+    
+                        <CheckBox Content="Show [Default] indicator in Now Playing"
+                                  IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
+                                  IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                                  Margin="20,0,0,0"/>
+                        <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="40,0,0,10"/>
+    
+                        <!-- Current Song Display (non-serialized, display-only) -->
+                        <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                            <TextBlock Text="Current Song: "
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentSongDisplay}"
+                                       FontSize="11"
+                                       Foreground="LightGray"
+                                       FontStyle="Italic"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+    
+                        <!-- Live now-playing preview card (album art + title/artist), display-only.
+                             Mirrors the data theme devs pull via {PluginSettings}. -->
+                        <Border Margin="20,0,0,10" Padding="8" CornerRadius="4"
+                                BorderThickness="1" BorderBrush="#33888888" Background="#11888888"
+                                HorizontalAlignment="Left"
+                                Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
+                            <StackPanel Orientation="Horizontal">
+                                <Grid Width="64" Height="64" Margin="0,0,10,0">
+                                    <Border Background="#22000000" CornerRadius="3"/>
+                                    <TextBlock Text="&#x266A;" FontSize="28" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" Opacity="0.5"
+                                               Visibility="{Binding PreviewHasNoArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Image Source="{Binding PreviewNowPlayingArtPath}" Stretch="UniformToFill"
+                                           Visibility="{Binding PreviewHasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding PreviewNowPlayingTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                    <TextBlock Text="{Binding PreviewNowPlayingArtist}" Opacity="0.75" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                    <!-- Spotify-only metadata; each row collapses when empty (game music leaves these blank). -->
+                                    <TextBlock Text="{Binding PreviewNowPlayingAlbum}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
+                                               Visibility="{Binding PreviewHasAlbum, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Text="{Binding PreviewNowPlayingGenre}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
+                                               Visibility="{Binding PreviewHasGenre, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Text="{Binding PreviewNowPlayingDuration}" FontSize="11" Opacity="0.6"
+                                               Visibility="{Binding PreviewHasDuration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+    
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Music Library Tagging" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+    
+                        <CheckBox Content="Auto-tag games on library update"
+                                  IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
+                                  Margin="0,5"/>
+                        <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+    
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                            <Button Content="Scan &amp; Tag All Games"
+                                    Width="160"
+                                    Margin="0,0,10,0"
+                                    Command="{Binding ScanAndTagAllGamesCommand}"/>
+                            <Button Content="Remove All Tags"
+                                    Width="140"
+                                    Command="{Binding RemoveAllMusicTagsCommand}"/>
+                        </StackPanel>
+    
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Performance" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                        <CheckBox Content="Enable Song List Cache"
+                                  IsChecked="{Binding Settings.EnableSongListCache}"
+                                  Margin="0,5"/>
+                        <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                        <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. Manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
+                                   FontSize="11"
+                                   Foreground="#FFB74D"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,15"/>
+    
+                        <!-- Note: "Release Audio When Idle" lives on the Experimental tab (v1.5.4) -->
+    
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Troubleshooting -->
+                    <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Enable Debug Logging"
+                              IsChecked="{Binding Settings.EnableDebugLogging}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Disable for normal use to reduce log file size."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <Button Content="Open Log Folder"
+                            Width="160"
+                            Margin="0,5,0,15"
+                            HorizontalAlignment="Left"
+                            Command="{Binding OpenLogFolderCommand}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Playback Tab -->
+        <TabItem Header="Playback">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Playback Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetPlaybackTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
+
+                    <!-- Moved from the General tab: these three decide WHEN music plays at
+                         all, so they belong at the head of Playback rather than under
+                         general options. Deliberately not collapsed — they are the first
+                         thing a user needs and should be visible on arrival. -->
                     <StackPanel Orientation="Horizontal" Margin="0,10">
                         <TextBlock Text="Play Music State: " VerticalAlignment="Center" Width="150"/>
                         <ComboBox SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}"
@@ -361,181 +554,6 @@
                                Margin="20,0,0,10"/>
 
                     <Separator Margin="0,15"/>
-
-                    <!-- Music Status Tags -->
-                    <TextBlock Text="Music Status Tags" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Tag games based on music availability for easy filtering in Playnite" FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Auto-tag games on library update"
-                              IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
-                        <Button Content="Scan &amp; Tag All Games"
-                                Width="160"
-                                Margin="0,0,10,0"
-                                Command="{Binding ScanAndTagAllGamesCommand}"/>
-                        <Button Content="Remove All Tags"
-                                Width="140"
-                                Command="{Binding RemoveAllMusicTagsCommand}"/>
-                    </StackPanel>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Top Panel Display -->
-                    <TextBlock Text="Media Controls" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Show Media Controls on Panel (Desktop)"
-                              IsChecked="{Binding Settings.ShowDesktopMediaControls}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="0,5"/>
-                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Displays the play/pause and skip buttons on Playnite's Top Panel.</Run>
-                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
-                    </TextBlock>
-
-                    <CheckBox Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
-                              IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="0,5"/>
-                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                        <Run Foreground="Gray">Adds Media Controls to Playnite's taskbar hover preview.</Run>
-                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
-                    </TextBlock>
-
-                    <CheckBox Content="Show Now Playing on Panel (Desktop)"
-                              IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
-                              Command="{Binding SetRestartRequired}"
-                              CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                              Margin="0,5"/>
-                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
-                        <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnight's Top Panel.</Run>
-                        <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
-                    </TextBlock>
-
-                    <CheckBox Content="Hide Now Playing for default music"
-                              IsChecked="{Binding Settings.HideNowPlayingForDefaultMusic}"
-                              IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                              Margin="20,5,0,0"/>
-                    <TextBlock Text="When enabled, the Now Playing panel is hidden when a game has no downloaded music and default/fallback music is playing"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
-
-                    <CheckBox Content="Show [Default] indicator in Now Playing"
-                              IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
-                              IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                              Margin="20,0,0,0"/>
-                    <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
-
-                    <!-- Current Song Display (non-serialized, display-only) -->
-                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
-                        <TextBlock Text="Current Song: "
-                                   FontSize="11"
-                                   Foreground="Gray"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CurrentSongDisplay}"
-                                   FontSize="11"
-                                   Foreground="LightGray"
-                                   FontStyle="Italic"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Live now-playing preview card (album art + title/artist), display-only.
-                         Mirrors the data theme devs pull via {PluginSettings}. -->
-                    <Border Margin="20,0,0,10" Padding="8" CornerRadius="4"
-                            BorderThickness="1" BorderBrush="#33888888" Background="#11888888"
-                            HorizontalAlignment="Left"
-                            Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
-                        <StackPanel Orientation="Horizontal">
-                            <Grid Width="64" Height="64" Margin="0,0,10,0">
-                                <Border Background="#22000000" CornerRadius="3"/>
-                                <TextBlock Text="&#x266A;" FontSize="28" HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" Opacity="0.5"
-                                           Visibility="{Binding PreviewHasNoArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <Image Source="{Binding PreviewNowPlayingArtPath}" Stretch="UniformToFill"
-                                       Visibility="{Binding PreviewHasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </Grid>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="{Binding PreviewNowPlayingTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
-                                <TextBlock Text="{Binding PreviewNowPlayingArtist}" Opacity="0.75" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
-                                <!-- Spotify-only metadata; each row collapses when empty (game music leaves these blank). -->
-                                <TextBlock Text="{Binding PreviewNowPlayingAlbum}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
-                                           Visibility="{Binding PreviewHasAlbum, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Text="{Binding PreviewNowPlayingGenre}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
-                                           Visibility="{Binding PreviewHasGenre, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Text="{Binding PreviewNowPlayingDuration}" FontSize="11" Opacity="0.6"
-                                           Visibility="{Binding PreviewHasDuration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Performance -->
-                    <TextBlock Text="Performance" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Enable Song List Cache"
-                              IsChecked="{Binding Settings.EnableSongListCache}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. Manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
-                               FontSize="11"
-                               Foreground="#FFB74D"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
-
-                    <!-- Note: "Release Audio When Idle" lives on the Experimental tab (v1.5.4) -->
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Troubleshooting -->
-                    <TextBlock Text="Troubleshooting" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Enable Debug Logging"
-                              IsChecked="{Binding Settings.EnableDebugLogging}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Disable for normal use to reduce log file size."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <Button Content="Open Log Folder"
-                            Width="160"
-                            Margin="0,5,0,15"
-                            HorizontalAlignment="Left"
-                            Command="{Binding OpenLogFolderCommand}"/>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Playback Tab -->
-        <TabItem Header="Playback">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Playback Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Click="ResetPlaybackTab_Click" Padding="8,3" FontSize="11"/>
-                    </Grid>
-                    <TextBlock Text="Configure music playback, volume, fades, and default music" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
                     <!-- Volume -->
                     <Expander IsExpanded="False" Margin="0,0,0,10">
@@ -781,16 +799,21 @@
 
                     <Separator Margin="0,15"/>
 
-                    <!-- Random Game Picker (grouped under Song Randomization) -->
-                    <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <CheckBox Content="Play music while browsing the random game picker"
-                              IsChecked="{Binding Settings.EnableRandomPickerMusic}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Random Game Picker" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                        <CheckBox Content="Play music while browsing the random game picker"
+                                  IsChecked="{Binding Settings.EnableRandomPickerMusic}"
+                                  Margin="0,5,0,5"/>
+                        <TextBlock Text="Plays each game's music as you click 'Pick Another' in Playnite's random game picker dialog. Music restores to your library selection when the dialog closes."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,15"/>
 
@@ -1502,20 +1525,6 @@
                                IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
                         </StackPanel>
                     </Expander>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Theme/Trailer Video -->
-                    <TextBlock Text="Theme Video" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Pause music when a trailer or theme video plays"
-                              IsChecked="{Binding Settings.PauseOnTrailer}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
 
                 </StackPanel>
             </ScrollViewer>
@@ -3588,6 +3597,18 @@
                                       IsChecked="{Binding Settings.PauseOnThemeVideo}"
                                       Margin="0,5,0,0"/>
                             <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,15"/>
+
+                            <!-- Moved from the Pauses tab: this is theme-detection behaviour and
+                                 belongs beside the other theme video option, not among the
+                                 general pause triggers. -->
+                            <CheckBox Content="Pause music when a trailer or theme video plays"
+                                      IsChecked="{Binding Settings.PauseOnTrailer}"
+                                      Margin="0,5,0,5"/>
+                            <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
                                        FontSize="11"
                                        Foreground="Gray"
                                        TextWrapping="Wrap"

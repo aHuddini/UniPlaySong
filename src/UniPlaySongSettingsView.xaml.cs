@@ -107,9 +107,6 @@ namespace UniPlaySong
 
             s.EnableMusic = true;
             s.SuppressPlayniteBackgroundMusic = true;
-            s.MusicState = AudioState.Always;
-            s.AutoPlayOnFirstLaunchDesktop = true;
-            s.SkipFirstSelectionAfterModeSwitch = false;
             s.ShowDesktopMediaControls = true;
             s.ShowTaskbarMediaControls = true;
             s.ShowNowPlayingInTopPanel = true;
@@ -130,6 +127,12 @@ namespace UniPlaySong
             var s = ConfirmAndGetSettings("Playback");
             if (s == null) return;
 
+            // Moved here from the General handler with their controls: these three decide when
+            // music plays at all, and now sit at the head of this tab.
+            s.MusicState = AudioState.Always;
+            s.AutoPlayOnFirstLaunchDesktop = true;
+            s.SkipFirstSelectionAfterModeSwitch = false;
+
             s.MusicVolume = Constants.DefaultMusicVolume;
             s.FullscreenVolumeBoostPercent = 0;
             s.LowerVolumeOnIdle = false;
@@ -138,7 +141,6 @@ namespace UniPlaySong
             s.FadeOutDuration = Constants.DefaultFadeOutDuration;
             s.EnablePreviewMode = false;
             s.PreviewDuration = Constants.DefaultPreviewDuration;
-            s.PauseOnTrailer = true;
             s.RandomizeOnEverySelect = true;
             s.RandomizeOnMusicEnd = true;
             s.RandomizeDefaultMusicOnEnd = true;
@@ -235,7 +237,6 @@ namespace UniPlaySong
             s.ExternalAudioDebounceSeconds = 0;
             s.ExternalAudioInstantPause = false;
             s.ExternalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32, sunshine, sunshinesvc";
-            s.PauseOnTrailer = true;
             s.PauseOnIdle = false;
             s.IdleTimeoutMinutes = 15;
 
@@ -395,6 +396,9 @@ namespace UniPlaySong
             s.PS5ThemeCompatMode = false;  // PS5-Experience theme compatibility (default off)
             s.PauseOnThemeOverlay = true;
             s.PauseOnThemeVideo = true;
+            // Moved here with its checkbox. It was previously assigned by BOTH the Playback and
+            // Pauses handlers even though the control only ever appeared on Pauses.
+            s.PauseOnTrailer = true;
             ShowButtonFeedback(sender, "Reset!");
         }
 
