@@ -299,7 +299,9 @@
                 <StackPanel Margin="20">
                     <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock Text="Pick how you want music to behave and UniPlaySong configures itself. Only the playback settings each option covers are changed — your volume, tool paths, pause rules and effects are left alone."
-                               FontSize="11" Foreground="#90A8A0" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                               FontSize="11" Foreground="#90A8A0" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock Text="A track that is already playing keeps going until it ends. Select a different game to hear the new behaviour straight away."
+                               FontSize="11" Foreground="#C8A24B" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                     <Border Background="#22FFFFFF" CornerRadius="4" Padding="10" Margin="0,0,0,18">
                         <StackPanel Orientation="Horizontal">

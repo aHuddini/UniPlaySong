@@ -41,6 +41,35 @@ namespace UniPlaySong.Tests.Services
                 "the clip loops rather than advancing — that is what makes it read as a PS3 menu");
         }
 
+        // The Desktop tile was only covered indirectly, and a report of "the full song plays on the
+        // PS3 clip option in Desktop" turned out to be the settings taking effect on the NEXT song
+        // rather than the profile being wrong — the preview timer starts in MarkSongStart, so a
+        // track already playing runs to its natural end. Asserting the Desktop tile directly so
+        // that distinction stays testable rather than needing to be re-derived.
+        [Test]
+        public void HoverShortClip_Desktop_EnablesPreviewModeAndLoops()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewDesktop), JukeboxSource.Library, false, false, false);
+
+            Assert.IsTrue(_s.EnablePreviewMode, "Desktop clip tile must enable preview mode too");
+            Assert.AreEqual(Constants.DefaultPreviewDuration, _s.PreviewDuration);
+            Assert.IsFalse(_s.RandomizeOnMusicEnd, "the clip loops");
+        }
+
+        // Both modes' clip tiles must agree on the clip settings; only the trigger differs.
+        [Test]
+        public void BothShortClipTiles_AgreeOnClipBehaviour()
+        {
+            foreach (var id in new[] { QuickStartProfiles.HoverPreviewFullscreen, QuickStartProfiles.HoverPreviewDesktop })
+            {
+                var s = new UniPlaySongSettings();
+                new QuickStartService().Apply(s, P(id), JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnablePreviewMode, $"{id}");
+                Assert.AreEqual(Constants.DefaultPreviewDuration, s.PreviewDuration, $"{id}");
+                Assert.IsFalse(s.RandomizeOnMusicEnd, $"{id}");
+            }
+        }
+
         // Only Short Clip loops. Everything else advances on song end, and must own that so the
         // loop cannot leak out of Short Clip into a tile applied afterwards.
         [Test]
