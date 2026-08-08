@@ -161,17 +161,28 @@ namespace UniPlaySong
         private bool _quickStartAddReverb;
         // Composes with every profile in both modes, so a checkbox rather than more tiles. Turns on
         // live effects with the HuddiniRehearsal preset — note this forces the NAudio backend.
+        // Reads from the live settings rather than a plain field, like the other page checkboxes.
+        // As a field it always opened unchecked, so someone who already had Live Effects on — or who
+        // had just applied Huddini Showcase, which turns them on itself — saw an unticked box that
+        // contradicted their actual state.
         public bool QuickStartAddReverb
         {
-            get => _quickStartAddReverb;
-            set { _quickStartAddReverb = value; OnPropertyChanged(); }
+            get => Settings?.LiveEffectsEnabled ?? false;
+            set { if (Settings != null) Settings.LiveEffectsEnabled = value; OnPropertyChanged(); }
         }
 
-        private bool _quickStartUseSpotify;
+        // Derived from the real radio source, so reopening the page shows what is actually
+        // configured. Writing it only swaps the source — it never turns radio on, because ticking a
+        // source checkbox should not silently change what is playing; that is the Jukebox tile's job.
         public bool QuickStartUseSpotify
         {
-            get => _quickStartUseSpotify;
-            set { _quickStartUseSpotify = value; OnPropertyChanged(); }
+            get => Settings?.RadioMusicSource == RadioMusicSource.Spotify;
+            set
+            {
+                if (Settings != null)
+                    Settings.RadioMusicSource = value ? RadioMusicSource.Spotify : RadioMusicSource.FullLibrary;
+                OnPropertyChanged();
+            }
         }
 
         private Services.JukeboxSource JukeboxSource =>
@@ -236,8 +247,12 @@ namespace UniPlaySong
             OnPropertyChanged(nameof(ActiveProfileLabel));
             OnPropertyChanged(nameof(CanUndoQuickStart));
             OnPropertyChanged(nameof(CanRestoreQuickStartOriginal));
+            // All four checkboxes read from the live settings, so every one has to be re-read after
+            // an apply, an undo or a reset — a profile may have changed any of them.
             OnPropertyChanged(nameof(QuickStartInstalledOnly));
             OnPropertyChanged(nameof(QuickStartPlayThroughGames));
+            OnPropertyChanged(nameof(QuickStartUseSpotify));
+            OnPropertyChanged(nameof(QuickStartAddReverb));
         }
 
         #endregion

@@ -369,7 +369,7 @@
                     <Separator Margin="0,10"/>
 
                     <TextBlock Text="Options" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,2"/>
-                    <TextBlock Text="These apply on top of whichever option you pick. Set them before pressing Apply." FontSize="11" Foreground="Gray" Margin="0,0,0,8"/>
+                    <TextBlock Text="These show your current settings and apply on top of whichever option you pick. An option that decides one of these for itself keeps its own choice." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
                     <CheckBox Content="Only play music for installed games"
                               IsChecked="{Binding QuickStartInstalledOnly}" Margin="0,5"/>
@@ -381,14 +381,14 @@
                     <TextBlock Text="The mix carries on while a game is running instead of pausing. Has no effect on the per-game options."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
 
-                    <CheckBox Content="Use Spotify as the Jukebox source"
+                    <CheckBox Content="Spotify as the radio source"
                               IsChecked="{Binding QuickStartUseSpotify}" Margin="0,5"/>
-                    <TextBlock Text="Jukebox plays from Spotify instead of your downloaded library. Spotify must be installed and running for it to make sound."
+                    <TextBlock Text="Reflects your current radio source. Ticking it makes Radio Mode play from Spotify instead of your downloaded library — Spotify must be installed and running for it to make sound. It does not turn Radio Mode on by itself; pick the Radio Mode option for that."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
 
-                    <CheckBox Content="Add reverb"
+                    <CheckBox Content="Live Effects reverb"
                               IsChecked="{Binding QuickStartAddReverb}" Margin="0,5"/>
-                    <TextBlock Text="Turns on Live Effects using the Huddini Rehearsal preset — wide stereo with a rich room reverb. This switches UniPlaySong to the NAudio audio engine, and you can fine-tune or change the preset afterwards on the Live Effects tab."
+                    <TextBlock Text="Reflects whether Live Effects is on. Ticking it here turns Live Effects on with the Huddini Rehearsal preset — wide stereo with a rich room reverb — and switches UniPlaySong to the NAudio audio engine. Fine-tune or change the preset on the Live Effects tab."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
                 </StackPanel>
             </ScrollViewer>
