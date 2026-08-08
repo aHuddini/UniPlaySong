@@ -134,6 +134,98 @@ namespace UniPlaySong
 
         public IPlayniteAPI PlayniteApi => plugin.PlayniteApi;
 
+        #region Quick Start
+
+        private readonly Services.QuickStartService _quickStart = new Services.QuickStartService();
+
+        public System.Collections.Generic.IEnumerable<Services.QuickStartProfile> FullscreenProfiles =>
+            Services.QuickStartProfiles.For(Services.QuickStartMode.Fullscreen);
+
+        public System.Collections.Generic.IEnumerable<Services.QuickStartProfile> DesktopProfiles =>
+            Services.QuickStartProfiles.For(Services.QuickStartMode.Desktop);
+
+        // The two page-level checkboxes. Not persisted settings of their own — they are read from
+        // the live settings so the page reflects reality when reopened, and written through on apply.
+        public bool QuickStartInstalledOnly
+        {
+            get => Settings?.MusicOnlyForInstalledGames ?? false;
+            set { if (Settings != null) Settings.MusicOnlyForInstalledGames = value; OnPropertyChanged(); }
+        }
+
+        public bool QuickStartPlayThroughGames
+        {
+            get => Settings?.RadioPlaysThroughGames ?? false;
+            set { if (Settings != null) Settings.RadioPlaysThroughGames = value; OnPropertyChanged(); }
+        }
+
+        private bool _quickStartAddReverb;
+        // Composes with every profile in both modes, so a checkbox rather than more tiles. Turns on
+        // live effects with the HuddiniRehearsal preset — note this forces the NAudio backend.
+        public bool QuickStartAddReverb
+        {
+            get => _quickStartAddReverb;
+            set { _quickStartAddReverb = value; OnPropertyChanged(); }
+        }
+
+        private bool _quickStartUseSpotify;
+        public bool QuickStartUseSpotify
+        {
+            get => _quickStartUseSpotify;
+            set { _quickStartUseSpotify = value; OnPropertyChanged(); }
+        }
+
+        private Services.JukeboxSource JukeboxSource =>
+            QuickStartUseSpotify ? Services.JukeboxSource.Spotify : Services.JukeboxSource.Library;
+
+        // "Hover Preview" / "Hover Preview (modified)" / "None yet" — tells the user what they are
+        // actually running, which is the point of persisting the active profile at all.
+        public string ActiveProfileLabel
+        {
+            get
+            {
+                var p = Services.QuickStartProfiles.ById(Settings?.ActiveQuickStartProfile);
+                if (p == null) return "None applied yet";
+                var modified = _quickStart.IsModified(Settings, JukeboxSource, QuickStartInstalledOnly, QuickStartPlayThroughGames, QuickStartAddReverb);
+                return modified ? $"{p.Name} ({p.Mode}) — modified" : $"{p.Name} ({p.Mode})";
+            }
+        }
+
+        public bool CanUndoQuickStart => _quickStart.CanUndo;
+
+        public ICommand ApplyQuickStartProfile => new Common.RelayCommand<object>((param) =>
+        {
+            var profile = param as Services.QuickStartProfile;
+            if (profile == null) return;
+
+            // Applying rewrites settings the user may have tuned by hand, so it asks first and
+            // names what it will change.
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                $"Apply the \"{profile.Name}\" profile?\n\n{profile.Summary}\n\n" +
+                "This changes only the playback settings this profile covers — your volume, tool paths, " +
+                "pause rules and effects are left as they are. You can undo it right after.",
+                "Apply Quick Start profile",
+                System.Windows.MessageBoxButton.YesNo);
+            if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+            if (_quickStart.Apply(Settings, profile, JukeboxSource, QuickStartInstalledOnly, QuickStartPlayThroughGames, QuickStartAddReverb))
+                RefreshQuickStart();
+        });
+
+        public ICommand UndoQuickStart => new Common.RelayCommand<object>((a) =>
+        {
+            if (_quickStart.Undo(Settings)) RefreshQuickStart();
+        });
+
+        private void RefreshQuickStart()
+        {
+            OnPropertyChanged(nameof(ActiveProfileLabel));
+            OnPropertyChanged(nameof(CanUndoQuickStart));
+            OnPropertyChanged(nameof(QuickStartInstalledOnly));
+            OnPropertyChanged(nameof(QuickStartPlayThroughGames));
+        }
+
+        #endregion
+
         // Runtime plugin version, displayed on the About tab. Reads AssemblyInformationalVersion
         // (set by package_extension.ps1 from version.txt). Falls back to AssemblyVersion if
         // informational attribute is missing.

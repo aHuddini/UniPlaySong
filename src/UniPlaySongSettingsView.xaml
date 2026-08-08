@@ -291,6 +291,102 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Quick Start Tab: pick a way of listening in one click. Tiles are distinct playback
+             behaviours, not bundles of checkboxes — variations that differ by a single setting are
+             the checkboxes below instead, which is what keeps this to three tiles per mode. -->
+        <TabItem Header="Quick Start">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Pick how you want music to behave and UniPlaySong configures itself. Only the playback settings each option covers are changed — your volume, tool paths, pause rules and effects are left alone."
+                               FontSize="11" Foreground="#90A8A0" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                    <Border Background="#22FFFFFF" CornerRadius="4" Padding="10" Margin="0,0,0,18">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Current: " VerticalAlignment="Center" FontSize="12" Foreground="Gray"/>
+                            <TextBlock Text="{Binding ActiveProfileLabel}" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            <Button Content="Undo last apply" Margin="15,0,0,0" Padding="8,3" FontSize="11"
+                                    Command="{Binding UndoQuickStart}"
+                                    IsEnabled="{Binding CanUndoQuickStart}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="Fullscreen mode" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                    <TextBlock Text="Couch and controller." FontSize="11" Foreground="Gray" Margin="0,0,0,8"/>
+                    <ItemsControl ItemsSource="{Binding FullscreenProfiles}" Margin="0,0,0,18">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#18FFFFFF" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Apply" Width="80" Padding="8,4" VerticalAlignment="Center"
+                                                Command="{Binding DataContext.ApplyQuickStartProfile, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Desktop mode" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                    <TextBlock Text="Mouse and keyboard. Select to Play is not offered here — it only exists in Fullscreen." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <ItemsControl ItemsSource="{Binding DesktopProfiles}" Margin="0,0,0,18">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#18FFFFFF" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Apply" Width="80" Padding="8,4" VerticalAlignment="Center"
+                                                Command="{Binding DataContext.ApplyQuickStartProfile, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Separator Margin="0,10"/>
+
+                    <TextBlock Text="Options" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,2"/>
+                    <TextBlock Text="These apply on top of whichever option you pick. Set them before pressing Apply." FontSize="11" Foreground="Gray" Margin="0,0,0,8"/>
+
+                    <CheckBox Content="Only play music for installed games"
+                              IsChecked="{Binding QuickStartInstalledOnly}" Margin="0,5"/>
+                    <TextBlock Text="Uninstalled games fall back to your default music instead of their own."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
+
+                    <CheckBox Content="Keep playing during games (Jukebox only)"
+                              IsChecked="{Binding QuickStartPlayThroughGames}" Margin="0,5"/>
+                    <TextBlock Text="The mix carries on while a game is running instead of pausing. Has no effect on the per-game options."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
+
+                    <CheckBox Content="Use Spotify as the Jukebox source"
+                              IsChecked="{Binding QuickStartUseSpotify}" Margin="0,5"/>
+                    <TextBlock Text="Jukebox plays from Spotify instead of your downloaded library. Spotify must be installed and running for it to make sound."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
+
+                    <CheckBox Content="Add reverb"
+                              IsChecked="{Binding QuickStartAddReverb}" Margin="0,5"/>
+                    <TextBlock Text="Turns on Live Effects using the Huddini Rehearsal preset — wide stereo with a rich room reverb. This switches UniPlaySong to the NAudio audio engine, and you can fine-tune or change the preset afterwards on the Live Effects tab."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- General Tab -->
         <TabItem Header="General">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

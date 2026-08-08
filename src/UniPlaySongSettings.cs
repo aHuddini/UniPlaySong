@@ -334,6 +334,16 @@ namespace UniPlaySong
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
+        // Id of the Quick Start profile last applied, empty when none. Stored so the page can show
+        // "Hover Preview (modified)" once an owned setting drifts, and offer a meaningful re-apply.
+        // An id rather than a display name so renaming a tile does not orphan existing installs.
+        private string activeQuickStartProfile = string.Empty;
+        public string ActiveQuickStartProfile
+        {
+            get => activeQuickStartProfile;
+            set { activeQuickStartProfile = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
         private bool enableDebugLogging = false;
         private bool pauseOnFocusLoss = false;
         private bool pauseOnMinimize = true;
