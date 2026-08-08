@@ -337,6 +337,21 @@ namespace UniPlaySong
         // Id of the Quick Start profile last applied, empty when none. Stored so the page can show
         // "Hover Preview (modified)" once an owned setting drifts, and offer a meaningful re-apply.
         // An id rather than a display name so renaming a tile does not orphan existing installs.
+        // The user's profile-owned settings as they were before the FIRST Quick Start profile was
+        // ever applied, serialized as JSON. Persisted rather than held in memory because the
+        // baseline has to outlive a Playnite restart: without this, applying a profile, restarting,
+        // then applying another made the SECOND capture the first profile's values, so "Reset to my
+        // settings" restored a profile instead of the user's own configuration.
+        //
+        // Written once and then left alone. Cleared when the user resets, so the next apply starts
+        // a fresh baseline.
+        private string quickStartOriginalSettings = string.Empty;
+        public string QuickStartOriginalSettings
+        {
+            get => quickStartOriginalSettings;
+            set { quickStartOriginalSettings = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
         private string activeQuickStartProfile = string.Empty;
         public string ActiveQuickStartProfile
         {

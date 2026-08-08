@@ -21,14 +21,12 @@ namespace UniPlaySong.Services
         private Dictionary<string, object> _undoValues;
         private string _undoProfileId;
 
-        // The user's settings as they were before the FIRST profile of this session was applied.
-        // Undo steps back one apply; this steps back to "no profile at all". Captured once and then
-        // left alone, so trying three tiles in a row still returns to where they started rather than
-        // to whichever tile they tried second.
-        private Dictionary<string, object> _originalValues;
-        private bool _originalCaptured;
-
-        public bool CanRestoreOriginal => _originalCaptured && _originalValues != null;
+        // Whether a pre-profile baseline exists. Read from the SETTINGS rather than a field: the
+        // baseline is persisted, so it survives a Playnite restart. Holding it in memory meant a
+        // restart between two applies made the second capture the first profile's values, and
+        // "Reset to my settings" then restored a profile rather than the user's own configuration.
+        public bool HasBaseline(UniPlaySongSettings settings) =>
+            !string.IsNullOrWhiteSpace(settings?.QuickStartOriginalSettings);
 
         // Union of every key any profile can touch, plus the page-level modifiers. Restoring has to
         // cover the whole surface rather than just the last profile's keys — otherwise switching
@@ -107,13 +105,16 @@ namespace UniPlaySong.Services
                         "falling back to the bundled preset so the profile has something to play.");
                 }
 
-                // Captured once, before the first apply of the session, across the FULL owned
-                // surface — so "Reset to Defaults" returns to what the user had rather than to
-                // whichever tile they happened to try first.
-                if (!_originalCaptured)
+                // Captured once, before the first profile is ever applied, across the FULL owned
+                // surface, and PERSISTED — so the baseline survives a restart and "Reset to my
+                // settings" returns to what the user had rather than to whichever tile they
+                // happened to apply first.
+                if (!HasBaseline(settings))
                 {
-                    _originalValues = Snapshot(settings, AllOwnedKeys());
-                    _originalCaptured = true;
+                    var baseline = Snapshot(settings, AllOwnedKeys());
+                    settings.QuickStartOriginalSettings =
+                        Newtonsoft.Json.JsonConvert.SerializeObject(baseline);
+                    _fileLogger?.Info($"QuickStart: captured a {baseline.Count}-setting baseline before the first profile");
                 }
 
                 _undoValues = Snapshot(settings, values.Keys);
@@ -169,20 +170,29 @@ namespace UniPlaySong.Services
         // untouched here as they are during an apply.
         public bool RestoreOriginal(UniPlaySongSettings settings)
         {
-            if (settings == null || !CanRestoreOriginal) return false;
+            if (settings == null || !HasBaseline(settings)) return false;
 
             try
             {
-                foreach (var kv in _originalValues)
+                var baseline = Newtonsoft.Json.JsonConvert
+                    .DeserializeObject<Dictionary<string, object>>(settings.QuickStartOriginalSettings);
+                if (baseline == null) return false;
+
+                foreach (var kv in baseline)
                     TrySet(settings, kv.Key, kv.Value);
 
                 settings.ActiveQuickStartProfile = string.Empty;
+
+                // Cleared so the next apply captures a fresh baseline from whatever the user has
+                // now — otherwise a stale one would keep dragging them back to a state they have
+                // already deliberately moved on from.
+                settings.QuickStartOriginalSettings = string.Empty;
 
                 // A further undo would put back a profile the user has just asked to forget.
                 _undoValues = null;
                 _undoProfileId = null;
 
-                _fileLogger?.Info($"QuickStart: restored {_originalValues.Count} settings to their pre-profile values");
+                _fileLogger?.Info($"QuickStart: restored {baseline.Count} settings to their pre-profile values");
                 return true;
             }
             catch (Exception ex)

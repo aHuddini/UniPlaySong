@@ -216,7 +216,7 @@ namespace UniPlaySong
             if (_quickStart.Undo(Settings)) RefreshQuickStart();
         });
 
-        public bool CanRestoreQuickStartOriginal => _quickStart.CanRestoreOriginal;
+        public bool CanRestoreQuickStartOriginal => _quickStart.HasBaseline(Settings);
 
         public ICommand RestoreQuickStartOriginal => new Common.RelayCommand<object>((a) =>
         {

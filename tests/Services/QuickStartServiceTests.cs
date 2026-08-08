@@ -457,7 +457,7 @@ namespace UniPlaySong.Tests.Services
             _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Spotify, false, true, true);
             _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
 
-            Assert.IsTrue(_svc.CanRestoreOriginal);
+            Assert.IsTrue(_svc.HasBaseline(_s));
             Assert.IsTrue(_svc.RestoreOriginal(_s));
 
             Assert.IsTrue(_s.PlayOnlyOnGameSelect, "back to the user's value, not the first tile's");
@@ -503,10 +503,89 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(@"C:\tools\ffmpeg.exe", _s.FFmpegPath);
         }
 
+        // The baseline is persisted, so a NEW service instance — a Playnite restart between two
+        // applies — must still restore the user's own settings rather than the first profile's.
+        // Previously the second instance captured a fresh baseline from already-profiled settings,
+        // so Reset handed back a profile.
+        [Test]
+        public void RestoreOriginal_SurvivesANewServiceInstance()
+        {
+            _s.FadeInDuration = 2.5;
+            _s.PlayOnlyOnGameSelect = true;
+            _s.PreviewDuration = 77;
+
+            new QuickStartService().Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+
+            var afterRestart = new QuickStartService();
+            afterRestart.Apply(_s, P(QuickStartProfiles.SelectToPlayFullscreen), JukeboxSource.Library, false, false, false);
+            Assert.IsTrue(afterRestart.HasBaseline(_s), "the persisted baseline must be visible to a new instance");
+            Assert.IsTrue(afterRestart.RestoreOriginal(_s));
+
+            Assert.AreEqual(2.5, _s.FadeInDuration, 0.001, "the user's fade, not a profile's");
+            Assert.IsTrue(_s.PlayOnlyOnGameSelect);
+            Assert.AreEqual(77, _s.PreviewDuration);
+        }
+
+        // The baseline round-trips through JSON, which turns enums into numbers and doubles into
+        // whatever fits — so restoring has to convert back, not just assign.
+        [Test]
+        public void RestoreOriginal_RoundTripsEnumsAndDoublesThroughJson()
+        {
+            _s.DefaultMusicSourceOption = DefaultMusicSource.RandomGame;
+            _s.RadioMusicSource = RadioMusicSource.CustomRotation;
+            _s.SelectedStylePreset = StylePreset.HuddiniRetroRadio;
+            _s.FadeOutDuration = 1.25;
+
+            new QuickStartService().Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Spotify, false, true, true);
+
+            var svc = new QuickStartService();
+            Assert.IsTrue(svc.RestoreOriginal(_s));
+
+            Assert.AreEqual(DefaultMusicSource.RandomGame, _s.DefaultMusicSourceOption);
+            Assert.AreEqual(RadioMusicSource.CustomRotation, _s.RadioMusicSource);
+            Assert.AreEqual(StylePreset.HuddiniRetroRadio, _s.SelectedStylePreset);
+            Assert.AreEqual(1.25, _s.FadeOutDuration, 0.001);
+        }
+
+        // Applying repeatedly must not move the baseline — it is captured before the FIRST profile.
+        [Test]
+        public void RestoreOriginal_BaselineDoesNotDriftAcrossRepeatedApplies()
+        {
+            _s.FadeInDuration = 2.5;
+            _s.MusicOnlyForInstalledGames = true;
+
+            for (int i = 0; i < 5; i++)
+            {
+                _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+                _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Library, true, true, true);
+            }
+
+            _svc.RestoreOriginal(_s);
+
+            Assert.AreEqual(2.5, _s.FadeInDuration, 0.001);
+            Assert.IsTrue(_s.MusicOnlyForInstalledGames);
+        }
+
+        // After a reset the baseline is gone, so the next apply captures where the user is NOW
+        // rather than dragging them back to a state they deliberately moved on from.
+        [Test]
+        public void RestoreOriginal_ClearsTheBaselineSoTheNextApplyStartsFresh()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+            _svc.RestoreOriginal(_s);
+            Assert.IsFalse(_svc.HasBaseline(_s));
+
+            _s.FadeInDuration = 3.0; // a new deliberate choice
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Library, false, false, false);
+            _svc.RestoreOriginal(_s);
+
+            Assert.AreEqual(3.0, _s.FadeInDuration, 0.001, "back to the newer choice, not the original one");
+        }
+
         [Test]
         public void RestoreOriginal_UnavailableBeforeAnyProfileIsApplied()
         {
-            Assert.IsFalse(_svc.CanRestoreOriginal);
+            Assert.IsFalse(_svc.HasBaseline(_s));
             Assert.IsFalse(_svc.RestoreOriginal(_s));
         }
 
