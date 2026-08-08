@@ -41,7 +41,8 @@ the next. "PS3 style" means hover-to-play — move the highlight, music follows.
 profile from select-to-play, where music only starts once you drill into a game's details view.
 Branding is the label; the trigger is the substance.
 
-Reading the settings, the behaviour splits along two independent dimensions:
+Reading the settings, the behaviour splits along three independent dimensions — trigger, qualifier
+and fallback:
 
 **When does music trigger?**
 
@@ -60,8 +61,31 @@ Reading the settings, the behaviour splits along two independent dimensions:
 | `GamePropFilterEnabled` + platform/genre/source ids | only games matching those properties |
 | `FilterModeEnabled` | only while a named Playnite filter preset is active |
 
-These are orthogonal — any trigger combines with any qualifier — which is exactly why the settings
-UI makes them hard to discover. A profile's job is to pick a sensible pairing and name it.
+**What fills the gaps?** Default music is its own dimension, not a `true`/`false` rider on the two
+above. Every qualifier works by letting non-matching games *fall through* to default music, so a
+profile that sets a qualifier is implicitly making a decision about default music whether it says so
+or not. The knobs:
+
+| Setting | Meaning |
+|---|---|
+| `EnableDefaultMusic` | whether the fallback exists at all — off means silence in the gaps |
+| `DefaultMusicSourceOption` | where it comes from: bundled preset, custom file/folder, random game, custom rotation, completion-status pool, active theme audio, defer to trailer audio, or Spotify |
+| `DefaultMusicContinueSameSong` | whether it resumes where it left off or restarts on each gap |
+| `RandomizeDefaultMusicOnEnd` | picks a new track when one finishes |
+
+This matters because the two states are audibly different things. Game music is *reactive* — it
+changes as you move. Default music is *continuous* — it is the bed underneath. A profile that gets
+the trigger right but leaves default music wrong still feels wrong: hover-to-play with
+`DefaultMusicContinueSameSong = false` restarts the bed every time you land on a game with no music,
+which is exactly the stutter the setting exists to prevent.
+
+So the three dimensions are **trigger x qualifier x fallback**, and they are orthogonal — any trigger
+combines with any qualifier combines with any fallback. That is why these are hard to discover today:
+they are spread across three areas of the settings UI. A profile's job is to pick a coherent triple
+and name it.
+
+**Every profile must state its fallback explicitly.** Leaving `EnableDefaultMusic` unowned would mean
+the same profile behaves differently for two users, which defeats the point of a profile.
 
 ## Desktop vs Fullscreen is the primary axis
 
@@ -85,7 +109,9 @@ the profiles in each column differ in ways the other mode cannot express.
 | **Select to Play** | Select — only on details view | all games |
 | **Hover Preview, Installed Only** | Hover | installed games only |
 | **Select to Play, Installed Only** | Select | installed games only |
-| **Jukebox / Radio** | radio plays through browsing and games | n/a |
+| **Jukebox / Radio (UPS pool)** | radio plays through browsing and games | n/a |
+| **Spotify Radio** | Spotify plays continuously; UPS conducts | n/a |
+| **Spotify Fills the Gaps** | per-game music as normal; Spotify covers games with none | all games |
 | **Quiet** | Select, no default music while browsing | all games |
 
 The first four are the grid that matters: two triggers × two qualifiers. That pairing is the thing
@@ -99,7 +125,9 @@ users currently have to discover by finding two unrelated checkboxes on two diff
 | **Hover Preview, Installed Only** | Hover | installed games only |
 | **Ambient Background** | default music runs; game music on selection | all games |
 | **On-Demand** | nothing auto-plays; press play to start | all games |
-| **Jukebox / Radio** | radio plays continuously | n/a |
+| **Jukebox / Radio (UPS pool)** | radio plays continuously | n/a |
+| **Spotify Radio** | Spotify plays continuously; UPS conducts | n/a |
+| **Spotify Fills the Gaps** | per-game music as normal; Spotify covers games with none | all games |
 
 Desktop has no **Select to Play** variants: `PlayOnlyOnGameSelect` is Fullscreen-only, so the trigger
 does not exist there. That asymmetry is real and the page should not pretend otherwise.
@@ -140,14 +168,55 @@ starts when you open it.
 Either of the two above plus `MusicOnlyForInstalledGames = true`. Uninstalled games fall through to
 default music.
 
-### Jukebox / Radio — both modes
+### Jukebox / Radio (UPS pool) — both modes
+
+Radio replaces per-game music entirely: it plays continuously from a pool rather than reacting to
+selection.
 
 | Setting | Value |
 |---|---|
 | `RadioModeEnabled` | `true` |
+| `RadioMusicSource` | `FullLibrary` (or `CustomFolder` / `CustomRotation` / `CompletionStatusPool`) |
 | `RadioPlaysThroughGames` | `true` |
 | `PlayOnlyOnGameSelect` | `false` |
-| `EnableDefaultMusic` | `false` |
+| `EnableDefaultMusic` | `false` — radio is already the continuous bed |
+
+### Spotify Radio — both modes
+
+The same shape, with Spotify as the source instead of a UPS pool. UPS conducts; Spotify plays.
+
+| Setting | Value | Why |
+|---|---|---|
+| `RadioModeEnabled` | `true` | radio is the mechanism |
+| `RadioMusicSource` | `Spotify` | **these two together are what `SpotifyRadioMode` means** |
+| `RadioPlaysThroughGames` | `true` | keep Spotify going during a game session |
+| `EnableDefaultMusic` | `false` | Spotify is the bed |
+
+**Do not set `SpotifyRadioMode` directly** — it is `[JsonIgnore]` and read-only, derived as
+`RadioModeEnabled && RadioMusicSource == Spotify`. A profile sets the two real keys; the derived
+property follows.
+
+Two things a profile cannot do, and the tile must say so rather than fail silently:
+
+- Spotify must actually be installed and running for this to produce sound. The profile configures
+  intent, not availability.
+- Live effects over Spotify need the process-loopback capture path, which has an OS floor
+  (Windows 10 build 19041). Not something a profile should enable blindly.
+
+### Spotify as *default music* rather than radio
+
+Distinct from the above and worth its own tile only if it earns one. Here Spotify fills the **gaps**
+— games with no music of their own — while UPS still plays per-game music normally.
+
+| Setting | Value |
+|---|---|
+| `EnableDefaultMusic` | `true` |
+| `DefaultMusicSourceOption` | `Spotify` |
+| `SpotifySkipOnGap` | user's choice — advance Spotify on each gap, or resume the current track |
+| `RadioModeEnabled` | `false` — otherwise radio overrides per-game music entirely |
+
+This is the pairing that most needs a profile, because getting it wrong (radio on *and* Spotify
+default music) produces two competing Spotify behaviours from settings on different tabs.
 
 ### Quiet Fullscreen / On-Demand Desktop
 
