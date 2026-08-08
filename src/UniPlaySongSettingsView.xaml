@@ -305,6 +305,19 @@
              duplicated per list before, so a styling change had to be made twice and could drift. -->
         <TabItem Header="Quick Start">
             <TabItem.Resources>
+                <!-- Opaque slate palette, deliberately NOT translucent white.
+                     The page previously used #14FFFFFF / #1FFFFFFF / #26FFFFFF — white at 7-14%
+                     opacity — which does not have a colour of its own: it simply lightens whatever
+                     the theme paints behind it, so every panel came out the same washed grey and
+                     the status bar read as "a white bar". These are solid, biased slightly blue so
+                     the panels sit apart from Playnite's neutral chrome instead of tinting it.
+                     Change these four and the whole tab follows. -->
+                <SolidColorBrush x:Key="QsPanel" Color="#232D3A"/>
+                <SolidColorBrush x:Key="QsTile" Color="#1A222C"/>
+                <SolidColorBrush x:Key="QsTileHover" Color="#243040"/>
+                <SolidColorBrush x:Key="QsStroke" Color="#31404F"/>
+                <SolidColorBrush x:Key="QsStrokeHover" Color="#4A5F73"/>
+
                 <!-- Section heading with a left accent bar, so the mode groups read as distinct
                      bands rather than another line of bold text. -->
                 <Style x:Key="QsSectionHeader" TargetType="Border">
@@ -318,17 +331,17 @@
                      and brightens the fill, so the whole row reads as the target rather than just
                      the Apply button. -->
                 <Style x:Key="QsCard" TargetType="Border">
-                    <Setter Property="Background" Value="#14FFFFFF"/>
-                    <Setter Property="BorderBrush" Value="#26FFFFFF"/>
+                    <Setter Property="Background" Value="{StaticResource QsTile}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource QsStroke}"/>
                     <Setter Property="BorderThickness" Value="1"/>
                     <Setter Property="CornerRadius" Value="6"/>
                     <Setter Property="Padding" Value="0"/>
                     <Setter Property="Margin" Value="0,0,0,7"/>
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#1FFFFFFF"/>
+                            <Setter Property="Background" Value="{StaticResource QsTileHover}"/>
                             <!-- Neutral hover, so the only coloured mark on a row is the active rail. -->
-                            <Setter Property="BorderBrush" Value="#59FFFFFF"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource QsStrokeHover}"/>
                         </Trigger>
                     </Style.Triggers>
                 </Style>
@@ -373,7 +386,7 @@
                                TextWrapping="Wrap" Margin="0,0,0,14"/>
 
                     <!-- Status strip: what is active, and the two ways back out. -->
-                    <Border Background="#1FFFFFFF" BorderBrush="#26FFFFFF" BorderThickness="1"
+                    <Border Background="{StaticResource QsPanel}" BorderBrush="{StaticResource QsStroke}" BorderThickness="1"
                             CornerRadius="6" Padding="14,11" Margin="0,0,0,20">
                         <Grid>
                             <Grid.ColumnDefinitions>
