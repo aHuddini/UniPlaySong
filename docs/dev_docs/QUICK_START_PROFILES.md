@@ -101,43 +101,58 @@ This is the organising idea, and it is grounded in the code rather than taste:
 So the page should present two columns rather than one flat list. A user knows which they are, and
 the profiles in each column differ in ways the other mode cannot express.
 
+### Keep the tile count small
+
+An earlier draft had eight tiles per column by making a separate profile for every
+trigger x qualifier pairing. That reproduced the settings UI's problem — too many near-identical
+choices — in a page whose whole purpose is to remove it. A user cannot meaningfully choose between
+"Hover Preview" and "Hover Preview, Installed Only" on a tile.
+
+**Rule: a tile is a distinct way of listening, not a combination of checkboxes.** Variations that
+differ by one setting are a *checkbox on the page*, not a tile of their own.
+
 ### Fullscreen profiles (couch / controller)
 
-| Profile | Trigger | Qualifier |
-|---|---|---|
-| **Hover Preview (PS3 style)** | Hover — music follows the highlight | all games |
-| **Select to Play** | Select — only on details view | all games |
-| **Hover Preview, Installed Only** | Hover | installed games only |
-| **Select to Play, Installed Only** | Select | installed games only |
-| **Jukebox / Radio (UPS pool)** | radio plays through browsing and games | n/a |
-| **Spotify Radio** | Spotify plays continuously; UPS conducts | n/a |
-| **Spotify Fills the Gaps** | per-game music as normal; Spotify covers games with none | all games |
-| **Quiet** | Select, no default music while browsing | all games |
-
-The first four are the grid that matters: two triggers × two qualifiers. That pairing is the thing
-users currently have to discover by finding two unrelated checkboxes on two different tabs.
+| Profile | What it does |
+|---|---|
+| **Hover Preview (PS3 style)** | Music follows the highlight as you browse. Default music fills games with none. |
+| **Select to Play** | Browsing stays on default music; a game's own music starts when you open it. |
+| **Jukebox / Radio** | One continuous mix instead of per-game music. Source picked on the tile: your library or Spotify. |
 
 ### Desktop profiles (mouse / keyboard)
 
-| Profile | Trigger | Qualifier |
-|---|---|---|
-| **Hover Preview** | Hover — music follows selection | all games |
-| **Hover Preview, Installed Only** | Hover | installed games only |
-| **Ambient Background** | default music runs; game music on selection | all games |
-| **On-Demand** | nothing auto-plays; press play to start | all games |
-| **Jukebox / Radio (UPS pool)** | radio plays continuously | n/a |
-| **Spotify Radio** | Spotify plays continuously; UPS conducts | n/a |
-| **Spotify Fills the Gaps** | per-game music as normal; Spotify covers games with none | all games |
+| Profile | What it does |
+|---|---|
+| **Hover Preview** | Music follows your selection. Default music fills games with none. |
+| **Ambient Background** | Default music runs continuously; game music takes over on selection. |
+| **Jukebox / Radio** | One continuous mix. Source picked on the tile: your library or Spotify. |
 
-Desktop has no **Select to Play** variants: `PlayOnlyOnGameSelect` is Fullscreen-only, so the trigger
-does not exist there. That asymmetry is real and the page should not pretend otherwise.
+Three tiles each. Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is Fullscreen-only —
+a real asymmetry the page should show rather than fake.
 
-`Jukebox / Radio` deliberately appears in both columns with the same key set — radio genuinely does
-not care about mode, and hiding it from one column would be arbitrary.
+### The two page-level checkboxes
 
-**Clip vs full track** is deliberately *not* a separate profile in either column. It composes with
-every trigger, so it belongs as a toggle on the Quick Start page ("play a short preview clip")
-rather than doubling the profile count.
+These apply on top of whichever tile is chosen, so they are checkboxes rather than more tiles:
+
+- **Only play music for installed games** — the `MusicOnlyForInstalledGames` qualifier
+- **Keep playing during games** — `RadioPlaysThroughGames`, only meaningful with the Jukebox tile
+
+Everything else — completion-status filters, property filters, Preview Mode, volume, effects —
+stays on its own tab. Quick Start gets you a working setup; it is not a second settings screen.
+
+### Dropped from the earlier draft
+
+**Quiet / On-Demand** was "the same as Select to Play but with default music off", which is one
+checkbox, not a way of listening. **Full Experience** is gone for the reason already recorded: it
+silently forces the NAudio backend. **Spotify Fills the Gaps** is not its own tile — it is the
+Spotify source choice on Hover/Select, since it means "per-game music as normal, Spotify in the
+gaps", which is the fallback dimension rather than a listening mode.
+
+**Preview Mode is not a profile and does not move.** It already exists as its own section on the
+Playback tab ("Enable Preview Mode" — game music restarts after a set duration, and it explicitly
+does not affect default music). It composes with every trigger, so making profiles for
+clip-vs-full-track would double the tile count to express one checkbox the user can already find.
+No profile owns it.
 
 ## Key sets — TO BE AGREED
 
@@ -253,12 +268,13 @@ backend, which is a real consequence worth stating in the UI rather than applyin
 3. **Its own Quick Start tab**, not a panel on About.
 4. **No first-run prompt.** Quick Start is discoverable, never automatic.
 
+5. **Tab position: third**, after About and Setup — orient, set up tools, then pick how it plays.
+6. **Preview Mode stays on the Playback tab.** It already exists there and no profile owns it.
+
 ## Still open
 
-- **Tab position.** Quick Start presumably belongs at or near the front, which competes with About
-  and Setup for the first slot. Current order starts About, Setup, General.
-- **Whether the clip toggle lives on the page** or is left to the Playback tab. Listed as a page-level
-  toggle above, but it is the one piece of the design not yet argued through.
+- **Naming.** "Hover Preview (PS3 style)" carries the console shorthand that made the idea land, but
+  ties UPS to a console it has no relationship with. Worth deciding before it appears in a release.
 
 ## What this does not solve
 
