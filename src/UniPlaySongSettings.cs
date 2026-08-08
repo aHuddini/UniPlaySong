@@ -9,11 +9,8 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong
 {
-    /// <summary>
-    /// Reverb effect presets based on Audacity's factory presets.
-    /// Each preset configures Room Size, Pre-delay, Reverberance, HF Damping,
-    /// Tone Low, Tone High, Wet Gain, Dry Gain, and Stereo Width.
-    /// </summary>
+    // Reverb effect presets based on Audacity's factory presets. Each preset configures Room Size,
+    // Pre-delay, Reverberance, HF Damping, Tone Low, Tone High, Wet Gain, Dry Gain, and Stereo Width.
     public enum ReverbPreset
     {
         Custom = 0,
@@ -55,10 +52,8 @@ namespace UniPlaySong
         Vaporwave           // The classic slowed+reverb aesthetic — huge, wet, dreamy
     }
 
-    /// <summary>
-    /// High-level style presets that configure all live effects at once.
-    /// Each style creatively combines HP, LP, reverb, slow, and gain settings.
-    /// </summary>
+    // High-level style presets that configure all live effects at once. Each style creatively combines
+    // HP, LP, reverb, slow, and gain settings.
     public enum StylePreset
     {
         None = 0,
@@ -424,27 +419,21 @@ namespace UniPlaySong
             set { enableMusic = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// When to play music (Never, Desktop, Fullscreen, Always)
-        /// </summary>
+        // When to play music (Never, Desktop, Fullscreen, Always)
         public AudioState MusicState
         {
             get => musicState;
             set { musicState = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Auto-play music on first launch in desktop mode
-        /// </summary>
+        // Auto-play music on first launch in desktop mode
         public bool AutoPlayOnFirstLaunchDesktop
         {
             get => autoPlayOnFirstLaunchDesktop;
             set { autoPlayOnFirstLaunchDesktop = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Skip first game selection after switching to fullscreen mode
-        /// </summary>
+        // Skip first game selection after switching to fullscreen mode
         public bool SkipFirstSelectionAfterModeSwitch
         {
             get => skipFirstSelectionAfterModeSwitch;
@@ -462,11 +451,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Theme Compatible Login Skip: Waits for keyboard/controller input (Enter/Space/Escape) before playing music.
-        /// Designed for themes with login/welcome screens. Music starts when user presses a key to dismiss the login screen.
-        /// Note: Disabled when "Do not play music on startup" is enabled.
-        /// </summary>
+        // Theme Compatible Login Skip: Waits for keyboard/controller input (Enter/Space/Escape) before
+        // playing music. Designed for themes with login/welcome screens. Music starts when user presses a key
+        // to dismiss the login screen. Note: Disabled when "Do not play music on startup" is enabled.
         public bool ThemeCompatibleSilentSkip
         {
             get => themeCompatibleSilentSkip;
@@ -478,27 +465,21 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Gets whether ThemeCompatibleSilentSkip checkbox should be enabled in UI.
-        /// Disabled when SkipFirstSelectionAfterModeSwitch is enabled.
-        /// </summary>
+        // Gets whether ThemeCompatibleSilentSkip checkbox should be enabled in UI. Disabled when
+        // SkipFirstSelectionAfterModeSwitch is enabled.
         public bool IsThemeCompatibleSilentSkipEnabled
         {
             get => !skipFirstSelectionAfterModeSwitch;
         }
 
-        /// <summary>
-        /// Pause music when trailers/videos are playing
-        /// </summary>
+        // Pause music when trailers/videos are playing
         public bool PauseOnTrailer
         {
             get => pauseOnTrailer;
             set { pauseOnTrailer = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Music volume (0-100)
-        /// </summary>
+        // Music volume (0-100)
         public int MusicVolume
         {
             get => musicVolume;
@@ -515,38 +496,30 @@ namespace UniPlaySong
             set { fullscreenVolumeBoostPercent = Math.Max(0, Math.Min(20, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Fade-in duration in seconds (0.05 - 10.0)
-        /// Controls how long music takes to fade in when starting or resuming
-        /// </summary>
+        // Fade-in duration in seconds (0.05 - 10.0) Controls how long music takes to fade in when starting or
+        // resuming
         public double FadeInDuration
         {
             get => fadeInDuration;
             set { fadeInDuration = Math.Round(Math.Max(Constants.MinFadeDuration, Math.Min(Constants.MaxFadeDuration, value)), 2); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Fade-out duration in seconds (0.05 - 10.0)
-        /// Controls how long music takes to fade out when switching or pausing
-        /// </summary>
+        // Fade-out duration in seconds (0.05 - 10.0) Controls how long music takes to fade out when switching
+        // or pausing
         public double FadeOutDuration
         {
             get => fadeOutDuration;
             set { fadeOutDuration = Math.Round(Math.Max(Constants.MinFadeDuration, Math.Min(Constants.MaxFadeDuration, value)), 2); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Path to yt-dlp executable (for YouTube downloads)
-        /// </summary>
+        // Path to yt-dlp executable (for YouTube downloads)
         public string YtDlpPath
         {
             get => ytDlpPath;
             set { ytDlpPath = value ?? string.Empty; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Path to ffmpeg executable (for YouTube downloads)
-        /// </summary>
+        // Path to ffmpeg executable (for YouTube downloads)
         public string FFmpegPath
         {
             get => ffmpegPath;
@@ -582,10 +555,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Tracks if a video is currently playing (set by MediaElementsMonitor).
-        /// Runtime-only state — excluded from serialization so it always starts false.
-        /// </summary>
+        // Tracks if a video is currently playing (set by MediaElementsMonitor). Runtime-only state —
+        // excluded from serialization so it always starts false.
         [JsonIgnore]
         public bool VideoIsPlaying
         {
@@ -593,12 +564,10 @@ namespace UniPlaySong
             set { videoIsPlaying = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings).
-        /// This is separate from VideoIsPlaying to prevent MediaElementsMonitor from overriding
-        /// theme pause requests. Music is paused if EITHER VideoIsPlaying OR ThemeOverlayActive is true.
-        /// Runtime-only state — excluded from serialization so it always starts false.
-        /// </summary>
+        // Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings). This is separate
+        // from VideoIsPlaying to prevent MediaElementsMonitor from overriding theme pause requests. Music is
+        // paused if EITHER VideoIsPlaying OR ThemeOverlayActive is true. Runtime-only state — excluded from
+        // serialization so it always starts false.
         [JsonIgnore]
         public bool ThemeOverlayActive
         {
@@ -807,21 +776,16 @@ namespace UniPlaySong
             set { activeMediaCanPrevious = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Enable preview mode for game-specific music
-        /// When enabled, songs will restart after the specified preview duration instead of playing continuously
-        /// </summary>
+        // Enable preview mode for game-specific music When enabled, songs will restart after the specified
+        // preview duration instead of playing continuously
         public bool EnablePreviewMode
         {
             get => enablePreviewMode;
             set { enablePreviewMode = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Preview duration in seconds (15-300 seconds)
-        /// Controls how long each game music track plays before restarting
-        /// Only applies when EnablePreviewMode is true and does not affect default music
-        /// </summary>
+        // Preview duration in seconds (15-300 seconds) Controls how long each game music track plays before
+        // restarting Only applies when EnablePreviewMode is true and does not affect default music
         public int PreviewDuration
         {
             get => previewDuration;
@@ -831,22 +795,17 @@ namespace UniPlaySong
         // Song List Cache Settings (opt-in performance feature)
         private bool enableSongListCache = false;
 
-        /// <summary>
-        /// Enable song list caching to optimize game selection performance.
-        /// When enabled, directory scans are cached in-memory for the current Playnite session.
-        /// Cache is automatically reset when Playnite restarts.
-        /// </summary>
+        // Enable song list caching to optimize game selection performance. When enabled, directory scans are
+        // cached in-memory for the current Playnite session. Cache is automatically reset when Playnite
+        // restarts.
         public bool EnableSongListCache
         {
             get => enableSongListCache;
             set { enableSongListCache = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Enable verbose debug logging to file.
-        /// When disabled, only errors and important events are logged.
-        /// Enable this for troubleshooting issues with the extension.
-        /// </summary>
+        // Enable verbose debug logging to file. When disabled, only errors and important events are logged.
+        // Enable this for troubleshooting issues with the extension.
         public bool EnableDebugLogging
         {
             get => enableDebugLogging;
@@ -876,30 +835,23 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Pause music when Playnite loses focus (switching to another application).
-        /// Music will resume when Playnite regains focus.
-        /// </summary>
+        // Pause music when Playnite loses focus (switching to another application). Music will resume when
+        // Playnite regains focus.
         public bool PauseOnFocusLoss
         {
             get => pauseOnFocusLoss;
             set { pauseOnFocusLoss = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Pause music when Playnite is minimized to taskbar.
-        /// Music will resume when Playnite is restored.
-        /// </summary>
+        // Pause music when Playnite is minimized to taskbar. Music will resume when Playnite is restored.
         public bool PauseOnMinimize
         {
             get => pauseOnMinimize;
             set { pauseOnMinimize = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Pause music when Playnite is hidden in the system tray.
-        /// Music will resume when Playnite is restored from the tray.
-        /// </summary>
+        // Pause music when Playnite is hidden in the system tray. Music will resume when Playnite is restored
+        // from the tray.
         public bool PauseWhenInSystemTray
         {
             get => pauseWhenInSystemTray;
@@ -1022,10 +974,8 @@ namespace UniPlaySong
             set { showTaskbarMediaControls = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Show "Now Playing" song info in the Desktop top panel bar.
-        /// Displays song title, artist (if available), and duration next to the play/pause buttons.
-        /// </summary>
+        // Show "Now Playing" song info in the Desktop top panel bar. Displays song title, artist (if
+        // available), and duration next to the play/pause buttons.
         public bool ShowNowPlayingInTopPanel
         {
             get => showNowPlayingInTopPanel;
@@ -1061,20 +1011,16 @@ namespace UniPlaySong
             set { progressBarPosition = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Show media control buttons (play/pause and skip) in the Desktop top panel bar.
-        /// When disabled, only the Now Playing text is shown (if enabled).
-        /// </summary>
+        // Show media control buttons (play/pause and skip) in the Desktop top panel bar. When disabled, only
+        // the Now Playing text is shown (if enabled).
         public bool ShowDesktopMediaControls
         {
             get => showDesktopMediaControls;
             set { showDesktopMediaControls = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Show a spectrum visualizer in the Desktop top panel bar.
-        /// Displays real-time frequency bars next to the media controls (requires Live Effects enabled).
-        /// </summary>
+        // Show a spectrum visualizer in the Desktop top panel bar. Displays real-time frequency bars next to
+        // the media controls (requires Live Effects enabled).
         public bool ShowSpectrumVisualizer
         {
             get => showSpectrumVisualizer;
@@ -1102,9 +1048,7 @@ namespace UniPlaySong
             set { naudioFadeOutCurve = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Automatically delete music files when their associated games are removed from Playnite.
-        /// </summary>
+        // Automatically delete music files when their associated games are removed from Playnite.
         public bool AutoDeleteMusicOnGameRemoval
         {
             get => autoDeleteMusicOnGameRemoval;
@@ -1319,9 +1263,7 @@ namespace UniPlaySong
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
         private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true as of v1.4.2 — most users want a persistent backdrop)
 
-        /// <summary>
-        /// Enable default music fallback when no game music is found
-        /// </summary>
+        // Enable default music fallback when no game music is found
         public bool EnableDefaultMusic
         {
             get => enableDefaultMusic;
@@ -1336,10 +1278,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Path to default music file (MP3, WAV, FLAC, etc.)
-        /// Only used when UseNativeMusicAsDefault is false
-        /// </summary>
+        // Path to default music file (MP3, WAV, FLAC, etc.) Only used when UseNativeMusicAsDefault is false
         public string DefaultMusicPath
         {
             get => defaultMusicPath;
@@ -1663,10 +1602,8 @@ namespace UniPlaySong
             set { defaultMusicContinueSameSong = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Backup of custom default music path when UseNativeMusicAsDefault is enabled
-        /// Used to restore the custom path when UseNativeMusicAsDefault is disabled
-        /// </summary>
+        // Backup of custom default music path when UseNativeMusicAsDefault is enabled Used to restore the
+        // custom path when UseNativeMusicAsDefault is disabled
         public string BackupCustomMusicPath
         {
             get => backupCustomMusicPath;
@@ -1693,30 +1630,23 @@ namespace UniPlaySong
         private bool useCustomHintsDatabase = false;
         private string customHintsDatabasePath = "";
 
-        /// <summary>
-        /// Enable search result caching to optimize KHInsider → YouTube fallback
-        /// When enabled, search results are cached for the specified duration
-        /// </summary>
+        // Enable search result caching to optimize KHInsider → YouTube fallback When enabled, search
+        // results are cached for the specified duration
         public bool EnableSearchCache
         {
             get => enableSearchCache;
             set { enableSearchCache = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Search cache duration in days (1-30)
-        /// Controls how long search results are cached before expiring
-        /// </summary>
+        // Search cache duration in days (1-30) Controls how long search results are cached before expiring
         public int SearchCacheDurationDays
         {
             get => searchCacheDurationDays;
             set { searchCacheDurationDays = Math.Max(1, Math.Min(30, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Automatically check for search hints database updates on application startup.
-        /// Compares the bundled version with the GitHub version and notifies if updates are available.
-        /// </summary>
+        // Automatically check for search hints database updates on application startup. Compares the bundled
+        // version with the GitHub version and notifies if updates are available.
         public bool AutoCheckHintsOnStartup
         {
             get => autoCheckHintsOnStartup;
@@ -1756,87 +1686,65 @@ namespace UniPlaySong
         private string trimSuffix = "-trimmed";
         private string preciseTrimSuffix = "-ptrimmed";
 
-        /// <summary>
-        /// Enable audio normalization for consistent volume levels
-        /// When enabled, audio files can be normalized to EBU R128 standard
-        /// </summary>
+        // Enable audio normalization for consistent volume levels When enabled, audio files can be normalized
+        // to EBU R128 standard
 
-        /// <summary>
-        /// Target loudness in LUFS (EBU R128 standard is -16 LUFS)
-        /// Range: -30 to -10 LUFS
-        /// </summary>
+        // Target loudness in LUFS (EBU R128 standard is -16 LUFS) Range: -30 to -10 LUFS
         public double NormalizationTargetLoudness
         {
             get => normalizationTargetLoudness;
             set { normalizationTargetLoudness = Math.Max(-30.0, Math.Min(-10.0, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// True peak limit in dBTP (EBU R128 standard is -1.0 to -1.5 dBTP)
-        /// Range: -3.0 to 0.0 dBTP
-        /// </summary>
+        // True peak limit in dBTP (EBU R128 standard is -1.0 to -1.5 dBTP) Range: -3.0 to 0.0 dBTP
         public double NormalizationTruePeak
         {
             get => normalizationTruePeak;
             set { normalizationTruePeak = Math.Max(-3.0, Math.Min(0.0, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Loudness range in LU (EBU R128 standard is 7-18 LU, default 11)
-        /// Range: 1 to 20 LU
-        /// </summary>
+        // Loudness range in LU (EBU R128 standard is 7-18 LU, default 11) Range: 1 to 20 LU
         public double NormalizationLoudnessRange
         {
             get => normalizationLoudnessRange;
             set { normalizationLoudnessRange = Math.Max(1.0, Math.Min(20.0, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Audio codec to use for normalization output
-        /// Default: libmp3lame (maintains MP3 format)
-        /// </summary>
+        // Audio codec to use for normalization output Default: libmp3lame (maintains MP3 format)
         public string NormalizationCodec
         {
             get => normalizationCodec;
             set { normalizationCodec = value ?? "auto"; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Suffix to append to normalized file names (e.g., "-normalized")
-        /// Normalized files are always created with this suffix, preserving original files
-        /// </summary>
+        // Suffix to append to normalized file names (e.g., "-normalized") Normalized files are always created
+        // with this suffix, preserving original files
         public string NormalizationSuffix
         {
             get => normalizationSuffix;
             set { normalizationSuffix = value ?? "-normalized"; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Skip files that are already normalized
-        /// When enabled, files with the normalization suffix are skipped during bulk operations
-        /// </summary>
+        // Skip files that are already normalized When enabled, files with the normalization suffix are
+        // skipped during bulk operations
         public bool SkipAlreadyNormalized
         {
             get => skipAlreadyNormalized;
             set { skipAlreadyNormalized = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Do not preserve original files (space saver mode)
-        /// When enabled, original files are normalized directly and replaced (no backup/preservation)
-        /// When disabled, original files are moved to PreservedOriginals folder
-        /// </summary>
+        // Do not preserve original files (space saver mode) When enabled, original files are normalized
+        // directly and replaced (no backup/preservation) When disabled, original files are moved to
+        // PreservedOriginals folder
         public bool DoNotPreserveOriginals
         {
             get => doNotPreserveOriginals;
             set { doNotPreserveOriginals = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Automatically normalize downloaded music files.
-        /// When enabled, music files will be normalized to EBU R128 standard after downloading.
-        /// Uses the configured normalization settings (target loudness, true peak, etc.)
-        /// </summary>
+        // Automatically normalize downloaded music files. When enabled, music files will be normalized to EBU
+        // R128 standard after downloading. Uses the configured normalization settings (target loudness, true
+        // peak, etc.)
         public bool AutoNormalizeAfterDownload
         {
             get => autoNormalizeAfterDownload;
@@ -1861,20 +1769,16 @@ namespace UniPlaySong
             set { conversionKeepOriginals = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Suffix to append to trimmed file names (e.g., "-trimmed")
-        /// Trimmed files are created with this suffix when preserving originals
-        /// </summary>
+        // Suffix to append to trimmed file names (e.g., "-trimmed") Trimmed files are created with this
+        // suffix when preserving originals
         public string TrimSuffix
         {
             get => trimSuffix;
             set { trimSuffix = value ?? "-trimmed"; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Suffix to append to precise-trimmed file names (e.g., "-ptrimmed")
-        /// Used by the waveform-based precise trim feature
-        /// </summary>
+        // Suffix to append to precise-trimmed file names (e.g., "-ptrimmed") Used by the waveform-based
+        // precise trim feature
         public string PreciseTrimSuffix
         {
             get => preciseTrimSuffix;
@@ -1889,20 +1793,16 @@ namespace UniPlaySong
         private bool fadeOutBeforeSongEnd = false;
         private double fadeOutBeforeSongEndDuration = 3.0;
 
-        /// <summary>
-        /// Randomize song selection when selecting a different game
-        /// When enabled, a random song will be selected each time you select a game (after primary song plays)
-        /// </summary>
+        // Randomize song selection when selecting a different game When enabled, a random song will be
+        // selected each time you select a game (after primary song plays)
         public bool RandomizeOnEverySelect
         {
             get => randomizeOnEverySelect;
             set { randomizeOnEverySelect = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Randomize song selection when current song ends
-        /// When enabled, after the current song finishes, a new random song will be selected from available songs
-        /// </summary>
+        // Randomize song selection when current song ends When enabled, after the current song finishes, a
+        // new random song will be selected from available songs
         public bool RandomizeOnMusicEnd
         {
             get => randomizeOnMusicEnd;
@@ -1939,12 +1839,10 @@ namespace UniPlaySong
         }
 
         private bool enableTrueCrossfade = false;
-        /// <summary>
-        /// When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd /
-        /// pool-based default music) the next song starts playing simultaneously with the
-        /// current song fading out, for a DJ-style overlap. Replaces the sequential
-        /// FadeOutBeforeSongEnd behavior. NAudio-only; enabling forces NAudio backend.
-        /// </summary>
+        // When enabled, during auto-advance transitions (Radio Mode / RandomizeOnMusicEnd / pool-based
+        // default music) the next song starts playing simultaneously with the current song fading out, for a
+        // DJ-style overlap. Replaces the sequential FadeOutBeforeSongEnd behavior. NAudio-only; enabling
+        // forces NAudio backend.
         public bool EnableTrueCrossfade
         {
             get => enableTrueCrossfade;
@@ -1959,12 +1857,9 @@ namespace UniPlaySong
         }
 
         private int crossfadeDurationSeconds = 9;
-        /// <summary>
-        /// Duration of the crossfade overlap in seconds (1–10). Only applies when
-        /// EnableTrueCrossfade is true. Song must be at least CrossfadeDurationSeconds + 2
-        /// seconds long for crossfade to fire; otherwise the transition falls back to
-        /// the sequential behavior.
-        /// </summary>
+        // Duration of the crossfade overlap in seconds (1–10). Only applies when EnableTrueCrossfade is
+        // true. Song must be at least CrossfadeDurationSeconds + 2 seconds long for crossfade to fire;
+        // otherwise the transition falls back to the sequential behavior.
         public int CrossfadeDurationSeconds
         {
             get => crossfadeDurationSeconds;
@@ -1990,11 +1885,9 @@ namespace UniPlaySong
         private bool autoDownloadOnLibraryUpdate = true;
         private DateTime lastAutoLibUpdateAssetsDownload = DateTime.MinValue;
 
-        /// <summary>
-        /// Automatically download music for newly added games when library is updated.
-        /// When enabled, music will be automatically downloaded for games added since the last check.
-        /// Uses BestAlbumPick and BestSongPick to select the most relevant music.
-        /// </summary>
+        // Automatically download music for newly added games when library is updated. When enabled, music
+        // will be automatically downloaded for games added since the last check. Uses BestAlbumPick and
+        // BestSongPick to select the most relevant music.
         public bool AutoDownloadOnLibraryUpdate
         {
             get => autoDownloadOnLibraryUpdate;
@@ -2010,10 +1903,8 @@ namespace UniPlaySong
             set { autoDownloadOnGameInstall = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Timestamp of the last automatic library update asset download.
-        /// Used to track which games need music downloaded.
-        /// </summary>
+        // Timestamp of the last automatic library update asset download. Used to track which games need music
+        // downloaded.
         public DateTime LastAutoLibUpdateAssetsDownload
         {
             get => lastAutoLibUpdateAssetsDownload;
@@ -2022,11 +1913,8 @@ namespace UniPlaySong
 
         private int maxConcurrentDownloads = 3;
 
-        /// <summary>
-        /// Maximum number of concurrent downloads during batch operations.
-        /// Higher values speed up batch downloads but may overwhelm servers.
-        /// Range: 1-5, Default: 3
-        /// </summary>
+        // Maximum number of concurrent downloads during batch operations. Higher values speed up batch
+        // downloads but may overwhelm servers. Range: 1-5, Default: 3
         public int MaxConcurrentDownloads
         {
             get => maxConcurrentDownloads;
@@ -2036,11 +1924,9 @@ namespace UniPlaySong
         // Music Status Tag Settings
         private bool autoTagOnLibraryUpdate = true;
 
-        /// <summary>
-        /// Automatically update music status tags when library is updated.
-        /// When enabled, games will be tagged with "[UPS] Has Music" or "[UPS] No Music"
-        /// based on whether they have downloaded music. These tags can be used for filtering.
-        /// </summary>
+        // Automatically update music status tags when library is updated. When enabled, games will be tagged
+        // with "[UPS] Has Music" or "[UPS] No Music" based on whether they have downloaded music. These tags
+        // can be used for filtering.
         public bool AutoTagOnLibraryUpdate
         {
             get => autoTagOnLibraryUpdate;
@@ -2060,21 +1946,17 @@ namespace UniPlaySong
             // Add more reliable channels here as you discover them
         };
 
-        /// <summary>
-        /// Enable YouTube channel whitelist for auto-download mode
-        /// When enabled, only playlists from whitelisted channels will be considered for auto-selection
-        /// Manual mode is not affected by this setting
-        /// </summary>
+        // Enable YouTube channel whitelist for auto-download mode When enabled, only playlists from
+        // whitelisted channels will be considered for auto-selection Manual mode is not affected by this
+        // setting
         public bool EnableYouTubeChannelWhitelist
         {
             get => enableYouTubeChannelWhitelist;
             set { enableYouTubeChannelWhitelist = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// List of whitelisted YouTube channel IDs
-        /// These channels are known to provide reliable game soundtrack uploads
-        /// </summary>
+        // List of whitelisted YouTube channel IDs These channels are known to provide reliable game
+        // soundtrack uploads
         // ObjectCreationHandling.Replace: without it Newtonsoft appends onto the
         // constructor-populated default list every load, so the defaults multiply
         // on each save/load cycle. Setter also de-dupes to self-heal configs that
@@ -2192,225 +2074,161 @@ namespace UniPlaySong
             set { calmDownTransitionDurationSeconds = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Enable live audio effects processing.
-        /// When enabled, uses NAudio-based player with real-time effects chain.
-        /// When disabled, uses standard WPF MediaPlayer for playback.
-        /// Note: Toggling this setting will restart the current song.
-        /// </summary>
+        // Enable live audio effects processing. When enabled, uses NAudio-based player with real-time effects
+        // chain. When disabled, uses standard WPF MediaPlayer for playback. Note: Toggling this setting will
+        // restart the current song.
         public bool LiveEffectsEnabled
         {
             get => liveEffectsEnabled;
             set { liveEffectsEnabled = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Enable low-pass filter effect (removes high frequencies).
-        /// Only works when LiveEffectsEnabled is true.
-        /// Use to create a "muffled" or "underwater" sound effect.
-        /// </summary>
+        // Enable low-pass filter effect (removes high frequencies). Only works when LiveEffectsEnabled is
+        // true. Use to create a "muffled" or "underwater" sound effect.
         public bool LowPassEnabled
         {
             get => lowPassEnabled;
             set { lowPassEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Enable high-pass filter effect (removes low frequencies).
-        /// Only works when LiveEffectsEnabled is true.
-        /// Use to reduce bass/rumble or create a "thin" sound.
-        /// </summary>
+        // Enable high-pass filter effect (removes low frequencies). Only works when LiveEffectsEnabled is
+        // true. Use to reduce bass/rumble or create a "thin" sound.
         public bool HighPassEnabled
         {
             get => highPassEnabled;
             set { highPassEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Enable reverb effect (adds spacial echo/ambiance).
-        /// Only works when LiveEffectsEnabled is true.
-        /// Creates a sense of space or room around the sound.
-        /// </summary>
+        // Enable reverb effect (adds spacial echo/ambiance). Only works when LiveEffectsEnabled is true.
+        // Creates a sense of space or room around the sound.
         public bool ReverbEnabled
         {
             get => reverbEnabled;
             set { reverbEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Low-pass filter cutoff frequency in Hz.
-        /// Range: 200 - 20000 Hz. Default: 8000 Hz (fairly open).
-        /// Lower values = more muffled sound.
-        /// </summary>
+        // Low-pass filter cutoff frequency in Hz. Range: 200 - 20000 Hz. Default: 8000 Hz (fairly open).
+        // Lower values = more muffled sound.
         public int LowPassCutoff
         {
             get => lowPassCutoff;
             set { lowPassCutoff = Math.Max(200, Math.Min(20000, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// High-pass filter cutoff frequency in Hz.
-        /// Range: 20 - 2000 Hz. Default: 80 Hz (minimal bass cut).
-        /// Higher values = more bass removed.
-        /// </summary>
+        // High-pass filter cutoff frequency in Hz. Range: 20 - 2000 Hz. Default: 80 Hz (minimal bass cut).
+        // Higher values = more bass removed.
         public int HighPassCutoff
         {
             get => highPassCutoff;
             set { highPassCutoff = Math.Max(20, Math.Min(2000, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb wet (effect) gain in dB.
-        /// Range: -20 to +10 dB. Default: -6 dB.
-        /// Controls the volume of the reverb effect independently from dry signal.
-        /// Positive values create more pronounced reverb effects.
-        /// </summary>
+        // Reverb wet (effect) gain in dB. Range: -20 to +10 dB. Default: -6 dB. Controls the volume of the
+        // reverb effect independently from dry signal. Positive values create more pronounced reverb effects.
         public int ReverbWetGain
         {
             get => reverbWetGain;
             set { reverbWetGain = Math.Max(-20, Math.Min(10, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb dry (original) gain in dB.
-        /// Range: -20 to 0 dB. Default: 0 dB (full volume).
-        /// Controls the volume of the original signal independently from reverb.
-        /// </summary>
+        // Reverb dry (original) gain in dB. Range: -20 to 0 dB. Default: 0 dB (full volume). Controls the
+        // volume of the original signal independently from reverb.
         public int ReverbDryGain
         {
             get => reverbDryGain;
             set { reverbDryGain = Math.Max(-20, Math.Min(0, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb room size percentage.
-        /// Range: 0 - 100%. Default: 75%.
-        /// Controls the size of the virtual room (larger = longer decay).
-        /// </summary>
+        // Reverb room size percentage. Range: 0 - 100%. Default: 75%. Controls the size of the virtual room
+        // (larger = longer decay).
         public int ReverbRoomSize
         {
             get => reverbRoomSize;
             set { reverbRoomSize = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb reverberance (tail length) percentage.
-        /// Range: 0 - 100%. Default: 50%.
-        /// Controls how long the reverb tail continues after sound ends.
-        /// Higher = longer, more "live" sounding reverb.
-        /// </summary>
+        // Reverb reverberance (tail length) percentage. Range: 0 - 100%. Default: 50%. Controls how long the
+        // reverb tail continues after sound ends. Higher = longer, more "live" sounding reverb.
         public int ReverbReverberance
         {
             get => reverbReverberance;
             set { reverbReverberance = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb high-frequency damping percentage.
-        /// Range: 0 - 100%. Default: 50%.
-        /// Controls how quickly high frequencies decay (higher = more muffled reverb tail).
-        /// </summary>
+        // Reverb high-frequency damping percentage. Range: 0 - 100%. Default: 50%. Controls how quickly high
+        // frequencies decay (higher = more muffled reverb tail).
         public int ReverbDamping
         {
             get => reverbDamping;
             set { reverbDamping = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb tone low (bass) percentage.
-        /// Range: 0 - 100%. Default: 100%.
-        /// Controls bass content of reverb. Lower = less boomy reverb.
-        /// </summary>
+        // Reverb tone low (bass) percentage. Range: 0 - 100%. Default: 100%. Controls bass content of reverb.
+        // Lower = less boomy reverb.
         public int ReverbToneLow
         {
             get => reverbToneLow;
             set { reverbToneLow = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb tone high (treble) percentage.
-        /// Range: 0 - 100%. Default: 100%.
-        /// Controls treble content of reverb. Lower = darker, less bright reverb.
-        /// </summary>
+        // Reverb tone high (treble) percentage. Range: 0 - 100%. Default: 100%. Controls treble content of
+        // reverb. Lower = darker, less bright reverb.
         public int ReverbToneHigh
         {
             get => reverbToneHigh;
             set { reverbToneHigh = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb pre-delay in milliseconds.
-        /// Range: 0 - 200 ms. Default: 10 ms.
-        /// Delays the onset of reverb, creating sense of distance/space.
-        /// </summary>
+        // Reverb pre-delay in milliseconds. Range: 0 - 200 ms. Default: 10 ms. Delays the onset of reverb,
+        // creating sense of distance/space.
         public int ReverbPreDelay
         {
             get => reverbPreDelay;
             set { reverbPreDelay = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb stereo width percentage.
-        /// Range: 0 - 100%. Default: 100%.
-        /// Controls the stereo spread of the reverb (0 = mono, 100 = full stereo).
-        /// </summary>
+        // Reverb stereo width percentage. Range: 0 - 100%. Default: 100%. Controls the stereo spread of the
+        // reverb (0 = mono, 100 = full stereo).
         public int ReverbStereoWidth
         {
             get => reverbStereoWidth;
             set { reverbStereoWidth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Reverb wet/dry mix percentage.
-        /// Range: 0 - 100%. Default: 50%.
-        /// Controls the balance between dry (original) and wet (reverb) signal.
-        /// 0% = fully dry (no reverb audible), 50% = equal blend, 100% = fully wet.
-        /// Applied as a crossfade on top of WetGain/DryGain dB controls.
-        /// </summary>
+        // Reverb wet/dry mix percentage. Range: 0 - 100%. Default: 50%. Controls the balance between dry
+        // (original) and wet (reverb) signal. 0% = fully dry (no reverb audible), 50% = equal blend, 100% =
+        // fully wet. Applied as a crossfade on top of WetGain/DryGain dB controls.
         public int ReverbMix
         {
             get => reverbMix;
             set { reverbMix = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Enable makeup gain (output amplification).
-        /// Only works when LiveEffectsEnabled is true.
-        /// </summary>
+        // Enable makeup gain (output amplification). Only works when LiveEffectsEnabled is true.
         public bool MakeupGainEnabled
         {
             get => makeupGainEnabled;
             set { makeupGainEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Makeup gain applied after all effects in dB.
-        /// Range: -6 to +12 dB. Default: 0 dB.
-        /// Use to compensate for volume changes caused by effects.
-        /// Only applied when MakeupGainEnabled is true.
-        /// </summary>
+        // Makeup gain applied after all effects in dB. Range: -6 to +12 dB. Default: 0 dB. Use to compensate
+        // for volume changes caused by effects. Only applied when MakeupGainEnabled is true.
         public int MakeupGain
         {
             get => makeupGain;
             set { makeupGain = Math.Max(-6, Math.Min(12, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Enable slow effect (reduces playback speed with proportional pitch drop).
-        /// Only works when LiveEffectsEnabled is true.
-        /// Creates a vinyl-slowdown aesthetic by resampling audio at a lower rate.
-        /// </summary>
+        // Enable slow effect (reduces playback speed with proportional pitch drop). Only works when
+        // LiveEffectsEnabled is true. Creates a vinyl-slowdown aesthetic by resampling audio at a lower rate.
         public bool SlowEnabled
         {
             get => slowEnabled;
             set { slowEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Slow effect amount as a percentage (0-50%).
-        /// Maps to speed multiplier: speed = 1.0 - (SlowAmount / 100.0)
-        /// 0% = normal speed (1.0x), 25% = 0.75x, 50% = 0.5x (half speed).
-        /// </summary>
+        // Slow effect amount as a percentage (0-50%). Maps to speed multiplier: speed = 1.0 - (SlowAmount /
+        // 100.0) 0% = normal speed (1.0x), 25% = 0.75x, 50% = 0.5x (half speed).
         public int SlowAmount
         {
             get => slowAmount;
@@ -2425,9 +2243,7 @@ namespace UniPlaySong
             set { stereoWidenerEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Stereo width. 0 = mono, 50 = normal (unchanged), 100 = maximum widening.
-        /// </summary>
+        // Stereo width. 0 = mono, 50 = normal (unchanged), 100 = maximum widening.
         public int StereoWidenerWidth
         {
             get => stereoWidenerWidth;
@@ -2442,27 +2258,21 @@ namespace UniPlaySong
             set { chorusEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Chorus LFO rate in tenths of Hz (1-50 → 0.1-5.0 Hz).
-        /// </summary>
+        // Chorus LFO rate in tenths of Hz (1-50 → 0.1-5.0 Hz).
         public int ChorusRate
         {
             get => chorusRate;
             set { chorusRate = Math.Max(1, Math.Min(50, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Chorus modulation depth percentage. Higher = more pitch wobble.
-        /// </summary>
+        // Chorus modulation depth percentage. Higher = more pitch wobble.
         public int ChorusDepth
         {
             get => chorusDepth;
             set { chorusDepth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Chorus wet/dry mix. 0% = dry only, 100% = wet only.
-        /// </summary>
+        // Chorus wet/dry mix. 0% = dry only, 100% = wet only.
         public int ChorusMix
         {
             get => chorusMix;
@@ -2477,18 +2287,14 @@ namespace UniPlaySong
             set { bitcrusherEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Bit depth for quantization (2-16). Lower = more distortion.
-        /// </summary>
+        // Bit depth for quantization (2-16). Lower = more distortion.
         public int BitcrusherBitDepth
         {
             get => bitcrusherBitDepth;
             set { bitcrusherBitDepth = Math.Max(2, Math.Min(16, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Sample rate reduction factor (1-32). 1 = no reduction. Higher = grittier.
-        /// </summary>
+        // Sample rate reduction factor (1-32). 1 = no reduction. Higher = grittier.
         public int BitcrusherDownsample
         {
             get => bitcrusherDownsample;
@@ -2503,29 +2309,22 @@ namespace UniPlaySong
             set { tremoloEnabled = value; OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Tremolo LFO rate in tenths of Hz (1-100 → 0.1-10.0 Hz).
-        /// </summary>
+        // Tremolo LFO rate in tenths of Hz (1-100 → 0.1-10.0 Hz).
         public int TremoloRate
         {
             get => tremoloRate;
             set { tremoloRate = Math.Max(1, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Tremolo modulation depth. 0% = no effect, 100% = full volume swing.
-        /// </summary>
+        // Tremolo modulation depth. 0% = no effect, 100% = full volume swing.
         public int TremoloDepth
         {
             get => tremoloDepth;
             set { tremoloDepth = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); ClearStylePresetIfActive(); }
         }
 
-        /// <summary>
-        /// Currently selected style preset.
-        /// Applies a complete configuration of all live effects (HP, LP, reverb, slow, gain).
-        /// Selecting a style overrides all individual effect settings.
-        /// </summary>
+        // Currently selected style preset. Applies a complete configuration of all live effects (HP, LP,
+        // reverb, slow, gain). Selecting a style overrides all individual effect settings.
         public StylePreset SelectedStylePreset
         {
             get => selectedStylePreset;
@@ -2543,11 +2342,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Currently selected reverb preset.
-        /// When set to a preset other than Custom, automatically applies the preset values.
-        /// Changes to individual reverb parameters will set this to Custom.
-        /// </summary>
+        // Currently selected reverb preset. When set to a preset other than Custom, automatically applies the
+        // preset values. Changes to individual reverb parameters will set this to Custom.
         public ReverbPreset SelectedReverbPreset
         {
             get => selectedReverbPreset;
@@ -2566,10 +2362,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Selected effect chain preset determining the order in which effects are applied.
-        /// Default: Standard (High-Pass → Low-Pass → Reverb)
-        /// </summary>
+        // Selected effect chain preset determining the order in which effects are applied. Default: Standard
+        // (High-Pass → Low-Pass → Reverb)
         public EffectChainPreset EffectChainPreset
         {
             get => effectChainPreset;
@@ -2585,9 +2379,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Gets a display-friendly string representing the current effect chain order.
-        /// </summary>
+        // Gets a display-friendly string representing the current effect chain order.
         public string EffectChainOrderDisplay
         {
             get
@@ -2614,56 +2406,42 @@ namespace UniPlaySong
 
         // ===== Advanced Reverb Tuning Properties =====
 
-        /// <summary>
-        /// Enable advanced reverb tuning controls.
-        /// WARNING: These settings can produce very loud output that may damage hearing!
-        /// Only enable if you understand the reverb algorithm parameters.
-        /// </summary>
+        // Enable advanced reverb tuning controls. WARNING: These settings can produce very loud output that
+        // may damage hearing! Only enable if you understand the reverb algorithm parameters.
         public bool AdvancedReverbTuningEnabled
         {
             get => advancedReverbTuningEnabled;
             set { advancedReverbTuningEnabled = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Wet gain multiplier (1-25, representing 0.01-0.25).
-        /// Controls overall reverb intensity. Higher = more pronounced reverb.
-        /// Default: 8 (0.08). Range: 1-25.
-        /// WARNING: Values above 15 can cause very loud output!
-        /// </summary>
+        // Wet gain multiplier (1-25, representing 0.01-0.25). Controls overall reverb intensity. Higher =
+        // more pronounced reverb. Default: 8 (0.08). Range: 1-25. WARNING: Values above 15 can cause very
+        // loud output!
         public int ReverbWetGainMultiplier
         {
             get => reverbWetGainMultiplier;
             set { reverbWetGainMultiplier = Math.Max(1, Math.Min(25, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// All-pass filter feedback coefficient (30-70, representing 0.30-0.70).
-        /// Controls reverb diffusion/smoothness. Higher = smoother, more blended.
-        /// Default: 50 (0.50). Lower values create more distinct echoes.
-        /// </summary>
+        // All-pass filter feedback coefficient (30-70, representing 0.30-0.70). Controls reverb
+        // diffusion/smoothness. Higher = smoother, more blended. Default: 50 (0.50). Lower values create more
+        // distinct echoes.
         public int ReverbAllpassFeedback
         {
             get => reverbAllpassFeedback;
             set { reverbAllpassFeedback = Math.Max(30, Math.Min(70, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Minimum HF damping coefficient (10-40, representing 0.10-0.40).
-        /// Controls brightness at 0% damping setting. Lower = brighter reverb.
-        /// Default: 20 (0.20).
-        /// </summary>
+        // Minimum HF damping coefficient (10-40, representing 0.10-0.40). Controls brightness at 0% damping
+        // setting. Lower = brighter reverb. Default: 20 (0.20).
         public int ReverbHfDampingMin
         {
             get => reverbHfDampingMin;
             set { reverbHfDampingMin = Math.Max(10, Math.Min(40, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Maximum HF damping coefficient (30-70, representing 0.30-0.70).
-        /// Controls darkness at 100% damping setting. Higher = darker reverb.
-        /// Default: 50 (0.50).
-        /// </summary>
+        // Maximum HF damping coefficient (30-70, representing 0.30-0.70). Controls darkness at 100% damping
+        // setting. Higher = darker reverb. Default: 50 (0.50).
         public int ReverbHfDampingMax
         {
             get => reverbHfDampingMax;
@@ -2672,61 +2450,47 @@ namespace UniPlaySong
 
         // ===== Spectrum Visualizer Tuning (Experimental) =====
 
-        /// <summary>
-        /// Minimum bar opacity percentage at idle (0-100). Controls brightness modulation range.
-        /// 0 = bars fade to invisible, 100 = no opacity change.
-        /// </summary>
+        // Minimum bar opacity percentage at idle (0-100). Controls brightness modulation range. 0 = bars fade
+        // to invisible, 100 = no opacity change.
         public int VizOpacityMin
         {
             get => vizOpacityMin;
             set { vizOpacityMin = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Global gain boost/cut in percent (-50 to +100). Applied on top of per-bar A-weighting.
-        /// Positive = bars jump higher, negative = more subtle.
-        /// </summary>
+        // Global gain boost/cut in percent (-50 to +100). Applied on top of per-bar A-weighting. Positive =
+        // bars jump higher, negative = more subtle.
         public int VizBarGainBoost
         {
             get => vizBarGainBoost;
             set { vizBarGainBoost = Math.Max(-50, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Peak hold duration in milliseconds (0-300). Bars hold at peak this long before falling. Default: 80
-        /// </summary>
+        // Peak hold duration in milliseconds (0-300). Bars hold at peak this long before falling. Default: 80
         public int VizPeakHoldMs
         {
             get => vizPeakHoldMs;
             set { vizPeakHoldMs = Math.Max(0, Math.Min(300, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Base gravity in tenths (10-200). Controls how fast bars fall after peak hold. 80 = 8.0. Default: 80
-        /// </summary>
+        // Base gravity in tenths (10-200). Controls how fast bars fall after peak hold. 80 = 8.0. Default: 80
         public int VizGravity
         {
             get => vizGravity;
             set { vizGravity = Math.Max(10, Math.Min(200, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Bass/Treble gravity contrast (0-100). 0 = all bars fall same speed. 100 = bass snappy, treble floaty. Default: 50
-        /// </summary>
+        // Bass/Treble gravity contrast (0-100). 0 = all bars fall same speed. 100 = bass snappy, treble floaty. Default: 50
         public int VizBassGravityBias
         {
             get => vizBassGravityBias;
             set { vizBassGravityBias = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT window size for spectrum analysis (512, 1024, or 2048).
-        /// Higher = better frequency resolution but slower temporal response.
-        /// 512: ~86Hz/bin, ~11.6ms window — snappy but coarse bass
-        /// 1024: ~43Hz/bin, ~23ms window — balanced
-        /// 2048: ~21.5Hz/bin, ~46ms window — precise but slower attack
-        /// Requires song restart to take effect.
-        /// </summary>
+        // FFT window size for spectrum analysis (512, 1024, or 2048). Higher = better frequency resolution
+        // but slower temporal response. 512: ~86Hz/bin, ~11.6ms window — snappy but coarse bass 1024:
+        // ~43Hz/bin, ~23ms window — balanced 2048: ~21.5Hz/bin, ~46ms window — precise but slower attack
+        // Requires song restart to take effect.
         public int VizFftSize
         {
             get => vizFftSize;
@@ -2740,131 +2504,105 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Bass gain multiplier (0-200%). Scales the gain applied to bars 0-5 (sub-bass through vocal presence).
-        /// Lower = bass bars shorter. Higher = bass bars taller. Default: 100%
-        /// </summary>
+        // Bass gain multiplier (0-200%). Scales the gain applied to bars 0-5 (sub-bass through vocal
+        // presence). Lower = bass bars shorter. Higher = bass bars taller. Default: 100%
         public int VizBassGain
         {
             get => vizBassGain;
             set { vizBassGain = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Treble gain multiplier (0-200%). Scales the gain applied to bars 6-11 (upper vocal through high treble).
-        /// Lower = treble bars shorter. Higher = treble bars taller. Default: 100%
-        /// </summary>
+        // Treble gain multiplier (0-200%). Scales the gain applied to bars 6-11 (upper vocal through high
+        // treble). Lower = treble bars shorter. Higher = treble bars taller. Default: 100%
         public int VizTrebleGain
         {
             get => vizTrebleGain;
             set { vizTrebleGain = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Frequency bleed amount (0-200%). Scales how much energy bleeds between adjacent bars.
-        /// 0 = no bleed (bars independent). 100 = default. 200 = heavy coupling. Default: 100%
-        /// </summary>
+        // Frequency bleed amount (0-200%). Scales how much energy bleeds between adjacent bars. 0 = no bleed
+        // (bars independent). 100 = default. 200 = heavy coupling. Default: 100%
         public int VizBleedAmount
         {
             get => vizBleedAmount;
             set { vizBleedAmount = Math.Max(0, Math.Min(200, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Soft-knee compression strength (0-100%). Controls how aggressively peaks are tamed.
-        /// 0 = no compression (linear). 50 = moderate. 100 = heavy compression. Default: 50%
-        /// </summary>
+        // Soft-knee compression strength (0-100%). Controls how aggressively peaks are tamed. 0 = no
+        // compression (linear). 50 = moderate. 100 = heavy compression. Default: 50%
         public int VizCompression
         {
             get => vizCompression;
             set { vizCompression = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// UI smoothing rise alpha (0-100%). How quickly bars respond to rising energy.
-        /// Higher = snappier beat attack. Lower = sluggish rise. Default: 85%
-        /// </summary>
+        // UI smoothing rise alpha (0-100%). How quickly bars respond to rising energy. Higher = snappier beat
+        // attack. Lower = sluggish rise. Default: 85%
         public int VizSmoothRise
         {
             get => vizSmoothRise;
             set { vizSmoothRise = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// UI smoothing fall alpha (0-100%). How quickly bars decay after energy drops.
-        /// Lower = smoother trailing. Higher = snappy drop. Default: 15%
-        /// </summary>
+        // UI smoothing fall alpha (0-100%). How quickly bars decay after energy drops. Lower = smoother
+        // trailing. Higher = snappy drop. Default: 15%
         public int VizSmoothFall
         {
             get => vizSmoothFall;
             set { vizSmoothFall = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT rise alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins
-        /// respond to rising energy. Higher = snappier bass attack. Default: 88
-        /// </summary>
+        // FFT rise alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins respond to rising
+        // energy. Higher = snappier bass attack. Default: 88
         public int VizFftRiseLow
         {
             get => vizFftRiseLow;
             set { vizFftRiseLow = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT rise alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins
-        /// respond to rising energy. Higher = snappier treble attack. Default: 93
-        /// </summary>
+        // FFT rise alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins respond to
+        // rising energy. Higher = snappier treble attack. Default: 93
         public int VizFftRiseHigh
         {
             get => vizFftRiseHigh;
             set { vizFftRiseHigh = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT fall alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins
-        /// decay after energy drops. Higher = faster decay, lower = smoother trailing. Default: 50
-        /// </summary>
+        // FFT fall alpha for bass bins (0-95). Controls how quickly low-frequency FFT bins decay after energy
+        // drops. Higher = faster decay, lower = smoother trailing. Default: 50
         public int VizFftFallLow
         {
             get => vizFftFallLow;
             set { vizFftFallLow = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT fall alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins
-        /// decay after energy drops. Higher = faster decay, lower = smoother trailing. Default: 65
-        /// </summary>
+        // FFT fall alpha for treble bins (0-95). Controls how quickly high-frequency FFT bins decay after
+        // energy drops. Higher = faster decay, lower = smoother trailing. Default: 65
         public int VizFftFallHigh
         {
             get => vizFftFallHigh;
             set { vizFftFallHigh = Math.Max(0, Math.Min(95, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// FFT timing mode. False = signal-based (wakes on new audio data, ~43fps at 1024 samples).
-        /// True = fixed 16ms timer (~62fps, matches UI refresh rate). Timer mode uses slightly more
-        /// CPU but provides consistent update rate that matches CompositionTarget.Rendering.
-        /// </summary>
+        // FFT timing mode. False = signal-based (wakes on new audio data, ~43fps at 1024 samples). True =
+        // fixed 16ms timer (~62fps, matches UI refresh rate). Timer mode uses slightly more CPU but provides
+        // consistent update rate that matches CompositionTarget.Rendering.
         public bool VizFftTimerMode
         {
             get => vizFftTimerMode;
             set { vizFftTimerMode = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Bar color theme for the spectrum visualizer.
-        /// Classic (0) uses the original solid white brush. Other themes use colored gradients.
-        /// </summary>
+        // Bar color theme for the spectrum visualizer. Classic (0) uses the original solid white brush. Other
+        // themes use colored gradients.
         public int VizColorTheme
         {
             get => vizColorTheme;
             set { vizColorTheme = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// When true, non-Classic themes use a bottom-to-top gradient.
-        /// When false, bars use a solid color from the theme's primary color.
-        /// </summary>
+        // When true, non-Classic themes use a bottom-to-top gradient. When false, bars use a solid color from
+        // the theme's primary color.
         public bool VizGradientEnabled
         {
             get => vizGradientEnabled;
@@ -2961,122 +2699,89 @@ namespace UniPlaySong
         private string toastBorderColor = "2A2A2A";  // Hex RGB without # - darker border that blends better
         private double toastBorderThickness = 1;  // Border thickness in pixels - thinner looks cleaner
 
-        /// <summary>
-        /// Enable acrylic blur effect on toast notifications.
-        /// Uses Windows DWM APIs for native blur - requires Windows 10 1803+.
-        /// Falls back gracefully on older systems.
-        /// </summary>
+        // Enable acrylic blur effect on toast notifications. Uses Windows DWM APIs for native blur - requires
+        // Windows 10 1803+. Falls back gracefully on older systems.
         public bool EnableToastAcrylicBlur
         {
             get => enableToastAcrylicBlur;
             set { enableToastAcrylicBlur = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast blur opacity (0-255). Higher = more opaque/darker, lower = more transparent.
-        /// Default: 221 (87% opacity). Recommended range: 150-240.
-        /// </summary>
+        // Toast blur opacity (0-255). Higher = more opaque/darker, lower = more transparent. Default: 221
+        // (87% opacity). Recommended range: 150-240.
         public int ToastBlurOpacity
         {
             get => toastBlurOpacity;
             set { toastBlurOpacity = Math.Max(0, Math.Min(255, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast blur tint color (RGB hex without #). This colors the blur effect.
-        /// Default: "1E1E1E" (dark gray). Format: "RRGGBB"
-        /// </summary>
+        // Toast blur tint color (RGB hex without #). This colors the blur effect. Default: "1E1E1E" (dark
+        // gray). Format: "RRGGBB"
         public string ToastBlurTintColor
         {
             get => toastBlurTintColor;
             set { toastBlurTintColor = value ?? "1E1E1E"; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture).
-        /// Acrylic blur requires Windows 10 1803+.
-        /// Default: 1 (Acrylic)
-        /// </summary>
+        // Toast blur mode: 0 = Basic blur (less intense), 1 = Acrylic blur (more intense with noise texture).
+        // Acrylic blur requires Windows 10 1803+. Default: 1 (Acrylic)
         public int ToastBlurMode
         {
             get => toastBlurMode;
             set { toastBlurMode = Math.Max(0, Math.Min(1, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast corner radius in pixels. Set to 0 for square corners.
-        /// Default: 8
-        /// </summary>
+        // Toast corner radius in pixels. Set to 0 for square corners. Default: 8
         public double ToastCornerRadius
         {
             get => toastCornerRadius;
             set { toastCornerRadius = Math.Max(0, Math.Min(32, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast width in pixels.
-        /// Default: 420
-        /// </summary>
+        // Toast width in pixels. Default: 420
         public double ToastWidth
         {
             get => toastWidth;
             set { toastWidth = Math.Max(200, Math.Min(800, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast minimum height in pixels.
-        /// Default: 90
-        /// </summary>
+        // Toast minimum height in pixels. Default: 90
         public double ToastMinHeight
         {
             get => toastMinHeight;
             set { toastMinHeight = Math.Max(50, Math.Min(300, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast maximum height in pixels.
-        /// Default: 180
-        /// </summary>
+        // Toast maximum height in pixels. Default: 180
         public double ToastMaxHeight
         {
             get => toastMaxHeight;
             set { toastMaxHeight = Math.Max(100, Math.Min(500, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast display duration in milliseconds.
-        /// Default: 4000 (4 seconds). Range: 1000-10000
-        /// </summary>
+        // Toast display duration in milliseconds. Default: 4000 (4 seconds). Range: 1000-10000
         public int ToastDurationMs
         {
             get => toastDurationMs;
             set { toastDurationMs = Math.Max(1000, Math.Min(10000, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Margin from screen edge for toast positioning (in pixels).
-        /// Default: 30
-        /// </summary>
+        // Margin from screen edge for toast positioning (in pixels). Default: 30
         public int ToastEdgeMargin
         {
             get => toastEdgeMargin;
             set { toastEdgeMargin = Math.Max(0, Math.Min(100, value)); OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast border color (RGB hex without #). This is the outer border color.
-        /// Default: "2A2A2A" (dark gray that blends with blur background)
-        /// </summary>
+        // Toast border color (RGB hex without #). This is the outer border color. Default: "2A2A2A" (dark
+        // gray that blends with blur background)
         public string ToastBorderColor
         {
             get => toastBorderColor;
             set { toastBorderColor = value ?? "2A2A2A"; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Toast border thickness in pixels.
-        /// Default: 1 (thin border that's subtle). Range: 0-5
-        /// </summary>
+        // Toast border thickness in pixels. Default: 1 (thin border that's subtle). Range: 0-5
         public double ToastBorderThickness
         {
             get => toastBorderThickness;
@@ -3346,11 +3051,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Applies a reverb preset by setting all reverb parameters.
-        /// Presets are based on Audacity's exact factory preset values.
-        /// Format: RoomSize, PreDelay, Reverberance, HfDamping, ToneLow, ToneHigh, WetGain, DryGain, StereoWidth
-        /// </summary>
+        // Applies a reverb preset by setting all reverb parameters. Presets are based on Audacity's exact
+        // factory preset values. Format: RoomSize, PreDelay, Reverberance, HfDamping, ToneLow, ToneHigh,
+        // WetGain, DryGain, StereoWidth
         public void ApplyReverbPreset(ReverbPreset preset)
         {
             switch (preset)
@@ -3791,11 +3494,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// When the user manually changes any individual effect parameter,
-        /// clear the style preset back to None so it doesn't re-apply on settings reload.
-        /// Suppressed during ApplyStylePreset so the preset's own property changes don't trigger clearing.
-        /// </summary>
+        // When the user manually changes any individual effect parameter, clear the style preset back to None
+        // so it doesn't re-apply on settings reload. Suppressed during ApplyStylePreset so the preset's own
+        // property changes don't trigger clearing.
         private void ClearStylePresetIfActive()
         {
             if (!_applyingStylePreset && selectedStylePreset != StylePreset.None)

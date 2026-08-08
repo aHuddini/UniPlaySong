@@ -9,10 +9,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Monitors
 {
-    /// <summary>
-    /// Monitors Playnite windows and attaches music controls for universal compatibility
-    /// Works with both desktop and fullscreen modes, any theme
-    /// </summary>
+    // Monitors Playnite windows and attaches music controls for universal compatibility Works with both
+    // desktop and fullscreen modes, any theme
     public class WindowMonitor
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -20,9 +18,7 @@ namespace UniPlaySong.Monitors
         private static ErrorHandlerService _errorHandler;
         private static bool _classHandlerRegistered;
 
-        /// <summary>
-        /// Attaches the window monitor to Playnite's window system
-        /// </summary>
+        // Attaches the window monitor to Playnite's window system
         public static void Attach(IMusicPlaybackService playbackService, ErrorHandlerService errorHandler = null)
         {
             _playbackService = playbackService;
@@ -39,9 +35,7 @@ namespace UniPlaySong.Monitors
             }
         }
 
-        /// <summary>
-        /// Handles window loaded events to attach music controls
-        /// </summary>
+        // Handles window loaded events to attach music controls
         private static void Window_Loaded(object sender, RoutedEventArgs e)
         {
             if (!(sender is Window window))
@@ -116,9 +110,7 @@ namespace UniPlaySong.Monitors
             }
         }
 
-        /// <summary>
-        /// Recursively searches the visual tree for a child element
-        /// </summary>
+        // Recursively searches the visual tree for a child element
         private static OutType FindVisualChild<OutType>(
             DependencyObject parent, 
             string typeName = null, 

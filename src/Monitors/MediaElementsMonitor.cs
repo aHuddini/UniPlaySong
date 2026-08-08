@@ -61,11 +61,9 @@ namespace UniPlaySong.Monitors
             }
         }
 
-        /// <summary>
-        /// Updates the settings reference to the current instance.
-        /// Called when Playnite reloads settings (e.g., after saving any plugin's settings).
-        /// Without this, the monitor writes VideoIsPlaying to a stale/dead settings object.
-        /// </summary>
+        // Updates the settings reference to the current instance. Called when Playnite reloads settings
+        // (e.g., after saving any plugin's settings). Without this, the monitor writes VideoIsPlaying to a
+        // stale/dead settings object.
         static public void UpdateSettings(UniPlaySongSettings newSettings)
         {
             if (newSettings != null)

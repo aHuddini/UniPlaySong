@@ -3,9 +3,7 @@ using System.Windows.Controls;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Interaction logic for DownloadFromUrlDialog.xaml
-    /// </summary>
+    // Interaction logic for DownloadFromUrlDialog.xaml
     public partial class DownloadFromUrlDialog : UserControl
     {
         public DownloadFromUrlDialog()

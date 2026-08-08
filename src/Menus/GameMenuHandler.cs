@@ -18,9 +18,7 @@ using MessageBoxResult = System.Windows.MessageBoxResult;
 
 namespace UniPlaySong.Menus
 {
-    /// <summary>
-    /// Handles game context menu actions
-    /// </summary>
+    // Handles game context menu actions
     public class GameMenuHandler
     {
         private readonly IPlayniteAPI _playniteApi;
@@ -71,9 +69,7 @@ namespace UniPlaySong.Menus
             _getSettings = getSettings;
         }
 
-        /// <summary>
-        /// Gets the list of failed downloads for retry purposes
-        /// </summary>
+        // Gets the list of failed downloads for retry purposes
         public IReadOnlyList<FailedDownload> FailedDownloads => _failedDownloads.AsReadOnly();
 
         public void DownloadMusicForGame(Game game)
@@ -609,9 +605,7 @@ namespace UniPlaySong.Menus
             }
         }
 
-        /// <summary>
-        /// Shows a file picker dialog for normalizing an individual song
-        /// </summary>
+        // Shows a file picker dialog for normalizing an individual song
         public void ShowNormalizeIndividualSong(Game game)
         {
             if (_errorHandler != null)
@@ -674,9 +668,7 @@ namespace UniPlaySong.Menus
             }
         }
 
-        /// <summary>
-        /// Shows a file picker dialog for trimming an individual song
-        /// </summary>
+        // Shows a file picker dialog for trimming an individual song
         public void ShowTrimIndividualSong(Game game)
         {
             if (_errorHandler != null)
@@ -1294,9 +1286,7 @@ namespace UniPlaySong.Menus
 
         #region Failed Download Tracking and Retry
 
-        /// <summary>
-        /// Tracks a failed download for later retry
-        /// </summary>
+        // Tracks a failed download for later retry
         private void TrackFailedDownload(Game game, string reason)
         {
             if (game == null)
@@ -1317,10 +1307,8 @@ namespace UniPlaySong.Menus
             _logger.Debug($"Tracked failed download for '{game.Name}': {reason}");
         }
 
-        /// <summary>
-        /// Retry failed downloads with manual source selection
-        /// Allows users to manually search and select music from KHInsider or YouTube
-        /// </summary>
+        // Retry failed downloads with manual source selection Allows users to manually search and select
+        // music from KHInsider or YouTube
         public void RetryFailedDownloads()
         {
             if (_errorHandler != null)
@@ -1425,9 +1413,7 @@ namespace UniPlaySong.Menus
             _playniteApi.Dialogs.ShowMessage(summaryMessage, "UniPlaySong - Retry Complete");
         }
 
-        /// <summary>
-        /// Clear all tracked failed downloads
-        /// </summary>
+        // Clear all tracked failed downloads
         public void ClearFailedDownloads()
         {
             _failedDownloads.Clear();
@@ -1438,10 +1424,8 @@ namespace UniPlaySong.Menus
 
         #region Audio Repair
 
-        /// <summary>
-        /// Shows a file picker dialog for repairing a problematic audio file.
-        /// Uses FFmpeg to re-encode the file to fix encoding issues that cause SDL_mixer failures.
-        /// </summary>
+        // Shows a file picker dialog for repairing a problematic audio file. Uses FFmpeg to re-encode the
+        // file to fix encoding issues that cause SDL_mixer failures.
         public void ShowRepairAudioFile(Game game)
         {
             if (_errorHandler != null)
@@ -1603,9 +1587,7 @@ namespace UniPlaySong.Menus
             }
         }
 
-        /// <summary>
-        /// Scans and repairs all audio files in a game's music folder
-        /// </summary>
+        // Scans and repairs all audio files in a game's music folder
         public void RepairAllAudioFiles(Game game)
         {
             if (_errorHandler != null)
@@ -1759,9 +1741,7 @@ namespace UniPlaySong.Menus
 
         #region Bulk Delete
 
-        /// <summary>
-        /// Deletes all music for multiple games with confirmation
-        /// </summary>
+        // Deletes all music for multiple games with confirmation
         public void DeleteAllMusicForGames(List<Game> games)
         {
             if (_errorHandler != null)
@@ -2075,14 +2055,10 @@ namespace UniPlaySong.Menus
 
         #region Batch Download Exceptions
 
-        /// <summary>
-        /// Exception thrown when user wants to skip current game in batch download
-        /// </summary>
+        // Exception thrown when user wants to skip current game in batch download
         private class BatchDownloadSkipException : Exception { }
 
-        /// <summary>
-        /// Exception thrown when user wants to cancel entire batch download
-        /// </summary>
+        // Exception thrown when user wants to cancel entire batch download
         private class BatchDownloadCancelException : Exception { }
 
         #endregion

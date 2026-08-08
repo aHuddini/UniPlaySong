@@ -4,16 +4,11 @@ using System.Windows.Data;
 
 namespace UniPlaySong.Monitors
 {
-    /// <summary>
-    /// Creates priority bindings for game context that work with any Playnite theme
-    /// Supports multiple data context paths used by different themes
-    /// </summary>
+    // Creates priority bindings for game context that work with any Playnite theme Supports multiple data
+    // context paths used by different themes
     internal static class GameContextBindingFactory
     {
-        /// <summary>
-        /// Common data context paths used by various Playnite themes
-        /// Ordered by priority (most common first)
-        /// </summary>
+        // Common data context paths used by various Playnite themes Ordered by priority (most common first)
         private static readonly IReadOnlyList<string> BindingPaths = new List<string>
         {
             "SelectedGameDetails.Game.Game",  // Common in many themes
@@ -41,9 +36,7 @@ namespace UniPlaySong.Monitors
             return priorityBinding;
         }
 
-        /// <summary>
-        /// Creates a single binding for a specific path
-        /// </summary>
+        // Creates a single binding for a specific path
         private static Binding CreateBinding(string path, object source)
         {
             var binding = new Binding

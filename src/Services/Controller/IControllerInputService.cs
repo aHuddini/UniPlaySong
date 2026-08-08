@@ -3,9 +3,7 @@ using System.Windows.Controls;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Actions that can be triggered by controller input
-    /// </summary>
+    // Actions that can be triggered by controller input
     public enum ControllerAction
     {
         None,
@@ -21,14 +19,10 @@ namespace UniPlaySong.Services.Controller
         ShowOSK         // Show On-Screen Keyboard for text input
     }
 
-    /// <summary>
-    /// Service for handling controller input mapping and events
-    /// </summary>
+    // Service for handling controller input mapping and events
     public interface IControllerInputService : IDisposable
     {
-        /// <summary>
-        /// Event fired when a controller action is requested
-        /// </summary>
+        // Event fired when a controller action is requested
         event EventHandler<ControllerAction> ActionRequested;
         
         /// <summary>
@@ -43,9 +37,7 @@ namespace UniPlaySong.Services.Controller
         /// <param name="control">The control to stop monitoring</param>
         void DetachFromControl(Control control);
         
-        /// <summary>
-        /// Gets whether the service is currently attached to any controls
-        /// </summary>
+        // Gets whether the service is currently attached to any controls
         bool IsAttached { get; }
     }
 }

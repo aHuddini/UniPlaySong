@@ -3,30 +3,20 @@ using System.Windows.Controls;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Main coordination service that manages all controller-related functionality
-    /// Acts as a facade over the individual controller services
-    /// </summary>
+    // Main coordination service that manages all controller-related functionality Acts as a facade over
+    // the individual controller services
     public interface IControllerOverlay : IDisposable
     {
-        /// <summary>
-        /// Gets whether the overlay is currently attached to a control
-        /// </summary>
+        // Gets whether the overlay is currently attached to a control
         bool IsAttached { get; }
         
-        /// <summary>
-        /// Gets whether controller mode is currently active
-        /// </summary>
+        // Gets whether controller mode is currently active
         bool IsControllerMode { get; }
         
-        /// <summary>
-        /// Event fired when controller mode changes
-        /// </summary>
+        // Event fired when controller mode changes
         event EventHandler<bool> ControllerModeChanged;
         
-        /// <summary>
-        /// Event fired when a controller action is requested
-        /// </summary>
+        // Event fired when a controller action is requested
         event EventHandler<ControllerAction> ActionRequested;
         
         /// <summary>
@@ -35,9 +25,7 @@ namespace UniPlaySong.Services.Controller
         /// <param name="targetControl">The control to enhance with controller support</param>
         void AttachTo(Control targetControl);
         
-        /// <summary>
-        /// Detaches the controller overlay from its current target
-        /// </summary>
+        // Detaches the controller overlay from its current target
         void Detach();
         
         /// <summary>
@@ -46,9 +34,7 @@ namespace UniPlaySong.Services.Controller
         /// <param name="enabled">True to force controller mode, false to force keyboard/mouse mode</param>
         void ForceControllerMode(bool enabled);
         
-        /// <summary>
-        /// Restores automatic controller detection
-        /// </summary>
+        // Restores automatic controller detection
         void RestoreAutomaticDetection();
     }
 }

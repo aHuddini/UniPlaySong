@@ -8,19 +8,15 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Stores original visual state for restoration
-    /// </summary>
+    // Stores original visual state for restoration
     internal class VisualState
     {
         public Style OriginalItemContainerStyle { get; set; }
         public Visibility OriginalVisibility { get; set; }
     }
 
-    /// <summary>
-    /// Service for applying and managing controller-specific visual enhancements
-    /// Preserves original appearance for safe restoration
-    /// </summary>
+    // Service for applying and managing controller-specific visual enhancements Preserves original
+    // appearance for safe restoration
     public class VisualEnhancementService : IVisualEnhancementService
     {
         private readonly ILogger _logger;
@@ -257,9 +253,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Creates a controller-enhanced style based on the existing Material Design style
-        /// </summary>
+        // Creates a controller-enhanced style based on the existing Material Design style
         private Style CreateControllerEnhancedStyle(ListBox listBox)
         {
             try
@@ -297,9 +291,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Creates a focus visual style optimized for controller navigation
-        /// </summary>
+        // Creates a focus visual style optimized for controller navigation
         private Style CreateControllerFocusStyle()
         {
             try

@@ -18,10 +18,8 @@ using UniPlaySong.ViewModels;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Controller-optimized download dialog that provides full download functionality
-    /// Runs completely separate from the main dialog with seamless fullscreen navigation
-    /// </summary>
+    // Controller-optimized download dialog that provides full download functionality Runs completely
+    // separate from the main dialog with seamless fullscreen navigation
     public partial class SimpleControllerDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -120,9 +118,7 @@ namespace UniPlaySong.Views
             };
         }
 
-        /// <summary>
-        /// Initialize the dialog for downloading music for a specific game
-        /// </summary>
+        // Initialize the dialog for downloading music for a specific game
         public void InitializeForGame(Game game, DownloadDialogService dialogService, IPlayniteAPI playniteApi, IDownloadManager downloadManager, IMusicPlaybackService playbackService, GameMusicFileService fileService)
         {
             try
@@ -147,9 +143,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Load the source selection step (KHInsider vs YouTube)
-        /// </summary>
+        // Load the source selection step (KHInsider vs YouTube)
         private void LoadSourceSelection()
         {
             try
@@ -184,9 +178,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Check if YouTube is properly configured
-        /// </summary>
+        // Check if YouTube is properly configured
         private bool CheckYouTubeConfiguration()
         {
             try
@@ -202,9 +194,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Create a display item for a source option
-        /// </summary>
+        // Create a display item for a source option
         private DownloadItemViewModel CreateSourceItem(GenericItemOption option)
         {
             return new DownloadItemViewModel
@@ -215,9 +205,7 @@ namespace UniPlaySong.Views
             };
         }
 
-        /// <summary>
-        /// Update UI elements for source selection step
-        /// </summary>
+        // Update UI elements for source selection step
         private void UpdateUIForSourceSelection()
         {
             try
@@ -234,9 +222,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Populate the results list with items
-        /// </summary>
+        // Populate the results list with items
         private void PopulateResultsList(List<DownloadItemViewModel> items)
         {
             try
@@ -318,9 +304,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Show an error message in a controller-friendly way using non-blocking notifications
-        /// </summary>
+        // Show an error message in a controller-friendly way using non-blocking notifications
         private void ShowError(string message)
         {
             try
@@ -352,9 +336,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle the cancel/back action based on current dialog step
-        /// </summary>
+        // Handle the cancel/back action based on current dialog step
         private void HandleCancelAction()
         {
             try
@@ -424,9 +406,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Close the dialog with the specified result
-        /// </summary>
+        // Close the dialog with the specified result
         private void CloseDialog(bool success)
         {
             try
@@ -491,9 +471,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle preview action (X/Y button)
-        /// </summary>
+        // Handle preview action (X/Y button)
         private void HandlePreviewAction()
         {
             try
@@ -531,9 +509,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Preview source information
-        /// </summary>
+        // Preview source information
         private void PreviewSource(ListBoxItem selectedItem)
         {
             try
@@ -574,9 +550,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Preview album information
-        /// </summary>
+        // Preview album information
         private void PreviewAlbum(ListBoxItem selectedItem)
         {
             try
@@ -610,9 +584,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Preview and play song audio
-        /// </summary>
+        // Preview and play song audio
         private void PreviewSong(ListBoxItem selectedItem)
         {
             try
@@ -719,9 +691,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Stop current audio preview and restore game music
-        /// </summary>
+        // Stop current audio preview and restore game music
         private void StopCurrentPreview()
         {
             // Ensure we're on the UI thread since MediaPlayer is a WPF object
@@ -752,9 +722,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Pause game music before starting preview
-        /// </summary>
+        // Pause game music before starting preview
         private void PauseGameMusicForPreview()
         {
             try
@@ -777,9 +745,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Resume game music after preview ends
-        /// </summary>
+        // Resume game music after preview ends
         private void RestoreGameMusic()
         {
             try
@@ -798,9 +764,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Play preview file using simple MediaPlayer
-        /// </summary>
+        // Play preview file using simple MediaPlayer
         private void PlayPreviewFile(string tempPath, string songName)
         {
             try
@@ -857,9 +821,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Get temp path for song preview
-        /// </summary>
+        // Get temp path for song preview
         private string GetTempPathForPreview(Song song)
         {
             try
@@ -901,9 +863,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle the confirm action based on current dialog step
-        /// </summary>
+        // Handle the confirm action based on current dialog step
         private void HandleConfirmAction()
         {
             try
@@ -956,9 +916,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle source selection (KHInsider vs YouTube)
-        /// </summary>
+        // Handle source selection (KHInsider vs YouTube)
         private void HandleSourceSelection(ListBoxItem selectedItem)
         {
             try
@@ -1149,9 +1107,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle album selection
-        /// </summary>
+        // Handle album selection
         private void HandleAlbumSelection(ListBoxItem selectedItem)
         {
             try
@@ -1177,9 +1133,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Load song selection for the chosen album
-        /// </summary>
+        // Load song selection for the chosen album
         private void LoadSongSelection(Album album)
         {
             try
@@ -1280,9 +1234,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle song selection and start download
-        /// </summary>
+        // Handle song selection and start download
         private void HandleSongSelection(ListBoxItem selectedItem)
         {
             try
@@ -1451,10 +1403,8 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle keyboard/controller input
-        /// Xbox controller buttons are typically mapped to these keys by Windows or controller software
-        /// </summary>
+        // Handle keyboard/controller input Xbox controller buttons are typically mapped to these keys by
+        // Windows or controller software
         private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             try
@@ -1530,9 +1480,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Check if enough time has passed since last D-pad navigation (debouncing)
-        /// </summary>
+        // Check if enough time has passed since last D-pad navigation (debouncing)
         private bool TryDpadNavigation()
         {
             var now = DateTime.Now;
@@ -1545,9 +1493,7 @@ namespace UniPlaySong.Views
             return true;
         }
 
-        /// <summary>
-        /// Navigate the list by a number of items
-        /// </summary>
+        // Navigate the list by a number of items
         private void NavigateList(int offset)
         {
             try
@@ -1570,9 +1516,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Jump to specific item (0 = first, -1 = last)
-        /// </summary>
+        // Jump to specific item (0 = first, -1 = last)
         private void JumpToItem(int index)
         {
             try
@@ -1595,9 +1539,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Update the input feedback text to show controller input is working
-        /// </summary>
+        // Update the input feedback text to show controller input is working
         private void UpdateInputFeedback(string message)
         {
             try
@@ -1686,9 +1628,7 @@ namespace UniPlaySong.Views
 
         #region Helper Methods
 
-        /// <summary>
-        /// Formats the song description, avoiding duplicate "MB" suffix
-        /// </summary>
+        // Formats the song description, avoiding duplicate "MB" suffix
         private static string FormatSongDescription(Song song)
         {
             var lengthPart = song.Length.HasValue ? song.Length.Value.ToString() : "";

@@ -7,9 +7,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    /// <summary>
-    /// Handles audio amplification dialog operations
-    /// </summary>
+    // Handles audio amplification dialog operations
     public class AmplifyDialogHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -115,9 +113,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly amplify dialog
-        /// </summary>
+        // Show controller-friendly amplify dialog
         public void ShowControllerAmplifyDialog(Game game)
         {
             try

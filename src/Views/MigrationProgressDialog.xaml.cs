@@ -7,9 +7,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Progress dialog for music migration operations
-    /// </summary>
+    // Progress dialog for music migration operations
     public partial class MigrationProgressDialog : UserControl
     {
         private CancellationTokenSource _cancellationTokenSource;
@@ -35,9 +33,7 @@ namespace UniPlaySong.Views
             StatusMessages.ItemsSource = _statusMessages;
         }
 
-        /// <summary>
-        /// Sets the dialog title
-        /// </summary>
+        // Sets the dialog title
         public void SetTitle(string title)
         {
             if (!Dispatcher.CheckAccess())
@@ -49,9 +45,7 @@ namespace UniPlaySong.Views
             TitleText.Text = title;
         }
 
-        /// <summary>
-        /// Report progress from migration service
-        /// </summary>
+        // Report progress from migration service
         public void ReportProgress(MigrationProgress progress)
         {
             if (!Dispatcher.CheckAccess())
@@ -113,9 +107,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Report final results from batch migration
-        /// </summary>
+        // Report final results from batch migration
         public void ReportCompletion(MigrationBatchResult result)
         {
             if (!Dispatcher.CheckAccess())

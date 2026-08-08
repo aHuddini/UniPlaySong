@@ -46,9 +46,7 @@ namespace UniPlaySong.Services
             _trailerAudioService = trailerAudioService;
         }
 
-        /// <summary>
-        /// Gets storage information for the cleanup UI.
-        /// </summary>
+        // Gets storage information for the cleanup UI.
         public (int gameCount, int fileCount, long totalBytes, int preservedCount, long preservedBytes) GetStorageInfo()
         {
             try
@@ -101,9 +99,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Deletes all music files and game folders.
-        /// </summary>
+        // Deletes all music files and game folders.
         public (int deletedFiles, int deletedFolders, bool success) DeleteAllMusic()
         {
             try

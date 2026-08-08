@@ -7,9 +7,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    /// <summary>
-    /// Handles waveform-based precise trim dialog operations
-    /// </summary>
+    // Handles waveform-based precise trim dialog operations
     public class WaveformTrimDialogHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -35,9 +33,7 @@ namespace UniPlaySong.Handlers
             _waveformTrimService = waveformTrimService;
         }
 
-        /// <summary>
-        /// Show the desktop waveform trim dialog for a game
-        /// </summary>
+        // Show the desktop waveform trim dialog for a game
         public void ShowPreciseTrimDialog(Game game)
         {
             try
@@ -120,9 +116,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly waveform trim dialog
-        /// </summary>
+        // Show controller-friendly waveform trim dialog
         public void ShowControllerPreciseTrimDialog(Game game)
         {
             try

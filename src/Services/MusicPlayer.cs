@@ -8,10 +8,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Music player with dual-player preloading system (like PlayniteSound)
-    /// Allows seamless switching by preloading next song while current fades out
-    /// </summary>
+    // Music player with dual-player preloading system (like PlayniteSound) Allows seamless switching by
+    // preloading next song while current fades out
     public class MusicPlayer : IMusicPlayer
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();

@@ -4,10 +4,8 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Centralized error handling and logging service
-    /// Provides consistent error handling, logging, and user-friendly error messages
-    /// </summary>
+    // Centralized error handling and logging service Provides consistent error handling, logging, and
+    // user-friendly error messages
     public class ErrorHandlerService
     {
         private readonly ILogger _logger;
@@ -88,9 +86,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Converts technical exceptions to user-friendly messages
-        /// </summary>
+        // Converts technical exceptions to user-friendly messages
         private string GetUserFriendlyMessage(Exception ex, string context)
         {
             // Handle specific exception types

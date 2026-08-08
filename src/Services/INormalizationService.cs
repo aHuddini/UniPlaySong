@@ -6,9 +6,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service interface for audio normalization operations
-    /// </summary>
+    // Service interface for audio normalization operations
     public interface INormalizationService
     {
         /// <summary>

@@ -6,9 +6,7 @@ using UniPlaySong.ViewModels;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Code-behind for BatchManualDownloadDialog.xaml
-    /// </summary>
+    // Code-behind for BatchManualDownloadDialog.xaml
     public partial class BatchManualDownloadDialog : UserControl
     {
         public BatchManualDownloadDialog()
@@ -16,9 +14,7 @@ namespace UniPlaySong.Views
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Handle game item click to trigger selection command
-        /// </summary>
+        // Handle game item click to trigger selection command
         private void GameItem_Click(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListBoxItem item && item.DataContext is GameDownloadItem gameItem)
@@ -33,9 +29,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle album item click to trigger selection command
-        /// </summary>
+        // Handle album item click to trigger selection command
         private void AlbumItem_Click(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListBoxItem item && item.DataContext is Album album)

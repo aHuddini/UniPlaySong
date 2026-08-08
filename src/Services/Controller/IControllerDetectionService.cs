@@ -2,29 +2,19 @@ using System;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Service for detecting when controller input is the primary method
-    /// </summary>
+    // Service for detecting when controller input is the primary method
     public interface IControllerDetectionService : IDisposable
     {
-        /// <summary>
-        /// Gets whether controller mode is currently active
-        /// </summary>
+        // Gets whether controller mode is currently active
         bool IsControllerMode { get; }
         
-        /// <summary>
-        /// Event fired when controller mode changes
-        /// </summary>
+        // Event fired when controller mode changes
         event EventHandler<bool> ControllerModeChanged;
         
-        /// <summary>
-        /// Starts monitoring for controller state changes
-        /// </summary>
+        // Starts monitoring for controller state changes
         void StartMonitoring();
         
-        /// <summary>
-        /// Stops monitoring for controller state changes
-        /// </summary>
+        // Stops monitoring for controller state changes
         void StopMonitoring();
         
         /// <summary>

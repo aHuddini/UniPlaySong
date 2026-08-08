@@ -18,11 +18,8 @@ using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Controller-friendly waveform trim dialog with two-step interface:
-    /// Step 1: File selection
-    /// Step 2: Waveform-based trim editing
-    /// </summary>
+    // Controller-friendly waveform trim dialog with two-step interface: Step 1: File selection Step 2:
+    // Waveform-based trim editing
     public partial class ControllerWaveformTrimDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -104,9 +101,7 @@ namespace UniPlaySong.Views
             PreviewKeyDown += OnKeyDown;
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game
-        /// </summary>
+        // Initialize the dialog for a specific game
         public void InitializeForGame(
             Game game,
             IPlayniteAPI playniteApi,
@@ -1018,11 +1013,8 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Returns to the file selection step after a successful operation.
-        /// Resets the trim state and reloads the file list so the user can
-        /// continue editing other songs without reopening the dialog.
-        /// </summary>
+        // Returns to the file selection step after a successful operation. Resets the trim state and reloads
+        // the file list so the user can continue editing other songs without reopening the dialog.
         private void ReturnToFileSelectionAfterSuccess()
         {
             try

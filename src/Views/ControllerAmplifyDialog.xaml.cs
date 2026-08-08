@@ -16,11 +16,8 @@ using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Controller-friendly audio amplify dialog with two-step interface:
-    /// Step 1: File selection
-    /// Step 2: Gain adjustment with waveform visualization
-    /// </summary>
+    // Controller-friendly audio amplify dialog with two-step interface: Step 1: File selection Step 2:
+    // Gain adjustment with waveform visualization
     public partial class ControllerAmplifyDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -105,9 +102,7 @@ namespace UniPlaySong.Views
             PreviewKeyDown += OnKeyDown;
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game
-        /// </summary>
+        // Initialize the dialog for a specific game
         public void InitializeForGame(
             Game game,
             IPlayniteAPI playniteApi,
@@ -776,9 +771,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Check if enough time has passed since last D-pad navigation (debouncing)
-        /// </summary>
+        // Check if enough time has passed since last D-pad navigation (debouncing)
         private bool TryDpadNavigation()
         {
             var now = DateTime.Now;
@@ -983,11 +976,8 @@ namespace UniPlaySong.Views
             window?.Close();
         }
 
-        /// <summary>
-        /// Returns to the file selection step after a successful operation.
-        /// Resets the amplify state and reloads the file list so the user can
-        /// continue editing other songs without reopening the dialog.
-        /// </summary>
+        // Returns to the file selection step after a successful operation. Resets the amplify state and
+        // reloads the file list so the user can continue editing other songs without reopening the dialog.
         private void ReturnToFileSelectionAfterSuccess()
         {
             try

@@ -4,9 +4,7 @@ using Playnite.SDK.Plugins;
 
 namespace UniPlaySong.Menus
 {
-    /// <summary>
-    /// Handles main menu actions
-    /// </summary>
+    // Handles main menu actions
     public class MainMenuHandler
     {
         private readonly IPlayniteAPI _playniteApi;

@@ -17,9 +17,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.ViewModels
 {
-    /// <summary>
-    /// Individual game item for batch manual download tracking
-    /// </summary>
+    // Individual game item for batch manual download tracking
     public class GameDownloadItem : INotifyPropertyChanged
     {
         private BatchDownloadStatus _status = BatchDownloadStatus.Pending;
@@ -93,10 +91,8 @@ namespace UniPlaySong.ViewModels
         }
     }
 
-    /// <summary>
-    /// ViewModel for batch manual download dialog
-    /// Allows users to manually download music for multiple failed games
-    /// </summary>
+    // ViewModel for batch manual download dialog Allows users to manually download music for multiple
+    // failed games
     public class BatchManualDownloadViewModel : INotifyPropertyChanged
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -211,10 +207,8 @@ namespace UniPlaySong.ViewModels
         public int FailedCount { get; private set; }
         public int TotalGames => Games.Count;
 
-        /// <summary>
-        /// When true (single game mode), auto-close after first successful download
-        /// instead of returning to game list view
-        /// </summary>
+        // When true (single game mode), auto-close after first successful download instead of returning to
+        // game list view
         public bool IsSingleGameMode { get; set; } = false;
 
         public string HeaderText

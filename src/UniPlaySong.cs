@@ -27,10 +27,8 @@ using UniPlaySong.DeskMediaControl;
 
 namespace UniPlaySong
 {
-    /// <summary>
-    /// UniPlaySong - Console-like game music preview extension for Playnite
-    /// Plays game-specific music when browsing your library
-    /// </summary>
+    // UniPlaySong - Console-like game music preview extension for Playnite Plays game-specific music when
+    // browsing your library
     public class UniPlaySong : GenericPlugin
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -401,10 +399,7 @@ namespace UniPlaySong
 
         #region Playnite Events
 
-        /// <summary>
-        /// Handles game selection events from Playnite.
-        /// Delegates all logic to the music playback coordinator.
-        /// </summary>
+        // Handles game selection events from Playnite. Delegates all logic to the music playback coordinator.
         public override void OnGameSelected(OnGameSelectedEventArgs args)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -625,10 +620,8 @@ namespace UniPlaySong
                 _playbackService.AddPauseSource(Models.PauseSource.SystemTray);
         }
 
-        /// <summary>
-        /// Handles application startup events from Playnite.
-        /// Initializes skip state, login detection, and native music suppression.
-        /// </summary>
+        // Handles application startup events from Playnite. Initializes skip state, login detection, and
+        // native music suppression.
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             _fileLogger?.Debug($"Application started - Mode: {_api.ApplicationInfo.Mode}");
@@ -861,10 +854,8 @@ namespace UniPlaySong
 
         }
 
-        /// <summary>
-        /// Asynchronously checks for search hints database updates from GitHub.
-        /// Runs in the background to avoid blocking startup.
-        /// </summary>
+        // Asynchronously checks for search hints database updates from GitHub. Runs in the background to
+        // avoid blocking startup.
         private void CheckForHintsUpdatesAsync()
         {
             System.Threading.Tasks.Task.Run(() =>
@@ -926,11 +917,8 @@ namespace UniPlaySong
             });
         }
 
-        /// <summary>
-        /// Handles library update events from Playnite.
-        /// Triggers auto-download of music for newly added games if enabled.
-        /// Also triggers auto-tagging of games if enabled.
-        /// </summary>
+        // Handles library update events from Playnite. Triggers auto-download of music for newly added games
+        // if enabled. Also triggers auto-tagging of games if enabled.
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
             try
@@ -1001,10 +989,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Automatically downloads music for a list of games.
-        /// Uses BestAlbumPick and BestSongPick to select the most relevant music.
-        /// </summary>
+        // Automatically downloads music for a list of games. Uses BestAlbumPick and BestSongPick to select
+        // the most relevant music.
         private async Task AutoDownloadMusicForGamesAsync(List<Game> games)
         {
             if (games == null || games.Count == 0)
@@ -1084,10 +1070,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Automatically downloads music for a single game.
-        /// Returns true if music was successfully downloaded.
-        /// </summary>
+        // Automatically downloads music for a single game. Returns true if music was successfully downloaded.
         private async Task<bool> AutoDownloadMusicForGameAsync(Game game)
         {
             try
@@ -1207,10 +1190,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Handles application shutdown events from Playnite.
-        /// Cleans up resources and stops all monitoring systems.
-        /// </summary>
+        // Handles application shutdown events from Playnite. Cleans up resources and stops all monitoring
+        // systems.
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             // Set BEFORE any teardown work — late events (theme overlay dismiss, video
@@ -1413,10 +1394,8 @@ namespace UniPlaySong
 
         #region Music Playback
 
-        /// <summary>
-        /// Determines if music should play for the currently selected game.
-        /// Delegates to the coordinator for all playback decisions.
-        /// </summary>
+        // Determines if music should play for the currently selected game. Delegates to the coordinator for
+        // all playback decisions.
         private bool ShouldPlayMusic()
         {
             var game = SelectedGames?.FirstOrDefault();
@@ -1526,10 +1505,8 @@ namespace UniPlaySong
 
         #region Event Handlers
 
-        /// <summary>
-        /// Handles changes to the games database collection.
-        /// When games are removed, deletes their associated music directories if the setting is enabled.
-        /// </summary>
+        // Handles changes to the games database collection. When games are removed, deletes their associated
+        // music directories if the setting is enabled.
         private void OnGamesCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> args)
         {
             if (_settings?.AutoDeleteMusicOnGameRemoval != true)
@@ -1607,10 +1584,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Handles SettingsService property change events.
-        /// Forwards video state and theme overlay changes to the coordinator.
-        /// </summary>
+        // Handles SettingsService property change events. Forwards video state and theme overlay changes to
+        // the coordinator.
         private void OnSettingsServicePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             // Ignore late theme-overlay / video-state events fired during Playnite's
@@ -1822,11 +1797,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Handles SettingsService settings changed events.
-        /// Manages plugin-level concerns: volume updates, media monitor, and PropertyChanged subscriptions.
-        /// Coordinator subscribes directly to SettingsService, so no manual UpdateSettings() needed.
-        /// </summary>
+        // Handles SettingsService settings changed events. Manages plugin-level concerns: volume updates,
+        // media monitor, and PropertyChanged subscriptions. Coordinator subscribes directly to
+        // SettingsService, so no manual UpdateSettings() needed.
         private void OnSettingsServiceChanged(object sender, SettingsChangedEventArgs e)
         {
             // Coordinator subscribes directly to SettingsService - no manual update needed
@@ -2165,10 +2138,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Called when settings are saved in the settings UI.
-        /// Reloads settings via SettingsService, which automatically notifies all subscribers.
-        /// </summary>
+        // Called when settings are saved in the settings UI. Reloads settings via SettingsService, which
+        // automatically notifies all subscribers.
         public void OnSettingsSaved()
         {
             // Reload settings from disk via SettingsService
@@ -2212,10 +2183,8 @@ namespace UniPlaySong
             _coordinator.HandleViewChange();
         }
 
-        /// <summary>
-        /// Handles window state changes (minimize/restore).
-        /// Pauses music when minimized if PauseOnMinimize is enabled.
-        /// </summary>
+        // Handles window state changes (minimize/restore). Pauses music when minimized if PauseOnMinimize is
+        // enabled.
         private void OnWindowStateChanged(object sender, EventArgs e)
         {
             var windowState = Application.Current?.MainWindow?.WindowState;
@@ -2233,10 +2202,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Handles window visibility changes (show/hide in system tray).
-        /// Pauses music when hidden in system tray if PauseWhenInSystemTray is enabled.
-        /// </summary>
+        // Handles window visibility changes (show/hide in system tray). Pauses music when hidden in system
+        // tray if PauseWhenInSystemTray is enabled.
         private void OnWindowVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             var isVisible = (bool)e.NewValue;
@@ -2872,11 +2839,9 @@ namespace UniPlaySong
             _taskbarMediaControls?.UpdatePlaybackState(false);
         }
 
-        /// <summary>
-        /// Early check of initial window state during service initialization.
-        /// Called before OnGameSelected can trigger music playback.
-        /// This is a best-effort check - if MainWindow isn't available yet, we retry in CheckInitialWindowState().
-        /// </summary>
+        // Early check of initial window state during service initialization. Called before OnGameSelected can
+        // trigger music playback. This is a best-effort check - if MainWindow isn't available yet, we retry
+        // in CheckInitialWindowState().
         private void CheckInitialWindowStateEarly()
         {
             try
@@ -2899,11 +2864,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Checks the initial window state at startup and adds appropriate pause sources.
-        /// This ensures music doesn't play if Playnite starts minimized, in system tray, or unfocused.
-        /// Called once after event handlers are registered in OnApplicationStarted.
-        /// </summary>
+        // Checks the initial window state at startup and adds appropriate pause sources. This ensures music
+        // doesn't play if Playnite starts minimized, in system tray, or unfocused. Called once after event
+        // handlers are registered in OnApplicationStarted.
         private void CheckInitialWindowState()
         {
             var window = Application.Current?.MainWindow;
@@ -3397,11 +3360,9 @@ namespace UniPlaySong
                 _api, _fileService, _playbackService);
         }
 
-        /// <summary>
-        /// Creates the appropriate music player based on LiveEffectsEnabled setting.
-        /// When live effects are enabled, uses NAudioMusicPlayer with real-time effects chain.
-        /// Otherwise, uses SDL2MusicPlayer (or falls back to WPF MediaPlayer).
-        /// </summary>
+        // Creates the appropriate music player based on LiveEffectsEnabled setting. When live effects are
+        // enabled, uses NAudioMusicPlayer with real-time effects chain. Otherwise, uses SDL2MusicPlayer (or
+        // falls back to WPF MediaPlayer).
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
@@ -3440,10 +3401,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Recreates the playback service with a new player when LiveEffectsEnabled changes.
-        /// Saves current playback state and restarts music after switching players.
-        /// </summary>
+        // Recreates the playback service with a new player when LiveEffectsEnabled changes. Saves current
+        // playback state and restarts music after switching players.
         private void RecreateMusicPlayerForLiveEffects()
         {
             try
@@ -3716,10 +3675,8 @@ namespace UniPlaySong
             return Math.Max(0.0, Math.Min(1.0, _playniteFullscreenVolume * boost));
         }
 
-        /// <summary>
-        /// Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference.
-        /// Returns 1.0 if not in fullscreen or reflection fails (graceful degradation).
-        /// </summary>
+        // Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference. Returns 1.0
+        // if not in fullscreen or reflection fails (graceful degradation).
         private double GetPlayniteFullscreenVolume()
         {
             try
@@ -3739,10 +3696,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Initializes the cached reference to Playnite's internal fullscreen settings object.
-        /// Uses the same reflection pattern proven by PlayniteSound.
-        /// </summary>
+        // Initializes the cached reference to Playnite's internal fullscreen settings object. Uses the same
+        // reflection pattern proven by PlayniteSound.
         private void InitializeFullscreenSettingsRef()
         {
             try
@@ -3768,10 +3723,9 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
-        /// Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as INotifyPropertyChanged).
-        /// </summary>
+        // Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
+        // Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as
+        // INotifyPropertyChanged).
         private void SubscribeToFullscreenVolumeChanges()
         {
             try
@@ -3800,9 +3754,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Unsubscribes from Playnite's fullscreen settings PropertyChanged.
-        /// </summary>
+        // Unsubscribes from Playnite's fullscreen settings PropertyChanged.
         private void UnsubscribeFromFullscreenVolumeChanges()
         {
             try
@@ -3823,10 +3775,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Handles changes to Playnite's fullscreen settings.
-        /// When BackgroundVolume changes, updates the volume multiplier on the playback service.
-        /// </summary>
+        // Handles changes to Playnite's fullscreen settings. When BackgroundVolume changes, updates the
+        // volume multiplier on the playback service.
         private void OnFullscreenSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "BackgroundVolume")
@@ -3928,10 +3878,7 @@ namespace UniPlaySong
 
         #region Audio Normalization
 
-        /// <summary>
-        /// Normalize all music files in the library.
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Normalize all music files in the library. Delegates to NormalizationDialogHandler.
         public void NormalizeAllMusicFiles()
         {
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
@@ -3997,64 +3944,44 @@ namespace UniPlaySong
             File.WriteAllText(indexPath, lines.ToString());
         }
 
-        /// <summary>
-        /// Normalize music files for a single game (for fullscreen menu).
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Normalize music files for a single game (for fullscreen menu). Delegates to
+        // NormalizationDialogHandler.
         public void NormalizeSelectedGamesFullscreen(Game game)
         {
             _normalizationDialogHandler?.NormalizeSelectedGamesFullscreen(game);
         }
 
-        /// <summary>
-        /// Normalize music files for selected games.
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Normalize music files for selected games. Delegates to NormalizationDialogHandler.
         public void NormalizeSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             _normalizationDialogHandler?.NormalizeSelectedGames(games, showSimpleConfirmation);
         }
 
-        /// <summary>
-        /// Delete all files in the PreservedOriginals folder.
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Delete all files in the PreservedOriginals folder. Delegates to NormalizationDialogHandler.
         public void DeletePreservedOriginals()
         {
             _normalizationDialogHandler?.DeletePreservedOriginals();
         }
 
-        /// <summary>
-        /// Restore original files from PreservedOriginals folder.
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Restore original files from PreservedOriginals folder. Delegates to NormalizationDialogHandler.
         public void RestoreNormalizedFiles()
         {
             _normalizationDialogHandler?.RestoreNormalizedFiles();
         }
 
-        /// <summary>
-        /// Normalize a single music file.
-        /// Delegates to NormalizationDialogHandler.
-        /// </summary>
+        // Normalize a single music file. Delegates to NormalizationDialogHandler.
         public void NormalizeSingleFile(Game game, string filePath)
         {
             _normalizationDialogHandler?.NormalizeSingleFile(game, filePath);
         }
 
-        /// <summary>
-        /// Trim a single music file.
-        /// Delegates to TrimDialogHandler.
-        /// </summary>
+        // Trim a single music file. Delegates to TrimDialogHandler.
         public void TrimSingleFile(Game game, string filePath)
         {
             _trimDialogHandler?.TrimSingleFile(game, filePath);
         }
 
-        /// <summary>
-        /// Repair a single audio file.
-        /// Delegates to GameMenuHandler.
-        /// </summary>
+        // Repair a single audio file. Delegates to GameMenuHandler.
         public void RepairSingleFile(Game game, string filePath)
         {
             // Use the existing repair logic from GameMenuHandler but for a specific file
@@ -4085,9 +4012,7 @@ namespace UniPlaySong
             RepairSingleFileWithProgress(game, filePath, _settings.FFmpegPath);
         }
 
-        /// <summary>
-        /// Repair a single audio file with progress dialog.
-        /// </summary>
+        // Repair a single audio file with progress dialog.
         private void RepairSingleFileWithProgress(Game game, string filePath, string ffmpegPath)
         {
             var fileName = System.IO.Path.GetFileName(filePath);
@@ -4182,28 +4107,20 @@ namespace UniPlaySong
 
         #region Audio Trimming
 
-        /// <summary>
-        /// Trim leading silence from all music files in the library.
-        /// Delegates to TrimDialogHandler.
-        /// </summary>
+        // Trim leading silence from all music files in the library. Delegates to TrimDialogHandler.
         public void TrimAllMusicFiles()
         {
             _trimDialogHandler?.TrimAllMusicFiles();
         }
 
-        /// <summary>
-        /// Trim leading silence from music files for a single game (for fullscreen menu).
-        /// Delegates to TrimDialogHandler.
-        /// </summary>
+        // Trim leading silence from music files for a single game (for fullscreen menu). Delegates to
+        // TrimDialogHandler.
         public void TrimSelectedGamesFullscreen(Game game)
         {
             _trimDialogHandler?.TrimSelectedGamesFullscreen(game);
         }
 
-        /// <summary>
-        /// Trim leading silence from music files for selected games.
-        /// Delegates to TrimDialogHandler.
-        /// </summary>
+        // Trim leading silence from music files for selected games. Delegates to TrimDialogHandler.
         public void TrimSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             _trimDialogHandler?.TrimSelectedGames(games, showSimpleConfirmation);
@@ -4228,10 +4145,8 @@ namespace UniPlaySong
             return new UniPlaySongSettingsView(this);
         }
 
-        /// <summary>
-        /// Returns custom controls for theme integration.
-        /// Called by Playnite when a theme uses UPS_MusicControl or UPS_SpectrumVisualizer elements.
-        /// </summary>
+        // Returns custom controls for theme integration. Called by Playnite when a theme uses
+        // UPS_MusicControl or UPS_SpectrumVisualizer elements.
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
             if (args.Name == "MusicControl")
@@ -5183,10 +5098,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Gets the top panel items for Desktop mode.
-        /// Provides a play/pause toggle button for music control.
-        /// </summary>
+        // Gets the top panel items for Desktop mode. Provides a play/pause toggle button for music control.
         public override IEnumerable<TopPanelItem> GetTopPanelItems()
         {
             // Only show in Desktop mode
@@ -5272,11 +5184,8 @@ namespace UniPlaySong
             yield return _dashboardSidebarItem;
         }
 
-        /// <summary>
-        /// Downloads music for all games that don't have music yet.
-        /// Triggered from settings Downloads tab.
-        /// Shows a non-blocking progress dialog with cancellation support.
-        /// </summary>
+        // Downloads music for all games that don't have music yet. Triggered from settings Downloads tab.
+        // Shows a non-blocking progress dialog with cancellation support.
         public void DownloadMusicForAllGamesFromSettings()
         {
             try
@@ -5360,10 +5269,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Performs bulk download with progress reporting.
-        /// Called from ActivateGlobalProgress for non-blocking UI updates.
-        /// </summary>
+        // Performs bulk download with progress reporting. Called from ActivateGlobalProgress for non-blocking
+        // UI updates.
         private async Task BulkDownloadMusicWithProgressAsync(List<Game> games, GlobalProgressActionArgs progressArgs)
         {
             var successCount = 0;
@@ -5452,11 +5359,9 @@ namespace UniPlaySong
             }));
         }
 
-        /// <summary>
-        /// Synchronously downloads music for a single game with cancellation support.
-        /// Used by BulkDownloadMusicWithProgress for progress dialog integration.
-        /// Returns true if music was successfully downloaded.
-        /// </summary>
+        // Synchronously downloads music for a single game with cancellation support. Used by
+        // BulkDownloadMusicWithProgress for progress dialog integration. Returns true if music was
+        // successfully downloaded.
         private bool AutoDownloadMusicForGameSync(Game game, CancellationToken cancellationToken)
         {
             try
@@ -5595,78 +5500,50 @@ namespace UniPlaySong
 
         #region Public API
 
-        /// <summary>
-        /// Gets the download manager service.
-        /// </summary>
+        // Gets the download manager service.
         public IDownloadManager GetDownloadManager() => _downloadManager;
 
-        /// <summary>
-        /// Gets the music playback service.
-        /// </summary>
+        // Gets the music playback service.
         public IMusicPlaybackService GetPlaybackService() => _playbackService;
 
-        /// <summary>
-        /// Gets the music playback coordinator.
-        /// </summary>
+        // Gets the music playback coordinator.
         public IMusicPlaybackCoordinator GetCoordinator() => _coordinator;
 
-        /// <summary>
-        /// Gets the game music file service.
-        /// </summary>
+        // Gets the game music file service.
         public GameMusicFileService GetFileService() => _fileService;
 
-        /// <summary>
-        /// Gets the download dialog service.
-        /// </summary>
+        // Gets the download dialog service.
         public DownloadDialogService GetDownloadDialogService() => _downloadDialogService;
 
-        /// <summary>
-        /// Gets the settings service.
-        /// </summary>
+        // Gets the settings service.
         public SettingsService GetSettingsService() => _settingsService;
 
-        /// <summary>
-        /// Gets the search cache service.
-        /// </summary>
+        // Gets the search cache service.
         public SearchCacheService GetSearchCacheService() => _cacheService;
 
         public DynamicColorCache GetDynamicColorCache() => _dynamicColorCache;
 
-        /// <summary>
-        /// Gets the search hints service.
-        /// </summary>
+        // Gets the search hints service.
         public SearchHintsService GetSearchHintsService() => _hintsService;
 
-        /// <summary>
-        /// Gets the error handler service.
-        /// </summary>
+        // Gets the error handler service.
         public ErrorHandlerService GetErrorHandlerService() => _errorHandler;
 
-        /// <summary>
-        /// Gets the audio normalization service.
-        /// </summary>
+        // Gets the audio normalization service.
         public Services.INormalizationService GetNormalizationService() => _normalizationService;
 
-        /// <summary>
-        /// Gets the audio trim service.
-        /// </summary>
+        // Gets the audio trim service.
         public Services.ITrimService GetTrimService() => _trimService;
 
-        /// <summary>
-        /// Gets the migration service.
-        /// </summary>
+        // Gets the migration service.
         public Services.MigrationService GetMigrationService() => _migrationService;
 
-        /// <summary>
-        /// Gets the game music tag service.
-        /// </summary>
+        // Gets the game music tag service.
         public Services.GameMusicTagService GetGameMusicTagService() => _tagService;
 
         public Services.Controller.ControllerEventRouter GetControllerEventRouter() => _controllerEventRouter;
 
-        /// <summary>
-        /// Gets the Playnite API instance.
-        /// </summary>
+        // Gets the Playnite API instance.
         public new IPlayniteAPI PlayniteApi => _api;
 
         #endregion
@@ -5760,9 +5637,7 @@ namespace UniPlaySong
                     musicFolderPath, upsVersion, osInfo, modeAtExport);
         }
 
-        /// <summary>
-        /// Resets all settings to their default values.
-        /// </summary>
+        // Resets all settings to their default values.
         public bool ResetSettingsToDefaults()
         {
             try
@@ -5804,9 +5679,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Performs a complete factory reset: deletes all music, clears cache, resets settings.
-        /// </summary>
+        // Performs a complete factory reset: deletes all music, clears cache, resets settings.
         public (int deletedFiles, int deletedFolders, bool success) FactoryReset()
         {
             try

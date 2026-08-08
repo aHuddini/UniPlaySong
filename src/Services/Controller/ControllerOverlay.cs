@@ -8,10 +8,8 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Main coordination service that manages all controller-related functionality
-    /// Acts as a safe overlay that doesn't break existing dialog behavior
-    /// </summary>
+    // Main coordination service that manages all controller-related functionality Acts as a safe overlay
+    // that doesn't break existing dialog behavior
     public class ControllerOverlay : IControllerOverlay
     {
         private readonly IControllerDetectionService _detectionService;
@@ -341,9 +339,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds the main ListBox in the target control
-        /// </summary>
+        // Safely finds the main ListBox in the target control
         private ListBox FindListBox(Control control)
         {
             try
@@ -357,9 +353,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds the search container (Grid containing search elements)
-        /// </summary>
+        // Safely finds the search container (Grid containing search elements)
         private Panel FindSearchContainer(Control control)
         {
             try
@@ -386,9 +380,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds the quick filters container by name
-        /// </summary>
+        // Safely finds the quick filters container by name
         private Panel FindQuickFiltersContainer(Control control)
         {
             try
@@ -402,9 +394,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds the controller hints container by name
-        /// </summary>
+        // Safely finds the controller hints container by name
         private Panel FindControllerHintsContainer(Control control)
         {
             try
@@ -418,9 +408,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds a child control by name
-        /// </summary>
+        // Safely finds a child control by name
         private T FindChildByName<T>(DependencyObject parent, string name) where T : FrameworkElement
         {
             if (parent == null) return null;
@@ -447,9 +435,7 @@ namespace UniPlaySong.Services.Controller
             return null;
         }
 
-        /// <summary>
-        /// Safely traverses visual tree to find a child of specific type
-        /// </summary>
+        // Safely traverses visual tree to find a child of specific type
         private T FindChildOfType<T>(DependencyObject parent) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -476,9 +462,7 @@ namespace UniPlaySong.Services.Controller
             return null;
         }
 
-        /// <summary>
-        /// Safely finds all children of a specific type
-        /// </summary>
+        // Safely finds all children of a specific type
         private List<T> FindChildrenOfType<T>(DependencyObject parent) where T : DependencyObject
         {
             var results = new List<T>();
@@ -504,9 +488,7 @@ namespace UniPlaySong.Services.Controller
             return results;
         }
 
-        /// <summary>
-        /// Toggle the On-Screen Keyboard visibility
-        /// </summary>
+        // Toggle the On-Screen Keyboard visibility
         private void ToggleOnScreenKeyboard()
         {
             try
@@ -536,9 +518,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely finds the OSK container by name
-        /// </summary>
+        // Safely finds the OSK container by name
         private Panel FindOSKContainer(Control control)
         {
             try

@@ -6,10 +6,8 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Service for handling controller input and mapping to actions
-    /// Provides safe input handling with graceful degradation
-    /// </summary>
+    // Service for handling controller input and mapping to actions Provides safe input handling with
+    // graceful degradation
     public class ControllerInputService : IControllerInputService
     {
         private readonly ILogger _logger;

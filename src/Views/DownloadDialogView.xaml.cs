@@ -88,9 +88,7 @@ namespace UniPlaySong.Views
 
         // NEW: Controller support methods (additive only - safe to fail)
         
-        /// <summary>
-        /// Initializes controller support safely without affecting existing functionality
-        /// </summary>
+        // Initializes controller support safely without affecting existing functionality
         private void InitializeControllerSupport()
         {
             try
@@ -129,9 +127,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handles controller actions mapped to dialog operations
-        /// </summary>
+        // Handles controller actions mapped to dialog operations
         private void OnControllerAction(object sender, ControllerAction action)
         {
             try
@@ -197,9 +193,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Toggle select all/deselect all functionality
-        /// </summary>
+        // Toggle select all/deselect all functionality
         private void ToggleSelectAll(ViewModels.DownloadDialogViewModel viewModel)
         {
             try
@@ -235,9 +229,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Move selection by pages (10 items at a time)
-        /// </summary>
+        // Move selection by pages (10 items at a time)
         private void MoveSelectionByPages(int direction)
         {
             try
@@ -259,9 +251,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Jump to specific item (0 = first, -1 = last)
-        /// </summary>
+        // Jump to specific item (0 = first, -1 = last)
         private void JumpToItem(int index)
         {
             try
@@ -284,9 +274,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Safely gets the plugin logger
-        /// </summary>
+        // Safely gets the plugin logger
         private ILogger GetPluginLogger()
         {
             try
@@ -301,9 +289,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Cleans up controller support safely
-        /// </summary>
+        // Cleans up controller support safely
         private void CleanupControllerSupport()
         {
             try
@@ -322,9 +308,7 @@ namespace UniPlaySong.Views
             }
         }
         
-        /// <summary>
-        /// Called when OSK text is confirmed - updates search term and performs search
-        /// </summary>
+        // Called when OSK text is confirmed - updates search term and performs search
         private void OnOSKTextConfirmed(string text)
         {
             try

@@ -3,9 +3,7 @@ using System.Windows.Controls;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Service for applying and managing controller-specific visual enhancements
-    /// </summary>
+    // Service for applying and managing controller-specific visual enhancements
     public interface IVisualEnhancementService : IDisposable
     {
         /// <summary>

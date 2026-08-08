@@ -5,10 +5,8 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Service for detecting controller input as the primary method
-    /// Uses multiple detection strategies for maximum compatibility
-    /// </summary>
+    // Service for detecting controller input as the primary method Uses multiple detection strategies for
+    // maximum compatibility
     public class ControllerDetectionService : IControllerDetectionService
     {
         private readonly ILogger _logger;
@@ -312,9 +310,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Native methods for Windows controller detection
-        /// </summary>
+        // Native methods for Windows controller detection
         private static class NativeMethods
         {
             public const uint JOYERR_NOERROR = 0;

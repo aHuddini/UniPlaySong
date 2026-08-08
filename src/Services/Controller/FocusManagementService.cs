@@ -7,9 +7,7 @@ using Playnite.SDK;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Stores original focus state for restoration
-    /// </summary>
+    // Stores original focus state for restoration
     internal class FocusState
     {
         public int OriginalTabIndex { get; set; }
@@ -17,10 +15,8 @@ namespace UniPlaySong.Services.Controller
         public int OriginalSelectedIndex { get; set; }
     }
 
-    /// <summary>
-    /// Service for managing focus behavior optimized for controller navigation
-    /// Preserves original state for safe restoration
-    /// </summary>
+    // Service for managing focus behavior optimized for controller navigation Preserves original state
+    // for safe restoration
     public class FocusManagementService : IFocusManagementService
     {
         private readonly ILogger _logger;
@@ -155,9 +151,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Safely focuses a ListBox with retry logic
-        /// </summary>
+        // Safely focuses a ListBox with retry logic
         private void FocusListBox(ListBox listBox)
         {
             try

@@ -90,11 +90,9 @@ namespace UniPlaySong
             // which sets IsRestartRequired on the Playnite settings window for safe restart handling
         }
 
-        /// <summary>
-        /// Command that sets IsRestartRequired on the Playnite settings window.
-        /// This triggers Playnite's built-in restart prompt when settings are saved.
-        /// Bound to checkboxes that require restart (like top panel settings).
-        /// </summary>
+        // Command that sets IsRestartRequired on the Playnite settings window. This triggers Playnite's
+        // built-in restart prompt when settings are saved. Bound to checkboxes that require restart (like top
+        // panel settings).
         public static ICommand SetRestartRequired => new Common.RelayCommand<object>((sender) =>
         {
             try
@@ -121,9 +119,7 @@ namespace UniPlaySong
             }
         });
 
-        /// <summary>
-        /// Finds the parent Window of a given element by walking up the visual tree.
-        /// </summary>
+        // Finds the parent Window of a given element by walking up the visual tree.
         private static Window FindParentWindow(DependencyObject element)
         {
             while (element != null)
@@ -1257,10 +1253,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Display-only property showing current song title | duration.
-        /// Not serialized to settings file. Uses same metadata reading as the top panel.
-        /// </summary>
+        // Display-only property showing current song title | duration. Not serialized to settings file. Uses
+        // same metadata reading as the top panel.
         public string CurrentSongDisplay
         {
             get
@@ -2332,9 +2326,7 @@ namespace UniPlaySong
             );
         });
 
-        /// <summary>
-        /// Command to set the toast tint color from a preset hex value
-        /// </summary>
+        // Command to set the toast tint color from a preset hex value
         public ICommand SetToastColorCommand => new Common.RelayCommand<string>((hexColor) =>
         {
             if (!string.IsNullOrEmpty(hexColor) && settings != null)
@@ -2347,9 +2339,7 @@ namespace UniPlaySong
             }
         });
 
-        /// <summary>
-        /// Red component (0-255) of the toast tint color
-        /// </summary>
+        // Red component (0-255) of the toast tint color
         public int ToastColorRed
         {
             get
@@ -2378,9 +2368,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Green component (0-255) of the toast tint color
-        /// </summary>
+        // Green component (0-255) of the toast tint color
         public int ToastColorGreen
         {
             get
@@ -2409,9 +2397,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Blue component (0-255) of the toast tint color
-        /// </summary>
+        // Blue component (0-255) of the toast tint color
         public int ToastColorBlue
         {
             get
@@ -2440,10 +2426,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Command to adjust the brightness of the current tint color.
-        /// Positive values lighten, negative values darken.
-        /// </summary>
+        // Command to adjust the brightness of the current tint color. Positive values lighten, negative
+        // values darken.
         public ICommand AdjustBrightnessCommand => new Common.RelayCommand<string>((deltaStr) =>
         {
             if (settings == null || string.IsNullOrEmpty(deltaStr)) return;
@@ -2472,9 +2456,7 @@ namespace UniPlaySong
 
         // ===== Toast Border Color Settings =====
 
-        /// <summary>
-        /// Command to set the toast border color from a preset hex value
-        /// </summary>
+        // Command to set the toast border color from a preset hex value
         public ICommand SetToastBorderColorCommand => new Common.RelayCommand<string>((hexColor) =>
         {
             if (!string.IsNullOrEmpty(hexColor) && settings != null)
@@ -2487,9 +2469,7 @@ namespace UniPlaySong
             }
         });
 
-        /// <summary>
-        /// Red component (0-255) of the toast border color
-        /// </summary>
+        // Red component (0-255) of the toast border color
         public int ToastBorderRed
         {
             get
@@ -2518,9 +2498,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Green component (0-255) of the toast border color
-        /// </summary>
+        // Green component (0-255) of the toast border color
         public int ToastBorderGreen
         {
             get
@@ -2549,9 +2527,7 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Blue component (0-255) of the toast border color
-        /// </summary>
+        // Blue component (0-255) of the toast border color
         public int ToastBorderBlue
         {
             get
@@ -2580,10 +2556,8 @@ namespace UniPlaySong
             }
         }
 
-        /// <summary>
-        /// Command to adjust the brightness of the border color.
-        /// Positive values lighten, negative values darken.
-        /// </summary>
+        // Command to adjust the brightness of the border color. Positive values lighten, negative values
+        // darken.
         public ICommand AdjustBorderBrightnessCommand => new Common.RelayCommand<string>((deltaStr) =>
         {
             if (settings == null || string.IsNullOrEmpty(deltaStr)) return;

@@ -11,10 +11,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// SDL2-based music player (matching PlayniteSound's implementation)
-    /// Provides reliable volume control without WPF threading issues
-    /// </summary>
+    // SDL2-based music player (matching PlayniteSound's implementation) Provides reliable volume control
+    // without WPF threading issues
     public class SDL2MusicPlayer : IMusicPlayer, IDisposable
     {
         // Instance variables

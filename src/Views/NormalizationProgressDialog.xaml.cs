@@ -7,9 +7,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Progress dialog for audio normalization operations
-    /// </summary>
+    // Progress dialog for audio normalization operations
     public partial class NormalizationProgressDialog : UserControl
     {
         private CancellationTokenSource _cancellationTokenSource;
@@ -35,9 +33,7 @@ namespace UniPlaySong.Views
             StatusMessages.ItemsSource = _statusMessages;
         }
 
-        /// <summary>
-        /// Report progress from normalization service
-        /// </summary>
+        // Report progress from normalization service
         public void ReportProgress(NormalizationProgress progress)
         {
             if (!Dispatcher.CheckAccess())
@@ -119,9 +115,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Find visual child of specified type
-        /// </summary>
+        // Find visual child of specified type
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)

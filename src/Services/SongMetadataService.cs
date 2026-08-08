@@ -8,11 +8,8 @@ using UniPlaySong.DeskMediaControl;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for reading and caching song metadata (title, artist, duration).
-    /// Uses TagLib# for reading ID3 tags and other audio metadata formats.
-    /// Reads metadata asynchronously to avoid blocking playback.
-    /// </summary>
+    // Service for reading and caching song metadata (title, artist, duration). Uses TagLib# for reading
+    // ID3 tags and other audio metadata formats. Reads metadata asynchronously to avoid blocking playback.
     public class SongMetadataService
     {
         private readonly FileLogger _fileLogger;
@@ -28,9 +25,7 @@ namespace UniPlaySong.Services
         private string _currentFilePath;
         private SongInfo _currentSongInfo;
 
-        /// <summary>
-        /// Event fired when song info changes (new song loaded).
-        /// </summary>
+        // Event fired when song info changes (new song loaded).
         public event Action<SongInfo> OnSongInfoChanged;
 
         public SongMetadataService(IMusicPlaybackService playbackService, FileLogger fileLogger = null, Func<UniPlaySongSettings> getSettings = null)
@@ -48,9 +43,7 @@ namespace UniPlaySong.Services
 
         private void OnMusicStoppedHandler(UniPlaySongSettings _) => ClearCurrentSongInfo();
 
-        /// <summary>
-        /// Resubscribe to a new playback service (e.g., after Live Effects toggle).
-        /// </summary>
+        // Resubscribe to a new playback service (e.g., after Live Effects toggle).
         public void ResubscribeToService(IMusicPlaybackService newPlaybackService)
         {
             if (newPlaybackService == null) return;
@@ -194,16 +187,11 @@ namespace UniPlaySong.Services
             OnSongInfoChanged?.Invoke(SongInfo.Empty);
         }
 
-        /// <summary>
-        /// Gets the current song info (cached).
-        /// </summary>
+        // Gets the current song info (cached).
         public SongInfo CurrentSongInfo => _currentSongInfo ?? SongInfo.Empty;
 
-        /// <summary>
-        /// Reads metadata from an audio file synchronously.
-        /// Used for initial load and background reading.
-        /// Falls back to cleaned filename if no embedded metadata.
-        /// </summary>
+        // Reads metadata from an audio file synchronously. Used for initial load and background reading.
+        // Falls back to cleaned filename if no embedded metadata.
         public SongInfo ReadMetadata(string filePath)
         {
             // Check cache first
@@ -217,9 +205,7 @@ namespace UniPlaySong.Services
             return info;
         }
 
-        /// <summary>
-        /// Internal method to read metadata from file (does actual I/O).
-        /// </summary>
+        // Internal method to read metadata from file (does actual I/O).
         private SongInfo ReadMetadataInternal(string filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))

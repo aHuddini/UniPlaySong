@@ -11,10 +11,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    /// <summary>
-    /// Handles audio trimming dialog operations.
-    /// Extracted from UniPlaySong.cs to reduce main plugin file size.
-    /// </summary>
+    // Handles audio trimming dialog operations. Extracted from UniPlaySong.cs to reduce main plugin file
+    // size.
     public class TrimDialogHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -113,9 +111,7 @@ namespace UniPlaySong.Handlers
             TrimSelectedGames(new List<Game> { game }, showSimpleConfirmation: true);
         }
 
-        /// <summary>
-        /// Trim leading silence from music files for selected games
-        /// </summary>
+        // Trim leading silence from music files for selected games
         public async void TrimSelectedGames(List<Game> games, bool showSimpleConfirmation = false)
         {
             try
@@ -185,9 +181,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Trim a single music file
-        /// </summary>
+        // Trim a single music file
         public async void TrimSingleFile(Game game, string filePath)
         {
             try
@@ -241,9 +235,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show trim progress dialog and execute trim operation
-        /// </summary>
+        // Show trim progress dialog and execute trim operation
         private void ShowTrimProgress(List<string> musicFiles, string title, bool showSimpleConfirmation = false)
         {
             try
@@ -384,9 +376,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Helper method to stop music playback before file processing
-        /// </summary>
+        // Helper method to stop music playback before file processing
         private async Task StopPlaybackForProcessingAsync(string context)
         {
             try

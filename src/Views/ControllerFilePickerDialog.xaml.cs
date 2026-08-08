@@ -15,9 +15,7 @@ using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Controller-friendly file picker dialog for setting/removing primary songs
-    /// </summary>
+    // Controller-friendly file picker dialog for setting/removing primary songs
     public partial class ControllerFilePickerDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -82,9 +80,7 @@ namespace UniPlaySong.Views
             PreviewKeyDown += OnKeyDown;
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game and mode
-        /// </summary>
+        // Initialize the dialog for a specific game and mode
         public void InitializeForGame(Game game, IPlayniteAPI playniteApi, GameMusicFileService fileService, IMusicPlaybackService playbackService, DialogMode mode)
         {
             try
@@ -108,9 +104,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Update UI elements based on dialog mode
-        /// </summary>
+        // Update UI elements based on dialog mode
         private void UpdateUIForMode()
         {
             switch (_mode)
@@ -148,9 +142,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Load music files for the current game
-        /// </summary>
+        // Load music files for the current game
         private void LoadMusicFiles()
         {
             try
@@ -210,9 +202,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Update the current primary song display
-        /// </summary>
+        // Update the current primary song display
         private void UpdateCurrentPrimaryDisplay()
         {
             if (!string.IsNullOrEmpty(_currentPrimarySong))
@@ -226,9 +216,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Populate the files list with music files
-        /// </summary>
+        // Populate the files list with music files
         private void PopulateFilesList()
         {
             FilesListBox.Items.Clear();
@@ -285,9 +273,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Show message when no files are found
-        /// </summary>
+        // Show message when no files are found
         private void ShowNoFilesMessage()
         {
             FilesListBox.Items.Clear();
@@ -303,9 +289,7 @@ namespace UniPlaySong.Views
             FilesListBox.Items.Add(messageItem);
         }
 
-        /// <summary>
-        /// Update input feedback text
-        /// </summary>
+        // Update input feedback text
         private void UpdateInputFeedback(string message)
         {
             if (InputFeedback != null)
@@ -360,9 +344,7 @@ namespace UniPlaySong.Views
 
         public void OnControllerButtonReleased(ControllerInput button) { }
 
-        /// <summary>
-        /// Check if enough time has passed since last D-pad navigation (debouncing)
-        /// </summary>
+        // Check if enough time has passed since last D-pad navigation (debouncing)
         private bool TryDpadNavigation()
         {
             var now = DateTime.Now;
@@ -375,9 +357,7 @@ namespace UniPlaySong.Views
             return true;
         }
 
-        /// <summary>
-        /// Navigate the list by a specified offset
-        /// </summary>
+        // Navigate the list by a specified offset
         private void NavigateList(int offset)
         {
             if (FilesListBox.Items.Count == 0) return;
@@ -387,9 +367,7 @@ namespace UniPlaySong.Views
             FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
         }
 
-        /// <summary>
-        /// Jump to a specific item index
-        /// </summary>
+        // Jump to a specific item index
         private void JumpToItem(int index)
         {
             if (FilesListBox.Items.Count == 0) return;
@@ -403,9 +381,7 @@ namespace UniPlaySong.Views
 
         #region Preview Support
 
-        /// <summary>
-        /// Preview the currently selected file
-        /// </summary>
+        // Preview the currently selected file
         private void PreviewSelectedFile()
         {
             try
@@ -435,9 +411,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Play preview file
-        /// </summary>
+        // Play preview file
         private void PlayPreviewFile(string filePath, string fileName)
         {
             try
@@ -489,9 +463,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Stop current preview and restore game music
-        /// </summary>
+        // Stop current preview and restore game music
         private void StopCurrentPreview()
         {
             try
@@ -512,9 +484,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Pause game music for preview
-        /// </summary>
+        // Pause game music for preview
         private void PauseGameMusicForPreview()
         {
             try
@@ -536,9 +506,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Restore game music after preview
-        /// </summary>
+        // Restore game music after preview
         private void RestoreGameMusic()
         {
             try
@@ -560,9 +528,7 @@ namespace UniPlaySong.Views
 
         #region Event Handlers
 
-        /// <summary>
-        /// Handle keyboard input as fallback
-        /// </summary>
+        // Handle keyboard input as fallback
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             switch (e.Key)
@@ -597,9 +563,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle confirm button click
-        /// </summary>
+        // Handle confirm button click
         private void ConfirmButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -642,17 +606,13 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle cancel button click
-        /// </summary>
+        // Handle cancel button click
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             CloseDialog(false);
         }
 
-        /// <summary>
-        /// Handle remove button click
-        /// </summary>
+        // Handle remove button click
         private void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             RemovePrimarySong();
@@ -662,9 +622,7 @@ namespace UniPlaySong.Views
 
         #region Primary Song Management
 
-        /// <summary>
-        /// Set the selected file as primary song
-        /// </summary>
+        // Set the selected file as primary song
         private void SetPrimarySong(string filePath)
         {
             try
@@ -685,9 +643,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Remove the current primary song
-        /// </summary>
+        // Remove the current primary song
         private void RemovePrimarySong()
         {
             try
@@ -707,9 +663,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Normalize the selected individual song
-        /// </summary>
+        // Normalize the selected individual song
         private void NormalizeIndividualSong(string filePath)
         {
             try
@@ -742,9 +696,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Trim the selected individual song
-        /// </summary>
+        // Trim the selected individual song
         private void TrimIndividualSong(string filePath)
         {
             try
@@ -777,9 +729,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Repair the selected individual song
-        /// </summary>
+        // Repair the selected individual song
         private void RepairIndividualSong(string filePath)
         {
             try
@@ -814,9 +764,7 @@ namespace UniPlaySong.Views
 
         #endregion
 
-        /// <summary>
-        /// Close the dialog with the specified result
-        /// </summary>
+        // Close the dialog with the specified result
         private void CloseDialog(bool success)
         {
             try

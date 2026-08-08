@@ -10,10 +10,8 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Handlers
 {
-    /// <summary>
-    /// Handles controller-friendly dialog operations for game music management.
-    /// Extracted from UniPlaySong.cs to reduce main plugin file size.
-    /// </summary>
+    // Handles controller-friendly dialog operations for game music management. Extracted from
+    // UniPlaySong.cs to reduce main plugin file size.
     public class ControllerDialogHandler
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -63,9 +61,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly file picker for setting primary song
-        /// </summary>
+        // Show controller-friendly file picker for setting primary song
         public void ShowSetPrimarySong(Game game)
         {
             try
@@ -90,9 +86,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Clear the primary song for a game (no dialog needed - just clear and notify)
-        /// </summary>
+        // Clear the primary song for a game (no dialog needed - just clear and notify)
         public void ClearPrimarySong(Game game)
         {
             try
@@ -123,9 +117,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly dialog for deleting songs
-        /// </summary>
+        // Show controller-friendly dialog for deleting songs
         public void ShowDeleteSongs(Game game)
         {
             try
@@ -158,9 +150,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show the controller-optimized download dialog for a specific game
-        /// </summary>
+        // Show the controller-optimized download dialog for a specific game
         public void ShowDownloadDialog(Game game)
         {
             try
@@ -237,9 +227,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly file picker for normalizing an individual song
-        /// </summary>
+        // Show controller-friendly file picker for normalizing an individual song
         public void ShowNormalizeIndividualSong(Game game)
         {
             try
@@ -272,9 +260,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly file picker for trimming an individual song
-        /// </summary>
+        // Show controller-friendly file picker for trimming an individual song
         public void ShowTrimIndividualSong(Game game)
         {
             try
@@ -307,9 +293,7 @@ namespace UniPlaySong.Handlers
             }
         }
 
-        /// <summary>
-        /// Show controller-friendly file picker for repairing an individual audio file
-        /// </summary>
+        // Show controller-friendly file picker for repairing an individual audio file
         public void ShowRepairIndividualSong(Game game)
         {
             try

@@ -5,9 +5,7 @@ using UniPlaySong.Models.WaveformTrim;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for waveform generation and precise audio trimming
-    /// </summary>
+    // Service for waveform generation and precise audio trimming
     public interface IWaveformTrimService
     {
         /// <summary>

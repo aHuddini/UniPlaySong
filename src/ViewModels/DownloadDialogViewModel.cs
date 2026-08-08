@@ -16,9 +16,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.ViewModels
 {
-    /// <summary>
-    /// View model for the download dialog (album/song selection)
-    /// </summary>
+    // View model for the download dialog (album/song selection)
     public class DownloadDialogViewModel : ObservableObject
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -258,9 +256,7 @@ namespace UniPlaySong.ViewModels
             }
         }
 
-        /// <summary>
-        /// Indicates if the user pressed the Back button (vs Cancel or closing the window)
-        /// </summary>
+        // Indicates if the user pressed the Back button (vs Cancel or closing the window)
         public bool BackWasPressed { get; set; } = false;
 
         public DownloadDialogViewModel(
@@ -315,9 +311,7 @@ namespace UniPlaySong.ViewModels
             // This prevents blocking the UI thread and ensures window is responsive
         }
 
-        /// <summary>
-        /// Sets source options for source selection dialog
-        /// </summary>
+        // Sets source options for source selection dialog
         public void SetSourceOptions(List<Playnite.SDK.GenericItemOption> options)
         {
             SearchResults.Clear();
@@ -546,9 +540,7 @@ namespace UniPlaySong.ViewModels
         private DateTime _lastPreviewRequestTime = DateTime.MinValue;
         private const int MinPreviewIntervalMs = 2000; // Minimum 2 seconds between preview requests to avoid rate limiting
 
-        /// <summary>
-        /// Returns true if a preview is currently playing
-        /// </summary>
+        // Returns true if a preview is currently playing
         public bool IsPreviewPlaying => !string.IsNullOrEmpty(_currentlyPreviewing) && _previewPlayer != null;
 
         private void PreviewSong(Song song)
@@ -698,9 +690,7 @@ namespace UniPlaySong.ViewModels
             }
         }
 
-        /// <summary>
-        /// Pause game music before starting preview
-        /// </summary>
+        // Pause game music before starting preview
         private void PauseGameMusicForPreview()
         {
             try
@@ -723,9 +713,7 @@ namespace UniPlaySong.ViewModels
             }
         }
 
-        /// <summary>
-        /// Resume game music after preview ends
-        /// </summary>
+        // Resume game music after preview ends
         private void RestoreGameMusic()
         {
             try
@@ -813,9 +801,7 @@ namespace UniPlaySong.ViewModels
             return System.IO.Path.Combine(tempDir, hash + extension);
         }
 
-        /// <summary>
-        /// Cleans up all tracked preview files. Should be called when dialog closes.
-        /// </summary>
+        // Cleans up all tracked preview files. Should be called when dialog closes.
         public void CleanupPreviewFiles()
         {
             try
@@ -855,9 +841,7 @@ namespace UniPlaySong.ViewModels
             return SelectedItems.Select(vm => vm.Item).ToList();
         }
 
-        /// <summary>
-        /// Formats the song description, avoiding duplicate "MB" suffix
-        /// </summary>
+        // Formats the song description, avoiding duplicate "MB" suffix
         private static string FormatSongDescription(Song song)
         {
             var lengthPart = song.Length.HasValue ? song.Length.Value.ToString() : "";
@@ -902,9 +886,7 @@ namespace UniPlaySong.ViewModels
             return "";
         }
 
-        /// <summary>
-        /// Handles double-click on an item (opens album tracks if it's an album)
-        /// </summary>
+        // Handles double-click on an item (opens album tracks if it's an album)
         public void HandleDoubleClick(DownloadItemViewModel item)
         {
             if (item == null)
@@ -931,14 +913,10 @@ namespace UniPlaySong.ViewModels
             }
         }
 
-        /// <summary>
-        /// Event raised when an album is double-clicked
-        /// </summary>
+        // Event raised when an album is double-clicked
         public event Action<Album> OnAlbumDoubleClicked;
 
-        /// <summary>
-        /// Downloads selected songs inline, showing progress in the status bar
-        /// </summary>
+        // Downloads selected songs inline, showing progress in the status bar
         public void DownloadSelectedSongs()
         {
             if (_fileService == null || _game == null || !_isSongSelection)
@@ -1144,9 +1122,7 @@ namespace UniPlaySong.ViewModels
         }
     }
 
-    /// <summary>
-    /// View model for individual download items (albums/songs) in the list
-    /// </summary>
+    // View model for individual download items (albums/songs) in the list
     public class DownloadItemViewModel : ObservableObject
     {
         private string _name;
@@ -1174,9 +1150,7 @@ namespace UniPlaySong.ViewModels
         public object Item { get; set; }
         public Source Source { get; set; }
 
-        /// <summary>
-        /// Indicates if this item comes from a user-defined search hint (search_hints.json)
-        /// </summary>
+        // Indicates if this item comes from a user-defined search hint (search_hints.json)
         public bool IsFromHint { get; set; } = false;
     }
 }

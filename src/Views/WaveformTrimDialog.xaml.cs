@@ -48,9 +48,7 @@ namespace UniPlaySong.Views
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game
-        /// </summary>
+        // Initialize the dialog for a specific game
         public void Initialize(
             Game game,
             IPlayniteAPI playniteApi,
@@ -612,9 +610,7 @@ namespace UniPlaySong.Views
 
         #endregion
 
-        /// <summary>
-        /// Cleanup when dialog closes
-        /// </summary>
+        // Cleanup when dialog closes
         public void Cleanup()
         {
             Logger.DebugIf(LogPrefix,"Cleanup called");

@@ -3,9 +3,7 @@ using System.Windows.Controls;
 
 namespace UniPlaySong.Services.Controller
 {
-    /// <summary>
-    /// Service for managing focus behavior for controller navigation
-    /// </summary>
+    // Service for managing focus behavior for controller navigation
     public interface IFocusManagementService : IDisposable
     {
         /// <summary>

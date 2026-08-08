@@ -744,13 +744,10 @@ namespace UniPlaySong.Services
             _volumeProvider?.SetTargetWithRamp((float)targetVolume, (float)durationSeconds);
         }
 
-        /// <summary>
-        /// Starts a crossfade from the currently-playing song into a new song.
-        /// Builds the next song's full chain, attaches it to the mixer, and starts
-        /// opposite volume ramps on both inputs. Primary (current) fades to 0;
-        /// secondary (next) fades from 0 to full volume. Called by CrossfadeCoordinator
-        /// when the overlap window begins. Idempotent — if already crossfading, no-op.
-        /// </summary>
+        // Starts a crossfade from the currently-playing song into a new song. Builds the next song's full
+        // chain, attaches it to the mixer, and starts opposite volume ramps on both inputs. Primary (current)
+        // fades to 0; secondary (next) fades from 0 to full volume. Called by CrossfadeCoordinator when the
+        // overlap window begins. Idempotent — if already crossfading, no-op.
         public void StartCrossfadeIntoNext(string nextPath, double durationSeconds)
         {
             if (_settingsService.Current?.EnableTrueCrossfade != true)
@@ -863,11 +860,9 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Cancels an in-progress crossfade by removing the secondary input from the mixer
-        /// and disposing its chain. Primary song keeps playing unchanged. No-op if not
-        /// currently crossfading. Called by manual-skip, game-switch, and Stop() paths.
-        /// </summary>
+        // Cancels an in-progress crossfade by removing the secondary input from the mixer and disposing its
+        // chain. Primary song keeps playing unchanged. No-op if not currently crossfading. Called by
+        // manual-skip, game-switch, and Stop() paths.
         public void CancelCrossfade()
         {
             if (!IsCrossfading) return;
@@ -1188,13 +1183,10 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Raised on the UI thread after a crossfade completes and the secondary song
-        /// has been promoted to primary. MusicPlaybackService subscribes to update
-        /// its current-song state and schedule the NEXT crossfade.
-        /// Different from MediaEnded: MediaEnded means "pick next song"; CrossfadePromoted
-        /// means "the already-picked next song has taken over."
-        /// </summary>
+        // Raised on the UI thread after a crossfade completes and the secondary song has been promoted to
+        // primary. MusicPlaybackService subscribes to update its current-song state and schedule the NEXT
+        // crossfade. Different from MediaEnded: MediaEnded means "pick next song"; CrossfadePromoted means
+        // "the already-picked next song has taken over."
         public event EventHandler CrossfadePromoted;
 
         // Device-level error (hardware disconnect, driver crash, etc.)

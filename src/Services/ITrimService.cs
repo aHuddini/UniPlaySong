@@ -6,9 +6,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service interface for audio silence trimming operations
-    /// </summary>
+    // Service interface for audio silence trimming operations
     public interface ITrimService
     {
         /// <summary>

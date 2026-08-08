@@ -13,9 +13,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Progress dialog for batch download operations with parallel support
-    /// </summary>
+    // Progress dialog for batch download operations with parallel support
     public partial class BatchDownloadProgressDialog : UserControl
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -40,28 +38,19 @@ namespace UniPlaySong.Views
         private bool _isReviewMode = false;
         private IPlayniteAPI _playniteApi;
 
-        /// <summary>
-        /// Event fired when user clicks a completed game to re-download (during review mode)
-        /// </summary>
+        // Event fired when user clicks a completed game to re-download (during review mode)
         public event Action<BatchDownloadItem> OnGameRedownloadRequested;
 
-        /// <summary>
-        /// Event fired when user clicks the pause/play music button
-        /// </summary>
+        // Event fired when user clicks the pause/play music button
         public event Action OnMusicPausePlayRequested;
 
-        /// <summary>
-        /// Event fired when user clicks the Auto-Add More Songs button
-        /// Parameters: number of songs to add (1-3)
-        /// </summary>
+        // Event fired when user clicks the Auto-Add More Songs button Parameters: number of songs to add (1-3)
         public event Action<int> OnAutoAddSongsRequested;
 
         // Music playback state
         private bool _isMusicPaused = false;
 
-        /// <summary>
-        /// Whether the dialog is in review mode (downloads complete, user reviewing results)
-        /// </summary>
+        // Whether the dialog is in review mode (downloads complete, user reviewing results)
         public bool IsReviewMode
         {
             get => _isReviewMode;
@@ -124,9 +113,7 @@ namespace UniPlaySong.Views
             };
         }
 
-        /// <summary>
-        /// Initialize the dialog with a list of game names (legacy method)
-        /// </summary>
+        // Initialize the dialog with a list of game names (legacy method)
         public void Initialize(IEnumerable<string> gameNames)
         {
             // Convert to game names list and call the new method
@@ -139,9 +126,7 @@ namespace UniPlaySong.Views
             }));
         }
 
-        /// <summary>
-        /// Initialize the dialog with a list of Game objects (includes library info)
-        /// </summary>
+        // Initialize the dialog with a list of Game objects (includes library info)
         public void Initialize(IEnumerable<Game> games, IPlayniteAPI playniteApi)
         {
             _playniteApi = playniteApi;
@@ -163,9 +148,7 @@ namespace UniPlaySong.Views
             InitializeInternal(items);
         }
 
-        /// <summary>
-        /// Gets the library name for a game
-        /// </summary>
+        // Gets the library name for a game
         private string GetLibraryName(Game game, IPlayniteAPI playniteApi)
         {
             if (game == null || playniteApi == null)
@@ -204,9 +187,7 @@ namespace UniPlaySong.Views
             return null;
         }
 
-        /// <summary>
-        /// Internal initialization method
-        /// </summary>
+        // Internal initialization method
         private void InitializeInternal(IEnumerable<BatchDownloadItem> items)
         {
             if (!Dispatcher.CheckAccess())
@@ -235,9 +216,7 @@ namespace UniPlaySong.Views
             UpdateOverallProgressInternal(); // Force immediate update on init
         }
 
-        /// <summary>
-        /// Update the status of a specific game by name
-        /// </summary>
+        // Update the status of a specific game by name
         public void UpdateGameStatus(string gameName, BatchDownloadStatus status, string message = null, string albumName = null, string sourceName = null)
         {
             if (!Dispatcher.CheckAccess())
@@ -287,9 +266,7 @@ namespace UniPlaySong.Views
             ScheduleUIUpdate();
         }
 
-        /// <summary>
-        /// Update the status of a game by index
-        /// </summary>
+        // Update the status of a game by index
         public void UpdateGameStatusByIndex(int index, BatchDownloadStatus status, string message = null, string albumName = null, string sourceName = null)
         {
             if (!Dispatcher.CheckAccess())
@@ -330,9 +307,7 @@ namespace UniPlaySong.Views
             ScheduleUIUpdate();
         }
 
-        /// <summary>
-        /// Update the status of a game by Game ID (handles duplicate game names correctly)
-        /// </summary>
+        // Update the status of a game by Game ID (handles duplicate game names correctly)
         public void UpdateGameStatusByGame(Game game, BatchDownloadStatus status, string message = null, string albumName = null, string sourceName = null)
         {
             if (game == null)
@@ -389,9 +364,7 @@ namespace UniPlaySong.Views
             ScheduleUIUpdate();
         }
 
-        /// <summary>
-        /// Update counters when a status changes (incremental, O(1) instead of O(n))
-        /// </summary>
+        // Update counters when a status changes (incremental, O(1) instead of O(n))
         private void UpdateCounters(BatchDownloadStatus oldStatus, BatchDownloadStatus newStatus)
         {
             // Decrement old status counter
@@ -415,9 +388,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Schedule a throttled UI update to prevent flooding the dispatcher
-        /// </summary>
+        // Schedule a throttled UI update to prevent flooding the dispatcher
         private void ScheduleUIUpdate()
         {
             if (!_uiUpdatePending)
@@ -430,9 +401,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Update overall progress display (internal, called from timer)
-        /// </summary>
+        // Update overall progress display (internal, called from timer)
         private void UpdateOverallProgressInternal()
         {
             if (!Dispatcher.CheckAccess())
@@ -484,18 +453,14 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Legacy method for compatibility - schedules throttled update
-        /// </summary>
+        // Legacy method for compatibility - schedules throttled update
         private void UpdateOverallProgress()
         {
             ScheduleUIUpdate();
         }
 
-        /// <summary>
-        /// Force an immediate UI update - call this after all downloads complete
-        /// to ensure the Close/Review buttons appear without waiting for throttle timer
-        /// </summary>
+        // Force an immediate UI update - call this after all downloads complete to ensure the Close/Review
+        // buttons appear without waiting for throttle timer
         public void ForceUIUpdate()
         {
             if (!Dispatcher.CheckAccess())
@@ -512,9 +477,7 @@ namespace UniPlaySong.Views
             UpdateOverallProgressInternal();
         }
 
-        /// <summary>
-        /// Mark all pending/in-progress items as cancelled
-        /// </summary>
+        // Mark all pending/in-progress items as cancelled
         public void CancelAllPending()
         {
             if (!Dispatcher.CheckAccess())
@@ -561,9 +524,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Get current progress summary
-        /// </summary>
+        // Get current progress summary
         public BatchDownloadProgress GetProgress()
         {
             lock (_lockObject)
@@ -582,9 +543,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Check if there's any work remaining
-        /// </summary>
+        // Check if there's any work remaining
         public bool HasPendingWork()
         {
             lock (_lockObject)
@@ -595,18 +554,14 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle Review button click - enter review mode
-        /// </summary>
+        // Handle Review button click - enter review mode
         private void ReviewButton_Click(object sender, RoutedEventArgs e)
         {
             IsReviewMode = true;
             Logger.Debug("[BatchDownloadProgressDialog] Entered review mode");
         }
 
-        /// <summary>
-        /// Handle click on a game item - in review mode, allow re-download for completed, skipped, or failed items
-        /// </summary>
+        // Handle click on a game item - in review mode, allow re-download for completed, skipped, or failed items
         private void GameItem_Click(object sender, MouseButtonEventArgs e)
         {
             if (!_isReviewMode)
@@ -629,9 +584,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Update a specific item after re-download completes
-        /// </summary>
+        // Update a specific item after re-download completes
         public void UpdateItemAfterRedownload(BatchDownloadItem item, string newAlbumName, string newSourceName)
         {
             if (!Dispatcher.CheckAccess())
@@ -650,9 +603,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Gets all completed items (for review processing)
-        /// </summary>
+        // Gets all completed items (for review processing)
         public IEnumerable<BatchDownloadItem> GetCompletedItems()
         {
             lock (_lockObject)
@@ -661,9 +612,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle music pause/play button click
-        /// </summary>
+        // Handle music pause/play button click
         private void MusicPausePlayButton_Click(object sender, RoutedEventArgs e)
         {
             _isMusicPaused = !_isMusicPaused;
@@ -671,9 +620,7 @@ namespace UniPlaySong.Views
             OnMusicPausePlayRequested?.Invoke();
         }
 
-        /// <summary>
-        /// Update the music button icon and label based on pause state
-        /// </summary>
+        // Update the music button icon and label based on pause state
         private void UpdateMusicButtonState()
         {
             if (_isMusicPaused)
@@ -688,9 +635,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Set the music pause state from external source (e.g., when playback service state changes)
-        /// </summary>
+        // Set the music pause state from external source (e.g., when playback service state changes)
         public void SetMusicPauseState(bool isPaused)
         {
             if (!Dispatcher.CheckAccess())
@@ -703,9 +648,7 @@ namespace UniPlaySong.Views
             UpdateMusicButtonState();
         }
 
-        /// <summary>
-        /// Mark a game as having songs added via Auto-Add (for purple bold styling)
-        /// </summary>
+        // Mark a game as having songs added via Auto-Add (for purple bold styling)
         public void MarkGameAsSongsAdded(Game game)
         {
             if (game == null) return;
@@ -726,9 +669,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Hide the Auto-Add More Songs button (call after auto-add completes)
-        /// </summary>
+        // Hide the Auto-Add More Songs button (call after auto-add completes)
         public void HideAutoAddButton()
         {
             if (!Dispatcher.CheckAccess())
@@ -740,9 +681,7 @@ namespace UniPlaySong.Views
             AutoAddSongsButton.Visibility = Visibility.Collapsed;
         }
 
-        /// <summary>
-        /// Handle Auto-Add More Songs button click - shows song count selection dialog
-        /// </summary>
+        // Handle Auto-Add More Songs button click - shows song count selection dialog
         private void AutoAddSongsButton_Click(object sender, RoutedEventArgs e)
         {
             // Use simple message box with options for cleaner UX

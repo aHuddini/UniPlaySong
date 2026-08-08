@@ -5,11 +5,9 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Dedicated audio preview player for the Amplify feature.
-    /// Uses MusicPlayer (WPF MediaPlayer) for consistent volume behavior with the rest of the app.
-    /// Completely separate from the main SDL2 playback service.
-    /// </summary>
+    // Dedicated audio preview player for the Amplify feature. Uses MusicPlayer (WPF MediaPlayer) for
+    // consistent volume behavior with the rest of the app. Completely separate from the main SDL2
+    // playback service.
     public class AmplifyPreviewPlayer : IDisposable
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -68,9 +66,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Stop current playback and release resources
-        /// </summary>
+        // Stop current playback and release resources
         public void Stop()
         {
             if (_isDisposed) return;
@@ -92,9 +88,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Whether audio is currently playing
-        /// </summary>
+        // Whether audio is currently playing
         public bool IsPlaying => _player?.IsActive ?? false;
 
         public void Dispose()

@@ -14,9 +14,7 @@ using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
 {
-    /// <summary>
-    /// Service for trimming leading silence from audio files using FFmpeg
-    /// </summary>
+    // Service for trimming leading silence from audio files using FFmpeg
     public class AudioTrimService : ITrimService
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -51,13 +49,9 @@ namespace UniPlaySong.Services
             return fileName.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Builds output filename by simply appending the trim suffix.
-        /// Simple approach: always append suffix to current filename.
-        /// Examples:
-        /// - "song.mp3" -> "song-trimmed.mp3"
-        /// - "song-normalized.mp3" -> "song-normalized-trimmed.mp3"
-        /// </summary>
+        // Builds output filename by simply appending the trim suffix. Simple approach: always append suffix
+        // to current filename. Examples: - "song.mp3" -> "song-trimmed.mp3" - "song-normalized.mp3" ->
+        // "song-normalized-trimmed.mp3"
         private string BuildTrimmedFileName(string baseFileName, string trimSuffix)
         {
             return $"{baseFileName}{trimSuffix}";
@@ -191,9 +185,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Determines if a file should be skipped based on trim settings
-        /// </summary>
+        // Determines if a file should be skipped based on trim settings
         private bool ShouldSkipFile(string filePath, TrimSettings settings, double? silenceEndTime)
         {
             // Check if already trimmed
@@ -314,9 +306,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Applies trim operation using FFmpeg
-        /// </summary>
+        // Applies trim operation using FFmpeg
         private async Task<bool> ApplyTrimAsync(
             string filePath,
             TrimSettings settings,
@@ -523,9 +513,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Stops music playback if currently playing. Called once before bulk operations.
-        /// </summary>
+        // Stops music playback if currently playing. Called once before bulk operations.
         private async Task StopPlaybackIfNeededAsync(CancellationToken cancellationToken)
         {
             try
@@ -542,9 +530,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Internal trim method for parallel processing - does NOT stop playback (caller handles that)
-        /// </summary>
+        // Internal trim method for parallel processing - does NOT stop playback (caller handles that)
         private async Task<(bool success, string status)> TrimFileInternalAsync(
             string filePath,
             TrimSettings settings,

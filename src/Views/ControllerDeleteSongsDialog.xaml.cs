@@ -15,9 +15,7 @@ using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Views
 {
-    /// <summary>
-    /// Controller-friendly dialog for deleting songs from game music folder
-    /// </summary>
+    // Controller-friendly dialog for deleting songs from game music folder
     public partial class ControllerDeleteSongsDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -81,9 +79,7 @@ namespace UniPlaySong.Views
             PreviewKeyDown += OnKeyDown;
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game
-        /// </summary>
+        // Initialize the dialog for a specific game
         public void InitializeForGame(Game game, IPlayniteAPI playniteApi, GameMusicFileService fileService, IMusicPlaybackService playbackService)
         {
             try
@@ -103,9 +99,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Load music files for the current game
-        /// </summary>
+        // Load music files for the current game
         private void LoadMusicFiles()
         {
             try
@@ -162,9 +156,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Populate the files list with music files
-        /// </summary>
+        // Populate the files list with music files
         private void PopulateFilesList()
         {
             FilesListBox.Items.Clear();
@@ -250,9 +242,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Format file size for display
-        /// </summary>
+        // Format file size for display
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };
@@ -266,9 +256,7 @@ namespace UniPlaySong.Views
             return $"{len:0.##} {sizes[order]}";
         }
 
-        /// <summary>
-        /// Show message when no files are found
-        /// </summary>
+        // Show message when no files are found
         private void ShowNoFilesMessage()
         {
             FilesListBox.Items.Clear();
@@ -284,9 +272,7 @@ namespace UniPlaySong.Views
             FilesListBox.Items.Add(messageItem);
         }
 
-        /// <summary>
-        /// Update input feedback text
-        /// </summary>
+        // Update input feedback text
         private void UpdateInputFeedback(string message)
         {
             if (InputFeedback != null)
@@ -362,9 +348,7 @@ namespace UniPlaySong.Views
 
         public void OnControllerButtonReleased(ControllerInput button) { }
 
-        /// <summary>
-        /// Check if enough time has passed since last D-pad navigation (debouncing)
-        /// </summary>
+        // Check if enough time has passed since last D-pad navigation (debouncing)
         private bool TryDpadNavigation()
         {
             var now = DateTime.Now;
@@ -377,9 +361,7 @@ namespace UniPlaySong.Views
             return true;
         }
 
-        /// <summary>
-        /// Navigate the list by a specified offset
-        /// </summary>
+        // Navigate the list by a specified offset
         private void NavigateList(int offset)
         {
             if (FilesListBox.Items.Count == 0) return;
@@ -389,9 +371,7 @@ namespace UniPlaySong.Views
             FilesListBox.ScrollIntoView(FilesListBox.SelectedItem);
         }
 
-        /// <summary>
-        /// Jump to a specific item index
-        /// </summary>
+        // Jump to a specific item index
         private void JumpToItem(int index)
         {
             if (FilesListBox.Items.Count == 0) return;
@@ -405,9 +385,7 @@ namespace UniPlaySong.Views
 
         #region Preview Support
 
-        /// <summary>
-        /// Preview the currently selected file
-        /// </summary>
+        // Preview the currently selected file
         private void PreviewSelectedFile()
         {
             try
@@ -437,9 +415,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Play preview file
-        /// </summary>
+        // Play preview file
         private void PlayPreviewFile(string filePath, string fileName)
         {
             try
@@ -491,9 +467,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Stop current preview and restore game music
-        /// </summary>
+        // Stop current preview and restore game music
         private void StopCurrentPreview()
         {
             try
@@ -514,9 +488,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Pause game music for preview
-        /// </summary>
+        // Pause game music for preview
         private void PauseGameMusicForPreview()
         {
             try
@@ -538,9 +510,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Restore game music after preview
-        /// </summary>
+        // Restore game music after preview
         private void RestoreGameMusic()
         {
             try
@@ -562,9 +532,7 @@ namespace UniPlaySong.Views
 
         #region Event Handlers
 
-        /// <summary>
-        /// Handle keyboard input as fallback
-        /// </summary>
+        // Handle keyboard input as fallback
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             // Ignore all input during deletion or confirmation dialogs
@@ -611,9 +579,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle delete button click
-        /// </summary>
+        // Handle delete button click
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -644,9 +610,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Handle cancel button click
-        /// </summary>
+        // Handle cancel button click
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             CloseDialog(false);
@@ -656,9 +620,7 @@ namespace UniPlaySong.Views
 
         #region Song Deletion
 
-        /// <summary>
-        /// Confirm and delete the selected song
-        /// </summary>
+        // Confirm and delete the selected song
         private async void ConfirmAndDeleteSong(string filePath)
         {
             try
@@ -736,9 +698,7 @@ namespace UniPlaySong.Views
             _modalCooldownUntil = DateTime.Now.AddMilliseconds(ModalCooldownMs);
         }
 
-        /// <summary>
-        /// Reset deletion state flags and re-enable controls
-        /// </summary>
+        // Reset deletion state flags and re-enable controls
         private void ResetDeletionState()
         {
             _isDeletionInProgress = false;
@@ -746,9 +706,7 @@ namespace UniPlaySong.Views
             DeleteButton.IsEnabled = true;
         }
 
-        /// <summary>
-        /// Stop all music playback to free up the file for deletion
-        /// </summary>
+        // Stop all music playback to free up the file for deletion
         private async Task StopAllMusicPlaybackAsync(string fileName)
         {
             try
@@ -781,9 +739,7 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Delete the song file
-        /// </summary>
+        // Delete the song file
         private async Task DeleteSongFileAsync(string filePath, bool isPrimarySong)
         {
             try
@@ -889,9 +845,7 @@ namespace UniPlaySong.Views
 
         #endregion
 
-        /// <summary>
-        /// Close the dialog with the specified result
-        /// </summary>
+        // Close the dialog with the specified result
         private void CloseDialog(bool success)
         {
             try

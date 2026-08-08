@@ -45,9 +45,7 @@ namespace UniPlaySong.Views
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Initialize the dialog for a specific game
-        /// </summary>
+        // Initialize the dialog for a specific game
         public void Initialize(
             Game game,
             IPlayniteAPI playniteApi,
