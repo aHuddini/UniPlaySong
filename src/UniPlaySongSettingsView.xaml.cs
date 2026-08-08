@@ -378,6 +378,9 @@ namespace UniPlaySong
             s.IdleAudioDeviceTeardownMinutes = 5;  // moved from General tab in v1.5.4
             s.AutoLaunchSpotifyOnStartup = false;
             s.SpotifyExePath = string.Empty;
+            s.EnableMediaKeyControl = false;
+            s.NaudioFadeInCurve = FadeCurveType.Quadratic;
+            s.NaudioFadeOutCurve = FadeCurveType.Cubic;
             ShowButtonFeedback(sender, "Reset!");
         }
 
