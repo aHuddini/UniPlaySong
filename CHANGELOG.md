@@ -6,6 +6,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.7.1] - 2026-08-08
 
+### Changed — Settings UI
+
+- **New Setup tab** collecting the two external tools UPS shells out to. `YtDlpPath` and `FFmpegPath` were split across the Downloads and Editing tabs, so a new user had to find two unrelated screens before anything worked. Both controls moved wholesale; the tabs they left keep a one-line pointer. Setup deliberately has **no Reset button** — these are machine-specific paths the user had to locate, and `ResetSettingsToDefaults` already preserves them for that reason. Six cross-references elsewhere (including the About tab's install guides) said "set its path in the Editing tab" and now point at Setup.
+- **Tab order** is now About, Setup, General, Playback, Pauses, Gamification, Live Effects, Editing, Downloads, Theme Support, Migration, Backup, Toast Notifications, Cleanup, Experimental — orientation and setup first, then everyday settings, with Downloads beside Editing and Backup beside Migration.
+- **Collapsible sections** added where tabs were flat walls of controls: General (Media Controls (Desktop), Music Library Tagging, Performance), Playback (Random Game Picker), Editing (Bulk Actions, File Management), Downloads (Download Automations, Library Automations), Migration (Import, Export), Cleanup (Delete Actions, Cleanup). On Cleanup, Reset Settings and Factory Reset stay expanded, and on General so does Troubleshooting — those are what someone arrives looking for when something is wrong.
+- **Migration**: Directory Locations moved from the bottom of the tab to above the actions, since knowing where files live is context you want before choosing an import or export.
+- **Controls moved to where they belong.** Play Music State, Automatic Playback on First Launch and Do not play music on startup move from General to the head of Playback (uncollapsed — they decide *when* music plays at all). The theme/trailer video pause option moves from Pauses to Theme Support, next to the other theme video setting. Each one's reset assignment moved with it, so no tab resets a control that is no longer on it.
+- **Renamed sections**: "Window State" → "Window Focus" (Pauses); "Completion Celebration" → "Games Completed Status", "Abandoned Status" → "Games Abandoned Status", "Achievement Unlock Sounds" → "PlayniteAchievements Unlocks" (Gamification); "Music Status Tags" → "Music Library Tagging" (General).
+
+### Fixed
+
+- **The Experimental tab's Reset button skipped three of its own settings.** `EnableMediaKeyControl`, `NaudioFadeInCurve` and `NaudioFadeOutCurve` are bound to controls on that tab but were never assigned by its handler, so pressing Reset left them untouched. Defaults read off a fresh `UniPlaySongSettings` by reflection rather than transcribed by eye: `false`, `Quadratic`, `Cubic`. An audit of all nine handlers against the 246 persisted settings found no other drift — 191 assignments, otherwise correct.
+- **`PauseOnTrailer` was reset by two handlers that did not own it.** Both the Playback and Pauses handlers assigned it although the control only ever appeared on Pauses; it now belongs to Theme Support alone, with its control.
+
 ### Performance
 
 - **Song loading moved off the UI thread.** Building a decoder costs real file I/O — a field log measured `Load: 192ms total (Reader=191)` for a long MP3 — and it was paid on the UI thread at the moment of the switch, which is exactly when Fullscreen navigation is busiest. `IMusicPlayer.PreLoad` now runs on a worker via `MusicPlaybackService.SchedulePreload`, so `Load()` claims a reader that is already built. Both backends' preload slots are lock-guarded for the cross-thread handoff, which also fixed a latent use-after-free in `SDL2MusicPlayer.Load` (it freed `_preloadedMusic` and then assigned that freed pointer to `_music`; unreachable only because `Close()` zeroes `_music` first).

@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-08-08
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
     Changelog:
+      - '[Improved] Settings reorganised — a new Setup tab puts yt-dlp and FFmpeg in one place, long tabs group into collapsible sections, and options now sit on the tab they belong to.'
       - '[Improved] Smoother library navigation in Fullscreen — preparing the next song no longer happens on the drawing thread, and the fade timers no longer take priority over drawing and controller input.'
       - '[Fixed] Switching audio engine — turning Live Effects, the Visualizer or Crossfade on or off, or opening a game with retro chiptune music — left the previous engine running in the background.'
       - '[Improved] Much quieter logging. With debug logging off, UPS now writes only errors to Playnite''s shared log instead of hundreds of routine lines.'

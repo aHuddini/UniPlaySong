@@ -3529,92 +3529,6 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- Theme Support Tab -->
-        <TabItem Header="Theme Support">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
-                    </Grid>
-                    <TextBlock Text="These options help certain themes work better with UniPlaySong. Most are geared toward theme developers or specific themes — most users never need to change them, unless a theme (or its setup guide) tells you to."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,5"/>
-
-                    <!-- Login Skip: user-facing compat for fullscreen themes that don't natively support UPS -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="Fullscreen Login Skip" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <CheckBox Content="Theme Compatible Login Skip (Fullscreen)"
-                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
-                              IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
-                              Margin="0,5"/>
-                    <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
-                    <Separator Margin="0,15"/>
-                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <CheckBox Content="Enable PS5-Experience theme compatibility"
-                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
-                              Margin="0,5,0,0"/>
-                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,15"/>
-
-                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
-                    <Separator Margin="0,15"/>
-                    <Expander IsExpanded="False" Margin="0,0,0,10">
-                        <Expander.Header>
-                            <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                        </Expander.Header>
-                        <StackPanel Margin="0,10,0,0">
-                            <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
-                                       FontSize="11"
-                                       Foreground="Orange"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,8"/>
-                            <CheckBox Content="Pause music for theme overlays"
-                                      IsChecked="{Binding Settings.PauseOnThemeOverlay}"
-                                      Margin="0,5,0,0"/>
-                            <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"
-                                       Margin="20,0,0,8"/>
-                            <CheckBox Content="Pause music for theme videos"
-                                      IsChecked="{Binding Settings.PauseOnThemeVideo}"
-                                      Margin="0,5,0,0"/>
-                            <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"
-                                       Margin="20,0,0,15"/>
-
-                            <!-- Moved from the Pauses tab: this is theme-detection behaviour and
-                                 belongs beside the other theme video option, not among the
-                                 general pause triggers. -->
-                            <CheckBox Content="Pause music when a trailer or theme video plays"
-                                      IsChecked="{Binding Settings.PauseOnTrailer}"
-                                      Margin="0,5,0,5"/>
-                            <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"
-                                       Margin="20,0,0,15"/>
-                        </StackPanel>
-                    </Expander>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
         <!-- Downloads Tab -->
         <TabItem Header="Downloads">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -3844,6 +3758,92 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Theme Support Tab -->
+        <TabItem Header="Theme Support">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="These options help certain themes work better with UniPlaySong. Most are geared toward theme developers or specific themes — most users never need to change them, unless a theme (or its setup guide) tells you to."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,5"/>
+
+                    <!-- Login Skip: user-facing compat for fullscreen themes that don't natively support UPS -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="Fullscreen Login Skip" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Theme Compatible Login Skip (Fullscreen)"
+                              IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
+                              IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
+                              Margin="0,5"/>
+                    <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
+                    <Separator Margin="0,15"/>
+                    <TextBlock Text="PS5-Experience Theme Compatibility" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <CheckBox Content="Enable PS5-Experience theme compatibility"
+                              IsChecked="{Binding Settings.PS5ThemeCompatMode}"
+                              Margin="0,5,0,0"/>
+                    <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <!-- Theme Developer Options (overlay/video pause opt-outs) -->
+                    <Separator Margin="0,15"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Theme Developer Options" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                            <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
+                                       FontSize="11"
+                                       Foreground="Orange"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,8"/>
+                            <CheckBox Content="Pause music for theme overlays"
+                                      IsChecked="{Binding Settings.PauseOnThemeOverlay}"
+                                      Margin="0,5,0,0"/>
+                            <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,8"/>
+                            <CheckBox Content="Pause music for theme videos"
+                                      IsChecked="{Binding Settings.PauseOnThemeVideo}"
+                                      Margin="0,5,0,0"/>
+                            <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,15"/>
+
+                            <!-- Moved from the Pauses tab: this is theme-detection behaviour and
+                                 belongs beside the other theme video option, not among the
+                                 general pause triggers. -->
+                            <CheckBox Content="Pause music when a trailer or theme video plays"
+                                      IsChecked="{Binding Settings.PauseOnTrailer}"
+                                      Margin="0,5,0,5"/>
+                            <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="20,0,0,15"/>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- Migration Tab -->
         <TabItem Header="Migration">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -3972,6 +3972,80 @@
                                     HorizontalAlignment="Left"/>
                         </StackPanel>
                     </Expander>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Backup Tab -->
+        <TabItem Header="Backup">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Settings Backup &amp; Migration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests."
+                               FontSize="11"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,20"/>
+
+                    <!-- JSON Export / Import (portable, re-importable) -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Portable JSON Backup" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded — those stay machine-specific."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Export Settings (JSON)..."
+                                        Click="ExportSettingsJson_Click"
+                                        Padding="15,8"
+                                        Margin="0,0,10,0"
+                                        Background="#2D5A87"
+                                        Foreground="White"/>
+                                <Button Content="Import Settings (JSON)..."
+                                        Click="ImportSettingsJson_Click"
+                                        Padding="15,8"
+                                        Background="#2D5A87"
+                                        Foreground="White"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Markdown Snapshot (human-readable, one-way) -->
+                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Human-Readable Snapshot" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. One-way — not re-importable."
+                                       FontSize="11"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
+
+                            <Button Content="Export Snapshot (Markdown)..."
+                                    Click="ExportSettingsMarkdown_Click"
+                                    Padding="15,8"
+                                    HorizontalAlignment="Left"
+                                    Background="#447755"
+                                    Foreground="White"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Notes -->
+                    <Border Background="#1A2A3A" BorderBrush="#3A5A7A" BorderThickness="1" CornerRadius="4" Padding="15">
+                        <StackPanel>
+                            <TextBlock Text="What gets included?" FontSize="12" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,8"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#BBCCDD">
+                                <Run Text="• "/><Run Text="JSON Export:" FontWeight="SemiBold"/><Run Text=" Playback / Pauses / Live Effects / Visualizer / all toggles. Excludes tool paths (yt-dlp, FFmpeg, custom default music file/folder paths, cookies file) and Custom Rotation game IDs."/>
+                                <LineBreak/>
+                                <Run Text="• "/><Run Text="JSON Import:" FontWeight="SemiBold"/><Run Text=" Restores included settings; preserves your local tool paths and Custom Rotation. You'll see a notification listing what stayed local."/>
+                                <LineBreak/>
+                                <Run Text="• "/><Run Text="Markdown Snapshot:" FontWeight="SemiBold"/><Run Text=" Everything visible (sensitive values like Last.fm session keys redacted as *****). Includes a 'Diff from defaults' table at the bottom."/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -4463,80 +4537,6 @@
                                 Foreground="White"
                                 FontWeight="Bold"/>
                     </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Backup Tab -->
-        <TabItem Header="Backup">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <TextBlock Text="Settings Backup &amp; Migration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests."
-                               FontSize="11"
-                               Foreground="#90A8A0"
-                               FontStyle="Italic"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,20"/>
-
-                    <!-- JSON Export / Import (portable, re-importable) -->
-                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
-                        <StackPanel>
-                            <TextBlock Text="Portable JSON Backup" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                            <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded — those stay machine-specific."
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,12"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="Export Settings (JSON)..."
-                                        Click="ExportSettingsJson_Click"
-                                        Padding="15,8"
-                                        Margin="0,0,10,0"
-                                        Background="#2D5A87"
-                                        Foreground="White"/>
-                                <Button Content="Import Settings (JSON)..."
-                                        Click="ImportSettingsJson_Click"
-                                        Padding="15,8"
-                                        Background="#2D5A87"
-                                        Foreground="White"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Markdown Snapshot (human-readable, one-way) -->
-                    <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
-                        <StackPanel>
-                            <TextBlock Text="Human-Readable Snapshot" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                            <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. One-way — not re-importable."
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,12"/>
-
-                            <Button Content="Export Snapshot (Markdown)..."
-                                    Click="ExportSettingsMarkdown_Click"
-                                    Padding="15,8"
-                                    HorizontalAlignment="Left"
-                                    Background="#447755"
-                                    Foreground="White"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Notes -->
-                    <Border Background="#1A2A3A" BorderBrush="#3A5A7A" BorderThickness="1" CornerRadius="4" Padding="15">
-                        <StackPanel>
-                            <TextBlock Text="What gets included?" FontSize="12" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,8"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#BBCCDD">
-                                <Run Text="• "/><Run Text="JSON Export:" FontWeight="SemiBold"/><Run Text=" Playback / Pauses / Live Effects / Visualizer / all toggles. Excludes tool paths (yt-dlp, FFmpeg, custom default music file/folder paths, cookies file) and Custom Rotation game IDs."/>
-                                <LineBreak/>
-                                <Run Text="• "/><Run Text="JSON Import:" FontWeight="SemiBold"/><Run Text=" Restores included settings; preserves your local tool paths and Custom Rotation. You'll see a notification listing what stayed local."/>
-                                <LineBreak/>
-                                <Run Text="• "/><Run Text="Markdown Snapshot:" FontWeight="SemiBold"/><Run Text=" Everything visible (sensitive values like Last.fm session keys redacted as *****). Includes a 'Diff from defaults' table at the bottom."/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

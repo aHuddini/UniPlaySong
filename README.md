@@ -23,6 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.7.1
 
 ### Improved
+- **Settings are easier to get through.** New **Setup** tab puts yt-dlp and FFmpeg in one place, so there's a single stop before anything else works. Long tabs now group into collapsible sections instead of one long scroll, options sit on the tab they belong to, and the tab order starts with About and Setup.
 - **Smoother library navigation in Fullscreen.** Preparing the next song no longer happens on the thread that draws the screen, so browsing doesn't hitch while a track loads. The fade timers also no longer take priority over drawing and controller input.
 - **Much quieter logging.** With debug logging off, UPS writes only errors to Playnite's shared log instead of hundreds of routine lines. Turning Enable Debug Logging on restores the full detail.
 
