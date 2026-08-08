@@ -45,6 +45,252 @@
         <Geometry x:Key="SpotifyLogoGeometry">M84,0 C37.6,0 0,37.6 0,84 C0,130.4 37.6,168 84,168 C130.4,168 168,130.4 168,84 C168,37.6 130.4,0 84,0 Z M122.5,121.2 C121,123.7 117.8,124.4 115.4,122.9 C95.9,111 71.4,108.3 42.5,114.9 C39.7,115.5 37,113.8 36.3,111 C35.7,108.2 37.4,105.5 40.2,104.8 C71.8,97.6 98.9,100.7 120.8,114.1 C123.2,115.6 124,118.8 122.5,121.2 Z M132.8,98.3 C130.9,101.4 126.9,102.3 123.8,100.4 C101.5,86.7 67.5,82.7 41.1,90.7 C37.6,91.8 33.9,89.8 32.8,86.3 C31.8,82.8 33.8,79.1 37.3,78 C67.4,68.9 104.9,73.3 130.5,89.1 C133.6,91 134.6,95.1 132.8,98.3 Z M133.7,74.4 C107,58.5 62.9,57.1 37.4,64.8 C33.2,66.1 28.8,63.7 27.5,59.5 C26.3,55.3 28.7,50.9 32.9,49.6 C62.2,40.7 110.9,42.4 141.6,60.6 C145.4,62.9 146.6,67.8 144.4,71.5 C142.2,75.3 137.4,76.6 133.7,74.4 Z</Geometry>
     </UserControl.Resources>
     <TabControl>
+        <!-- About Tab -->
+        <TabItem Header="About">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+
+                    <!-- Header -->
+                    <TextBlock Text="UniPlaySong" FontSize="22" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Version " FontSize="12" Foreground="Gray" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding PluginVersion}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="0,0,0,15">
+                        A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections.
+                    </TextBlock>
+
+                    <!-- Supported Audio Formats -->
+                    <Border BorderBrush="#FF888888" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A888888">
+                        <StackPanel>
+                            <TextBlock Text="Supported Audio Formats" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8">
+                                Formats tested with UPS's audio system. Drop files matching these extensions into a game's music folder.
+                            </TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• MP3</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• OGG Vorbis</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• FLAC</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• WAV</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">Retro chiptune (via bundled Game Music Emu):</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .spc</Run> — SNES / Super Famicom</TextBlock>
+                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .hes</Run> — NEC TurboGrafx-16 / PC Engine (requires sibling .m3u for multi-track playback or splitting)</TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Officially Supported Themes -->
+                    <Border BorderBrush="#FF4A9EFF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A4A9EFF">
+                        <StackPanel>
+                            <TextBlock Text="Officially Supported Fullscreen Themes" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
+                                These themes are tested against every UniPlaySong release and use the plugin's theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens, and overlays:
+                            </TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• ANIKI REMAKE</TextBlock>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• PS5 Experience (by saVantCZ) — enable "Theme compatibility" in Settings → Theme Support</TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                Theme developers: see Settings → Theme Support for the compatibility toggles (overlay/video music pausing, and the PS5-Experience fix).
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Changelog (current version only; older history on GitHub) -->
+                    <Border BorderBrush="#FF6FB36F" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A6FB36F">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="What's New in " FontSize="14" FontWeight="Bold"/>
+                                <TextBlock Text="v" FontSize="14" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding PluginVersion}" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                                The list below covers only the current release. For full version history, see the installer manifest on GitHub.
+                            </TextBlock>
+
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Added:</Run> Radio Mode can play through your gaming sessions — see "Except Radio Mode" under Pause on Game Launch. Game-specific music still pauses.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Added:</Run> Theme developers can bind the new option as an in-theme toggle.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Pausing for other apps' audio no longer stops working after a cancelled game launch.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Returning from a game no longer applies a minimize / system-tray pause you had switched off.
+                            </TextBlock>
+
+                            <TextBlock FontSize="11">
+                                Full version history:
+                                <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml" RequestNavigate="AboutHyperlink_RequestNavigate">UniPlaySong installer manifest on GitHub</Hyperlink>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Troubleshooting / Known Quirks -->
+                    <Border BorderBrush="#FFE0A040" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1AE0A040">
+                        <StackPanel>
+                            <TextBlock Text="Troubleshooting / Known Quirks" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                                These are real-world edge cases UPS users have hit. If you run into one, the workaround is listed below the description.
+                            </TextBlock>
+
+                            <TextBlock Text="Windows can't auto-suspend while UPS has played audio" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
+                                UPS keeps a persistent audio device open between songs to avoid stutter on game switches. Windows reads that as an active audio session and prevents the system from going to sleep — even when UPS has been paused for a long time. You'll see this if you have desktop autosuspend configured and notice your PC never sleeps while Playnite is running.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                <Run FontWeight="SemiBold">Workaround:</Run> Fully exit Playnite when stepping away from your PC. A fix is being investigated for a future v1.5.x patch.
+                            </TextBlock>
+
+                            <TextBlock Text="Pause on Focus Loss can be unreliable" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                If music gets stuck silent after exiting a game, try disabling "Ignore brief focus loss (alt-tab)" first. If it still happens, send a log file via Settings → Backup → Export Markdown Snapshot.
+                            </TextBlock>
+
+                            <TextBlock Text="Active Theme Music requires theme support" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
+                                As of v1.5.2, UPS reads <Run FontFamily="Consolas">UPS_BackgroundAudio.{mp3,ogg,wav,flac}</Run> from the active theme's audio folder. It no longer reads <Run FontFamily="Consolas">background.mp3</Run> because Playnite's own audio player uses that file. If your theme only has <Run FontFamily="Consolas">background.mp3</Run>, the Active Theme Music option in <Run FontWeight="SemiBold">Settings → Playback</Run> will show a one-click helper button to make a UPS-named copy.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                <Run FontWeight="SemiBold">Workaround:</Run> Click the helper button when it appears, or pick a different default music source. Themes that handle audio internally (like ANIKI REMAKE) don't support this option at all — use the Bundled Ambient preset instead.
+                            </TextBlock>
+
+                            <TextBlock Text="Toast notification blur is broken on Windows 11" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
+                                A recent Windows 11 update deprecated the API UPS uses for the toast acrylic blur effect. Toasts still appear and work, but render with a flat colored tint instead of frosted glass. Windows 10 unaffected. A fix is planned for a future v1.5.x patch.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bundled Music Credits -->
+                    <Border BorderBrush="#FF8888FF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A8888FF">
+                        <StackPanel>
+                            <TextBlock Text="Bundled Music Credits" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
+                                The Bundled Ambient default-music option ships these tracks. Full license details in NOTICES.txt.
+                            </TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Shades of Orange</Run> — Dave Miles, via Zapsplat (Standard License, Attribution)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Dark Ambient Soundscape Music / Dark Space Ambient</Run> — Tunetank (Pixabay Content License)</TextBlock>
+                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Ambient Background 2</Run> — DELOSound / Roman Dolmatov (Pixabay Content License)</TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Setup Instructions -->
+                    <TextBlock Text="Setup" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
+                        Most features work out of the box. A few optional features require external tools, which you install yourself:
+                    </TextBlock>
+
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">yt-dlp and Deno (for YouTube music downloads)</TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
+                        Download yt-dlp.exe and deno.exe. Place both in the same folder (Deno is the JavaScript runtime yt-dlp uses for YouTube's player extraction). Then point the plugin to yt-dlp.exe in the Setup tab.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                        <TextBlock FontSize="11" Foreground="Gray" Text="Downloads: "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://github.com/yt-dlp/yt-dlp/releases" RequestNavigate="AboutHyperlink_RequestNavigate">yt-dlp</Hyperlink>
+                        </TextBlock>
+                        <TextBlock FontSize="11" Foreground="Gray" Text=" | "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://deno.com/" RequestNavigate="AboutHyperlink_RequestNavigate">Deno</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">FFmpeg (for normalization, conversion, and waveform editing)</TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
+                        Download FFmpeg and point the plugin to ffmpeg.exe in the Setup tab. Required for music downloads, plus audio normalization, bulk format conversion, silence trim, and amplify.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                        <TextBlock FontSize="11" Foreground="Gray" Text="Download: "/>
+                        <TextBlock FontSize="11">
+                            <Hyperlink NavigateUri="https://ffmpeg.org/download.html" RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Links -->
+                    <Separator Margin="0,5,0,15"/>
+                    <TextBlock Text="Links" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="GitHub: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong" RequestNavigate="AboutHyperlink_RequestNavigate">github.com/aHuddini/UniPlaySong</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="Report a bug: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/issues" RequestNavigate="AboutHyperlink_RequestNavigate">Open an issue on GitHub</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <TextBlock Text="Support: " FontSize="12" Width="100"/>
+                        <TextBlock FontSize="12">
+                            <Hyperlink NavigateUri="https://ko-fi.com/Z8Z11SG2IK" RequestNavigate="AboutHyperlink_RequestNavigate">Ko-fi</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Setup Tab: one place for the external tools UPS shells out to. Deliberately has no
+             "Reset to Defaults" button — these are machine-specific paths the user had to locate,
+             not preferences, and the global reset preserves them for the same reason. -->
+        <TabItem Header="Setup">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Setup" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Point UniPlaySong at the external tools it needs. Set these once and every other feature that depends on them will work."
+                               FontSize="11" Foreground="#90A8A0" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="yt-dlp" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Settings.YtDlpPath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="False"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Command="{Binding BrowseForYtDlpFile}"/>
+                        <TextBlock Text="{Binding YtDlpStatus}" Foreground="{Binding YtDlpStatusBrush}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe. Yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support. Used for downloading music."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,20"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <TextBlock Text="FFmpeg" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="FFmpeg Path: " VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Settings.FFmpegPath}"
+                                 Width="300"
+                                 Margin="0,0,10,0"
+                                 IsReadOnly="False"/>
+                        <Button Content="Browse..."
+                                Width="80"
+                                Command="{Binding BrowseForFFmpegFile}"/>
+                        <TextBlock Text="{Binding FfmpegStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <TextBlock Text="Point this to the full path of ffmpeg.exe (e.g. C:\Tools\ffmpeg\ffmpeg.exe). Required for music downloads (audio extraction/conversion) as well as normalization, silence trimming, precise trim, audio repair, and trailer audio extraction. Download from ffmpeg.org if not installed."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,20"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <!-- General Tab -->
         <TabItem Header="General">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -819,7 +1065,7 @@
                                  IsEnabled="{Binding IsTrailerAudioEnabled}"
                                  GroupName="DefaultMusicSource"
                                  Margin="20,5,0,0"/>
-                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Editing tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
+                    <TextBlock Text="For games with no UniPlaySong music, extracts the audio from the game's EML video trailer and plays it as the default music. The first play for each game may take a moment while the audio is extracted (it might be slow); it is cached afterward so later plays are instant. Requires FFmpeg (set in the Setup tab) and a full video trailer from the ExtraMetadataLoader extension. Games with only a micro-trailer, or no trailer, stay silent."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -830,7 +1076,7 @@
                                FontWeight="SemiBold"
                                TextWrapping="Wrap"
                                Margin="40,0,0,4"/>
-                    <TextBlock Text="Requires FFmpeg — set its path in the Editing tab"
+                    <TextBlock Text="Requires FFmpeg — set its path in the Setup tab"
                                FontSize="11"
                                Foreground="IndianRed"
                                TextWrapping="Wrap"
@@ -1028,6 +1274,252 @@
             </ScrollViewer>
         </TabItem>
 
+        <!-- Pauses Tab -->
+        <TabItem Header="Pauses">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20">
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Pause Scenarios" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Click="ResetPausesTab_Click" Padding="8,3" FontSize="11"/>
+                    </Grid>
+                    <TextBlock Text="Configure when music should automatically pause and resume"
+                               FontSize="11"
+                               Foreground="#90A8A0"
+                               FontStyle="Italic"
+                               Margin="0,0,0,20"/>
+
+                    <!-- System Events -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+
+                    <CheckBox Content="Pause on Game Launch"
+                              IsChecked="{Binding Settings.PauseOnGameStart}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, UPS music pauses with a smooth fade-out as soon as you click Play on a game. Music resumes when the game closes. Compatible with the Splash Screen plugin."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,4"/>
+                    <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. If you want Radio Mode to keep playing over your game, leave this ON and tick 'Except Radio Mode' below instead."
+                               FontSize="11"
+                               Foreground="#E08070"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Except Radio Mode (radio plays through games)"
+                              IsChecked="{Binding Settings.RadioPlaysThroughGames}"
+                              Margin="20,0,0,5"/>
+                    <TextBlock Text="When enabled, Radio Mode (UPS pool or Spotify) keeps playing while a game is running instead of pausing. Applies only to Radio Mode — game-specific music still pauses. Works whether or not 'Pause on Game Launch' is enabled. Manual pause and screen lock still pause the radio."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Windows is locked"
+                              IsChecked="{Binding Settings.PauseOnSystemLock}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
+                              IsChecked="{Binding Settings.PauseOnIdle}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnIdle}">
+                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider Minimum="1" Maximum="60"
+                                Value="{Binding Settings.IdleTimeoutMinutes}"
+                                Width="200"
+                                TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
+                    </StackPanel>
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Window State -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+
+                    <CheckBox Content="Pause music when Playnite loses focus"
+                              IsChecked="{Binding Settings.PauseOnFocusLoss}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Stay paused after focus is restored"
+                              IsChecked="{Binding Settings.FocusLossStayPaused}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Music won't automatically resume when Playnite regains focus. Press play to resume manually."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
+                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Text="Detects the alt-tab overlay and only pauses if you actually switch to another app. Aborted alt-tabs are ignored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is minimized"
+                              IsChecked="{Binding Settings.PauseOnMinimize}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar. Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Pause music when Playnite is in system tray"
+                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"
+                              Margin="0,5"/>
+                    <TextBlock Text="When enabled, music will pause when Playnite is hidden in the system tray (e.g., on startup or after closing to tray). Music will resume when Playnite is restored."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- External Audio -->
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="External Audio" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+
+                    <CheckBox Content="Pause music when another app plays audio"
+                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                    <CheckBox Content="Stay paused after external audio stops (Desktop only)"
+                              IsChecked="{Binding Settings.KeepPausedAfterExternalAudio}"
+                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"
+                              Margin="20,5,0,5"/>
+                    <TextBlock Text="When enabled, UPS does NOT auto-resume when the external audio stops. Manually resume via the top panel play/pause button or media keys. Only affects Desktop mode; Fullscreen always auto-resumes."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="40,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
+                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                            <Setter Property="Text" Value="Instant"/>
+                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
+                               FontSize="11"
+                               Foreground="CornflowerBlue"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Content="Instant pause (no fade transition)"
+                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
+                              Margin="20,5,0,5"
+                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
+                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"
+                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,15"/>
+
+                    <!-- Theme/Trailer Video -->
+                    <TextBlock Text="Theme Video" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Pause music when a trailer or theme video plays"
+                              IsChecked="{Binding Settings.PauseOnTrailer}"
+                              Margin="0,5,0,5"/>
+                    <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,10"/>
+
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
 
         <!-- Gamification Tab -->
         <TabItem Header="Gamification">
@@ -1379,252 +1871,6 @@
                     </StackPanel>
                         </StackPanel>
                     </Expander>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-        <!-- Pauses Tab -->
-        <TabItem Header="Pauses">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-                    <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Pause Scenarios" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Click="ResetPausesTab_Click" Padding="8,3" FontSize="11"/>
-                    </Grid>
-                    <TextBlock Text="Configure when music should automatically pause and resume"
-                               FontSize="11"
-                               Foreground="#90A8A0"
-                               FontStyle="Italic"
-                               Margin="0,0,0,20"/>
-
-                    <!-- System Events -->
-                    <Expander IsExpanded="False" Margin="0,0,0,10">
-                        <Expander.Header>
-                            <TextBlock Text="System Events" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                        </Expander.Header>
-                        <StackPanel Margin="0,10,0,0">
-
-                    <CheckBox Content="Pause on Game Launch"
-                              IsChecked="{Binding Settings.PauseOnGameStart}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, UPS music pauses with a smooth fade-out as soon as you click Play on a game. Music resumes when the game closes. Compatible with the Splash Screen plugin."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,4"/>
-                    <TextBlock Text="⚠ Keep this ON for normal UPS behavior. Disabling causes UPS music to keep playing in the background while your game is running. If you want Radio Mode to keep playing over your game, leave this ON and tick 'Except Radio Mode' below instead."
-                               FontSize="11"
-                               Foreground="#E08070"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <CheckBox Content="Except Radio Mode (radio plays through games)"
-                              IsChecked="{Binding Settings.RadioPlaysThroughGames}"
-                              Margin="20,0,0,5"/>
-                    <TextBlock Text="When enabled, Radio Mode (UPS pool or Spotify) keeps playing while a game is running instead of pausing. Applies only to Radio Mode — game-specific music still pauses. Works whether or not 'Pause on Game Launch' is enabled. Manual pause and screen lock still pause the radio."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Windows is locked"
-                              IsChecked="{Binding Settings.PauseOnSystemLock}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when you lock your PC (Win+L). Music will resume when you unlock and sign back in."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when idle (no keyboard/mouse input)"
-                              IsChecked="{Binding Settings.PauseOnIdle}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Pauses music after a period of inactivity. Music resumes when any keyboard or mouse input is detected. Does not detect gamepad input."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnIdle}">
-                        <TextBlock Text="Idle timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider Minimum="1" Maximum="60"
-                                Value="{Binding Settings.IdleTimeoutMinutes}"
-                                Width="200"
-                                TickFrequency="5" IsSnapToTickEnabled="False"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
-                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
-                    </StackPanel>
-                        </StackPanel>
-                    </Expander>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Window State -->
-                    <Expander IsExpanded="False" Margin="0,0,0,10">
-                        <Expander.Header>
-                            <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                        </Expander.Header>
-                        <StackPanel Margin="0,10,0,0">
-
-                    <CheckBox Content="Pause music when Playnite loses focus"
-                              IsChecked="{Binding Settings.PauseOnFocusLoss}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when you switch to another application. Music will resume when Playnite regains focus."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <CheckBox Content="Stay paused after focus is restored"
-                              IsChecked="{Binding Settings.FocusLossStayPaused}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Text="Music won't automatically resume when Playnite regains focus. Press play to resume manually."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
-                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Text="Detects the alt-tab overlay and only pauses if you actually switch to another app. Aborted alt-tabs are ignored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Playnite is minimized"
-                              IsChecked="{Binding Settings.PauseOnMinimize}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when Playnite is minimized to the taskbar. Music will resume when Playnite is restored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Pause music when Playnite is in system tray"
-                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, music will pause when Playnite is hidden in the system tray (e.g., on startup or after closing to tray). Music will resume when Playnite is restored."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                        </StackPanel>
-                    </Expander>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- External Audio -->
-                    <Expander IsExpanded="False" Margin="0,0,0,10">
-                        <Expander.Header>
-                            <TextBlock Text="External Audio" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                        </Expander.Header>
-                        <StackPanel Margin="0,10,0,0">
-
-                    <CheckBox Content="Pause music when another app plays audio"
-                              IsChecked="{Binding Settings.PauseOnExternalAudio}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="When enabled, music will automatically pause when another application (YouTube, Spotify, Discord, etc.) starts playing audio. Music resumes after the external audio stops. Uses Windows audio session detection."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x26A0; Limitation: Screen recorders and streaming apps (OBS, Shadowplay, etc.) that capture desktop audio may cause false detections since they mirror system audio back through their own audio sessions. Add these apps to the exclusion list below if you experience issues."
-                               FontSize="11"
-                               Foreground="Orange"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Stay paused after external audio stops (Desktop only)"
-                              IsChecked="{Binding Settings.KeepPausedAfterExternalAudio}"
-                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"
-                              Margin="20,5,0,5"/>
-                    <TextBlock Text="When enabled, UPS does NOT auto-resume when the external audio stops. Manually resume via the top panel play/pause button or media keys. Only affects Desktop mode; Fullscreen always auto-resumes."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="40,0,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
-                                IsEnabled="{Binding Settings.PauseOnExternalAudio}">
-                        <TextBlock Text="Debounce:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
-                        <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
-                                Value="{Binding Settings.ExternalAudioDebounceSeconds}"
-                                Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                            <Setter Property="Text" Value="Instant"/>
-                                            <Setter Property="Foreground" Value="CornflowerBlue"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                    <TextBlock Text="How long external audio must play before pausing, and how long silence must last before resuming. Set to 0 for instant response. Lower values are more responsive but may flicker with brief sounds."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-                    <TextBlock Text="&#x2139; Instant mode: Windows notification sounds, brief audio blips, and system alerts may trigger pauses."
-                               FontSize="11"
-                               Foreground="CornflowerBlue"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <CheckBox Content="Instant pause (no fade transition)"
-                              IsChecked="{Binding Settings.ExternalAudioInstantPause}"
-                              Margin="20,5,0,5"
-                              IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Music cuts immediately instead of fading. Useful for voice calls or when you want zero audio overlap."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Excluded apps:" FontSize="11" Foreground="Gray" Margin="20,10,0,5"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
-                             Width="350" HorizontalAlignment="Left" Margin="20,0,0,5"
-                             IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                    <TextBlock Text="Comma-separated process names to ignore (e.g. obs64, discord). Find process names in Task Manager's Details tab. These apps' audio will not trigger a pause."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"
-                               IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-                        </StackPanel>
-                    </Expander>
-
-                    <Separator Margin="0,15"/>
-
-                    <!-- Theme/Trailer Video -->
-                    <TextBlock Text="Theme Video" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-
-                    <CheckBox Content="Pause music when a trailer or theme video plays"
-                              IsChecked="{Binding Settings.PauseOnTrailer}"
-                              Margin="0,5,0,5"/>
-                    <TextBlock Text="Pauses music when a theme or trailer video is detected (e.g. from themes like ANIKI REMAKE). Note: this may break compatibility with Extra Metadata Loader (EML). Disable if you experience issues. Enabled by default."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -3001,24 +3247,8 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,10"/>
 
-                    <!-- FFmpeg Path Setting -->
-                    <TextBlock Text="FFmpeg Configuration" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="FFmpeg Path: " VerticalAlignment="Center" Width="120"/>
-                        <TextBox Text="{Binding Settings.FFmpegPath}"
-                                 Width="300"
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="False"/>
-                        <Button Content="Browse..."
-                                Width="80"
-                                Command="{Binding BrowseForFFmpegFile}"/>
-                        <TextBlock Text="{Binding FfmpegStatus}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
-                    </StackPanel>
-                    <TextBlock Text="Point this to the full path of ffmpeg.exe (e.g. C:\Tools\ffmpeg\ffmpeg.exe). Required for music downloads (audio extraction/conversion) as well as normalization, silence trimming, precise trim, and audio repair. Download from ffmpeg.org if not installed."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,20"/>
+                    <TextBlock Text="FFmpeg powers these tools — set its path in the Setup tab."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                     <StackPanel>
                         <Separator Margin="0,15"/>
@@ -3371,22 +3601,8 @@
                     </Grid>
                     <TextBlock Text="Configure download tools, auto-download behavior, and search caching" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="yt-dlp Path: " VerticalAlignment="Center" Width="120"/>
-                        <TextBox Text="{Binding Settings.YtDlpPath}"
-                                 Width="300"
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="False"/>
-                        <Button Content="Browse..."
-                                Width="80"
-                                Command="{Binding BrowseForYtDlpFile}"/>
-                        <TextBlock Text="{Binding YtDlpStatus}" Foreground="{Binding YtDlpStatusBrush}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="SemiBold"/>
-                    </StackPanel>
-                    <TextBlock Text="Point this to the full path of yt-dlp.exe (e.g. C:\Tools\yt-dlp\yt-dlp.exe). For YouTube downloads, place deno.exe in the same folder as yt-dlp.exe. Yt-dlp requires a JavaScript runtime (Deno recommended) for YouTube support."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                    <TextBlock Text="Downloads use yt-dlp and FFmpeg — set both paths in the Setup tab."
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                     <Separator Margin="0,10"/>
 
@@ -3453,7 +3669,7 @@
                     <CheckBox Content="Automatically normalize downloaded music"
                               IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
                               Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab. Requires FFmpeg."
+                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab (FFmpeg path is in Setup). Requires FFmpeg."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
@@ -4680,201 +4896,6 @@
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,10">
                         A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
                     </TextBlock>
-
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- About Tab -->
-        <TabItem Header="About">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20">
-
-                    <!-- Header -->
-                    <TextBlock Text="UniPlaySong" FontSize="22" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Version " FontSize="12" Foreground="Gray" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding PluginVersion}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="0,0,0,15">
-                        A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections.
-                    </TextBlock>
-
-                    <!-- Supported Audio Formats -->
-                    <Border BorderBrush="#FF888888" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A888888">
-                        <StackPanel>
-                            <TextBlock Text="Supported Audio Formats" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8">
-                                Formats tested with UPS's audio system. Drop files matching these extensions into a game's music folder.
-                            </TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• MP3</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• OGG Vorbis</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• FLAC</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• WAV</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">Retro chiptune (via bundled Game Music Emu):</TextBlock>
-                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
-                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
-                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .spc</Run> — SNES / Super Famicom</TextBlock>
-                            <TextBlock FontSize="12" Margin="10,0,0,2"><Run FontWeight="SemiBold">• .hes</Run> — NEC TurboGrafx-16 / PC Engine (requires sibling .m3u for multi-track playback or splitting)</TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,2,0,0">
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Officially Supported Themes -->
-                    <Border BorderBrush="#FF4A9EFF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A4A9EFF">
-                        <StackPanel>
-                            <TextBlock Text="Officially Supported Fullscreen Themes" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
-                                These themes are tested against every UniPlaySong release and use the plugin's theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens, and overlays:
-                            </TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• ANIKI REMAKE</TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• PS5 Experience (by saVantCZ) — enable "Theme compatibility" in Settings → Theme Support</TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
-                                Theme developers: see Settings → Theme Support for the compatibility toggles (overlay/video music pausing, and the PS5-Experience fix).
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Changelog (current version only; older history on GitHub) -->
-                    <Border BorderBrush="#FF6FB36F" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A6FB36F">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="What's New in " FontSize="14" FontWeight="Bold"/>
-                                <TextBlock Text="v" FontSize="14" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding PluginVersion}" FontSize="14" FontWeight="Bold"/>
-                            </StackPanel>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
-                                The list below covers only the current release. For full version history, see the installer manifest on GitHub.
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Radio Mode can play through your gaming sessions — see "Except Radio Mode" under Pause on Game Launch. Game-specific music still pauses.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Theme developers can bind the new option as an in-theme toggle.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Pausing for other apps' audio no longer stops working after a cancelled game launch.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Returning from a game no longer applies a minimize / system-tray pause you had switched off.
-                            </TextBlock>
-
-                            <TextBlock FontSize="11">
-                                Full version history:
-                                <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml" RequestNavigate="AboutHyperlink_RequestNavigate">UniPlaySong installer manifest on GitHub</Hyperlink>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Troubleshooting / Known Quirks -->
-                    <Border BorderBrush="#FFE0A040" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1AE0A040">
-                        <StackPanel>
-                            <TextBlock Text="Troubleshooting / Known Quirks" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
-                                These are real-world edge cases UPS users have hit. If you run into one, the workaround is listed below the description.
-                            </TextBlock>
-
-                            <TextBlock Text="Windows can't auto-suspend while UPS has played audio" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
-                                UPS keeps a persistent audio device open between songs to avoid stutter on game switches. Windows reads that as an active audio session and prevents the system from going to sleep — even when UPS has been paused for a long time. You'll see this if you have desktop autosuspend configured and notice your PC never sleeps while Playnite is running.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                <Run FontWeight="SemiBold">Workaround:</Run> Fully exit Playnite when stepping away from your PC. A fix is being investigated for a future v1.5.x patch.
-                            </TextBlock>
-
-                            <TextBlock Text="Pause on Focus Loss can be unreliable" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                If music gets stuck silent after exiting a game, try disabling "Ignore brief focus loss (alt-tab)" first. If it still happens, send a log file via Settings → Backup → Export Markdown Snapshot.
-                            </TextBlock>
-
-                            <TextBlock Text="Active Theme Music requires theme support" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
-                                As of v1.5.2, UPS reads <Run FontFamily="Consolas">UPS_BackgroundAudio.{mp3,ogg,wav,flac}</Run> from the active theme's audio folder. It no longer reads <Run FontFamily="Consolas">background.mp3</Run> because Playnite's own audio player uses that file. If your theme only has <Run FontFamily="Consolas">background.mp3</Run>, the Active Theme Music option in <Run FontWeight="SemiBold">Settings → Playback</Run> will show a one-click helper button to make a UPS-named copy.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                <Run FontWeight="SemiBold">Workaround:</Run> Click the helper button when it appears, or pick a different default music source. Themes that handle audio internally (like ANIKI REMAKE) don't support this option at all — use the Bundled Ambient preset instead.
-                            </TextBlock>
-
-                            <TextBlock Text="Toast notification blur is broken on Windows 11" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                A recent Windows 11 update deprecated the API UPS uses for the toast acrylic blur effect. Toasts still appear and work, but render with a flat colored tint instead of frosted glass. Windows 10 unaffected. A fix is planned for a future v1.5.x patch.
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Bundled Music Credits -->
-                    <Border BorderBrush="#FF8888FF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A8888FF">
-                        <StackPanel>
-                            <TextBlock Text="Bundled Music Credits" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
-                                The Bundled Ambient default-music option ships these tracks. Full license details in NOTICES.txt.
-                            </TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Shades of Orange</Run> — Dave Miles, via Zapsplat (Standard License, Attribution)</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Dark Ambient Soundscape Music / Dark Space Ambient</Run> — Tunetank (Pixabay Content License)</TextBlock>
-                            <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Ambient Background 2</Run> — DELOSound / Roman Dolmatov (Pixabay Content License)</TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Setup Instructions -->
-                    <TextBlock Text="Setup" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,10">
-                        Most features work out of the box. A few optional features require external tools, which you install yourself:
-                    </TextBlock>
-
-                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">yt-dlp and Deno (for YouTube music downloads)</TextBlock>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
-                        Download yt-dlp.exe and deno.exe. Place both in the same folder (Deno is the JavaScript runtime yt-dlp uses for YouTube's player extraction). Then point the plugin to yt-dlp.exe in the Downloads tab.
-                    </TextBlock>
-                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
-                        <TextBlock FontSize="11" Foreground="Gray" Text="Downloads: "/>
-                        <TextBlock FontSize="11">
-                            <Hyperlink NavigateUri="https://github.com/yt-dlp/yt-dlp/releases" RequestNavigate="AboutHyperlink_RequestNavigate">yt-dlp</Hyperlink>
-                        </TextBlock>
-                        <TextBlock FontSize="11" Foreground="Gray" Text=" | "/>
-                        <TextBlock FontSize="11">
-                            <Hyperlink NavigateUri="https://deno.com/" RequestNavigate="AboutHyperlink_RequestNavigate">Deno</Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,4,0,2">FFmpeg (for normalization, conversion, and waveform editing)</TextBlock>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,6">
-                        Download FFmpeg and point the plugin to ffmpeg.exe in the Editing tab. Required for music downloads, plus audio normalization, bulk format conversion, silence trim, and amplify.
-                    </TextBlock>
-                    <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
-                        <TextBlock FontSize="11" Foreground="Gray" Text="Download: "/>
-                        <TextBlock FontSize="11">
-                            <Hyperlink NavigateUri="https://ffmpeg.org/download.html" RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org</Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <!-- Links -->
-                    <Separator Margin="0,5,0,15"/>
-                    <TextBlock Text="Links" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
-                        <TextBlock Text="GitHub: " FontSize="12" Width="100"/>
-                        <TextBlock FontSize="12">
-                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong" RequestNavigate="AboutHyperlink_RequestNavigate">github.com/aHuddini/UniPlaySong</Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
-                        <TextBlock Text="Report a bug: " FontSize="12" Width="100"/>
-                        <TextBlock FontSize="12">
-                            <Hyperlink NavigateUri="https://github.com/aHuddini/UniPlaySong/issues" RequestNavigate="AboutHyperlink_RequestNavigate">Open an issue on GitHub</Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
-                        <TextBlock Text="Support: " FontSize="12" Width="100"/>
-                        <TextBlock FontSize="12">
-                            <Hyperlink NavigateUri="https://ko-fi.com/Z8Z11SG2IK" RequestNavigate="AboutHyperlink_RequestNavigate">Ko-fi</Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
 
                 </StackPanel>
             </ScrollViewer>
