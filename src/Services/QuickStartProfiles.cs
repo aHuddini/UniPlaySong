@@ -108,7 +108,7 @@ namespace UniPlaySong.Services
                 Id = JukeboxFullscreen,
                 Name = "Jukebox / Radio",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source.",
+                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
                 Values = JukeboxValues()
             },
 
@@ -145,19 +145,55 @@ namespace UniPlaySong.Services
                 Id = JukeboxDesktop,
                 Name = "Jukebox / Radio",
                 Mode = QuickStartMode.Desktop,
-                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source.",
+                Summary = "One continuous mix instead of per-game music. Pick your library or Spotify as the source. Default music stays on in case the mix has nothing to play.",
                 Values = JukeboxValues()
             },
         };
 
-        // Radio replaces per-game music, so default music is off — radio IS the continuous bed and
-        // running both would layer two of them. Source is filled in at apply time from the tile.
+        // Radio is the continuous bed, but default music stays ON as the safety net.
+        //
+        // Turning it off looked right — two beds layered would be wrong — but StartRadioPlayback
+        // BAILS on an empty pool ("RadioMode: pool empty for source X") and simply returns. A user
+        // with nothing downloaded yet, or FullLibrary against an empty library, or CustomFolder with
+        // no folder chosen, then gets silence and no way to tell why. Default music is what covers
+        // that, and it does not double up: the radio owns playback whenever its pool has anything in
+        // it, so the fallback only surfaces when the radio genuinely cannot play.
         private static Dictionary<string, object> JukeboxValues() => new Dictionary<string, object>
         {
             { nameof(UniPlaySongSettings.RadioModeEnabled), true },
-            { nameof(UniPlaySongSettings.EnableDefaultMusic), false },
+            { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
             { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), false },
             { nameof(UniPlaySongSettings.RadioMusicSource), RadioMusicSource.FullLibrary },
+        };
+
+        // Sources that need something the user has to supply first. Applying a profile must not
+        // leave default music pointed at a source with nothing behind it — that is the same silent
+        // failure as the empty radio pool, one layer down.
+        public static bool DefaultSourceIsUsable(UniPlaySongSettings s)
+        {
+            if (s == null) return false;
+            switch (s.DefaultMusicSourceOption)
+            {
+                case DefaultMusicSource.CustomFile:
+                    return !string.IsNullOrWhiteSpace(s.DefaultMusicPath);
+                case DefaultMusicSource.CustomFolder:
+                    return !string.IsNullOrWhiteSpace(s.DefaultMusicFolderPath);
+                case DefaultMusicSource.CustomRotation:
+                    return s.CustomRotationGameIds != null && s.CustomRotationGameIds.Count > 0;
+                case DefaultMusicSource.CompletionStatusPool:
+                    return s.DefaultMusicStatusPoolIds != null && s.DefaultMusicStatusPoolIds.Count > 0;
+                default:
+                    // BundledPreset, RandomGame, ActiveThemeMusic, DeferToTrailerAudio and Spotify
+                    // all work without the user configuring a path or list first.
+                    return true;
+            }
+        }
+
+        // BundledPreset ships with the plugin, so it is the one source guaranteed to produce sound
+        // on a fresh install.
+        public static Dictionary<string, object> BundledPresetFallback() => new Dictionary<string, object>
+        {
+            { nameof(UniPlaySongSettings.DefaultMusicSourceOption), DefaultMusicSource.BundledPreset },
         };
 
         // Applies the Jukebox tile's source choice. Spotify radio is RadioModeEnabled +

@@ -94,7 +94,6 @@ namespace UniPlaySong.Tests.Services
             Assert.IsTrue(_s.RadioModeEnabled);
             Assert.AreEqual(RadioMusicSource.Spotify, _s.RadioMusicSource);
             Assert.IsTrue(_s.SpotifyRadioMode, "derived from RadioModeEnabled + RadioMusicSource");
-            Assert.IsFalse(_s.EnableDefaultMusic, "radio is already the continuous bed");
             Assert.IsTrue(_s.RadioPlaysThroughGames);
         }
 
@@ -173,6 +172,68 @@ namespace UniPlaySong.Tests.Services
 
             Assert.IsFalse(_svc.IsModified(_s, JukeboxSource.Library, false, false, false),
                 "changing an unowned setting is not profile drift");
+        }
+
+        // StartRadioPlayback returns without playing when its pool is empty, so a Jukebox profile
+        // that also turned default music off would leave a user with nothing and no explanation.
+        [Test]
+        public void Jukebox_KeepsDefaultMusicOnAsTheSafetyNet()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Library, false, true, false);
+            Assert.IsTrue(_s.EnableDefaultMusic, "an empty radio pool must still leave something to play");
+
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Spotify, false, true, false);
+            Assert.IsTrue(_s.EnableDefaultMusic);
+        }
+
+        [Test]
+        public void EveryProfile_LeavesDefaultMusicEnabled()
+        {
+            foreach (var p in QuickStartProfiles.All)
+            {
+                var s = new UniPlaySongSettings();
+                new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnableDefaultMusic, $"{p.Id} left default music off");
+            }
+        }
+
+        // Enabling a fallback that is itself unconfigured is the same silent failure one layer down.
+        [TestCase(DefaultMusicSource.CustomFile)]
+        [TestCase(DefaultMusicSource.CustomFolder)]
+        [TestCase(DefaultMusicSource.CustomRotation)]
+        [TestCase(DefaultMusicSource.CompletionStatusPool)]
+        public void Apply_UnconfiguredDefaultSource_FallsBackToBundledPreset(DefaultMusicSource source)
+        {
+            _s.DefaultMusicSourceOption = source; // left unconfigured: no path, no list
+
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+
+            Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption,
+                $"{source} has nothing behind it, so the profile should fall back to the bundled preset");
+        }
+
+        [Test]
+        public void Apply_ConfiguredDefaultSource_IsLeftAlone()
+        {
+            _s.DefaultMusicSourceOption = DefaultMusicSource.CustomFolder;
+            _s.DefaultMusicFolderPath = @"D:\Music\Ambient";
+
+            _svc.Apply(_s, P(QuickStartProfiles.SelectToPlayFullscreen), JukeboxSource.Library, false, false, false);
+
+            Assert.AreEqual(DefaultMusicSource.CustomFolder, _s.DefaultMusicSourceOption,
+                "a source the user has actually configured must survive");
+            Assert.AreEqual(@"D:\Music\Ambient", _s.DefaultMusicFolderPath);
+        }
+
+        [Test]
+        public void Apply_SourcesNeedingNoSetup_AreLeftAlone()
+        {
+            foreach (var src in new[] { DefaultMusicSource.RandomGame, DefaultMusicSource.Spotify, DefaultMusicSource.ActiveThemeMusic })
+            {
+                var s = new UniPlaySongSettings { DefaultMusicSourceOption = src };
+                new QuickStartService().Apply(s, P(QuickStartProfiles.HoverPreviewDesktop), JukeboxSource.Library, false, false, false);
+                Assert.AreEqual(src, s.DefaultMusicSourceOption, $"{src} needs no user setup and should be kept");
+            }
         }
 
         // "Add reverb" composes with every tile rather than being tiles of its own.

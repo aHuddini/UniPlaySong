@@ -58,6 +58,19 @@ namespace UniPlaySong.Services
                 foreach (var kv in QuickStartProfiles.ReverbValues(addReverb))
                     values[kv.Key] = kv.Value;
 
+                // Every profile turns default music ON, so it has to point at a source that can
+                // actually produce sound. If the user's current source needs something they have not
+                // supplied — a file, a folder, a rotation list — fall back to the bundled preset
+                // rather than enabling a fallback that is itself empty.
+                if (!QuickStartProfiles.DefaultSourceIsUsable(settings))
+                {
+                    foreach (var kv in QuickStartProfiles.BundledPresetFallback())
+                        values[kv.Key] = kv.Value;
+                    _fileLogger?.Info(
+                        $"QuickStart: default music source '{settings.DefaultMusicSourceOption}' is not configured — " +
+                        "falling back to the bundled preset so the profile has something to play.");
+                }
+
                 _undoValues = Snapshot(settings, values.Keys);
                 _undoProfileId = settings.ActiveQuickStartProfile;
 

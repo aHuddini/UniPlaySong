@@ -89,6 +89,23 @@ and name it.
 **Every profile must state its fallback explicitly.** Leaving `EnableDefaultMusic` unowned would mean
 the same profile behaves differently for two users, which defeats the point of a profile.
 
+**Every profile turns default music ON — including Jukebox.** An earlier draft had Jukebox switch it
+off, reasoning that radio is already the continuous bed and two beds would layer. That was wrong:
+`StartRadioPlayback` *returns without playing* when its pool is empty (logged as "RadioMode: pool
+empty for source X"). A user with nothing downloaded yet, an empty library under `FullLibrary`, or
+`CustomFolder` with no folder chosen would get silence and no indication why. The two do not double
+up in practice — the radio owns playback whenever its pool has anything in it, so the fallback only
+surfaces when the radio genuinely cannot play.
+
+**And the fallback itself must be playable.** Four default-music sources need something the user has
+to supply first — `CustomFile` (a path), `CustomFolder` (a path), `CustomRotation` (a game list),
+`CompletionStatusPool` (a status list). Applying a profile while one of those is unconfigured would
+enable a fallback that is itself empty: the same silent failure one layer down. So apply checks, and
+falls back to `BundledPreset`, which ships with the plugin and is the one source guaranteed to
+produce sound on a fresh install. A source the user *has* configured is never touched, and the
+sources needing no setup (`RandomGame`, `ActiveThemeMusic`, `DeferToTrailerAudio`, `Spotify`) are
+left alone.
+
 ## Desktop vs Fullscreen is the primary axis
 
 This is the organising idea, and it is grounded in the code rather than taste:
@@ -119,7 +136,7 @@ differ by one setting are a *checkbox on the page*, not a tile of their own.
 |---|---|
 | **Hover Preview (PS3 style)** | Music follows the highlight as you browse. Default music fills games with none. |
 | **Select to Play** | Browsing stays on default music; a game's own music starts when you open it. |
-| **Jukebox / Radio** | One continuous mix instead of per-game music. Source picked on the tile: your library or Spotify. |
+| **Jukebox / Radio** | One continuous mix instead of per-game music. Source picked on the tile: your library or Spotify. Default music stays on as a safety net for an empty pool. |
 
 ### Desktop profiles (mouse / keyboard)
 
