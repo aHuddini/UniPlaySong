@@ -54,6 +54,10 @@ namespace UniPlaySong.Services
         // persisted, so renaming one would orphan ActiveQuickStartProfile on existing installs.
         public const string AmbientDesktop = "dt-ambient";
         public const string JukeboxDesktop = "dt-jukebox";
+        // Offered in both columns — the only tile that is, because it is a showcase of what the
+        // plugin can do rather than a way of listening tied to one mode.
+        public const string HuddiniShowcaseFullscreen = "fs-showcase";
+        public const string HuddiniShowcaseDesktop = "dt-showcase";
 
         public static IReadOnlyList<QuickStartProfile> All => _all;
 
@@ -125,6 +129,60 @@ namespace UniPlaySong.Services
                 { nameof(UniPlaySongSettings.EnablePreviewMode), false },
             };
 
+        // Huddini's personal setup, offered in both modes. Unlike the other tiles this is not a
+        // minimal "way of listening" — it deliberately turns on the things that show what UPS does,
+        // so it owns more keys than anything else in the catalogue.
+        //
+        // It is the ONE profile that sets MusicVolume, which every other tile is forbidden from
+        // touching. That is the point of a showcase: it is a complete configuration, and the volume
+        // and boost are part of what it is demonstrating. Every value here is inside its property's
+        // clamp — volume 0-100, boost 0-20, song-end fade 0.2-5.0, crossfade 1-10, fades 0.10-5.0 —
+        // checked rather than assumed, because a setter that silently clamps would make the tile
+        // apply something other than what it advertises.
+        private static Dictionary<string, object> ShowcaseValues() => new Dictionary<string, object>
+        {
+            // Plays in both modes — the showcase is not mode-specific.
+            { nameof(UniPlaySongSettings.MusicState), AudioState.Always },
+            { nameof(UniPlaySongSettings.EnableMusic), true },
+
+            { nameof(UniPlaySongSettings.MusicVolume), 90 },
+            { nameof(UniPlaySongSettings.FullscreenVolumeBoostPercent), 3 },
+
+            { nameof(UniPlaySongSettings.FadeInDuration), 0.35 },
+            { nameof(UniPlaySongSettings.FadeOutDuration), 0.65 },
+            { nameof(UniPlaySongSettings.FadeOutBeforeSongEndDuration), 3.0 },
+
+            // True crossfade needs the NAudio backend, which Live Effects below also forces — the
+            // two are consistent rather than fighting each other.
+            { nameof(UniPlaySongSettings.EnableTrueCrossfade), true },
+            { nameof(UniPlaySongSettings.CrossfadeDurationSeconds), 7 },
+
+            { nameof(UniPlaySongSettings.RandomizeOnEverySelect), true },
+            { nameof(UniPlaySongSettings.RandomizeOnMusicEnd), true },
+
+            { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
+            { nameof(UniPlaySongSettings.DefaultMusicContinueSameSong), true },
+            { nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd), true },
+            { nameof(UniPlaySongSettings.DefaultMusicSourceOption), DefaultMusicSource.BundledPreset },
+            { nameof(UniPlaySongSettings.RandomizeBundledTrackOnStartup), true },
+
+            { nameof(UniPlaySongSettings.MusicOnlyForInstalledGames), true },
+
+            // Full tracks, not clips — the showcase is about the crossfade and the effects, which a
+            // 30-second snippet would cut off before they land.
+            { nameof(UniPlaySongSettings.EnablePreviewMode), false },
+            { nameof(UniPlaySongSettings.StopAfterSongEnds), false },
+
+            // Radio would replace per-game music, which is what the rest of this is demonstrating.
+            { nameof(UniPlaySongSettings.RadioModeEnabled), false },
+
+            { nameof(UniPlaySongSettings.LiveEffectsEnabled), true },
+            { nameof(UniPlaySongSettings.SelectedStylePreset), StylePreset.HuddiniRehearsal },
+        };
+
+        public static bool IsShowcase(QuickStartProfile profile) =>
+            profile != null && (profile.Id == HuddiniShowcaseFullscreen || profile.Id == HuddiniShowcaseDesktop);
+
         private static readonly List<QuickStartProfile> _all = new List<QuickStartProfile>
         {
             new QuickStartProfile
@@ -167,6 +225,14 @@ namespace UniPlaySong.Services
                     { nameof(UniPlaySongSettings.FadeInDuration), Common.Constants.DefaultFadeInDuration },
                     { nameof(UniPlaySongSettings.FadeOutDuration), Common.Constants.DefaultFadeOutDuration },
                 })
+            },
+            new QuickStartProfile
+            {
+                Id = HuddiniShowcaseFullscreen,
+                Name = "Huddini Showcase",
+                Mode = QuickStartMode.Fullscreen,
+                Summary = "Huddini's personal setup — crossfades, live effects, volume boost and randomised bundled ambience. Plays in both modes and only for installed games. Sets your volume, which no other option does.",
+                Values = ShowcaseValues()
             },
             new QuickStartProfile
             {
@@ -220,6 +286,14 @@ namespace UniPlaySong.Services
                     { nameof(UniPlaySongSettings.FadeInDuration), 1.0 },
                     { nameof(UniPlaySongSettings.FadeOutDuration), 0.8 },
                 })
+            },
+            new QuickStartProfile
+            {
+                Id = HuddiniShowcaseDesktop,
+                Name = "Huddini Showcase",
+                Mode = QuickStartMode.Desktop,
+                Summary = "Huddini's personal setup — crossfades, live effects, volume boost and randomised bundled ambience. Plays in both modes and only for installed games. Sets your volume, which no other option does.",
+                Values = ShowcaseValues()
             },
             new QuickStartProfile
             {

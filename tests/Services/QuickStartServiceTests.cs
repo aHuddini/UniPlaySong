@@ -22,10 +22,10 @@ namespace UniPlaySong.Tests.Services
         private QuickStartProfile P(string id) => QuickStartProfiles.ById(id);
 
         [Test]
-        public void Catalogue_HasFourTilesPerMode()
+        public void Catalogue_HasFiveTilesPerMode()
         {
-            Assert.AreEqual(4, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
-            Assert.AreEqual(4, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
+            Assert.AreEqual(5, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
+            Assert.AreEqual(5, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
         }
 
         // The Short Clip / Full Track pair is the reason EnablePreviewMode must be owned explicitly.
@@ -179,12 +179,70 @@ namespace UniPlaySong.Tests.Services
             }
         }
 
-        // Decided in design: volume is personal and must never be overwritten by a profile.
+        // Volume is personal, so no tile overwrites it — except Huddini Showcase, which is a
+        // complete configuration rather than a way of listening, and whose volume and boost are
+        // part of what it demonstrates. The carve-out is deliberate and narrow.
         [Test]
-        public void NoProfile_OwnsMusicVolume()
+        public void OnlyShowcaseOwnsMusicVolume()
         {
             foreach (var p in QuickStartProfiles.All)
-                Assert.IsFalse(p.Values.ContainsKey(nameof(UniPlaySongSettings.MusicVolume)), $"{p.Id} owns MusicVolume");
+            {
+                var owns = p.Values.ContainsKey(nameof(UniPlaySongSettings.MusicVolume));
+                Assert.AreEqual(QuickStartProfiles.IsShowcase(p), owns,
+                    $"{p.Id} has the wrong MusicVolume ownership");
+            }
+        }
+
+        // Every value the showcase writes must survive its property's clamp, or the tile would
+        // advertise settings it does not actually apply.
+        [Test]
+        public void Showcase_ValuesAllSurviveTheirClamps()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HuddiniShowcaseFullscreen), JukeboxSource.Library, false, false, false);
+
+            Assert.AreEqual(AudioState.Always, _s.MusicState, "plays in both modes");
+            Assert.AreEqual(90, _s.MusicVolume);
+            Assert.AreEqual(3, _s.FullscreenVolumeBoostPercent);
+            Assert.AreEqual(0.35, _s.FadeInDuration, 0.001);
+            Assert.AreEqual(0.65, _s.FadeOutDuration, 0.001);
+            Assert.AreEqual(3.0, _s.FadeOutBeforeSongEndDuration, 0.001);
+            Assert.IsTrue(_s.EnableTrueCrossfade);
+            Assert.AreEqual(7, _s.CrossfadeDurationSeconds);
+            Assert.IsTrue(_s.RandomizeOnEverySelect);
+            Assert.IsTrue(_s.RandomizeOnMusicEnd);
+            Assert.IsTrue(_s.EnableDefaultMusic);
+            Assert.IsTrue(_s.DefaultMusicContinueSameSong);
+            Assert.IsTrue(_s.RandomizeDefaultMusicOnEnd);
+            Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption);
+            Assert.IsTrue(_s.RandomizeBundledTrackOnStartup);
+            Assert.IsTrue(_s.MusicOnlyForInstalledGames);
+            Assert.IsTrue(_s.LiveEffectsEnabled);
+            Assert.AreEqual(StylePreset.HuddiniRehearsal, _s.SelectedStylePreset);
+            Assert.IsFalse(_s.RadioModeEnabled, "radio would replace the per-game music it is showing off");
+            Assert.IsFalse(_s.EnablePreviewMode, "clips would cut the crossfade off before it lands");
+        }
+
+        // Offered in both columns, and both must configure identically — it is one setup, not two.
+        [Test]
+        public void Showcase_IsIdenticalInBothModes()
+        {
+            var fs = new UniPlaySongSettings();
+            var dt = new UniPlaySongSettings();
+            new QuickStartService().Apply(fs, P(QuickStartProfiles.HuddiniShowcaseFullscreen), JukeboxSource.Library, false, false, false);
+            new QuickStartService().Apply(dt, P(QuickStartProfiles.HuddiniShowcaseDesktop), JukeboxSource.Library, false, false, false);
+
+            Assert.AreEqual(fs.MusicVolume, dt.MusicVolume);
+            Assert.AreEqual(fs.CrossfadeDurationSeconds, dt.CrossfadeDurationSeconds);
+            Assert.AreEqual(fs.SelectedStylePreset, dt.SelectedStylePreset);
+            Assert.AreEqual(fs.MusicState, dt.MusicState);
+        }
+
+        // The showcase declares installed-only itself, so an unticked page checkbox must not undo it.
+        [Test]
+        public void Showcase_KeepsInstalledOnlyEvenWhenTheCheckboxIsClear()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HuddiniShowcaseDesktop), JukeboxSource.Library, false, false, false);
+            Assert.IsTrue(_s.MusicOnlyForInstalledGames, "installed-only is part of this profile");
         }
 
         // Every profile must state its fallback, or the same tile behaves differently per user.

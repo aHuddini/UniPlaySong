@@ -84,13 +84,22 @@ namespace UniPlaySong.Services
                     // per-game qualifier and Jukebox has no per-game playback to qualify.
                     values[QuickStartProfiles.InstalledOnlyKey] = false;
                 }
-                else
+                else if (!values.ContainsKey(QuickStartProfiles.InstalledOnlyKey))
                 {
+                    // Only fill this in when the profile has not already decided. Huddini Showcase
+                    // declares installed-only as part of what it is, so an unticked page checkbox
+                    // must not quietly undo it.
                     values[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
                 }
 
+                // The reverb checkbox only fills in keys the profile has not already decided.
+                // Huddini Showcase turns Live Effects on with its own style preset as part of what
+                // it is; an unticked checkbox must not silently switch that back off.
                 foreach (var kv in QuickStartProfiles.ReverbValues(addReverb))
-                    values[kv.Key] = kv.Value;
+                {
+                    if (!values.ContainsKey(kv.Key))
+                        values[kv.Key] = kv.Value;
+                }
 
                 // Every profile turns default music ON, so it has to point at a source that can
                 // actually produce sound. If the user's current source needs something they have not
@@ -218,13 +227,16 @@ namespace UniPlaySong.Services
                 expected[QuickStartProfiles.PlayThroughGamesKey] = playThroughGames;
                 expected[QuickStartProfiles.InstalledOnlyKey] = false;
             }
-            else
+            else if (!expected.ContainsKey(QuickStartProfiles.InstalledOnlyKey))
             {
                 expected[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
             }
 
             foreach (var kv in QuickStartProfiles.ReverbValues(addReverb))
-                expected[kv.Key] = kv.Value;
+            {
+                if (!expected.ContainsKey(kv.Key))
+                    expected[kv.Key] = kv.Value;
+            }
 
             foreach (var kv in expected)
             {
