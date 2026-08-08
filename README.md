@@ -20,21 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.7.0
+## What's New - v1.7.1
 
-### Added
-- **Radio Mode can now play through your gaming sessions.** New option under Pause on Game Launch: "Except Radio Mode". Turn it on and your radio — the UPS song pool or Spotify — keeps playing while you're in a game, instead of pausing. Game-specific music still pauses as normal, and manual pause and screen lock still stop the radio. Theme developers can bind the option as an in-theme toggle.
-- **"Play music only on game select" now works with Radio Mode.** The radio plays while you browse, the selected game's music takes over when you open a game, and the radio resumes when you back out — for both the UPS song pool and Spotify. Opening the same game repeatedly picks a different song again.
+### Improved
+- **Smoother library navigation in Fullscreen.** Preparing the next song no longer happens on the thread that draws the screen, so browsing doesn't hitch while a track loads. The fade timers also no longer take priority over drawing and controller input.
+- **Much quieter logging.** With debug logging off, UPS writes only errors to Playnite's shared log instead of hundreds of routine lines. Turning Enable Debug Logging on restores the full detail.
 
 ### Fixed
-- **External-audio pausing no longer breaks after a cancelled game launch** (a splash-screen plugin cancelling it, or a game failing to start), which used to disable it for the rest of the session.
-- **Faster shutdown.** Closing Playnite could stall for seconds — longer the longer it had been open — even if you never use Spotify.
-- **Taskbar media buttons now control Spotify** when it's your radio source, instead of starting game music alongside it, and the play/pause icon shows the right state without lagging.
-- **Live Effects on Spotify:** no more static or crackling when a Fullscreen theme stalls, plus smoother game switches.
-- **Assorted pause fixes:** a game's own audio no longer counts as "external audio" when Pause on Game Launch is off, returning from a game no longer applies a pause you'd switched off, and setting changes apply immediately.
+- **Switching audio engine no longer leaves the old one running.** Turning Live Effects, the Visualizer or Crossfade on or off — or opening a game with retro chiptune music, which switches engines automatically — left the previous engine alive in the background, doing work for the rest of the session.
 
 ### Previous Version
-- **v1.6.9**: Live Effects on Spotify now work on Windows 10; fixed saving a setting silencing Spotify, music starting then instantly stopping, and music not resuming after exiting a game.
+- **v1.7.0**: Radio Mode can play through your gaming sessions; "Play music only on game select" now works with Radio Mode; faster shutdown; taskbar media buttons control Spotify when it's your radio source.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

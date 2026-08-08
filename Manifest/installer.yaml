@@ -1,5 +1,13 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.7.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-08
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
+    Changelog:
+      - '[Improved] Smoother library navigation in Fullscreen — preparing the next song no longer happens on the drawing thread, and the fade timers no longer take priority over drawing and controller input.'
+      - '[Fixed] Switching audio engine — turning Live Effects, the Visualizer or Crossfade on or off, or opening a game with retro chiptune music — left the previous engine running in the background.'
+      - '[Improved] Much quieter logging. With debug logging off, UPS now writes only errors to Playnite''s shared log instead of hundreds of routine lines.'
   - Version: 1.7.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-30
