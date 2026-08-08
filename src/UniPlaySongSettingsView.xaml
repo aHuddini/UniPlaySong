@@ -1372,10 +1372,10 @@
 
                     <Separator Margin="0,15"/>
 
-                    <!-- Window State -->
+                    <!-- Window Focus -->
                     <Expander IsExpanded="False" Margin="0,0,0,10">
                         <Expander.Header>
-                            <TextBlock Text="Window State" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="Window Focus" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
                         </Expander.Header>
                         <StackPanel Margin="0,10,0,0">
 
@@ -1542,7 +1542,7 @@
                     <!-- Completion Celebration -->
                     <Expander IsExpanded="False" Margin="0,0,0,10">
                         <Expander.Header>
-                            <TextBlock Text="Completion Celebration" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="Games Completed Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
                         </Expander.Header>
                         <StackPanel Margin="0,10,0,0">
 
@@ -1653,7 +1653,7 @@
                     <Separator Margin="0,15,0,10"/>
                     <Expander IsExpanded="False" Margin="0,0,0,10">
                         <Expander.Header>
-                            <TextBlock Text="Abandoned Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="Games Abandoned Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
                         </Expander.Header>
                         <StackPanel Margin="0,10,0,0">
 
@@ -1753,7 +1753,7 @@
                     <Separator Margin="0,15,0,10"/>
                     <Expander IsExpanded="False" Margin="0,0,0,10">
                         <Expander.Header>
-                            <TextBlock Text="Achievement Unlock Sounds" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="PlayniteAchievements Unlocks" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
                         </Expander.Header>
                         <StackPanel Margin="0,10,0,0">
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
@@ -4371,9 +4371,6 @@
                                     Background="#664422"
                                     Foreground="White"/>
                         </StackPanel>
-    
-                        <Separator Margin="0,0,0,20"/>
-    
                         </StackPanel>
                     </Expander>
 
@@ -4420,8 +4417,6 @@
                         </StackPanel>
                         </StackPanel>
                     </Expander>
-
-                    <Separator Margin="0,0,0,20"/>
 
                     <Separator Margin="0,0,0,20"/>
 
