@@ -3421,96 +3421,104 @@
 
                         <Separator Margin="0,10"/>
 
-                        <TextBlock Text="Bulk Actions" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                        <Expander IsExpanded="False" Margin="0,10,0,10">
+                            <Expander.Header>
+                                <TextBlock Text="Bulk Actions" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <Button Content="Normalize All Music Files"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding NormalizeAllMusicCommand}"/>
+                                <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+    
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Trim Silence - All Files"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding TrimAllMusicCommand}"/>
+                                <TextBlock Text="Remove leading silence from all music files."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+    
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Create Folders for All Games"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding CreateMissingMusicFoldersCommand}"/>
+                                <TextBlock Text="Create a music folder for every game in your library that doesn't have one yet."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            </StackPanel>
+                        </Expander>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <Button Content="Normalize All Music Files"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding NormalizeAllMusicCommand}"/>
-                            <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Trim Silence - All Files"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding TrimAllMusicCommand}"/>
-                            <TextBlock Text="Remove leading silence from all music files."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Create Folders for All Games"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding CreateMissingMusicFoldersCommand}"/>
-                            <TextBlock Text="Create a music folder for every game in your library that doesn't have one yet."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <Separator Margin="0,15"/>
-
-                        <TextBlock Text="File Management" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
-                            <Button Content="Open Game Index"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding OpenGameIndexCommand}"/>
-                            <TextBlock Text="Open the game index listing all games with music folders and their IDs."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Open Preserved Folder"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding OpenPreservedOriginalsFolderCommand}"/>
-                            <TextBlock Text="Open the folder containing backup copies of original files."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Restore Original Files"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding RestoreNormalizedFilesCommand}"/>
-                            <TextBlock Text="Restore originals and delete normalized/trimmed versions."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="Gray"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
-                            <Button Content="Delete Preserved Originals"
-                                    Width="220"
-                                    Margin="0,0,10,0"
-                                    Command="{Binding DeletePreservedOriginalsCommand}"/>
-                            <TextBlock Text="Permanently delete all preserved originals to free disk space."
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="#FF6B6B"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <Expander IsExpanded="False" Margin="0,10,0,10">
+                            <Expander.Header>
+                                <TextBlock Text="File Management" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <Button Content="Open Game Index"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding OpenGameIndexCommand}"/>
+                                <TextBlock Text="Open the game index listing all games with music folders and their IDs."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+    
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Open Preserved Folder"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding OpenPreservedOriginalsFolderCommand}"/>
+                                <TextBlock Text="Open the folder containing backup copies of original files."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+    
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Restore Original Files"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding RestoreNormalizedFilesCommand}"/>
+                                <TextBlock Text="Restore originals and delete normalized/trimmed versions."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+    
+                            <StackPanel Orientation="Horizontal" Margin="0,10">
+                                <Button Content="Delete Preserved Originals"
+                                        Width="220"
+                                        Margin="0,0,10,0"
+                                        Command="{Binding DeletePreservedOriginalsCommand}"/>
+                                <TextBlock Text="Permanently delete all preserved originals to free disk space."
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="#FF6B6B"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
