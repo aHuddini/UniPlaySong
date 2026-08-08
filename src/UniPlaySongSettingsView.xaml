@@ -366,7 +366,7 @@
 
                     <CheckBox Content="Only play music for installed games"
                               IsChecked="{Binding QuickStartInstalledOnly}" Margin="0,5"/>
-                    <TextBlock Text="Uninstalled games fall back to your default music instead of their own."
+                    <TextBlock Text="Uninstalled games fall back to your default music instead of their own. Ignored by Jukebox — it would make the mix stop for installed games, which is the opposite of what that option is for."
                                FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,8"/>
 
                     <CheckBox Content="Keep playing during games (Jukebox only)"

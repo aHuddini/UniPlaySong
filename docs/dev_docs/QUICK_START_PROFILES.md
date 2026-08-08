@@ -143,7 +143,7 @@ differ by one setting are a *checkbox on the page*, not a tile of their own.
 | Profile | What it does |
 |---|---|
 | **Hover Preview (PS3 style)** | Music follows your selection. Default music fills games with none. |
-| **Ambient Background** | Default music runs continuously; game music takes over on selection. |
+| **Ambient Background** | One continuous background track. Selecting a game does not interrupt it. |
 | **Jukebox / Radio** | One continuous mix. Source picked on the tile: your library or Spotify. |
 
 Three tiles each. Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is Fullscreen-only —
@@ -153,7 +153,7 @@ a real asymmetry the page should show rather than fake.
 
 These apply on top of whichever tile is chosen, so they are checkboxes rather than more tiles:
 
-- **Only play music for installed games** — the `MusicOnlyForInstalledGames` qualifier
+- **Only play music for installed games** — the `MusicOnlyForInstalledGames` qualifier. Ignored by Jukebox: in the radio branch it makes radio yield to installed games with music, which would break the continuous mix.
 - **Keep playing during games** — `RadioPlaysThroughGames`, only meaningful with the Jukebox tile
 - **Use Spotify as the Jukebox source** — `RadioMusicSource`, likewise Jukebox-only
 - **Add reverb** — `LiveEffectsEnabled` + `StylePreset.HuddiniRehearsal`, the "wide stereo, rich

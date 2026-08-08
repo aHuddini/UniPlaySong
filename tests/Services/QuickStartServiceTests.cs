@@ -236,6 +236,63 @@ namespace UniPlaySong.Tests.Services
             }
         }
 
+        // Ambient means the bed never breaks. EnableMusic=false + EnableDefaultMusic=true is the
+        // engine's supported "default music only" path.
+        [Test]
+        public void Ambient_PlaysDefaultMusicWithoutGameMusicInterrupting()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
+
+            Assert.IsFalse(_s.EnableMusic, "game music must not take over the bed");
+            Assert.IsTrue(_s.EnableDefaultMusic);
+            Assert.IsTrue(_s.DefaultMusicContinueSameSong, "the bed must not restart");
+            Assert.IsFalse(_s.RadioModeEnabled);
+        }
+
+        // Every other tile promises game music, so each must undo Ambient's suppression.
+        [Test]
+        public void SwitchingAwayFromAmbient_RestoresGameMusic()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, false);
+            Assert.IsFalse(_s.EnableMusic);
+
+            foreach (var id in new[] { QuickStartProfiles.HoverPreviewDesktop, QuickStartProfiles.HoverPreviewFullscreen,
+                                       QuickStartProfiles.SelectToPlayFullscreen, QuickStartProfiles.JukeboxDesktop })
+            {
+                var s = new UniPlaySongSettings { EnableMusic = false };
+                new QuickStartService().Apply(s, P(id), JukeboxSource.Library, false, false, false);
+                Assert.IsTrue(s.EnableMusic, $"{id} must turn game music back on");
+            }
+        }
+
+        // In the radio branch, MusicOnlyForInstalledGames makes radio YIELD to installed games with
+        // music — which would break the one thing Jukebox promises.
+        [Test]
+        public void Jukebox_IgnoresInstalledOnly_SoTheMixDoesNotStop()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Library, true, true, false);
+
+            Assert.IsFalse(_s.MusicOnlyForInstalledGames,
+                "installed-only makes radio yield to installed games, interrupting the mix");
+            Assert.IsTrue(_s.RadioModeEnabled);
+        }
+
+        [Test]
+        public void Jukebox_DoesNotReadAsModifiedWhenInstalledOnlyIsTicked()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Library, true, true, false);
+
+            Assert.IsFalse(_svc.IsModified(_s, JukeboxSource.Library, true, true, false),
+                "drift detection must mirror the apply rule or Jukebox always looks modified");
+        }
+
+        [Test]
+        public void NonJukebox_StillHonoursInstalledOnly()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, true, false, false);
+            Assert.IsTrue(_s.MusicOnlyForInstalledGames, "the qualifier still applies to per-game tiles");
+        }
+
         // "Add reverb" composes with every tile rather than being tiles of its own.
         [Test]
         public void Apply_AddReverb_EnablesLiveEffectsWithHuddiniRehearsal()

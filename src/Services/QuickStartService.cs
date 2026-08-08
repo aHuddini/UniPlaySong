@@ -48,12 +48,24 @@ namespace UniPlaySong.Services
                     ? QuickStartProfiles.WithJukeboxSource(profile, jukeboxSource)
                     : new Dictionary<string, object>(profile.Values);
 
-                values[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
-
-                // Only meaningful with radio: RadioPlaysThroughGames governs whether the radio keeps
-                // going during a game session, and there is no radio to keep going otherwise.
                 if (QuickStartProfiles.IsJukebox(profile))
+                {
+                    // Only meaningful with radio: RadioPlaysThroughGames governs whether the radio
+                    // keeps going during a game session, and there is no radio to keep going
+                    // otherwise.
                     values[QuickStartProfiles.PlayThroughGamesKey] = playThroughGames;
+
+                    // installed-only is deliberately NOT applied to Jukebox. In the radio branch,
+                    // MusicOnlyForInstalledGames makes radio YIELD to any installed game that has
+                    // its own music ("RadioMode: yielding to installed game ..."), which breaks the
+                    // one thing this tile promises — a mix that does not stop. The checkbox is a
+                    // per-game qualifier and Jukebox has no per-game playback to qualify.
+                    values[QuickStartProfiles.InstalledOnlyKey] = false;
+                }
+                else
+                {
+                    values[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
+                }
 
                 foreach (var kv in QuickStartProfiles.ReverbValues(addReverb))
                     values[kv.Key] = kv.Value;
@@ -126,9 +138,15 @@ namespace UniPlaySong.Services
                 ? QuickStartProfiles.WithJukeboxSource(profile, jukeboxSource)
                 : new Dictionary<string, object>(profile.Values);
 
-            expected[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
             if (QuickStartProfiles.IsJukebox(profile))
+            {
                 expected[QuickStartProfiles.PlayThroughGamesKey] = playThroughGames;
+                expected[QuickStartProfiles.InstalledOnlyKey] = false;
+            }
+            else
+            {
+                expected[QuickStartProfiles.InstalledOnlyKey] = installedOnly;
+            }
 
             foreach (var kv in QuickStartProfiles.ReverbValues(addReverb))
                 expected[kv.Key] = kv.Value;
