@@ -3687,40 +3687,46 @@
                         </StackPanel>
                     </Expander>
 
-                    <Separator Margin="0,15"/>
+                    <Expander IsExpanded="False" Margin="0,10,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Download Automations" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                        <CheckBox Content="Automatically normalize downloaded music"
+                                  IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
+                                  Margin="0,10,0,5"/>
+                        <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab (FFmpeg path is in Setup). Requires FFmpeg."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                        </StackPanel>
+                    </Expander>
 
-                    <TextBlock Text="Post-Download Processing" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                    <CheckBox Content="Automatically normalize downloaded music"
-                              IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab (FFmpeg path is in Setup). Requires FFmpeg."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <Separator Margin="0,15"/>
-
-                    <TextBlock Text="Auto-Download on Library Update" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-                    <CheckBox Content="Automatically download music for new games"
-                              IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <CheckBox Content="Automatically download music when a game is installed"
-                              IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"
-                              Margin="0,10,0,5"/>
-                    <TextBlock Text="When a game changes from uninstalled to installed, music will be automatically downloaded in the background if the game doesn't already have music. Uses the same download logic as above."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,10,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="Library Automations" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                        <CheckBox Content="Automatically download music for new games"
+                                  IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
+                                  Margin="0,10,0,5"/>
+                        <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+    
+                        <CheckBox Content="Automatically download music when a game is installed"
+                                  IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"
+                                  Margin="0,10,0,5"/>
+                        <TextBlock Text="When a game changes from uninstalled to installed, music will be automatically downloaded in the background if the game doesn't already have music. Uses the same download logic as above."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- DISABLED: Bulk download temporarily removed (GitHub TOS review) -->
                     <!--
