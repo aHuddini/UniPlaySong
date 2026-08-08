@@ -139,10 +139,23 @@ namespace UniPlaySong
         private readonly Services.QuickStartService _quickStart = new Services.QuickStartService();
 
         public System.Collections.Generic.IEnumerable<Services.QuickStartProfile> FullscreenProfiles =>
-            Services.QuickStartProfiles.For(Services.QuickStartMode.Fullscreen);
+            WithActiveFlag(Services.QuickStartProfiles.For(Services.QuickStartMode.Fullscreen));
 
         public System.Collections.Generic.IEnumerable<Services.QuickStartProfile> DesktopProfiles =>
-            Services.QuickStartProfiles.For(Services.QuickStartMode.Desktop);
+            WithActiveFlag(Services.QuickStartProfiles.For(Services.QuickStartMode.Desktop));
+
+        // Stamps IsActive before the list is bound, so the tile template can paint its accent rail.
+        // Done here rather than in the catalogue because only the view model can see the live
+        // settings; the catalogue is deliberately free of any settings dependency.
+        private System.Collections.Generic.IEnumerable<Services.QuickStartProfile> WithActiveFlag(
+            System.Collections.Generic.IEnumerable<Services.QuickStartProfile> profiles)
+        {
+            var activeId = Settings?.ActiveQuickStartProfile;
+            var list = profiles.ToList();
+            foreach (var p in list)
+                p.IsActive = p.Id == activeId;
+            return list;
+        }
 
         // The two page-level checkboxes. Not persisted settings of their own — they are read from
         // the live settings so the page reflects reality when reopened, and written through on apply.
@@ -287,6 +300,9 @@ namespace UniPlaySong
             OnPropertyChanged(nameof(ActiveProfileLabel));
             OnPropertyChanged(nameof(ActiveProfileBrush));
             OnPropertyChanged(nameof(ActiveProfileState));
+            // Re-emit the lists so each tile's IsActive is recomputed and the accent rail moves.
+            OnPropertyChanged(nameof(FullscreenProfiles));
+            OnPropertyChanged(nameof(DesktopProfiles));
             OnPropertyChanged(nameof(CanUndoQuickStart));
             OnPropertyChanged(nameof(CanRestoreQuickStartOriginal));
             // All four checkboxes read from the live settings, so every one has to be re-read after

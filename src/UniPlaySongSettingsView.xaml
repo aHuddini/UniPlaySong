@@ -22,6 +22,7 @@
         <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
         <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <local:ActiveRailConverter x:Key="ActiveRailConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         <!-- Section divider: bolder + accent-tinted so settings sections read as distinct blocks
@@ -294,33 +295,66 @@
              behaviours, not bundles of checkboxes — variations that differ by a single setting are
              the checkboxes below instead, which is what keeps the tile count down.
 
+             Layout is full-width rows with card styling, chosen over a card GRID: Playnite's
+             settings window is often narrow, and a grid collapses to one column there — giving up
+             the grid's only advantage while leaving the descriptions cramped. Rows keep the
+             description readable at every width and still get the rounded surface, hover lift and
+             accent rail that make it read as a set of choices rather than a list of settings.
+
              The tile template is defined once as a resource and reused by both mode lists; it was
              duplicated per list before, so a styling change had to be made twice and could drift. -->
         <TabItem Header="Quick Start">
             <TabItem.Resources>
-                <!-- Section heading with a left accent bar, so the two mode groups read as distinct
+                <!-- Section heading with a left accent bar, so the mode groups read as distinct
                      bands rather than another line of bold text. -->
                 <Style x:Key="QsSectionHeader" TargetType="Border">
-                    <Setter Property="BorderBrush" Value="#C8A24B"/>
+                    <Setter Property="BorderBrush" Value="#4CC2FF"/>
                     <Setter Property="BorderThickness" Value="3,0,0,0"/>
                     <Setter Property="Padding" Value="10,2,0,2"/>
                     <Setter Property="Margin" Value="0,0,0,10"/>
                 </Style>
 
+                <!-- Card surface for a profile row. The hover state lifts the border to the accent
+                     and brightens the fill, so the whole row reads as the target rather than just
+                     the Apply button. -->
+                <Style x:Key="QsCard" TargetType="Border">
+                    <Setter Property="Background" Value="#14FFFFFF"/>
+                    <Setter Property="BorderBrush" Value="#26FFFFFF"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="CornerRadius" Value="6"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,0,0,7"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1FFFFFFF"/>
+                            <Setter Property="BorderBrush" Value="#664CC2FF"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+
                 <DataTemplate x:Key="QsProfileTile">
-                    <Border Background="#14FFFFFF" CornerRadius="5" Padding="14,12" Margin="0,0,0,7">
+                    <Border Style="{StaticResource QsCard}">
                         <Grid>
                             <Grid.ColumnDefinitions>
+                                <!-- Accent rail: a fixed 3px column so every row aligns whether or
+                                     not it is the active one. -->
+                                <ColumnDefinition Width="3"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"/>
+
+                            <Border Grid.Column="0" CornerRadius="6,0,0,6"
+                                    Background="{Binding IsActive, Converter={StaticResource ActiveRailConverter}}"/>
+
+                            <StackPanel Grid.Column="1" Margin="14,12,16,12" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
                                 <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#9AA0A6"
                                            TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Apply" Width="76" Padding="8,5"
-                                    VerticalAlignment="Center"
+
+                            <Button Grid.Column="2" Content="Apply" Width="76" Padding="8,5"
+                                    Margin="0,0,14,0" VerticalAlignment="Center"
                                     Command="{Binding DataContext.ApplyQuickStartProfile, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                     CommandParameter="{Binding}"/>
                         </Grid>
@@ -329,7 +363,7 @@
             </TabItem.Resources>
 
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20" MaxWidth="720" HorizontalAlignment="Left">
+                <StackPanel Margin="20" MaxWidth="760" HorizontalAlignment="Left">
 
                     <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock Text="Pick how you want music to behave and UniPlaySong sets itself up. Your volume, tool paths, pause rules and effects are left alone."
@@ -337,7 +371,8 @@
                                TextWrapping="Wrap" Margin="0,0,0,14"/>
 
                     <!-- Status strip: what is active, and the two ways back out. -->
-                    <Border Background="#1FFFFFFF" CornerRadius="5" Padding="14,10" Margin="0,0,0,20">
+                    <Border Background="#1FFFFFFF" BorderBrush="#26FFFFFF" BorderThickness="1"
+                            CornerRadius="6" Padding="14,11" Margin="0,0,0,20">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

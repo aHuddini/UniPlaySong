@@ -29,6 +29,11 @@ namespace UniPlaySong.Services
         public QuickStartMode Mode { get; set; }
         public string Summary { get; set; }
 
+        // Drives the accent rail on the tile. Set by the view model when the page refreshes rather
+        // than computed here, because a profile has no way to see the live settings — and the
+        // catalogue is a static list, so this is the one piece of per-render state it carries.
+        public bool IsActive { get; set; }
+
         // The settings this profile OWNS. Applying writes only these; everything else the user
         // configured is left alone. Keyed by property name so the applier can snapshot for undo
         // and detect drift without a hand-written list per profile.
