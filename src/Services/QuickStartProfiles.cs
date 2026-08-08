@@ -81,6 +81,9 @@ namespace UniPlaySong.Services
             // Owned so a tile cannot inherit the clip setting from a Hover tile applied earlier.
             // Hover Short Clip overrides this back to true via ClipValues.
             { nameof(UniPlaySongSettings.EnablePreviewMode), false },
+            // Advance to a different track when one finishes. Hover Short Clip overrides this to
+            // false so its clip loops instead — see ClipValues.
+            { nameof(UniPlaySongSettings.RandomizeOnMusicEnd), true },
         };
 
         // Hover: music follows the highlight, with short fades because browsing changes tracks often
@@ -110,6 +113,12 @@ namespace UniPlaySong.Services
             {
                 { nameof(UniPlaySongSettings.EnablePreviewMode), true },
                 { nameof(UniPlaySongSettings.PreviewDuration), Common.Constants.DefaultPreviewDuration },
+                // The clip loops rather than advancing to another track, which is what makes this
+                // read as a PS3 menu: the same snippet repeats for as long as the highlight sits on
+                // a game. With RandomizeOnMusicEnd left on, each clip would end and jump to a
+                // different song from the same game, so the highlight would sit still while the
+                // music kept changing.
+                { nameof(UniPlaySongSettings.RandomizeOnMusicEnd), false },
             }
             : new Dictionary<string, object>
             {
@@ -123,7 +132,7 @@ namespace UniPlaySong.Services
                 Id = HoverPreviewFullscreen,
                 Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Fullscreen,
-                Summary = "Music follows the highlight as you browse, playing a 30-second snippet of each game's track rather than the whole thing.",
+                Summary = "Music follows the highlight as you browse, playing a 30-second snippet that loops for as long as you stay on a game.",
                 Values = Merge(HoverBase(), ClipValues(true))
             },
             new QuickStartProfile
@@ -173,7 +182,7 @@ namespace UniPlaySong.Services
                 Id = HoverPreviewDesktop,
                 Name = "Hover Preview, Short Clip (PS3 style)",
                 Mode = QuickStartMode.Desktop,
-                Summary = "Music follows your selection, playing a 30-second snippet of each game's track rather than the whole thing.",
+                Summary = "Music follows your selection, playing a 30-second snippet that loops for as long as you stay on a game.",
                 Values = Merge(HoverBaseDesktop(), ClipValues(true))
             },
             new QuickStartProfile
@@ -238,6 +247,9 @@ namespace UniPlaySong.Services
             { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
             { nameof(UniPlaySongSettings.PlayOnlyOnGameSelect), false },
             { nameof(UniPlaySongSettings.EnablePreviewMode), false },
+            // Owned for the same reason — otherwise applying Jukebox after Hover Short Clip would
+            // inherit its loop, and the "continuous mix" would be one track repeating.
+            { nameof(UniPlaySongSettings.RandomizeOnMusicEnd), true },
             { nameof(UniPlaySongSettings.RadioMusicSource), RadioMusicSource.FullLibrary },
         };
 

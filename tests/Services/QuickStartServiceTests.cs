@@ -37,6 +37,37 @@ namespace UniPlaySong.Tests.Services
             Assert.IsTrue(_s.EnablePreviewMode);
             Assert.AreEqual(Constants.DefaultPreviewDuration, _s.PreviewDuration);
             Assert.IsFalse(_s.PlayOnlyOnGameSelect, "still hover, not select");
+            Assert.IsFalse(_s.RandomizeOnMusicEnd,
+                "the clip loops rather than advancing — that is what makes it read as a PS3 menu");
+        }
+
+        // Only Short Clip loops. Everything else advances on song end, and must own that so the
+        // loop cannot leak out of Short Clip into a tile applied afterwards.
+        [Test]
+        public void OnlyShortClipLoops_EveryOtherTileAdvancesOnSongEnd()
+        {
+            foreach (var p in QuickStartProfiles.All)
+            {
+                var expectLoop = p.Id == QuickStartProfiles.HoverPreviewFullscreen
+                              || p.Id == QuickStartProfiles.HoverPreviewDesktop;
+
+                Assert.IsTrue(p.Values.ContainsKey(nameof(UniPlaySongSettings.RandomizeOnMusicEnd)),
+                    $"{p.Id} does not declare RandomizeOnMusicEnd");
+
+                var s = new UniPlaySongSettings();
+                new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
+                Assert.AreEqual(!expectLoop, s.RandomizeOnMusicEnd, $"{p.Id} has the wrong song-end behaviour");
+            }
+        }
+
+        [Test]
+        public void SwitchingFromShortClipToAnotherTile_StopsTheLoop()
+        {
+            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
+            Assert.IsFalse(_s.RandomizeOnMusicEnd);
+
+            _svc.Apply(_s, P(QuickStartProfiles.HoverFullTrackFullscreen), JukeboxSource.Library, false, false, false);
+            Assert.IsTrue(_s.RandomizeOnMusicEnd, "full track should advance, not inherit the loop");
         }
 
         [Test]
