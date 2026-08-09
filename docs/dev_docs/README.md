@@ -40,8 +40,8 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](../The
 
 - `docs/EXTERNAL_CONTROL.md` — the localhost control API (StreamDeck, AutoHotkey, Touch Portal).
 - `docs/Theme Support/` — everything aimed at theme developers, starting with [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md).
-- `docs/archive/` — shipped design/plan documents, planning backlogs and historical session notes, kept for provenance. Not maintained. Includes `POTENTIAL_ISSUES.md` (edge cases and deferred fixes, written around v1.4.x) and `PERF_OPTIMIZATION_PLAN.md` (the `PerfOptimization` backlog).
-- `docs/dev_docs/roadmaps/` and `docs/dev_docs/spikes/` — forward-looking ideas and experiments.
+- `docs/archive/` — shipped design/plan documents, planning backlogs, proven spikes and historical session notes, kept for provenance. Not maintained. Includes `POTENTIAL_ISSUES.md` (edge cases and deferred fixes, written around v1.4.x), `PERF_OPTIMIZATION_PLAN.md` (the `PerfOptimization` backlog), and `spikes/` (throwaway experiments whose questions are settled — the code that shipped from them lives under `native/` or `src/`).
+- `docs/dev_docs/roadmaps/` — forward-looking ideas not yet committed to.
 - `docs/dev_docs/proposals/` — planning and design documents for work not yet committed to. **Gitignored**: proposals stay local so nothing half-decided is published. Put new planning docs here; move one out only when it becomes shipped reference.
 - `CHANGELOG.md` (root) — developer-facing version history, the most reliable record of *why* something changed.
 

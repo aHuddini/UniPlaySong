@@ -8,7 +8,7 @@
 
 ## Spike results (2026-07-12) — PROVEN
 
-A minimal C++/WinRT console (`scratchpad/spotloop_spike.cpp`, built with VS 2022 + Windows SDK 26100) targeting Spotify's process tree via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS` (INCLUDE_TARGET_PROCESS_TREE):
+A minimal C++/WinRT console (`docs/archive/spikes/spotloop_spike.cpp`, built with VS 2022 + Windows SDK 26100) targeting Spotify's process tree via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS` (INCLUDE_TARGET_PROCESS_TREE):
 
 - **Paused Spotify:** clocked 4.00s of frames, peak=0.0 (stream live, no audio rendered — expected).
 - **Playing Spotify:** `frames=175959 (3.99s @ 44100Hz), peak=0.384, RMS=0.057` → **NON-SILENT, no DRM block.** WAV written + confirmed by ear: clean, isolated Spotify audio, nothing else on the system.
@@ -77,10 +77,15 @@ Experimental, opt-in, clearly gated:
 
 ## Feasibility spike — DONE (proven, see "Spike results" above)
 
-The spike is complete and successful. Reference implementation of the capture core is preserved at
-[`docs/dev_docs/spikes/spotloop_spike.cpp`](spikes/spotloop_spike.cpp) — the exact code that captured
-isolated Spotify PCM. It's the template for the production shim (it already does the async
-`ActivateAudioInterfaceAsync` dance, the activation-params blob, tree targeting, and the capture loop).
+The spike is complete and successful. It is preserved at
+[`docs/archive/spikes/spotloop_spike.cpp`](../archive/spikes/spotloop_spike.cpp) — the exact code that
+captured isolated Spotify PCM, kept as the evidence behind the claim above. It was the template for
+the production shim (the async `ActivateAudioInterfaceAsync` dance, the activation-params blob, tree
+targeting, and the capture loop).
+
+That shim has since shipped: `native/SpotifyLoopback/SpotifyLoopbackCapture.cpp` is the maintained
+implementation. Read the spike for how the capture was proven; read the shim for how it actually
+works today.
 
 ## Remaining work to ship the feature (all plumbing — the hard part is proven)
 
