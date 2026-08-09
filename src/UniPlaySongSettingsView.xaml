@@ -325,6 +325,12 @@
                 <SolidColorBrush x:Key="QsStroke" Color="#31404F"/>
                 <SolidColorBrush x:Key="QsStrokeHover" Color="#4A5F73"/>
 
+                <!-- Applied-profile row. Green to agree with the ACTIVE badge and the rail, but
+                     heavily darkened toward the tile colour: a saturated green fill behind
+                     11px body text would cost more contrast than the highlight is worth. -->
+                <SolidColorBrush x:Key="QsTileActive" Color="#1B3226"/>
+                <SolidColorBrush x:Key="QsStrokeActive" Color="#4E8C5E"/>
+
                 <!-- Section heading with a left accent bar, so the mode groups read as distinct
                      bands rather than another line of bold text. -->
                 <Style x:Key="QsSectionHeader" TargetType="Border">
@@ -347,9 +353,21 @@
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{StaticResource QsTileHover}"/>
-                            <!-- Neutral hover, so the only coloured mark on a row is the active rail. -->
+                            <!-- Neutral hover, so the only coloured signal on a row is the active state. -->
                             <Setter Property="BorderBrush" Value="{StaticResource QsStrokeHover}"/>
                         </Trigger>
+
+                        <!-- The applied profile lights the WHOLE row, not just its 4px rail: a
+                             green-tinted fill and a green border, so it reads as selected at a
+                             glance instead of needing the eye to find a thin stripe.
+
+                             Listed after the hover trigger deliberately — later triggers win in
+                             WPF, so hovering the active row does not wash the green back out.
+                             The tint is dark enough that the body text keeps its contrast. -->
+                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource QsTileActive}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource QsStrokeActive}"/>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
 
