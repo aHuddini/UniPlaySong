@@ -312,6 +312,13 @@
                      the status bar read as "a white bar". These are solid, biased slightly blue so
                      the panels sit apart from Playnite's neutral chrome instead of tinting it.
                      Change these four and the whole tab follows. -->
+                <!-- The tab's own ground. Every other tab in this window leaves its background
+                     transparent and inherits the Playnite theme, which is why the area behind the
+                     tiles kept reading as the theme's pale surface no matter what colour the
+                     panels were — the panels were the only thing being painted. Setting this is
+                     what actually overrides the theme for this tab. Darker than QsTile so the rows
+                     sit ON something rather than blending into it. -->
+                <SolidColorBrush x:Key="QsGround" Color="#12171E"/>
                 <SolidColorBrush x:Key="QsPanel" Color="#232D3A"/>
                 <SolidColorBrush x:Key="QsTile" Color="#1A222C"/>
                 <SolidColorBrush x:Key="QsTileHover" Color="#243040"/>
@@ -377,8 +384,10 @@
                 </DataTemplate>
             </TabItem.Resources>
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20" MaxWidth="760" HorizontalAlignment="Left">
+            <ScrollViewer Background="{StaticResource QsGround}" Padding="20" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <!-- Padding on the ScrollViewer, not Margin here, so QsGround fills the whole
+                     tab instead of leaving a theme-coloured gutter around the edge. -->
+                <StackPanel MaxWidth="760" HorizontalAlignment="Left">
 
                     <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock Text="Pick how you want music to behave and UniPlaySong sets itself up. Your volume, tool paths, pause rules and effects are left alone."
