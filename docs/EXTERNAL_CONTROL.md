@@ -24,4 +24,4 @@ Control UniPlaySong playback via Playnite's `playnite://` URI protocol. Works fr
 - **Windows Run (Win+R)** — Type the URI and press Enter
 - **Desktop Shortcut** — Right-click desktop > New Shortcut > paste the URI as the target
 - **Batch File** — `start playnite://uniplaysong/volume/50`
-- **Playnite Themes** — See [Theme Integration Guide](dev_docs/THEME_INTEGRATION_GUIDE.md)
+- **Playnite Themes** — See [Theme Integration Guide](Theme%20Support/THEME_INTEGRATION_GUIDE.md)

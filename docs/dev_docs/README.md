@@ -1,7 +1,7 @@
 # UniPlaySong — Developer Documentation
 
 Reference documentation for working on UniPlaySong. Everything here describes UPS internals;
-theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md).
+theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md).
 
 ## Start here
 
@@ -31,18 +31,18 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 
 | Doc | Covers |
 |---|---|
-| [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
+| [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
 | [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs. |
 | [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
-| [POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md) | Known edge cases and deliberately deferred fixes. Written around v1.4.x — verify against current code before acting on it. |
-| [PERF_OPTIMIZATION_PLAN.md](PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
 | [QUICK_START_PROFILES.md](QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. Not built yet. |
 
 ## Other locations
 
 - `docs/EXTERNAL_CONTROL.md` — the localhost control API (StreamDeck, AutoHotkey, Touch Portal).
-- `docs/archive/` — shipped design/plan documents and historical session notes, kept for provenance. Not maintained.
+- `docs/Theme Support/` — everything aimed at theme developers, starting with [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md).
+- `docs/archive/` — shipped design/plan documents, planning backlogs and historical session notes, kept for provenance. Not maintained. Includes `POTENTIAL_ISSUES.md` (edge cases and deferred fixes, written around v1.4.x) and `PERF_OPTIMIZATION_PLAN.md` (the `PerfOptimization` backlog).
 - `docs/dev_docs/roadmaps/` and `docs/dev_docs/spikes/` — forward-looking ideas and experiments.
+- `docs/dev_docs/proposals/` — planning and design documents for work not yet committed to. **Gitignored**: proposals stay local so nothing half-decided is published. Put new planning docs here; move one out only when it becomes shipped reference.
 - `CHANGELOG.md` (root) — developer-facing version history, the most reliable record of *why* something changed.
 
 ## Conventions

@@ -14,6 +14,8 @@ release/
 DEMOClip2.mp4
 docs/release_notes/
 docs/dev_docs/roadmaps/
+# Planning/design docs stay local — proposals are drafted here, never published
+**/proposals/
 .claude/
 CLAUDE.md
 .superpowers/
