@@ -23,6 +23,8 @@ Packages:
       - '[Improved] Smoother library navigation in Fullscreen.'
       - '[Fixed] Switching audio engine left the previous engine running in the background.'
       - '[Improved] Much quieter logging when debug logging is off.'
+      - '[Settings Improvement] About tab: removed known issues that no longer apply, simplified the Active Theme Music and autosuspend notes, and updated What''s New to this release.'
+      - '[Settings Improvement] About tab: added a Thanks section crediting Mike Aniki for the ANIKI REMAKE integration, Justin Delano for the PlayniteAchievements integration, and everyone who reported bugs.'
   - Version: 1.7.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-30
