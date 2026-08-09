@@ -102,7 +102,7 @@ namespace UniPlaySong.Common
         }
 
         // Returns the active fullscreen theme's achievement sound for a rarity
-        // (common|uncommon|rare|ultrarare|capstone) — audio/Achievements/{rarity}.{wav,mp3,ogg,flac},
+        // (common|uncommon|rare|ultrarare|hidden|capstone) — audio/Achievements/{rarity}.{wav,mp3,ogg,flac},
         // first match — or null if the theme provides none. Cached per rarity, invalidated on theme
         // change (same mechanism as FindActiveThemeUpsAudioFile).
         public static string FindThemeAchievementSound(string rarity)
@@ -125,11 +125,11 @@ namespace UniPlaySong.Common
             return resolved;
         }
 
-        // Returns how many of the five rarities the active theme provides a sound for (0..5).
-        // Drives the settings status line ("Active theme provides N/5 rarity sounds").
+        // Returns how many of the six rarities the active theme provides a sound for (0..6).
+        // Drives the settings status line ("Active theme provides N/6 rarity sounds").
         public static int CountThemeAchievementSounds()
         {
-            var rarities = new[] { "common", "uncommon", "rare", "ultrarare", "capstone" };
+            var rarities = new[] { "common", "uncommon", "rare", "ultrarare", "hidden", "capstone" };
             int count = 0;
             foreach (var r in rarities)
                 if (!string.IsNullOrEmpty(FindThemeAchievementSound(r))) count++;

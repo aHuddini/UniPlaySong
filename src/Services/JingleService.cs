@@ -13,13 +13,14 @@ namespace UniPlaySong.Services
         Abandoned,    // Game marked Abandoned
 
         // Achievement/trophy unlocked — fired via URI by external plugins (e.g. Playnite Achievements).
-        // Achievement is the MASTER/fallback sound; the five rarity tiers each have their own optional
+        // Achievement is the MASTER/fallback sound; the six rarity tiers each have their own optional
         // sound and fall back to Achievement when not set. See ACHIEVEMENT_SOUND_INTEGRATION.md.
         Achievement,            // master / fallback (used when a rarity has no sound of its own)
         AchievementCommon,      // commonachievement     (bronze)
         AchievementUncommon,    // uncommonachievement   (silver)
         AchievementRare,        // rareachievement       (gold)
         AchievementUltraRare,   // ultrarareachievement  (platinum)
+        AchievementHidden,      // hidden                (hidden/secret unlock — PA's own command name)
         AchievementCapstone     // capstoneachievement   (perfect / 100%)
     }
 
@@ -199,6 +200,7 @@ namespace UniPlaySong.Services
                 case JingleEvent.AchievementUncommon:
                 case JingleEvent.AchievementRare:
                 case JingleEvent.AchievementUltraRare:
+                case JingleEvent.AchievementHidden:
                 case JingleEvent.AchievementCapstone:
                     return true;
                 default:
@@ -215,6 +217,7 @@ namespace UniPlaySong.Services
                 case JingleEvent.AchievementUncommon:  return "uncommon";
                 case JingleEvent.AchievementRare:      return "rare";
                 case JingleEvent.AchievementUltraRare: return "ultrarare";
+                case JingleEvent.AchievementHidden:    return "hidden";
                 case JingleEvent.AchievementCapstone:  return "capstone";
                 default:                               return null;
             }
@@ -257,12 +260,13 @@ namespace UniPlaySong.Services
                 case "uncommon":  return settings.UncommonAchievementSoundPath;
                 case "rare":      return settings.RareAchievementSoundPath;
                 case "ultrarare": return settings.UltraRareAchievementSoundPath;
+                case "hidden":    return settings.HiddenAchievementSoundPath;
                 case "capstone":  return settings.CapstoneAchievementSoundPath;
                 default:          return null;
             }
         }
 
-        // True for the master achievement event and all five rarity events — these all use the
+        // True for the master achievement event and all six rarity events — these all use the
         // dedicated lightweight (SDL2) external-sound path, never the effects-capable jingle path.
         private static bool IsAchievementEvent(JingleEvent evt)
         {
@@ -273,6 +277,7 @@ namespace UniPlaySong.Services
                 case JingleEvent.AchievementUncommon:
                 case JingleEvent.AchievementRare:
                 case JingleEvent.AchievementUltraRare:
+                case JingleEvent.AchievementHidden:
                 case JingleEvent.AchievementCapstone:
                     return true;
                 default:

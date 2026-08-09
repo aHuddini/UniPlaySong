@@ -93,8 +93,8 @@ namespace UniPlaySong.Services
         public const string DefaultAchievementJingle = "Achievements/Trophy_Notif.mp3";
 
         // Full path to the bundled PA Starter Pack sound for a rarity (common|uncommon|rare|
-        // ultrarare|capstone), or null if the file is missing. Used as the pack default and as the
-        // per-rarity fallback for the Theme and Custom packs.
+        // ultrarare|hidden|capstone), or null if the file is missing. Used as the pack default and
+        // as the per-rarity fallback for the Theme and Custom packs.
         public static string GetPAStarterPackPath(string rarity)
         {
             var r = (rarity ?? string.Empty).Trim().ToLowerInvariant();
@@ -104,6 +104,7 @@ namespace UniPlaySong.Services
                 case "uncommon":
                 case "rare":
                 case "ultrarare":
+                case "hidden":
                 case "capstone":
                     return ResolveJinglePath($"Achievements/PAStarterPack/{r}.mp3");
                 default:

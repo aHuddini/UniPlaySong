@@ -380,11 +380,12 @@ namespace UniPlaySong
         public string BadgeSilverPath => Services.BundledImageService.GetAchievementBadgePath("silver");
         public string BadgeGoldPath => Services.BundledImageService.GetAchievementBadgePath("gold");
         public string BadgePlatinumPath => Services.BundledImageService.GetAchievementBadgePath("platinum");
+        public string BadgeHiddenPath => Services.BundledImageService.GetAchievementBadgePath("hidden");
         public string BadgePerfectPath => Services.BundledImageService.GetAchievementBadgePath("perfect");
 
-        // Status line for the Theme pack: how many of the five rarities the active theme provides.
+        // Status line for the Theme pack: how many of the six rarities the active theme provides.
         public string ThemeAchievementStatus =>
-            $"Active theme provides {Common.PlayniteThemeHelper.CountThemeAchievementSounds()}/5 rarity sounds (audio/Achievements/{{rarity}}.wav). Missing rarities use the PA Starter Pack.";
+            $"Active theme provides {Common.PlayniteThemeHelper.CountThemeAchievementSounds()}/6 rarity sounds (audio/Achievements/{{rarity}}.wav). Missing rarities use the PA Starter Pack.";
 
         // === Active Theme UPS Audio status surface (v1.5.2) ===
         // Bound by the Active Theme Music section in the Playback tab. Recomputed on demand
@@ -1198,7 +1199,7 @@ namespace UniPlaySong
         });
 
         // ── Per-rarity achievement sound commands (parameterized by rarity to avoid 10 near-identical
-        // blocks). CommandParameter is "common"|"uncommon"|"rare"|"ultrarare"|"capstone". ──
+        // blocks). CommandParameter is "common"|"uncommon"|"rare"|"ultrarare"|"hidden"|"capstone". ──
 
         // Browse for a rarity's custom file. Setting one auto-switches the pack to Custom, per the
         // design: "if a user picks a rarity to customize, the main option switches to Custom."
@@ -1283,6 +1284,7 @@ namespace UniPlaySong
                 case "uncommon":  return Settings.UncommonAchievementSoundPath;
                 case "rare":      return Settings.RareAchievementSoundPath;
                 case "ultrarare": return Settings.UltraRareAchievementSoundPath;
+                case "hidden":    return Settings.HiddenAchievementSoundPath;
                 case "capstone":  return Settings.CapstoneAchievementSoundPath;
                 default:          return null;
             }
@@ -1297,6 +1299,7 @@ namespace UniPlaySong
                 case "uncommon":  Settings.UncommonAchievementSoundPath = path; break;
                 case "rare":      Settings.RareAchievementSoundPath = path; break;
                 case "ultrarare": Settings.UltraRareAchievementSoundPath = path; break;
+                case "hidden":    Settings.HiddenAchievementSoundPath = path; break;
                 case "capstone":  Settings.CapstoneAchievementSoundPath = path; break;
             }
         }

@@ -426,13 +426,14 @@ namespace UniPlaySong
 
         // Which per-rarity sound pack to use. PA Starter Pack (bundled Pixabay set) by default.
         // Tier -> badge: Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum,
-        // Capstone=perfect (100%). Each rarity's custom file (below) is used only in Custom mode;
-        // any unresolved rarity falls back to PA Starter, then to the master sound above.
+        // Hidden=secret unlock, Capstone=perfect (100%). Each rarity's custom file (below) is used
+        // only in Custom mode; any unresolved rarity falls back to PA Starter, then to the master.
         private AchievementSoundPack achievementSoundPack = AchievementSoundPack.PAStarterPack;
         private string commonAchievementSoundPath = string.Empty;
         private string uncommonAchievementSoundPath = string.Empty;
         private string rareAchievementSoundPath = string.Empty;
         private string ultraRareAchievementSoundPath = string.Empty;
+        private string hiddenAchievementSoundPath = string.Empty;
         private string capstoneAchievementSoundPath = string.Empty;
 
         // Download notifications
@@ -1144,11 +1145,13 @@ namespace UniPlaySong
         // below; Theme/PAStarterPack/Custom all fall back to the master sound above for any gap.
         public AchievementSoundPack AchievementSoundPack { get => achievementSoundPack; set { achievementSoundPack = value; OnPropertyChanged(); } }
         // Custom per-rarity files (used only when AchievementSoundPack == Custom). Tier -> badge:
-        // Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum, Capstone=perfect (100%).
+        // Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum, Hidden=secret unlock,
+        // Capstone=perfect (100%).
         public string CommonAchievementSoundPath { get => commonAchievementSoundPath; set { commonAchievementSoundPath = value; OnPropertyChanged(); } }
         public string UncommonAchievementSoundPath { get => uncommonAchievementSoundPath; set { uncommonAchievementSoundPath = value; OnPropertyChanged(); } }
         public string RareAchievementSoundPath { get => rareAchievementSoundPath; set { rareAchievementSoundPath = value; OnPropertyChanged(); } }
         public string UltraRareAchievementSoundPath { get => ultraRareAchievementSoundPath; set { ultraRareAchievementSoundPath = value; OnPropertyChanged(); } }
+        public string HiddenAchievementSoundPath { get => hiddenAchievementSoundPath; set { hiddenAchievementSoundPath = value; OnPropertyChanged(); } }
         public string CapstoneAchievementSoundPath { get => capstoneAchievementSoundPath; set { capstoneAchievementSoundPath = value; OnPropertyChanged(); } }
 
         public bool ShowCelebrationToast

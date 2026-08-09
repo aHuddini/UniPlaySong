@@ -205,6 +205,7 @@ namespace UniPlaySong
             s.UncommonAchievementSoundPath = string.Empty;
             s.RareAchievementSoundPath = string.Empty;
             s.UltraRareAchievementSoundPath = string.Empty;
+            s.HiddenAchievementSoundPath = string.Empty;
             s.CapstoneAchievementSoundPath = string.Empty;
             // Abandoned status
             s.EnableAbandonedSound = false;

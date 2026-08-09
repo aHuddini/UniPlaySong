@@ -104,7 +104,7 @@ namespace UniPlaySong.Services
 
                 // Achievement/trophy unlock sound — fired by external plugins (e.g. Playnite
                 // Achievements) via playnite://uniplaysong/playniteachievements/{rarity}, where
-                // {rarity} is common | uncommon | rare | ultrarare | capstone. Namespaced under the
+                // {rarity} is common | uncommon | rare | ultrarare | hidden | capstone. Namespaced under the
                 // source plugin so other integrations can add their own path later. All rarities play the same achievement
                 // sound for now (per-rarity override sounds are a planned follow-up). Plays on the dedicated jingle player, so
                 // it works over a running game and no-ops when the achievement-sound setting is off.
@@ -145,7 +145,8 @@ namespace UniPlaySong.Services
         {
             // arguments[0] == "playniteachievements"; arguments[1] (optional) == the rarity tier
             // segment (Playnite Achievements' command names, lowercased):
-            //   commonachievement | uncommonachievement | rareachievement | ultrarareachievement | capstoneachievement
+            //   commonachievement | uncommonachievement | rareachievement | ultrarareachievement |
+            //   hidden | capstoneachievement
             // Each maps to its own JingleEvent; the event resolves to that rarity's sound, or falls
             // back to the master achievement sound when the rarity has none. An unknown or missing
             // tier plays the master sound, so a newer PA that adds a tier still works.
@@ -160,6 +161,9 @@ namespace UniPlaySong.Services
                 case "uncommonachievement":   evt = JingleEvent.AchievementUncommon;  break;
                 case "rareachievement":       evt = JingleEvent.AchievementRare;      break;
                 case "ultrarareachievement":  evt = JingleEvent.AchievementUltraRare; break;
+                // PA sends "hidden" for this tier, not "hiddenachievement" — the developer named it
+                // that way, so it does not follow the {rarity}achievement pattern of the others.
+                case "hidden":                evt = JingleEvent.AchievementHidden;    break;
                 case "capstoneachievement":   evt = JingleEvent.AchievementCapstone;  break;
                 default:                      evt = JingleEvent.Achievement;          break; // master fallback
             }

@@ -2096,6 +2096,16 @@
                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                             <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4" Margin="5,0,0,0"/>
                         </StackPanel>
+                        <!-- Hidden -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Image Source="{Binding BadgeHiddenPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                            <TextBlock Text="Hidden" Width="80" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Settings.HiddenAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                     IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4"
+                                    IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                            <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4" Margin="5,0,0,0"/>
+                        </StackPanel>
                         <!-- Capstone -->
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Image Source="{Binding BadgePerfectPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>

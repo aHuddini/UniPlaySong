@@ -29,9 +29,14 @@ playnite://uniplaysong/playniteachievements/{tier}
 | `uncommonachievement`   | Uncommon    | silver    |
 | `rareachievement`       | Rare        | gold      |
 | `ultrarareachievement`  | Ultra-Rare  | platinum  |
+| `hidden`                | Hidden      | hidden    |
 | `capstoneachievement`   | Capstone    | perfect   |
 
 `capstoneachievement` = platinum trophy / 100% completion.
+
+**Note the `hidden` segment does not carry the `achievement` suffix** the other five use — it is
+`playnite://uniplaysong/playniteachievements/hidden`, not `hiddenachievement`. That is the command
+name Playnite Achievements sends, so UPS matches it rather than imposing its own convention.
 
 - **Namespaced** under `playniteachievements` so other source plugins can have their own path later
   (`uniplaysong/<source>/...`).
@@ -47,7 +52,7 @@ playnite://uniplaysong/playniteachievements/{tier}
 ```csharp
 // On unlock — pick the tier segment, fire the URI. No reference to UniPlaySong.
 // tier = "commonachievement" | "uncommonachievement" | "rareachievement"
-//        | "ultrarareachievement" | "capstoneachievement"
+//        | "ultrarareachievement" | "hidden" | "capstoneachievement"
 string tier = /* map trophy rarity to one of the above */;
 try { System.Diagnostics.Process.Start($"playnite://uniplaysong/playniteachievements/{tier}"); }
 catch { /* UPS not installed / URI unhandled — ignore */ }
@@ -119,7 +124,8 @@ Windows sleep. See `docs/dev_docs/` issue-#81 notes and `src/Services/SleepCoord
 ## Per-rarity sound resolution (sound-pack model)
 
 `HandlePlayniteAchievement` maps each tier segment to a `JingleEvent`
-(`AchievementCommon/Uncommon/Rare/UltraRare/Capstone`), plus `Achievement` for the master/default.
+(`AchievementCommon/Uncommon/Rare/UltraRare/Hidden/Capstone`), plus `Achievement` for the
+master/default.
 
 The global gate is `EnableAchievementSound`. When on, a rarity event resolves to a **file path**
 directly (not a `JingleSoundConfig`) via `JingleService.ResolveAchievementRarityPath`, driven by the
@@ -143,6 +149,7 @@ space, no separators:
 | Uncommon  | `uncommon.wav`                             |
 | Rare      | `rare.wav`                                 |
 | UltraRare | `ultrarare.wav`                            |
+| Hidden    | `hidden.wav`                               |
 | Capstone  | `capstone.wav`                             |
 
 `ultrarare` is one word — `Ultra-Rare.wav` or `Ultra Rare.wav` will NOT match (the hyphen/space

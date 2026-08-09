@@ -579,10 +579,11 @@ YourTheme/
 │       ├── uncommon.wav      ← silver
 │       ├── rare.wav          ← gold
 │       ├── ultrarare.wav     ← platinum
+│       ├── hidden.wav        ← hidden / secret unlock
 │       └── capstone.wav      ← perfect / 100%
 ```
 
-- Rarity filenames: `common`, `uncommon`, `rare`, `ultrarare`, `capstone` (case-insensitive).
+- Rarity filenames: `common`, `uncommon`, `rare`, `ultrarare`, `hidden`, `capstone` (case-insensitive).
 - Extensions: `.wav`, `.mp3`, `.ogg`, `.flac` — first match wins.
 - Ship as many or as few as you like — the user's selected pack falls back to UPS's bundled **PA Starter Pack** for any rarity you don't provide, and to their master default sound if that's missing too.
 
@@ -623,7 +624,10 @@ For **plugins** (e.g. Playnite Achievements) — or a theme — that want UniPla
 | Uncommon | `uncommonachievement` | `playnite://uniplaysong/playniteachievements/uncommonachievement` |
 | Rare | `rareachievement` | `playnite://uniplaysong/playniteachievements/rareachievement` |
 | Ultra-rare | `ultrarareachievement` | `playnite://uniplaysong/playniteachievements/ultrarareachievement` |
+| Hidden (secret unlock) | `hidden` | `playnite://uniplaysong/playniteachievements/hidden` |
 | Capstone (platinum / 100%) | `capstoneachievement` | `playnite://uniplaysong/playniteachievements/capstoneachievement` |
+
+`hidden` is the one segment without the `achievement` suffix — that is the command name Playnite Achievements sends.
 
 Each tier resolves to a sound via the user's selected **Achievement Sound Pack** (their theme's sounds, the bundled PA Starter Pack, or their own custom files), falling back to a master default sound. Case-insensitive; an unknown/missing tier plays the default (forward-compatible). Theme devs: to ship your own per-rarity sounds, see ["Ship achievement unlock sounds with your theme"](#ship-achievement-unlock-sounds-with-your-theme-v1510) above.
 
