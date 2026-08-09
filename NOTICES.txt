@@ -227,6 +227,7 @@ Rarity -> original Pixabay filename:
   uncommon.mp3  <- (Uncommon) PIXABAY - lesiakower - level-up-enhancement.mp3
   rare.mp3      <- (Rare) PIXABAY - mrstokes 302 - Success Videogame - SFX.mp3
   ultrarare.mp3 <- (UltraRare) PIXABAY - lolo - Powered Up 3.mp3
+  hidden.mp3    <- (Hidden) PIXABAY - Hidden Unlock.mp3
   capstone.mp3  <- (Capstone) PIXABAY - cartoon music game sfx - Cartoon Game Upgrade.mp3
 Modifications: Copied and renamed to {rarity}.mp3; audio otherwise unchanged. The
             labeled originals are kept alongside in Jingles/Achievements/ for provenance.
