@@ -6,6 +6,8 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
     Changelog:
       - '[New Feature] Quick Start Tab: for getting the basics working without sorting through every setting. Pick how you want music to behave — hover previews, select-to-play, background music, radio, or the full showcase — and UniPlaySong sets the rest up. Undo and reset put your own settings back.'
+      - '[New Feature] Gamification tab: added a "Hidden" achievement rarity for secret unlocks, between Ultra-Rare and Capstone. Playnite Achievements fires it on a hidden unlock, and a bundled sound ships for it.'
+      - '[Theme Dev Feature] New PlayniteAchievements unlock sound called Hidden Achievements. Add a file named hidden.mp3 to support hidden achievement sound notifications in your theme.'
       - '[New Setting] Setup Tab: yt-dlp and FFmpeg setup are in one page for user convenience.'
       - '[Settings Improvement] Gamification tab: renamed "Achievement Unlock Sounds" to "PlayniteAchievements Unlocks" to clarify ties to the PA plugin.'
       - '[Settings Improvement] Gamification tab: renamed "Completion Celebration" and "Abandoned Status" to "Games Completed Status" and "Games Abandoned Status" to clarify they follow a game''s completion status.'
@@ -19,13 +21,12 @@ Packages:
       - '[Settings Improvement] Cleanup tab: added "Delete Actions" and "Cleanup" sections you can expand, leaving Reset Settings and Factory Reset visible.'
       - '[Settings Improvement] Theme Support tab: moved the theme/trailer video pause option here from Pauses tab, next to the other theme video setting.'
       - '[Settings Improvement] Tab order: About and Setup now come first in the UPS add-on menu.'
-      - '[Fixed] Experimental tab: Reset skipped media key control and the two fade curve settings.'
-      - '[Improved] Smoother library navigation in Fullscreen.'
-      - '[Fixed] Switching audio engine left the previous engine running in the background.'
-      - '[Improved] Much quieter logging when debug logging is off.'
-      - '[New Feature] Gamification tab: added a "Hidden" achievement rarity for secret unlocks, between Ultra-Rare and Capstone. Playnite Achievements fires it on a hidden unlock, and themes can supply their own hidden.wav.'
       - '[Settings Improvement] About tab: removed known issues that no longer apply, simplified the Active Theme Music and autosuspend notes, and updated What''s New to this release.'
       - '[Settings Improvement] About tab: added a Thanks section crediting Mike Aniki for the ANIKI REMAKE integration, Justin Delano for the PlayniteAchievements integration, and everyone who reported bugs.'
+      - '[Improved] Smoother library navigation in Fullscreen.'
+      - '[Improved] Much quieter logging when debug logging is off.'
+      - '[Fixed] Experimental tab: Reset skipped media key control and the two fade curve settings.'
+      - '[Fixed] Switching audio engine left the previous engine running in the background.'
   - Version: 1.7.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-07-30

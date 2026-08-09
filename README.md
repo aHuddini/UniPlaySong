@@ -24,6 +24,10 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Added
 - **Quick Start — set up UniPlaySong in one click.** For anyone who wants the basics working without reading through every settings tab. Five ways of listening per mode, applied in one click. Pick **Hover Preview** (music follows the highlight, as a looping 30-second clip or the full track), **Select to Play** (Fullscreen — a game's music starts when you open it), **Background Mode** (Desktop — one ambient track, uninterrupted), **Radio Mode** (one continuous mix from your library or Spotify), or **Huddini Showcase** (everything on: crossfades, live effects, volume boost). Applying only changes the playback settings that option covers — your tool paths and pause rules are left alone — and **Undo** or **Reset to my settings** puts things back.
+- **A Hidden achievement sound.** Playnite Achievements can now fire a separate sound for hidden/secret unlocks, sitting between Ultra-Rare and Capstone. A sound is bundled for it, and you can swap in your own.
+
+### For theme developers
+- **Hidden achievement unlocks.** Add `hidden.[audio extension]` to your theme's `audio/Achievements/` folder to give secret unlocks their own sound.
 
 ### Improved
 - **Settings are easier to get through.** New **Setup** tab puts yt-dlp and FFmpeg in one place, so there's a single stop before anything else works. Long tabs now group into collapsible sections instead of one long scroll, options sit on the tab they belong to, and the tab order starts with About and Setup.

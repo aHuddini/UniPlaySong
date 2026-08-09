@@ -149,7 +149,7 @@ space, no separators:
 | Uncommon  | `uncommon.wav`                             |
 | Rare      | `rare.wav`                                 |
 | UltraRare | `ultrarare.wav`                            |
-| Hidden    | `hidden.wav`                               |
+| Hidden    | `hidden.[audio extension]`                 |
 | Capstone  | `capstone.wav`                             |
 
 `ultrarare` is one word — `Ultra-Rare.wav` or `Ultra Rare.wav` will NOT match (the hyphen/space

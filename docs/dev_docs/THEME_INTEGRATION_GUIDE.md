@@ -579,7 +579,7 @@ YourTheme/
 │       ├── uncommon.wav      ← silver
 │       ├── rare.wav          ← gold
 │       ├── ultrarare.wav     ← platinum
-│       ├── hidden.wav        ← hidden / secret unlock
+│       ├── hidden.[ext]      ← hidden / secret unlock
 │       └── capstone.wav      ← perfect / 100%
 ```
 
