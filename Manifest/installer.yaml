@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-08-08
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.1/UniPlaySong-1_7_1.pext'
     Changelog:
+      - '[New Feature] Quick Start Tab: pick how you want music to behave and UniPlaySong sets itself up — hover previews, select-to-play, background music, radio, or the full showcase. Undo and reset put your own settings back.'
       - '[New Setting] Setup Tab: yt-dlp and FFmpeg setup are in one page for user convenience.'
       - '[Settings Improvement] Gamification tab: renamed "Achievement Unlock Sounds" to "PlayniteAchievements Unlocks" to clarify ties to the PA plugin.'
       - '[Settings Improvement] Gamification tab: renamed "Completion Celebration" and "Abandoned Status" to "Games Completed Status" and "Games Abandoned Status" to clarify they follow a game''s completion status.'

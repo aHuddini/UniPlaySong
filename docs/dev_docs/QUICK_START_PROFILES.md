@@ -3,9 +3,15 @@
 A Quick Start page that configures UPS for a way of using it, in one click, instead of making a new
 user visit six tabs to discover what the plugin can do. Landing page for the settings UI.
 
-**Status:** BUILT. Shipped in `Services/QuickStartProfiles.cs` (the catalogue),
-`Services/QuickStartService.cs` (apply / undo / drift), the Quick Start tab, and
-`tests/Services/QuickStartServiceTests.cs`. This document is the rationale; the code is the truth.
+**Status:** BUILT, shipped in 1.7.1.
+
+Lives in `Services/QuickStartProfiles.cs` (the catalogue), `Services/QuickStartService.cs` (apply /
+undo / drift), the Quick Start tab in `UniPlaySongSettingsView.xaml`, and
+`tests/Services/QuickStartServiceTests.cs`.
+
+Tile names and values changed several times during the build, so **the catalogue is authoritative** —
+this document explains the reasoning, not the current values. Where the two disagree, the code wins
+and this file needs a correction.
 
 ---
 
@@ -147,7 +153,7 @@ differ by one setting are a *checkbox on the page*, not a tile of their own.
 | **Background Mode (Default Music)** | One bundled ambient track the whole time; game music OFF so nothing interrupts it. |
 | **Radio Mode (Random Game Music)** | One continuous mix. Library or Spotify. |
 
-Four Fullscreen tiles, three Desktop. Desktop has no **Select to Play** or **Library Background**
+Five tiles per mode. Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is Fullscreen-only —
 because `PlayOnlyOnGameSelect` is Fullscreen-only —
 a real asymmetry the page should show rather than fake.
 
@@ -223,7 +229,7 @@ starts when you open it.
 Either of the two above plus `MusicOnlyForInstalledGames = true`. Uninstalled games fall through to
 default music.
 
-### Jukebox / Radio (UPS pool) — both modes
+### Radio Mode (Random Game Music) — both modes
 
 Radio replaces per-game music entirely: it plays continuously from a pool rather than reacting to
 selection.
@@ -282,7 +288,7 @@ default music) produces two competing Spotify behaviours from settings on differ
 | `AutoPlayOnFirstLaunchDesktop` | `false` (Desktop variant) |
 | `PlayOnlyOnGameSelect` | `true` (Fullscreen variant) |
 
-### Ambient Background — Desktop
+### Background Mode (Default Music) — Desktop
 
 | Setting | Value |
 |---|---|

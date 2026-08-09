@@ -22,6 +22,9 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.7.1
 
+### Added
+- **Quick Start — set up UniPlaySong in one click.** A new tab with five ways of listening for each mode, so you don't have to hunt through six tabs to get a working setup. Pick **Hover Preview** (music follows the highlight, as a looping 30-second clip or the full track), **Select to Play** (Fullscreen — a game's music starts when you open it), **Background Mode** (Desktop — one ambient track, uninterrupted), **Radio Mode** (one continuous mix from your library or Spotify), or **Huddini Showcase** (everything on: crossfades, live effects, volume boost). Applying only changes the playback settings that option covers — your tool paths and pause rules are left alone — and **Undo** or **Reset to my settings** puts things back.
+
 ### Improved
 - **Settings are easier to get through.** New **Setup** tab puts yt-dlp and FFmpeg in one place, so there's a single stop before anything else works. Long tabs now group into collapsible sections instead of one long scroll, options sit on the tab they belong to, and the tab order starts with About and Setup.
 - **Smoother library navigation in Fullscreen.** Preparing the next song no longer happens on the thread that draws the screen, so browsing doesn't hitch while a track loads. The fade timers also no longer take priority over drawing and controller input.

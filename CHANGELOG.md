@@ -6,6 +6,35 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.7.1] - 2026-08-08
 
+### Added — Quick Start
+
+- **A Quick Start tab, third after About and Setup, that configures playback in one click.** Five tiles per mode, each a distinct way of listening rather than a bundle of checkboxes — variations differing by a single setting are page-level checkboxes instead, which is what keeps the count down.
+
+  | Fullscreen | Desktop |
+  |---|---|
+  | Hover Preview, Short Clip (PS3 style) | Hover Preview, Short Clip (PS3 style) |
+  | Hover Preview, Full Track | Hover Preview, Full Track |
+  | Select to Play | Background Mode (Default Music) |
+  | Huddini Showcase | Huddini Showcase |
+  | Radio Mode (Random Game Music) | Radio Mode (Random Game Music) |
+
+  Desktop has no **Select to Play** because `PlayOnlyOnGameSelect` is gated on `GetActiveFullscreenView()`, which returns null in Desktop — the trigger cannot fire there at all, so the page shows the asymmetry rather than faking it.
+
+- **Applying writes only the keys a profile declares.** Volume, tool paths, pause rules and effects are untouched, so trying a profile cannot discard configuration tuned by hand. It confirms first, naming what will change. `ActiveQuickStartProfile` persists the tile *id* (not its name, so renaming a tile does not orphan existing installs), which lets the page show `ACTIVE` or `MODIFIED` once an owned setting drifts. Apply, snapshot and drift-detection are all reflection-driven off the declared key list, so adding a key to a profile needs no matching code elsewhere.
+
+- **Undo, and Reset to my settings.** Undo steps back one apply. Reset steps back to the settings from before the *first* profile of the session and clears the active profile — it restores across the union of every key any profile can write, since otherwise Background Mode's `EnableMusic = false` would survive a reset triggered from a different tile. The baseline is persisted (`QuickStartOriginalSettings`), because holding it in memory meant a Playnite restart between two applies made the second capture read already-profiled settings as though they were the user's.
+
+- **Four page-level checkboxes** — installed-games-only, keep-playing-during-games, Spotify as the radio source, and Live Effects reverb (`StylePreset.HuddiniRehearsal`). All read from the live settings rather than opening blank, and a profile that declares one of these for itself keeps its own choice rather than being overridden by an unticked box.
+
+### Fixed — Quick Start
+
+Found while building it; each would have produced silence or a wrong-sounding profile:
+
+- **Radio with an empty pool left nothing playing.** `StartRadioPlayback` returns without playing when its pool is empty, so a Jukebox profile that also switched default music off gave silence with no explanation. Every profile now keeps default music on as the safety net, and an unconfigured default source (`CustomFile`/`CustomFolder` with no path, `CustomRotation`/`CompletionStatusPool` with no list) falls back to `BundledPreset` rather than enabling a fallback that is itself empty.
+- **`EnablePreviewMode` and `RandomizeOnMusicEnd` were unowned**, and both persist — so a tile silent about them inherited whatever was last set, and two users applying the same tile heard different things. Every profile now declares both. Hover Short Clip sets `RandomizeOnMusicEnd = false` so its clip loops, which is what makes it read as a console menu rather than jumping to another song from the same game.
+- **The installed-only checkbox broke Radio Mode.** In the radio branch, `MusicOnlyForInstalledGames` makes radio *yield* to installed games with music, stopping the mix that tile exists to provide. Radio Mode now forces it off.
+- **Ambient Background was not ambient** — it let game music take over on selection, making it behave identically to Hover Preview beside it. Reworked into Background Mode, which switches game music off so the bed is uninterrupted.
+
 ### Changed — Settings UI
 
 - **New Setup tab** collecting the two external tools UPS shells out to. `YtDlpPath` and `FFmpegPath` were split across the Downloads and Editing tabs, so a new user had to find two unrelated screens before anything worked. Both controls moved wholesale; the tabs they left keep a one-line pointer. Setup deliberately has **no Reset button** — these are machine-specific paths the user had to locate, and `ResetSettingsToDefaults` already preserves them for that reason. Six cross-references elsewhere (including the About tab's install guides) said "set its path in the Editing tab" and now point at Setup.
