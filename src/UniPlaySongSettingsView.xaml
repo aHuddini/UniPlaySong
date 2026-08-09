@@ -110,16 +110,19 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Radio Mode can play through your gaming sessions — see "Except Radio Mode" under Pause on Game Launch. Game-specific music still pauses.
+                                <Run FontWeight="SemiBold">Added:</Run> Quick Start tab — pick how you want music to behave and UPS sets the rest up, without going through every setting.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Theme developers can bind the new option as an in-theme toggle.
+                                <Run FontWeight="SemiBold">Added:</Run> Setup tab — yt-dlp and FFmpeg paths now live in one place.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Pausing for other apps' audio no longer stops working after a cancelled game launch.
+                                <Run FontWeight="SemiBold">Improved:</Run> Settings are easier to get through — long tabs group into sections you can expand, and options sit on the tab they belong to.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Returning from a game no longer applies a minimize / system-tray pause you had switched off.
+                                <Run FontWeight="SemiBold">Improved:</Run> Smoother library navigation in Fullscreen — browsing no longer hitches while a track loads.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Fixed:</Run> Switching audio engine no longer leaves the previous one running in the background.
                             </TextBlock>
 
                             <TextBlock FontSize="11">
@@ -180,7 +183,7 @@
                                 <Run FontWeight="SemiBold">Justin Delano (JDD)</Run> — for integrating UniPlaySong with PlayniteAchievements, so achievement unlocks can trigger UPS sounds.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,0">
-                                <Run FontWeight="SemiBold">Everyone who reported a bug</Run> — over the years, users taking the time to write up what broke (and often test the fix) is how most of this plugin got sorted out. Thank you.
+                                <Run FontWeight="SemiBold">Everyone who reported a bug</Run> — users taking the time to write up what broke, and often test the fix, is how a lot of this plugin got sorted out. Thank you.
                             </TextBlock>
                         </StackPanel>
                     </Border>
