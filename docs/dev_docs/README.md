@@ -35,14 +35,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](../The
 |---|---|
 | [VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md](features/VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [QUICK_START_PROFILES.md](features/QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. |
-
-## Integrating with other plugins
-
-`docs/dev_docs/plugin/` — the contracts other plugins call into.
-
-| Doc | Covers |
-|---|---|
-| [ACHIEVEMENT_SOUND_INTEGRATION.md](plugin/ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs, as used by Playnite Achievements. |
+| [ACHIEVEMENT_SOUND_INTEGRATION.md](features/ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs, as used by Playnite Achievements. |
 
 Theme developers want [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md) — the `UPS_MusicControl` contract, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls and now-playing data. Kept current; the canonical theme reference.
 
