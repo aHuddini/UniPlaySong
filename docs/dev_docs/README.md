@@ -16,25 +16,35 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](../The
 
 | Doc | Covers |
 |---|---|
-| [NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md) | The persistent-mixer architecture, per-sample volume ramping, the five fade curves, song-end detection, format normalization, the logical-pause mechanism, and how the NAudio backend compares to SDL2. |
+| [NAUDIO_PIPELINE.md](features/NAUDIO_PIPELINE.md) | The persistent-mixer architecture, per-sample volume ramping, the five fade curves, song-end detection, format normalization, the logical-pause mechanism, and how the NAudio backend compares to SDL2. |
 | [SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md) | Standard formats plus retro chiptune via GME, and the backend auto-switch that GME files trigger. |
-| [GME_BUILD.md](GME_BUILD.md) | Building the Game Music Emu native library. |
+| [CHIPTUNE_GME_DLL_BUILD.md](features/CHIPTUNE_GME_DLL_BUILD.md) | Building the Game Music Emu native library. |
 
 ## Spotify
 
 | Doc | Covers |
 |---|---|
-| [SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md) | Control and radio: the event-mirror architecture (`SpotifyControlService` ↔ SMTC), the drive model and pause ownership, default-music gap handling, and Radio Mode. |
-| [SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md](SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md) | Why live effects over Spotify need WASAPI process-loopback capture, and the OS floor that gates it (Windows 10 build 19041). |
+| [SPOTIFY_INTEGRATION.md](features/SPOTIFY_INTEGRATION.md) | Control and radio: the event-mirror architecture (`SpotifyControlService` ↔ SMTC), the drive model and pause ownership, default-music gap handling, and Radio Mode. |
+| [SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md](../archive/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md) | Why live effects over Spotify need WASAPI process-loopback capture, and the OS floor that gates it (Windows 10 build 19041). |
 
 ## Feature-specific
 
+`docs/dev_docs/features/` — one doc per feature area. The audio-pipeline and Spotify docs above live here too.
+
 | Doc | Covers |
 |---|---|
-| [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
-| [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs. |
-| [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
-| [QUICK_START_PROFILES.md](QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. Not built yet. |
+| [VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md](features/VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
+| [QUICK_START_PROFILES.md](features/QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. |
+
+## Integrating with other plugins
+
+`docs/dev_docs/plugin/` — the contracts other plugins call into.
+
+| Doc | Covers |
+|---|---|
+| [ACHIEVEMENT_SOUND_INTEGRATION.md](plugin/ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs, as used by Playnite Achievements. |
+
+Theme developers want [THEME_INTEGRATION_GUIDE.md](../Theme%20Support/THEME_INTEGRATION_GUIDE.md) — the `UPS_MusicControl` contract, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls and now-playing data. Kept current; the canonical theme reference.
 
 ## Other locations
 

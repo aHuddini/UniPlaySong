@@ -90,7 +90,7 @@ Scope estimate: ~5-7 days — build a custom GME fork that pulls in Nuked-OPM an
 
 ### Related
 
-- User-facing docs on current GME boundary: [SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md)
+- User-facing docs on current GME boundary: [SUPPORTED_FILE_FORMATS.md](../dev_docs/SUPPORTED_FILE_FORMATS.md)
 
 ---
 

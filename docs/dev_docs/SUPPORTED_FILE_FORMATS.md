@@ -100,6 +100,6 @@ Documented as a v1.5+ investigation. For now, the GME feature set is our chiptun
 ## Implementation
 
 - Extensions registered in [Constants.cs](../../src/Common/Constants.cs)
-- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license) — both x86, stored in [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/). Source pin and reproducible build for `gme.dll`: [`GME_BUILD.md`](GME_BUILD.md). Per-component license notices: [`NOTICES.txt`](../../NOTICES.txt).
+- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license) — both x86, stored in [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/). Source pin and reproducible build for `gme.dll`: [`features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md). Per-component license notices: [`NOTICES.txt`](../../NOTICES.txt).
 
 See [POTENTIAL_ISSUES.md](../archive/POTENTIAL_ISSUES.md) for the GME 1.5x gain boost rollback info.

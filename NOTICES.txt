@@ -31,13 +31,13 @@ Source code availability (LGPL §6):
 
       https://github.com/libgme/game-music-emu/tree/1815b97e01e68b16a8f07daef8c71bd52f36d307
 
-  Reproduction instructions are documented in docs/dev_docs/GME_BUILD.md.
+  Reproduction instructions are documented in docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md.
 
 Modifications: NONE. The bundled gme.dll is built unmodified from the source
 referenced above. UniPlaySong does not maintain a fork of GME and does not
 apply any patches. The build configuration (x86, Nuked YM2612 emulator,
 BUILD_SHARED_LIBS=ON) is the only deviation from a vanilla "git clone +
-cmake build". See docs/dev_docs/GME_BUILD.md for build configuration.
+cmake build". See docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md for build configuration.
 
 Written offer: Anyone who has received a UniPlaySong .pext containing this
 gme.dll may obtain the corresponding LGPL source by:

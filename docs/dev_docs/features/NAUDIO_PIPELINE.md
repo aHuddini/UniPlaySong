@@ -70,7 +70,7 @@ The mute-and-replace physics: the loopback tap is **post** session-volume, so th
 
 Idle audio-device teardown (issue #81) must NOT fire while effected Spotify is audible: `SleepCoordinator.isAudible` counts `SpotifyLiveEffectsHost.IsEffecting`, and lock/suspend shut the host down (unmuting Spotify) and rebuild on resume.
 
-See `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md` for the capture path and `SpotifyEffectsCoordinator`'s dry-output mute invariant.
+See `docs/archive/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md` for the capture path and `SpotifyEffectsCoordinator`'s dry-output mute invariant.
 
 ## Volume Ramping (SmoothVolumeSampleProvider)
 

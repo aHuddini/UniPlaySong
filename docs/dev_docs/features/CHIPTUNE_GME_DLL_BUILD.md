@@ -53,5 +53,5 @@ GME is **LGPL v2.1+**, UPS is **MIT**. Combined legitimately because:
 1. `gme.dll` is **dynamically linked** via P/Invoke — not statically linked into `UniPlaySong.dll`.
 2. The LGPL'd source is available: archived in this repo (`lib/source/`) and upstream at the pinned commit.
 3. Recipients can replace `gme.dll` with their own build matching the `gme_*` API in `Audio/GmeNative.cs`.
-4. License notices preserved in [`NOTICES.txt`](../../NOTICES.txt) (bundled in the `.pext`).
+4. License notices preserved in [`NOTICES.txt`](../../../NOTICES.txt) (bundled in the `.pext`).
 5. The Nuked YM2612 emulator is itself LGPL — explicitly NOT the MAME-derived option (which is GPL and would be incompatible).

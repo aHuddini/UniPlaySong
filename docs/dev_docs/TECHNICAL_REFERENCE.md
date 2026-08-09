@@ -764,7 +764,7 @@ private bool ShouldRestartForPreview()
 
 **Location**: `Players/MusicFader.cs`, `Audio/SmoothVolumeSampleProvider.cs`, `Services/MusicPlaybackService.cs`
 
-Full technical details: [NAudio Pipeline Documentation](NAUDIO_PIPELINE.md)
+Full technical details: [NAudio Pipeline Documentation](features/NAUDIO_PIPELINE.md)
 
 ### Volume Management
 
