@@ -89,11 +89,10 @@
                             <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8">
                                 These themes are tested against every UniPlaySong release and use the plugin's theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens, and overlays:
                             </TextBlock>
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• Solaris</TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2">• ANIKI REMAKE</TextBlock>
                             <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8">• PS5 Experience (by saVantCZ) — enable "Theme compatibility" in Settings → Theme Support</TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
-                                Theme developers: see Settings → Theme Support for the compatibility toggles (overlay/video music pausing, and the PS5-Experience fix).
+                                See Settings → Theme Support for the compatibility toggles (overlay/video music pausing, and the PS5-Experience fix).
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -138,12 +137,9 @@
                                 These are real-world edge cases UPS users have hit. If you run into one, the workaround is listed below the description.
                             </TextBlock>
 
-                            <TextBlock Text="Windows can't auto-suspend while UPS has played audio" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
-                                UPS keeps a persistent audio device open between songs to avoid stutter on game switches. Windows reads that as an active audio session and prevents the system from going to sleep — even when UPS has been paused for a long time. You'll see this if you have desktop autosuspend configured and notice your PC never sleeps while Playnite is running.
-                            </TextBlock>
+                            <TextBlock Text="Windows may not auto-sleep while Playnite is running" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                <Run FontWeight="SemiBold">Workaround:</Run> Fully exit Playnite when stepping away from your PC. A fix is being investigated for a future v1.5.x patch.
+                                UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio. If your PC doesn't sleep on its own, exit Playnite when you step away.
                             </TextBlock>
 
                             <TextBlock Text="Pause on Focus Loss can be unreliable" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
@@ -152,17 +148,10 @@
                             </TextBlock>
 
                             <TextBlock Text="Active Theme Music requires theme support" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,4">
-                                As of v1.5.2, UPS reads <Run FontFamily="Consolas">UPS_BackgroundAudio.{mp3,ogg,wav,flac}</Run> from the active theme's audio folder. It no longer reads <Run FontFamily="Consolas">background.mp3</Run> because Playnite's own audio player uses that file. If your theme only has <Run FontFamily="Consolas">background.mp3</Run>, the Active Theme Music option in <Run FontWeight="SemiBold">Settings → Playback</Run> will show a one-click helper button to make a UPS-named copy.
-                            </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                <Run FontWeight="SemiBold">Workaround:</Run> Click the helper button when it appears, or pick a different default music source. Themes that handle audio internally (like ANIKI REMAKE) don't support this option at all — use the Bundled Ambient preset instead.
+                                This option needs the theme to include a <Run FontFamily="Consolas">UPS_BackgroundAudio</Run> audio file. If you want to use it, ask the theme's developer to add one — or pick a different default music source.
                             </TextBlock>
 
-                            <TextBlock Text="Toast notification blur is broken on Windows 11" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="10,0,0,10">
-                                A recent Windows 11 update deprecated the API UPS uses for the toast acrylic blur effect. Toasts still appear and work, but render with a flat colored tint instead of frosted glass. Windows 10 unaffected. A fix is planned for a future v1.5.x patch.
-                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -177,6 +166,22 @@
                             <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>
                             <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Dark Ambient Soundscape Music / Dark Space Ambient</Run> — Tunetank (Pixabay Content License)</TextBlock>
                             <TextBlock FontSize="12" Margin="0,0,0,2"><Run FontWeight="SemiBold">• Ambient Background 2</Run> — DELOSound / Roman Dolmatov (Pixabay Content License)</TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Thanks / people credits -->
+                    <Border BorderBrush="#FF8888FF" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,20" Background="#1A8888FF">
+                        <StackPanel>
+                            <TextBlock Text="Thanks" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Mike Aniki</Run> — for the work on fully integrating UniPlaySong with ANIKI REMAKE, and for requesting and testing the theme-integration features that came out of it.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+                                <Run FontWeight="SemiBold">Justin Delano (JDD)</Run> — for integrating UniPlaySong with PlayniteAchievements, so achievement unlocks can trigger UPS sounds.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,0">
+                                <Run FontWeight="SemiBold">Everyone who reported a bug</Run> — over the years, users taking the time to write up what broke (and often test the fix) is how most of this plugin got sorted out. Thank you.
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -3990,7 +3995,7 @@
                         <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
                                 Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
                     </Grid>
-                    <TextBlock Text="These options help certain themes work better with UniPlaySong. Most are geared toward theme developers or specific themes — most users never need to change them, unless a theme (or its setup guide) tells you to."
+                    <TextBlock Text="These options help certain themes work better with UniPlaySong. Most users never need to change them, unless a theme (or its setup guide) tells you to."
                                FontSize="11"
                                Foreground="Gray"
                                TextWrapping="Wrap"
