@@ -23,7 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.7.1
 
 ### Added
-- **Quick Start — set up UniPlaySong in one click.** A new tab with five ways of listening for each mode, so you don't have to hunt through six tabs to get a working setup. Pick **Hover Preview** (music follows the highlight, as a looping 30-second clip or the full track), **Select to Play** (Fullscreen — a game's music starts when you open it), **Background Mode** (Desktop — one ambient track, uninterrupted), **Radio Mode** (one continuous mix from your library or Spotify), or **Huddini Showcase** (everything on: crossfades, live effects, volume boost). Applying only changes the playback settings that option covers — your tool paths and pause rules are left alone — and **Undo** or **Reset to my settings** puts things back.
+- **Quick Start — set up UniPlaySong in one click.** For anyone who wants the basics working without reading through every settings tab. Five ways of listening per mode, applied in one click. Pick **Hover Preview** (music follows the highlight, as a looping 30-second clip or the full track), **Select to Play** (Fullscreen — a game's music starts when you open it), **Background Mode** (Desktop — one ambient track, uninterrupted), **Radio Mode** (one continuous mix from your library or Spotify), or **Huddini Showcase** (everything on: crossfades, live effects, volume boost). Applying only changes the playback settings that option covers — your tool paths and pause rules are left alone — and **Undo** or **Reset to my settings** puts things back.
 
 ### Improved
 - **Settings are easier to get through.** New **Setup** tab puts yt-dlp and FFmpeg in one place, so there's a single stop before anything else works. Long tabs now group into collapsible sections instead of one long scroll, options sit on the tab they belong to, and the tab order starts with About and Setup.
@@ -110,17 +110,18 @@ Download or update directly from the Playnite add-on database, or browse Generic
 1. Download yt-dlp, Deno, and FFmpeg (all three are required for download functionality)
 2. Place `deno.exe` in the same folder as `yt-dlp.exe`
 3. In Playnite: **Settings → Add-ons → Extension Settings → UniPlaySong**
-4. **Downloads tab** → set the path to `yt-dlp.exe`
-5. **Editing tab** → set the path to `ffmpeg.exe`
+4. **Setup tab** → set the paths to `yt-dlp.exe` and `ffmpeg.exe` (both live here as of v1.7.1)
+5. **Quick Start tab** → pick how you want music to behave, and you're done
 
 ---
 
 ## 🎮 Usage & Settings
 
-### Quick Start
+### Getting started
 1. Install yt-dlp, Deno, and FFmpeg (see Requirements above)
-2. Right-click games for music search and download options via YouTube
-3. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
+2. Open the **Quick Start** tab and pick how you want music to behave — that covers the basics without going through every other tab
+3. Right-click games for music search and download options via YouTube
+4. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting

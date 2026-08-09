@@ -303,7 +303,8 @@
 
              The tile template is defined once as a resource and reused by both mode lists; it was
              duplicated per list before, so a styling change had to be made twice and could drift. -->
-        <TabItem Header="Quick Start">
+        <TabItem Header="Quick Start"
+                 ToolTip="Set up UniPlaySong in one click, without going through every tab.">
             <TabItem.Resources>
                 <!-- Opaque slate palette, deliberately NOT translucent white.
                      The page previously used #14FFFFFF / #1FFFFFFF / #26FFFFFF — white at 7-14%
@@ -408,9 +409,15 @@
                 <StackPanel MaxWidth="760" HorizontalAlignment="Left">
 
                     <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <TextBlock Text="Pick how you want music to behave and UniPlaySong sets itself up. Your volume, tool paths, pause rules and effects are left alone."
-                               FontSize="11" Foreground="#90A8A0" FontStyle="Italic"
-                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <!-- Says who the tab is FOR, not just what it does. Without this it reads as
+                         another settings screen, when the point is that it replaces having to read
+                         the other fifteen. -->
+                    <TextBlock Text="For getting up and running without going through every tab. Pick how you want music to behave and UniPlaySong sets the rest up for you."
+                               FontSize="12" Foreground="#B8C2CC"
+                               TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock Text="Everything here can still be changed by hand on the other tabs afterwards — and applying an option only touches the playback settings it covers, so your volume, tool paths, pause rules and effects are left alone."
+                               FontSize="11" Foreground="#7A8085"
+                               TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                     <!-- Status strip: what is active, and the two ways back out. -->
                     <Border Background="{StaticResource QsPanel}" BorderBrush="{StaticResource QsStroke}" BorderThickness="1"
