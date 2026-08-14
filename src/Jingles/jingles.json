@@ -194,5 +194,14 @@
     "source": "Aniki ReMake theme",
     "license": "Used with permission",
     "category": "achievement"
+  },
+  {
+    "file": "ControlUp/PIXABAY - FREESOUND COMMUNITY - Coin Pickup.mp3",
+    "title": "Coin Pickup",
+    "artist": "Freesound Community",
+    "console": "",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "category": "controlup"
   }
 ]

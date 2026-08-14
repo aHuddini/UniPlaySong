@@ -103,6 +103,25 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Output buffer in samples, set from the Experimental tab (Constants.DefaultAudioBufferSamples
+        // when unset). Read once per device open — Mix_OpenAudio takes it as an argument, so a change
+        // only lands when the device is next opened, which is why the setting says "restart Playnite".
+        //
+        // Static because SDL2's device is process-wide: one device, one buffer, regardless of how many
+        // player instances ride it.
+        private static int _audioBufferSamples = Constants.DefaultAudioBufferSamples;
+
+        // Called by the composition root before any player is built, and on settings save.
+        public static void SetAudioBufferSamples(int samples)
+        {
+            // Powers of two from 256 to 8192. An out-of-range value would make Mix_OpenAudio fail and
+            // take all audio down, so a bad value falls back rather than propagating.
+            if (samples >= 256 && samples <= 8192 && (samples & (samples - 1)) == 0)
+                _audioBufferSamples = samples;
+            else
+                _audioBufferSamples = Constants.DefaultAudioBufferSamples;
+        }
+
         private void InitializeSDL()
         {
             if (!_isSDLAudioInitialized)
@@ -113,8 +132,13 @@ namespace UniPlaySong.Services
                     throw new Exception($"SDL could not initialize! SDL Error: {SDL2.SDL_GetError()}");
                 }
 
-                // Initialize SDL_mixer
-                if (SDL2Mixer.Mix_OpenAudio(44100, SDL2.MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+                // Initialize SDL_mixer. The buffer size sets output latency directly — a chunk must
+                // fill before anything is audible — so it trades responsiveness against dropout
+                // safety: 2048 samples at 44100Hz measured ~45ms to first audible sample, 1024 ~19ms,
+                // 512 ~9ms, while each halving doubles audio-thread wakeups. 2048 stays the default
+                // because this device also carries continuous music during gaming, where a crackle is
+                // worse than latency; the Experimental tab exposes the trade for anyone who wants it.
+                if (SDL2Mixer.Mix_OpenAudio(44100, SDL2.MIX_DEFAULT_FORMAT, 2, _audioBufferSamples) < 0)
                 {
                     throw new Exception($"SDL_mixer could not initialize! Mixer Error: {SDL2Mixer.GetMixError()}");
                 }

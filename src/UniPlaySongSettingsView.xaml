@@ -110,19 +110,10 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Quick Start tab — pick how you want music to behave and UPS sets the rest up, without going through every setting.
+                                <Run FontWeight="SemiBold">Added:</Run> ControlUp Events, in Gamification — plays a sound when the ControlUp plugin detects a controller. Pick a bundled preset or your own file.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> Setup tab — yt-dlp and FFmpeg paths now live in one place.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Improved:</Run> Settings are easier to get through — long tabs group into sections you can expand, and options sit on the tab they belong to.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Improved:</Run> Smoother library navigation in Fullscreen — browsing no longer hitches while a track loads.
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Fixed:</Run> Switching audio engine no longer leaves the previous one running in the background.
+                                <Run FontWeight="SemiBold">Added:</Run> Audio Buffer Size, in Experimental — trades how quickly sounds start against how safe playback is from crackling. Default unchanged.
                             </TextBlock>
 
                             <TextBlock FontSize="11">
@@ -2117,6 +2108,59 @@
                             <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4" Margin="5,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ControlUp events — triggered by the ControlUp plugin via URI -->
+                    <Separator Margin="0,15,0,10"/>
+                    <Expander IsExpanded="False" Margin="0,0,0,10">
+                        <Expander.Header>
+                            <TextBlock Text="ControlUp Events" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,10,0,0">
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
+                                       Text="Plays a sound when ControlUp detects a game controller. UniPlaySong doesn't detect controllers itself — the ControlUp plugin fires it via playnite://uniplaysong/controlup/detecttrigger. Plays over a running game. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
+
+                            <CheckBox Content="Enable controller detected sound"
+                                      IsChecked="{Binding Settings.EnableControlUpDetectSound}"
+                                      Margin="0,5"/>
+
+                            <StackPanel Margin="20,5,0,10"
+                                        IsEnabled="{Binding Settings.EnableControlUpDetectSound}">
+                                <RadioButton Content="System beep"
+                                             IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SystemBeep}"
+                                             GroupName="ControlUpDetectSound"
+                                             Margin="0,3"/>
+                                <RadioButton Content="Bundled sound"
+                                             IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                             GroupName="ControlUpDetectSound"
+                                             Margin="0,3"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                                    <TextBlock Text="Coin Pickup"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                                    <Button Content="Preview"
+                                            Command="{Binding PreviewControlUpDetectSoundCommand}"
+                                            Padding="10,4"/>
+                                </StackPanel>
+                                <RadioButton Content="Custom sound file (.wav recommended)"
+                                             IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                             GroupName="ControlUpDetectSound"
+                                             Margin="0,3"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                    <TextBox Text="{Binding Settings.ControlUpDetectSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                             Width="350"
+                                             VerticalContentAlignment="Center"
+                                             Margin="0,0,8,0"/>
+                                    <Button Content="Browse..."
+                                            Command="{Binding BrowseControlUpDetectSoundCommand}"
+                                            Padding="10,4"/>
+                                    <Button Content="Preview"
+                                            Command="{Binding PreviewControlUpDetectCustomSoundCommand}"
+                                            Padding="10,4"
+                                            Margin="5,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Expander>
                 </StackPanel>
@@ -4904,6 +4948,27 @@
                                TextWrapping="Wrap"
                                Margin="20,0,0,5"/>
                     <TextBlock Text="&#x26A0; Experimental: still being ironed out — behavior may change."
+                               FontSize="11"
+                               Foreground="Orange"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,15"/>
+
+                    <!-- Audio Buffer Size (v1.7.2) -->
+                    <TextBlock Text="Audio Buffer Size" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8">
+                        <TextBlock Text="Buffer: " VerticalAlignment="Center" Width="100"/>
+                        <ComboBox ItemsSource="{Binding AudioBufferOptions}"
+                                  DisplayMemberPath="Label"
+                                  SelectedValuePath="Samples"
+                                  SelectedValue="{Binding Settings.AudioBufferSamples}"
+                                  Width="340"/>
+                    </StackPanel>
+                    <TextBlock Text="How much audio UniPlaySong prepares ahead of the speakers. A smaller buffer starts sounds sooner — most noticeable on short notification sounds like achievement and controller dings — but gives the audio thread less headroom, so a busy machine may crackle or drop out. Increase it if you hear stuttering; leave it at 2048 if playback is fine."
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Margin="20,0,0,5"/>
+                    <TextBlock Text="&#x26A0; Takes effect after restarting Playnite — the buffer is fixed when the audio device opens."
                                FontSize="11"
                                Foreground="Orange"
                                TextWrapping="Wrap"

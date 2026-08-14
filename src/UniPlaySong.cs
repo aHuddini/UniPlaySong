@@ -241,6 +241,42 @@ namespace UniPlaySong
         // UniPlaySongSettings's INotifyPropertyChanged.
         public UniPlaySongSettings Settings => _settings;
 
+        // Direct in-process entry point for other plugins, as an alternative to the
+        // playnite://uniplaysong/... URI. Same handler, same debounce, same settings gate — only the
+        // transport differs: this skips Process.Start and Windows' shell resolution of the
+        // playnite:// scheme, measured at ~10-16ms warm and ~80ms on the first fire of a session.
+        //
+        // Intended to be called by reflection, so the caller needs no reference to this assembly and
+        // the two plugins stay independently versioned:
+        //
+        //   var ups = PlayniteApi.Addons.Plugins
+        //       .FirstOrDefault(p => p.Id == Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+        //   ups?.GetType().GetMethod("TriggerExternalEvent", new[] { typeof(string), typeof(string) })
+        //       ?.Invoke(ups, new object[] { "controlup", "detecttrigger" });
+        //
+        // Returns true if the event was recognised and handled (including when the user's setting for
+        // it is off — "handled" means routed, not "made a sound"), false if the source/event is
+        // unknown to this build, so a caller can fall back to the URI against an older UniPlaySong.
+        //
+        // Signature is deliberately (string, string) of primitives: no custom types to bind, nothing
+        // to keep in sync, and a caller compiled against any version can invoke it.
+        public bool TriggerExternalEvent(string source, string eventName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(source) || _externalControlService == null)
+                    return false;
+
+                return _externalControlService.HandleExternalEvent(source, eventName);
+            }
+            catch (Exception ex)
+            {
+                // Never throw into a caller's event path — it may be on their UI thread.
+                _fileLogger?.Warn($"TriggerExternalEvent({source}/{eventName}) failed: {ex.Message}");
+                return false;
+            }
+        }
+
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
 
@@ -306,6 +342,11 @@ namespace UniPlaySong
             // This allows DEBUG-level logs to be conditional based on user preference
             if (_settings != null)
             {
+                // Apply the audio buffer BEFORE any player is built: SDL2's device is process-wide
+                // and Mix_OpenAudio takes the buffer as an argument, so whatever is set at the first
+                // device open is what the whole session uses.
+                Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
+
                 // Set the global static so all classes can check it
                 FileLogger.GlobalDebugEnabled = () => _settings.EnableDebugLogging;
 
@@ -783,10 +824,9 @@ namespace UniPlaySong
             // Any game selection that happened during startup will now be processed
             _playbackService?.MarkInitializationComplete();
 
-            // Prewarm the jingle audio device so the first completion/abandoned jingle doesn't pay the
-            // ~700ms cold endpoint-open (only matters with Live Effects on jingles; SDL2's shared device
-            // is already open). Deferred 3s off the startup path; only when a jingle feature is enabled.
-            if (_settings?.EnableCompletionCelebration == true || _settings?.EnableAbandonedSound == true)
+            // Prewarm the jingle audio device so the first sound doesn't pay the cold device-open.
+            // Deferred 3s off the startup path; only when some sound feature is actually enabled.
+            if (AnySoundFeatureWantsPrewarm())
             {
                 System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ =>
                     Application.Current?.Dispatcher?.BeginInvoke(
@@ -1779,6 +1819,12 @@ namespace UniPlaySong
         // SettingsService, so no manual UpdateSettings() needed.
         private void OnSettingsServiceChanged(object sender, SettingsChangedEventArgs e)
         {
+            // Stage the buffer for the NEXT device open. Usually that means a Playnite restart (the
+            // UI says so), but it also lands without one when the device is reopened after idle
+            // teardown — no reason to make that case wait.
+            if (_settings != null)
+                Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
+
             // Coordinator subscribes directly to SettingsService - no manual update needed
 
             // Resolve the game to re-react against. Prefer Playnite's current selection (covers the typical "user is
@@ -2363,12 +2409,29 @@ namespace UniPlaySong
             }
         }
 
+        // Whether any feature that plays through JingleService is enabled — the gate for warming its
+        // audio device.
+        //
+        // Must list EVERY such feature, not just the celebration jingles: PrewarmJinglePlayer also
+        // opens SDL2's shared device for EXTERNAL notification sounds (achievement unlocks, ControlUp
+        // controller detection). Gating only on completion/abandoned meant a user who enabled just the
+        // ControlUp ding never prewarmed and paid the full cold cost on every fire — ~110ms device
+        // open + ~30ms first decode on top of the output buffer — recurring after each idle teardown
+        // closed the device again.
+        private bool AnySoundFeatureWantsPrewarm()
+        {
+            return _settings?.EnableCompletionCelebration == true
+                || _settings?.EnableAbandonedSound == true
+                || _settings?.EnableAchievementSound == true
+                || _settings?.EnableControlUpDetectSound == true;
+        }
+
         // Re-open the jingle audio device after an idle/lock/suspend release (issue #81) so the first
-        // jingle after wake stays instant. Only when a jingle feature is on. Deferred slightly so it
+        // jingle after wake stays instant. Only when a sound feature is on. Deferred slightly so it
         // doesn't contend with the main player's resume work.
         private void RewarmJinglePlayerIfEnabled()
         {
-            if (_settings?.EnableCompletionCelebration != true && _settings?.EnableAbandonedSound != true)
+            if (!AnySoundFeatureWantsPrewarm())
                 return;
             System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
                 Application.Current?.Dispatcher?.BeginInvoke(

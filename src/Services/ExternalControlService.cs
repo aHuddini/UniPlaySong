@@ -17,6 +17,22 @@ namespace UniPlaySong.Services
         private readonly System.Func<Spotify.SpotifyControlService> _getSpotify;
         private const string NotificationPrefix = "UniPlaySong_ExtCtrl";
 
+        // Debounce window for ControlUp's controller-detected event (see HandleControlUp).
+        //
+        // 250ms, not the original 1000ms: that was sized for connect-event bursts only, from when the
+        // URI was the sole entry point. The hotkey now reaches the same handler, and a full second of
+        // deafness swallowed a deliberate hotkey press that landed shortly after a connect — plugging
+        // a controller in and immediately pressing the hotkey is ordinary use, not a burst. 250ms is
+        // still far longer than the millisecond-scale repeats a flaky USB port or Bluetooth re-pair
+        // produces, and short enough that no press a person makes on purpose is lost.
+        //
+        // Not tied to the sound's length (~2s for the bundled clip): PlayExternalSound stops the
+        // previous sound before starting the next, so a retrigger cuts the first off by design rather
+        // than overlapping it.
+        private const int ControlUpDebounceMs = 250;
+        private readonly System.Diagnostics.Stopwatch _controlUpLastFire = new System.Diagnostics.Stopwatch();
+        private readonly object _controlUpDebounceLock = new object();
+
         public ExternalControlService(
             IMusicPlaybackService playbackService,
             IActiveMediaService activeMedia,
@@ -112,6 +128,14 @@ namespace UniPlaySong.Services
                     HandlePlayniteAchievement(args.Arguments);
                     break;
 
+                // Controller detected — fired by ControlUp via playnite://uniplaysong/controlup/detecttrigger.
+                // Namespaced under the source plugin, same as playniteachievements, so ControlUp can add
+                // more events later without a second convention. Plays on the lightweight player and
+                // no-ops when the ControlUp sound setting is off.
+                case "controlup":
+                    HandleControlUp(args.Arguments);
+                    break;
+
                 default:
                     Notify($"Unknown command \"{command}\"");
                     break;
@@ -141,6 +165,60 @@ namespace UniPlaySong.Services
             _playbackService.SetVolume(volume / Constants.VolumeDivisor);
         }
 
+        // In-process entry point for other plugins (see UniPlaySong.TriggerExternalEvent). Routes to
+        // the SAME handlers as the URI, so the debounce, the settings gate, and the unknown-event
+        // behavior are shared rather than reimplemented — a second code path here would drift from
+        // the URI's on the first change either one received.
+        //
+        // Returns whether the source was recognised, so a caller can fall back to the URI when
+        // talking to an older UniPlaySong that lacks this method.
+        public bool HandleExternalEvent(string source, string eventName)
+        {
+            switch ((source ?? string.Empty).ToLowerInvariant())
+            {
+                case "controlup":
+                    HandleControlUp(new[] { "controlup", eventName });
+                    return true;
+
+                case "playniteachievements":
+                    HandlePlayniteAchievement(new[] { "playniteachievements", eventName });
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private void HandleControlUp(string[] arguments)
+        {
+            // arguments[0] == "controlup"; arguments[1] == the event segment. Only "detecttrigger"
+            // today — an unknown or missing segment no-ops rather than playing the wrong sound, so a
+            // future ControlUp that adds events stays safe against this build.
+            // ?. on the element too: the in-process entry point can pass a null event name, where the
+            // URI path could only ever produce non-null segments.
+            var evt = arguments != null && arguments.Length > 1
+                ? arguments[1]?.ToLowerInvariant()
+                : null;
+
+            if (evt != "detecttrigger") return;
+
+            // Controller connect events burst: a flaky USB port, a controller waking from sleep, or
+            // Bluetooth re-pairing can fire this several times in a row, and ControlUp deliberately
+            // doesn't throttle its side. Without this guard one physical reconnect becomes a stutter
+            // of overlapping dings. Stopwatch, not DateTime — a clock change (NTP, DST) must not
+            // swallow a real fire or wave a burst through.
+            lock (_controlUpDebounceLock)
+            {
+                if (_controlUpLastFire.IsRunning
+                    && _controlUpLastFire.ElapsedMilliseconds < ControlUpDebounceMs)
+                    return;
+
+                _controlUpLastFire.Restart();
+            }
+
+            _jingleService?.PlayForEvent(JingleEvent.ControllerDetected, _getSettings?.Invoke());
+        }
+
         private void HandlePlayniteAchievement(string[] arguments)
         {
             // arguments[0] == "playniteachievements"; arguments[1] (optional) == the rarity tier
@@ -151,7 +229,7 @@ namespace UniPlaySong.Services
             // back to the master achievement sound when the rarity has none. An unknown or missing
             // tier plays the master sound, so a newer PA that adds a tier still works.
             var tier = arguments != null && arguments.Length > 1
-                ? arguments[1].ToLowerInvariant()
+                ? arguments[1]?.ToLowerInvariant()
                 : null;
 
             JingleEvent evt;

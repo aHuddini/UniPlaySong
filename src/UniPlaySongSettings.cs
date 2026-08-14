@@ -334,6 +334,7 @@ namespace UniPlaySong
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
         private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
+        private int audioBufferSamples = Constants.DefaultAudioBufferSamples; // v1.7.2 — see AudioBufferSamples property
         // Id of the Quick Start profile last applied, empty when none. Stored so the page can show
         // "Hover Preview (modified)" once an owned setting drifts, and offer a meaningful re-apply.
         // An id rather than a display name so renaming a tile does not orphan existing installs.
@@ -423,6 +424,14 @@ namespace UniPlaySong
         private CelebrationSoundType achievementSoundType = CelebrationSoundType.BundledJingle;
         private string selectedAchievementJingle = "Achievements/Trophy_Notif.mp3";
         private string achievementSoundPath = string.Empty;
+
+        // Gamification — ControlUp events. Fired via the
+        // playnite://uniplaysong/controlup/{event} URI by the ControlUp plugin, which detects the
+        // controller; UniPlaySong only plays the sound. Off by default.
+        private bool enableControlUpDetectSound = false;
+        private CelebrationSoundType controlUpDetectSoundType = CelebrationSoundType.BundledJingle;
+        private string selectedControlUpDetectJingle = Services.BundledJingleService.DefaultControlUpJingle;
+        private string controlUpDetectSoundPath = string.Empty;
 
         // Which per-rarity sound pack to use. PA Starter Pack (bundled Pixabay set) by default.
         // Tier -> badge: Common=bronze, Uncommon=silver, Rare=gold, UltraRare=platinum,
@@ -855,6 +864,27 @@ namespace UniPlaySong
             }
         }
 
+        // v1.7.2 — SDL2 output buffer in samples. Sets output latency directly: a chunk must fill
+        // before anything is audible, so at 44100Hz 2048 measured ~45ms to first audible sample,
+        // 1024 ~19ms, 4096 ~90ms. Lower is more responsive (noticeable on short notification sounds),
+        // higher is safer against dropouts on a loaded machine, since each halving doubles how often
+        // the audio thread must wake. 2048 is the default and the pre-v1.7.2 behavior.
+        //
+        // Applies on the next audio-device open, which in practice means restarting Playnite —
+        // Mix_OpenAudio takes the buffer as an argument and the device is process-wide.
+        public int AudioBufferSamples
+        {
+            get => audioBufferSamples;
+            set
+            {
+                if (audioBufferSamples != value)
+                {
+                    audioBufferSamples = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         // Pause music when Playnite loses focus (switching to another application). Music will resume when
         // Playnite regains focus.
         public bool PauseOnFocusLoss
@@ -1138,6 +1168,37 @@ namespace UniPlaySong
         {
             get => achievementSoundPath;
             set { achievementSoundPath = value; OnPropertyChanged(); }
+        }
+
+        // ── ControlUp events ──
+        // Play a sound when ControlUp reports a controller detected. Triggered externally via the
+        // playnite://uniplaysong/controlup/detecttrigger URI — UniPlaySong doesn't detect controllers
+        // itself. Uses the lightweight external player, so it plays over a running game. Off by default.
+        public bool EnableControlUpDetectSound
+        {
+            get => enableControlUpDetectSound;
+            set { enableControlUpDetectSound = value; OnPropertyChanged(); }
+        }
+
+        public CelebrationSoundType ControlUpDetectSoundType
+        {
+            get => controlUpDetectSoundType;
+            set { controlUpDetectSoundType = value; OnPropertyChanged(); }
+        }
+
+        // Filename of the selected bundled jingle (from the Jingles folder) for controller detection.
+        // Empty resolves to the first bundled ControlUp sound, so the preset works before it's picked.
+        public string SelectedControlUpDetectJingle
+        {
+            get => selectedControlUpDetectJingle;
+            set { selectedControlUpDetectJingle = value; OnPropertyChanged(); }
+        }
+
+        // Path to a custom controller-detected sound file (.wav recommended).
+        public string ControlUpDetectSoundPath
+        {
+            get => controlUpDetectSoundPath;
+            set { controlUpDetectSoundPath = value; OnPropertyChanged(); }
         }
 
         // ── Per-rarity achievement sound pack ──

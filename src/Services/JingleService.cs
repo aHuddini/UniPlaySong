@@ -21,7 +21,11 @@ namespace UniPlaySong.Services
         AchievementRare,        // rareachievement       (gold)
         AchievementUltraRare,   // ultrarareachievement  (platinum)
         AchievementHidden,      // hidden                (hidden/secret unlock — PA's own command name)
-        AchievementCapstone     // capstoneachievement   (perfect / 100%)
+        AchievementCapstone,    // capstoneachievement   (perfect / 100%)
+
+        // Controller detected — fired via URI by ControlUp (playnite://uniplaysong/controlup/detecttrigger).
+        // Like the achievement events, this plays on the lightweight external player.
+        ControllerDetected
     }
 
     // Owns jingle playback lifecycle: creates a dedicated player for each fire, coordinates pause/resume of the
@@ -122,10 +126,10 @@ namespace UniPlaySong.Services
                 string path = ResolveConfigPath(config);
                 if (string.IsNullOrEmpty(path)) return;
 
-                // External notification sounds (achievement/URI, all rarities) take the dedicated
-                // lightweight path; regular celebration jingles (completion/abandoned) keep the
-                // existing effects-capable path untouched.
-                if (IsAchievementEvent(evt))
+                // External notification sounds (achievement/URI, all rarities, ControlUp) take the
+                // dedicated lightweight path; regular celebration jingles (completion/abandoned) keep
+                // the existing effects-capable path untouched.
+                if (IsExternalNotificationEvent(evt))
                     PlayExternalSound(path, settings);
                 else
                     Play(path, settings);
@@ -170,6 +174,19 @@ namespace UniPlaySong.Services
                 // resolved to a file path via the sound pack in PlayForEvent (path-based, not config).
                 case JingleEvent.Achievement:
                     return MasterAchievementConfig(settings);
+
+                case JingleEvent.ControllerDetected:
+                    if (settings?.EnableControlUpDetectSound != true) return null;
+                    return new JingleSoundConfig
+                    {
+                        SoundType = settings.ControlUpDetectSoundType,
+                        // An unset selection resolves to the first bundled ControlUp sound, so picking
+                        // the preset radio works before the picker has ever been touched.
+                        JingleFilename = string.IsNullOrWhiteSpace(settings.SelectedControlUpDetectJingle)
+                            ? BundledJingleService.GetDefaultControlUpJingleFilename()
+                            : settings.SelectedControlUpDetectJingle,
+                        CustomFilePath = settings.ControlUpDetectSoundPath
+                    };
 
                 default:
                     return null;
@@ -266,9 +283,11 @@ namespace UniPlaySong.Services
             }
         }
 
-        // True for the master achievement event and all six rarity events — these all use the
-        // dedicated lightweight (SDL2) external-sound path, never the effects-capable jingle path.
-        private static bool IsAchievementEvent(JingleEvent evt)
+        // True for events fired by external plugins via URI (achievement unlocks, ControlUp
+        // controller detection). These all use the dedicated lightweight (SDL2) external-sound path,
+        // never the effects-capable jingle path — they're short notification dings over a running
+        // game, where the main music is already paused and there's nothing to duck.
+        private static bool IsExternalNotificationEvent(JingleEvent evt)
         {
             switch (evt)
             {
@@ -279,6 +298,7 @@ namespace UniPlaySong.Services
                 case JingleEvent.AchievementUltraRare:
                 case JingleEvent.AchievementHidden:
                 case JingleEvent.AchievementCapstone:
+                case JingleEvent.ControllerDetected:
                     return true;
                 default:
                     return false;
@@ -446,10 +466,63 @@ namespace UniPlaySong.Services
                 // when its shared device is already open.
                 (_jinglePlayer as IAudioDeviceHolder)?.PrewarmAudioDevice();
                 _fileLogger?.Debug($"[Jingle] Prewarmed jingle player ({_jinglePlayer?.GetType().Name}, liveEffects={wantEffects})");
+
+                // External notification sounds (achievement/URI, ControlUp) always ride SDL2's
+                // process-wide device, which the line above only opens when the jingle player is
+                // itself SDL2. With Live Effects on it's NAudio, opening a WASAPI endpoint instead —
+                // so the first external sound paid a ~110ms cold SDL2 open (measured) before its
+                // first note. Warming it here costs nothing when the device is already open.
+                PrewarmExternalPlayer();
             }
             catch (Exception ex)
             {
                 _fileLogger?.Warn($"PrewarmJinglePlayer failed: {ex.Message}");
+            }
+        }
+
+        // Opens SDL2's shared audio device ahead of the first external notification sound, so the
+        // achievement/ControlUp path doesn't pay a cold device-open on its first fire.
+        //
+        // Deliberately does NOT keep the player: PlayExternalSound builds a fresh one per fire and
+        // disposing it never closes the shared device (secondary holder, issue #81), so the warmth
+        // outlives this throwaway instance. Holding one here instead would collide with that
+        // per-fire lifecycle for no gain.
+        private void PrewarmExternalPlayer()
+        {
+            IMusicPlayer probe = null;
+            try
+            {
+                probe = _createLightweightPlayer();
+                (probe as IAudioDeviceHolder)?.PrewarmAudioDevice();
+
+                // Also touch the decoder once. Opening the device leaves ~30ms of first-decode
+                // setup (measured), which is per-PROCESS, not per-file — a different file loads in
+                // 0ms once any file has been decoded. Loading (never playing) the sound this event
+                // will use pays that here instead of on the first ding.
+                var warmFile = BundledJingleService.ResolveJinglePath(
+                    BundledJingleService.DefaultControlUpJingle);
+                if (!string.IsNullOrEmpty(warmFile)) probe.Load(warmFile);
+
+                // Logged because this path is otherwise invisible: it plays nothing and disposes its
+                // player, so without a line here there is no way to tell from a log whether the
+                // external-sound device was warmed, or whether the file it warms even resolved.
+                _fileLogger?.Debug($"[Jingle] Prewarmed external player ({probe?.GetType().Name}, " +
+                                   $"deviceOpen={(probe as IAudioDeviceHolder)?.IsAudioDeviceOpen}, " +
+                                   $"decoderWarmedWith={(string.IsNullOrEmpty(warmFile) ? "<none resolved>" : System.IO.Path.GetFileName(warmFile))})");
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"PrewarmExternalPlayer failed: {ex.Message}");
+            }
+            finally
+            {
+                try
+                {
+                    if (probe is IAudioDeviceHolder ph) _deviceRegistry?.Unregister(ph);
+                    probe?.Close();
+                    (probe as IDisposable)?.Dispose();
+                }
+                catch { }
             }
         }
 

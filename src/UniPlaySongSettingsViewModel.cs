@@ -341,6 +341,9 @@ namespace UniPlaySong
         // Bundled "Default" achievement pack (Trophy Notif + Platinum) for the achievement sound pickers
         public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
 
+        // SDL2 output buffer choices for the Experimental tab.
+        public List<AudioBufferOption> AudioBufferOptions => AudioBufferOption.All;
+
         // Plays a sound preview. Always tears down the previous player and builds a fresh one, and gates Play() on
         // MediaOpened — WPF MediaPlayer.Open is async, so playing immediately can replay the previously-loaded file
         // (the "preview doesn't update when I change the option" bug). Gating on MediaOpened guarantees the
@@ -1186,6 +1189,71 @@ namespace UniPlaySong
                     && File.Exists(Settings.AchievementSoundPath))
                 {
                     PlayPreview(Settings.AchievementSoundPath);
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No custom sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
+        });
+
+        // ── ControlUp event sound commands ──
+
+        public ICommand BrowseControlUpDetectSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.ogg;*.flac|WAV Files (recommended)|*.wav|All Files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+            {
+                Settings.ControlUpDetectSoundPath = dialog.FileName;
+                Settings.ControlUpDetectSoundType = CelebrationSoundType.CustomFile;
+            }
+        });
+
+        // Previews the BUNDLED preset (the picker's selection) — independent of which sound-type radio
+        // is active, so the preset row's Preview always previews the preset. An unset selection previews
+        // the first bundled ControlUp sound, matching what the event would actually play.
+        public ICommand PreviewControlUpDetectSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                var selected = string.IsNullOrWhiteSpace(Settings.SelectedControlUpDetectJingle)
+                    ? Services.BundledJingleService.GetDefaultControlUpJingleFilename()
+                    : Settings.SelectedControlUpDetectJingle;
+
+                var fileToPlay = Services.BundledJingleService.ResolveJinglePath(selected);
+                if (!string.IsNullOrEmpty(fileToPlay))
+                {
+                    PlayPreview(fileToPlay);
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowMessage("No sound file selected or file not found.", "UniPlaySong");
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayniteApi.Dialogs.ShowMessage($"Error playing sound: {ex.Message}", "UniPlaySong");
+            }
+        });
+
+        // Previews the CUSTOM file directly — independent of which sound-type radio is active, so the
+        // custom row's Preview always previews the custom file (not the preset).
+        public ICommand PreviewControlUpDetectCustomSoundCommand => new Common.RelayCommand<object>((a) =>
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(Settings.ControlUpDetectSoundPath)
+                    && File.Exists(Settings.ControlUpDetectSoundPath))
+                {
+                    PlayPreview(Settings.ControlUpDetectSoundPath);
                 }
                 else
                 {
@@ -3385,6 +3453,25 @@ namespace UniPlaySong
             }
             return true;
         }
+    }
+
+    // One entry in the Experimental tab's audio-buffer dropdown.
+    public class AudioBufferOption
+    {
+        public int Samples { get; set; }
+        public string Label { get; set; }
+
+        // Latencies are measured on this codebase at 44100Hz, not computed, so the labels say what
+        // a user will actually hear. Powers of two only — Mix_OpenAudio expects one, and anything
+        // else fails the device open and takes all audio down for the session.
+        public static List<AudioBufferOption> All { get; } = new List<AudioBufferOption>
+        {
+            new AudioBufferOption { Samples = 512,  Label = "512 — lowest latency (~9ms), most likely to crackle" },
+            new AudioBufferOption { Samples = 1024, Label = "1024 — low latency (~19ms)" },
+            new AudioBufferOption { Samples = 2048, Label = "2048 — default (~45ms)" },
+            new AudioBufferOption { Samples = 4096, Label = "4096 — safest against dropouts (~90ms)" },
+            new AudioBufferOption { Samples = 8192, Label = "8192 — last resort for stubborn crackling (~180ms)" },
+        };
     }
 }
 

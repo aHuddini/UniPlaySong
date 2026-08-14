@@ -29,6 +29,15 @@ namespace UniPlaySong.Common
 
         #endregion
 
+        #region Audio Device
+
+        // SDL2 output buffer in samples. Sets output latency directly (a chunk must fill before
+        // anything is audible): at 44100Hz, 2048 measured ~45ms to first audible sample, 1024 ~19ms,
+        // 4096 ~90ms. Lower is more responsive, higher is safer against dropouts on a loaded machine.
+        public const int DefaultAudioBufferSamples = 2048;
+
+        #endregion
+
         #region Preview Duration
 
         public const int DefaultPreviewDuration = 30;

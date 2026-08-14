@@ -1,5 +1,12 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.7.2
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-13
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.2/UniPlaySong-1_7_2.pext'
+    Changelog:
+      - '[Plugin Support] ControlUp Sound Events: a new section in Gamification that plays a sound when the ControlUp plugin detects a game controller. Choose a bundled preset or your own audio file, with Preview on both. Off by default.'
+      - '[New Setting] Experimental tab: Audio Buffer Size sets how much audio is prepared ahead of the speakers. A smaller buffer starts sounds sooner, most noticeable on short notification sounds; a larger one is safer against crackling on a busy machine. The default is unchanged, so nothing moves unless you change it. Takes effect after restarting Playnite.'
   - Version: 1.7.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-08

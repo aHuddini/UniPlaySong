@@ -233,6 +233,16 @@ Modifications: Copied and renamed to {rarity}.mp3; audio otherwise unchanged. Th
             labeled originals are kept alongside in Jingles/Achievements/ for provenance.
 
 
+ControlUp event sound (Jingles/ControlUp/*.mp3)
+-----------------------------------------------
+Purpose:    Bundled sound for the ControlUp "controller detected" event, played
+            via the playnite://uniplaysong/controlup/detecttrigger URI.
+License:    Pixabay Content License — royalty-free.
+Source:     https://pixabay.com/sound-effects/
+File:       PIXABAY - FREESOUND COMMUNITY - Coin Pickup.mp3
+Modifications: None — bundled under its original labeled filename.
+
+
 Achievement rarity badge art (Images/Achievements/badge-*.png)
 --------------------------------------------------------------
 Purpose:    Rarity badge icons (bronze/silver/gold/platinum/perfect) shown next

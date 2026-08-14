@@ -48,6 +48,7 @@ namespace UniPlaySong.Services
         private const string CategoryCelebration = "celebration";
         private const string CategoryAbandoned = "abandoned";
         private const string CategoryAchievement = "achievement";
+        private const string CategoryControlUp = "controlup";
 
         private static List<BundledJingleInfo> _jingles;
         private static string _jinglesDirectory;
@@ -86,6 +87,29 @@ namespace UniPlaySong.Services
             return GetAllJingles()
                 .Where(j => string.Equals(j.Category, CategoryAchievement, System.StringComparison.OrdinalIgnoreCase))
                 .ToList();
+        }
+
+        // Returns jingles tagged "controlup" — the bundled sounds offered for ControlUp events
+        // (controller detected). The category filter is what keeps this picker from offering
+        // celebration/abandoned/achievement sounds, exactly as those categories stay separate
+        // from each other.
+        public static List<BundledJingleInfo> GetControlUpJingles()
+        {
+            return GetAllJingles()
+                .Where(j => string.Equals(j.Category, CategoryControlUp, System.StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // The default ControlUp event sound. Also the settings default, so the picker shows what
+        // actually plays instead of sitting blank on a fresh install.
+        public const string DefaultControlUpJingle = "ControlUp/PIXABAY - FREESOUND COMMUNITY - Coin Pickup.mp3";
+
+        // Gets the first available ControlUp sound filename, or empty string if none. The fallback
+        // for a settings file whose stored selection no longer exists on disk.
+        public static string GetDefaultControlUpJingleFilename()
+        {
+            var jingles = GetControlUpJingles();
+            return jingles.Count > 0 ? jingles[0].File : string.Empty;
         }
 
         // The master/default achievement sound filename ("Trophy Notif"). Falls back to the first

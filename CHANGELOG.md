@@ -4,6 +4,49 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.7.2] - 2026-08-13
+
+### Added — ControlUp Events
+
+- **`playnite://uniplaysong/controlup/detecttrigger` URI command, plus a ControlUp Events section in the Gamification tab.** Requested by the ControlUp plugin, which detects the controller and fires the URI fire-and-forget; UniPlaySong only plays the sound. Namespaced by source plugin then event (`controlup/{event}`), matching the `playniteachievements/{rarity}` precedent rather than inventing a second convention, so ControlUp can add events later without another handler shape.
+
+- **Settings:** `EnableControlUpDetectSound` (off by default), `ControlUpDetectSoundType` (`SystemBeep` / `BundledJingle` / `CustomFile`), `SelectedControlUpDetectJingle`, `ControlUpDetectSoundPath`. Follows the master-achievement config pattern, not the per-rarity pack chain — there is one ControlUp event, so the pack machinery doesn't apply.
+
+- **One bundled sound, not a preset list:** "Coin Pickup" (Pixabay, see `NOTICES.txt`), shipped under a new `controlup` category in `Jingles/jingles.json` alongside the existing `celebration` / `abandoned` / `achievement` categories. The category filter is what keeps this sound out of the other pickers and theirs out of this one. Since the choice is bundled-or-custom, the UI shows a label rather than a dropdown; `GetControlUpJingles()` still returns the category, so a picker can come back if a future event ships several sounds. `SelectedControlUpDetectJingle` defaults to the bundled file, and both `JingleService` and the preview command fall back to the first `controlup` entry when a stored selection is empty (settings written before this shipped), so what Preview plays is always what the event plays.
+
+- **Debounce (250 ms)** in `ExternalControlService.HandleControlUp`. Sized at 1000ms while the URI was the only entry point and connect bursts the only concern; reduced once the hotkey path reached the same handler, where a full second silently swallowed a deliberate press landing shortly after a controller connect — plugging in a controller and immediately pressing the hotkey is ordinary use, not a burst. 250ms still dwarfs the millisecond-scale repeats a flaky USB port or Bluetooth re-pair produces. Deliberately not tied to the sound's length (~2s for the bundled clip): `PlayExternalSound` stops the previous sound before starting the next, so a retrigger cuts the first off by design rather than overlapping it. Controller connect events burst — a flaky USB port, a controller waking from sleep, Bluetooth re-pairing — and ControlUp deliberately doesn't throttle its side, so without this one physical reconnect becomes a stutter of overlapping dings. Uses `Stopwatch`, not `DateTime`: a wall-clock change (NTP, DST) must not swallow a real fire or wave a burst through. Placed at the URI boundary rather than in `JingleService`, which is also called from trusted internal paths (completion/abandoned) that must not be throttled.
+
+- **Playback path:** routes to the lightweight SDL2 external player, never the NAudio Live-Effects pipeline — same rationale as achievement sounds (a short notification ding over a running game, no reverb/visualization, avoids the ~130 ms Live-Effects setup latency). `JingleService.IsAchievementEvent` was renamed `IsExternalNotificationEvent` to stay honest now that it gates more than achievements.
+
+- Unknown or missing event segments no-op without notifying, so a future ControlUp that adds events can't make this build play the wrong sound or spam an "Unknown command" notification on every controller connect.
+
+### Performance
+
+- **First external notification sound now fires in ~1ms instead of ~147ms.** `PrewarmJinglePlayer` only warmed the completion/abandoned player; external sounds (achievement unlocks and now ControlUp) ride SDL2's process-wide device, which that prewarm opens *only* when the jingle player is itself SDL2 — with Live Effects on it builds NAudio and opens a WASAPI endpoint instead, leaving SDL2 cold. The first ding then paid ~110ms of device-open plus ~30ms of first-decode setup. `PrewarmExternalPlayer` now warms both at startup, off the hot path.
+- Measured, not estimated: 147ms cold → 32ms with the device warmed → 1ms with the decoder warmed too. The decode cost is per-process, not per-file (a second, different file loads in 0ms), so one warm-up covers every external sound. The probe player is disposed immediately — SDL2's shared device is never closed by a secondary holder (issue #81), so the warmth outlives it.
+
+### Added — direct entry point for integrating plugins
+
+- **`UniPlaySong.TriggerExternalEvent(string source, string eventName)`**, an in-process alternative to the `playnite://uniplaysong/...` URI for plugins that already run inside Playnite. Measured: `Process.Start` on the URI costs ~10-16ms warm and ~82ms on the first fire of a session, before Playnite even dispatches it. A caller resolves the plugin via `PlayniteApi.Addons.Plugins` and invokes by reflection, so neither side references the other's assembly and both stay independently versioned. Primitive-only signature for the same reason.
+
+- Routes to the same handlers as the URI rather than duplicating them, so the debounce, the settings gate, and the unknown-event behavior are shared — both entry points cannot double-fire, and a caller mixing them (or falling back mid-burst) still gets one sound. Returns `true` when the source was recognised and routed — including when the user's sound setting is off, since a retry over the URI would hit the same gate — and `false` for an unknown source, which is the caller's signal to fall back for older UniPlaySong builds.
+
+- Hardened both handlers against a null event segment: reachable from the in-process path, where the URI could only ever produce non-null strings, and a throw would surface in the *caller's* event handler on their UI thread.
+
+### Fixed
+
+- **The audio device was never prewarmed for users who enabled only a notification sound.** Both prewarm call sites (startup and the post-idle/lock/suspend rewarm) gated on `EnableCompletionCelebration || EnableAbandonedSound`, but `PrewarmJinglePlayer` also opens SDL2's shared device for external notification sounds. Anyone running just the achievement or ControlUp sound — with completion and abandoned off — never prewarmed, so every fire paid the full cold cost (~110ms device open + ~30ms first decode on top of the output buffer), and paid it again after each idle teardown closed the device. Both gates now route through `AnySoundFeatureWantsPrewarm()`, which lists every feature that plays through `JingleService`. This predates the ControlUp work: achievement-only users have been paying it since the achievement sounds shipped.
+
+- `PrewarmGateTests` maps every `JingleEvent` to the setting that enables it and fails if any event's setting is missing from the gate, so a future event can't silently reintroduce the cold path.
+
+### Added — Audio Buffer Size (Experimental)
+
+- **Audio buffer size is now selectable in the Experimental tab; the default is unchanged at 2048.** The prewarm above got `Play()` returning in ~1ms, but `Mix_PlayMusic` only queues to SDL's audio thread — the chunk must still fill before anything is heard, and that buffer is the real floor on audible latency. Measured at 44100Hz on this codebase: 2048 ≈ 45ms to first audible sample, 1024 ≈ 19ms, 512 ≈ 9ms. Each halving doubles how often the audio thread must wake, so lower is more responsive and more prone to crackling on a loaded machine.
+
+- Offered as 512 / 1024 / 2048 / 4096 / 8192 with the measured latency in each label. 2048 remains the default and the pre-v1.7.2 behavior — the trade is exposed, not made for the user, because the same device carries continuous music during gaming where a dropout is worse than latency. Applies on the next audio-device open (a Playnite restart, or after idle teardown).
+
+- The value feeds `Mix_OpenAudio` directly, where an unacceptable argument fails the device open and silences *all* audio for the session, so `SetAudioBufferSamples` falls back to the default on anything that isn't a power of two in 256–8192, and a test pins every dropdown option to that contract.
+
 ## [1.7.1] - 2026-08-08
 
 ### Added — Quick Start

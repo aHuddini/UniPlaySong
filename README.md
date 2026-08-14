@@ -20,25 +20,14 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.7.1
+## What's New - v1.7.2
 
 ### Added
-- **Quick Start — set up UniPlaySong in one click.** For anyone who wants the basics working without reading through every settings tab. Five ways of listening per mode, applied in one click. Pick **Hover Preview** (music follows the highlight, as a looping 30-second clip or the full track), **Select to Play** (Fullscreen — a game's music starts when you open it), **Background Mode** (Desktop — one ambient track, uninterrupted), **Radio Mode** (one continuous mix from your library or Spotify), or **Huddini Showcase** (everything on: crossfades, live effects, volume boost). Applying only changes the playback settings that option covers — your tool paths and pause rules are left alone — and **Undo** or **Reset to my settings** puts things back.
-- **A Hidden achievement sound.** Playnite Achievements can now fire a separate sound for hidden/secret unlocks, sitting between Ultra-Rare and Capstone. A sound is bundled for it, and you can swap in your own.
-
-### For theme developers
-- **Hidden achievement unlocks.** Add `hidden.[audio extension]` to your theme's `audio/Achievements/` folder to give secret unlocks their own sound.
-
-### Improved
-- **Settings are easier to get through.** New **Setup** tab puts yt-dlp and FFmpeg in one place, so there's a single stop before anything else works. Long tabs now group into collapsible sections instead of one long scroll, options sit on the tab they belong to, and the tab order starts with About and Setup.
-- **Smoother library navigation in Fullscreen.** Preparing the next song no longer happens on the thread that draws the screen, so browsing doesn't hitch while a track loads. The fade timers also no longer take priority over drawing and controller input.
-- **Much quieter logging.** With debug logging off, UPS writes only errors to Playnite's shared log instead of hundreds of routine lines. Turning Enable Debug Logging on restores the full detail.
-
-### Fixed
-- **Switching audio engine no longer leaves the old one running.** Turning Live Effects, the Visualizer or Crossfade on or off — or opening a game with retro chiptune music, which switches engines automatically — left the previous engine alive in the background, doing work for the rest of the session.
+- **ControlUp support — a sound when your controller is detected.** New ControlUp Events section in the Gamification tab. If you use the [ControlUp](https://github.com/aHuddini/ControlUp) plugin, UniPlaySong plays a short sound the moment it picks up a controller. Use the bundled sound or your own file. Off by default.
+- **Audio buffer size, in the Experimental tab.** Trades responsiveness against crackling on a busy machine. Default unchanged.
 
 ### Previous Version
-- **v1.7.0**: Radio Mode can play through your gaming sessions; "Play music only on game select" now works with Radio Mode; faster shutdown; taskbar media buttons control Spotify when it's your radio source.
+- **v1.7.1**: Quick Start tab sets up playback in one click; new Setup tab for yt-dlp and FFmpeg; a separate Hidden achievement sound; smoother Fullscreen browsing; much quieter logging; switching audio engine no longer leaves the old one running.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -130,7 +119,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 ### Settings Tabs
 - **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
 - **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), random game picker music, game property filter, filter mode, radio mode
-- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, abandoned-status sound + toast
+- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, ControlUp controller-detected sound, abandoned-status sound + toast
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
 - **Audio Editing**: EBU R128 volume normalization and silence trimming
@@ -194,5 +183,6 @@ Bundled third-party components ship under their own licenses — see [`NOTICES.t
 - [Gitea Repository](https://gitea.com/aHuddini/UniPlaySong)
 - [PlayniteSound](https://github.com/joyrider3774/PlayniteSound)
 - [Playnite Achievements](https://github.com/justin-delano/PlayniteAchievements) by Justin Delano
+- [ControlUp](https://github.com/aHuddini/ControlUp)
 - [Aniki ReMake theme](https://github.com/Mike-Aniki/Aniki-ReMake) by Mike Aniki
 - [Playnite](https://playnite.link/)

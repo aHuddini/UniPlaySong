@@ -207,6 +207,11 @@ namespace UniPlaySong
             s.UltraRareAchievementSoundPath = string.Empty;
             s.HiddenAchievementSoundPath = string.Empty;
             s.CapstoneAchievementSoundPath = string.Empty;
+            // ControlUp events — bundled "Coin Pickup" default
+            s.EnableControlUpDetectSound = false;
+            s.ControlUpDetectSoundType = CelebrationSoundType.BundledJingle;
+            s.SelectedControlUpDetectJingle = BundledJingleService.DefaultControlUpJingle;
+            s.ControlUpDetectSoundPath = string.Empty;
             // Abandoned status
             s.EnableAbandonedSound = false;
             s.AbandonedSoundType = CelebrationSoundType.BundledJingle;
