@@ -110,7 +110,7 @@
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-                                <Run FontWeight="SemiBold">Added:</Run> ControlUp Events, in Gamification — plays a sound when the ControlUp plugin detects a controller. Pick a bundled preset or your own file.
+                                <Run FontWeight="SemiBold">Added:</Run> ControlUp Events, in Gamification — plays a sound when the ControlUp plugin detects a controller. Pick a bundled preset or your own file. Needs ControlUp v2.5.3.
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
                                 <Run FontWeight="SemiBold">Added:</Run> Audio Buffer Size, in Experimental — trades how quickly sounds start against how safe playback is from crackling. Default unchanged.

@@ -23,7 +23,7 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.7.2
 
 ### Added
-- **ControlUp support — a sound when your controller is detected.** New ControlUp Events section in the Gamification tab. If you use the [ControlUp](https://github.com/aHuddini/ControlUp) plugin, UniPlaySong plays a short sound the moment it picks up a controller. Use the bundled sound or your own file. Off by default.
+- **ControlUp support — a sound when your controller is detected.** New ControlUp Events section in the Gamification tab. UniPlaySong plays a short sound the moment [ControlUp](https://github.com/aHuddini/ControlUp) picks up a controller. Use the bundled sound or your own file. Off by default, and needs ControlUp v2.5.3 to send the trigger.
 - **Audio buffer size, in the Experimental tab.** Trades responsiveness against crackling on a busy machine. Default unchanged.
 
 ### Previous Version
