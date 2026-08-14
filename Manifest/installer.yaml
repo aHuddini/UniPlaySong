@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.7.3
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-14
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.3/UniPlaySong-1_7_3.pext'
+    Changelog:
+      - '[Critical Fix] YouTube downloads that failed with a "403 Forbidden" now work. Some videos were refused outright, most visibly in Download from URL where both the preview and the download failed. UniPlaySong now retries those automatically with different settings and gets the track. Videos that already downloaded fine are unaffected.'
   - Version: 1.7.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-13

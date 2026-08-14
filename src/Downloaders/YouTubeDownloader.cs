@@ -177,7 +177,60 @@ namespace UniPlaySong.Downloaders
             return songs;
         }
 
+        // Downloads a song, retrying once with player_client pinned if the first attempt fails.
+        //
+        // YouTube serves some videos as m3u8/251 under yt-dlp's default client negotiation and then
+        // refuses the media fetch with a 403 — reported as "unable to download video data" on a full
+        // download, or as an ffmpeg-side 403 on a preview, where --download-sections hands the
+        // googlevideo URL to ffmpeg, which carries none of yt-dlp's session context. Pinning
+        // `android,ios,web` makes YouTube serve a progressive format that downloads cleanly.
+        //
+        // A retry rather than always pinning, because pinning is not free: with cookies it collapses
+        // to web-only and provokes the nsig JS challenge, which fails outright without a JS runtime
+        // (Deno/Node). Attempt 1 keeps the negotiation that already works for most videos, and only
+        // the videos YouTube actually refuses pay for a second attempt.
         public bool DownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview = false)
+        {
+            if (TryDownloadSong(song, path, cancellationToken, isPreview, forceClientPin: false))
+                return true;
+
+            // A retry can only help when it would send a DIFFERENT command, and only when the failure
+            // is the kind a different command can fix. Each skip is logged: a silent skip reads
+            // exactly like a retry that ran and failed, which is the wrong thing to conclude from a
+            // log when someone is working out why a download never recovered.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Logger.DebugIf(LogPrefix, $"No fallback for '{song?.Name}': cancelled by user");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(_ytDlpPath) || string.IsNullOrWhiteSpace(_ffmpegPath))
+            {
+                Logger.DebugIf(LogPrefix, $"No fallback for '{song?.Name}': yt-dlp or ffmpeg not configured");
+                return false;
+            }
+
+            if (_cookieMode == CookieMode.None)
+            {
+                // Attempt 1 already pinned the clients here, so a retry would be byte-identical.
+                Logger.DebugIf(LogPrefix,
+                    $"No fallback for '{song?.Name}': player_client was already pinned on the primary attempt (no cookie mode)");
+                return false;
+            }
+
+            Logger.DebugIf(LogPrefix,
+                $"Primary attempt failed for '{song?.Name}' (id={song?.Id}) — falling back to player_client=android,ios,web");
+
+            bool ok = TryDownloadSong(song, path, cancellationToken, isPreview, forceClientPin: true);
+
+            Logger.DebugIf(LogPrefix, ok
+                ? $"Fallback SUCCEEDED for '{song?.Name}' — the primary client negotiation is being refused for this video"
+                : $"Fallback FAILED for '{song?.Name}' — both client configurations were refused");
+
+            return ok;
+        }
+
+        private bool TryDownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview, bool forceClientPin)
         {
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || string.IsNullOrWhiteSpace(_ffmpegPath))
             {
@@ -320,7 +373,9 @@ namespace UniPlaySong.Downloaders
                 // ~5-6s on this path is the architectural limit yt-dlp imposes (multi-client
                 // negotiation + JS challenge solve), not something flag tweaks can lower.
                 // Tracked: https://github.com/yt-dlp/yt-dlp/issues/12482
-                string antiBotOptions = (_cookieMode != CookieMode.None)
+                // forceClientPin is the retry (see DownloadSong): the first attempt failed, so the
+                // trade-off above is worth taking rather than returning nothing at all.
+                string antiBotOptions = (_cookieMode != CookieMode.None && !forceClientPin)
                     ? string.Empty
                     : " --extractor-args \"youtube:player_client=android,ios,web\"";
 
@@ -638,7 +693,11 @@ namespace UniPlaySong.Downloaders
                         if (match.Success) format = match.Groups[1].Value;
                     }
                     var formatTag = string.IsNullOrEmpty(format) ? "" : $" [fmt {format}]";
-                    Logger.DebugIf(LogPrefix, $"Downloaded {song.Name} ({fileInfo.Length} bytes){formatTag}");
+                    // Which attempt produced this. Without it the log cannot distinguish a normal
+                    // download from one the fallback rescued, so a creeping rise in fallback use —
+                    // the signal that YouTube has shifted again — would be invisible.
+                    var attemptTag = forceClientPin ? " [via fallback: player_client pinned]" : " [primary]";
+                    Logger.DebugIf(LogPrefix, $"Downloaded {song.Name} ({fileInfo.Length} bytes){formatTag}{attemptTag}");
                     return true;
                 }
                 

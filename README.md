@@ -20,14 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.7.2
+## What's New - v1.7.3
 
-### Added
-- **ControlUp support — a sound when your controller is detected.** New ControlUp Events section in the Gamification tab. UniPlaySong plays a short sound the moment [ControlUp](https://github.com/aHuddini/ControlUp) picks up a controller. Use the bundled sound or your own file. Off by default, and needs ControlUp v2.5.3 to send the trigger.
-- **Audio buffer size, in the Experimental tab.** Trades responsiveness against crackling on a busy machine. Default unchanged.
+### Fixed
+- **YouTube downloads that failed with a "403 Forbidden" now work.** Some videos were refused outright — most visibly in **Download from URL**, where previews and downloads both failed. UniPlaySong now automatically retries those with different settings and gets the track. Videos that already downloaded fine are unaffected.
 
 ### Previous Version
-- **v1.7.1**: Quick Start tab sets up playback in one click; new Setup tab for yt-dlp and FFmpeg; a separate Hidden achievement sound; smoother Fullscreen browsing; much quieter logging; switching audio engine no longer leaves the old one running.
+- **v1.7.2**: ControlUp support — a sound when your controller is detected (needs ControlUp v2.5.3); audio buffer size setting in the Experimental tab.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

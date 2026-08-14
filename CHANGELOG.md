@@ -4,6 +4,22 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.7.3] - 2026-08-14
+
+### Fixed — YouTube 403 on some videos
+
+- **YouTube downloads that failed with a 403 now retry once with `player_client` pinned, and succeed.** For some videos YouTube negotiates the `tv` client, serves an m3u8/251 stream, then refuses the media fetch. It surfaces two different ways depending on the path: full downloads report `unable to download video data: HTTP Error 403`, while previews report an *ffmpeg-side* 403, because `--download-sections` hands the googlevideo URL to ffmpeg, which carries none of yt-dlp's session context. Pinning `youtube:player_client=android,ios,web` makes YouTube serve a progressive format (18) that downloads cleanly.
+
+- **Structured as a fallback rather than always pinning.** Pinning is not free: with cookies present it collapses to web-only and provokes the nsig JS challenge, which fails outright without a JS runtime (Deno/Node). The first attempt keeps the negotiation that already works for the large majority of videos; only the videos YouTube actually refuses pay for a second attempt. `DownloadSong` is now a wrapper over `TryDownloadSong(..., forceClientPin)`.
+
+- The retry is skipped — with the reason logged — when it could not possibly help: user cancellation, missing yt-dlp/ffmpeg, or no-cookie mode (where the primary attempt already pins the clients, making a retry byte-identical).
+
+- **Diagnosis note:** this presents as "Download from URL is broken while Download Music works", but both features share one downloader. The variable is the *video*, not the feature — a refused video fails from either entry point. It shows up in the URL dialog first because that is where an arbitrary link is pasted, rather than picked from a playlist search.
+
+### Changed
+
+- Download logging now names which attempt produced the file: `[primary]` or `[via fallback: player_client pinned]`, alongside the existing format tag. Fallback entry, success, failure, and each skip reason are logged too, so a rising share of fallback use — the signal that YouTube has shifted again — is visible in a debug log instead of silent.
+
 ## [1.7.2] - 2026-08-13
 
 ### Added — ControlUp Events
