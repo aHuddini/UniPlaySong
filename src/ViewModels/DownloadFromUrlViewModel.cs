@@ -311,6 +311,38 @@ namespace UniPlaySong.ViewModels
             ShowValidationResult = true;
         }
 
+        // Builds the --dump-json command for URL validation.
+        //
+        // Cookies previously covered only Firefox and CustomFile, so a Chrome/Edge/Brave/Opera user
+        // with cookies configured had them silently dropped here while the downloader honoured them —
+        // validation could fail on a video that then downloaded fine, which reads as "the URL box is
+        // broken". All six modes are handled now, matching YouTubeDownloader.
+        private string BuildVideoInfoArguments(string url, string rateLimitOptions, CookieMode cookieMode, bool forceClientPin)
+        {
+            string cookiesArg;
+            switch (cookieMode)
+            {
+                case CookieMode.Firefox: cookiesArg = "--cookies-from-browser firefox "; break;
+                case CookieMode.Chrome:  cookiesArg = "--cookies-from-browser chrome ";  break;
+                case CookieMode.Edge:    cookiesArg = "--cookies-from-browser edge ";    break;
+                case CookieMode.Brave:   cookiesArg = "--cookies-from-browser brave ";   break;
+                case CookieMode.Opera:   cookiesArg = "--cookies-from-browser opera ";   break;
+                case CookieMode.CustomFile:
+                    var cookiesPath = _settingsService.Current?.CustomCookiesFilePath ?? string.Empty;
+                    cookiesArg = string.IsNullOrWhiteSpace(cookiesPath)
+                        ? string.Empty
+                        : $"--cookies \"{cookiesPath}\" ";
+                    break;
+                default: cookiesArg = string.Empty; break;
+            }
+
+            var clientPin = (cookieMode != CookieMode.None && !forceClientPin)
+                ? string.Empty
+                : " --extractor-args \"youtube:player_client=android,ios,web\"";
+
+            return $"{cookiesArg}--dump-json --no-download{clientPin}{rateLimitOptions} \"{url}\"";
+        }
+
         private VideoInfoResult GetVideoInfo(string videoId, CancellationToken cancellationToken)
         {
             var ytDlpPath = _settingsService.Current?.YtDlpPath;
@@ -325,24 +357,75 @@ namespace UniPlaySong.ViewModels
                 var url = $"https://www.youtube.com/watch?v={videoId}";
                 // Rate limiting options to avoid throttling
                 var rateLimitOptions = " --sleep-requests 1 --sleep-interval 2 --max-sleep-interval 5";
-                var arguments = $"--dump-json --no-download{rateLimitOptions} \"{url}\"";
 
                 var currentCookieMode = _settingsService.Current?.CookieMode ?? CookieMode.None;
-                if (currentCookieMode == CookieMode.Firefox)
+
+                // Same client pinning YouTubeDownloader applies, and for the same reason: without it
+                // YouTube can refuse the request outright. This call is a separate yt-dlp invocation
+                // built here rather than in the downloader, so it does NOT inherit the downloader's
+                // options or its 403 fallback — it has to carry its own.
+                //
+                // No-cookie mode pins the clients up front (matching the downloader's primary
+                // attempt); cookie mode leaves them unset, because with cookies the triple collapses
+                // to web-only and provokes the nsig JS challenge, which fails without a JS runtime.
+                // A cookie-mode failure is retried below with the clients pinned.
+                var arguments = BuildVideoInfoArguments(url, rateLimitOptions, currentCookieMode, forceClientPin: false);
+
+                var primary = RunVideoInfo(ytDlpPath, arguments, videoId, cancellationToken);
+                if (primary != null || cancellationToken.IsCancellationRequested)
+                    return primary;
+
+                // Same fallback the downloader applies (see YouTubeDownloader.DownloadSong): when the
+                // default negotiation is refused, retry once with the clients pinned. Skipped in
+                // no-cookie mode, where the primary attempt already pinned them and the retry would
+                // send an identical command.
+                if (currentCookieMode == CookieMode.None)
                 {
-                    arguments = "--cookies-from-browser firefox " + arguments;
+                    Logger.DebugIf(LogPrefix, "No fallback for video info: player_client was already pinned on the primary attempt (no cookie mode)");
+                    return null;
                 }
-                else if (currentCookieMode == CookieMode.CustomFile)
-                {
-                    var cookiesPath = _settingsService.Current?.CustomCookiesFilePath ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(cookiesPath))
-                        arguments = $"--cookies \"{cookiesPath}\" " + arguments;
-                }
+
+                Logger.DebugIf(LogPrefix, "Primary video-info attempt failed — falling back to player_client=android,ios,web");
+
+                var fallbackArgs = BuildVideoInfoArguments(url, rateLimitOptions, currentCookieMode, forceClientPin: true);
+                var fallback = RunVideoInfo(ytDlpPath, fallbackArgs, videoId, cancellationToken);
+
+                Logger.DebugIf(LogPrefix, fallback != null
+                    ? "Video-info fallback SUCCEEDED — the primary client negotiation is being refused for this video"
+                    : "Video-info fallback FAILED — both client configurations were refused");
+
+                return fallback;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to get video info: {ex.Message}");
+                return null;
+            }
+        }
+
+        // One --dump-json run. Returns null on cancellation, a non-zero exit, or unparseable output,
+        // so the caller can decide whether a different set of arguments is worth trying.
+        private VideoInfoResult RunVideoInfo(string ytDlpPath, string arguments, string videoId, CancellationToken cancellationToken)
+        {
+            try
+            {
+
+                // Run from yt-dlp's own folder, matching YouTubeDownloader. Without this the process
+                // inherits Playnite's working directory, which yt-dlp resolves relative paths and
+                // temp files against — including the temporary copy --cookies-from-browser makes of
+                // the browser's cookie database. On a portable install that inherited directory is
+                // the Playnite folder itself, which may not be writable (Program Files, a read-only
+                // location, a network share), so cookie extraction can fail here while the same
+                // fetch without cookies succeeds.
+                var workingDir = Path.GetDirectoryName(ytDlpPath);
+                if (string.IsNullOrWhiteSpace(workingDir) || !Directory.Exists(workingDir))
+                    workingDir = Directory.GetCurrentDirectory();
 
                 var processInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = ytDlpPath,
                     Arguments = arguments,
+                    WorkingDirectory = workingDir,
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -375,6 +458,13 @@ namespace UniPlaySong.ViewModels
                     if (process.ExitCode != 0)
                     {
                         Logger.Error($"yt-dlp failed to get video info: {error}");
+                        // The command and working directory, matching what YouTubeDownloader logs on
+                        // failure. Diagnosing the 403s in v1.7.3 stalled because this path logged the
+                        // error text alone, so there was no way to tell which options were actually
+                        // sent or where the process ran — the two things that differ between a normal
+                        // and a portable install.
+                        Logger.Error($"Failed command: {ytDlpPath} {arguments}");
+                        Logger.Error($"Working directory: {processInfo.WorkingDirectory}");
                         return null;
                     }
 

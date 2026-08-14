@@ -16,9 +16,19 @@ All notable changes to UniPlaySong will be documented in this file.
 
 - **Diagnosis note:** this presents as "Download from URL is broken while Download Music works", but both features share one downloader. The variable is the *video*, not the feature — a refused video fails from either entry point. It shows up in the URL dialog first because that is where an arbitrary link is pasted, rather than picked from a playlist search.
 
+### Fixed — Download from URL validation
+
+- **URL validation is a separate yt-dlp call built in `DownloadFromUrlViewModel`, and it carried none of the downloader's protections.** It never passed `--extractor-args` in any mode, so validation could be refused for a video that then downloaded fine — which is why this reported as "Download from URL is broken while Download Music works". It now pins clients on the same terms as the downloader and applies the same primary-then-fallback retry.
+
+- **Cookies were honoured for only two of the six cookie modes.** Validation handled Firefox and CustomFile; a Chrome, Edge, Brave, or Opera user with cookies configured had them silently dropped here while the downloader used them. All six are handled now, via one `BuildVideoInfoArguments` helper.
+
+- **The validation process inherited Playnite's working directory** while the downloader explicitly runs from yt-dlp's own folder. yt-dlp resolves relative paths and temp files against that directory, including the temporary copy `--cookies-from-browser` makes of the browser cookie database. Now consistent with the downloader.
+
 ### Changed
 
 - Download logging now names which attempt produced the file: `[primary]` or `[via fallback: player_client pinned]`, alongside the existing format tag. Fallback entry, success, failure, and each skip reason are logged too, so a rising share of fallback use — the signal that YouTube has shifted again — is visible in a debug log instead of silent.
+
+- Failed URL validation now logs the full command and working directory, matching what the downloader already logged on failure. Diagnosing these 403s stalled repeatedly because this path logged only the error text: there was no way to see which options were actually sent, or where the process ran — the two things that differ between a standard and a portable install.
 
 ## [1.7.2] - 2026-08-13
 
