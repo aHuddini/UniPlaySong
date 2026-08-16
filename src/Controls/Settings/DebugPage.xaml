@@ -16,7 +16,7 @@
     </UserControl.Resources>
 
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Debug" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Logging, for when something needs reporting."/>

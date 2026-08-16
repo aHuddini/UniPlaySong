@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
             <TextBlock Text="Settings Backup &amp; Migration" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests." Style="{StaticResource UpsPageSubtitle}"/>
 

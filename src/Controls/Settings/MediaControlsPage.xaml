@@ -16,7 +16,7 @@
     </UserControl.Resources>
 
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Media Controls" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="The transport controls and now-playing readout UniPlaySong adds to Playnite."/>

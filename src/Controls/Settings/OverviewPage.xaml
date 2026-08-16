@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.OverviewPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.OverviewPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -20,7 +20,7 @@
          tint says what kind of block it is before a word is read. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

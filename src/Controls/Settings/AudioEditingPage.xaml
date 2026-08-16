@@ -16,7 +16,7 @@
     </UserControl.Resources>
 
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Audio Editing" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Convert, normalize and rename. Everything here runs on demand, never during playback."/>

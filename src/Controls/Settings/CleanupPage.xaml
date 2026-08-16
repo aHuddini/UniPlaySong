@@ -25,7 +25,7 @@
          irreversible. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Cleanup &amp; Reset" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Text="Remove downloaded content, or put settings back to how they started." Style="{StaticResource UpsPageSubtitle}"/>

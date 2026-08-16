@@ -217,6 +217,15 @@
         <Setter Property="Margin" Value="56,1,0,12"/>
     </Style>
 
+    <!-- Same hint, no indent. For prose that is NOT sitting under a toggle — inside a card, under
+         a section bar, anywhere the 32px alignment would look like a stray tab. Use this rather
+         than overriding Margin inline: two adjacent lines where one overrides and one does not
+         come out on different left edges, which is exactly how the Migration directory list
+         ended up ragged. -->
+    <Style x:Key="UpsHintFlush" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Margin" Value="0,1,0,8"/>
+    </Style>
+
     <Style x:Key="UpsWarning" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
         <Setter Property="Foreground" Value="{StaticResource UpsWarn}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>

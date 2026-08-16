@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
     <ScrollViewer Style="{StaticResource UpsPage}">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
             <TextBlock Text="Music Migration" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Text="Transfer music files between PlayniteSound and UniPlaySong extensions." Style="{StaticResource UpsPageSubtitle}"/>
 
@@ -58,11 +58,11 @@
                  context you want BEFORE choosing an import or export, not after. -->
             <StackPanel Margin="0,0,0,20">
                 <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Directory Locations" Style="{StaticResource UpsSectionTitle}"/></Border>
-                <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap" Margin="0,0,0,5">
+                <TextBlock Style="{StaticResource UpsHintFlush}">
                     <Run FontWeight="SemiBold">PlayniteSound:</Run>
                     <Run Text=" %APPDATA%\Playnite\ExtraMetadata\Games\{GameId}\Music Files\"/>
                 </TextBlock>
-                <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap">
+                <TextBlock Style="{StaticResource UpsHintFlush}">
                     <Run FontWeight="SemiBold">UniPlaySong:</Run>
                     <Run Text=" %APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\"/>
                 </TextBlock>
