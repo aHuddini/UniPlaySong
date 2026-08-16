@@ -2,9 +2,9 @@
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class PausesPage : UserControl
+    public partial class CommonEventsPage : UserControl
     {
-        public PausesPage()
+        public CommonEventsPage()
         {
             InitializeComponent();
         }

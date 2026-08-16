@@ -1,0 +1,100 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.ExternalAudioPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="External Audio" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Get out of the way when something else starts making noise."/>
+
+            <CheckBox Content="Pause when another app plays audio"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.PauseOnExternalAudio}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Pauses when YouTube, Spotify, Discord or anything else starts playing, and resumes once it stops. Uses Windows audio session detection."/>
+            <TextBlock Style="{StaticResource UpsWarning}"
+                       Text="Screen recorders and streaming apps (OBS, Shadowplay) that capture desktop audio can trigger this, because they mirror system audio back through their own session. Add them to the exclusions below if that happens."/>
+
+            <CheckBox Content="Stay paused after the other audio stops (Desktop only)"
+                      Style="{StaticResource UpsToggleChild}"
+                      IsChecked="{Binding Settings.KeepPausedAfterExternalAudio}"
+                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="Music will not resume on its own — use the top panel or your media keys. Fullscreen always resumes regardless."/>
+
+            <CheckBox Content="Cut instantly, without a fade"
+                      Style="{StaticResource UpsToggleChild}"
+                      IsChecked="{Binding Settings.ExternalAudioInstantPause}"
+                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="Useful for voice calls, or any time you want zero overlap."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
+                        IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                <TextBlock Text="Debounce" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="0" Maximum="10" Width="200" VerticalAlignment="Center"
+                        IsSnapToTickEnabled="True" TickFrequency="1"
+                        Value="{Binding Settings.ExternalAudioDebounceSeconds}"/>
+                <TextBlock Margin="12,0,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource UpsValue}">
+                            <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                    <Setter Property="Text" Value="Instant"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                       Text="How long the other audio must play before music pauses, and how long the silence must last before it resumes. Lower is more responsive but can flicker on brief sounds."/>
+            <!-- Only worth saying when the debounce is actually zero. -->
+            <TextBlock Text="At zero, Windows notification sounds and short blips will pause the music too.">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
+                        <Setter Property="Margin" Value="0,0,0,4"/>
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock Text="Exclusions" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <TextBlock Text="Ignore audio from these processes" Style="{StaticResource UpsLabel}"
+                       Margin="0,0,0,6" IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+            <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
+                     Width="420" HorizontalAlignment="Left" Margin="0,0,0,6"
+                     IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,12"
+                       Text="Comma-separated process names, e.g. obs64, discord. Find them in Task Manager's Details tab. Audio from these will never pause your music."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

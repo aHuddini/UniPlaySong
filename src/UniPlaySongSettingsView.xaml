@@ -213,8 +213,11 @@
 
         <TabItem Header="Pauses">
             <TabControl Style="{StaticResource NavStrip}" Tag="Pauses">
-                <TabItem Header="Pauses">
-                    <settings:PausesPage/>
+                <TabItem Header="Common Events">
+                    <settings:CommonEventsPage/>
+                </TabItem>
+                <TabItem Header="External Audio">
+                    <settings:ExternalAudioPage/>
                 </TabItem>
             </TabControl>
         </TabItem>
