@@ -119,16 +119,16 @@
     </Style>
 
     <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
-         explanation read as one block. 26 track + 10 gap. -->
+         explanation read as one block. 24 track + 8 gap. -->
     <Style x:Key="UpsHint" TargetType="TextBlock">
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
-        <Setter Property="Margin" Value="36,1,0,12"/>
+        <Setter Property="Margin" Value="32,1,0,12"/>
     </Style>
 
     <Style x:Key="UpsHintIndented" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
-        <Setter Property="Margin" Value="60,1,0,12"/>
+        <Setter Property="Margin" Value="56,1,0,12"/>
     </Style>
 
     <Style x:Key="UpsWarning" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
@@ -197,51 +197,94 @@
     <!-- Brighter than the off groove by a wide margin, because with the bloom gone this fill is
          what carries the on state at a glance. -->
     <LinearGradientBrush x:Key="UpsGrooveOn" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#2C6642"/>
-        <GradientStop Offset="0.55" Color="#458F5D"/>
-        <GradientStop Offset="1"    Color="#68BC84"/>
+        <GradientStop Offset="0"    Color="#5A3E11"/>
+        <GradientStop Offset="0.55" Color="#8A6420"/>
+        <GradientStop Offset="1"    Color="#C79A3C"/>
     </LinearGradientBrush>
 
     <Style x:Key="UpsToggle" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
-        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontSize" Value="13"/>
         <Setter Property="Margin" Value="0,7,0,0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
-                        <!-- SnapsToDevicePixels + UseLayoutRounding keep the rim and the knob edge
-                             on whole pixels. At this size a half-pixel edge is the difference
-                             between a crisp control and a smudged one. -->
-                        <Border x:Name="Track"
-                                Width="26" Height="14" CornerRadius="7"
-                                Background="{StaticResource UpsGrooveOff}"
-                                BorderBrush="#0B1015" BorderThickness="1"
-                                VerticalAlignment="Center"
-                                SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <Border x:Name="Thumb"
-                                    Width="10" Height="10" CornerRadius="5"
+                        <!-- A Border takes one child, so the surfaces are siblings in a Grid and
+                             stack in document order: groove, dark inset lip, lit hairline, cap.
+                             SnapsToDevicePixels + UseLayoutRounding keep every edge on a whole
+                             pixel — at 24x13 a half-pixel rim is a smudge. -->
+                        <Grid Width="24" Height="13" VerticalAlignment="Center">
+
+                            <Border x:Name="Track" CornerRadius="0"
+                                    Background="{StaticResource UpsGrooveOff}"
+                                    BorderBrush="#0B1015" BorderThickness="1"
+                                    SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+
+                            <!-- Hard inset lip, zero blur. WPF has no inset shadow, so this is a
+                                 solid band pinned under the top edge — which is all the CSS
+                                 equivalent draws anyway, and it stays crisp at this size. -->
+                            <Border x:Name="InsetLip" Height="2.5" VerticalAlignment="Top"
+                                    Margin="1,1,1,0" IsHitTestVisible="False"
+                                    Background="#20000000"/>
+
+                            <!-- Hairline catching the light along the top lip. Sits above the
+                                 inset band so the groove reads as an edge, not a gradient. -->
+                            <Border x:Name="Lip" Height="1" VerticalAlignment="Top"
+                                    Margin="2,0,2,0" IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Offset="0"   Color="#00FFFFFF"/>
+                                        <GradientStop Offset="0.5" Color="#5BFFFFFF"/>
+                                        <GradientStop Offset="1"   Color="#00FFFFFF"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Border x:Name="Thumb" Width="12" Height="10" CornerRadius="0"
                                     Background="{StaticResource UpsKnobFace}"
                                     BorderBrush="#4B5764" BorderThickness="0.75"
                                     HorizontalAlignment="Left" Margin="1.5,0,0,0"
                                     SnapsToDevicePixels="True">
-                                <!-- Tight and shallow: enough to lift the cap off the groove,
-                                     not enough to read as a halo on a page full of these. -->
+                                <!-- Nearly hard: 1px of blur is enough to separate the cap from
+                                     the groove without the halo a page full of these would make. -->
                                 <Border.Effect>
-                                    <DropShadowEffect Color="#000000" BlurRadius="2"
-                                                      ShadowDepth="0.5" Direction="270" Opacity="0.5"/>
+                                    <DropShadowEffect Color="#000000" BlurRadius="1"
+                                                      ShadowDepth="0.8" Direction="270" Opacity="0.4"/>
                                 </Border.Effect>
+                                <Grid>
+                                    <!-- Moulded bevel: lit top edge, shaded bottom edge. -->
+                                    <Border Height="1" VerticalAlignment="Top" Margin="1,0,1,0"
+                                            Background="#69FFFFFF"/>
+                                    <Border Height="1" VerticalAlignment="Bottom" Margin="1,0,1,0"
+                                            Background="#56000000"/>
+                                    <!-- Gloss over the upper 45% of the cap. -->
+                                    <Border VerticalAlignment="Top" Height="4.5">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Offset="0" Color="#54FFFFFF"/>
+                                                <GradientStop Offset="1" Color="#00FFFFFF"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <!-- Indicator sunk INTO the cap. This is where the on state
+                                         gets its spark without any light spilling onto the page. -->
+                                    <Ellipse x:Name="Led" Width="3" Height="3" Fill="#6B7885"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             Opacity="0.45"/>
+                                </Grid>
                             </Border>
-                        </Border>
+                        </Grid>
+
                         <ContentPresenter x:Name="Label"
-                                          Margin="10,0,0,0" VerticalAlignment="Center"
+                                          Margin="8,0,0,0" VerticalAlignment="Center"
                                           RecognizesAccessKey="True"/>
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{StaticResource UpsGrooveOn}"/>
-                            <Setter TargetName="Track" Property="BorderBrush" Value="#2E6B44"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="#7A5A20"/>
                             <!-- No bloom on the on state. A page carries a dozen or more of these,
                                  and a dozen soft green halos turn a list of settings into a
                                  smear. On reads from the fill and the knob's position, which are
@@ -253,6 +296,8 @@
                                  into place. An alignment swap is correct the instant it renders. -->
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                             <Setter TargetName="Thumb" Property="Margin" Value="0,0,1.5,0"/>
+                            <Setter TargetName="Led" Property="Fill" Value="#FFD98A"/>
+                            <Setter TargetName="Led" Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Thumb" Property="BorderBrush" Value="#93A4B4"/>

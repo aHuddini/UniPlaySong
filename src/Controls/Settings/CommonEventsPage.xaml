@@ -58,7 +58,7 @@
                       IsChecked="{Binding Settings.PauseOnIdle}"/>
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Pauses after a spell with no keyboard or mouse input, and resumes on the next one. Gamepad input is not detected."/>
-            <StackPanel Orientation="Horizontal" Margin="36,0,0,12"
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,12"
                         IsEnabled="{Binding Settings.PauseOnIdle}">
                 <TextBlock Text="Idle timeout" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
                 <Slider Minimum="1" Maximum="60" Width="220" VerticalAlignment="Center"
