@@ -101,7 +101,7 @@
 
                 <StackPanel Grid.Column="1" Margin="14,12,16,12" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
-                               TextWrapping="Wrap"/>
+                               Foreground="{StaticResource QsText}" TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#9AA0A6"
                                TextWrapping="Wrap" Margin="0,4,0,0"/>
                 </StackPanel>
@@ -135,7 +135,8 @@
              tab instead of leaving a theme-coloured gutter around the edge. -->
         <StackPanel MaxWidth="760" HorizontalAlignment="Left">
 
-            <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock Text="Quick Start" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"
+                       Foreground="{StaticResource QsText}"/>
             <!-- Says who the tab is FOR, not just what it does. Without this it reads as
                  another settings screen, when the point is that it replaces having to read
                  the other fifteen. -->
@@ -190,7 +191,7 @@
 
             <Border Style="{StaticResource QsSectionHeader}">
                 <StackPanel>
-                    <TextBlock Text="Fullscreen" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="Fullscreen" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource QsText}"/>
                     <TextBlock Text="Couch and controller." FontSize="11" Foreground="#7A8085"/>
                 </StackPanel>
             </Border>
@@ -199,7 +200,7 @@
 
             <Border Style="{StaticResource QsSectionHeader}">
                 <StackPanel>
-                    <TextBlock Text="Desktop" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="Desktop" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource QsText}"/>
                     <TextBlock Text="Mouse and keyboard. Select to Play is Fullscreen-only, so it is not offered here."
                                FontSize="11" Foreground="#7A8085" TextWrapping="Wrap"/>
                 </StackPanel>
@@ -209,7 +210,7 @@
 
             <Border Style="{StaticResource QsSectionHeader}">
                 <StackPanel>
-                    <TextBlock Text="Options" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="Options" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource QsText}"/>
                     <TextBlock Text="Your current settings. A profile that decides one of these keeps its own choice."
                                FontSize="11" Foreground="#7A8085" TextWrapping="Wrap"/>
                 </StackPanel>
