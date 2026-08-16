@@ -324,6 +324,25 @@ rendering black-on-black.
 | Two shadows on one element | One `Effect` per element | Pick one, or fake with a sibling |
 | Inherited text colour to survive | Loses to the host theme's implicit style | Explicit `Foreground` everywhere |
 | `TemplateBinding` in a trigger setter | Unreliable | `{Binding X, RelativeSource={RelativeSource TemplatedParent}}` |
+| `DisplayMemberPath` on a **restyled** ComboBox | Templates the dropdown items only; the closed box reads `ToString()` | Set `ItemTemplate` instead |
+
+### The DisplayMemberPath trap
+
+If you retemplate `ComboBox`, **stop using `DisplayMemberPath`.** It templates the dropdown *items*
+only. The closed selection box renders from `SelectionBoxItemTemplate`, which WPF leaves **null**
+when only `DisplayMemberPath` is set — so the `ContentPresenter` falls back to `ToString()` and your
+box reads `MyApp.Models.Thing`.
+
+The stock template hides this, so it surfaces the moment you restyle and looks like your template's
+fault. Setting `ItemTemplate` populates `SelectionBoxItemTemplate` from it and fixes both:
+
+```xml
+<DataTemplate x:Key="ThingTemplate">
+    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+</DataTemplate>
+
+<ComboBox ItemTemplate="{StaticResource ThingTemplate}" SelectedValuePath="Id" .../>
+```
 | A gradient highlight of fixed height | Offsets are a **proportion** of the element | `MappingMode="Absolute"` + `EndPoint` in device units |
 | Backdrop blur / acrylic | `BlurEffect` blurs the element, not what is behind it | Translucent fill over a ground you paint yourself, plus a lit edge |
 

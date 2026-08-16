@@ -292,6 +292,19 @@ Collected because each cost time to discover:
 | An inherited text colour | Loses to the theme's implicit style | Explicit `Foreground` everywhere |
 | Two shadows on one element | One `Effect` per element | Pick one, or fake with a sibling |
 | A gradient highlight of fixed height | Offsets are a **proportion** of the element | `MappingMode="Absolute"` + `EndPoint` in device units |
+| `DisplayMemberPath` on a restyled ComboBox | Templates dropdown items only; closed box shows `ToString()` | Set `ItemTemplate` (e.g. `UpsJingleItemTemplate`) |
+
+### DisplayMemberPath does not reach the closed box
+
+`DisplayMemberPath` templates the dropdown *items*. The closed selection box renders from
+`SelectionBoxItemTemplate`, which WPF leaves **null** when only `DisplayMemberPath` is set, so the
+`ContentPresenter` falls back to `ToString()` — the jingle dropdowns read
+`UniPlaySong.Services.BundledJingleInfo`. The stock template hides this, so it appears the moment
+the control is restyled and looks like the new template's fault.
+
+Setting `ItemTemplate` populates `SelectionBoxItemTemplate` from it and fixes both. Two
+`DisplayMemberPath` uses remain, on Experimental and Playback — **convert them when those pages are
+restyled**, or they will show the same thing.
 
 ### The gradient-scaling trap
 
