@@ -265,11 +265,12 @@
                 <TabItem Header="Fade Transitions">
                     <settings:FadeTransitionsPage/>
                 </TabItem>
-                <TabItem Header="Effects">
+                <!-- The old Live Effects tab, intact apart from the visualizer block moving to
+                     its own page. Section order is the original — reverb included, since it is
+                     one stage of the same chain. Layout gets revisited later; this split does
+                     not pre-empt it. -->
+                <TabItem Header="Live Effects">
                     <settings:EffectsPage/>
-                </TabItem>
-                <TabItem Header="Reverb">
-                    <settings:ReverbPage/>
                 </TabItem>
                 <TabItem Header="Visualizers">
                     <settings:VisualizersPage/>

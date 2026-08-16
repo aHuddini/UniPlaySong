@@ -15,32 +15,26 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Two layers of tuning, both folded. The preset and colour pickers at the top are what
-         almost everyone touches; Bar Behaviour and FFT Smoothing are the individual knobs
-         behind those presets, and opening a preset's own controls beside it invites people
-         to fight the preset by hand. -->
+    <!-- The Spectrum Visualizer block lifted off the old Live Effects tab, in its original
+         order and with its original two expanders. Restyled only. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
-            <TextBlock Text="Visualizers" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Spectrum Visualizer" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="An eight-bar frequency spectrum in the Desktop top panel, reacting to whatever is playing."/>
+                       Text="A real-time 8-bar frequency spectrum for the Desktop top panel. Tune the animation to your preference."/>
 
-            <CheckBox Content="Show the spectrum visualizer"
+            <CheckBox Content="Show Spectrum Visualizer in Top Panel"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.ShowSpectrumVisualizer}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Sits in the Desktop top panel next to the media controls. Forces the NAudio backend, which is where the spectrum data comes from."/>
-
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Look" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
+                       Text="Displays the spectrum in the Desktop top panel bar alongside the media controls. Forces the NAudio backend, which is where the spectrum data comes from."/>
 
             <StackPanel IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
 
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
-                    <TextBlock Text="Preset" Style="{StaticResource UpsLabel}" Width="110"/>
+                    <TextBlock Text="Viz preset" Style="{StaticResource UpsLabel}" Width="120"/>
                     <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
                               SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
                               SelectionChanged="VizPreset_SelectionChanged">
@@ -54,56 +48,57 @@
                     </ComboBox>
                 </StackPanel>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                           Text="Sets every tuning value at once. Picking one overwrites what is under Bar Behaviour below — choose Custom to keep your own. You can still fine-tune afterwards."/>
+                           Text="Configures all visualizer parameters at once. Choose Custom to keep your current settings. Selecting a preset overwrites every value below — you can then fine-tune."/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                    <TextBlock Text="Colour" Style="{StaticResource UpsLabel}" Width="110"/>
+                    <TextBlock Text="Colour theme" Style="{StaticResource UpsLabel}" Width="120"/>
                     <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
                               SelectedIndex="{Binding Settings.VizColorTheme, Converter={StaticResource VizColorThemeConverter}}">
-                        <ComboBoxItem Content="Dynamic (game art V1)"/>
-                        <ComboBoxItem Content="Classic (white)"/>
-                        <ComboBoxItem Content="Neon (cyan → magenta)"/>
-                        <ComboBoxItem Content="Fire (orange → red)"/>
-                        <ComboBoxItem Content="Ocean (teal → blue)"/>
-                        <ComboBoxItem Content="Sunset (yellow → pink)"/>
-                        <ComboBoxItem Content="Matrix (green)"/>
-                        <ComboBoxItem Content="Ice (white → blue)"/>
-                        <ComboBoxItem Content="Synthwave (purple → pink)"/>
-                        <ComboBoxItem Content="Ember (ember → amber)"/>
-                        <ComboBoxItem Content="Abyss (navy → aqua)"/>
-                        <ComboBoxItem Content="Solar (rust → gold)"/>
-                        <ComboBoxItem Content="Vapor (mint → lavender)"/>
-                        <ComboBoxItem Content="Frost (steel → white)"/>
-                        <ComboBoxItem Content="Dynamic (vibrant vibes)"/>
-                        <ComboBoxItem Content="Aurora (teal → lime)"/>
-                        <ComboBoxItem Content="Coral (coral → peach)"/>
-                        <ComboBoxItem Content="Plasma (indigo → red)"/>
-                        <ComboBoxItem Content="Toxic (acid → purple)"/>
-                        <ComboBoxItem Content="Cherry (cherry → rose)"/>
-                        <ComboBoxItem Content="Midnight (indigo → cyan)"/>
-                        <ComboBoxItem Content="Dynamic (alt algorithm)"/>
+                        <ComboBoxItem Content="Dynamic (Game Art V1)"/>
+                        <ComboBoxItem Content="Classic (White)"/>
+                        <ComboBoxItem Content="Neon (Cyan → Magenta)"/>
+                        <ComboBoxItem Content="Fire (Orange → Red)"/>
+                        <ComboBoxItem Content="Ocean (Teal → Blue)"/>
+                        <ComboBoxItem Content="Sunset (Yellow → Pink)"/>
+                        <ComboBoxItem Content="Matrix (Green)"/>
+                        <ComboBoxItem Content="Ice (White → Blue)"/>
+                        <ComboBoxItem Content="Synthwave (Purple → Pink)"/>
+                        <ComboBoxItem Content="Ember (Ember → Amber)"/>
+                        <ComboBoxItem Content="Abyss (Navy → Aqua)"/>
+                        <ComboBoxItem Content="Solar (Rust → Gold)"/>
+                        <ComboBoxItem Content="Vapor (Mint → Lavender)"/>
+                        <ComboBoxItem Content="Frost (Steel → White)"/>
+                        <ComboBoxItem Content="Dynamic (Vibrant Vibes)"/>
+                        <ComboBoxItem Content="Aurora (Teal → Lime)"/>
+                        <ComboBoxItem Content="Coral (Coral → Peach)"/>
+                        <ComboBoxItem Content="Plasma (Indigo → Red)"/>
+                        <ComboBoxItem Content="Toxic (Acid → Purple)"/>
+                        <ComboBoxItem Content="Cherry (Cherry → Rose)"/>
+                        <ComboBoxItem Content="Midnight (Indigo → Cyan)"/>
+                        <ComboBoxItem Content="Dynamic (Alt Algo)"/>
                     </ComboBox>
                 </StackPanel>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,6"
-                           Text="Each bar runs a gradient from base to tip. Classic is the plain white original. The three Dynamic themes sample the game's own artwork: V1 picks natural tones, Alt Algorithm weights the centre of the image, Vibrant Vibes forces vivid high-contrast pairs."/>
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,8"
+                           Text="Bar colour theme. Gradient colours shift from the bottom to the top of each bar. Classic uses the original white style. Game Art V1 samples natural tones from game artwork, Alt Algo uses centre-weighted sampling for potentially better picks, and Vibrant Vibes forces vivid gradients with strong contrast."/>
 
                 <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left" Margin="0,0,0,4"
-                        Content="Clear the dynamic colour cache"
+                        Content="Reset Dynamic Colours Cache"
                         Command="{Binding ResetDynamicColorCacheCommand}"/>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
-                           Text="Every game re-samples its artwork from scratch next time it plays."/>
+                           Text="Clears cached colour data so every game re-samples from its artwork."/>
             </StackPanel>
 
+            <!-- Dynamic Color Tuning (V1 + Alt Algo — Vibrant Vibes uses hardcoded vivid params) -->
             <Expander Style="{StaticResource UpsSection}" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Dynamic Colour Tuning" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="Dynamic Colour Tuning (Experimental)" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Floors applied to colours pulled out of game artwork, so a dark or washed-out cover still produces readable bars. Applies to Dynamic V1 and Alt Algorithm — Vibrant Vibes carries its own values."/>
+                               Text="Fine-tune how colours are extracted from game artwork for Dynamic V1 and Alt Algo. Vibrant Vibes uses its own aggressive settings. Most users will not need to change these."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Brightness, base" Style="{StaticResource UpsLabel}" Width="150"/>
+                        <TextBlock Text="Min brightness (base)" Style="{StaticResource UpsLabel}" Width="160"/>
                         <Slider Minimum="30" Maximum="220" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.DynMinBrightnessBottom}"
                                 SmallChange="5" LargeChange="20" TickFrequency="30"/>
@@ -111,10 +106,10 @@
                                    Text="{Binding Settings.DynMinBrightnessBottom}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Higher lifts bars out of dark artwork. Default 200."/>
+                               Text="Minimum brightness for the gradient base colour. Higher gives brighter bars from dark artwork. Default 200."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Brightness, tip" Style="{StaticResource UpsLabel}" Width="150"/>
+                        <TextBlock Text="Min brightness (tip)" Style="{StaticResource UpsLabel}" Width="160"/>
                         <Slider Minimum="30" Maximum="220" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.DynMinBrightnessTop}"
                                 SmallChange="5" LargeChange="20" TickFrequency="30"/>
@@ -122,10 +117,10 @@
                                    Text="{Binding Settings.DynMinBrightnessTop}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Higher gives more vivid peaks. Default 150."/>
+                               Text="Minimum brightness for the gradient tip colour. Higher gives more vivid peaks. Default 150."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Saturation, base" Style="{StaticResource UpsLabel}" Width="150"/>
+                        <TextBlock Text="Min saturation (base)" Style="{StaticResource UpsLabel}" Width="160"/>
                         <Slider Minimum="0" Maximum="80" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.DynMinSatBottom}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -133,10 +128,10 @@
                                    Text="{Binding Settings.DynMinSatBottom, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Higher keeps the base from washing out to grey. Default 30%."/>
+                               Text="Minimum colour saturation for the gradient base. Higher is more vivid and less washed out. Default 30%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Saturation, tip" Style="{StaticResource UpsLabel}" Width="150"/>
+                        <TextBlock Text="Min saturation (tip)" Style="{StaticResource UpsLabel}" Width="160"/>
                         <Slider Minimum="0" Maximum="80" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.DynMinSatTop}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -144,31 +139,28 @@
                                    Text="{Binding Settings.DynMinSatTop, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,8"
-                               Text="Same for the peaks. Default 35%."/>
+                               Text="Minimum colour saturation for the gradient tip. Higher gives more vivid peaks. Default 35%."/>
 
                     <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left"
-                            Content="Reset these four"
+                            Content="Reset to Defaults"
                             Command="{Binding ResetDynamicTuningCommand}"/>
                 </StackPanel>
             </Expander>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Motion" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
+            <!-- Advanced Customization (collapsed by default) -->
             <Expander Style="{StaticResource UpsSection}" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Bar Behaviour" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="Advanced Customization (Experimental)" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="What the presets above are setting. Change anything here and the preset becomes Custom."/>
+                               Text="Fine-tune individual visualizer parameters. Most users should stay with the presets above."/>
 
-                    <CheckBox Content="Gradient bars"
+                    <CheckBox Content="Enable Gradient Bars"
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.VizGradientEnabled}"/>
                     <TextBlock Style="{StaticResource UpsHint}"
-                               Text="Off gives every bar one flat colour instead of a base-to-tip gradient. Classic is solid either way."/>
+                               Text="On, non-Classic themes use a two-tone gradient. Off, bars use a solid colour."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Idle opacity" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -179,7 +171,7 @@
                                    Text="{Binding Settings.VizOpacityMin, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How visible a bar is at rest. Lower makes the pulse stronger; 100 removes the effect. Default 30%."/>
+                               Text="Bar opacity when idle. Lower is a stronger glow or pulse; 100 means no opacity change. Default 30%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Gain boost" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -190,7 +182,7 @@
                                    Text="{Binding Settings.VizBarGainBoost, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Offset applied to every bar. Positive for taller peaks. Default 0%."/>
+                               Text="Global gain offset applied to all bars. Positive is taller peaks, negative is subtler. Default 0%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Peak hold" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -201,7 +193,7 @@
                                    Text="{Binding Settings.VizPeakHoldMs, StringFormat='{}{0} ms'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How long a bar sits at its peak before it starts to fall. Default 80 ms."/>
+                               Text="How long bars hold at peak before falling. 0 is an instant drop, 300 is a long freeze. Default 80 ms."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Gravity" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -212,7 +204,7 @@
                                    Text="{Binding Settings.VizGravity}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How hard bars fall once they let go. Low values leave floaty trails. Default 80."/>
+                               Text="Base fall acceleration. Higher drops bars faster after peaks, lower leaves floaty trails. Default 80."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Bass punch" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -223,7 +215,7 @@
                                    Text="{Binding Settings.VizBassGravityBias, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Splits gravity across the spectrum: 0 makes every bar fall at the same rate, higher makes bass snappy and treble floaty. Default 50%."/>
+                               Text="Bass/treble gravity contrast. 0 gives every bar the same speed; higher makes bass snappy and treble floaty. Default 50%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="FFT size" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -235,7 +227,7 @@
                                    Text="{Binding Settings.VizFftSize}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="The analysis window. 512 reacts fast but reads bass coarsely; 2048 is precise but slower off the mark. Takes effect on the next song. Default 1024."/>
+                               Text="FFT analysis window size. 512 is snappy but coarse in the bass, 1024 is balanced, 2048 is precise but slower to attack. Requires a song restart. Default 1024."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Bass gain" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -246,7 +238,7 @@
                                    Text="{Binding Settings.VizBassGain, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Height of the lower bars, sub-bass up through vocal presence. Default 100%."/>
+                               Text="Scales gain for the bass bars, sub-bass through vocal presence. Default 100%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Treble gain" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -257,10 +249,10 @@
                                    Text="{Binding Settings.VizTrebleGain, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Height of the upper bars. Default 100%."/>
+                               Text="Scales gain for the treble bars, upper vocal through high treble. Default 100%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Frequency bleed" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <TextBlock Text="Freq bleed" Style="{StaticResource UpsLabel}" Width="130"/>
                         <Slider Minimum="0" Maximum="200" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.VizBleedAmount}"
                                 SmallChange="5" LargeChange="20" TickFrequency="25"/>
@@ -268,7 +260,7 @@
                                    Text="{Binding Settings.VizBleedAmount, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How much energy spills into neighbouring bars. 0 makes each bar independent and spiky, 200 makes the row move as one. Default 100%."/>
+                               Text="How much energy bleeds between adjacent bars. 0 keeps bars independent, 100 is the default coupling, 200 is heavy bleed. Default 100%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Compression" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -279,7 +271,7 @@
                                    Text="{Binding Settings.VizCompression, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Tames the tallest peaks so quiet detail still shows. Higher makes the bars more uniform. Default 50%."/>
+                               Text="Soft-knee peak compression. 0 is linear and uncompressed; higher tames peaks more aggressively and makes bars more uniform. Default 50%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Smooth rise" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -290,7 +282,7 @@
                                    Text="{Binding Settings.VizSmoothRise, StringFormat='{}{0}%'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Attack — how fast bars answer a beat. Default 85%."/>
+                               Text="How quickly bars respond to rising energy — the beat attack. Higher is snappier, lower is sluggish. Default 85%."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Smooth fall" Style="{StaticResource UpsLabel}" Width="130"/>
@@ -300,28 +292,23 @@
                         <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                    Text="{Binding Settings.VizSmoothFall, StringFormat='{}{0}%'}"/>
                     </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                               Text="Decay — how fast they let go afterwards. Default 15%."/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,14"
+                               Text="How quickly bars decay after energy drops. Lower trails more smoothly, higher drops snappily. Default 15%."/>
 
-                </StackPanel>
-            </Expander>
+                    <!-- FFT Smoothing sub-block. A plain heading inside this expander, as it was:
+                         it is one layer below the controls above, not a peer of them. -->
+                    <TextBlock Text="FFT Smoothing (Advanced)" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                               Text="Controls the pre-render FFT temporal smoothing. These shape how the raw spectrum data responds before it reaches the UI. Changes apply live."/>
 
-            <Expander Style="{StaticResource UpsSection}" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="FFT Smoothing" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Smoothing applied to the raw spectrum before it reaches the bars — one layer below Bar Behaviour. Changes apply live."/>
-
-                    <CheckBox Content="Fixed timer (~62 fps)"
+                    <CheckBox Content="Use Fixed Timer (~62 fps)"
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.VizFftTimerMode}"/>
                     <TextBlock Style="{StaticResource UpsHint}"
-                               Text="By default the FFT runs whenever audio delivers samples, about 43 fps at size 1024. Timer mode runs it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
+                               Text="Signal mode, the default, runs the FFT when audio delivers new samples — about 43 fps at 1024. Timer mode runs it at a fixed ~62 fps matching the UI refresh rate: slightly more CPU, but it may feel smoother."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Rise, bass" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <TextBlock Text="FFT rise (bass)" Style="{StaticResource UpsLabel}" Width="130"/>
                         <Slider Minimum="0" Maximum="95" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.VizFftRiseLow}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -329,10 +316,10 @@
                                    Text="{Binding Settings.VizFftRiseLow}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How fast the bass bins climb to a new peak. Default 88."/>
+                               Text="How quickly bass FFT bins rise to new peaks. Higher is a snappier bass attack. Default 88."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Rise, treble" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <TextBlock Text="FFT rise (treble)" Style="{StaticResource UpsLabel}" Width="130"/>
                         <Slider Minimum="0" Maximum="95" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.VizFftRiseHigh}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -340,10 +327,10 @@
                                    Text="{Binding Settings.VizFftRiseHigh}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="Same for the treble bins. Default 93."/>
+                               Text="How quickly treble FFT bins rise to new peaks. Higher is a snappier treble attack. Default 93."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Fall, bass" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <TextBlock Text="FFT fall (bass)" Style="{StaticResource UpsLabel}" Width="130"/>
                         <Slider Minimum="0" Maximum="95" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.VizFftFallLow}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -351,10 +338,10 @@
                                    Text="{Binding Settings.VizFftFallLow}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                               Text="How fast the bass bins decay. Lower trails more smoothly. Default 50."/>
+                               Text="How quickly bass FFT bins decay after energy drops. Lower gives smoother bass trailing. Default 50."/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Fall, treble" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <TextBlock Text="FFT fall (treble)" Style="{StaticResource UpsLabel}" Width="130"/>
                         <Slider Minimum="0" Maximum="95" Width="200" VerticalAlignment="Center"
                                 Value="{Binding Settings.VizFftFallHigh}"
                                 SmallChange="5" LargeChange="10" TickFrequency="10"/>
@@ -362,7 +349,7 @@
                                    Text="{Binding Settings.VizFftFallHigh}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                               Text="Same for the treble bins. Default 65."/>
+                               Text="How quickly treble FFT bins decay after energy drops. Lower gives smoother treble trailing. Default 65."/>
 
                 </StackPanel>
             </Expander>
