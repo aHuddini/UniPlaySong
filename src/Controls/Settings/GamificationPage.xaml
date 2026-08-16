@@ -1,0 +1,413 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.GamificationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+            <Grid Margin="0,0,0,10">
+                <TextBlock Text="Gamification" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Click="ResetGamificationTab_Click" Padding="8,3" FontSize="11"/>
+            </Grid>
+            <TextBlock Text="Celebrate your gaming milestones — completion fanfares, achievement sounds, and status toasts" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
+
+            <!-- Completion Celebration -->
+            <Expander IsExpanded="False" Margin="0,0,0,10">
+                <Expander.Header>
+                    <TextBlock Text="Games Completed Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+
+            <CheckBox Content="Play Fanfare on Completed Games"
+                      IsChecked="{Binding Settings.EnableCompletionCelebration}"
+                      Margin="0,5"/>
+            <TextBlock Text="Play a celebration sound when you mark a game as 'Completed' in Playnite"
+                       FontSize="11"
+                       Foreground="Gray"
+                       TextWrapping="Wrap"
+                       Margin="20,0,0,5"/>
+
+            <CheckBox Content="Also celebrate when marked as 'Beaten'"
+                      IsChecked="{Binding Settings.CelebrateBeaten}"
+                      IsEnabled="{Binding Settings.EnableCompletionCelebration}"
+                      Margin="20,3,0,2"/>
+            <TextBlock Text="Fires the same fanfare for Playnite's built-in 'Beaten' status (main story finished), in addition to 'Completed'"
+                       FontSize="11"
+                       Foreground="Gray"
+                       TextWrapping="Wrap"
+                       Margin="40,0,0,8"/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableCompletionCelebration}">
+                <RadioButton Content="Jingle Preset"
+                             IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="CelebrationSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox ItemsSource="{Binding CelebrationJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedCelebrationJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewCelebrationSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="CelebrationSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Text="{Binding Settings.CelebrationSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Content="Browse..."
+                            Command="{Binding BrowseCelebrationSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewCelebrationSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <CheckBox Content="Apply live effects to jingles"
+                          IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
+                          Margin="0,10,0,3"/>
+                <TextBlock Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."
+                           FontSize="11"
+                           Foreground="Gray"
+                           TextWrapping="Wrap"
+                           Margin="20,0,0,5"/>
+
+                <!-- Visual Celebration Toast -->
+                <CheckBox Content="Show celebration toast notification"
+                          IsChecked="{Binding Settings.ShowCelebrationToast}"
+                          Margin="0,10,0,5"/>
+                <TextBlock Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."
+                           FontSize="11"
+                           Foreground="Gray"
+                           TextWrapping="Wrap"
+                           Margin="20,0,0,10"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                    <TextBlock Text="Duration:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                            Value="{Binding Settings.CelebrationToastDurationSeconds}"
+                            Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Settings.CelebrationToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                               VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                    <TextBlock Text="Color theme:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    <ComboBox SelectedIndex="{Binding Settings.CelebrationToastTheme, Converter={StaticResource CelebrationThemeConverter}}"
+                              Margin="8,0,0,0" Width="170">
+                        <ComboBoxItem Content="Gold (Default)"/>
+                        <ComboBoxItem Content="Royal Purple"/>
+                        <ComboBoxItem Content="Emerald"/>
+                        <ComboBoxItem Content="Ruby"/>
+                        <ComboBoxItem Content="Ice Blue"/>
+                        <ComboBoxItem Content="Sunset"/>
+                        <ComboBoxItem Content="Platinum"/>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <!-- Abandoned Status Sound + Toast (parallel pipeline, separate settings) -->
+            <Separator Margin="0,15,0,10"/>
+            <Expander IsExpanded="False" Margin="0,0,0,10">
+                <Expander.Header>
+                    <TextBlock Text="Games Abandoned Status" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+
+            <CheckBox Content="Play Sound on Abandoned Games"
+                      IsChecked="{Binding Settings.EnableAbandonedSound}"
+                      Margin="0,5"/>
+            <TextBlock Text="Play a distinct sound (and optional toast) when you mark a game as 'Abandoned' in Playnite. Separate from the Completed/Beaten fanfare so you can pick a resigned / game-over jingle instead."
+                       FontSize="11"
+                       Foreground="Gray"
+                       TextWrapping="Wrap"
+                       Margin="20,0,0,5"/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableAbandonedSound}">
+                <RadioButton Content="Jingle Preset"
+                             IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="AbandonedSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox ItemsSource="{Binding AbandonedJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedAbandonedJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewAbandonedSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="AbandonedSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Text="{Binding Settings.AbandonedSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Content="Browse..."
+                            Command="{Binding BrowseAbandonedSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewAbandonedSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <!-- Abandoned Toast -->
+                <CheckBox Content="Show abandoned toast notification"
+                          IsChecked="{Binding Settings.ShowAbandonedToast}"
+                          Margin="0,10,0,5"/>
+                <TextBlock Text="Displays a muted toast popup with a graveyard icon when a game is marked abandoned."
+                           FontSize="11"
+                           Foreground="Gray"
+                           TextWrapping="Wrap"
+                           Margin="20,0,0,10"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Duration:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                            Value="{Binding Settings.AbandonedToastDurationSeconds}"
+                            Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Settings.AbandonedToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                               VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Color theme:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    <ComboBox SelectedIndex="{Binding Settings.AbandonedToastTheme, Converter={StaticResource AbandonedThemeConverter}}"
+                              Margin="8,0,0,0" Width="170">
+                        <ComboBoxItem Content="Tombstone (Default)"/>
+                        <ComboBoxItem Content="Dusk Blue"/>
+                        <ComboBoxItem Content="Rust"/>
+                        <ComboBoxItem Content="Ash"/>
+                        <ComboBoxItem Content="Faded Crimson"/>
+                        <ComboBoxItem Content="Shadow"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Margin="20,8,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Message (use {gameName} as placeholder):" FontSize="11" Foreground="Gray" Margin="0,0,0,3"/>
+                    <TextBox Text="{Binding Settings.AbandonedToastMessage, UpdateSourceTrigger=PropertyChanged}"
+                             Width="400" HorizontalAlignment="Left"
+                             VerticalContentAlignment="Center"/>
+                    <TextBlock Text="Examples: &quot;Filed away without finishing {gameName}.&quot;, &quot;{gameName} has been flushed.&quot;, &quot;RIP {gameName}&quot;"
+                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <!-- Achievement / trophy unlock sound — triggered by external plugins via URI -->
+            <Separator Margin="0,15,0,10"/>
+            <Expander IsExpanded="False" Margin="0,0,0,10">
+                <Expander.Header>
+                    <TextBlock Text="PlayniteAchievements Unlocks" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
+                       Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game. Pick a sound pack for the five rarities below; the master default sound is the ultimate fallback."/>
+
+            <CheckBox Content="Enable achievement sounds (default / fallback)"
+                      IsChecked="{Binding Settings.EnableAchievementSound}"
+                      Margin="0,5"/>
+            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,5"
+                       Text="The default sound, played for any rarity that doesn't have its own sound set below."/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <RadioButton Content="Jingle Preset"
+                             IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="AchievementSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox ItemsSource="{Binding AchievementJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedAchievementJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewAchievementSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="AchievementSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Text="{Binding Settings.AchievementSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Content="Browse..."
+                            Command="{Binding BrowseAchievementSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Content="Preview"
+                            Command="{Binding PreviewAchievementCustomSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Per-rarity sound pack -->
+            <TextBlock Text="Rarity sound pack" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,2"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+            <StackPanel Margin="0,0,0,4" IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <RadioButton Content="Active theme's sounds" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Theme}"/>
+                <TextBlock Text="{Binding ThemeAchievementStatus}" FontSize="10" Foreground="Gray" Margin="24,0,0,4" TextWrapping="Wrap"/>
+                <RadioButton Content="PA Starter Pack (bundled)" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PAStarterPack}"/>
+                <RadioButton Content="Custom (your own per-rarity files below)" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+            </StackPanel>
+
+            <!-- Per-rarity custom files (always visible; setting one switches the pack to Custom) -->
+            <TextBlock Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,6"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"
+                       Text="Pick the Custom pack above to enable per-rarity file overrides. Preview always plays the sound that rarity would use under the current pack. Badge art from the Playnite Achievements plugin."/>
+            <StackPanel IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <!-- Common -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeBronzePath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Common" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.CommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Uncommon -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeSilverPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Uncommon" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.UncommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Rare -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeGoldPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.RareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Ultra-Rare -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgePlatinumPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Ultra-Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.UltraRareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Hidden -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeHiddenPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Hidden" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.HiddenAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Capstone -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgePerfectPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Capstone" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.CapstoneAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <!-- ControlUp events — triggered by the ControlUp plugin via URI -->
+            <Separator Margin="0,15,0,10"/>
+            <Expander IsExpanded="False" Margin="0,0,0,10">
+                <Expander.Header>
+                    <TextBlock Text="ControlUp Events" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
+                               Text="Plays a sound when ControlUp detects a game controller. UniPlaySong doesn't detect controllers itself — the ControlUp plugin fires it via playnite://uniplaysong/controlup/detecttrigger. Plays over a running game. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
+
+                    <CheckBox Content="Enable controller detected sound"
+                              IsChecked="{Binding Settings.EnableControlUpDetectSound}"
+                              Margin="0,5"/>
+
+                    <StackPanel Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.EnableControlUpDetectSound}">
+                        <RadioButton Content="Bundled sound"
+                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                     GroupName="ControlUpDetectSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Coin Pickup"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewControlUpDetectSoundCommand}"
+                                    Padding="10,4"/>
+                        </StackPanel>
+                        <RadioButton Content="Custom sound file (.wav recommended)"
+                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                     GroupName="ControlUpDetectSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                            <TextBox Text="{Binding Settings.ControlUpDetectSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="350"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                            <Button Content="Browse..."
+                                    Command="{Binding BrowseControlUpDetectSoundCommand}"
+                                    Padding="10,4"/>
+                            <Button Content="Preview"
+                                    Command="{Binding PreviewControlUpDetectCustomSoundCommand}"
+                                    Padding="10,4"
+                                    Margin="5,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

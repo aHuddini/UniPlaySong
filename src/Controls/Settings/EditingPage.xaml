@@ -1,0 +1,303 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.EditingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+            <Grid Margin="0,0,0,10">
+                <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Click="ResetEditingTab_Click" Padding="8,3" FontSize="11"/>
+            </Grid>
+            <TextBlock Text="Normalize volume levels and trim audio files. Operations are performed on-demand — not in real-time during playback."
+                       FontSize="11"
+                       Foreground="#90A8A0"
+                       FontStyle="Italic"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,10"/>
+
+            <TextBlock Text="FFmpeg powers these tools — set its path in the Setup tab."
+                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+            <StackPanel>
+                <Separator Margin="0,15"/>
+                <TextBlock Text="Format Conversion" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Target Format:" VerticalAlignment="Center" Width="110"/>
+                    <ComboBox Width="80" Margin="0,0,15,0"
+                              SelectedValue="{Binding Settings.ConversionTargetFormat}"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="OGG" Tag="ogg"/>
+                        <ComboBoxItem Content="MP3" Tag="mp3"/>
+                    </ComboBox>
+                    <TextBlock Text="Quality:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <ComboBox Width="100" Margin="0,0,15,0"
+                              SelectedValue="{Binding Settings.ConversionBitrate}"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="128 kbps" Tag="128"/>
+                        <ComboBoxItem Content="192 kbps" Tag="192"/>
+                        <ComboBoxItem Content="256 kbps" Tag="256"/>
+                    </ComboBox>
+                    <CheckBox Content="Keep originals as backup"
+                              IsChecked="{Binding Settings.ConversionKeepOriginals}"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10">
+                    <Button Content="Convert All Music Files"
+                            Width="220"
+                            Margin="0,0,10,0"
+                            Command="{Binding ConvertAllMusicCommand}"/>
+                    <TextBlock Text="Convert all music files in your library to the selected format and quality."
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <Separator Margin="0,15"/>
+
+                <Expander IsExpanded="False" Margin="0,10,0,10">
+                    <Expander.Header>
+                        <TextBlock Text="Normalization Settings" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                    </Expander.Header>
+                    <StackPanel Margin="0,10,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Target Loudness: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.NormalizationTargetLoudness}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="LUFS (EBU R128: -16 LUFS)"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="Gray"/>
+                        </StackPanel>
+                        <TextBlock Text="Target integrated loudness. Industry standard is -16 LUFS. Range: -30 to -10 LUFS"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="True Peak Limit: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.NormalizationTruePeak}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="dBTP (EBU R128: -1.5 dBTP)"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="Gray"/>
+                        </StackPanel>
+                        <TextBlock Text="True peak limit to prevent clipping. Industry standard is -1.5 dBTP. Range: -3.0 to 0.0 dBTP"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Loudness Range: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.NormalizationLoudnessRange}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="LU (EBU R128: 11 LU)"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="Gray"/>
+                        </StackPanel>
+                        <TextBlock Text="Loudness range target. Industry standard is 11 LU. Range: 1 to 20 LU"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
+                            <ComboBox SelectedValue="{Binding Settings.NormalizationCodec}"
+                                      SelectedValuePath="Tag"
+                                      Width="220"
+                                      Margin="0,0,10,0">
+                                <ComboBoxItem Content="Auto (match input format)" Tag="auto"/>
+                                <ComboBoxItem Content="MP3 (libmp3lame)" Tag="libmp3lame"/>
+                                <ComboBoxItem Content="OGG Vorbis (libvorbis)" Tag="libvorbis"/>
+                                <ComboBoxItem Content="FLAC (lossless)" Tag="flac"/>
+                                <ComboBoxItem Content="WAV (uncompressed)" Tag="pcm_s16le"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+                    </StackPanel>
+                </Expander>
+
+                <Expander IsExpanded="False" Margin="0,10,0,10">
+                    <Expander.Header>
+                        <TextBlock Text="File Naming" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                    </Expander.Header>
+                    <StackPanel Margin="0,10,0,0">
+                        <TextBlock Text="Normalized files are always created with a suffix (e.g., 'song-normalized.mp3'), preserving your original files. Original files are never modified or deleted."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Normalization Suffix: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.NormalizationSuffix}"
+                                     Width="120"
+                                     Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Silence Trim Suffix: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Text="{Binding Settings.TrimSuffix}"
+                                     Width="120"
+                                     Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Suffix to append to silence-trimmed file names (default: '-trimmed'). Example: 'song.mp3' becomes 'song-trimmed.mp3'"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+
+                        <CheckBox Content="Skip Already Normalized Files"
+                                  IsChecked="{Binding Settings.SkipAlreadyNormalized}"
+                                  Margin="0,10"/>
+                        <TextBlock Text="When enabled, files with the normalization suffix are automatically skipped during bulk operations. Useful when downloading new music."
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,10"/>
+
+                        <CheckBox Content="Do not preserve originals (space saver)"
+                                  IsChecked="{Binding Settings.DoNotPreserveOriginals}"
+                                  Margin="0,10"/>
+                        <TextBlock Text="When enabled, original files are normalized directly and replaced (no backup/preservation). Saves disk space but originals cannot be restored. When disabled, originals are moved to PreservedOriginals folder."
+                                   FontSize="11"
+                                   Foreground="#FFA500"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,20"/>
+                    </StackPanel>
+                </Expander>
+
+                <Expander IsExpanded="False" Margin="0,10,0,10">
+                    <Expander.Header>
+                        <TextBlock Text="Bulk Actions" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                    </Expander.Header>
+                    <StackPanel Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <Button Content="Normalize All Music Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding NormalizeAllMusicCommand}"/>
+                        <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Trim Silence - All Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding TrimAllMusicCommand}"/>
+                        <TextBlock Text="Remove leading silence from all music files."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Create Folders for All Games"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding CreateMissingMusicFoldersCommand}"/>
+                        <TextBlock Text="Create a music folder for every game in your library that doesn't have one yet."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    </StackPanel>
+                </Expander>
+
+                <Expander IsExpanded="False" Margin="0,10,0,10">
+                    <Expander.Header>
+                        <TextBlock Text="File Management" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                    </Expander.Header>
+                    <StackPanel Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <Button Content="Open Game Index"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding OpenGameIndexCommand}"/>
+                        <TextBlock Text="Open the game index listing all games with music folders and their IDs."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Open Preserved Folder"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding OpenPreservedOriginalsFolderCommand}"/>
+                        <TextBlock Text="Open the folder containing backup copies of original files."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Restore Original Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding RestoreNormalizedFilesCommand}"/>
+                        <TextBlock Text="Restore originals and delete normalized/trimmed versions."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Content="Delete Preserved Originals"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding DeletePreservedOriginalsCommand}"/>
+                        <TextBlock Text="Permanently delete all preserved originals to free disk space."
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="#FF6B6B"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

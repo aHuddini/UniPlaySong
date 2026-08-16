@@ -1599,7 +1599,9 @@ namespace UniPlaySong
         public bool PreviewHasAlbum => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingAlbum);
         public bool PreviewHasGenre => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingGenre);
         public bool PreviewHasDuration => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingDuration);
-        public UniPlaySong PluginForPreview => plugin;
+        // How the settings pages reach the plugin. They are constructed by XAML, so they cannot
+        // take it as a constructor argument the way the old single settings view did.
+        public UniPlaySong Plugin => plugin;
 
         // Called by the view on the settings object's PropertyChanged to refresh the ticker + card live.
         public void RefreshNowPlayingPreview()
