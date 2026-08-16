@@ -375,6 +375,13 @@ namespace UniPlaySong
 
             _previewOpenGen = _previewGen;
             try { _jinglePreviewPlayer.Stop(); } catch { }
+
+            // Close() before Open() — without it, previewing the SAME file twice is silent.
+            // MediaPlayer.Open only raises MediaOpened when the source actually changes, so
+            // re-opening an identical URI is a no-op: the handler above never runs, and nothing
+            // plays. Close() drops the current source so the next Open is always a real change.
+            // (Reopening the settings window used to "fix" it only because that built a new player.)
+            try { _jinglePreviewPlayer.Close(); } catch { }
             _jinglePreviewPlayer.Open(new Uri(filePath));
         }
 
@@ -1378,12 +1385,7 @@ namespace UniPlaySong
             {
                 string fileToPlay = null;
 
-                if (Settings.AbandonedSoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                    return;
-                }
-                else if (Settings.AbandonedSoundType == CelebrationSoundType.BundledJingle)
+                if (Settings.AbandonedSoundType == CelebrationSoundType.BundledJingle)
                 {
                     fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedAbandonedJingle);
                 }
@@ -1415,12 +1417,7 @@ namespace UniPlaySong
             {
                 string fileToPlay = null;
 
-                if (Settings.CelebrationSoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                    return;
-                }
-                else if (Settings.CelebrationSoundType == CelebrationSoundType.BundledJingle)
+                if (Settings.CelebrationSoundType == CelebrationSoundType.BundledJingle)
                 {
                     fileToPlay = Services.BundledJingleService.ResolveJinglePath(Settings.SelectedCelebrationJingle);
                 }

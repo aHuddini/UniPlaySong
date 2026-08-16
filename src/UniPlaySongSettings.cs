@@ -178,7 +178,13 @@ namespace UniPlaySong
 
     public enum CelebrationSoundType
     {
-        SystemBeep,     // Windows system sound
+        // Removed in v1.7.4 — it existed to bring the jingle system up and was never a sound
+        // anyone wanted. The member STAYS so the numbering does not shift: these persist to
+        // config.json as integers, so deleting it would silently turn every stored BundledJingle
+        // (1) into CustomFile and every CustomFile (2) into an out-of-range value, breaking
+        // working setups on upgrade. Migration maps it to BundledJingle on load; nothing in the
+        // UI offers it, and no playback path honours it.
+        SystemBeep_Removed,
         BundledJingle,  // Jingle preset shipped with the plugin
         CustomFile      // User-selected audio file (.wav recommended)
     }

@@ -5,7 +5,8 @@ Packages:
     ReleaseDate: 2026-08-15
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.4/UniPlaySong-1_7_4.pext'
     Changelog:
-      - '[Placeholder] Changelog items for this release go here.'
+      - '[Fixed] Gamification tab: the Preview buttons only played a sound once. Clicking Preview again did nothing until you closed and reopened the settings window.'
+      - '[Changed] Gamification tab: removed the "System beep" sound option from the Games Completed, Games Abandoned, PlayniteAchievements and ControlUp sections. If you had it selected, those now use the bundled jingle instead.'
   - Version: 1.7.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-14

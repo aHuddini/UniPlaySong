@@ -226,6 +226,36 @@ namespace UniPlaySong.Services
         {
             bool changed = false;
 
+            // v1.7.4: System beep was removed as a sound choice. Anyone who had it selected gets
+            // the bundled jingle instead — without this their sound silently stops working, since
+            // no playback path honours the removed value any more and the UI no longer offers it,
+            // so they could not see what their setting was stuck on. The enum member itself is
+            // kept as a numbering placeholder (see CelebrationSoundType) so stored integers do
+            // not shift underneath existing configs.
+            if (settings.CelebrationSoundType == CelebrationSoundType.SystemBeep_Removed)
+            {
+                settings.CelebrationSoundType = CelebrationSoundType.BundledJingle;
+                changed = true;
+            }
+
+            if (settings.AbandonedSoundType == CelebrationSoundType.SystemBeep_Removed)
+            {
+                settings.AbandonedSoundType = CelebrationSoundType.BundledJingle;
+                changed = true;
+            }
+
+            if (settings.AchievementSoundType == CelebrationSoundType.SystemBeep_Removed)
+            {
+                settings.AchievementSoundType = CelebrationSoundType.BundledJingle;
+                changed = true;
+            }
+
+            if (settings.ControlUpDetectSoundType == CelebrationSoundType.SystemBeep_Removed)
+            {
+                settings.ControlUpDetectSoundType = CelebrationSoundType.BundledJingle;
+                changed = true;
+            }
+
             // v1.3.8: Add Wallpaper Engine to default excluded apps.
             // v1.6.3: Add Sunshine game-streaming host — its audio-capture session mirrors system
             // output, so UPS's own music reads back as "external audio" and pause-oscillates.

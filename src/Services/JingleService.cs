@@ -101,11 +101,6 @@ namespace UniPlaySong.Services
                     var master = MasterAchievementConfig(settings);
                     if (!master.HasValue) return;
                     var mcfg = master.Value;
-                    if (mcfg.SoundType == CelebrationSoundType.SystemBeep)
-                    {
-                        System.Media.SystemSounds.Asterisk.Play();
-                        return;
-                    }
                     var masterPath = ResolveConfigPath(mcfg);
                     if (!string.IsNullOrEmpty(masterPath)) PlayExternalSound(masterPath, settings);
                     return;
@@ -114,14 +109,6 @@ namespace UniPlaySong.Services
                 var maybeConfig = GetConfigForEvent(evt, settings);
                 if (!maybeConfig.HasValue) return;
                 var config = maybeConfig.Value;
-
-                // SystemBeep: doesn't touch jingle player machinery — plays the Windows
-                // system sound directly and returns. Main music is unaffected (no pause).
-                if (config.SoundType == CelebrationSoundType.SystemBeep)
-                {
-                    System.Media.SystemSounds.Asterisk.Play();
-                    return;
-                }
 
                 string path = ResolveConfigPath(config);
                 if (string.IsNullOrEmpty(path)) return;
@@ -194,7 +181,7 @@ namespace UniPlaySong.Services
         }
 
         // Resolves a config to a playable file path (BundledJingle -> bundled path, CustomFile ->
-        // the file if it exists). Returns null for SystemBeep or when nothing resolves.
+        // the file if it exists). Returns null when nothing resolves.
         private static string ResolveConfigPath(JingleSoundConfig config)
         {
             if (config.SoundType == CelebrationSoundType.BundledJingle)

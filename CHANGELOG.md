@@ -4,6 +4,20 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.7.4] - 2026-08-15
+
+### Fixed
+
+- **Preview buttons only worked once per settings-window session.** `MediaPlayer.Open()` raises `MediaOpened` only when the source actually changes, so re-opening the same URI was a no-op: the handler that calls `Play()` never ran and the second click was silent. Reopening the settings window appeared to fix it only because that built a fresh player. `PlayPreview` now calls `Close()` before `Open()`, so every click is a real source change. Affects all seven Preview buttons, since they share the one helper.
+
+### Changed
+
+- **Removed the "System beep" sound option** from the Games Completed, Games Abandoned, PlayniteAchievements, and ControlUp sections. It existed to bring the jingle system up and was never a sound anyone wanted.
+
+- The enum member is **kept as a numbering placeholder** (`SystemBeep_Removed`) rather than deleted. These persist to `config.json` as integers, so removing slot 0 would turn every stored `BundledJingle` (1) into `CustomFile` and every `CustomFile` (2) into an out-of-range value — silently breaking working setups on upgrade. `MigrateSettings` maps a stored beep selection to `BundledJingle` on load, so anyone who had it selected keeps a working sound instead of silently getting nothing. `SystemBeepRemovalTests` pins both the numbering and the fresh-install defaults.
+
+- Note: this does not touch the download-completion notification beep, which is a separate feature.
+
 ## [1.7.3] - 2026-08-14
 
 ### Fixed — YouTube 403 on some videos
