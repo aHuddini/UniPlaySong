@@ -287,39 +287,37 @@
          WPF has no backdrop blur. Real acrylic is a Win32 window attribute, and BlurEffect blurs
          the element rather than what is behind it. This is the honest approximation: translucency
          plus a lit edge, which is what reads as glass anyway at this size. -->
-    <!-- MappingMode="Absolute" is load-bearing. Gradient offsets default to a PROPORTION of the
-         element, so a percentage-based sheen grows with the card: a 200px card got a 10px sliver
-         while a 60px one got 3px, and a column of cards looked ragged. Absolute puts StartPoint
-         and EndPoint in device units, so the lit edge is 3px on every card whatever its height,
-         and SpreadMethod (Pad, the default) carries the last stop down the rest of the fill. -->
-    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
-        <GradientStop Offset="0"   Color="#34FFFFFF"/>
-        <GradientStop Offset="0.5" Color="#12FFFFFF"/>
-        <GradientStop Offset="1"   Color="#D81A2330"/>
+    <!-- Card face. A broad diagonal, light corner to dark corner, as if one light source were off
+         the top-left. Proportional offsets are correct HERE — the gradient is meant to span the
+         whole card, so it scales with it by design. (The earlier bug was a small percentage doing
+         the job of a fixed size; that is now the border's job, and a border is 1px by
+         construction.)
+
+         Alpha near 0xE6 so the ground's own diagonal shows through and the card sits ON something
+         rather than being pasted over it. -->
+    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6222B37"/>
+        <GradientStop Offset="1" Color="#E6141A23"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
-        <GradientStop Offset="0"   Color="#40A7E4FF"/>
-        <GradientStop Offset="0.5" Color="#16A7E4FF"/>
-        <GradientStop Offset="1"   Color="#D815232E"/>
+    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E61C2E3B"/>
+        <GradientStop Offset="1" Color="#E6111A22"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
-        <GradientStop Offset="0"   Color="#409DE8B4"/>
-        <GradientStop Offset="0.5" Color="#169DE8B4"/>
-        <GradientStop Offset="1"   Color="#D815241C"/>
+    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E61B2E23"/>
+        <GradientStop Offset="1" Color="#E6111B16"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
-        <GradientStop Offset="0"   Color="#40F0CE8A"/>
-        <GradientStop Offset="0.5" Color="#16F0CE8A"/>
-        <GradientStop Offset="1"   Color="#D8241E14"/>
+    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E62B2417"/>
+        <GradientStop Offset="1" Color="#E61A150E"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
-        <GradientStop Offset="0"   Color="#40B4B0FF"/>
-        <GradientStop Offset="0.5" Color="#16B4B0FF"/>
-        <GradientStop Offset="1"   Color="#D8191C2E"/>
+    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6202339"/>
+        <GradientStop Offset="1" Color="#E6141626"/>
     </LinearGradientBrush>
 
     <!-- Bevelled edges. The border is a gradient rather than a flat colour: lit along the top,
@@ -332,34 +330,49 @@
 
          The glass brushes above are kept and still used for the fill, so the two treatments
          compose: bevelled edge, glazed face. -->
-    <LinearGradientBrush x:Key="UpsBevelNeutral" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#63768A"/>
-        <GradientStop Offset="0.35" Color="#3D4B5B"/>
-        <GradientStop Offset="1"    Color="#222A34"/>
+    <!-- Diagonal, so the lit corner is top-LEFT and the shadowed one bottom-right — one light
+         source, consistent with the card face and the toggle cap. A purely vertical bevel lights
+         the whole top edge evenly, which reads as a printed line; lighting a corner reads as an
+         object.
+
+         Four stops rather than three: the hot highlight is held briefly at the start and the mid
+         tone occupies most of the run, so the edge is defined all the way round. Glassmorphism
+         guides typically fade the border to zero opacity mid-run, which works over vibrant
+         photographic backdrops where the fill defines the card — over near-black slate the border
+         IS the definition, so it stays visible throughout. -->
+    <LinearGradientBrush x:Key="UpsBevelNeutral" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#93A6B8"/>
+        <GradientStop Offset="0.12" Color="#63768A"/>
+        <GradientStop Offset="0.55" Color="#3A4757"/>
+        <GradientStop Offset="1"    Color="#1E262F"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsBevelAccent" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#4E9CBC"/>
-        <GradientStop Offset="0.35" Color="#2E6A82"/>
-        <GradientStop Offset="1"    Color="#1B3E4D"/>
+    <LinearGradientBrush x:Key="UpsBevelAccent" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#7FC6E2"/>
+        <GradientStop Offset="0.12" Color="#4E9CBC"/>
+        <GradientStop Offset="0.55" Color="#2C6580"/>
+        <GradientStop Offset="1"    Color="#173846"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsBevelGood" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#5FA97A"/>
-        <GradientStop Offset="0.35" Color="#3D7A54"/>
-        <GradientStop Offset="1"    Color="#234730"/>
+    <LinearGradientBrush x:Key="UpsBevelGood" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#8CCFA3"/>
+        <GradientStop Offset="0.12" Color="#5FA97A"/>
+        <GradientStop Offset="0.55" Color="#3A7550"/>
+        <GradientStop Offset="1"    Color="#1E402B"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsBevelWarn" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#B99548"/>
-        <GradientStop Offset="0.35" Color="#85682D"/>
-        <GradientStop Offset="1"    Color="#4E3D1A"/>
+    <LinearGradientBrush x:Key="UpsBevelWarn" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#E0BC70"/>
+        <GradientStop Offset="0.12" Color="#B99548"/>
+        <GradientStop Offset="0.55" Color="#7E6329"/>
+        <GradientStop Offset="1"    Color="#453516"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsBevelInfo" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#7373A8"/>
-        <GradientStop Offset="0.35" Color="#4B4B80"/>
-        <GradientStop Offset="1"    Color="#2C2C4D"/>
+    <LinearGradientBrush x:Key="UpsBevelInfo" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#9C9CD0"/>
+        <GradientStop Offset="0.12" Color="#7373A8"/>
+        <GradientStop Offset="0.55" Color="#47477A"/>
+        <GradientStop Offset="1"    Color="#272745"/>
     </LinearGradientBrush>
 
     <Style x:Key="UpsCard" TargetType="Border">
@@ -370,6 +383,15 @@
         <Setter Property="Padding" Value="14,12"/>
         <Setter Property="Margin" Value="0,0,0,12"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!-- Neutral and shallow. This is separation, not the bloom the toggles were told to drop:
+             a card is one of three or four on a page rather than one of fifteen, the colour is
+             black rather than a hue, and it signals depth rather than state. -->
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="#000000" BlurRadius="9" ShadowDepth="2"
+                                  Direction="270" Opacity="0.38"/>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Reference / capability -->
