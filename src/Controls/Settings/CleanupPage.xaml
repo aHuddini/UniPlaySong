@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="UniPlaySong.Controls.Settings.CleanupPage"
+<UserControl x:Class="UniPlaySong.Controls.Settings.CleanupPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,160 +14,131 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
+
+    <!-- Two levels, and only two. Section bars name the three GROUPS of work; each individual
+         action is a card. Before this, both were section bars, so "Delete Actions" and "Delete
+         All Music" carried identical weight and the page read as nine equal headings with no
+         hierarchy at all.
+
+         Button colour is the severity scale, and it is the fastest thing to read on the page:
+         neutral is safe and reversible, amber removes files you can re-download, red is
+         irreversible. -->
+
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Left">
-            <TextBlock Text="Cleanup &amp; Reset" Style="{StaticResource UpsPageTitle}"/>
-            <TextBlock Text="Reset UniPlaySong settings and remove all downloaded content." Style="{StaticResource UpsPageSubtitle}"/>
 
-            <!-- Warning Banner -->
-            <Border Style="{StaticResource UpsCardDanger}" BorderThickness="1" CornerRadius="4" Padding="15" Margin="0,0,0,20">
+            <TextBlock Text="Cleanup &amp; Reset" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Remove downloaded content, or put settings back to how they started." Style="{StaticResource UpsPageSubtitle}"/>
+
+            <Border Style="{StaticResource UpsCardDanger}">
                 <StackPanel>
-                    <TextBlock Text="WARNING: These actions cannot be undone!"
-                               FontSize="14"
-                               FontWeight="Bold"
-                               Foreground="#FF6666"
-                               Margin="0,0,0,5"/>
-                    <TextBlock Text="Factory Reset will permanently delete all downloaded music files, preserved originals, and reset all settings to their defaults. Make sure you have backups if needed."
-                               FontSize="11"
-                               Foreground="#FFAAAA"
-                               TextWrapping="Wrap"/>
+                    <TextBlock Text="Nothing on this page can be undone" Style="{StaticResource UpsCardTitle}"
+                               Foreground="#F09292"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0" Foreground="#D9AFAF"
+                               Text="Deleted music is gone, not recycled. If you want a way back, export your settings first from Advanced, Backup."/>
                 </StackPanel>
             </Border>
 
-            <!-- Current Storage Info -->
-            <Border Style="{StaticResource UpsCard}" CornerRadius="4" Padding="15" Margin="0,0,0,20">
+            <Border Style="{StaticResource UpsCard}">
                 <StackPanel>
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Current Storage Usage" Style="{StaticResource UpsSectionTitle}"/></Border>
-                    <TextBlock Text="{Binding CleanupStorageInfo}"
-                               Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Refresh"
+                    <TextBlock Text="Current storage usage" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Text="{Binding CleanupStorageInfo}" Style="{StaticResource UpsHint}" Margin="0,0,0,10"/>
+                    <Button Content="Refresh" Style="{StaticResource UpsButton}"
                             HorizontalAlignment="Left"
-                            Margin="0,10,0,0"
-                            Padding="10,5"
                             Command="{Binding RefreshCleanupStorageInfoCommand}"/>
                 </StackPanel>
             </Border>
 
-            <!-- Destructive actions, collapsed so they are not the first thing a
-                 user reaches for. Reset Settings and Factory Reset stay expanded
-                 below: they are the recovery path, not routine maintenance. -->
-            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Delete Actions" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                <!-- Delete All Music -->
-                <StackPanel Margin="0,0,0,20">
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Delete All Music" Style="{StaticResource UpsSectionTitle}"/></Border>
-                    <TextBlock Text="Removes all downloaded music files and game folders. Settings will be preserved."
-                               Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Delete All Music Files"
-                            Command="{Binding DeleteAllMusicCommand}"
-                            Padding="15,8"
-                            HorizontalAlignment="Left"
-                            Background="#882222"
-                            Foreground="White"/>
-                </StackPanel>
-    
-                <!-- Delete Long Songs -->
-                <StackPanel Margin="0,0,0,20">
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Delete Long Songs" Style="{StaticResource UpsSectionTitle}"/></Border>
-                    <TextBlock Text="Scans your music library and deletes songs longer than 10 minutes. Useful for removing accidentally downloaded full albums, podcasts, or corrupted files that break bulk operations."
-                               Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Delete Songs &gt; 10 Minutes"
-                            Command="{Binding DeleteLongSongsCommand}"
-                            Padding="15,8"
-                            HorizontalAlignment="Left"
-                            Background="#664422"
-                            Foreground="White"/>
-                </StackPanel>
-                </StackPanel>
-            </Expander>
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Remove Music" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
 
-            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Cleanup" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                <!-- Clean Up Orphaned Music -->
-                <StackPanel Margin="0,0,0,20">
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Clean Up Orphaned Music" Style="{StaticResource UpsSectionTitle}"/></Border>
-                    <TextBlock Text="Scans for music folders belonging to games that are no longer in your Playnite library and removes them."
-                               Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-                    <CheckBox Style="{StaticResource UpsToggle}" Content="Automatically delete music when games are removed from library"
-                              IsChecked="{Binding Settings.AutoDeleteMusicOnGameRemoval}"
-                              Margin="0,0,0,10"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Clean Up Orphaned Music"
-                            Command="{Binding CleanupOrphanedMusicCommand}"
-                            Padding="15,8"
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Delete all music" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Removes every downloaded file and game folder. Settings are kept."/>
+                    <Button Content="Delete all music files" Style="{StaticResource UpsButtonDanger}"
                             HorizontalAlignment="Left"
-                            Background="#664422"
-                            Foreground="White"/>
+                            Command="{Binding DeleteAllMusicCommand}"/>
                 </StackPanel>
-    
-                <!-- Clear Trailer-Audio Cache -->
-                <StackPanel Margin="0,0,0,20">
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Clear Trailer-Audio Cache" Style="{StaticResource UpsSectionTitle}"/></Border>
-                    <TextBlock Text="Deletes the audio extracted from game video trailers (used by the experimental &quot;Stream audio from the game's EML trailer (no-music games only)&quot; default-music option). Files are re-extracted automatically the next time such a game is played."
-                               Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Clear Trailer-Audio Cache"
-                            Command="{Binding ClearTrailerAudioCacheCommand}"
-                            Padding="15,8"
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Delete long songs" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Deletes anything over ten minutes. Catches full albums, podcasts and corrupted files that were downloaded by mistake and that break bulk operations."/>
+                    <Button Content="Delete songs over 10 minutes" Style="{StaticResource UpsButtonCaution}"
                             HorizontalAlignment="Left"
-                            Background="#664422"
-                            Foreground="White"/>
+                            Command="{Binding DeleteLongSongsCommand}"/>
                 </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Tidy Up" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Orphaned music" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                               Text="Finds music folders for games that are no longer in your Playnite library, and removes them."/>
+                    <CheckBox Content="Delete a game's music when it leaves the library"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.AutoDeleteMusicOnGameRemoval}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="36,1,0,10"
+                               Text="Keeps this from building up again, with no prompt at the time."/>
+                    <Button Content="Clean up orphaned music" Style="{StaticResource UpsButtonCaution}"
+                            HorizontalAlignment="Left"
+                            Command="{Binding CleanupOrphanedMusicCommand}"/>
                 </StackPanel>
-            </Expander>
+            </Border>
 
-            <!-- Reset Settings Only -->
-            <StackPanel Margin="0,0,0,20">
-                <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Reset Settings Only" Style="{StaticResource UpsSectionTitle}"/></Border>
-                <TextBlock Text="Resets all settings to their default values. Music files will be preserved."
-                           Style="{StaticResource UpsHint}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,10"/>
-                <Button Style="{StaticResource UpsButton}" Content="Reset Settings to Defaults"
-                        Command="{Binding ResetSettingsCommand}"
-                        Padding="15,8"
-                        HorizontalAlignment="Left"/>
-            </StackPanel>
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Trailer-audio cache" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Deletes audio extracted from game video trailers, used by the experimental trailer default-music option. It is re-extracted automatically next time such a game is played, so this one really is just a cache."/>
+                    <Button Content="Clear trailer-audio cache" Style="{StaticResource UpsButton}"
+                            HorizontalAlignment="Left"
+                            Command="{Binding ClearTrailerAudioCacheCommand}"/>
+                </StackPanel>
+            </Border>
 
-            <!-- Factory Reset -->
-            <StackPanel Margin="0,0,0,20">
-                <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Factory Reset" Style="{StaticResource UpsSectionTitle}"/></Border>
-                <TextBlock Text="Completely resets UniPlaySong to its initial state. This will:"
-                           Style="{StaticResource UpsHint}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,5"/>
-                <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10">
-                    <Run Text="- Delete all downloaded music files"/>
-                    <LineBreak/>
-                    <Run Text="- Delete all preserved original files"/>
-                    <LineBreak/>
-                    <Run Text="- Remove all game music folders"/>
-                    <LineBreak/>
-                    <Run Text="- Clear the search cache"/>
-                    <LineBreak/>
-                    <Run Text="- Reset all settings to defaults"/>
-                </TextBlock>
-                <Button Style="{StaticResource UpsButton}" Content="Factory Reset"
-                        Command="{Binding FactoryResetCommand}"
-                        Padding="15,8"
-                        HorizontalAlignment="Left"
-                        Background="#AA2222"
-                        Foreground="White"
-                        FontWeight="Bold"/>
-            </StackPanel>
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Start Over" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Reset settings only" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Puts every setting back to its default. Your music files are left alone."/>
+                    <Button Content="Reset settings to defaults" Style="{StaticResource UpsButtonCaution}"
+                            HorizontalAlignment="Left"
+                            Command="{Binding ResetSettingsCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCardDanger}">
+                <StackPanel>
+                    <TextBlock Text="Factory reset" Style="{StaticResource UpsCardTitle}" Foreground="#F09292"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                               Text="Returns UniPlaySong to the state it was in on install. All five at once:"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10">
+                        <Run Text="• Deletes all downloaded music"/><LineBreak/>
+                        <Run Text="• Deletes all preserved originals"/><LineBreak/>
+                        <Run Text="• Removes every game music folder"/><LineBreak/>
+                        <Run Text="• Clears the search cache"/><LineBreak/>
+                        <Run Text="• Resets every setting"/>
+                    </TextBlock>
+                    <Button Content="Factory reset" Style="{StaticResource UpsButtonDanger}"
+                            HorizontalAlignment="Left" FontWeight="SemiBold"
+                            Command="{Binding FactoryResetCommand}"/>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

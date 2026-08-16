@@ -20,53 +20,47 @@
             <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests." Style="{StaticResource UpsPageSubtitle}"/>
 
             <!-- JSON Export / Import (portable, re-importable) -->
-            <Border Style="{StaticResource UpsCard}" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+            <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Portable JSON Backup" Style="{StaticResource UpsSectionTitle}"/></Border>
+                    <TextBlock Text="Portable JSON Backup" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded — those stay machine-specific."
                                Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource UpsButton}" Content="Export Settings (JSON)..."
+                        <Button Style="{StaticResource UpsButtonPrimary}" Content="Export Settings (JSON)…"
                                 Click="ExportSettingsJson_Click"
                                 Padding="15,8"
-                                Margin="0,0,10,0"
-                                Background="#2D5A87"
-                                Foreground="White"/>
-                        <Button Style="{StaticResource UpsButton}" Content="Import Settings (JSON)..."
+                                Margin="0,0,10,0"/>
+                        <Button Style="{StaticResource UpsButtonPrimary}" Content="Import Settings (JSON)…"
                                 Click="ImportSettingsJson_Click"
-                                Padding="15,8"
-                                Background="#2D5A87"
-                                Foreground="White"/>
+                                Padding="15,8"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
             <!-- Markdown Snapshot (human-readable, one-way) -->
-            <Border Style="{StaticResource UpsCard}" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+            <Border Style="{StaticResource UpsCardGood}">
                 <StackPanel>
-                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Human-Readable Snapshot" Style="{StaticResource UpsSectionTitle}"/></Border>
+                    <TextBlock Text="Human-Readable Snapshot" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. One-way — not re-importable."
                                Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
 
-                    <Button Style="{StaticResource UpsButton}" Content="Export Snapshot (Markdown)..."
+                    <Button Style="{StaticResource UpsButtonPositive}" Content="Export Snapshot (Markdown)…"
                             Click="ExportSettingsMarkdown_Click"
                             Padding="15,8"
-                            HorizontalAlignment="Left"
-                            Background="#447755"
-                            Foreground="White"/>
+                            HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 
             <!-- Notes -->
-            <Border Style="{StaticResource UpsCardAccent}" BorderThickness="1" CornerRadius="4" Padding="15">
+            <Border Style="{StaticResource UpsCard}">
                 <StackPanel>
-                    <TextBlock Text="What gets included?" FontSize="12" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#BBCCDD">
+                    <TextBlock Text="What gets included?" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0">
                         <Run Text="• "/><Run Text="JSON Export:" FontWeight="SemiBold"/><Run Text=" Playback / Pauses / Live Effects / Visualizer / all toggles. Excludes tool paths (yt-dlp, FFmpeg, custom default music file/folder paths, cookies file) and Custom Rotation game IDs."/>
                         <LineBreak/>
                         <Run Text="• "/><Run Text="JSON Import:" FontWeight="SemiBold"/><Run Text=" Restores included settings; preserves your local tool paths and Custom Rotation. You'll see a notification listing what stayed local."/>

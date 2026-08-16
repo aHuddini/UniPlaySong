@@ -915,6 +915,177 @@
         </Setter>
     </Style>
 
+    <!-- Tinted actions. The neutral UpsButton is for the small utilities that sit beside a field —
+         Browse, Refresh, Preview. A button that is the POINT of its card gets a tint, so a page of
+         several actions says which is which before the labels are read. Same bevel and press
+         behaviour; only the face and rim change.
+
+         This restores colour the old pages carried inline (a blue export, a green snapshot) that a
+         single neutral button style had flattened away. -->
+    <LinearGradientBrush x:Key="UpsButtonPrimaryFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#2A5872"/>
+        <GradientStop Offset="1" Color="#1B3A4D"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPrimaryFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#356C8C"/>
+        <GradientStop Offset="1" Color="#224B63"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPrimaryRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#6FB4D4"/>
+        <GradientStop Offset="0.5" Color="#356C8C"/>
+        <GradientStop Offset="1"   Color="#16303F"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonPositiveFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#3A6B4C"/>
+        <GradientStop Offset="1" Color="#254732"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPositiveFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#4A855F"/>
+        <GradientStop Offset="1" Color="#2F5940"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPositiveRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#7FC395"/>
+        <GradientStop Offset="0.5" Color="#4A855F"/>
+        <GradientStop Offset="1"   Color="#1E3B2A"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonCautionFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#6B5330"/>
+        <GradientStop Offset="1" Color="#46351D"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonCautionFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#856741"/>
+        <GradientStop Offset="1" Color="#584429"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonCautionRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#C9A567"/>
+        <GradientStop Offset="0.5" Color="#856741"/>
+        <GradientStop Offset="1"   Color="#392B18"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonDangerFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#7A2C2C"/>
+        <GradientStop Offset="1" Color="#4E1B1B"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonDangerFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#98393A"/>
+        <GradientStop Offset="1" Color="#652424"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonDangerRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#D98A8A"/>
+        <GradientStop Offset="0.5" Color="#98393A"/>
+        <GradientStop Offset="1"   Color="#3E1616"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsButtonCaution" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonCautionFace}"
+                            BorderBrush="{StaticResource UpsButtonCautionRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonCautionFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Irreversible only. If it also gets used for merely-annoying-to-undo, the red stops
+         carrying information and people learn to click through it. -->
+    <Style x:Key="UpsButtonDanger" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonDangerFace}"
+                            BorderBrush="{StaticResource UpsButtonDangerRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonDangerFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsButtonPrimary" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonPrimaryFace}"
+                            BorderBrush="{StaticResource UpsButtonPrimaryRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonPrimaryFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsButtonPositive" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonPositiveFace}"
+                            BorderBrush="{StaticResource UpsButtonPositiveRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonPositiveFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- A nested toggle: one that only means anything while its parent is on. Indented, and lit
          violet rather than cyan so a glance down the page separates the sub-options from the
          settings they hang off. -->

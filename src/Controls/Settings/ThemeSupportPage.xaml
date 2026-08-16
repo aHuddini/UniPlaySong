@@ -19,28 +19,28 @@
             <Grid Margin="0,0,0,10">
                 <TextBlock Text="Theme Support" Style="{StaticResource UpsPageTitle}"/>
             </Grid>
-            <TextBlock Text="These options help certain themes work better with UniPlaySong. Most users never need to change them, unless a theme (or its setup guide) tells you to."
+            <TextBlock Text="These options help certain themes work better with UniPlaySong. Most users never need to change them."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="0,0,0,5"/>
 
             <!-- Login Skip: user-facing compat for fullscreen themes that don't natively support UPS -->
-            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Fullscreen Login Skip" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Fullscreen" Style="{StaticResource UpsSectionTitle}"/></Border>
             <CheckBox Style="{StaticResource UpsToggle}" Content="Theme Compatible Login Skip (Fullscreen)"
                       IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
                       IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
                       Margin="0,5"/>
-            <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted. Themes with built-in UPS integration (like ANIKI REMAKE) handle this automatically and don't need this option."
+            <TextBlock Text="Only needed for fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music, so the theme's login/welcome screen audio isn't interrupted."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,10"/>
 
             <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="PS5-Experience Theme Compatibility" Style="{StaticResource UpsSectionTitle}"/></Border>
-            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable PS5-Experience theme compatibility"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable PS5-Experience Theme Patch"
                       IsChecked="{Binding Settings.PS5ThemeCompatMode}"
                       Margin="0,5,0,0"/>
-            <TextBlock Text="Fixes the selected game's music briefly breaking through at the Welcome Hub on the PS5-Experience theme (and other themes whose 'play default music' trigger flickers as focus settles). Enable only if you use such a theme and notice music switching glitches at hub/menu screens."
+            <TextBlock Text="Fixes the music briefly breaking on the Welcome Hub button on the PS5-Experience theme. Enable if you notice music switching glitches at hub/menu screens."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,15"/>
@@ -51,7 +51,7 @@
                     <TextBlock ups:TrackedCaps.Text="Theme Developer Options" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel Margin="0,10,0,0">
-                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to — they change how UPS music pauses for theme overlays and videos and can break music behavior on themes that rely on it."
+                    <TextBlock Text="&#x26A0; For theme developers only. Do NOT turn these off unless a theme developer tells you to."
                                FontSize="11"
                                Foreground="Orange"
                                TextWrapping="Wrap"
@@ -59,14 +59,14 @@
                     <CheckBox Style="{StaticResource UpsToggle}" Content="Pause music for theme overlays"
                               IsChecked="{Binding Settings.PauseOnThemeOverlay}"
                               Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Uncheck only if a theme developer says their theme raises this for views where music should keep playing. Enabled by default."
+                    <TextBlock Text="When a theme shows an overlay/panel that sets the UPS_MusicControl element, pause the music. Enabled by default."
                                Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="20,0,0,8"/>
                     <CheckBox Style="{StaticResource UpsToggle}" Content="Pause music for theme videos"
                               IsChecked="{Binding Settings.PauseOnThemeVideo}"
                               Margin="0,5,0,0"/>
-                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Uncheck only if a theme developer says their theme uses decorative videos that shouldn't stop the music (e.g. on trophy/menu/login screens). Enabled by default."
+                    <TextBlock Text="When a theme plays a video element (background, trailer, intro, etc.), pause the music. Enabled by default."
                                Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="20,0,0,15"/>
