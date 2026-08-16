@@ -195,11 +195,14 @@
 
         <TabItem Header="Setup">
             <TabControl Style="{StaticResource NavStrip}" Tag="Setup">
-                <TabItem Header="Setup">
-                    <settings:SetupPage/>
+                <TabItem Header="Tools">
+                    <settings:ToolsPage/>
                 </TabItem>
                 <TabItem Header="Downloads">
                     <settings:DownloadsPage/>
+                </TabItem>
+                <TabItem Header="Automations">
+                    <settings:AutomationsPage/>
                 </TabItem>
             </TabControl>
         </TabItem>

@@ -626,6 +626,161 @@
         </Setter>
     </Style>
 
+    <!-- ================================================================================
+         Radio button — the exclusive-choice sibling of the toggle.
+
+         Stays circular where the toggle is square: the shape is the affordance, and a round well
+         has meant "one of these" since physical panels. Same construction otherwise — recessed
+         groove, bevelled rim, a lit indicator when selected — so the two read as one family.
+         ================================================================================ -->
+    <LinearGradientBrush x:Key="UpsWellFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"   Color="#0E141A"/>
+        <GradientStop Offset="0.6" Color="#1B232E"/>
+        <GradientStop Offset="1"   Color="#28323D"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsWellRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#5A6A7A"/>
+        <GradientStop Offset="0.5" Color="#2C3743"/>
+        <GradientStop Offset="1"   Color="#141A21"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsRadio" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="14" Height="14" VerticalAlignment="Center">
+                            <Ellipse x:Name="Well"
+                                     Fill="{StaticResource UpsWellFace}"
+                                     Stroke="{StaticResource UpsWellRim}" StrokeThickness="1"/>
+                            <Ellipse x:Name="Dot" Width="6" Height="6"
+                                     Fill="{StaticResource UpsAccent}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Opacity="0"/>
+                        </Grid>
+                        <ContentPresenter x:Name="Label" Margin="8,0,0,0"
+                                          VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Dot" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Well" Property="Stroke" Value="#8CA0B4"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Well" Property="Opacity" Value="0.35"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.35"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Text input. A recess rather than a raised panel — the inverse of the button, which is what
+         an input should read as. Left unstyled it renders as WPF's stark white box, which on this
+         ground is the brightest thing on the page by a wide margin and pulls the eye off the
+         setting it belongs to. -->
+    <Style x:Key="UpsTextBox" TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="7,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{StaticResource UpsWellFace}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsWellRim}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Well" CornerRadius="4"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"
+                                      Focusable="False" HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Well" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         Button. Same bevelled panel as the cards, at control scale.
+         ================================================================================ -->
+    <LinearGradientBrush x:Key="UpsButtonFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#2B3644"/>
+        <GradientStop Offset="1" Color="#1D2530"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#384656"/>
+        <GradientStop Offset="1" Color="#26303C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#7C8EA0"/>
+        <GradientStop Offset="0.5" Color="#3C4959"/>
+        <GradientStop Offset="1"   Color="#212934"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonFace}"
+                            BorderBrush="{StaticResource UpsButtonRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                        </Trigger>
+                        <!-- Pressed inverts the bevel, so the panel reads as pushed in. -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- A nested toggle: one that only means anything while its parent is on. Indented, and lit
          violet rather than cyan so a glance down the page separates the sub-options from the
          settings they hang off. -->

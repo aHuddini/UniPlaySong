@@ -2,9 +2,9 @@
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class SetupPage : UserControl
+    public partial class AutomationsPage : UserControl
     {
-        public SetupPage()
+        public AutomationsPage()
         {
             InitializeComponent();
         }

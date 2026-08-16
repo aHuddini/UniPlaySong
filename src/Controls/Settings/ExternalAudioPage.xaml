@@ -97,7 +97,7 @@
 
             <TextBlock Text="Ignore audio from these processes" Style="{StaticResource UpsLabel}"
                        Margin="0,0,0,6" IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-            <TextBox Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
+            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
                      Width="420" HorizontalAlignment="Left" Margin="0,0,0,6"
                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,12"

@@ -1,0 +1,57 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.AutomationsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The automations off the old Downloads page. They are the settings that act on their own,
+         which is a different question from how downloading is configured, and they were buried
+         under the cookie and search machinery. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Automations" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="What UniPlaySong does on its own, without you asking."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Library" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Download music for newly added games"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When your library updates, music is fetched for new games automatically. Picks the best match by album and song title, preferring a main theme, and takes one song per game. Needs yt-dlp and FFmpeg."/>
+
+            <CheckBox Content="Download music when a game is installed"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When a game goes from uninstalled to installed and has no music yet, it downloads in the background. Same selection logic as above."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="After Download" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Normalize downloaded music"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Brings every download to the EBU R128 loudness standard so tracks do not jump in volume between games. Uses the settings on Library → Audio Editing. Needs FFmpeg."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

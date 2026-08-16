@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
@@ -13,227 +14,112 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20">
-            <Grid Margin="0,0,0,10">
-                <TextBlock Text="Download Settings" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-            </Grid>
-            <TextBlock Text="Configure download tools, auto-download behavior, and search caching" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,20"/>
 
-            <TextBlock Text="Downloads use yt-dlp and FFmpeg — set both paths in the Setup tab."
-                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,10"/>
+    <!-- How downloading is configured. What happens automatically moved to Automations. -->
 
-            <Separator Margin="0,10"/>
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
 
-            <Expander IsExpanded="False" Margin="0,10,0,10">
+            <TextBlock Text="Downloads" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Cookies, search caching and the hints database. Downloading needs yt-dlp and FFmpeg — set both under Tools."/>
+
+            <!-- Open by default. Every section on this page folds, so with all three shut the page
+                 opens blank and reads as broken; the cookie source is also the one people actually
+                 come here to change. -->
+            <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
-                    <TextBlock Text="Cookie Source" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
+                    <TextBlock ups:TrackedCaps.Text="Cookie Source" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                    <TextBlock Text="Uses your browser's YouTube login to speed up previews/downloads (~2x faster) via audio-only streams. Counts toward your account's activity. Requires the browser signed into YouTube; antivirus may flag Chromium browsers (Chrome, Edge, Brave, Opera)."
-                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                               Text="Uses your browser's YouTube login to reach audio-only streams, which roughly halves download time. It counts toward your account's activity, needs that browser signed in, and antivirus sometimes flags Chromium browsers being read."/>
 
-                    <RadioButton Content="No cookies"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=None}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
+                    <RadioButton Content="No cookies" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=None}"/>
+                    <RadioButton Content="Firefox" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Firefox}"/>
+                    <RadioButton Content="Chrome" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Chrome}"/>
+                    <RadioButton Content="Edge" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Edge}"/>
+                    <RadioButton Content="Brave" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Brave}"/>
+                    <RadioButton Content="Opera" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Opera}"/>
+                    <RadioButton Content="Custom cookies file" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"/>
 
-                    <RadioButton Content="Use cookies from Firefox"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Firefox}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-
-                    <RadioButton Content="Use cookies from Chrome"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Chrome}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-
-                    <RadioButton Content="Use cookies from Edge"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Edge}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-
-                    <RadioButton Content="Use cookies from Brave"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Brave}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-
-                    <RadioButton Content="Use cookies from Opera"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Opera}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-
-                    <RadioButton Content="Use custom cookies file"
-                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
-                                 GroupName="CookieMode"
-                                 Margin="0,3"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,3,0,0">
-                        <TextBox Text="{Binding Settings.CustomCookiesFilePath}"
-                                 Width="300"
-                                 Margin="0,0,10,0"
-                                 IsReadOnly="False"/>
-                        <Button Content="Browse..."
-                                Width="80"
+                    <StackPanel Orientation="Horizontal" Margin="22,8,0,4">
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CustomCookiesFilePath}" Width="300" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
                                 Command="{Binding BrowseForCookiesFile}"/>
                     </StackPanel>
-                    <TextBlock Text="Select a cookies.txt file exported from your browser."
-                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="20,3,0,5"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="22,0,0,4"
+                               Text="A cookies.txt exported from your browser."/>
                 </StackPanel>
             </Expander>
 
-            <Expander IsExpanded="False" Margin="0,10,0,10">
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
                 <Expander.Header>
-                    <TextBlock Text="Download Automations" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+                    <TextBlock ups:TrackedCaps.Text="Search Cache" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                <CheckBox Content="Automatically normalize downloaded music"
-                          IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"
-                          Margin="0,10,0,5"/>
-                <TextBlock Text="When enabled, music files will be automatically normalized to EBU R128 standard after downloading. Uses the normalization settings configured in the Editing tab (FFmpeg path is in Setup). Requires FFmpeg."
-                           FontSize="11"
-                           Foreground="Gray"
-                           TextWrapping="Wrap"
-                           Margin="20,0,0,10"/>
-                </StackPanel>
-            </Expander>
+                <StackPanel>
+                    <CheckBox Content="Cache search results"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.EnableSearchCache}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Keeps KHInsider and YouTube results so the same search is not run twice. Cached entries expire after the duration below."/>
 
-            <Expander IsExpanded="False" Margin="0,10,0,10">
-                <Expander.Header>
-                    <TextBlock Text="Library Automations" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                <CheckBox Content="Automatically download music for new games"
-                          IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"
-                          Margin="0,10,0,5"/>
-                <TextBlock Text="When enabled, music will be automatically downloaded for newly added games when your library is updated. Uses intelligent album and song selection to find the best match (title/main theme preferred). Only 1 song per game is downloaded. Requires yt-dlp and FFmpeg to be configured."
-                           FontSize="11"
-                           Foreground="Gray"
-                           TextWrapping="Wrap"
-                           Margin="20,0,0,10"/>
-    
-                <CheckBox Content="Automatically download music when a game is installed"
-                          IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"
-                          Margin="0,10,0,5"/>
-                <TextBlock Text="When a game changes from uninstalled to installed, music will be automatically downloaded in the background if the game doesn't already have music. Uses the same download logic as above."
-                           FontSize="11"
-                           Foreground="Gray"
-                           TextWrapping="Wrap"
-                           Margin="20,0,0,10"/>
-                </StackPanel>
-            </Expander>
-
-            <!-- DISABLED: Bulk download temporarily removed (GitHub TOS review) -->
-            <!--
-            <Separator Margin="0,15"/>
-
-            <TextBlock Text="Bulk Download" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-
-            <StackPanel Orientation="Horizontal" Margin="0,10">
-                <Button Content="Download Music for All Games"
-                        Width="220"
-                        Margin="0,0,10,0"
-                        Command="{Binding DownloadMusicForAllGamesCommand}"/>
-                <TextBlock Text="Download music for all games that don't have any yet."
-                           VerticalAlignment="Center"
-                           FontSize="11"
-                           Foreground="Gray"
-                           TextWrapping="Wrap"/>
-            </StackPanel>
-            -->
-
-            <!-- Search settings (merged from the former Search tab in v1.5.10) — collapsible -->
-            <Separator Margin="0,20"/>
-            <Expander IsExpanded="False" Margin="0,10,0,10">
-                <Expander.Header>
-                    <TextBlock Text="Search" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                </Expander.Header>
-                <StackPanel Margin="0,10,0,0">
-                    <TextBlock Text="Manage search result caching and the auto-search hints database" FontSize="11" Foreground="#90A8A0" FontStyle="Italic" Margin="0,0,0,15"/>
-
-                    <CheckBox Content="Enable Search Result Caching"
-                              IsChecked="{Binding Settings.EnableSearchCache}"
-                              Margin="0,5"/>
-                    <TextBlock Text="When enabled, caches search results from KHInsider and YouTube to avoid redundant searches. Cached results expire after the specified duration."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,5" IsEnabled="{Binding Settings.EnableSearchCache}">
-                        <TextBlock Text="Cache Duration (days): " VerticalAlignment="Center" Width="150"/>
-                        <TextBox Text="{Binding Settings.SearchCacheDurationDays}"
-                                 Width="60"
-                                 Margin="0,0,10,0"/>
-                        <TextBlock Text="(1-30 days)"
-                                   VerticalAlignment="Center"
-                                   FontSize="11"
-                                   Foreground="Gray"/>
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,8"
+                                IsEnabled="{Binding Settings.EnableSearchCache}">
+                        <TextBlock Text="Expire after" Style="{StaticResource UpsLabel}" Margin="0,0,10,0"/>
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SearchCacheDurationDays}" Width="52" Margin="0,0,8,0"/>
+                        <TextBlock Text="days  (1–30)" Style="{StaticResource UpsHint}" Margin="0,0,0,0"/>
                     </StackPanel>
-                    <TextBlock Text="How long to keep cached search results before they expire. Longer duration = fewer searches but may miss new uploads."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="32,0,0,10"
+                               Text="Longer means fewer searches, but new uploads take longer to appear."/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Content="Clear Search Cache"
-                                Width="150"
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                        <Button Content="Clear search cache" Style="{StaticResource UpsButton}"
                                 Command="{Binding ClearSearchCache}"/>
-                        <TextBlock Text="{Binding CacheStatsText}"
-                                   VerticalAlignment="Center"
-                                   Margin="15,0,0,0"
-                                   FontSize="11"
-                                   Foreground="Gray"/>
+                        <TextBlock Text="{Binding CacheStatsText}" Style="{StaticResource UpsHint}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
                     </StackPanel>
+                </StackPanel>
+            </Expander>
 
-                    <Separator Margin="0,20"/>
-
-                    <!-- Search Hint Database Section -->
-                    <TextBlock Text="Search Hint Database" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,10"/>
-                    <TextBlock Text="The search hints database helps find correct soundtracks for games with problematic names."
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,15"/>
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Search Hints" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                               Text="The hints database helps find the right soundtrack for games whose names search badly."/>
 
                     <!-- OneWay is load-bearing: TwoWay here ping-ponged with the radio below via
-                         InverseBooleanConverter.ConvertBack until the UI stack overflowed (v1.6.8 crash).
-                         The "custom" radio's TwoWay binding is the sole writer for this group. -->
-                    <RadioButton Content="Use bundled database"
-                                 IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}, Mode=OneWay}"
-                                 GroupName="HintsDatabase"
-                                 Margin="0,5,0,5"/>
+                         InverseBooleanConverter.ConvertBack until the UI stack overflowed (v1.6.8
+                         crash). The custom radio's TwoWay binding is the sole writer for this group. -->
+                    <RadioButton Content="Bundled database" Style="{StaticResource UpsRadio}" GroupName="HintsDatabase"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}, Mode=OneWay}"/>
+                    <RadioButton Content="Custom database file" Style="{StaticResource UpsRadio}" GroupName="HintsDatabase"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase}"/>
 
-                    <RadioButton Content="Use custom database file"
-                                 IsChecked="{Binding Settings.UseCustomHintsDatabase}"
-                                 GroupName="HintsDatabase"
-                                 Margin="0,5,0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,10"
+                    <StackPanel Orientation="Horizontal" Margin="22,8,0,6"
                                 IsEnabled="{Binding Settings.UseCustomHintsDatabase}">
-                        <TextBox Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
-                                 Width="350"
-                                 VerticalContentAlignment="Center"
-                                 IsReadOnly="True"/>
-                        <Button Content="Browse..."
-                                Width="80"
-                                Margin="5,0,0,0"
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="320" VerticalContentAlignment="Center" IsReadOnly="True" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
                                 Command="{Binding BrowseForCustomHintsDatabase}"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Status: " VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding HintsDatabaseStatus}"
-                                   VerticalAlignment="Center"
-                                   Foreground="#90CAF9"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
-                        <Button Content="Open Database Folder"
-                                Width="160"
-                                Command="{Binding OpenHintsDatabaseFolder}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                        <TextBlock Text="Status" Style="{StaticResource UpsLabel}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding HintsDatabaseStatus}" Style="{StaticResource UpsValue}"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
