@@ -123,6 +123,77 @@
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
     </Style>
 
+    <!-- A collapsible section. Same accent bar and tracked caps as UpsSectionBar, plus a
+         disclosure chevron, so a collapsed page still reads as the same design rather than as a
+         different kind of control.
+
+         Expanded by default: the settings are the point of the page, and these pages are short
+         enough after the split that opening to a wall of closed headings would cost a click per
+         section for nothing. Set IsExpanded="False" on any section that is genuinely secondary.
+
+         The ToggleButton carries its own template — without one it picks up the host theme's
+         button chrome and the header renders as a raised grey button across the page. -->
+    <Style x:Key="UpsSection" TargetType="Expander">
+        <Setter Property="IsExpanded" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <StackPanel>
+                        <!-- Content must be fed from Header explicitly. Without it the button has
+                             nothing to present and the heading renders as a bare bar and chevron
+                             — which builds and runs perfectly happily. -->
+                        <ToggleButton IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      Cursor="Hand" Focusable="True" HorizontalAlignment="Left">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent"
+                                            BorderBrush="{StaticResource UpsAccent}"
+                                            BorderThickness="3,0,0,0"
+                                            Padding="10,1,0,1" Margin="0,14,0,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                            <!-- Points right when closed, down when open. -->
+                                            <Path x:Name="Chevron" Data="M 0,0 L 4,3.5 L 0,7 Z"
+                                                  Fill="{StaticResource UpsTextFaint}"
+                                                  VerticalAlignment="Center" Margin="8,0,0,0"
+                                                  RenderTransformOrigin="0.5,0.5">
+                                                <Path.RenderTransform>
+                                                    <RotateTransform Angle="0"/>
+                                                </Path.RenderTransform>
+                                            </Path>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="90"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Chevron" Property="Fill"
+                                                    Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="Body" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="Body" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
          explanation read as one block. 24 track + 8 gap. -->
     <Style x:Key="UpsHint" TargetType="TextBlock">
@@ -206,6 +277,20 @@
         <GradientStop Offset="0.55" Color="#1E7391"/>
         <GradientStop Offset="1"    Color="#3BACD1"/>
     </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRim" Color="#1F5F76"/>
+    <SolidColorBrush x:Key="UpsLedOn" Color="#A7E8FF"/>
+
+    <!-- Sub-option on state. A nested toggle only means anything while its parent is on, so it
+         gets its own colour rather than repeating the parent's — violet reads as clearly not-cyan
+         while staying in the cool family, and sits a little duller so it reads as subordinate
+         rather than as a second kind of primary. -->
+    <LinearGradientBrush x:Key="UpsGrooveOnSub" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#2B2450"/>
+        <GradientStop Offset="0.55" Color="#3F3675"/>
+        <GradientStop Offset="1"    Color="#6154A0"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRimSub" Color="#39316B"/>
+    <SolidColorBrush x:Key="UpsLedOnSub" Color="#C3B4FF"/>
 
     <Style x:Key="UpsToggle" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
@@ -214,6 +299,12 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Margin" Value="0,7,0,0"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <!-- The template repurposes these three to carry the ON colours, so a derived style can
+             recolour the switch without restating the whole template. The off groove is fixed,
+             so Background and BorderBrush are free to mean "on". -->
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOn}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRim}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOn}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
@@ -290,8 +381,10 @@
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Track" Property="Background" Value="{StaticResource UpsGrooveOn}"/>
-                            <Setter TargetName="Track" Property="BorderBrush" Value="#1F5F76"/>
+                            <Setter TargetName="Track" Property="Background"
+                                    Value="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="Track" Property="BorderBrush"
+                                    Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <!-- No bloom on the on state. A page carries a dozen or more of these,
                                  and a dozen soft green halos turn a list of settings into a
                                  smear. On reads from the fill and the knob's position, which are
@@ -303,7 +396,8 @@
                                  into place. An alignment swap is correct the instant it renders. -->
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                             <Setter TargetName="Thumb" Property="Margin" Value="0,0,1.5,0"/>
-                            <Setter TargetName="Led" Property="Fill" Value="#A7E8FF"/>
+                            <Setter TargetName="Led" Property="Fill"
+                                    Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="Led" Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -319,9 +413,14 @@
         </Setter>
     </Style>
 
-    <!-- A nested toggle: one that only means anything while its parent is on. -->
+    <!-- A nested toggle: one that only means anything while its parent is on. Indented, and lit
+         violet rather than cyan so a glance down the page separates the sub-options from the
+         settings they hang off. -->
     <Style x:Key="UpsToggleChild" TargetType="CheckBox" BasedOn="{StaticResource UpsToggle}">
         <Setter Property="Margin" Value="24,7,0,0"/>
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOnSub}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRimSub}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOnSub}"/>
     </Style>
 
     <!-- Official Spotify logomark: green circle + 3 sound-wave arcs, viewBox 0 0 168 168. -->

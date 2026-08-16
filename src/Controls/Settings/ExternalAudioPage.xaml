@@ -44,9 +44,11 @@
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="Useful for voice calls, or any time you want zero overlap."/>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
                         IsEnabled="{Binding Settings.PauseOnExternalAudio}">
@@ -84,9 +86,14 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Exclusions" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Exclusions" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
 
             <TextBlock Text="Ignore audio from these processes" Style="{StaticResource UpsLabel}"
                        Margin="0,0,0,6" IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
@@ -95,6 +102,9 @@
                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,12"
                        Text="Comma-separated process names, e.g. obs64, discord. Find them in Task Manager's Details tab. Audio from these will never pause your music."/>
+
+                </StackPanel>
+            </Expander>
 
         </StackPanel>
     </ScrollViewer>
