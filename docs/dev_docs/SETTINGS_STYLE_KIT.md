@@ -324,3 +324,25 @@ rendering black-on-black.
 | Two shadows on one element | One `Effect` per element | Pick one, or fake with a sibling |
 | Inherited text colour to survive | Loses to the host theme's implicit style | Explicit `Foreground` everywhere |
 | `TemplateBinding` in a trigger setter | Unreliable | `{Binding X, RelativeSource={RelativeSource TemplatedParent}}` |
+| A gradient highlight of fixed height | Offsets are a **proportion** of the element | `MappingMode="Absolute"` + `EndPoint` in device units |
+| Backdrop blur / acrylic | `BlurEffect` blurs the element, not what is behind it | Translucent fill over a ground you paint yourself, plus a lit edge |
+
+### Two traps worth copying the fix for
+
+**Gradient offsets scale with the element.** A "3% sheen along the top" renders 10px tall on a
+200px card and 3px on a 60px one, and a column of them looks ragged. Set `MappingMode="Absolute"`
+with `EndPoint` in device units. Better still, put the highlight in a **gradient border** — a
+border is one pixel by construction and cannot develop the problem:
+
+```xml
+<LinearGradientBrush x:Key="Bevel" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Offset="0"    Color="#63768A"/>  <!-- lit top edge -->
+    <GradientStop Offset="0.35" Color="#3D4B5B"/>
+    <GradientStop Offset="1"    Color="#222A34"/>  <!-- shadowed bottom -->
+</LinearGradientBrush>
+```
+
+**Translucency needs a backdrop you own.** Panels at 7–14% white over a *host theme's* background
+have no colour of their own — every one comes out the same washed grey, whatever hue you intended.
+The same technique over a ground your page paints is entirely predictable. Own the backdrop first,
+then glaze.

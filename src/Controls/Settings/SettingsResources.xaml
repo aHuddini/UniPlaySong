@@ -287,72 +287,113 @@
          WPF has no backdrop blur. Real acrylic is a Win32 window attribute, and BlurEffect blurs
          the element rather than what is behind it. This is the honest approximation: translucency
          plus a lit edge, which is what reads as glass anyway at this size. -->
-    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#30FFFFFF"/>
-        <GradientStop Offset="0.05" Color="#0EFFFFFF"/>
-        <GradientStop Offset="0.06" Color="#D81C2530"/>
-        <GradientStop Offset="1"    Color="#D8161D26"/>
+    <!-- MappingMode="Absolute" is load-bearing. Gradient offsets default to a PROPORTION of the
+         element, so a percentage-based sheen grows with the card: a 200px card got a 10px sliver
+         while a 60px one got 3px, and a column of cards looked ragged. Absolute puts StartPoint
+         and EndPoint in device units, so the lit edge is 3px on every card whatever its height,
+         and SpreadMethod (Pad, the default) carries the last stop down the rest of the fill. -->
+    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
+        <GradientStop Offset="0"   Color="#34FFFFFF"/>
+        <GradientStop Offset="0.5" Color="#12FFFFFF"/>
+        <GradientStop Offset="1"   Color="#D81A2330"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#3AA7E4FF"/>
-        <GradientStop Offset="0.05" Color="#12A7E4FF"/>
-        <GradientStop Offset="0.06" Color="#D816232E"/>
-        <GradientStop Offset="1"    Color="#D8121C25"/>
+    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
+        <GradientStop Offset="0"   Color="#40A7E4FF"/>
+        <GradientStop Offset="0.5" Color="#16A7E4FF"/>
+        <GradientStop Offset="1"   Color="#D815232E"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#3A9DE8B4"/>
-        <GradientStop Offset="0.05" Color="#129DE8B4"/>
-        <GradientStop Offset="0.06" Color="#D816241C"/>
-        <GradientStop Offset="1"    Color="#D8121D18"/>
+    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
+        <GradientStop Offset="0"   Color="#409DE8B4"/>
+        <GradientStop Offset="0.5" Color="#169DE8B4"/>
+        <GradientStop Offset="1"   Color="#D815241C"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#3AF0CE8A"/>
-        <GradientStop Offset="0.05" Color="#12F0CE8A"/>
-        <GradientStop Offset="0.06" Color="#D8241E14"/>
-        <GradientStop Offset="1"    Color="#D81C1810"/>
+    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
+        <GradientStop Offset="0"   Color="#40F0CE8A"/>
+        <GradientStop Offset="0.5" Color="#16F0CE8A"/>
+        <GradientStop Offset="1"   Color="#D8241E14"/>
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#3AB4B0FF"/>
-        <GradientStop Offset="0.05" Color="#12B4B0FF"/>
-        <GradientStop Offset="0.06" Color="#D81A1C2E"/>
-        <GradientStop Offset="1"    Color="#D8151726"/>
+    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="0,3" MappingMode="Absolute">
+        <GradientStop Offset="0"   Color="#40B4B0FF"/>
+        <GradientStop Offset="0.5" Color="#16B4B0FF"/>
+        <GradientStop Offset="1"   Color="#D8191C2E"/>
+    </LinearGradientBrush>
+
+    <!-- Bevelled edges. The border is a gradient rather than a flat colour: lit along the top,
+         falling to shadow at the bottom, so the card reads as a raised panel.
+
+         Chosen over the glass sheen for two reasons. It speaks the same language as the toggle
+         cap, which is already a moulded bevel, so the window has one vocabulary instead of two.
+         And a border is one pixel by construction — it cannot develop the size-with-the-card
+         problem the proportional sheen had, on any card, ever.
+
+         The glass brushes above are kept and still used for the fill, so the two treatments
+         compose: bevelled edge, glazed face. -->
+    <LinearGradientBrush x:Key="UpsBevelNeutral" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#63768A"/>
+        <GradientStop Offset="0.35" Color="#3D4B5B"/>
+        <GradientStop Offset="1"    Color="#222A34"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelAccent" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#4E9CBC"/>
+        <GradientStop Offset="0.35" Color="#2E6A82"/>
+        <GradientStop Offset="1"    Color="#1B3E4D"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelGood" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#5FA97A"/>
+        <GradientStop Offset="0.35" Color="#3D7A54"/>
+        <GradientStop Offset="1"    Color="#234730"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelWarn" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#B99548"/>
+        <GradientStop Offset="0.35" Color="#85682D"/>
+        <GradientStop Offset="1"    Color="#4E3D1A"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelInfo" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#7373A8"/>
+        <GradientStop Offset="0.35" Color="#4B4B80"/>
+        <GradientStop Offset="1"    Color="#2C2C4D"/>
     </LinearGradientBrush>
 
     <Style x:Key="UpsCard" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
-        <Setter Property="BorderBrush" Value="#3A4757"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNeutral}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="14,12"/>
         <Setter Property="Margin" Value="0,0,0,12"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
     <!-- Reference / capability -->
     <Style x:Key="UpsCardAccent" TargetType="Border" BasedOn="{StaticResource UpsCard}">
         <Setter Property="Background" Value="{StaticResource UpsGlassAccent}"/>
-        <Setter Property="BorderBrush" Value="#2E6A82"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelAccent}"/>
     </Style>
 
     <!-- Release notes, anything that reads as "new" -->
     <Style x:Key="UpsCardGood" TargetType="Border" BasedOn="{StaticResource UpsCard}">
         <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
-        <Setter Property="BorderBrush" Value="#3D7A54"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelGood}"/>
     </Style>
 
     <!-- Caveats, quirks, anything with a "but" in it -->
     <Style x:Key="UpsCardWarn" TargetType="Border" BasedOn="{StaticResource UpsCard}">
         <Setter Property="Background" Value="{StaticResource UpsGlassWarn}"/>
-        <Setter Property="BorderBrush" Value="#85682D"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelWarn}"/>
     </Style>
 
     <!-- Credit, licensing, people -->
     <Style x:Key="UpsCardInfo" TargetType="Border" BasedOn="{StaticResource UpsCard}">
         <Setter Property="Background" Value="{StaticResource UpsGlassInfo}"/>
-        <Setter Property="BorderBrush" Value="#4B4B80"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelInfo}"/>
     </Style>
 
     <!-- A card's own heading. Sits inside the box, so the box does not need a section bar too. -->

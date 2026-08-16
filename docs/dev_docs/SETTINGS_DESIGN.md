@@ -291,3 +291,14 @@ Collected because each cost time to discover:
 | Multiple layers in a `Border` | One child only | Siblings in a `Grid` |
 | An inherited text colour | Loses to the theme's implicit style | Explicit `Foreground` everywhere |
 | Two shadows on one element | One `Effect` per element | Pick one, or fake with a sibling |
+| A gradient highlight of fixed height | Offsets are a **proportion** of the element | `MappingMode="Absolute"` + `EndPoint` in device units |
+
+### The gradient-scaling trap
+
+Gradient stop offsets default to a proportion of the element, so a "3% sheen at the top" is 10px on
+a 200px card and 3px on a 60px one — a column of cards comes out visibly ragged. Set
+`MappingMode="Absolute"` and put `EndPoint` in device units; `SpreadMethod` (Pad, the default)
+carries the last stop down the remainder.
+
+A **gradient border** sidesteps it entirely, which is why the cards use one for their bevel: a
+border is one pixel by construction, so it cannot scale with its content.
