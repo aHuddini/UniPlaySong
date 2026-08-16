@@ -33,7 +33,11 @@
                                 Click="ExportSettingsJson_Click"
                                 Padding="15,8"
                                 Margin="0,0,10,0"/>
-                        <Button Style="{StaticResource UpsButtonPrimary}" Content="Import Settings (JSON)…"
+                        <!-- Amber, not blue. Export writes a file and changes nothing; import
+                             replaces every setting you currently have. Same severity scale as
+                             Cleanup: neutral is safe, amber changes things you would have to
+                             redo, red is irreversible. -->
+                        <Button Style="{StaticResource UpsButtonCaution}" Content="Import Settings (JSON)…"
                                 Click="ImportSettingsJson_Click"
                                 Padding="15,8"/>
                     </StackPanel>
