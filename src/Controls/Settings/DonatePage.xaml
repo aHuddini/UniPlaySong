@@ -1,0 +1,73 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.DonatePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Support UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="The plugin is free and stays free. This page is only here if you feel like chipping in."/>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,8"
+                               Text="UniPlaySong is built and maintained by Huddini in his own time. Every feature in here started as somebody's request or somebody's bug report, and none of it is behind a paywall."/>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,0"
+                               Text="If it has made your library more fun to browse and you want to say thanks, these are the two places. Neither unlocks anything — there is nothing to unlock."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Where" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ko-fi" Style="{StaticResource UpsLabel}" Margin="0,0,0,8"/>
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,8">
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
+                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ko-fi.com/Z8Z11SG2IK"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">ko-fi.com/Z8Z11SG2IK</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                               Text="One-off, no account needed."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="GitHub" Style="{StaticResource UpsLabel}" Margin="0,0,0,8"/>
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,8">
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
+                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/sponsors/aHuddini"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">github.com/sponsors/aHuddini</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                               Text="Recurring, if you would rather it be ongoing."/>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,4,0,0"
+                       Text="Costs nothing and helps just as much: report a bug you hit, or tell someone the plugin exists."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

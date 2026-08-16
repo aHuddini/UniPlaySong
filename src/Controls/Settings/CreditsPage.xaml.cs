@@ -1,15 +1,15 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class AboutPage : UserControl
+    public partial class CreditsPage : UserControl
     {
-        public AboutPage()
+        public CreditsPage()
         {
             InitializeComponent();
         }
 
-        // Opens the hyperlink URI in the user's default browser.
+        // Opens the URI in the user's default browser.
         private void AboutHyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             try
@@ -22,7 +22,8 @@ namespace UniPlaySong.Controls.Settings
             }
             catch
             {
-                // Silent: if the OS can't open a browser we'd rather do nothing than throw into the settings host.
+                // Silent: if the OS cannot open a browser we would rather do nothing than throw
+                // into the settings host.
             }
         }
     }

@@ -228,6 +228,27 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
+    <!-- Prose. Wider than a hint and at full strength, for pages that explain rather than configure. -->
+    <Style x:Key="UpsBody" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+
+    <!-- A Hyperlink left unstyled renders in WPF's default navy, which is close to unreadable on
+         UpsGround. Accent for the resting state, brighter on hover. -->
+    <Style x:Key="UpsLink" TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="TextDecorations" Value="{x:Null}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#8FDCFF"/>
+                <Setter Property="TextDecorations" Value="Underline"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Card surface, for settings that want grouping beyond a section bar. -->
     <Style x:Key="UpsCard" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource UpsSurface}"/>

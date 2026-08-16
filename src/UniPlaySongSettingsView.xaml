@@ -169,8 +169,17 @@
 
         <TabItem Header="About">
             <TabControl Style="{StaticResource NavStrip}">
-                <TabItem Header="About">
-                    <settings:AboutPage/>
+                <TabItem Header="Overview">
+                    <settings:OverviewPage/>
+                </TabItem>
+                <TabItem Header="Credits">
+                    <settings:CreditsPage/>
+                </TabItem>
+                <TabItem Header="Links">
+                    <settings:LinksPage/>
+                </TabItem>
+                <TabItem Header="Donate">
+                    <settings:DonatePage/>
                 </TabItem>
             </TabControl>
         </TabItem>

@@ -1,0 +1,50 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.CreditsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Credits" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="The music that ships with UniPlaySong, and the people who shaped it."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Bundled Music" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                       Text="The Bundled Ambient default-music option ships these tracks. Full license details in NOTICES.txt."/>
+            <TextBlock Style="{StaticResource UpsBody}"><Run FontWeight="SemiBold">Shades of Orange</Run> — Dave Miles, via Zapsplat (Standard License, Attribution)</TextBlock>
+            <TextBlock Style="{StaticResource UpsBody}"><Run FontWeight="SemiBold">ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>
+            <TextBlock Style="{StaticResource UpsBody}"><Run FontWeight="SemiBold">Dark Ambient Soundscape Music / Dark Space Ambient</Run> — Tunetank (Pixabay Content License)</TextBlock>
+            <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,4"><Run FontWeight="SemiBold">Ambient Background 2</Run> — DELOSound / Roman Dolmatov (Pixabay Content License)</TextBlock>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Thanks" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <TextBlock Style="{StaticResource UpsBody}">
+                <Run FontWeight="SemiBold">Mike Aniki</Run> — for fully integrating UniPlaySong with ANIKI REMAKE, and for requesting and testing the theme-integration features that came out of it.
+            </TextBlock>
+            <TextBlock Style="{StaticResource UpsBody}">
+                <Run FontWeight="SemiBold">Justin Delano (JDD)</Run> — for integrating UniPlaySong with PlayniteAchievements, so achievement unlocks can trigger UPS sounds.
+            </TextBlock>
+            <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,4">
+                <Run FontWeight="SemiBold">Everyone who reported a bug</Run> — taking the time to write up what broke, and often to test the fix, is how a lot of this plugin got sorted out. Thank you.
+            </TextBlock>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

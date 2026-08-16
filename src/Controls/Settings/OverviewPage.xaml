@@ -1,0 +1,114 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.OverviewPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- What the old About tab was, minus the parts that earned their own pages: credits, links
+         and the donate page are siblings now. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Version " Style="{StaticResource UpsHint}" Margin="0"/>
+                <TextBlock Text="{Binding PluginVersion}" Style="{StaticResource UpsHint}"
+                           Margin="0" FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections."/>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="What's New" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10">
+                        <Run Text="Release "/><Run Text="{Binding PluginVersion, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=". This covers the current release only."/>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Fixed:</Run> Preview buttons only played once per settings session — clicking Preview again now works without reopening this window.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Changed:</Run> Removed the System beep sound option. If you had it selected, that sound now uses the bundled jingle.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,4,0,0">
+                        Full version history:
+                        <Hyperlink Style="{StaticResource UpsLink}"
+                                   NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">installer manifest on GitHub</Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Supported Formats" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                               Text="Formats tested with UPS's audio system. Drop files matching these extensions into a game's music folder."/>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">• MP3   • OGG Vorbis   • FLAC   • WAV</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,8,0,4" FontWeight="SemiBold">Retro chiptune, via the bundled Game Music Emu</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,2"><Run FontWeight="SemiBold">.vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,2"><Run FontWeight="SemiBold">.nsf</Run> — NES / Famicom</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,2"><Run FontWeight="SemiBold">.spc</Run> — SNES / Super Famicom</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,2"><Run FontWeight="SemiBold">.hes</Run> — NEC TurboGrafx-16 / PC Engine (needs a sibling .m3u for multi-track playback)</TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Supported Themes" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                               Text="Tested against every UniPlaySong release. These use the theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2" FontWeight="SemiBold">• ANIKI REMAKE</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,8" FontWeight="SemiBold">• PS5 Experience (by saVantCZ)</TextBlock>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                               Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support. The overlay and video pause options live there too."/>
+                </StackPanel>
+            </Expander>
+
+            <!-- Collapsed by default: real edge cases, but nobody opens this page to read them. -->
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Known Quirks" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Real-world edge cases users have hit. The workaround follows each one."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Text="Windows may not auto-sleep while Playnite is running"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
+                               Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio. If your PC doesn't sleep on its own, exit Playnite when you step away."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Text="Pause on focus loss can be unreliable"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
+                               Text="If music gets stuck silent after exiting a game, turn off &quot;Ignore brief focus loss&quot; first. If it still happens, send a log via Advanced → Backup → Export Snapshot."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Text="Active theme music requires theme support"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,4"
+                               Text="This option needs the theme to ship a UPS_BackgroundAudio file. Ask the theme's developer to add one, or pick a different default music source."/>
+                </StackPanel>
+            </Expander>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
