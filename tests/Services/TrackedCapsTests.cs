@@ -33,16 +33,32 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void DoesNotTrackAcrossAWordGap()
+        public void TracksBothSidesOfAWordGapSoItStaysTheWidestGap()
         {
-            // A word gap is already a gap. Tracking it too opens a chasm and the heading reads as
-            // two headings, which is what multi-word titles looked like.
+            // Leaving the word gap untracked gives it one plain space while every letter gap is
+            // space + tracking, so at 10px the words close up and "STYLE PRESET" reads as one
+            // word. Tracking both sides - the rule CSS letter-spacing follows - keeps the word
+            // gap wider than the letter gaps.
             var segs = TrackedCaps.Segments("AB CD", Tracking, Size).ToList();
             var gap = segs.FindIndex(s => s.Text == " " && !s.FontSize.HasValue);
 
             Assert.That(gap, Is.GreaterThan(0), "the real space survives");
-            Assert.That(segs[gap - 1].FontSize.HasValue, Is.False, "no spacer before the word gap");
-            Assert.That(segs[gap + 1].FontSize.HasValue, Is.False, "no spacer after the word gap");
+            Assert.That(segs[gap - 1].FontSize.HasValue, Is.True, "spacer before the word gap");
+            Assert.That(segs[gap + 1].FontSize.HasValue, Is.True, "spacer after the word gap");
+        }
+
+        [Test]
+        public void AWordGapIsWiderThanALetterGap()
+        {
+            var segs = TrackedCaps.Segments("AB CD", Tracking, Size).ToList();
+            var gap = segs.FindIndex(s => s.Text == " " && !s.FontSize.HasValue);
+
+            // Advance is proportional to font size for the same glyph, so the sum of the three
+            // runs spanning a word gap must beat the single spacer between two letters.
+            var letterGap = segs[1].FontSize.Value;
+            var wordGap = segs[gap - 1].FontSize.Value + Size + segs[gap + 1].FontSize.Value;
+
+            Assert.That(wordGap, Is.GreaterThan(letterGap * 2));
         }
 
         [Test]

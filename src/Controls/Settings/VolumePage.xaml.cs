@@ -2,9 +2,9 @@
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class PlaybackPage : UserControl
+    public partial class VolumePage : UserControl
     {
-        public PlaybackPage()
+        public VolumePage()
         {
             InitializeComponent();
         }

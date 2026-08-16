@@ -83,20 +83,16 @@ namespace UniPlaySong.Controls.Settings
             var upper = source.ToUpperInvariant();
             var spacer = fontSize * (tracking / SpaceWidthEm);
 
+            // Spacer after every character except the last, spaces included - the same rule CSS
+            // letter-spacing follows. Skipping it around word gaps, which is what this did first,
+            // leaves a word gap of one plain space while every letter gap is space + tracking; at
+            // 10px that is 2.5px against 1px and "STYLE PRESET" closes up into one word. Tracking
+            // both sides of the space instead makes the word gap the widest gap in the line.
             for (var i = 0; i < upper.Length; i++)
             {
-                // A word gap is already a gap. Tracking it as well opens a chasm and the heading
-                // reads as two headings, which is what multi-word titles looked like.
-                if (upper[i] == ' ')
-                {
-                    result.Add(new Segment { Text = " " });
-                    continue;
-                }
-
                 result.Add(new Segment { Text = upper[i].ToString() });
 
-                var last = i == upper.Length - 1;
-                if (!last && upper[i + 1] != ' ')
+                if (i < upper.Length - 1)
                     result.Add(new Segment { Text = " ", FontSize = spacer });
             }
 

@@ -1,0 +1,64 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.StartupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The three settings that decide whether music plays at all, split off the front of the
+         old Playback tab. They gate everything on the other pages in this group, so they get
+         a page of their own rather than sitting above 700 lines of detail. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Startup" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Whether music plays at all, and whether it starts on its own."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Where Music Plays" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+                <TextBlock Text="Play music in" Style="{StaticResource UpsLabel}" Width="140"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
+                          SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}">
+                    <ComboBoxItem Content="Never"/>
+                    <ComboBoxItem Content="Desktop only"/>
+                    <ComboBoxItem Content="Fullscreen only"/>
+                    <ComboBoxItem Content="Desktop + Fullscreen"/>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,14"
+                       Text="The master switch. To stop automatic playback in Desktop entirely, pick &quot;Fullscreen only&quot; — for finer control there, use the first-launch option below."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Automatic Playback" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Play automatically on first launch (Desktop)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoPlayOnFirstLaunchDesktop}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Off means nothing plays in Desktop until you press Play once. After that first press, game switches play music for the rest of the session. Resets when Playnite restarts."/>
+
+            <CheckBox Content="Skip the first selection after switching to Fullscreen"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.SkipFirstSelectionAfterModeSwitch}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Music stays quiet on the first game you land on after entering Fullscreen mode, so an intro or login screen is not talked over."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

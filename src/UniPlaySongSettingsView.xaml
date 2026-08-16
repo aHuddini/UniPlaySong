@@ -223,8 +223,17 @@
 
         <TabItem Header="Playback">
             <TabControl Style="{StaticResource NavStrip}" Tag="Playback">
-                <TabItem Header="Playback">
-                    <settings:PlaybackPage/>
+                <TabItem Header="Startup">
+                    <settings:StartupPage/>
+                </TabItem>
+                <TabItem Header="Trigger Methods">
+                    <settings:TriggerMethodsPage/>
+                </TabItem>
+                <TabItem Header="Default Music">
+                    <settings:DefaultMusicPage/>
+                </TabItem>
+                <TabItem Header="Randomization">
+                    <settings:RandomizationPage/>
                 </TabItem>
                 <!-- Off the old General tab: these decide whether UPS plays at all, which is a
                      playback question, not a general one. -->
@@ -247,8 +256,23 @@
 
         <TabItem Header="Live Effects">
             <TabControl Style="{StaticResource NavStrip}" Tag="Live Effects">
-                <TabItem Header="Live Effects">
-                    <settings:LiveEffectsPage/>
+                <!-- Volume and Fade Transitions came off Playback. They are not gated by the
+                     Live Effects master toggle, but they are the same subject — level and
+                     shape — and the reset map already filed them under this group. -->
+                <TabItem Header="Volume">
+                    <settings:VolumePage/>
+                </TabItem>
+                <TabItem Header="Fade Transitions">
+                    <settings:FadeTransitionsPage/>
+                </TabItem>
+                <TabItem Header="Effects">
+                    <settings:EffectsPage/>
+                </TabItem>
+                <TabItem Header="Reverb">
+                    <settings:ReverbPage/>
+                </TabItem>
+                <TabItem Header="Visualizers">
+                    <settings:VisualizersPage/>
                 </TabItem>
             </TabControl>
         </TabItem>

@@ -1,0 +1,74 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.VolumePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Volume and fades moved here off the old Playback tab. They are level and shape, which
+         is what the rest of this group is about; Playback is about which song plays. Nothing
+         on this page needs Live Effects switched on — output gain, which does, sits with the
+         chain on the Effects page. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Volume" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="How loud UniPlaySong plays, and when it should back off."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Level" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
+                <TextBlock Text="Music volume" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0" Maximum="100" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.MusicVolume}"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.MusicVolume, StringFormat='{}{0}%'}"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <TextBlock Text="Fullscreen boost" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0" Maximum="20" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.FullscreenVolumeBoostPercent}"
+                        TickFrequency="1" IsSnapToTickEnabled="True"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.FullscreenVolumeBoostPercent, StringFormat='+{0}%'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,14"
+                       Text="Nudges the level up in Fullscreen to offset Playnite's own background-volume reduction. Desktop is untouched. Default 0%."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="When Idle" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Fade down to 25% instead of pausing"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.LowerVolumeOnIdle}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Music drops quietly into the background after a spell of no input, and comes straight back up on the next keypress. A gentler alternative to the idle pause on the Pauses page."/>
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
+                        IsEnabled="{Binding Settings.LowerVolumeOnIdle}">
+                <TextBlock Text="Idle timeout" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="1" Maximum="60" Width="220" VerticalAlignment="Center"
+                        Value="{Binding Settings.IdleVolumeTimeoutMinutes}"
+                        TickFrequency="5" IsSnapToTickEnabled="False"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.IdleVolumeTimeoutMinutes, StringFormat='{}{0} min'}"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
