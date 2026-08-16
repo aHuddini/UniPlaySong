@@ -304,16 +304,16 @@
     </LinearGradientBrush>
 
     <!-- Sub-option on state. A nested toggle only means anything while its parent is on, so it
-         gets its own colour rather than repeating the parent's — violet reads as clearly not-cyan
-         while staying in the cool family, and sits a little duller so it reads as subordinate
-         rather than as a second kind of primary. -->
+         gets its own colour rather than repeating the parent's. Deep blue sits beside the cyan
+         parent without leaving the cool family, and reads a stop or two quieter, which is what
+         keeps a sub-option from looking like a second kind of primary. -->
     <LinearGradientBrush x:Key="UpsGrooveOnSub" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#2B2450"/>
-        <GradientStop Offset="0.55" Color="#3F3675"/>
-        <GradientStop Offset="1"    Color="#6154A0"/>
+        <GradientStop Offset="0"    Color="#16273F"/>
+        <GradientStop Offset="0.55" Color="#22406B"/>
+        <GradientStop Offset="1"    Color="#3A63A0"/>
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="UpsOnRimSub" Color="#39316B"/>
-    <SolidColorBrush x:Key="UpsLedOnSub" Color="#C3B4FF"/>
+    <SolidColorBrush x:Key="UpsOnRimSub" Color="#1E355C"/>
+    <SolidColorBrush x:Key="UpsLedOnSub" Color="#A8C6F0"/>
 
     <Style x:Key="UpsToggle" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
