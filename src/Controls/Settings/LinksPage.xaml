@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.LinksPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.LinksPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -25,11 +25,10 @@
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
                        Text="Where the project lives, and where to get the optional external tools."/>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Project" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
-            <Grid Margin="0,0,0,4">
+            <Border Style="{StaticResource UpsCardAccent}">
+              <StackPanel>
+                <TextBlock Text="Project" Style="{StaticResource UpsCardTitle}"/>
+                <Grid Margin="0,0,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -56,11 +55,13 @@
                                NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
                                RequestNavigate="AboutHyperlink_RequestNavigate">Installer manifest</Hyperlink>
                 </TextBlock>
-            </Grid>
-
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="External Tools" Style="{StaticResource UpsSectionTitle}"/>
+                </Grid>
+              </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+              <StackPanel>
+                <TextBlock Text="External Tools" Style="{StaticResource UpsCardTitle}"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
                        Text="Most features work out of the box. A few need tools you install yourself, then point the plugin at under Setup → Tools."/>
 
@@ -84,6 +85,8 @@
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ffmpeg.org/download.html"
                            RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org/download</Hyperlink>
             </TextBlock>
+              </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

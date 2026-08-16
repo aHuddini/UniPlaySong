@@ -78,10 +78,20 @@
     <SolidColorBrush x:Key="UpsWarn"       Color="#C8A24B"/>
     <SolidColorBrush x:Key="UpsDanger"     Color="#E08070"/>
 
+    <!-- The page ground is a slow diagonal rather than a flat fill. Two reasons: a flat ground
+         gives a translucent card nothing to sit on, so glass reads as plain grey; and a large
+         unbroken block of one colour looks like an unpainted surface rather than a chosen one.
+         The range is tiny on purpose — this should never be legible as a gradient. -->
+    <LinearGradientBrush x:Key="UpsGroundGlass" StartPoint="0,0" EndPoint="0.85,1">
+        <GradientStop Offset="0"   Color="#151C25"/>
+        <GradientStop Offset="0.5" Color="#12171E"/>
+        <GradientStop Offset="1"   Color="#0F141B"/>
+    </LinearGradientBrush>
+
     <!-- Page root. Padding sits here rather than on the inner panel so the ground fills the whole
          page instead of leaving a theme-coloured gutter round the edge. -->
     <Style x:Key="UpsPage" TargetType="ScrollViewer">
-        <Setter Property="Background" Value="{StaticResource UpsGround}"/>
+        <Setter Property="Background" Value="{StaticResource UpsGroundGlass}"/>
         <Setter Property="Padding" Value="22,18,22,24"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
@@ -249,14 +259,113 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Card surface, for settings that want grouping beyond a section bar. -->
+    <!-- ================================================================================
+         Cards.
+
+         Informational pages (About and its siblings) are built from these rather than from
+         section bars. A run of prose under flat headings reads as one wall of text no matter how
+         the headings are set; a tinted, bordered box makes each block a distinct object you can
+         skip or land on, and the tint says what KIND of block it is before you read a word.
+
+         Settings pages are the opposite case — there the rows are the objects, and cards around
+         them would just add noise. Use UpsSectionBar / UpsSection there.
+
+         Tints are the palette's hues at low saturation over the page ground, not the saturated
+         borders this replaces; a #FF8888FF border was fighting the slate rather than sitting in
+         it. Keep the background near UpsSurface so text contrast never depends on the hue.
+         ================================================================================ -->
+    <!-- Glazed, not flat. Each fill runs a bright sliver across the top few percent — the lit
+         edge of a pane catching light — then falls to a translucent tint. Alpha is real here
+         (0xD8, ~85%) so the ground's diagonal shows through and the card sits ON something.
+
+         Note this reverses the warning left on the Quick Start palette, and deliberately. That
+         warning was about translucent panels over the HOST THEME's background: white at 7-14%
+         has no colour of its own, so every panel came out the same washed grey over an unknown
+         ground. These sit over a ground we paint ourselves, so the result is predictable — the
+         technique was never the problem, not owning the backdrop was.
+
+         WPF has no backdrop blur. Real acrylic is a Win32 window attribute, and BlurEffect blurs
+         the element rather than what is behind it. This is the honest approximation: translucency
+         plus a lit edge, which is what reads as glass anyway at this size. -->
+    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#30FFFFFF"/>
+        <GradientStop Offset="0.05" Color="#0EFFFFFF"/>
+        <GradientStop Offset="0.06" Color="#D81C2530"/>
+        <GradientStop Offset="1"    Color="#D8161D26"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#3AA7E4FF"/>
+        <GradientStop Offset="0.05" Color="#12A7E4FF"/>
+        <GradientStop Offset="0.06" Color="#D816232E"/>
+        <GradientStop Offset="1"    Color="#D8121C25"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#3A9DE8B4"/>
+        <GradientStop Offset="0.05" Color="#129DE8B4"/>
+        <GradientStop Offset="0.06" Color="#D816241C"/>
+        <GradientStop Offset="1"    Color="#D8121D18"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#3AF0CE8A"/>
+        <GradientStop Offset="0.05" Color="#12F0CE8A"/>
+        <GradientStop Offset="0.06" Color="#D8241E14"/>
+        <GradientStop Offset="1"    Color="#D81C1810"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#3AB4B0FF"/>
+        <GradientStop Offset="0.05" Color="#12B4B0FF"/>
+        <GradientStop Offset="0.06" Color="#D81A1C2E"/>
+        <GradientStop Offset="1"    Color="#D8151726"/>
+    </LinearGradientBrush>
+
     <Style x:Key="UpsCard" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource UpsSurface}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource UpsStroke}"/>
+        <Setter Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+        <Setter Property="BorderBrush" Value="#3A4757"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="14,12"/>
-        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
+
+    <!-- Reference / capability -->
+    <Style x:Key="UpsCardAccent" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassAccent}"/>
+        <Setter Property="BorderBrush" Value="#2E6A82"/>
+    </Style>
+
+    <!-- Release notes, anything that reads as "new" -->
+    <Style x:Key="UpsCardGood" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
+        <Setter Property="BorderBrush" Value="#3D7A54"/>
+    </Style>
+
+    <!-- Caveats, quirks, anything with a "but" in it -->
+    <Style x:Key="UpsCardWarn" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassWarn}"/>
+        <Setter Property="BorderBrush" Value="#85682D"/>
+    </Style>
+
+    <!-- Credit, licensing, people -->
+    <Style x:Key="UpsCardInfo" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassInfo}"/>
+        <Setter Property="BorderBrush" Value="#4B4B80"/>
+    </Style>
+
+    <!-- A card's own heading. Sits inside the box, so the box does not need a section bar too. -->
+    <Style x:Key="UpsCardTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <!-- Bulleted line inside a card. -->
+    <Style x:Key="UpsBullet" TargetType="TextBlock" BasedOn="{StaticResource UpsBody}">
+        <Setter Property="Margin" Value="2,0,0,3"/>
     </Style>
 
     <!-- ================================================================================
