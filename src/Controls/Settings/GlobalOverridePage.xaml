@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.GlobalOverridePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Global Override" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="The two switches that decide whether UniPlaySong plays at all."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music"
+                      IsChecked="{Binding Settings.EnableMusic}"
+                      Margin="0,5"/>
+            <TextBlock Text="When enabled, music will automatically play when selecting games (console-like preview experience)"
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="20,0,0,10"/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Suppress Playnite Native Background Music"
+                      IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
+                      Margin="0,5"/>
+            <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="20,0,0,2"/>
+            <TextBlock Text="WARNING: Disabling this option will allow Playnite's vanilla theme music to play simultaneously alongside UniPlaySong music, causing annoying audio issues. This WILL negatively impact themes like ANIKI Remake and other fullscreen themes that include their own music. It is strongly recommended to keep this option enabled to ensure proper plugin functionality."
+                       FontSize="11"
+                       Foreground="#FFD44040"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"
+                       Margin="20,0,0,10"/>
+
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

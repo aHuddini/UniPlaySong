@@ -1,12 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
-using UniPlaySong.Common;
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class GeneralPage : UserControl
+    public partial class MediaControlsPage : UserControl
     {
-        public GeneralPage()
+        public MediaControlsPage()
         {
             InitializeComponent();
         }
@@ -72,6 +71,5 @@ namespace UniPlaySong.Controls.Settings
                     vm?.RefreshNowPlayingPreview();
             }
         }
-
     }
 }

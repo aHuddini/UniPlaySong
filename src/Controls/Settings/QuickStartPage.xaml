@@ -129,7 +129,11 @@
          The tile template is defined once as a resource and reused by both mode lists; it was
          duplicated per list before, so a styling change had to be made twice and could drift. -->
 
-    <ScrollViewer Background="{StaticResource QsGround}" Padding="20" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+    <!-- Ground comes from the shared UpsGroundGlass, not this page's own QsGround, so Profiles
+         does not read as a different application to the pages either side of it. The tile
+         treatment below stays its own — this page is a chooser, not a settings list. -->
+    <ScrollViewer Background="{StaticResource UpsGroundGlass}" Padding="22,18,22,24"
+                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   TextElement.Foreground="{StaticResource QsText}">
         <!-- Padding on the ScrollViewer, not Margin here, so QsGround fills the whole
              tab instead of leaving a theme-coloured gutter around the edge. -->

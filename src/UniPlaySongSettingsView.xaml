@@ -187,7 +187,7 @@
         <TabItem Header="Quick Start"
                  ToolTip="Set up UniPlaySong in one click, without going through every tab.">
             <TabControl Style="{StaticResource NavStrip}">
-                <TabItem Header="Quick Start">
+                <TabItem Header="Profiles">
                     <settings:QuickStartPage/>
                 </TabItem>
             </TabControl>
@@ -209,8 +209,14 @@
 
         <TabItem Header="General">
             <TabControl Style="{StaticResource NavStrip}" Tag="General">
-                <TabItem Header="General">
-                    <settings:GeneralPage/>
+                <TabItem Header="Media Controls">
+                    <settings:MediaControlsPage/>
+                </TabItem>
+                <TabItem Header="Tagging">
+                    <settings:TaggingPage/>
+                </TabItem>
+                <TabItem Header="Performance">
+                    <settings:PerformancePage/>
                 </TabItem>
             </TabControl>
         </TabItem>
@@ -219,6 +225,11 @@
             <TabControl Style="{StaticResource NavStrip}" Tag="Playback">
                 <TabItem Header="Playback">
                     <settings:PlaybackPage/>
+                </TabItem>
+                <!-- Off the old General tab: these decide whether UPS plays at all, which is a
+                     playback question, not a general one. -->
+                <TabItem Header="Global Override">
+                    <settings:GlobalOverridePage/>
                 </TabItem>
             </TabControl>
         </TabItem>
@@ -283,6 +294,10 @@
                 </TabItem>
                 <TabItem Header="Cleanup">
                     <settings:CleanupPage/>
+                </TabItem>
+                <!-- The old General tab's Troubleshooting section. -->
+                <TabItem Header="Debug">
+                    <settings:DebugPage/>
                 </TabItem>
                 <!-- Hidden: a dev test surface, deliberately not exposed to users. Kept for future editing. -->
                 <TabItem Header="Toast Notifications" Visibility="Collapsed">

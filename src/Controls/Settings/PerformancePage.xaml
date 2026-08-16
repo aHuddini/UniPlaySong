@@ -1,0 +1,41 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.PerformancePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Performance" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Caching and housekeeping that trade memory or disk for speed."/>
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Song List Cache"
+                          IsChecked="{Binding Settings.EnableSongListCache}"
+                          Margin="0,5"/>
+                <TextBlock Text="When enabled, music directory lists are cached in memory during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts."
+                           Style="{StaticResource UpsHint}"
+                           TextWrapping="Wrap"
+                           Margin="20,0,0,10"/>
+                <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library. Manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
+                           FontSize="11"
+                           Foreground="#FFB74D"
+                           TextWrapping="Wrap"
+                           Margin="20,0,0,15"/>
+    
+                <!-- Note: "Release Audio When Idle" lives on the Experimental tab (v1.5.4) -->
+    
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
