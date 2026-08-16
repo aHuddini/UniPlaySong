@@ -42,7 +42,7 @@
                              Margin="0,3"/>
                 <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
                     <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AchievementJingles}"
-                              ItemTemplate="{StaticResource UpsJingleItemTemplate}"
+                              ItemTemplate="{StaticResource UpsDisplayNameTemplate}"
                               SelectedValuePath="File"
                               SelectedValue="{Binding Settings.SelectedAchievementJingle}"
                               Width="300"

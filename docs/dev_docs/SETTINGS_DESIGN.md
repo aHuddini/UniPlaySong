@@ -97,18 +97,30 @@ it separates from its hint by weight and not only by colour.
 ### Tracked caps
 
 WPF's `TextBlock` has **neither `text-transform` nor `letter-spacing`**. `TrackedCaps` (an attached
-property in `src/Controls/Settings/TrackedCaps.cs`) supplies both by rewriting the string with a
-hair space between letters — skipping any spacer that would straddle a real word gap, since
-padding both sides of an existing space opens a chasm and "WINDOW FOCUS" reads as two headings.
+property in `src/Controls/Settings/TrackedCaps.cs`) supplies both by rebuilding `Inlines` as a run
+per character with a **space run at a scaled-down `FontSize`** between them.
 
 ```xml
 <TextBlock ups:TrackedCaps.Text="Window Focus" Style="{StaticResource UpsSectionTitle}"/>
 ```
 
 Set `TrackedCaps.Text`, never `Text` — the readable string stays in the markup, so pages remain
-greppable and a translator sees ordinary words. True tracking would need `Glyphs` with explicit
-`Indices`, the font URI and per-character advance widths; at 10px the hair space lands within a
-fraction of a pixel of that.
+greppable and a translator sees ordinary words.
+
+**Why a scaled space and not a hair space.** A hair space is whatever width the font decides to
+give it, which made `Tracking` a label rather than a value — the em figure in the style meant
+nothing and could not be tuned. A space is close enough to a quarter em in the faces this ships
+against that `FontSize × (tracking ÷ 0.25)` lands on the requested tracking, so 0.1em at 10px is
+genuinely 1px of advance. True tracking would need `Glyphs` with explicit `Indices`, the font URI
+and per-character advance widths.
+
+**The spacer follows every character, spaces included** — the rule CSS `letter-spacing` follows.
+This looks wrong and is not: the intuition is that a word gap is already a gap and tracking it
+too would open a chasm, and that is what this did first. It produces the opposite problem. A
+plain space at 10px is ~2.5px while every letter gap is space + tracking, so at heading sizes the
+word gap is barely wider than the letter gaps and `STYLE PRESET` closes up into one word. Tracking
+both sides of the space makes the word gap the widest gap in the line, which is what tells the eye
+where one word ends. `TrackedCapsTests` pins both halves of this.
 
 ---
 
@@ -292,7 +304,7 @@ Collected because each cost time to discover:
 | An inherited text colour | Loses to the theme's implicit style | Explicit `Foreground` everywhere |
 | Two shadows on one element | One `Effect` per element | Pick one, or fake with a sibling |
 | A gradient highlight of fixed height | Offsets are a **proportion** of the element | `MappingMode="Absolute"` + `EndPoint` in device units |
-| `DisplayMemberPath` on a restyled ComboBox | Templates dropdown items only; closed box shows `ToString()` | Set `ItemTemplate` (e.g. `UpsJingleItemTemplate`) |
+| `DisplayMemberPath` on a restyled ComboBox | Templates dropdown items only; closed box shows `ToString()` | Set `ItemTemplate` (`UpsDisplayNameTemplate` / `UpsLabelTemplate`) |
 
 ### DisplayMemberPath does not reach the closed box
 
@@ -302,9 +314,12 @@ Collected because each cost time to discover:
 `UniPlaySong.Services.BundledJingleInfo`. The stock template hides this, so it appears the moment
 the control is restyled and looks like the new template's fault.
 
-Setting `ItemTemplate` populates `SelectionBoxItemTemplate` from it and fixes both. Two
-`DisplayMemberPath` uses remain, on Experimental and Playback — **convert them when those pages are
-restyled**, or they will show the same thing.
+Setting `ItemTemplate` populates `SelectionBoxItemTemplate` from it and fixes both. Two templates
+cover every dropdown in the window — `UpsDisplayNameTemplate` and `UpsLabelTemplate` — and are
+chosen by **the property the items expose, not by what the dropdown is for**: jingles and bundled
+presets both carry `DisplayName` and share one. No `DisplayMemberPath` remains on a restyled
+`ComboBox`; adding one back reintroduces the bug silently, because the dropdown list still looks
+right and only the closed box is wrong.
 
 ### The gradient-scaling trap
 

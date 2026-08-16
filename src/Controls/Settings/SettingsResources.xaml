@@ -785,7 +785,7 @@
          Dropdown. The closed box is the same recess as UpsTextBox — it is an input — and the
          popup is a raised panel, since it sits above the page.
          ================================================================================ -->
-    <!-- Use this instead of DisplayMemberPath on any dropdown of BundledJingleInfo.
+    <!-- Use one of these instead of DisplayMemberPath on ANY dropdown bound to objects.
          DisplayMemberPath templates the dropdown ITEMS only. The closed selection box renders
          from SelectionBoxItemTemplate, which WPF leaves null when only DisplayMemberPath is set —
          so the ContentPresenter falls back to ToString() and the box reads
@@ -793,9 +793,14 @@
          SelectionBoxItemTemplate from it, which fixes both at once.
 
          The stock ComboBox template hides this, which is why it only appeared once the control
-         was restyled. -->
-    <DataTemplate x:Key="UpsJingleItemTemplate">
+         was restyled. Pick by the property the items expose, not by what the dropdown is for:
+         jingles and bundled presets both carry DisplayName and share one template. -->
+    <DataTemplate x:Key="UpsDisplayNameTemplate">
         <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+    </DataTemplate>
+
+    <DataTemplate x:Key="UpsLabelTemplate">
+        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
     </DataTemplate>
 
     <Style x:Key="UpsComboBoxItem" TargetType="ComboBoxItem">

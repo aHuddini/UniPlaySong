@@ -58,7 +58,7 @@
             <StackPanel Orientation="Horizontal" Margin="0,8">
                 <TextBlock Style="{StaticResource UpsLabel}" Text="Buffer: " VerticalAlignment="Center" Width="100"/>
                 <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AudioBufferOptions}"
-                          DisplayMemberPath="Label"
+                          ItemTemplate="{StaticResource UpsLabelTemplate}"
                           SelectedValuePath="Samples"
                           SelectedValue="{Binding Settings.AudioBufferSamples}"
                           Width="340"/>
