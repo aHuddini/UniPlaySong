@@ -258,8 +258,14 @@
 
         <TabItem Header="Library">
             <TabControl Style="{StaticResource NavStrip}" Tag="Library">
-                <TabItem Header="Editing">
-                    <settings:EditingPage/>
+                <TabItem Header="Statistics">
+                    <settings:StatisticsPage/>
+                </TabItem>
+                <TabItem Header="Audio Editing">
+                    <settings:AudioEditingPage/>
+                </TabItem>
+                <TabItem Header="Audio Management">
+                    <settings:AudioManagementPage/>
                 </TabItem>
             </TabControl>
         </TabItem>

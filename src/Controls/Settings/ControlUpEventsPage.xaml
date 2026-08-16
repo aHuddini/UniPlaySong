@@ -39,7 +39,7 @@
                                      GroupName="ControlUpDetectSound"
                                      Margin="0,3"/>
                         <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
-                            <TextBlock Text="Coin Pickup"
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Coin Pickup"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0"/>
                             <Button Style="{StaticResource UpsButton}" Content="Preview"

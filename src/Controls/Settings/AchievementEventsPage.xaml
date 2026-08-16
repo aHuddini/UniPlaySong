@@ -71,7 +71,7 @@
             </StackPanel>
 
             <!-- Per-rarity sound pack -->
-            <TextBlock Text="Rarity sound pack" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,2"
+            <TextBlock Style="{StaticResource UpsLabel}" Text="Rarity sound pack" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,2"
                        IsEnabled="{Binding Settings.EnableAchievementSound}"/>
             <StackPanel Margin="0,0,0,4" IsEnabled="{Binding Settings.EnableAchievementSound}">
                 <RadioButton Style="{StaticResource UpsRadio}" Content="Active theme's sounds" GroupName="AchievementPack" Margin="0,3"
@@ -84,7 +84,7 @@
             </StackPanel>
 
             <!-- Per-rarity custom files (always visible; setting one switches the pack to Custom) -->
-            <TextBlock Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
+            <TextBlock Style="{StaticResource UpsLabel}" Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
                        IsEnabled="{Binding Settings.EnableAchievementSound}"/>
             <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,6"
                        IsEnabled="{Binding Settings.EnableAchievementSound}"
@@ -93,7 +93,7 @@
                 <!-- Common -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgeBronzePath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Common" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Common" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4"
@@ -103,7 +103,7 @@
                 <!-- Uncommon -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgeSilverPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Uncommon" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Uncommon" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.UncommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4"
@@ -113,7 +113,7 @@
                 <!-- Rare -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgeGoldPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Rare" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.RareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4"
@@ -123,7 +123,7 @@
                 <!-- Ultra-Rare -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgePlatinumPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Ultra-Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Ultra-Rare" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.UltraRareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4"
@@ -133,7 +133,7 @@
                 <!-- Hidden -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgeHiddenPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Hidden" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Hidden" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.HiddenAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4"
@@ -143,7 +143,7 @@
                 <!-- Capstone -->
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Image Source="{Binding BadgePerfectPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
-                    <TextBlock Text="Capstone" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Capstone" Width="80" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CapstoneAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
                              IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                     <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4"

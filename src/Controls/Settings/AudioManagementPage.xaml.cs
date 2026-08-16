@@ -2,9 +2,9 @@
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class EditingPage : UserControl
+    public partial class AudioManagementPage : UserControl
     {
-        public EditingPage()
+        public AudioManagementPage()
         {
             InitializeComponent();
         }
