@@ -19,6 +19,23 @@
         <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
 
+    <!-- TEMPORARY — delete this ItemGroup together with src/DesignReworkIdea/ once the settings
+         revamp ships. Both exist only for the duration of that work.
+
+         Design explorations (Mike Aniki's settings mockups) live under src/ for easy reference, but
+         the SDK globs everything under src/ into the build. The mockup declares the SAME x:Class as
+         the real settings view, so WPF generated that class twice and the build failed with
+         duplicate InitializeComponent/_contentLoaded. Excluded from every item type rather than
+         just Page: a scratch .cs would collide the same way. -->
+    <ItemGroup>
+        <Page Remove="DesignReworkIdea\**" />
+        <Compile Remove="DesignReworkIdea\**" />
+        <Resource Remove="DesignReworkIdea\**" />
+        <None Remove="DesignReworkIdea\**" />
+        <EmbeddedResource Remove="DesignReworkIdea\**" />
+        <ApplicationDefinition Remove="DesignReworkIdea\**" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="NVorbis" Version="0.10.4" />
         <PackageReference Include="PlayniteSDK" Version="6.16.0.0" PrivateAssets="none" />
