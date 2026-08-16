@@ -280,6 +280,29 @@
     <SolidColorBrush x:Key="UpsOnRim" Color="#1F5F76"/>
     <SolidColorBrush x:Key="UpsLedOn" Color="#A7E8FF"/>
 
+    <!-- Hover. Three surfaces move together — the cap face, its rim, and the hairline along the
+         track's top lip — because any one of them alone is too quiet to notice at 24x13. The
+         track's own fill is deliberately left alone: it carries the on/off state, and a hover
+         that recoloured it would read as the setting having changed. -->
+    <LinearGradientBrush x:Key="UpsKnobFaceHover" StartPoint="0.3,0" EndPoint="0.7,1">
+        <GradientStop Offset="0"    Color="#FFFFFF"/>
+        <GradientStop Offset="0.30" Color="#F6FAFE"/>
+        <GradientStop Offset="0.62" Color="#D2DEEA"/>
+        <GradientStop Offset="1"    Color="#94A3B2"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsLipSheen" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0"   Color="#00FFFFFF"/>
+        <GradientStop Offset="0.5" Color="#62FFFFFF"/>
+        <GradientStop Offset="1"   Color="#00FFFFFF"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsLipSheenHover" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0"   Color="#00FFFFFF"/>
+        <GradientStop Offset="0.5" Color="#B8FFFFFF"/>
+        <GradientStop Offset="1"   Color="#00FFFFFF"/>
+    </LinearGradientBrush>
+
     <!-- Sub-option on state. A nested toggle only means anything while its parent is on, so it
          gets its own colour rather than repeating the parent's — violet reads as clearly not-cyan
          while staying in the cool family, and sits a little duller so it reads as subordinate
@@ -330,15 +353,8 @@
                             <!-- Hairline catching the light along the top lip. Sits above the
                                  inset band so the groove reads as an edge, not a gradient. -->
                             <Border x:Name="Lip" Height="1" VerticalAlignment="Top"
-                                    Margin="2,0,2,0" IsHitTestVisible="False">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Offset="0"   Color="#00FFFFFF"/>
-                                        <GradientStop Offset="0.5" Color="#62FFFFFF"/>
-                                        <GradientStop Offset="1"   Color="#00FFFFFF"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
+                                    Margin="2,0,2,0" IsHitTestVisible="False"
+                                    Background="{StaticResource UpsLipSheen}"/>
 
                             <Border x:Name="Thumb" Width="12" Height="10" CornerRadius="0"
                                     Background="{StaticResource UpsKnobFace}"
@@ -400,8 +416,12 @@
                                     Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="Led" Property="Opacity" Value="1"/>
                         </Trigger>
+                        <!-- After the IsChecked trigger, so on a lit switch the hover still wins
+                             for the surfaces it touches. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Thumb" Property="BorderBrush" Value="#93A4B4"/>
+                            <Setter TargetName="Thumb" Property="Background" Value="{StaticResource UpsKnobFaceHover}"/>
+                            <Setter TargetName="Thumb" Property="BorderBrush" Value="#A9BAC9"/>
+                            <Setter TargetName="Lip" Property="Background" Value="{StaticResource UpsLipSheenHover}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Track" Property="Opacity" Value="0.35"/>
