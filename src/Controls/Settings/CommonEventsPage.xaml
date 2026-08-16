@@ -24,7 +24,7 @@
 
             <TextBlock Text="Common Events" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="When music should pause on its own, and when it should pick back up."/>
+                       Text="When music should pause on its own."/>
 
             <!-- Not collapsible, deliberately. Pause-on-game-launch is the setting people open
                  this page for, and the warning under it is the one that most needs to be seen.
@@ -40,13 +40,13 @@
                     <TextBlock Style="{StaticResource UpsHint}"
                                Text="Music fades out as soon as you click Play, and resumes when the game closes. Compatible with the Splash Screen plugin."/>
                     <TextBlock Style="{StaticResource UpsDangerNote}"
-                               Text="Keep this on for normal behaviour. With it off, music keeps playing in the background while your game runs. To let Radio Mode play over a game, leave this on and use the toggle below instead."/>
+                               Text="Keep this on to ensure normal plugin behaviour. If disabled, UPS music keeps playing in the background while your game runs."/>
 
-                    <CheckBox Content="Except Radio Mode — radio plays through games"
+                    <CheckBox Content="Except Radio Mode (Radio Plays Through Games, PS4-Style)"
                               Style="{StaticResource UpsToggleChild}"
                               IsChecked="{Binding Settings.RadioPlaysThroughGames}"/>
                     <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Radio Mode (UPS pool or Spotify) keeps playing while a game runs. Game-specific music still pauses. Works whether or not the pause above is on. Manual pause and screen lock still stop the radio."/>
+                               Text="Radio Mode keeps music playing while a game runs, PS4-style. Applies to a Default music pool source or Spotify mode. Game select music remains paused."/>
 
             </StackPanel>
 
@@ -67,7 +67,7 @@
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.PauseOnIdle}"/>
                     <TextBlock Style="{StaticResource UpsHint}"
-                               Text="Pauses after a spell with no keyboard or mouse input, and resumes on the next one. Gamepad input is not detected."/>
+                               Text="Pauses after a duration with no keyboard or mouse input, and resumes on the next one. Does not apply to Gamepad input."/>
                     <StackPanel Orientation="Horizontal" Margin="32,0,0,12"
                                 IsEnabled="{Binding Settings.PauseOnIdle}">
                         <TextBlock Text="Idle timeout" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
@@ -98,14 +98,14 @@
                               IsChecked="{Binding Settings.FocusLossStayPaused}"
                               IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
                     <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Music will not resume on its own — press play when you want it back."/>
+                               Text="Music will not resume on its own — manually press play when you want it back."/>
 
                     <CheckBox Content="Ignore brief focus loss (alt-tab)"
                               Style="{StaticResource UpsToggleChild}"
                               IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
                               IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
                     <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Detects the alt-tab overlay and only pauses if you actually switch away. Aborted alt-tabs are ignored."/>
+                               Text="Detects the Windows OS alt-tab overlay and only pauses if you actually switch away. Aborted alt-tabs are ignored."/>
 
                     <CheckBox Content="Pause when minimized"
                               Style="{StaticResource UpsToggle}"
@@ -117,7 +117,7 @@
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.PauseWhenInSystemTray}"/>
                     <TextBlock Style="{StaticResource UpsHint}"
-                               Text="Pauses while Playnite is hidden in the tray — on startup, or after closing to tray — and resumes when it is restored."/>
+                               Text="Pauses while Playnite is hidden in the tray, and resumes when it is restored."/>
 
                 </StackPanel>
             </Expander>

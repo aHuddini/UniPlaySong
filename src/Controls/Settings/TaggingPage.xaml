@@ -19,9 +19,9 @@
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Tagging" Style="{StaticResource UpsPageTitle}"/>
-            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="How UniPlaySong writes track metadata into your music files."/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="How UniPlaySong writes metadata into Playnite."/>
     
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-tag games on library update"
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-Tag Games On Library Update"
                           IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"
                           Margin="0,5"/>
                 <TextBlock Text="When enabled, games will be automatically tagged with '[UPS] Has Music' or '[UPS] No Music' when you update your library. Use Playnite's filter to find games by tag."

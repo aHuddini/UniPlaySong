@@ -20,24 +20,24 @@
 
             <TextBlock Text="External Audio" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Get out of the way when something else starts making noise."/>
+                       Text="Rules UPS honors to pause itself when non-Playnite applications play audio."/>
 
             <CheckBox Content="Pause when another app plays audio"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.PauseOnExternalAudio}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Pauses when YouTube, Spotify, Discord or anything else starts playing, and resumes once it stops. Uses Windows audio session detection."/>
+                       Text="Pauses when apps like YouTube, Spotify, Discord or anything else starts playing, and resumes once it stops."/>
             <TextBlock Style="{StaticResource UpsWarning}"
-                       Text="Screen recorders and streaming apps (OBS, Shadowplay) that capture desktop audio can trigger this, because they mirror system audio back through their own session. Add them to the exclusions below if that happens."/>
+                       Text="Screen recorders and streaming apps (OBS, Shadowplay, XSplit, etc) that capture desktop audio can trigger pauses unnecessarily, making this feature feel broken. They mirror system audio back, confusing UPS. Add them to the process exclusions below if that happens."/>
 
             <CheckBox Content="Stay paused after the other audio stops (Desktop only)"
                       Style="{StaticResource UpsToggleChild}"
                       IsChecked="{Binding Settings.KeepPausedAfterExternalAudio}"
                       IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
             <TextBlock Style="{StaticResource UpsHintIndented}"
-                       Text="Music will not resume on its own — use the top panel or your media keys. Fullscreen always resumes regardless."/>
+                       Text="Music will not resume on its own after being paused, you must use the top panel or your media keys. Fullscreen always resumes regardless."/>
 
-            <CheckBox Content="Cut instantly, without a fade"
+            <CheckBox Content="Cut instantly, no fade effect"
                       Style="{StaticResource UpsToggleChild}"
                       IsChecked="{Binding Settings.ExternalAudioInstantPause}"
                       IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
@@ -70,7 +70,7 @@
                 </TextBlock>
             </StackPanel>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
-                       Text="How long the other audio must play before music pauses, and how long the silence must last before it resumes. Lower is more responsive but can flicker on brief sounds."/>
+                       Text="How long the other audio must play before UPS music pauses, and how long the silence must last before it resumes. Lower is more responsive, but can flicker pauses on brief sounds."/>
             <!-- Only worth saying when the debounce is actually zero. -->
             <TextBlock Text="At zero, Windows notification sounds and short blips will pause the music too.">
                 <TextBlock.Style>
@@ -91,7 +91,7 @@
 
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Exclusions" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="App Exclusions" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
 
@@ -101,7 +101,7 @@
                      Width="420" HorizontalAlignment="Left" Margin="0,0,0,6"
                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,12"
-                       Text="Comma-separated process names, e.g. obs64, discord. Find them in Task Manager's Details tab. Audio from these will never pause your music."/>
+                       Text="Comma-separated process names, e.g. obs64, discord. Find your app's process in Task Manager's Details tab. UPS will then ignore these apps' audio and will not pause its music."/>
 
                 </StackPanel>
             </Expander>

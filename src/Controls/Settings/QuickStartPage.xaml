@@ -147,7 +147,7 @@
             <TextBlock Text="For getting up and running without going through every tab. Pick how you want music to behave and UniPlaySong sets the rest up for you."
                        FontSize="12" Foreground="#B8C2CC"
                        TextWrapping="Wrap" Margin="0,0,0,6"/>
-            <TextBlock Text="Everything here can still be changed by hand on the other tabs afterwards — and applying an option only touches the playback settings it covers, so your volume, tool paths, pause rules and effects are left alone."
+            <TextBlock Text="Everything here can still be changed by hand on the other tabs afterwards."
                        FontSize="11" Foreground="#7A8085"
                        TextWrapping="Wrap" Margin="0,0,0,16"/>
 
@@ -215,7 +215,7 @@
             <Border Style="{StaticResource QsSectionHeader}">
                 <StackPanel>
                     <TextBlock Text="Options" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource QsText}"/>
-                    <TextBlock Text="Your current settings. A profile that decides one of these keeps its own choice."
+                    <TextBlock Text="Your current settings."
                                FontSize="11" Foreground="#7A8085" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
@@ -230,20 +230,20 @@
 
             <CheckBox Content="Keep playing during games" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartPlayThroughGames}" Margin="0,4"/>
-            <TextBlock Text="Radio Mode only — the mix carries on instead of pausing when a game starts."
+            <TextBlock Text="Radio Mode only. Music carries on instead of pausing when a game starts."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,10"/>
 
             <CheckBox Content="Spotify as the radio source" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartUseSpotify}" Margin="0,4"/>
-            <TextBlock Text="Radio Mode plays from Spotify instead of your library. Spotify must be running. Does not turn Radio Mode on by itself."
+            <TextBlock Text="Requires Radio Mode to be enabled. Radio Mode plays from Spotify instead of your library. Spotify must be running."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,10"/>
 
             <CheckBox Content="Live Effects reverb" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartAddReverb}" Margin="0,4"/>
-            <TextBlock Text="Turns on Live Effects with the Huddini Rehearsal preset, and switches to the NAudio engine. Tune it on the Live Effects tab."
+            <TextBlock Text="Turns on Live Effects with the Huddini Rehearsal preset. Customize effects in the Live Effects page."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,14"/>
 
-            <TextBlock Text="A track that is already playing runs to its end. Select a different game to hear a new profile straight away."
+            <TextBlock Text="Profiles take effect after you select a different game. Select a different game to hear a new profile straight away."
                        FontSize="11" Foreground="#C8A24B" TextWrapping="Wrap" Margin="0,4,0,0"/>
         </StackPanel>
     </ScrollViewer>

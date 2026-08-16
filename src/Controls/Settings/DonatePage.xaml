@@ -20,27 +20,27 @@
 
             <TextBlock Text="Support UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="The plugin you are running is the complete one. Everything on this page is optional."/>
+                       Text="UPS is a full blown audio engine for Playnite that is free and open-source."/>
 
             <Border Style="{StaticResource UpsCard}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,8"
-                               Text="UniPlaySong is built and maintained by Huddini in his own time, and it got here on the back of community requests, bug reports and testing. Releases carry on going up on GitHub as normal, free, with nothing held back."/>
+                               Text="UPS is maintained by Huddini in his spare time and when he's not trying to make ends meet."/>
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,0"
-                               Text="UPS is feature-complete at this point. Everything from here is a bonus until the Playnite 11 port lands."/>
+                               Text="Your support is critical to continue the development of UPS, be it promoting on Reddit, tipping a dollar, etc."/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="The Unlocked Build" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Ko-Fi: Enhanced Build" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
             <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,6"
-                       Text="Ko-fi supporters also get an enhanced build. It does exactly one thing differently: it improves the download manager. That is the whole difference."/>
+                       Text="Supporters can purchase an unlocked build of UPS that improves the download manager (a non-essential feature of UPS)."/>
             <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,6"
-                       Text="You do not need it. Downloading music works in the normal build, and so does every other feature — playback, radio, live effects, jingles, the editor, theme support. The unlocked build makes one part nicer, not possible."/>
+                       Text="New unlocked builds will release on Ko-Fi when major features ship, but is not required. Downloading music works in the normal build, and so does every other feature — playback, radio, live effects, jingles, etc. The unlocked build simply makes one feature nicer."/>
             <TextBlock Style="{StaticResource UpsWarning}" Margin="0,0,0,4"
-                       Text="Nothing else is going behind a paywall. The community is a large part of why UPS is what it is, and locking up what it helped build would be a poor way to say thanks."/>
+                       Text="Nothing else is planned to be paywalled at this point. UPS is feature-complete. The Playnite community is a large part of why UPS is what it is, and locking up what it helped build would be a poor way to say thanks."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Where" Style="{StaticResource UpsSectionTitle}"/>
@@ -55,29 +55,29 @@
                     <RowDefinition/><RowDefinition/><RowDefinition/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ko-fi" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ko-fi (Tips)" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
                 <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
                         <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ko-fi.com/Z8Z11SG2IK"
                                    RequestNavigate="AboutHyperlink_RequestNavigate">ko-fi.com/Z8Z11SG2IK</Hyperlink>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
-                               Text="One-off, no account needed. This is where the unlocked build lives."/>
+                               Text="The primary way to support me."/>
                 </StackPanel>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="GitHub" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="GitHub (Sponsor)" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
                 <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,10">
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
                         <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/sponsors/aHuddini"
                                    RequestNavigate="AboutHyperlink_RequestNavigate">github.com/sponsors/aHuddini</Hyperlink>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
-                               Text="Recurring, if you would rather it be ongoing. Plain support, no build attached."/>
+                               Text="Recurring subscription."/>
                 </StackPanel>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Free" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsHint}" Margin="0,2,0,0"
-                           Text="Report a bug you hit, or tell someone the plugin exists. Costs nothing and has genuinely shaped more of UPS than money has."/>
+                           Text="Report a bug you hit, or tell someone the plugin exists."/>
             </Grid>
 
         </StackPanel>

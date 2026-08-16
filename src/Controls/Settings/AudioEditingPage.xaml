@@ -22,7 +22,7 @@
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Convert, normalize and rename. Everything here runs on demand, never during playback."/>
 
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
-                       Text="FFmpeg powers these tools — set its path under Setup → Tools."/>
+                       Text="FFmpeg is required to run these functions."/>
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
                     <TextBlock ups:TrackedCaps.Text="Format Conversion" Style="{StaticResource UpsSectionTitle}"/>
@@ -171,7 +171,7 @@
                                    TextWrapping="Wrap"
                                    Margin="20,0,0,10"/>
 
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals (space saver)"
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals when normalizing (space saver)"
                                   IsChecked="{Binding Settings.DoNotPreserveOriginals}"
                                   Margin="0,10"/>
                         <TextBlock Text="When enabled, original files are normalized directly and replaced (no backup/preservation). Saves disk space but originals cannot be restored. When disabled, originals are moved to PreservedOriginals folder."

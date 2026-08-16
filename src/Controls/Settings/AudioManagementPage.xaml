@@ -31,7 +31,7 @@
                                 Width="220"
                                 Margin="0,0,10,0"
                                 Command="{Binding NormalizeAllMusicCommand}"/>
-                        <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings."
+                        <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings in Audio Editing page."
                                    VerticalAlignment="Center"
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"/>

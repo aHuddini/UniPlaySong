@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.RandomizationPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.RandomizationPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -24,29 +24,29 @@
 
             <TextBlock Text="Randomization" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Which song plays next when a game has several, and how long each one gets."/>
+                       Text="Rules for UPS to determine which game music plays next when a game has several tracks, and how long each one gets."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Song Selection" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Pick a new song each time you select the game"
+            <CheckBox Content="Pick a new song each time you select the game (Switch Mode)"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.RandomizeOnEverySelect}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="After the game's primary song has played once, later visits pick at random from the rest."/>
+                       Text="After a game's initial song has played, UPS will pick a random song if you later visit the same game."/>
 
-            <CheckBox Content="Pick a new song when the current one ends"
+            <CheckBox Content="Pick a new song when the current one ends (Loop Mode)"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.RandomizeOnMusicEnd}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="When a track finishes, another is chosen at random from the game's songs instead of looping."/>
+                       Text="When staying on the same game, after a song finishes, another is chosen at random from the game's songs instead of looping."/>
 
             <CheckBox Content="Stop when the song ends"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.StopAfterSongEnds}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="No loop and no advance — silence until you select another game. Applies to normal playback and to preview mode."/>
+                       Text="Do not loop and do not advance. Silence until you select another game. Applies to normal playback and to preview mode."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Preview Mode" Style="{StaticResource UpsSectionTitle}"/>
@@ -56,7 +56,7 @@
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.EnablePreviewMode}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Game music restarts once it hits the length below, so you hear the opening of a track rather than all of it. Default music is unaffected."/>
+                       Text="Game music restarts once it hits a certain duration, so you hear the opening of a track rather than all of it."/>
             <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
                         IsEnabled="{Binding Settings.EnablePreviewMode}">
                 <TextBlock Text="Preview length" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
@@ -71,7 +71,7 @@
                 <TextBlock ups:TrackedCaps.Text="Random Game Picker" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Play music while browsing the random game picker"
+            <CheckBox Content="Play music while browsing Playnite's Random Game Picker"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.EnableRandomPickerMusic}"/>
             <TextBlock Style="{StaticResource UpsHint}"

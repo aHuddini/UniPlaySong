@@ -71,11 +71,11 @@
                 <StackPanel>
                     <TextBlock Text="Officially Supported Fullscreen Themes" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,8"
-                               Text="Tested against every UniPlaySong release. These use the theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
+                               Text="Themes that use the theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• ANIKI REMAKE</TextBlock>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold" Margin="2,0,0,8">• PS5 Experience (by saVantCZ)</TextBlock>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
-                               Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support. The overlay and video pause options live there too."/>
+                               Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support."/>
                 </StackPanel>
             </Border>
 
@@ -83,22 +83,22 @@
                 <StackPanel>
                     <TextBlock Text="Troubleshooting / Known Quirks" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
-                               Text="Real-world edge cases users have hit. The workaround follows each one."/>
+                               Text="Real-world edge cases users have hit."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Text="Windows may not auto-sleep while Playnite is running"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
-                               Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio. If your PC doesn't sleep on its own, exit Playnite when you step away."/>
+                               Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio, which may prevent sleep. If your PC doesn't sleep on its own, exit Playnite when you step away."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Text="Pause on focus loss can be unreliable"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
-                               Text="If music gets stuck silent after exiting a game, turn off &quot;Ignore brief focus loss&quot; first. If it still happens, send a log via Advanced → Backup → Export Snapshot."/>
+                               Text="If music gets stuck silent after exiting a game, turn off &quot;Ignore brief focus loss&quot;. If it still happens, send a log."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
-                               Text="Active theme music requires theme support"/>
+                               Text="Active theme music options in Playback settings require theme support"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,0"
-                               Text="This option needs the theme to ship a UPS_BackgroundAudio file. Ask the theme's developer to add one, or pick a different default music source."/>
+                               Text="This option needs the theme to ship a UPS_BackgroundAudio audio file. Ask the theme's developer to add one to their theme directories"/>
                 </StackPanel>
             </Border>
 

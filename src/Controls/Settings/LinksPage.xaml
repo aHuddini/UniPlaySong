@@ -63,12 +63,12 @@
               <StackPanel>
                 <TextBlock Text="External Tools" Style="{StaticResource UpsCardTitle}"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
-                       Text="Most features work out of the box. A few need tools you install yourself, then point the plugin at under Setup → Tools."/>
+                       Text="Most features work out of the box. Below are tools required for full plugin functionality."/>
 
             <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
-                       Text="yt-dlp and Deno — for YouTube music downloads"/>
+                       Text="yt-dlp and Deno"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,6"
-                       Text="Download both and put them in the same folder. Deno is the JavaScript runtime yt-dlp needs for YouTube's player extraction."/>
+                       Text="Essential for downloads. They need to be placed together in a folder."/>
             <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,12">
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/yt-dlp/yt-dlp/releases"
                            RequestNavigate="AboutHyperlink_RequestNavigate">yt-dlp releases</Hyperlink>
@@ -78,9 +78,9 @@
             </TextBlock>
 
             <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
-                       Text="FFmpeg — for normalization, conversion and waveform editing"/>
+                       Text="FFmpeg"/>
             <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,6"
-                       Text="Also required for music downloads, silence trim and amplify."/>
+                       Text="Also required for music downloads. For normalization, conversion, waveform editing, silence trim and amplify."/>
             <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,4">
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ffmpeg.org/download.html"
                            RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org/download</Hyperlink>

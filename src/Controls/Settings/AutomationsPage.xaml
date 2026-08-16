@@ -24,33 +24,33 @@
 
             <TextBlock Text="Automations" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="What UniPlaySong does on its own, without you asking."/>
+                       Text="Options to automate the use of certain features in UniPlaySong. yt-dlp and FFmpeg tools are required."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Library" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Download music for newly added games"
+            <CheckBox Content="Automatically Download Music For Newly Added Games"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="When your library updates, music is fetched for new games automatically. Picks the best match by album and song title, preferring a main theme, and takes one song per game. Needs yt-dlp and FFmpeg."/>
+                       Text="When your library updates, music is fetched for new games automatically. UPS picks the best match by album and song title."/>
 
-            <CheckBox Content="Download music when a game is installed"
+            <CheckBox Content="Automatically Download Music Only When A Game Is Installed"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="When a game goes from uninstalled to installed and has no music yet, it downloads in the background. Same selection logic as above."/>
+                       Text="When a game goes from uninstalled to installed in your library and has no music yet, UPS automatically downloads music in the background."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="After Download" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Post-Download Actions" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Normalize downloaded music"
+            <CheckBox Content="Automatically Normalize Downloaded Music"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Brings every download to the EBU R128 loudness standard so tracks do not jump in volume between games. Uses the settings on Library → Audio Editing. Needs FFmpeg."/>
+                       Text="Normalize every new download to the EBU R128 loudness standard so tracks do not jump in volume between games. Tune normalization settings in Library → Audio Editing."/>
 
         </StackPanel>
     </ScrollViewer>

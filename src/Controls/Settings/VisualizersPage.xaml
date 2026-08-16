@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.VisualizersPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.VisualizersPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -29,7 +29,7 @@
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.ShowSpectrumVisualizer}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Displays the spectrum in the Desktop top panel bar alongside the media controls. Forces the NAudio backend, which is where the spectrum data comes from."/>
+                       Text="Displays the spectrum in the Desktop top panel bar alongside the media controls."/>
 
             <StackPanel IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
 
@@ -48,7 +48,7 @@
                     </ComboBox>
                 </StackPanel>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                           Text="Configures all visualizer parameters at once. Choose Custom to keep your current settings. Selecting a preset overwrites every value below — you can then fine-tune."/>
+                           Text="Configures all visualizer parameters at once. Choose Custom to keep your current settings. Selecting a preset overwrites every value below."/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                     <TextBlock Text="Colour theme" Style="{StaticResource UpsLabel}" Width="120"/>

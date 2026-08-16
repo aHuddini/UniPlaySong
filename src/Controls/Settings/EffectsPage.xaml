@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.EffectsPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.EffectsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -38,7 +38,7 @@
                       IsChecked="{Binding Settings.ApplyLiveEffectsToSpotify}"
                       IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
             <TextBlock Style="{StaticResource UpsHintIndented}"
-                       Text="Captures Spotify's own audio and runs it through your chain — Spotify's direct output is muted while this is active. Needs Windows 10 build 20348 or newer."/>
+                       Text="Captures Spotify's own audio and runs it through the effects chain. Needs Windows 10 build 20348 or newer."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Style Preset" Style="{StaticResource UpsSectionTitle}"/>
