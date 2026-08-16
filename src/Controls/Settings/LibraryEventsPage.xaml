@@ -31,10 +31,10 @@
                       Margin="0,5"/>
             <TextBlock Style="{StaticResource UpsHint}" Text="Play a celebration sound when you mark a game as 'Completed' in Playnite"/>
 
-            <CheckBox Style="{StaticResource UpsToggle}" Content="Also celebrate when marked as 'Beaten'"
+            <CheckBox Style="{StaticResource UpsToggleChild}" Content="Also celebrate when marked as 'Beaten'"
                       IsChecked="{Binding Settings.CelebrateBeaten}"
                       IsEnabled="{Binding Settings.EnableCompletionCelebration}"
-                      Margin="20,3,0,2"/>
+                      />
             <TextBlock Style="{StaticResource UpsHint}" Text="Fires the same fanfare for Playnite's built-in 'Beaten' status (main story finished), in addition to 'Completed'"/>
 
             <StackPanel Margin="20,5,0,10"
@@ -72,13 +72,13 @@
                             Margin="5,0,0,0"/>
                 </StackPanel>
 
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
+                <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Apply live effects to jingles"
                           IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
                           Margin="0,10,0,3"/>
                 <TextBlock Style="{StaticResource UpsHint}" Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."/>
 
                 <!-- Visual Celebration Toast -->
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Show celebration toast notification"
+                <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Show celebration toast notification"
                           IsChecked="{Binding Settings.ShowCelebrationToast}"
                           Margin="0,10,0,5"/>
                 <TextBlock Style="{StaticResource UpsHint}" Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."/>
@@ -155,7 +155,7 @@
                 </StackPanel>
 
                 <!-- Abandoned Toast -->
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Show abandoned toast notification"
+                <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Show abandoned toast notification"
                           IsChecked="{Binding Settings.ShowAbandonedToast}"
                           Margin="0,10,0,5"/>
                 <TextBlock Style="{StaticResource UpsHint}" Text="Displays a muted toast popup with a graveyard icon when a game is marked abandoned."/>
