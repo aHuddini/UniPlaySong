@@ -25,6 +25,13 @@
          what actually overrides the theme for this tab. Darker than QsTile so the rows
          sit ON something rather than blending into it. -->
     <SolidColorBrush x:Key="QsGround" Color="#12171E"/>
+
+    <!-- Primary text. This page paints its own dark ground, so it has to own its text colour to
+         match: anything left to inherit takes the host theme's foreground, which is chosen for the
+         theme's background rather than for QsGround. Checkboxes were the visible casualty — their
+         labels came out near-black on the dark surface. Local Foreground values on individual
+         elements still win over this, so the dim greys below are unaffected. -->
+    <SolidColorBrush x:Key="QsText" Color="#E4E9EF"/>
     <SolidColorBrush x:Key="QsPanel" Color="#232D3A"/>
     <SolidColorBrush x:Key="QsTile" Color="#1A222C"/>
     <SolidColorBrush x:Key="QsTileHover" Color="#243040"/>
@@ -122,7 +129,8 @@
          The tile template is defined once as a resource and reused by both mode lists; it was
          duplicated per list before, so a styling change had to be made twice and could drift. -->
 
-    <ScrollViewer Background="{StaticResource QsGround}" Padding="20" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer Background="{StaticResource QsGround}" Padding="20" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  TextElement.Foreground="{StaticResource QsText}">
         <!-- Padding on the ScrollViewer, not Margin here, so QsGround fills the whole
              tab instead of leaving a theme-coloured gutter around the edge. -->
         <StackPanel MaxWidth="760" HorizontalAlignment="Left">
@@ -207,22 +215,25 @@
                 </StackPanel>
             </Border>
 
-            <CheckBox Content="Only play music for installed games"
+            <!-- Foreground set on each of these four rather than left to inherit: a CheckBox takes
+                 its own from the host theme's CheckBox style, which outranks the inherited value
+                 set on the ScrollViewer above. -->
+            <CheckBox Content="Only play music for installed games" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartInstalledOnly}" Margin="0,4"/>
             <TextBlock Text="Uninstalled games fall back to your default music. Radio Mode ignores this."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,10"/>
 
-            <CheckBox Content="Keep playing during games"
+            <CheckBox Content="Keep playing during games" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartPlayThroughGames}" Margin="0,4"/>
             <TextBlock Text="Radio Mode only — the mix carries on instead of pausing when a game starts."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,10"/>
 
-            <CheckBox Content="Spotify as the radio source"
+            <CheckBox Content="Spotify as the radio source" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartUseSpotify}" Margin="0,4"/>
             <TextBlock Text="Radio Mode plays from Spotify instead of your library. Spotify must be running. Does not turn Radio Mode on by itself."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,10"/>
 
-            <CheckBox Content="Live Effects reverb"
+            <CheckBox Content="Live Effects reverb" Foreground="{StaticResource QsText}"
                       IsChecked="{Binding QuickStartAddReverb}" Margin="0,4"/>
             <TextBlock Text="Turns on Live Effects with the Huddini Rehearsal preset, and switches to the NAudio engine. Tune it on the Live Effects tab."
                        FontSize="11" Foreground="#7A8085" TextWrapping="Wrap" Margin="24,0,0,14"/>
