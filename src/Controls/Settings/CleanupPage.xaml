@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.CleanupPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.CleanupPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -39,39 +39,13 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource UpsCard}">
+            <Border Style="{StaticResource UpsCardNavy}">
                 <StackPanel>
                     <TextBlock Text="Current storage usage" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Text="{Binding CleanupStorageInfo}" Style="{StaticResource UpsHint}" Margin="0,0,0,10"/>
                     <Button Content="Refresh" Style="{StaticResource UpsButton}"
                             HorizontalAlignment="Left"
                             Command="{Binding RefreshCleanupStorageInfoCommand}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Remove Music" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
-            <Border Style="{StaticResource UpsCard}">
-                <StackPanel>
-                    <TextBlock Text="Delete all music" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
-                               Text="Removes every downloaded file and game folder. Settings are kept."/>
-                    <Button Content="Delete all music files" Style="{StaticResource UpsButtonDanger}"
-                            HorizontalAlignment="Left"
-                            Command="{Binding DeleteAllMusicCommand}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource UpsCard}">
-                <StackPanel>
-                    <TextBlock Text="Delete long songs" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
-                               Text="Deletes anything over ten minutes. Catches full albums, podcasts and corrupted files that were downloaded by mistake and that break bulk operations."/>
-                    <Button Content="Delete songs over 10 minutes" Style="{StaticResource UpsButtonCaution}"
-                            HorizontalAlignment="Left"
-                            Command="{Binding DeleteLongSongsCommand}"/>
                 </StackPanel>
             </Border>
 
@@ -107,6 +81,32 @@
             </Border>
 
             <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Remove Music" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Delete all music" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Removes every downloaded file and game folder. Settings are kept."/>
+                    <Button Content="Delete all music files" Style="{StaticResource UpsButtonDanger}"
+                            HorizontalAlignment="Left"
+                            Command="{Binding DeleteAllMusicCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Delete long songs" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                               Text="Deletes anything over ten minutes. Catches full albums, podcasts and corrupted files that were downloaded by mistake and that break bulk operations."/>
+                    <Button Content="Delete songs over 10 minutes" Style="{StaticResource UpsButtonCaution}"
+                            HorizontalAlignment="Left"
+                            Command="{Binding DeleteLongSongsCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Start Over" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
@@ -125,7 +125,7 @@
                 <StackPanel>
                     <TextBlock Text="Factory reset" Style="{StaticResource UpsCardTitle}" Foreground="#F09292"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
-                               Text="Returns UniPlaySong to the state it was in on install. All five at once:"/>
+                               Text="Returns UniPlaySong to the state it was in on install:"/>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10">
                         <Run Text="• Deletes all downloaded music"/><LineBreak/>
                         <Run Text="• Deletes all preserved originals"/><LineBreak/>

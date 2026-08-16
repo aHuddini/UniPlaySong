@@ -417,6 +417,26 @@
         <Setter Property="BorderBrush" Value="{StaticResource UpsBevelWarn}"/>
     </Style>
 
+    <!-- Readout, not action. Navy sets a status panel apart from the cards around it that DO
+         something, so "here is the current state" and "here is a button that changes it" are not
+         the same colour. Deeper and bluer than UpsCardAccent, which is for capability. -->
+    <LinearGradientBrush x:Key="UpsGlassNavy" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6121A33"/>
+        <GradientStop Offset="1" Color="#E6080C1D"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelNavy" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#8892D6"/>
+        <GradientStop Offset="0.12" Color="#5A66B0"/>
+        <GradientStop Offset="0.55" Color="#37407A"/>
+        <GradientStop Offset="1"    Color="#1B2143"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsCardNavy" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassNavy}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNavy}"/>
+    </Style>
+
     <!-- Credit, licensing, people -->
     <Style x:Key="UpsCardInfo" TargetType="Border" BasedOn="{StaticResource UpsCard}">
         <Setter Property="Background" Value="{StaticResource UpsGlassInfo}"/>
