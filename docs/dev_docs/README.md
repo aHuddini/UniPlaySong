@@ -36,6 +36,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 | [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md) | Known edge cases and deliberately deferred fixes. Written around v1.4.x — verify against current code before acting on it. |
 | [PERF_OPTIMIZATION_PLAN.md](PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
+| [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md) | You're changing how the settings window looks or adding a page. The palette and type scale with the reasoning behind them, the toggle switch's anatomy and its three rules, section behaviour, the per-group reset architecture, and the WPF constraints (no letter-spacing, no inset shadow, one child per Border) that shaped all of it. Read the "Changing the style" section before touching `SettingsResources.xaml`. |
 | [QUICK_START_PROFILES.md](QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. Not built yet. |
 
 ## Other locations
@@ -49,9 +50,9 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 
 - **Code comments** are single-line `//`. XML doc comments only for public APIs that genuinely need param/returns; drop them when the signature is self-documenting.
 - **Two loggers**: `Logger.*` goes to Playnite's `extension.log`; `_fileLogger?.*` goes to `UniPlaySong.log` and is gated behind the Enable Debug Logging setting. Prefer the file logger for anything high-frequency.
-- **Changing a setting's default** means updating the backing field, the per-tab Reset handler, and verifying the global reset — all three.
+- **Changing a setting's default** means editing the backing field, and nothing else. Reset copies from a pristine `UniPlaySongSettings`, so the initialiser is the single source of truth. **Adding** a setting means filing it in `SettingsGroups.Map` (or `NeverReset`); `SettingsResetCoverageTests` fails by name if you forget. See [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md).
 - **Update the doc alongside the code.** A doc that describes last release's behaviour is worse than no doc; this index exists because several didn't get that treatment.
 
 ---
 
-**Last updated**: 2026-07-31 · **Covers**: v1.7.1
+**Last updated**: 2026-08-16 · **Covers**: v1.7.4
