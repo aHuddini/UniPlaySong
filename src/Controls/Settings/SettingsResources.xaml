@@ -89,7 +89,7 @@
     </Style>
 
     <Style x:Key="UpsPageTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
         <Setter Property="Margin" Value="0,0,0,4"/>
@@ -112,16 +112,21 @@
         <Setter Property="Margin" Value="0,14,0,10"/>
     </Style>
 
+    <!-- Small, dimmed and tracked uppercase, so the heading reads as a band marker rather than
+         competing with the setting labels under it. The old 13.5 sat 4% off the 13px labels,
+         which is not a hierarchy level — the eye read the whole page as one tier.
+         Set the string via TrackedCaps.Text, not Text: WPF has no text-transform or
+         letter-spacing, and that attached property supplies both. -->
     <Style x:Key="UpsSectionTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="FontSize" Value="10"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
     </Style>
 
     <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
          explanation read as one block. 24 track + 8 gap. -->
     <Style x:Key="UpsHint" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontSize" Value="10"/>
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="Margin" Value="32,1,0,12"/>
@@ -189,22 +194,24 @@
 
     <!-- Empty channel. Dark at the lip, opening out below. -->
     <LinearGradientBrush x:Key="UpsGrooveOff" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#10161D"/>
+        <GradientStop Offset="0"    Color="#0F151C"/>
         <GradientStop Offset="0.55" Color="#1E2733"/>
-        <GradientStop Offset="1"    Color="#2B3742"/>
+        <GradientStop Offset="1"    Color="#2C3843"/>
     </LinearGradientBrush>
 
     <!-- Brighter than the off groove by a wide margin, because with the bloom gone this fill is
          what carries the on state at a glance. -->
     <LinearGradientBrush x:Key="UpsGrooveOn" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#5A3E11"/>
-        <GradientStop Offset="0.55" Color="#8A6420"/>
-        <GradientStop Offset="1"    Color="#C79A3C"/>
+        <GradientStop Offset="0"    Color="#154759"/>
+        <GradientStop Offset="0.55" Color="#1E7391"/>
+        <GradientStop Offset="1"    Color="#3BACD1"/>
     </LinearGradientBrush>
 
     <Style x:Key="UpsToggle" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <!-- SemiBold so the label separates from its hint by weight, not only by colour. -->
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Margin" Value="0,7,0,0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -236,7 +243,7 @@
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                         <GradientStop Offset="0"   Color="#00FFFFFF"/>
-                                        <GradientStop Offset="0.5" Color="#5BFFFFFF"/>
+                                        <GradientStop Offset="0.5" Color="#62FFFFFF"/>
                                         <GradientStop Offset="1"   Color="#00FFFFFF"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
@@ -284,7 +291,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{StaticResource UpsGrooveOn}"/>
-                            <Setter TargetName="Track" Property="BorderBrush" Value="#7A5A20"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="#1F5F76"/>
                             <!-- No bloom on the on state. A page carries a dozen or more of these,
                                  and a dozen soft green halos turn a list of settings into a
                                  smear. On reads from the fill and the knob's position, which are
@@ -296,7 +303,7 @@
                                  into place. An alignment swap is correct the instant it renders. -->
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                             <Setter TargetName="Thumb" Property="Margin" Value="0,0,1.5,0"/>
-                            <Setter TargetName="Led" Property="Fill" Value="#FFD98A"/>
+                            <Setter TargetName="Led" Property="Fill" Value="#A7E8FF"/>
                             <Setter TargetName="Led" Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">

@@ -1,9 +1,10 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.CommonEventsPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.CommonEventsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
@@ -26,7 +27,7 @@
                        Text="When music should pause on its own, and when it should pick back up."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock Text="Games" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Games" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
             <CheckBox Content="Pause on game launch"
@@ -44,7 +45,7 @@
                        Text="Radio Mode (UPS pool or Spotify) keeps playing while a game runs. Game-specific music still pauses. Works whether or not the pause above is on. Manual pause and screen lock still stop the radio."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock Text="System" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="System" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
             <CheckBox Content="Pause when Windows is locked"
@@ -69,7 +70,7 @@
             </StackPanel>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock Text="Window Focus" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Window Focus" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
             <CheckBox Content="Pause when Playnite loses focus"
