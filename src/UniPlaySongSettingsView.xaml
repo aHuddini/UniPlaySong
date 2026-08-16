@@ -8,6 +8,12 @@
              d:DesignHeight="500" d:DesignWidth="600">
 
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- for NullToVisibilityConverter, used to hide the Reset button on groups that
+                     own no resettable settings -->
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
         <!-- Palette lifted from the Quick Start tab rather than invented alongside it. That tab is
              the look this rework is chasing, and two independent slate palettes in one window would
@@ -109,7 +115,13 @@
         </Style>
 
         <!-- The strip above each group's pages. Deliberately NOT an implicit TabControl style: an
-             implicit one would cascade into the pages and restyle any TabControl added there. -->
+             implicit one would cascade into the pages and restyle any TabControl added there.
+
+             The strip also carries the group's Reset button. Reset is per group, so the strip is
+             the honest place for it — one button beside the group's own pages, rather than one on
+             every page having to explain its scope in the label. The group name comes from this
+             TabControl's Tag; leaving Tag unset (About, Quick Start) hides the button, which is
+             what those two groups want since they own no resettable settings. -->
         <Style x:Key="NavStrip" TargetType="TabControl">
             <Setter Property="ItemContainerStyle" Value="{StaticResource NavStripItem}"/>
             <Setter Property="Template">
@@ -121,7 +133,17 @@
                                     BorderBrush="{StaticResource NavStroke}"
                                     BorderThickness="0,0,0,1"
                                     Padding="8,0,8,0">
-                                <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right"
+                                            Content="Reset"
+                                            Margin="8,4,2,4" Padding="10,3" FontSize="11"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding DataContext.ResetGroupCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                                            CommandParameter="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                            ToolTip="Restore this group's settings to their defaults."
+                                            Visibility="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                    <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
+                                </DockPanel>
                             </Border>
                             <ContentPresenter ContentSource="SelectedContent"/>
                         </DockPanel>
@@ -130,6 +152,7 @@
             </Setter>
         </Style>
 
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <!-- Two-level navigation. The left rail is the groups; the strip along the top of each group
@@ -161,13 +184,10 @@
             </TabControl>
         </TabItem>
 
-        <TabItem Header="General">
-            <TabControl Style="{StaticResource NavStrip}">
+        <TabItem Header="Setup">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Setup">
                 <TabItem Header="Setup">
                     <settings:SetupPage/>
-                </TabItem>
-                <TabItem Header="General">
-                    <settings:GeneralPage/>
                 </TabItem>
                 <TabItem Header="Downloads">
                     <settings:DownloadsPage/>
@@ -175,27 +195,40 @@
             </TabControl>
         </TabItem>
 
+        <TabItem Header="General">
+            <TabControl Style="{StaticResource NavStrip}" Tag="General">
+                <TabItem Header="General">
+                    <settings:GeneralPage/>
+                </TabItem>
+            </TabControl>
+        </TabItem>
+
         <TabItem Header="Playback">
-            <TabControl Style="{StaticResource NavStrip}">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Playback">
                 <TabItem Header="Playback">
                     <settings:PlaybackPage/>
                 </TabItem>
+            </TabControl>
+        </TabItem>
+
+        <TabItem Header="Pauses">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Pauses">
                 <TabItem Header="Pauses">
                     <settings:PausesPage/>
                 </TabItem>
             </TabControl>
         </TabItem>
 
-        <TabItem Header="Effects">
-            <TabControl Style="{StaticResource NavStrip}">
+        <TabItem Header="Live Effects">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Live Effects">
                 <TabItem Header="Live Effects">
                     <settings:LiveEffectsPage/>
                 </TabItem>
             </TabControl>
         </TabItem>
 
-        <TabItem Header="Notifications">
-            <TabControl Style="{StaticResource NavStrip}">
+        <TabItem Header="Gamification">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Gamification">
                 <TabItem Header="Gamification">
                     <settings:GamificationPage/>
                 </TabItem>
@@ -203,7 +236,7 @@
         </TabItem>
 
         <TabItem Header="Library">
-            <TabControl Style="{StaticResource NavStrip}">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Library">
                 <TabItem Header="Editing">
                     <settings:EditingPage/>
                 </TabItem>
@@ -211,7 +244,7 @@
         </TabItem>
 
         <TabItem Header="Advanced">
-            <TabControl Style="{StaticResource NavStrip}">
+            <TabControl Style="{StaticResource NavStrip}" Tag="Advanced">
                 <TabItem Header="Theme Support">
                     <settings:ThemeSupportPage/>
                 </TabItem>

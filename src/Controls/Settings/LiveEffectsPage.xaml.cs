@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -11,74 +11,6 @@ namespace UniPlaySong.Controls.Settings
             InitializeComponent();
         }
 
-        private void ResetLiveEffectsTab_Click(object sender, RoutedEventArgs e)
-        {
-            var s = SettingsPageHelpers.ConfirmAndGetSettings(this, "Live Effects");
-            if (s == null) return;
-
-            // Reset master toggles
-            s.LiveEffectsEnabled = true;
-            s.ApplyLiveEffectsToSpotify = false;
-            s.ShowSpectrumVisualizer = true;
-            s.ShowPeakMeter = false;
-
-            // Reset all effects (reuses same logic as existing inline reset)
-            s.SelectedStylePreset = StylePreset.HuddiniRehearsal;
-            s.EffectChainPreset = EffectChainPreset.Standard;
-            s.HighPassEnabled = false;
-            s.HighPassCutoff = 80;
-            s.LowPassEnabled = false;
-            s.LowPassCutoff = 8000;
-            s.ReverbEnabled = false;
-            s.SelectedReverbPreset = ReverbPreset.Custom;
-            s.ReverbRoomSize = 75;
-            s.ReverbReverberance = 50;
-            s.ReverbDamping = 50;
-            s.ReverbPreDelay = 10;
-            s.ReverbToneLow = 100;
-            s.ReverbToneHigh = 100;
-            s.ReverbWetGain = -6;
-            s.ReverbDryGain = 0;
-            s.ReverbStereoWidth = 100;
-            s.ReverbMix = 50;
-            s.SlowEnabled = false;
-            s.SlowAmount = 0;
-            s.StereoWidenerEnabled = false;
-            s.StereoWidenerWidth = 50;
-            s.ChorusEnabled = false;
-            s.ChorusRate = 30;
-            s.ChorusDepth = 50;
-            s.ChorusMix = 40;
-            s.BitcrusherEnabled = false;
-            s.BitcrusherBitDepth = 8;
-            s.BitcrusherDownsample = 1;
-            s.TremoloEnabled = false;
-            s.TremoloRate = 40;
-            s.TremoloDepth = 50;
-            s.MakeupGainEnabled = false;
-            s.MakeupGain = 0;
-
-            // Reset advanced reverb tuning
-            s.AdvancedReverbTuningEnabled = false;
-            s.ReverbWetGainMultiplier = 3;
-            s.ReverbAllpassFeedback = 50;
-            s.ReverbHfDampingMin = 20;
-            s.ReverbHfDampingMax = 50;
-
-            // Reset visualizer tuning to defaults
-            ApplyVizPresetValues(s, VizPreset.Default);
-            s.SelectedVizPreset = VizPreset.Punchy;
-            s.VizColorTheme = 0; // Dynamic
-            s.VizGradientEnabled = true;
-
-            // Reset dynamic color tuning
-            s.DynMinBrightnessBottom = 200;
-            s.DynMinBrightnessTop = 150;
-            s.DynMinSatBottom = 30;
-            s.DynMinSatTop = 35;
-
-            SettingsPageHelpers.ShowButtonFeedback(sender, "Reset!");
-        }
 
         private void CopyLiveEffectsToClipboard_Click(object sender, RoutedEventArgs e)
         {
@@ -130,70 +62,7 @@ namespace UniPlaySong.Controls.Settings
             SettingsPageHelpers.ShowButtonFeedback(sender, "Copied!");
         }
 
-        private void ResetLiveEffects_Click(object sender, RoutedEventArgs e)
-        {
-            var vm = DataContext as UniPlaySongSettingsViewModel;
-            if (vm == null) return;
-            var s = vm.Settings;
 
-            // Reset all live effect parameters to factory defaults
-            s.SelectedStylePreset = StylePreset.None;
-            s.EffectChainPreset = EffectChainPreset.Standard;
-
-            s.HighPassEnabled = false;
-            s.HighPassCutoff = 80;
-            s.LowPassEnabled = false;
-            s.LowPassCutoff = 8000;
-
-            s.ReverbEnabled = false;
-            s.SelectedReverbPreset = ReverbPreset.Custom;
-            s.ReverbRoomSize = 75;
-            s.ReverbReverberance = 50;
-            s.ReverbDamping = 50;
-            s.ReverbPreDelay = 10;
-            s.ReverbToneLow = 100;
-            s.ReverbToneHigh = 100;
-            s.ReverbWetGain = -6;
-            s.ReverbDryGain = 0;
-            s.ReverbStereoWidth = 100;
-            s.ReverbMix = 50;
-
-            s.SlowEnabled = false;
-            s.SlowAmount = 0;
-
-            s.StereoWidenerEnabled = false;
-            s.StereoWidenerWidth = 50;
-
-            s.ChorusEnabled = false;
-            s.ChorusRate = 30;
-            s.ChorusDepth = 50;
-            s.ChorusMix = 40;
-
-            s.BitcrusherEnabled = false;
-            s.BitcrusherBitDepth = 8;
-            s.BitcrusherDownsample = 1;
-
-            s.TremoloEnabled = false;
-            s.TremoloRate = 40;
-            s.TremoloDepth = 50;
-
-            s.MakeupGainEnabled = false;
-            s.MakeupGain = 0;
-
-            SettingsPageHelpers.ShowButtonFeedback(sender, "Reset!");
-        }
-
-        private void ResetVisualizerDefaults_Click(object sender, RoutedEventArgs e)
-        {
-            var vm = DataContext as UniPlaySongSettingsViewModel;
-            if (vm == null) return;
-            var s = vm.Settings;
-
-            ApplyVizPresetValues(s, VizPreset.Default);
-            s.SelectedVizPreset = VizPreset.Custom;
-
-            SettingsPageHelpers.ShowButtonFeedback(sender, "Reset!");
-        }
 
         private void VizPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

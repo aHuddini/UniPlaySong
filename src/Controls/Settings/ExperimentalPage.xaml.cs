@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using UniPlaySong.Services;
 
 namespace UniPlaySong.Controls.Settings
 {
@@ -10,25 +11,32 @@ namespace UniPlaySong.Controls.Settings
             InitializeComponent();
         }
 
+        // Icon Glow is a section reset, narrower than the Advanced group button in the strip.
+        // It names the properties but not their values — those come off a pristine settings
+        // object, so this can no longer disagree with the shipped defaults the way it did when
+        // it hardcoded EnableIconGlow = true against a default of false.
+        private static readonly string[] IconGlowSettings =
+        {
+            nameof(UniPlaySongSettings.IconGlowPreset),
+            nameof(UniPlaySongSettings.EnableIconGlow),
+            nameof(UniPlaySongSettings.EnableIconGlowPulse),
+            nameof(UniPlaySongSettings.EnableIconGlowSpin),
+            nameof(UniPlaySongSettings.EnableIconGlowSpinAcceleration),
+            nameof(UniPlaySongSettings.EnableListIconGlow),
+            nameof(UniPlaySongSettings.SubtleListGlow),
+            nameof(UniPlaySongSettings.IconGlowSpinSpeed),
+            nameof(UniPlaySongSettings.IconGlowIntensity),
+            nameof(UniPlaySongSettings.IconGlowSize),
+            nameof(UniPlaySongSettings.IconGlowPulseSpeed),
+            nameof(UniPlaySongSettings.IconGlowAudioSensitivity),
+        };
+
         private void ResetIconGlow_Click(object sender, RoutedEventArgs e)
         {
             var vm = DataContext as UniPlaySongSettingsViewModel;
-            var s = vm?.Settings;
-            if (s == null) return;
+            if (vm?.Settings == null) return;
 
-            s.IconGlowPreset = IconGlowPreset.Custom;
-            s.EnableIconGlow = true;
-            s.EnableIconGlowPulse = true;
-            s.EnableIconGlowSpin = false;
-            s.EnableIconGlowSpinAcceleration = false;
-            s.EnableListIconGlow = false;
-            s.SubtleListGlow = false;
-            s.IconGlowSpinSpeed = 20.0;
-            s.IconGlowIntensity = 1.8;
-            s.IconGlowSize = 6.0;
-            s.IconGlowPulseSpeed = 1.5;
-            s.IconGlowAudioSensitivity = 2.0;
-
+            SettingsResetService.ResetProperties(vm.Settings, IconGlowSettings);
             SettingsPageHelpers.ShowButtonFeedback(sender, "Reset!");
         }
     }

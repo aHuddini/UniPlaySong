@@ -73,26 +73,5 @@ namespace UniPlaySong.Controls.Settings
             }
         }
 
-        private void ResetGeneralTab_Click(object sender, RoutedEventArgs e)
-        {
-            var s = SettingsPageHelpers.ConfirmAndGetSettings(this, "General");
-            if (s == null) return;
-
-            s.EnableMusic = true;
-            s.SuppressPlayniteBackgroundMusic = true;
-            s.ShowDesktopMediaControls = true;
-            s.ShowTaskbarMediaControls = true;
-            s.ShowNowPlayingInTopPanel = true;
-            s.HideNowPlayingForDefaultMusic = false;
-            s.ShowDefaultMusicIndicator = true;
-            s.ShowProgressBar = false;
-            s.ProgressBarPosition = ProgressBarPosition.AfterSkipButton;
-            s.AutoTagOnLibraryUpdate = true;
-            s.AutoDeleteMusicOnGameRemoval = true;
-            s.EnableSongListCache = false;
-            s.EnableDebugLogging = false;
-
-            SettingsPageHelpers.ShowButtonFeedback(sender, "Reset!");
-        }
     }
 }

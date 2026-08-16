@@ -480,6 +480,24 @@ namespace UniPlaySong
             return newSettings;
         }
 
+        // Reset for a whole left-rail group. The strip template supplies the group name from the
+        // inner TabControl's Tag, so there is one button per group rather than one per page — and
+        // the values come from SettingsResetService, which reads them off a pristine settings
+        // object instead of restating them.
+        public ICommand ResetGroupCommand => new Common.RelayCommand<object>((param) =>
+        {
+            var group = param as string;
+            if (string.IsNullOrEmpty(group)) return;
+
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                $"Reset all {group} settings to their defaults?",
+                $"Reset {group}",
+                MessageBoxButton.YesNo);
+            if (confirm != MessageBoxResult.Yes) return;
+
+            SettingsResetService.ResetGroup(Settings, group);
+        });
+
         public ICommand BrowseForYtDlpFile => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

@@ -1,28 +1,14 @@
-using System.Windows;
 using System.Windows.Controls;
 
 namespace UniPlaySong.Controls.Settings
 {
-    // Shared by the per-tab settings pages. These two used to be private members of the one
-    // settings view; every page needs them now, so they live here rather than being copied
-    // sixteen times.
+    // Shared by the settings pages.
+    //
+    // This also held ConfirmAndGetSettings, which every per-tab reset handler called. Reset is now
+    // per rail group and lives on the view model's ResetGroupCommand, which does its own
+    // confirmation, so nothing calls it any more.
     internal static class SettingsPageHelpers
     {
-        // Per-tab reset: confirms with the user, returns the settings object or null if cancelled.
-        internal static UniPlaySongSettings ConfirmAndGetSettings(FrameworkElement page, string tabName)
-        {
-            var vm = page.DataContext as UniPlaySongSettingsViewModel;
-            if (vm == null) return null;
-
-            var result = vm.PlayniteApi.Dialogs.ShowMessage(
-                $"Reset {tabName} settings to defaults?",
-                $"Reset {tabName}",
-                MessageBoxButton.YesNo);
-            if (result != MessageBoxResult.Yes) return null;
-
-            return vm.Settings;
-        }
-
         // Momentarily swaps a button's caption to confirm the click landed, then restores it.
         internal static void ShowButtonFeedback(object sender, string message)
         {

@@ -17,8 +17,6 @@
         <StackPanel Margin="20">
             <Grid Margin="0,0,0,10">
                 <TextBlock Text="Theme Support" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Click="ResetThemeSupportTab_Click" Padding="8,3" FontSize="11"/>
             </Grid>
             <TextBlock Text="These options help certain themes work better with UniPlaySong. Most users never need to change them, unless a theme (or its setup guide) tells you to."
                        FontSize="11"

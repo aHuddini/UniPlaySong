@@ -17,8 +17,6 @@
         <StackPanel Margin="20">
             <Grid Margin="0,0,0,10">
                 <TextBlock Text="Audio Editing" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                <Button Content="Reset to Defaults" HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Click="ResetEditingTab_Click" Padding="8,3" FontSize="11"/>
             </Grid>
             <TextBlock Text="Normalize volume levels and trim audio files. Operations are performed on-demand — not in real-time during playback."
                        FontSize="11"
