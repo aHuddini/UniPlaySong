@@ -83,9 +83,9 @@
          unbroken block of one colour looks like an unpainted surface rather than a chosen one.
          The range is tiny on purpose — this should never be legible as a gradient. -->
     <LinearGradientBrush x:Key="UpsGroundGlass" StartPoint="0,0" EndPoint="0.85,1">
-        <GradientStop Offset="0"   Color="#151C25"/>
-        <GradientStop Offset="0.5" Color="#12171E"/>
-        <GradientStop Offset="1"   Color="#0F141B"/>
+        <GradientStop Offset="0"   Color="#1A212B"/>
+        <GradientStop Offset="0.5" Color="#161C25"/>
+        <GradientStop Offset="1"   Color="#131922"/>
     </LinearGradientBrush>
 
     <!-- Page root. Padding sits here rather than on the inner panel so the ground fills the whole
@@ -295,29 +295,34 @@
 
          Alpha near 0xE6 so the ground's own diagonal shows through and the card sits ON something
          rather than being pasted over it. -->
+    <!-- Darker than the ground they sit on, which is the point: these read as smoked glass laid
+         on a lighter surface, not as panels cut from it. The bevel's lit top-left corner and the
+         drop shadow are what keep them raised rather than reading as holes — a recess would want
+         the opposite bevel and no shadow. Alpha stays near 0xE6 so the ground's diagonal still
+         shows through the tint. -->
     <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#E6222B37"/>
-        <GradientStop Offset="1" Color="#E6141A23"/>
+        <GradientStop Offset="0" Color="#E6161D28"/>
+        <GradientStop Offset="1" Color="#E60B0F16"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#E61C2E3B"/>
-        <GradientStop Offset="1" Color="#E6111A22"/>
+        <GradientStop Offset="0" Color="#E6111F2B"/>
+        <GradientStop Offset="1" Color="#E6080F16"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#E61B2E23"/>
-        <GradientStop Offset="1" Color="#E6111B16"/>
+        <GradientStop Offset="0" Color="#E6102018"/>
+        <GradientStop Offset="1" Color="#E607100C"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#E62B2417"/>
-        <GradientStop Offset="1" Color="#E61A150E"/>
+        <GradientStop Offset="0" Color="#E61E180D"/>
+        <GradientStop Offset="1" Color="#E6100C06"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#E6202339"/>
-        <GradientStop Offset="1" Color="#E6141626"/>
+        <GradientStop Offset="0" Color="#E615172A"/>
+        <GradientStop Offset="1" Color="#E60A0B18"/>
     </LinearGradientBrush>
 
     <!-- Bevelled edges. The border is a gradient rather than a flat colour: lit along the top,

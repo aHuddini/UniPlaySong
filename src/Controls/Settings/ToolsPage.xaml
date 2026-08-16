@@ -23,7 +23,7 @@
 
             <TextBlock Text="Tools" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Point UniPlaySong at the external tools it needs. Set these once and everything that depends on them works."/>
+                       Text="Point UniPlaySong at the external tools it needs."/>
 
             <Border Style="{StaticResource UpsCard}">
                 <StackPanel>
@@ -36,7 +36,7 @@
                                    VerticalAlignment="Center" Margin="12,0,0,0" FontWeight="SemiBold" FontSize="11.5"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
-                               Text="The full path to yt-dlp.exe, e.g. C:\Tools\yt-dlp\yt-dlp.exe. Put deno.exe in the same folder — yt-dlp needs a JavaScript runtime for YouTube. Used for downloading music."/>
+                               Text="Required for downloading music. Do not forget to also put deno.exe in the same folder as yt-dlp.exe."/>
                 </StackPanel>
             </Border>
 
@@ -51,12 +51,9 @@
                                    Margin="12,0,0,0" FontWeight="SemiBold" FontSize="11.5"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
-                               Text="The full path to ffmpeg.exe. Required for downloads (audio extraction), and for normalization, conversion, silence trim, precise trim, audio repair and trailer audio."/>
+                               Text="Required for downloads (audio extraction), and for normalization, conversion, silence trim, precise trim, audio repair and trailer audio."/>
                 </StackPanel>
             </Border>
-
-            <TextBlock Style="{StaticResource UpsHint}" Margin="0,2,0,0"
-                       Text="Don't have them yet? About → Links has the download pages for both."/>
 
         </StackPanel>
     </ScrollViewer>
