@@ -118,19 +118,17 @@
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
     </Style>
 
-    <!-- The explanatory line under a setting. Indented to sit under the toggle's label, not its
-         switch, so the two read as one block. -->
     <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
-         explanation read as one block. 34 track + 10 gap. -->
+         explanation read as one block. 26 track + 10 gap. -->
     <Style x:Key="UpsHint" TargetType="TextBlock">
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
-        <Setter Property="Margin" Value="44,1,0,12"/>
+        <Setter Property="Margin" Value="36,1,0,12"/>
     </Style>
 
     <Style x:Key="UpsHintIndented" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
-        <Setter Property="Margin" Value="68,1,0,12"/>
+        <Setter Property="Margin" Value="60,1,0,12"/>
     </Style>
 
     <Style x:Key="UpsWarning" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
@@ -212,18 +210,18 @@
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
                         <Border x:Name="Track"
-                                Width="34" Height="18" CornerRadius="9"
+                                Width="26" Height="14" CornerRadius="7"
                                 Background="{StaticResource UpsGrooveOff}"
                                 BorderBrush="#0B1015" BorderThickness="1"
                                 VerticalAlignment="Center">
                             <Border x:Name="Thumb"
-                                    Width="14" Height="14" CornerRadius="7"
+                                    Width="10" Height="10" CornerRadius="5"
                                     Background="{StaticResource UpsKnobFace}"
-                                    BorderBrush="#55616D" BorderThickness="0.8"
-                                    HorizontalAlignment="Left" Margin="1,0,0,0">
+                                    BorderBrush="#55616D" BorderThickness="0.6"
+                                    HorizontalAlignment="Left" Margin="1.5,0,0,0">
                                 <Border.Effect>
-                                    <DropShadowEffect Color="#000000" BlurRadius="4"
-                                                      ShadowDepth="1.4" Direction="270" Opacity="0.75"/>
+                                    <DropShadowEffect Color="#000000" BlurRadius="2.5"
+                                                      ShadowDepth="0.7" Direction="270" Opacity="0.5"/>
                                 </Border.Effect>
                             </Border>
                         </Border>
@@ -237,8 +235,8 @@
                             <Setter TargetName="Track" Property="BorderBrush" Value="#1B3D28"/>
                             <Setter TargetName="Track" Property="Effect">
                                 <Setter.Value>
-                                    <DropShadowEffect Color="#5FA976" BlurRadius="7"
-                                                      ShadowDepth="0" Opacity="0.5"/>
+                                    <DropShadowEffect Color="#5FA976" BlurRadius="5"
+                                                      ShadowDepth="0" Opacity="0.4"/>
                                 </Setter.Value>
                             </Setter>
                             <!-- The knob throws, it does not glide. Two reasons beyond taste: a
@@ -247,7 +245,7 @@
                                  window opens would sit at the wrong end and then visibly jump
                                  into place. An alignment swap is correct the instant it renders. -->
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
-                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,1,0"/>
+                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,1.5,0"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Thumb" Property="BorderBrush" Value="#93A4B4"/>
