@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
@@ -13,34 +14,28 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20">
-            <TextBlock Text="Settings Backup &amp; Migration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-            <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests."
-                       FontSize="11"
-                       Foreground="#90A8A0"
-                       FontStyle="Italic"
-                       TextWrapping="Wrap"
-                       Margin="0,0,0,20"/>
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+            <TextBlock Text="Settings Backup &amp; Migration" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests." Style="{StaticResource UpsPageSubtitle}"/>
 
             <!-- JSON Export / Import (portable, re-importable) -->
-            <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+            <Border Style="{StaticResource UpsCard}" CornerRadius="4" Padding="15" Margin="0,0,0,15">
                 <StackPanel>
-                    <TextBlock Text="Portable JSON Backup" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Portable JSON Backup" Style="{StaticResource UpsSectionTitle}"/></Border>
                     <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded — those stay machine-specific."
-                               FontSize="11"
-                               Foreground="Gray"
+                               Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Content="Export Settings (JSON)..."
+                        <Button Style="{StaticResource UpsButton}" Content="Export Settings (JSON)..."
                                 Click="ExportSettingsJson_Click"
                                 Padding="15,8"
                                 Margin="0,0,10,0"
                                 Background="#2D5A87"
                                 Foreground="White"/>
-                        <Button Content="Import Settings (JSON)..."
+                        <Button Style="{StaticResource UpsButton}" Content="Import Settings (JSON)..."
                                 Click="ImportSettingsJson_Click"
                                 Padding="15,8"
                                 Background="#2D5A87"
@@ -50,16 +45,15 @@
             </Border>
 
             <!-- Markdown Snapshot (human-readable, one-way) -->
-            <Border Background="#2D2D2D" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+            <Border Style="{StaticResource UpsCard}" CornerRadius="4" Padding="15" Margin="0,0,0,15">
                 <StackPanel>
-                    <TextBlock Text="Human-Readable Snapshot" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Human-Readable Snapshot" Style="{StaticResource UpsSectionTitle}"/></Border>
                     <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. One-way — not re-importable."
-                               FontSize="11"
-                               Foreground="Gray"
+                               Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
 
-                    <Button Content="Export Snapshot (Markdown)..."
+                    <Button Style="{StaticResource UpsButton}" Content="Export Snapshot (Markdown)..."
                             Click="ExportSettingsMarkdown_Click"
                             Padding="15,8"
                             HorizontalAlignment="Left"
@@ -69,7 +63,7 @@
             </Border>
 
             <!-- Notes -->
-            <Border Background="#1A2A3A" BorderBrush="#3A5A7A" BorderThickness="1" CornerRadius="4" Padding="15">
+            <Border Style="{StaticResource UpsCardAccent}" BorderThickness="1" CornerRadius="4" Padding="15">
                 <StackPanel>
                     <TextBlock Text="What gets included?" FontSize="12" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,8"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#BBCCDD">

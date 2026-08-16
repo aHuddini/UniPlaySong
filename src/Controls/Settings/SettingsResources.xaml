@@ -423,6 +423,25 @@
         <Setter Property="BorderBrush" Value="{StaticResource UpsBevelInfo}"/>
     </Style>
 
+    <!-- "This cannot be undone." Reserved for destructive actions; if it is used for ordinary
+         caution it stops meaning anything. UpsCardWarn is the one for caution. -->
+    <LinearGradientBrush x:Key="UpsGlassDanger" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6301416"/>
+        <GradientStop Offset="1" Color="#E61C0B0C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelDanger" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#D07A78"/>
+        <GradientStop Offset="0.12" Color="#A85350"/>
+        <GradientStop Offset="0.55" Color="#743634"/>
+        <GradientStop Offset="1"    Color="#3E1D1C"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsCardDanger" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassDanger}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelDanger}"/>
+    </Style>
+
     <!-- A card's own heading. Sits inside the box, so the box does not need a section bar too. -->
     <Style x:Key="UpsCardTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12.5"/>

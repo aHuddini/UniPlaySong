@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
@@ -13,10 +14,10 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20">
-            <TextBlock Text="Experimental Features" FontSize="18" FontWeight="Bold" Margin="0,0,0,5"/>
-            <Border Background="#3A2A00" BorderBrush="#CC8800" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,5,0,20">
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+            <TextBlock Text="Experimental Features" Style="{StaticResource UpsPageTitle}"/>
+            <Border Style="{StaticResource UpsCardWarn}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,5,0,20">
                 <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#FFCC66">
                     <Run FontWeight="SemiBold">Warning:</Run>
                     <Run Text=" These features are experimental and under active development. They may not work correctly, cause minor audio glitches, or behave unexpectedly. They may be changed or removed in future versions. Enable at your own discretion."/>
@@ -24,14 +25,14 @@
             </Border>
 
             <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
-            <TextBlock Text="Release Audio When Idle" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Release Audio When Idle" Style="{StaticResource UpsSectionTitle}"/></Border>
             <StackPanel Orientation="Horizontal" Margin="0,8">
-                <TextBlock Text="Release after: " VerticalAlignment="Center" Width="100"/>
-                <TextBlock Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Release after: " VerticalAlignment="Center" Width="100"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
                            VerticalAlignment="Center"
                            Width="25"
                            Margin="0,0,3,0"/>
-                <TextBlock Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <Slider Minimum="0" Maximum="60"
                         Value="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
                         Width="200"
@@ -43,8 +44,7 @@
                         AutoToolTipPlacement="TopLeft"/>
             </StackPanel>
             <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. 0 disables idle release. UniPlaySong also releases its audio device immediately when you lock the PC or it suspends (regardless of this setting)."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,5"/>
             <TextBlock Text="&#x26A0; Experimental: still being ironed out — behavior may change."
@@ -54,18 +54,17 @@
                        Margin="20,0,0,15"/>
 
             <!-- Audio Buffer Size (v1.7.2) -->
-            <TextBlock Text="Audio Buffer Size" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Audio Buffer Size" Style="{StaticResource UpsSectionTitle}"/></Border>
             <StackPanel Orientation="Horizontal" Margin="0,8">
-                <TextBlock Text="Buffer: " VerticalAlignment="Center" Width="100"/>
-                <ComboBox ItemsSource="{Binding AudioBufferOptions}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Buffer: " VerticalAlignment="Center" Width="100"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AudioBufferOptions}"
                           DisplayMemberPath="Label"
                           SelectedValuePath="Samples"
                           SelectedValue="{Binding Settings.AudioBufferSamples}"
                           Width="340"/>
             </StackPanel>
             <TextBlock Text="How much audio UniPlaySong prepares ahead of the speakers. A smaller buffer starts sounds sooner — most noticeable on short notification sounds like achievement and controller dings — but gives the audio thread less headroom, so a busy machine may crackle or drop out. Increase it if you hear stuttering; leave it at 2048 if playback is fine."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,5"/>
             <TextBlock Text="&#x26A0; Takes effect after restarting Playnite — the buffer is fixed when the audio device opens."
@@ -75,27 +74,26 @@
                        Margin="20,0,0,15"/>
 
             <!-- Download Notification Sound -->
-            <TextBlock Text="Download Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <CheckBox Content="Play sound when downloads complete"
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Download Notifications" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Play sound when downloads complete"
                       IsChecked="{Binding Settings.PlaySoundOnDownloadComplete}"
                       Margin="0,5,0,5"/>
             <TextBlock Text="Briefly pauses music and plays a system notification sound when any music download finishes (single game, batch, auto-download, Download From URL)."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,10"/>
 
             <!-- Song Progress Indicator -->
-            <TextBlock Text="Song Progress Indicator" FontSize="14" FontWeight="SemiBold" Margin="0,15,0,10"/>
-            <CheckBox Content="Show song progress bar (Desktop mode)"
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Song Progress Indicator" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show song progress bar (Desktop mode)"
                       IsChecked="{Binding Settings.ShowProgressBar}"
                       Command="{Binding SetRestartRequired}"
                       CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                       Margin="0,5,0,5"/>
             <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                         IsEnabled="{Binding Settings.ShowProgressBar}">
-                <TextBlock Text="Position:" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
-                <ComboBox SelectedIndex="{Binding Settings.ProgressBarPosition, Converter={StaticResource ProgressBarPositionConverter}}"
+                <TextBlock Text="Position:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.ProgressBarPosition, Converter={StaticResource ProgressBarPositionConverter}}"
                           Margin="8,0,0,0" Width="170">
                     <ComboBoxItem Content="After skip button"/>
                     <ComboBoxItem Content="After visualizer"/>
@@ -109,14 +107,12 @@
             </TextBlock>
 
             <!-- Peak Meter -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="Peak Meter (VU Display)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <CheckBox Content="Show Peak Meter in top panel"
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Peak Meter (VU Display)" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show Peak Meter in top panel"
                       IsChecked="{Binding Settings.ShowPeakMeter}"
                       Margin="0,5,0,5"/>
             <TextBlock Text="Real-time L/R audio level meter with green/yellow/red LED-style bars. Requires NAudio player (auto-enabled). May impact performance on some systems."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,5"/>
             <TextBlock Text="&#x26A0; Experimental: This feature may cause lag on some systems."
@@ -126,27 +122,24 @@
                        Margin="20,0,0,10"/>
 
             <!-- Media Key Control -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="Media Key Control" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Media Key Control" Style="{StaticResource UpsSectionTitle}"/></Border>
 
-            <CheckBox Content="Control music with keyboard media keys"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Control music with keyboard media keys"
                       IsChecked="{Binding Settings.EnableMediaKeyControl}"
                       Margin="0,5,0,5"/>
             <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,10"/>
 
             <!-- NAudio Fade Curve Tuning -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="NAudio Fade Curves" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="NAudio Fade Curves" Style="{StaticResource UpsSectionTitle}"/></Border>
             <TextBlock Text="Only applies when Live Effects or Visualizer is enabled (NAudio pipeline)"
                        FontSize="11" FontStyle="Italic" Foreground="#90A8A0" Margin="0,0,0,8"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                <TextBlock Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
-                <ComboBox SelectedIndex="{Binding Settings.NaudioFadeInCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeInCurve, Converter={StaticResource FadeCurveTypeConverter}}"
                           Width="150">
                     <ComboBoxItem Content="Linear"/>
                     <ComboBoxItem Content="Quadratic"/>
@@ -157,8 +150,8 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                <TextBlock Text="Fade-out curve:" VerticalAlignment="Center" Width="110"/>
-                <ComboBox SelectedIndex="{Binding Settings.NaudioFadeOutCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-out curve:" VerticalAlignment="Center" Width="110"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeOutCurve, Converter={StaticResource FadeCurveTypeConverter}}"
                           Width="150">
                     <ComboBoxItem Content="Linear"/>
                     <ComboBoxItem Content="Quadratic"/>
@@ -169,25 +162,23 @@
             </StackPanel>
 
             <TextBlock Text="Linear: constant rate. Quadratic: moderate curve. Cubic: aggressive perceptual decay (default fade-out). S-Curve: gentle start/end, fast middle. Logarithmic: fast initial change, slow tail."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,10"/>
 
             <!-- Icon Glow -->
-            <Separator Margin="0,15"/>
             <Grid Margin="0,0,0,5">
-                <TextBlock Text="Icon Glow" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                <Button Content="Reset Icon Glow" HorizontalAlignment="Right" VerticalAlignment="Center"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Icon Glow" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource UpsButton}" Content="Reset Icon Glow" HorizontalAlignment="Right" VerticalAlignment="Center"
                         Click="ResetIconGlow_Click" Padding="8,3" FontSize="11"/>
             </Grid>
-            <CheckBox Content="Enable Icon Glow (Desktop only)"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Icon Glow (Desktop only)"
                       IsChecked="{Binding Settings.EnableIconGlow}"
                       Margin="0,12,0,4"
                       ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
             <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
-                <TextBlock Text="Preset:" VerticalAlignment="Center" Width="130"/>
-                <ComboBox SelectedValue="{Binding Settings.IconGlowPreset}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Preset:" VerticalAlignment="Center" Width="130"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.IconGlowPreset}"
                           SelectedValuePath="Tag"
                           Width="160" HorizontalAlignment="Left">
                     <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
@@ -209,24 +200,24 @@
                 </ComboBox>
             </DockPanel>
             <StackPanel IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
-            <CheckBox Content="Enable pulse animation (SDL2 fallback)"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable pulse animation (SDL2 fallback)"
                       IsChecked="{Binding Settings.EnableIconGlowPulse}"
                       Margin="20,0,0,4"
                       IsEnabled="{Binding Settings.EnableIconGlow}"
                       ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
-            <CheckBox Content="Enable slow spin"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable slow spin"
                       IsChecked="{Binding Settings.EnableIconGlowSpin}"
                       Margin="20,0,0,4"
                       IsEnabled="{Binding Settings.EnableIconGlow}"
                       ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
-            <CheckBox Content="Beat-reactive spin acceleration"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Beat-reactive spin acceleration"
                       IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
                       Margin="40,0,0,4"
                       IsEnabled="{Binding Settings.EnableIconGlowSpin}"
                       ToolTip="When enabled, the glow spin speeds up on audio beats." />
             <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
-                <TextBlock Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
-                <TextBlock Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
                            VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
                 <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
                         Minimum="5" Maximum="60"
@@ -234,8 +225,8 @@
                         ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
             </DockPanel>
             <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                <TextBlock Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
-                <TextBlock Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
                            VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
                 <Slider Value="{Binding Settings.IconGlowIntensity}"
                         Minimum="0.5" Maximum="3.0"
@@ -243,8 +234,8 @@
                         ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
             </DockPanel>
             <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                <TextBlock Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
-                <TextBlock Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
                            VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
                 <Slider Value="{Binding Settings.IconGlowSize}"
                         Minimum="2.0" Maximum="12.0"
@@ -252,8 +243,8 @@
                         ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
             </DockPanel>
             <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                <TextBlock Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
-                <TextBlock Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
                            VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
                 <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
                         Minimum="0.5" Maximum="4.0"
@@ -261,8 +252,8 @@
                         ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
             </DockPanel>
             <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                <TextBlock Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
-                <TextBlock Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
                            VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
                 <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
                         Minimum="0.5" Maximum="4.0"
@@ -272,35 +263,32 @@
             </StackPanel>
 
             <!-- List Icon Glow -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="List Icon Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <CheckBox Content="Enable List Icon Glow (Desktop only)"
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="List Icon Glow" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable List Icon Glow (Desktop only)"
                       IsChecked="{Binding Settings.EnableListIconGlow}"
                       Margin="0,12,0,4"
                       ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
-            <CheckBox Content="Subtle glow (softer effect)"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Subtle glow (softer effect)"
                       IsChecked="{Binding Settings.SubtleListGlow}"
                       Margin="20,0,0,4"
                       IsEnabled="{Binding Settings.EnableListIconGlow}"
                       ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
 
             <!-- Sidebar Glow -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="Sidebar Glow" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Sidebar Glow" Style="{StaticResource UpsSectionTitle}"/></Border>
 
-            <CheckBox Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
                       IsChecked="{Binding Settings.EnableSidebarGlow}"
                       Margin="0,5,0,5"/>
             <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
-                       FontSize="11"
-                       Foreground="Gray"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,5"/>
 
             <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                         IsEnabled="{Binding Settings.EnableSidebarGlow}">
-                <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <ComboBox Width="160"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" Width="160"
                           SelectedIndex="{Binding Settings.SidebarGlowMode, Converter={StaticResource SidebarGlowModeConverter}}"
                           IsEnabled="{Binding Settings.EnableSidebarGlow}">
                     <ComboBoxItem Content="Breathing"/>
@@ -330,31 +318,29 @@
             </StackPanel>
 
             <!-- Auto-launch Spotify (Experimental) -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="Auto-launch Spotify (Experimental)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <CheckBox Content="Auto-launch Spotify on startup if not running"
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Auto-launch Spotify (Experimental)" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-launch Spotify on startup if not running"
                       IsChecked="{Binding Settings.AutoLaunchSpotifyOnStartup}"
                       Margin="0,5,0,0"/>
-            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,8"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,0,0,8"
                        Text="When Spotify is your Radio Mode or Default Music source and the Spotify desktop app isn't running, UniPlaySong opens it on startup so music can begin. Only acts when Spotify is your active source. Media controls need Spotify running."/>
             <StackPanel Orientation="Horizontal" Margin="20,0,0,0"
                         IsEnabled="{Binding Settings.AutoLaunchSpotifyOnStartup}">
-                <TextBlock Text="Spotify path (optional): " VerticalAlignment="Center"/>
-                <TextBox Text="{Binding Settings.SpotifyExePath, UpdateSourceTrigger=PropertyChanged}"
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Spotify path (optional): " VerticalAlignment="Center"/>
+                <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SpotifyExePath, UpdateSourceTrigger=PropertyChanged}"
                          Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
-                <Button Content="Browse..." Command="{Binding BrowseSpotifyExeCommand}" Padding="10,4"/>
+                <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseSpotifyExeCommand}" Padding="10,4"/>
             </StackPanel>
-            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,3,0,0"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,3,0,0"
                        Text="Leave empty for standard installs (auto-detected at %APPDATA%\Spotify\Spotify.exe). For Microsoft Store or custom installs, point this at Spotify.exe or its shortcut (.lnk)."/>
 
             <!-- Music Dashboard -->
-            <Separator Margin="0,15"/>
-            <TextBlock Text="Music Dashboard" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Music Dashboard" Style="{StaticResource UpsSectionTitle}"/></Border>
 
-            <CheckBox Content="Enable Music Dashboard sidebar panel (Desktop only)"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music Dashboard sidebar panel (Desktop only)"
                       IsChecked="{Binding Settings.ShowMusicDashboard}"
                       Margin="0,5,0,5"/>
-            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="20,0,0,10">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,0,0,10">
                 A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
             </TextBlock>
 
