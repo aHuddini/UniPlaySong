@@ -194,10 +194,12 @@
         <GradientStop Offset="1"    Color="#2B3742"/>
     </LinearGradientBrush>
 
+    <!-- Brighter than the off groove by a wide margin, because with the bloom gone this fill is
+         what carries the on state at a glance. -->
     <LinearGradientBrush x:Key="UpsGrooveOn" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0"    Color="#27563A"/>
-        <GradientStop Offset="0.55" Color="#3E7C53"/>
-        <GradientStop Offset="1"    Color="#5FA976"/>
+        <GradientStop Offset="0"    Color="#2C6642"/>
+        <GradientStop Offset="0.55" Color="#458F5D"/>
+        <GradientStop Offset="1"    Color="#68BC84"/>
     </LinearGradientBrush>
 
     <Style x:Key="UpsToggle" TargetType="CheckBox">
@@ -209,19 +211,26 @@
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <!-- SnapsToDevicePixels + UseLayoutRounding keep the rim and the knob edge
+                             on whole pixels. At this size a half-pixel edge is the difference
+                             between a crisp control and a smudged one. -->
                         <Border x:Name="Track"
                                 Width="26" Height="14" CornerRadius="7"
                                 Background="{StaticResource UpsGrooveOff}"
                                 BorderBrush="#0B1015" BorderThickness="1"
-                                VerticalAlignment="Center">
+                                VerticalAlignment="Center"
+                                SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <Border x:Name="Thumb"
                                     Width="10" Height="10" CornerRadius="5"
                                     Background="{StaticResource UpsKnobFace}"
-                                    BorderBrush="#55616D" BorderThickness="0.6"
-                                    HorizontalAlignment="Left" Margin="1.5,0,0,0">
+                                    BorderBrush="#4B5764" BorderThickness="0.75"
+                                    HorizontalAlignment="Left" Margin="1.5,0,0,0"
+                                    SnapsToDevicePixels="True">
+                                <!-- Tight and shallow: enough to lift the cap off the groove,
+                                     not enough to read as a halo on a page full of these. -->
                                 <Border.Effect>
-                                    <DropShadowEffect Color="#000000" BlurRadius="2.5"
-                                                      ShadowDepth="0.7" Direction="270" Opacity="0.5"/>
+                                    <DropShadowEffect Color="#000000" BlurRadius="2"
+                                                      ShadowDepth="0.5" Direction="270" Opacity="0.5"/>
                                 </Border.Effect>
                             </Border>
                         </Border>
@@ -232,13 +241,11 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{StaticResource UpsGrooveOn}"/>
-                            <Setter TargetName="Track" Property="BorderBrush" Value="#1B3D28"/>
-                            <Setter TargetName="Track" Property="Effect">
-                                <Setter.Value>
-                                    <DropShadowEffect Color="#5FA976" BlurRadius="5"
-                                                      ShadowDepth="0" Opacity="0.4"/>
-                                </Setter.Value>
-                            </Setter>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="#2E6B44"/>
+                            <!-- No bloom on the on state. A page carries a dozen or more of these,
+                                 and a dozen soft green halos turn a list of settings into a
+                                 smear. On reads from the fill and the knob's position, which are
+                                 both hard-edged. It is also a dozen fewer blur passes. -->
                             <!-- The knob throws, it does not glide. Two reasons beyond taste: a
                                  real panel switch snaps, and a slide animation only runs on the
                                  transition INTO checked — so every toggle already on when the
