@@ -244,8 +244,14 @@
 
         <TabItem Header="Gamification">
             <TabControl Style="{StaticResource NavStrip}" Tag="Gamification">
-                <TabItem Header="Gamification">
-                    <settings:GamificationPage/>
+                <TabItem Header="Library Events">
+                    <settings:LibraryEventsPage/>
+                </TabItem>
+                <TabItem Header="Achievements">
+                    <settings:AchievementEventsPage/>
+                </TabItem>
+                <TabItem Header="ControlUp">
+                    <settings:ControlUpEventsPage/>
                 </TabItem>
             </TabControl>
         </TabItem>

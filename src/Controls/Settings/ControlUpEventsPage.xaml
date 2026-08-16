@@ -1,0 +1,71 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.ControlUpEventsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="ControlUp Events" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Sounds when the ControlUp plugin reports a controller event."/>
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Controller Detected" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                               Text="Plays a sound when ControlUp detects a game controller. UniPlaySong doesn't detect controllers itself — the ControlUp plugin fires it via playnite://uniplaysong/controlup/detecttrigger. Plays over a running game. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
+
+                    <CheckBox Style="{StaticResource UpsToggle}" Content="Enable controller detected sound"
+                              IsChecked="{Binding Settings.EnableControlUpDetectSound}"
+                              Margin="0,5"/>
+
+                    <StackPanel Margin="20,5,0,10"
+                                IsEnabled="{Binding Settings.EnableControlUpDetectSound}">
+                        <RadioButton Style="{StaticResource UpsRadio}" Content="Bundled sound"
+                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                                     GroupName="ControlUpDetectSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Coin Pickup"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource UpsButton}" Content="Preview"
+                                    Command="{Binding PreviewControlUpDetectSoundCommand}"
+                                    Padding="10,4"/>
+                        </StackPanel>
+                        <RadioButton Style="{StaticResource UpsRadio}" Content="Custom sound file (.wav recommended)"
+                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                                     GroupName="ControlUpDetectSound"
+                                     Margin="0,3"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.ControlUpDetectSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="350"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource UpsButton}" Content="Browse..."
+                                    Command="{Binding BrowseControlUpDetectSoundCommand}"
+                                    Padding="10,4"/>
+                            <Button Style="{StaticResource UpsButton}" Content="Preview"
+                                    Command="{Binding PreviewControlUpDetectCustomSoundCommand}"
+                                    Padding="10,4"
+                                    Margin="5,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

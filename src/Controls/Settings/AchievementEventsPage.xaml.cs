@@ -2,9 +2,9 @@
 
 namespace UniPlaySong.Controls.Settings
 {
-    public partial class GamificationPage : UserControl
+    public partial class AchievementEventsPage : UserControl
     {
-        public GamificationPage()
+        public AchievementEventsPage()
         {
             InitializeComponent();
         }

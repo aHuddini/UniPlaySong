@@ -1,0 +1,198 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.LibraryEventsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Library Events" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Sounds and toasts when a game changes status in your library."/>
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Completed" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Play Fanfare on Completed Games"
+                      IsChecked="{Binding Settings.EnableCompletionCelebration}"
+                      Margin="0,5"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Play a celebration sound when you mark a game as 'Completed' in Playnite"/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Also celebrate when marked as 'Beaten'"
+                      IsChecked="{Binding Settings.CelebrateBeaten}"
+                      IsEnabled="{Binding Settings.EnableCompletionCelebration}"
+                      Margin="20,3,0,2"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Fires the same fanfare for Playnite's built-in 'Beaten' status (main story finished), in addition to 'Completed'"/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableCompletionCelebration}">
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Jingle Preset"
+                             IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="CelebrationSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding CelebrationJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedCelebrationJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewCelebrationSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.CelebrationSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="CelebrationSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CelebrationSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..."
+                            Command="{Binding BrowseCelebrationSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewCelebrationSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
+                          IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
+                          Margin="0,10,0,3"/>
+                <TextBlock Style="{StaticResource UpsHint}" Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."/>
+
+                <!-- Visual Celebration Toast -->
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Show celebration toast notification"
+                          IsChecked="{Binding Settings.ShowCelebrationToast}"
+                          Margin="0,10,0,5"/>
+                <TextBlock Style="{StaticResource UpsHint}" Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                    <TextBlock Text="Duration:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                    <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                            Value="{Binding Settings.CelebrationToastDurationSeconds}"
+                            Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Settings.CelebrationToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                               VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowCelebrationToast}">
+                    <TextBlock Text="Color theme:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                    <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.CelebrationToastTheme, Converter={StaticResource CelebrationThemeConverter}}"
+                              Margin="8,0,0,0" Width="170">
+                        <ComboBoxItem Content="Gold (Default)"/>
+                        <ComboBoxItem Content="Royal Purple"/>
+                        <ComboBoxItem Content="Emerald"/>
+                        <ComboBoxItem Content="Ruby"/>
+                        <ComboBoxItem Content="Ice Blue"/>
+                        <ComboBoxItem Content="Sunset"/>
+                        <ComboBoxItem Content="Platinum"/>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Abandoned" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Play Sound on Abandoned Games"
+                      IsChecked="{Binding Settings.EnableAbandonedSound}"
+                      Margin="0,5"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Play a distinct sound (and optional toast) when you mark a game as 'Abandoned' in Playnite. Separate from the Completed/Beaten fanfare so you can pick a resigned / game-over jingle instead."/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableAbandonedSound}">
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Jingle Preset"
+                             IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="AbandonedSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AbandonedJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedAbandonedJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewAbandonedSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.AbandonedSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="AbandonedSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.AbandonedSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..."
+                            Command="{Binding BrowseAbandonedSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewAbandonedSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <!-- Abandoned Toast -->
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Show abandoned toast notification"
+                          IsChecked="{Binding Settings.ShowAbandonedToast}"
+                          Margin="0,10,0,5"/>
+                <TextBlock Style="{StaticResource UpsHint}" Text="Displays a muted toast popup with a graveyard icon when a game is marked abandoned."/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Duration:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                    <Slider Minimum="3" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1"
+                            Value="{Binding Settings.AbandonedToastDurationSeconds}"
+                            Width="150" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Settings.AbandonedToastDurationSeconds, StringFormat='{}{0} seconds'}"
+                               VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Color theme:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                    <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.AbandonedToastTheme, Converter={StaticResource AbandonedThemeConverter}}"
+                              Margin="8,0,0,0" Width="170">
+                        <ComboBoxItem Content="Tombstone (Default)"/>
+                        <ComboBoxItem Content="Dusk Blue"/>
+                        <ComboBoxItem Content="Rust"/>
+                        <ComboBoxItem Content="Ash"/>
+                        <ComboBoxItem Content="Faded Crimson"/>
+                        <ComboBoxItem Content="Shadow"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Margin="20,8,0,5"
+                            IsEnabled="{Binding Settings.ShowAbandonedToast}">
+                    <TextBlock Text="Message (use {gameName} as placeholder):" Style="{StaticResource UpsHint}" Margin="0,0,0,3"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.AbandonedToastMessage, UpdateSourceTrigger=PropertyChanged}"
+                             Width="400" HorizontalAlignment="Left"
+                             VerticalContentAlignment="Center"/>
+                    <TextBlock Text="Examples: &quot;Filed away without finishing {gameName}.&quot;, &quot;{gameName} has been flushed.&quot;, &quot;RIP {gameName}&quot;"
+                               Style="{StaticResource UpsHint}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

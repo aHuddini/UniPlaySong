@@ -734,6 +734,103 @@
     </Style>
 
     <!-- ================================================================================
+         Dropdown. The closed box is the same recess as UpsTextBox — it is an input — and the
+         popup is a raised panel, since it sits above the page.
+         ================================================================================ -->
+    <Style x:Key="UpsComboBoxItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="9,5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Row" Background="Transparent"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="#243040"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="#1D3A4C"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsComboBox" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsComboBoxItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Well" CornerRadius="4"
+                                            Background="{StaticResource UpsWellFace}"
+                                            BorderBrush="{StaticResource UpsWellRim}" BorderThickness="1"
+                                            SnapsToDevicePixels="True">
+                                        <Path x:Name="Chevron" Data="M 0,0 L 7,0 L 3.5,4.5 Z"
+                                              Fill="{StaticResource UpsTextMuted}"
+                                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                                              Margin="0,0,9,0"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                                            <Setter TargetName="Chevron" Property="Fill" Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="Selected" IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                          Margin="9,0,26,0" VerticalAlignment="Center"/>
+
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                            <Border Background="#161D26" BorderBrush="{StaticResource UpsStrokeHi}"
+                                    BorderThickness="1" CornerRadius="4" Margin="0,3,0,0"
+                                    MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" BlurRadius="10" ShadowDepth="3"
+                                                      Direction="270" Opacity="0.55"/>
+                                </Border.Effect>
+                                <ScrollViewer>
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
          Button. Same bevelled panel as the cards, at control scale.
          ================================================================================ -->
     <LinearGradientBrush x:Key="UpsButtonFace" StartPoint="0,0" EndPoint="0,1">

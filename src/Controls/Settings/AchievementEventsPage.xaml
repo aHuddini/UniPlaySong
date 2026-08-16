@@ -1,0 +1,158 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.AchievementEventsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+
+            <TextBlock Text="Achievement Events" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Sounds when PlayniteAchievements reports an unlock."/>
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Unlocks" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                       Text="Plays a fanfare when an achievement/trophy is unlocked. UniPlaySong doesn't detect unlocks itself — an external plugin (e.g. Playnite Achievements) fires it via playnite://uniplaysong/playniteachievements/{rarity}. Plays over a running game. Pick a sound pack for the five rarities below; the master default sound is the ultimate fallback."/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable achievement sounds (default / fallback)"
+                      IsChecked="{Binding Settings.EnableAchievementSound}"
+                      Margin="0,5"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,0,0,5"
+                       Text="The default sound, played for any rarity that doesn't have its own sound set below."/>
+
+            <StackPanel Margin="20,5,0,10"
+                        IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Jingle Preset"
+                             IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
+                             GroupName="AchievementSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                    <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AchievementJingles}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedAchievementJingle}"
+                              Width="300"
+                              Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewAchievementSoundCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Custom sound file (.wav recommended)"
+                             IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
+                             GroupName="AchievementSound"
+                             Margin="0,3"/>
+                <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.AchievementSoundPath, UpdateSourceTrigger=PropertyChanged}"
+                             Width="350"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..."
+                            Command="{Binding BrowseAchievementSoundCommand}"
+                            Padding="10,4"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview"
+                            Command="{Binding PreviewAchievementCustomSoundCommand}"
+                            Padding="10,4"
+                            Margin="5,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Per-rarity sound pack -->
+            <TextBlock Text="Rarity sound pack" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,2"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+            <StackPanel Margin="0,0,0,4" IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Active theme's sounds" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Theme}"/>
+                <TextBlock Text="{Binding ThemeAchievementStatus}" FontSize="10" Foreground="Gray" Margin="24,0,0,4" TextWrapping="Wrap"/>
+                <RadioButton Style="{StaticResource UpsRadio}" Content="PA Starter Pack (bundled)" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PAStarterPack}"/>
+                <RadioButton Style="{StaticResource UpsRadio}" Content="Custom (your own per-rarity files below)" GroupName="AchievementPack" Margin="0,3"
+                             IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+            </StackPanel>
+
+            <!-- Per-rarity custom files (always visible; setting one switches the pack to Custom) -->
+            <TextBlock Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,6"
+                       IsEnabled="{Binding Settings.EnableAchievementSound}"
+                       Text="Pick the Custom pack above to enable per-rarity file overrides. Preview always plays the sound that rarity would use under the current pack. Badge art from the Playnite Achievements plugin."/>
+            <StackPanel IsEnabled="{Binding Settings.EnableAchievementSound}">
+                <!-- Common -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeBronzePath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Common" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="common" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Uncommon -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeSilverPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Uncommon" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.UncommonAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="uncommon" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Rare -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeGoldPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.RareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="rare" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Ultra-Rare -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgePlatinumPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Ultra-Rare" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.UltraRareAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="ultrarare" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Hidden -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgeHiddenPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Hidden" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.HiddenAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="hidden" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+                <!-- Capstone -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Image Source="{Binding BadgePerfectPath}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant"/>
+                    <TextBlock Text="Capstone" Width="80" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CapstoneAchievementSoundPath, UpdateSourceTrigger=PropertyChanged}" Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4"
+                            IsEnabled="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Command="{Binding PreviewRarityAchievementSoundCommand}" CommandParameter="capstone" Padding="10,4" Margin="5,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
