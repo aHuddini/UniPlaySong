@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="UniPlaySong.UniPlaySongSettingsView"
+<UserControl x:Class="UniPlaySong.UniPlaySongSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,58 +6,233 @@
              xmlns:settings="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
-    <!-- Each tab's content lives in its own UserControl under Controls/Settings/. This file is
-         the shell: it decides which pages exist and how they are grouped, nothing more. -->
-    <TabControl>
+
+    <UserControl.Resources>
+
+        <!-- Palette lifted from the Quick Start tab rather than invented alongside it. That tab is
+             the look this rework is chasing, and two independent slate palettes in one window would
+             drift apart on the first tweak. Same four surfaces, same accent. -->
+        <SolidColorBrush x:Key="NavGround" Color="#12171E"/>
+        <SolidColorBrush x:Key="NavSurface" Color="#1A222C"/>
+        <SolidColorBrush x:Key="NavSelected" Color="#232D3A"/>
+        <SolidColorBrush x:Key="NavStroke" Color="#31404F"/>
+        <SolidColorBrush x:Key="NavAccent" Color="#4CC2FF"/>
+        <SolidColorBrush x:Key="NavText" Color="#9AA7B4"/>
+        <SolidColorBrush x:Key="NavTextActive" Color="#FFFFFF"/>
+
+        <!-- Rail entry: a full-width row that marks selection with a left accent bar. The bar is
+             the TabItem's own left border rather than a separate element, so nothing has to be
+             kept in sync with the row's height. -->
+        <Style x:Key="NavRailItem" TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Row"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="3,0,0,0"
+                                Padding="13,9"
+                                TextElement.Foreground="{StaticResource NavText}"
+                                TextElement.FontSize="12.5">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Row" Property="Background" Value="{StaticResource NavSurface}"/>
+                                <Setter TargetName="Row" Property="TextElement.Foreground" Value="{StaticResource NavTextActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Row" Property="Background" Value="{StaticResource NavSelected}"/>
+                                <Setter TargetName="Row" Property="BorderBrush" Value="{StaticResource NavAccent}"/>
+                                <Setter TargetName="Row" Property="TextElement.Foreground" Value="{StaticResource NavTextActive}"/>
+                                <Setter TargetName="Row" Property="TextElement.FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Page entry: underline rather than a second boxed tab, so the strip reads as
+             subordinate to the rail instead of competing with it. -->
+        <Style x:Key="NavStripItem" TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Tab"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,2"
+                                Padding="13,8,13,6"
+                                TextElement.Foreground="{StaticResource NavText}"
+                                TextElement.FontSize="12">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Tab" Property="TextElement.Foreground" Value="{StaticResource NavTextActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Tab" Property="BorderBrush" Value="{StaticResource NavAccent}"/>
+                                <Setter TargetName="Tab" Property="TextElement.Foreground" Value="{StaticResource NavTextActive}"/>
+                                <Setter TargetName="Tab" Property="TextElement.FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The rail itself. MinWidth rather than Width so a longer group name later widens the
+             rail instead of being clipped. -->
+        <Style x:Key="NavRail" TargetType="TabControl">
+            <Setter Property="ItemContainerStyle" Value="{StaticResource NavRailItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Background="{StaticResource NavGround}"
+                                    BorderBrush="{StaticResource NavStroke}"
+                                    BorderThickness="0,0,1,0">
+                                <StackPanel IsItemsHost="True" MinWidth="148" Margin="0,8"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1" ContentSource="SelectedContent"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The strip above each group's pages. Deliberately NOT an implicit TabControl style: an
+             implicit one would cascade into the pages and restyle any TabControl added there. -->
+        <Style x:Key="NavStrip" TargetType="TabControl">
+            <Setter Property="ItemContainerStyle" Value="{StaticResource NavStripItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top"
+                                    Background="{StaticResource NavSurface}"
+                                    BorderBrush="{StaticResource NavStroke}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="8,0,8,0">
+                                <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
+                            </Border>
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </DockPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- Two-level navigation. The left rail is the groups; the strip along the top of each group
+         is the pages inside it. Page content itself lives in Controls/Settings/ — this file only
+         decides what exists and where it sits.
+
+         EVERY rail entry is a group holding a TabControl, including the five that hold a single
+         page today. Those five are the ones expected to grow: splitting a page out of Effects, or
+         adding a second Notifications page, is then one more TabItem, not a restructure of the
+         entry. Uniformity here is the whole point, so resist collapsing the single-page groups
+         back down to a bare page. -->
+
+    <TabControl Style="{StaticResource NavRail}">
+
         <TabItem Header="About">
-            <settings:AboutPage/>
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="About">
+                    <settings:AboutPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Setup">
-            <settings:SetupPage/>
-        </TabItem>
+
         <TabItem Header="Quick Start"
                  ToolTip="Set up UniPlaySong in one click, without going through every tab.">
-            <settings:QuickStartPage/>
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Quick Start">
+                    <settings:QuickStartPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
+
         <TabItem Header="General">
-            <settings:GeneralPage/>
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Setup">
+                    <settings:SetupPage/>
+                </TabItem>
+                <TabItem Header="General">
+                    <settings:GeneralPage/>
+                </TabItem>
+                <TabItem Header="Downloads">
+                    <settings:DownloadsPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
+
         <TabItem Header="Playback">
-            <settings:PlaybackPage/>
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Playback">
+                    <settings:PlaybackPage/>
+                </TabItem>
+                <TabItem Header="Pauses">
+                    <settings:PausesPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Pauses">
-            <settings:PausesPage/>
+
+        <TabItem Header="Effects">
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Live Effects">
+                    <settings:LiveEffectsPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Gamification">
-            <settings:GamificationPage/>
+
+        <TabItem Header="Notifications">
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Gamification">
+                    <settings:GamificationPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Live Effects">
-            <settings:LiveEffectsPage/>
+
+        <TabItem Header="Library">
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Editing">
+                    <settings:EditingPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Editing">
-            <settings:EditingPage/>
+
+        <TabItem Header="Advanced">
+            <TabControl Style="{StaticResource NavStrip}">
+                <TabItem Header="Theme Support">
+                    <settings:ThemeSupportPage/>
+                </TabItem>
+                <TabItem Header="Backup">
+                    <settings:BackupPage/>
+                </TabItem>
+                <TabItem Header="Migration">
+                    <settings:MigrationPage/>
+                </TabItem>
+                <TabItem Header="Cleanup">
+                    <settings:CleanupPage/>
+                </TabItem>
+                <!-- Hidden: a dev test surface, deliberately not exposed to users. Kept for future editing. -->
+                <TabItem Header="Toast Notifications" Visibility="Collapsed">
+                    <settings:ToastNotificationsPage/>
+                </TabItem>
+                <TabItem Header="Experimental">
+                    <settings:ExperimentalPage/>
+                </TabItem>
+            </TabControl>
         </TabItem>
-        <TabItem Header="Downloads">
-            <settings:DownloadsPage/>
-        </TabItem>
-        <TabItem Header="Theme Support">
-            <settings:ThemeSupportPage/>
-        </TabItem>
-        <TabItem Header="Migration">
-            <settings:MigrationPage/>
-        </TabItem>
-        <TabItem Header="Backup">
-            <settings:BackupPage/>
-        </TabItem>
-        <!-- Hidden: a dev test surface, deliberately not exposed to users. Kept for future editing. -->
-        <TabItem Header="Toast Notifications" Visibility="Collapsed">
-            <settings:ToastNotificationsPage/>
-        </TabItem>
-        <TabItem Header="Cleanup">
-            <settings:CleanupPage/>
-        </TabItem>
-        <TabItem Header="Experimental">
-            <settings:ExperimentalPage/>
-        </TabItem>
+
     </TabControl>
 </UserControl>
