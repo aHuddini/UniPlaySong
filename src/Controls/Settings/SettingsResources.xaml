@@ -472,11 +472,15 @@
     </Style>
 
     <!-- A card's own heading. Sits inside the box, so the box does not need a section bar too. -->
+    <!-- Deliberately two steps clear of UpsLabel, not one. At 12.5/SemiBold against a 12/Normal
+         label in the same colour, a card of key-value rows read as four labels with the first
+         one slightly bolder - the title stopped looking like a title. Size, weight and the gap
+         beneath it all move together, because any one of them alone is still ambiguous. -->
     <Style x:Key="UpsCardTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="12.5"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
-        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="Margin" Value="0,0,0,11"/>
     </Style>
 
     <!-- Bulleted line inside a card. -->
@@ -1156,14 +1160,18 @@
     <Style x:Key="UpsPillLink" TargetType="Button">
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Foreground" Value="White"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Background" Value="{StaticResource UpsKoFi}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="cap" CornerRadius="13" Padding="11,5,13,5"
+                    <!-- Sized to sit inside a text row rather than push it open: the capsule
+                         has to match the line box of the labels beside it, or the row it
+                         lives in grows taller than every other row in the card. -->
+                    <Border x:Name="cap" CornerRadius="10" Padding="9,3,11,3"
                             Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}">
                         <ContentPresenter VerticalAlignment="Center"/>
                     </Border>

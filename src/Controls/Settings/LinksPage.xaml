@@ -56,13 +56,13 @@
                                RequestNavigate="AboutHyperlink_RequestNavigate">Update Log</Hyperlink>
                 </TextBlock>
 
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Support" Style="{StaticResource UpsLabel}" Margin="0,4,0,0"/>
-                <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource UpsPillLink}" Margin="0,2,0,0"
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Support" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource UpsPillLink}" Margin="0,0,0,0"
                         Tag="https://ko-fi.com/Z8Z11SG2IK" Click="OpenLink_Click"
                         ToolTip="ko-fi.com/Z8Z11SG2IK">
                     <StackPanel Orientation="Horizontal">
                         <Path Data="{StaticResource UpsCoffeeCupGeometry}" Fill="White" Stretch="Uniform"
-                              Width="14" Height="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                              Width="11" Height="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Support me on Ko-fi" VerticalAlignment="Center" Foreground="White"/>
                     </StackPanel>
                 </Button>
@@ -83,14 +83,10 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Discord" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
-                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
-                    <TextBlock Style="{StaticResource UpsBody}" Margin="0">
-                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://discord.gg/lvUdMqCwVf"
-                                   RequestNavigate="AboutHyperlink_RequestNavigate">The official Playnite server</Hyperlink>
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,0"
-                               Text="Where the extension developers hang out too."/>
-                </StackPanel>
+                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0,0,0,6">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://discord.gg/lvUdMqCwVf"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">Official Playnite Discord</Hyperlink>
+                </TextBlock>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Twitter" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0">
@@ -123,18 +119,13 @@
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://deno.com/"
                            RequestNavigate="AboutHyperlink_RequestNavigate">deno.com</Hyperlink>
             </TextBlock>
-            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,8">
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,0">
                 <Run Foreground="#6B7A88">•</Run>
                 <Run FontWeight="SemiBold">FFmpeg</Run>
                 <Run Foreground="#6B7A88"> — </Run>
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ffmpeg.org/download.html"
                            RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org/download</Hyperlink>
             </TextBlock>
-
-            <!-- Kept when the other descriptions went: this one is not what a tool does, it is
-                 where to put it, and yt-dlp fails without Deno beside it. -->
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="2,0,0,0"
-                       Text="yt-dlp and Deno go in the same folder."/>
               </StackPanel>
             </Border>
 
