@@ -100,8 +100,14 @@
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
                                Text="Active theme music options in Playback settings require theme support"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,0"
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
                                Text="This option needs the theme to ship a UPS_BackgroundAudio audio file. Ask the theme's developer to add one to their theme directories."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Very long or very large songs can make a theme stutter"/>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,0"
+                               Text="A track past roughly 30 minutes, or one with a big file size, competes with the theme for memory and can leave animations stuttering. Cut it to something like 10-15 minutes with Precise Trim — right-click the game in your library — or shrink the file under Library → Audio Editing → Format Conversion. A reasonable-bitrate MP3 or OGG is far lighter than a long WAV or FLAC."/>
                 </StackPanel>
             </Border>
 
