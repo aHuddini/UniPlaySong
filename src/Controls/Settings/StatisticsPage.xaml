@@ -21,11 +21,9 @@
             <TextBlock Text="Statistics" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="What is actually in your music library, and where the space is going."/>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Library" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
+            <!-- No section wrapper. The whole page is one read-only readout, so a collapsible
+                 header would only offer to hide the single thing the page exists to show -
+                 and the page title already names it. -->
 
             <!-- Row 1: Core metrics -->
             <UniformGrid Columns="4" Margin="0,0,0,5">
@@ -108,8 +106,6 @@
                     <TextBlock Text="{Binding StatsReducibleSpace}" FontSize="11" Foreground="#4AABAB" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
-                </StackPanel>
-            </Expander>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

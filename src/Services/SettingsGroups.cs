@@ -32,6 +32,10 @@ namespace UniPlaySong.Services
                 [Setup] = new string[]
                 {
                     nameof(UniPlaySongSettings.AutoCheckHintsOnStartup),
+                    // Follows its toggle from Advanced -> Cleanup to Setup -> Automations. The
+                    // map decides which group's Reset owns a setting, so it has to move with
+                    // the UI or the wrong button resets it.
+                    nameof(UniPlaySongSettings.AutoDeleteMusicOnGameRemoval),
                     nameof(UniPlaySongSettings.AutoDownloadOnGameInstall),
                     nameof(UniPlaySongSettings.AutoDownloadOnLibraryUpdate),
                     nameof(UniPlaySongSettings.AutoNormalizeAfterDownload),
@@ -257,7 +261,6 @@ namespace UniPlaySong.Services
                 [Advanced] = new string[]
                 {
                     nameof(UniPlaySongSettings.AudioBufferSamples),
-                    nameof(UniPlaySongSettings.AutoDeleteMusicOnGameRemoval),
                     nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup),
                     nameof(UniPlaySongSettings.EnableDebugLogging),
                     nameof(UniPlaySongSettings.EnableIconGlow),

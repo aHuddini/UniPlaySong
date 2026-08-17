@@ -48,7 +48,7 @@
                            Text="{Binding Settings.FullscreenVolumeBoostPercent, StringFormat='+{0}%'}"/>
             </StackPanel>
             <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,14"
-                       Text="Nudges the level up in Fullscreen to offset Playnite's own background-volume reduction. Desktop is untouched. Default 0%."/>
+                       Text="Default 0%. Boost nudges the level up in Fullscreen to deal with Playnite's strong volume reduction methods. Desktop is untouched."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="When Idle" Style="{StaticResource UpsSectionTitle}"/>

@@ -42,6 +42,15 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="When a game goes from uninstalled to installed in your library and has no music yet, UPS automatically downloads music in the background."/>
 
+            <!-- Moved off Advanced → Cleanup. Cleanup is for actions you run; this fires on its
+                 own, which makes it the same kind of setting as the two downloads above. The
+                 manual sweep for music already orphaned stays on Cleanup. -->
+            <CheckBox Content="Automatically Delete A Game's Music When It Leaves The Library"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDeleteMusicOnGameRemoval}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Removing a game from Playnite also removes its music folder, so stale music does not sit on your PC. To clear music from games already removed, use Advanced → Cleanup."/>
+
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Post-Download Actions" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
