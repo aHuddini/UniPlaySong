@@ -41,6 +41,9 @@
                         <Run FontWeight="SemiBold">Mike Aniki</Run> — for fully integrating UniPlaySong with ANIKI REMAKE, and for requesting and testing the theme-integration features that came out of it.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">saVantCZ</Run> — for extensive testing, and for the help integrating UniPlaySong with his PS5 Experience theme.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
                         <Run FontWeight="SemiBold">Justin Delano (JDD)</Run> — for integrating UniPlaySong with PlayniteAchievements, so achievement unlocks can trigger UPS sounds.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,0">
