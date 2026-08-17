@@ -34,7 +34,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition/><RowDefinition/><RowDefinition/>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Source" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
@@ -53,7 +53,49 @@
                 <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsBody}">
                     <Hyperlink Style="{StaticResource UpsLink}"
                                NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
-                               RequestNavigate="AboutHyperlink_RequestNavigate">Installer manifest</Hyperlink>
+                               RequestNavigate="AboutHyperlink_RequestNavigate">Update Log</Hyperlink>
+                </TextBlock>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Support" Style="{StaticResource UpsLabel}" Margin="0,4,0,0"/>
+                <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource UpsPillLink}" Margin="0,2,0,0"
+                        Tag="https://ko-fi.com/Z8Z11SG2IK" Click="OpenLink_Click"
+                        ToolTip="ko-fi.com/Z8Z11SG2IK">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource UpsCoffeeCupGeometry}" Fill="White" Stretch="Uniform"
+                              Width="14" Height="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Support me on Ko-fi" VerticalAlignment="Center" Foreground="White"/>
+                    </StackPanel>
+                </Button>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCardAccent}">
+              <StackPanel>
+                <TextBlock Text="Social" Style="{StaticResource UpsCardTitle}"/>
+                <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Discord" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0">
+                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://discord.gg/lvUdMqCwVf"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">The official Playnite server</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,0"
+                               Text="Where the extension developers hang out too."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Twitter" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://twitter.com/Huddini_2k"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">@Huddini_2k</Hyperlink>
                 </TextBlock>
                 </Grid>
               </StackPanel>
@@ -65,26 +107,34 @@
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
                        Text="Most features work out of the box. Below are tools required for full plugin functionality."/>
 
-            <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
-                       Text="yt-dlp and Deno"/>
-            <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,6"
-                       Text="Essential for downloads. They need to be placed together in a folder."/>
-            <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,12">
+            <!-- A list, not three labelled blocks: this page exists to get you to a download,
+                 and what each tool is for belongs on Setup → Tools where you configure it. -->
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,4">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">yt-dlp</Run>
+                <Run Foreground="#6B7A88"> — </Run>
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/yt-dlp/yt-dlp/releases"
-                           RequestNavigate="AboutHyperlink_RequestNavigate">yt-dlp releases</Hyperlink>
-                <Run Foreground="#6B7A88">   ·   </Run>
+                           RequestNavigate="AboutHyperlink_RequestNavigate">github.com/yt-dlp/yt-dlp/releases</Hyperlink>
+            </TextBlock>
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,4">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">Deno</Run>
+                <Run Foreground="#6B7A88"> — </Run>
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://deno.com/"
                            RequestNavigate="AboutHyperlink_RequestNavigate">deno.com</Hyperlink>
             </TextBlock>
-
-            <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
-                       Text="FFmpeg"/>
-            <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,6"
-                       Text="Also required for music downloads. For normalization, conversion, waveform editing, silence trim and amplify."/>
-            <TextBlock Style="{StaticResource UpsBody}" Margin="10,0,0,4">
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,8">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">FFmpeg</Run>
+                <Run Foreground="#6B7A88"> — </Run>
                 <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ffmpeg.org/download.html"
                            RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org/download</Hyperlink>
             </TextBlock>
+
+            <!-- Kept when the other descriptions went: this one is not what a tool does, it is
+                 where to put it, and yt-dlp fails without Deno beside it. -->
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="2,0,0,0"
+                       Text="yt-dlp and Deno go in the same folder."/>
               </StackPanel>
             </Border>
 
