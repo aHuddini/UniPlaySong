@@ -94,7 +94,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.MakeupGainEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Output Gain" Style="{StaticResource UpsRailLabel}"/>
@@ -105,7 +105,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
                         <CheckBox Content="Enable Makeup Gain"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.MakeupGainEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
                             <TextBlock Text="Gain" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -125,7 +125,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.HighPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="High-Pass Filter" Style="{StaticResource UpsRailLabel}"/>
@@ -136,7 +136,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."/>
                         <CheckBox Content="Enable High-Pass Filter"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.HighPassEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
                             <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -156,7 +156,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.LowPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Low-Pass Filter" Style="{StaticResource UpsRailLabel}"/>
@@ -167,7 +167,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Removes high frequencies above the cutoff point. Creates a muffled or underwater effect."/>
                         <CheckBox Content="Enable Low-Pass Filter"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.LowPassEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
                             <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -187,7 +187,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.SlowEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Slow Effect" Style="{StaticResource UpsRailLabel}"/>
@@ -198,7 +198,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Reduces playback speed with a proportional pitch drop. The classic slowed aesthetic &#8212; a vinyl record at a lower RPM."/>
                         <CheckBox Content="Enable Slow Effect"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.SlowEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
                             <TextBlock Text="Slow amount" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -218,7 +218,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.StereoWidenerEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Stereo Widener" Style="{StaticResource UpsRailLabel}"/>
@@ -229,7 +229,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Adjusts the stereo image using mid-side processing. Widen for an immersive feel, or narrow toward mono."/>
                         <CheckBox Content="Enable Stereo Widener"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.StereoWidenerEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
                             <TextBlock Text="Width" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -249,7 +249,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.ChorusEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Chorus" Style="{StaticResource UpsRailLabel}"/>
@@ -260,7 +260,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Thickens the sound by mixing in a slightly delayed, pitch-modulated copy. Creates a lush doubling effect."/>
                         <CheckBox Content="Enable Chorus"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.ChorusEnabled}"/>
                         <StackPanel Margin="32,0,0,0">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
@@ -302,7 +302,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.BitcrusherEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Bitcrusher" Style="{StaticResource UpsRailLabel}"/>
@@ -313,7 +313,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Reduces bit depth and sample rate for lo-fi digital distortion. Retro, crunchy, chiptune-style effects."/>
                         <CheckBox Content="Enable Bitcrusher"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.BitcrusherEnabled}"/>
                         <StackPanel Margin="32,0,0,0">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
@@ -345,7 +345,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.TremoloEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Tremolo" Style="{StaticResource UpsRailLabel}"/>
@@ -356,7 +356,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Periodic volume modulation that creates a pulsing, wavering effect. Slow rates feel atmospheric, fast rates feel intense."/>
                         <CheckBox Content="Enable Tremolo"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.TremoloEnabled}"/>
                         <StackPanel Margin="32,0,0,0">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
@@ -391,7 +391,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
-                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsPipOn}"
                                          Visibility="{Binding Settings.ReverbEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
                             <TextBlock Text="Reverb" Style="{StaticResource UpsRailLabel}"/>
@@ -402,7 +402,7 @@
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Adds spatial depth and ambience. Based on the libSoX / Audacity algorithm, so its presets carry across."/>
                         <CheckBox Content="Enable Reverb"
-                                  Style="{StaticResource UpsToggle}"
+                                  Style="{StaticResource UpsToggleAmber}"
                                   IsChecked="{Binding Settings.ReverbEnabled}"/>
                         <StackPanel Orientation="Horizontal" Margin="32,0,0,2">
                             <TextBlock Text="Preset" Style="{StaticResource UpsParamLabel}" Width="130"/>
@@ -595,7 +595,7 @@
                                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                                            Text="Expert-level parameters that affect the reverb algorithm's behaviour. For audio engineers and enthusiasts."/>
                                 <CheckBox Content="Enable Advanced Tuning"
-                                          Style="{StaticResource UpsToggle}"
+                                          Style="{StaticResource UpsToggleAmber}"
                                           IsChecked="{Binding Settings.AdvancedReverbTuningEnabled}"/>
                                 <TextBlock Style="{StaticResource UpsDangerNote}"
                                            Text="WARNING: these settings can produce VERY LOUD output that may damage your hearing or your speakers. Only enable them if you understand the reverb algorithm. Use at your own risk."/>

@@ -1171,6 +1171,33 @@
     <!-- Same sub-option colour, no indent of its own. For a toggle that already sits inside an
          indented, parent-gated block — where UpsToggleChild would indent it a second time and
          step it out of line with the radios and sliders beside it. -->
+    <!-- Amber on-state, for the per-effect switches on the Live Effects page. The window is
+         cyan everywhere else, so a page whose whole job is "which of these ten are running"
+         reads faster when its switches are the one warm thing on it - and the master toggle
+         above stays cyan, which keeps the page switch distinct from the effect switches.
+
+         Amber is also the caution colour in this file (UpsWarn, UpsCardWarn). That overlap is
+         tolerable here only because these panes carry no caution state of their own; the two
+         warnings on the page are the master toggle's and Advanced Tuning's, both of which sit
+         outside the effect switches. Do not spread this to a page that warns. -->
+    <LinearGradientBrush x:Key="UpsGrooveOnAmber" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#4A3714"/>
+        <GradientStop Offset="0.55" Color="#8A6A22"/>
+        <GradientStop Offset="1"    Color="#D8A93E"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRimAmber" Color="#6B5220"/>
+    <SolidColorBrush x:Key="UpsLedOnAmber" Color="#FFE6A8"/>
+
+    <Style x:Key="UpsToggleAmber" TargetType="CheckBox" BasedOn="{StaticResource UpsToggle}">
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOnAmber}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRimAmber}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOnAmber}"/>
+    </Style>
+
+    <!-- The rail pip, lit. Matches the amber switches rather than the green it started as, so a
+         lit pip and a lit switch are visibly the same fact. -->
+    <SolidColorBrush x:Key="UpsPipOn" Color="#D8A93E"/>
+
     <Style x:Key="UpsToggleChildFlush" TargetType="CheckBox" BasedOn="{StaticResource UpsToggleChild}">
         <Setter Property="Margin" Value="0,7,0,0"/>
     </Style>
