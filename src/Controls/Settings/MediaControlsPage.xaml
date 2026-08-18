@@ -20,6 +20,9 @@
 
             <TextBlock Text="Media Controls" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Playback controls and Now-Playing readout UniPlaySong adds to Playnite."/>
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Media Controls" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls on Panel (Desktop)"
                           IsChecked="{Binding Settings.ShowDesktopMediaControls}"
                           Command="{Binding SetRestartRequired}"
@@ -40,13 +43,17 @@
                     <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                 </TextBlock>
     
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Now Playing Ticker" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Now Playing on Panel (Desktop)"
                           IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                           Command="{Binding SetRestartRequired}"
                           CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                           Margin="0,5"/>
                 <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
-                    <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnight's Top Panel.</Run>
+                    <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnite's Top Panel.</Run>
                     <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
                 </TextBlock>
     
@@ -68,6 +75,10 @@
                            TextWrapping="Wrap"
                            Margin="40,0,0,10"/>
     
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Preview" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
                 <!-- Current Song Display (non-serialized, display-only) -->
                 <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
                     <TextBlock Text="Current Song: "
