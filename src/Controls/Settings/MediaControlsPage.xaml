@@ -26,21 +26,21 @@
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls on Panel (Desktop)"
                           IsChecked="{Binding Settings.ShowDesktopMediaControls}"
                           Command="{Binding SetRestartRequired}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                          Margin="0,5"/>
-                <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                    <Run Foreground="Gray">Displays the play/pause and skip buttons on Playnite's Top Panel.</Run>
-                    <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+                <TextBlock Style="{StaticResource UpsHint}">
+                    <Run Text="Displays the play/pause and skip buttons on Playnite's Top Panel."/>
+                    <Run Text="Requires a Playnite restart to take effect."
+                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
     
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
                           IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
                           Command="{Binding SetRestartRequired}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                          Margin="0,5"/>
-                <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,10">
-                    <Run Foreground="Gray">Adds Media Controls to Playnite's taskbar hover preview.</Run>
-                    <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+                <TextBlock Style="{StaticResource UpsHint}">
+                    <Run Text="Adds Media Controls to Playnite's taskbar hover preview."/>
+                    <Run Text="Requires a Playnite restart to take effect."
+                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
     
 
@@ -50,11 +50,11 @@
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Now Playing on Panel (Desktop)"
                           IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
                           Command="{Binding SetRestartRequired}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
-                          Margin="0,5"/>
-                <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,2">
-                    <Run Foreground="Gray">Displays the current song title, artist, and duration on Playnite's Top Panel.</Run>
-                    <Run Foreground="Orange">Requires Playnite restart to take effect.</Run>
+                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+                <TextBlock Style="{StaticResource UpsHint}">
+                    <Run Text="Displays the current song title, artist, and duration on Playnite's Top Panel."/>
+                    <Run Text="Requires a Playnite restart to take effect."
+                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
     
                 <CheckBox Style="{StaticResource UpsToggleChild}" Content="Hide Now Playing for default music"
@@ -62,18 +62,14 @@
                           IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
                           />
                 <TextBlock Text="When enabled, the Now Playing panel is hidden when a game has no downloaded music and default/fallback music is playing"
-                           Style="{StaticResource UpsHint}"
-                           TextWrapping="Wrap"
-                           Margin="40,0,0,10"/>
+                           Style="{StaticResource UpsHintIndented}"/>
     
                 <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show [Default] indicator in Now Playing"
                           IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
                           IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
                           />
                 <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
-                           Style="{StaticResource UpsHint}"
-                           TextWrapping="Wrap"
-                           Margin="40,0,0,10"/>
+                           Style="{StaticResource UpsHintIndented}"/>
     
 
             <!-- A card, not a bar: the one block here that is output rather than input, so it
