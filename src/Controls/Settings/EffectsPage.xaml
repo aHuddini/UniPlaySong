@@ -115,7 +115,7 @@
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                        Text="{Binding Settings.MakeupGain, StringFormat='{}{0} dB'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="Boosts or cuts output volume. Uses soft-knee limiting to prevent harsh clipping. Default 0 dB."/>
                     </StackPanel>
                 </TabItem>
@@ -146,7 +146,7 @@
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                        Text="{Binding Settings.HighPassCutoff, StringFormat='{}{0} Hz'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="Frequencies below this are attenuated. Default 80 Hz &#8212; subtle rumble removal."/>
                     </StackPanel>
                 </TabItem>
@@ -177,7 +177,7 @@
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                        Text="{Binding Settings.LowPassCutoff, StringFormat='{}{0} Hz'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="Frequencies above this are attenuated. Default 8000 Hz &#8212; subtle high-end rolloff."/>
                     </StackPanel>
                 </TabItem>
@@ -208,7 +208,7 @@
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                        Text="{Binding Settings.SlowAmount, StringFormat='{}{0}%'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="0% is normal speed, 25% is 0.75x, 50% is half. Loud or unnormalized songs may clip when slowed &#8212; use Makeup Gain at -3 to -6 dB if you hear distortion."/>
                     </StackPanel>
                 </TabItem>
@@ -239,7 +239,7 @@
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                                        Text="{Binding Settings.StereoWidenerWidth, StringFormat='{}{0}%'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="0% is mono, 50% is normal stereo and unchanged, 100% is maximum widening. Default 50%."/>
                     </StackPanel>
                 </TabItem>
@@ -442,7 +442,7 @@
                                 <ComboBoxItem Content="Vaporwave"/>
                             </ComboBox>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                        <TextBlock Style="{StaticResource UpsHintFlush}"
                                    Text="Audacity-compatible presets plus UniPlaySong environments. Adjusting any slider sets this to Custom."/>
                         <Border Style="{StaticResource UpsCard}">
                             <StackPanel>

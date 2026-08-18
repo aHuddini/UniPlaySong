@@ -26,7 +26,7 @@
             <TextBlock Text="When enabled, game music will automatically play when selecting games (console-like preview experience). Turn off if you only want Default music or Radio Mode."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                       Margin="32,0,0,10"/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Suppress Playnite Vanilla Theme Music"
                       IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
@@ -34,7 +34,7 @@
             <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,2"/>
+                       Margin="32,0,0,2"/>
             <TextBlock Text="WARNING: It is strongly recommended to keep this option on to ensure normal plugin functionality. Disabling this option allows Playnite's vanilla theme music to play simultaneously alongside UPS music, causing annoying audio issues. This WILL negatively impact all fullscreen themes that include their own music."
                        FontSize="11"
                        Foreground="#FFD44040"

@@ -32,7 +32,7 @@
                     <TextBlock ups:TrackedCaps.Text="Cookie Source" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                                Text="Uses your browser's YouTube login to reach audio-only streams, which roughly halves download and preview times. It counts toward your account's activity. Firefox cookies work best."/>
 
                     <RadioButton Content="No cookies" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
@@ -55,7 +55,7 @@
                         <Button Content="Browse…" Style="{StaticResource UpsButton}"
                                 Command="{Binding BrowseForCookiesFile}"/>
                     </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="22,0,0,4"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="22,0,0,4"
                                Text="A cookies.txt exported from your browser."/>
                 </StackPanel>
             </Expander>
@@ -75,7 +75,7 @@
                                 IsEnabled="{Binding Settings.EnableSearchCache}">
                         <TextBlock Text="Expire after" Style="{StaticResource UpsLabel}" Margin="0,0,10,0"/>
                         <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SearchCacheDurationDays}" Width="52" Margin="0,0,8,0"/>
-                        <TextBlock Text="days  (1–30)" Style="{StaticResource UpsHint}" Margin="0,0,0,0"/>
+                        <TextBlock Text="days  (1–30)" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHint}" Margin="32,0,0,10"
                                Text="Longer means fewer searches, but new uploads take longer to appear."/>

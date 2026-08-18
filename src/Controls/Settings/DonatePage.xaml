@@ -61,7 +61,7 @@
                         <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ko-fi.com/Z8Z11SG2IK"
                                    RequestNavigate="AboutHyperlink_RequestNavigate">ko-fi.com/Z8Z11SG2IK</Hyperlink>
                     </TextBlock>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
                                Text="The primary way to support me."/>
                 </StackPanel>
 
@@ -71,12 +71,12 @@
                         <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/sponsors/aHuddini"
                                    RequestNavigate="AboutHyperlink_RequestNavigate">github.com/sponsors/aHuddini</Hyperlink>
                     </TextBlock>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
                                Text="Recurring subscription."/>
                 </StackPanel>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Free" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsHint}" Margin="0,2,0,0"
+                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsHintFlush}" Margin="0,2,0,0"
                            Text="Report a bug you hit, or tell someone the plugin exists."/>
             </Grid>
 

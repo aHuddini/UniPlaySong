@@ -25,13 +25,13 @@
                     <TextBlock ups:TrackedCaps.Text="Unlocks" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                        Text="Plays a fanfare when an achievement/trophy is unlocked. Pick a sound pack for the five rarities below; the master default sound is the ultimate fallback."/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable achievement sounds (default / fallback)"
                       IsChecked="{Binding Settings.EnableAchievementSound}"
                       Margin="0,5"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,0,0,5"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHintFlush}" Margin="20,0,0,5"
                        Text="The default sound, played for any rarity that doesn't have its own sound set below."/>
 
             <StackPanel Margin="20,5,0,10"
@@ -76,7 +76,7 @@
             <StackPanel Margin="0,0,0,4" IsEnabled="{Binding Settings.EnableAchievementSound}">
                 <RadioButton Style="{StaticResource UpsRadio}" Content="Active theme's sounds" GroupName="AchievementPack" Margin="0,3"
                              IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Theme}"/>
-                <TextBlock Text="{Binding ThemeAchievementStatus}" FontSize="10" Foreground="Gray" Margin="24,0,0,4" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding ThemeAchievementStatus}" Style="{StaticResource UpsHint}"/>
                 <RadioButton Style="{StaticResource UpsRadio}" Content="PA Starter Pack (bundled)" GroupName="AchievementPack" Margin="0,3"
                              IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PAStarterPack}"/>
                 <RadioButton Style="{StaticResource UpsRadio}" Content="Custom (your own per-rarity files below)" GroupName="AchievementPack" Margin="0,3"
@@ -86,7 +86,7 @@
             <!-- Per-rarity custom files (always visible; setting one switches the pack to Custom) -->
             <TextBlock Style="{StaticResource UpsLabel}" Text="Per-rarity custom files" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,2"
                        IsEnabled="{Binding Settings.EnableAchievementSound}"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="0,0,0,6"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
                        IsEnabled="{Binding Settings.EnableAchievementSound}"
                        Text="Pick the Custom pack above to enable per-rarity file overrides. Badge art from the Playnite Achievements plugin."/>
             <StackPanel IsEnabled="{Binding Settings.EnableAchievementSound}">

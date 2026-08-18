@@ -45,7 +45,7 @@
                               IsChecked="{Binding Settings.EnableSidebarGlow}"
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
-                               Style="{StaticResource UpsHint}"
+                               Style="{StaticResource UpsHintFlush}"
                                TextWrapping="Wrap"/>
                     <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                                 IsEnabled="{Binding Settings.EnableSidebarGlow}">
@@ -110,7 +110,7 @@
                             <CheckBox Content="Enable Gradient Bars"
                                       Style="{StaticResource UpsToggleAmber}"
                                       IsChecked="{Binding Settings.VizGradientEnabled}"/>
-                            <TextBlock Style="{StaticResource UpsHintIndented}"
+                            <TextBlock Style="{StaticResource UpsHintFlush}"
                                        Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
                         </StackPanel>
                     </Border>
@@ -441,7 +441,7 @@
                                 <CheckBox Content="Use Fixed Timer (~62 fps)"
                                           Style="{StaticResource UpsToggleAmber}"
                                           IsChecked="{Binding Settings.VizFftTimerMode}"/>
-                                <TextBlock Style="{StaticResource UpsHint}"
+                                <TextBlock Style="{StaticResource UpsHintFlush}"
                                            Text="By default the FFT runs whenever audio delivers samples, about 43 fps at size 1024. Timer mode runs it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,2">

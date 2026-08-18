@@ -90,7 +90,7 @@
                     <CheckBox Content="Pause when Playnite loses focus"
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Style="{StaticResource UpsHint}"
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
                                Text="Pauses when you switch to another application, and resumes when Playnite comes back."/>
 
                     <CheckBox Content="Stay paused after focus returns"

@@ -73,7 +73,7 @@
                     <CheckBox Content="Pick a random preset every startup"
                               Style="{StaticResource UpsToggleChildFlush}"
                               IsChecked="{Binding Settings.RandomizeBundledTrackOnStartup}"/>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
                                Text="One preset is chosen at random each time Playnite starts and used for the whole session."/>
                 </StackPanel>
 
@@ -270,7 +270,7 @@
                               Style="{StaticResource UpsToggleChildFlush}"
                               IsChecked="{Binding Settings.SpotifySkipOnGap}"
                               IsEnabled="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"/>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
                                Text="A fresh Spotify song plays every time you hover on a game with no music. Turn off to keep the same song on switch."/>
                 </StackPanel>
 

@@ -74,7 +74,7 @@
             <CheckBox Content="Play music while browsing Playnite's Random Game Picker"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.EnableRandomPickerMusic}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
+            <TextBlock Style="{StaticResource UpsHintFlush}"
                        Text="Each game's music plays as you click Pick Another in Playnite's picker dialog. Music returns to your library selection when the dialog closes."/>
 
         </StackPanel>

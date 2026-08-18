@@ -50,7 +50,7 @@
             <CheckBox Content="Play automatically on first launch (Desktop Only)"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.AutoPlayOnFirstLaunchDesktop}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
+            <TextBlock Style="{StaticResource UpsHintFlush}"
                        Text="Default: On. Off means nothing plays in Desktop (until you press Play once using media controls). After that first press, game switches play music for the rest of the session. Resets when Playnite restarts."/>
 
             <CheckBox Content="Skip the first selection after switching to Fullscreen"

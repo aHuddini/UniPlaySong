@@ -183,12 +183,12 @@
                 </StackPanel>
                 <StackPanel Margin="20,8,0,5"
                             IsEnabled="{Binding Settings.ShowAbandonedToast}">
-                    <TextBlock Text="Message (use {gameName} as placeholder):" Style="{StaticResource UpsHint}" Margin="0,0,0,3"/>
+                    <TextBlock Text="Message (use {gameName} as placeholder):" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,3"/>
                     <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.AbandonedToastMessage, UpdateSourceTrigger=PropertyChanged}"
                              Width="400" HorizontalAlignment="Left"
                              VerticalContentAlignment="Center"/>
                     <TextBlock Text="Examples: &quot;Filed away without finishing {gameName}.&quot;, &quot;{gameName} has been flushed.&quot;, &quot;RIP {gameName}&quot;"
-                               Style="{StaticResource UpsHint}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                               Style="{StaticResource UpsHintFlush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                 </StackPanel>
             </StackPanel>
                 </StackPanel>

@@ -74,7 +74,7 @@
             <CheckBox Content="True crossfade — overlap the two tracks"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.EnableTrueCrossfade}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
+            <TextBlock Style="{StaticResource UpsHintFlush}"
                        Text="Replaces the sequential fade above with a DJ-style overlap: the next song starts while the current one is still fading. Auto-advance transitions only — manual song changes still switch instantly."/>
             <TextBlock Style="{StaticResource UpsWarning}" Margin="32,0,0,6"
                        Text="Takes effect on the next song transition."/>

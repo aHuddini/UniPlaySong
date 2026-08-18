@@ -24,7 +24,7 @@
                 <StackPanel>
                     <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Preview" Style="{StaticResource UpsSectionTitle}"/></Border>
                     <TextBlock Text="Test the current toast settings to see how they look."
-                               Style="{StaticResource UpsHint}"
+                               Style="{StaticResource UpsHintFlush}"
                                Margin="0,0,0,10"/>
                     <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource UpsButton}" Content="Show Test Toast"
@@ -41,7 +41,7 @@
             <!-- Blur Effect Settings -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Blur Effect" Style="{StaticResource UpsSectionTitle}"/></Border>
             <TextBlock Text="Acrylic blur effect creates a frosted glass appearance. Requires Windows 10 1803 or later."
-                       Style="{StaticResource UpsHint}"
+                       Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="0,0,0,10"/>
 
@@ -67,7 +67,7 @@
             <TextBlock Text="Higher = more opaque/darker. Lower = more transparent (more blur visible). 0 = fully transparent. Default: 221"
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                       Margin="32,0,0,10"/>
 
             <!-- Blur Mode -->
             <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
@@ -80,7 +80,7 @@
             <TextBlock Text="Acrylic blur has a frosted glass effect with noise texture and supports tint color. Basic blur is smoother but does NOT support tint color (Windows API limitation)."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,15"/>
+                       Margin="32,0,0,15"/>
 
             <!-- Blur Tint Color Section (Acrylic mode only) -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Tint Color (Acrylic Mode Only)" Style="{StaticResource UpsSectionTitle}"/></Border>
@@ -179,7 +179,7 @@
             </Border>
 
             <TextBlock Text="Use the RGB sliders, brightness buttons, or presets to pick a tint color. Only works with Acrylic blur mode."
-                       Style="{StaticResource UpsHint}"
+                       Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="0,0,0,15"/>
 
@@ -250,7 +250,7 @@
                         TickPlacement="BottomRight"/>
             </StackPanel>
             <TextBlock Text="0 = square corners, higher = more rounded. Default: 8"
-                       Style="{StaticResource UpsHint}"
+                       Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,10"/>
 
@@ -270,7 +270,7 @@
                         TickPlacement="BottomRight"/>
             </StackPanel>
             <TextBlock Text="Distance from screen edge where toast appears. Default: 30"
-                       Style="{StaticResource UpsHint}"
+                       Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,15"/>
 
@@ -293,7 +293,7 @@
                         TickPlacement="BottomRight"/>
             </StackPanel>
             <TextBlock Text="How long the toast stays on screen (in milliseconds). 1000 = 1 second. Default: 4000 (4 seconds)"
-                       Style="{StaticResource UpsHint}"
+                       Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="20,0,0,15"/>
         </StackPanel>

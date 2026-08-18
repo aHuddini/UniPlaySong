@@ -42,7 +42,7 @@
                     <TextBlock Style="{StaticResource UpsBody}">
                         <Run FontWeight="SemiBold">Changed:</Run> Removed the System beep sound option. If you had it selected, that sound now uses the bundled jingle.
                     </TextBlock>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,4,0,0">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:
                         <Hyperlink Style="{StaticResource UpsLink}"
                                    NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
@@ -54,7 +54,7 @@
             <Border Style="{StaticResource UpsCard}">
                 <StackPanel>
                     <TextBlock Text="Supported Audio Formats" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="Audio formats tested with UPS's audio engine. Drop files matching these extensions into a game's music folder."/>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• MP3    • OGG Vorbis    • FLAC    • WAV</TextBlock>
 
@@ -70,7 +70,7 @@
             <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
                     <TextBlock Text="Officially Supported Fullscreen Themes" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,8"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="Themes that use the UPS theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• ANIKI REMAKE</TextBlock>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold" Margin="2,0,0,8">• PS5 Experience (by saVantCZ)</TextBlock>
@@ -82,31 +82,31 @@
             <Border Style="{StaticResource UpsCardWarn}">
                 <StackPanel>
                     <TextBlock Text="Troubleshooting / Known Quirks" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
                                Text="Real-world edge cases users have hit."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
                                Text="Windows may not auto-sleep while Playnite is running"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
                                Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio, which may prevent sleep. If your PC doesn't sleep on its own, exit Playnite when you step away."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
                                Text="Pause on focus loss can be unreliable"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
                                Text="If music gets stuck silent after exiting a game, turn off &quot;Ignore brief focus loss&quot;. If it still happens, send a log."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
                                Text="Active theme music options in Playback settings require theme support"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,10"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
                                Text="This option needs the theme to ship a UPS_BackgroundAudio audio file. Ask the theme's developer to add one to their theme directories."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
                                Text="Very long or very large songs can make a theme stutter"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="10,0,0,0"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,0"
                                Text="A track past roughly 30 minutes, or one with a big file size, competes with the theme for memory and can leave animations stuttering. Cut it to something like 10-15 minutes with Precise Trim — right-click the game in your library — or shrink the file under Library → Audio Editing → Format Conversion. A reasonable-bitrate MP3 or OGG is far lighter than a long WAV or FLAC."/>
                 </StackPanel>
             </Border>

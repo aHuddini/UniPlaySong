@@ -237,6 +237,10 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
+    <Style x:Key="UpsWarningFlush" TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
+        <Setter Property="Margin" Value="0,1,0,8"/>
+    </Style>
+
     <Style x:Key="UpsDangerNote" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
         <Setter Property="Foreground" Value="{StaticResource UpsDanger}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>

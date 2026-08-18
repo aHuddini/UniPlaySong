@@ -69,7 +69,7 @@
                     </TextBlock.Style>
                 </TextBlock>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                        Text="How long the other audio must play before UPS music pauses, and how long the silence must last before it resumes. Lower is more responsive, but can flicker pauses on brief sounds."/>
             <!-- Only worth saying when the debounce is actually zero. -->
             <TextBlock FontSize="11" Text="At zero, Windows notification sounds and short blips will pause the music too.">
@@ -100,7 +100,7 @@
             <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
                      Width="420" HorizontalAlignment="Left" Margin="0,0,0,6"
                      IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,12"
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,12"
                        Text="Comma-separated process names, e.g. obs64, discord. Find your app's process in Task Manager's Details tab. UPS will then ignore these apps' audio and will not pause its music."/>
 
                 </StackPanel>

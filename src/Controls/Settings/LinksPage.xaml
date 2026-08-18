@@ -100,7 +100,7 @@
             <Border Style="{StaticResource UpsCard}">
               <StackPanel>
                 <TextBlock Text="External Tools" Style="{StaticResource UpsCardTitle}"/>
-            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
                        Text="Most features work out of the box. Below are tools required for full plugin functionality."/>
 
             <!-- A list, not three labelled blocks: this page exists to get you to a download,

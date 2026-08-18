@@ -21,7 +21,7 @@
             <TextBlock Text="Audio Editing" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Convert, normalize and rename. Everything here runs on demand, never during playback."/>
 
-            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                        Text="FFmpeg is required to run these functions."/>
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
@@ -57,7 +57,7 @@
                             Command="{Binding ConvertAllMusicCommand}"/>
                     <TextBlock Text="Convert all music files in your library to the selected format and quality."
                                VerticalAlignment="Center"
-                               Style="{StaticResource UpsHint}"
+                               Style="{StaticResource UpsHintFlush}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
@@ -81,7 +81,7 @@
                         <TextBlock Text="Target integrated loudness. Industry standard is -16 LUFS. Range: -30 to -10 LUFS"
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                                   Margin="32,0,0,5"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Style="{StaticResource UpsLabel}" Text="True Peak Limit: " VerticalAlignment="Center" Width="150"/>
@@ -95,7 +95,7 @@
                         <TextBlock Text="True peak limit to prevent clipping. Industry standard is -1.5 dBTP. Range: -3.0 to 0.0 dBTP"
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                                   Margin="32,0,0,5"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Style="{StaticResource UpsLabel}" Text="Loudness Range: " VerticalAlignment="Center" Width="150"/>
@@ -109,7 +109,7 @@
                         <TextBlock Text="Loudness range target. Industry standard is 11 LU. Range: 1 to 20 LU"
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,5"/>
+                                   Margin="32,0,0,5"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Style="{StaticResource UpsLabel}" Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
@@ -127,7 +127,7 @@
                         <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,10"/>
+                                   Margin="32,0,0,10"/>
                 </StackPanel>
             </Expander>
 
@@ -137,7 +137,7 @@
                 </Expander.Header>
                 <StackPanel>
                         <TextBlock Text="Normalized files are always created with a suffix (e.g., 'song-normalized.mp3'), preserving your original files. Original files are never modified or deleted."
-                                   Style="{StaticResource UpsHint}"
+                                   Style="{StaticResource UpsHintFlush}"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,10"/>
 
@@ -148,7 +148,7 @@
                                      Margin="0,0,10,0"/>
                         </StackPanel>
                         <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'"
-                                   Style="{StaticResource UpsHint}"
+                                   Style="{StaticResource UpsHintFlush}"
                                    TextWrapping="Wrap"
                                    Margin="20,0,0,10"/>
 
@@ -161,7 +161,7 @@
                         <TextBlock Text="Suffix to append to silence-trimmed file names (default: '-trimmed'). Example: 'song.mp3' becomes 'song-trimmed.mp3'"
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,10"/>
+                                   Margin="32,0,0,10"/>
 
                         <CheckBox Style="{StaticResource UpsToggle}" Content="Skip Already Normalized Files"
                                   IsChecked="{Binding Settings.SkipAlreadyNormalized}"
@@ -169,7 +169,7 @@
                         <TextBlock Text="When enabled, files with the normalization suffix are automatically skipped during bulk operations. Useful when downloading new music."
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,10"/>
+                                   Margin="32,0,0,10"/>
 
                         <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals when normalizing (space saver)"
                                   IsChecked="{Binding Settings.DoNotPreserveOriginals}"
