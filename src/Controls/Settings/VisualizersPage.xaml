@@ -38,7 +38,7 @@
                  card. The other two head a rail and are built as units. -->
             <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
-                    <TextBlock Text="Sidebar Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Text="1) Sidebar Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="Turns the sidebar background into its own audio-reactive visual, separate from the spectrum below and with its own set of modes."/>
                     <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
@@ -85,7 +85,7 @@
                 <StackPanel>
                     <Border Style="{StaticResource UpsUnitHead}">
                         <StackPanel>
-                            <TextBlock Text="Spectrum — Top Panel (Desktop)" Style="{StaticResource UpsCardTitle}"/>
+                            <TextBlock Text="2) Spectrum — Top Panel (Desktop)" Style="{StaticResource UpsCardTitle}"/>
                             <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                        Text="An eight-bar frequency spectrum beside the Desktop media controls."/>
                             <CheckBox Content="Show Spectrum Visualizer in Top Panel"
@@ -568,7 +568,7 @@
                                 <Button Style="{StaticResource UpsButton}" DockPanel.Dock="Right"
                                         Content="Reset Icon Glow" Click="ResetIconGlow_Click"
                                         Padding="8,3" FontSize="11" VerticalAlignment="Center"/>
-                                <TextBlock Text="Icon Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
+                                <TextBlock Text="3) Icon Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
                             </DockPanel>
                             <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                        Text="A coloured halo around the selected game's icon, sampled from its art. Reacts to audio when Live Effects or the spectrum is running, and falls back to a gentle pulse when neither is."/>
