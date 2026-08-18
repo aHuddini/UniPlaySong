@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.VisualizersPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.VisualizersPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -40,42 +40,43 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Displays the spectrum in the Desktop top panel bar alongside the media controls. Forces the NAudio backend, which is where the spectrum data comes from."/>
 
+            <!-- Look is a card above the rail rather than a pane inside it. The preset writes
+                 to every value on the tuning panes, so it sits over them the same way Style
+                 Preset sits over the effect rail - a control that rewrites the rail should not
+                 be one of the rail's own entries. -->
+            <Border Style="{StaticResource UpsCardAccent}">
+                <StackPanel IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+                    <TextBlock Text="Look" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                               Text="A preset sets every tuning value at once. Everything in the rail below is what a preset writes to."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                        <TextBlock Text="Viz preset" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                        <ComboBox Style="{StaticResource UpsComboBox}" Width="200"
+                                  SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
+                                  SelectionChanged="VizPreset_SelectionChanged">
+                            <ComboBoxItem Content="Custom"/>
+                            <ComboBoxItem Content="Default"/>
+                            <ComboBoxItem Content="Smooth"/>
+                            <ComboBoxItem Content="Punchy"/>
+                            <ComboBoxItem Content="Cinematic"/>
+                            <ComboBoxItem Content="Minimal"/>
+                            <ComboBoxItem Content="Reactive"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                               Text="Choose Custom to keep your current settings. Selecting any other preset overwrites every value under Bar Behaviour and FFT Smoothing — you can fine-tune afterwards."/>
+
+                    <CheckBox Content="Enable Gradient Bars"
+                              Style="{StaticResource UpsToggleAmber}"
+                              IsChecked="{Binding Settings.VizGradientEnabled}"/>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
+                </StackPanel>
+            </Border>
+
             <TabControl Style="{StaticResource UpsEffectRail}" Margin="0,4,0,0"
                         IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Look" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Look" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                                   Text="A preset sets every tuning value at once. Everything on the other panes is what a preset writes to."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Viz preset" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <ComboBox Style="{StaticResource UpsComboBox}" Width="200"
-                                      SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
-                                      SelectionChanged="VizPreset_SelectionChanged">
-                                <ComboBoxItem Content="Custom"/>
-                                <ComboBoxItem Content="Default"/>
-                                <ComboBoxItem Content="Smooth"/>
-                                <ComboBoxItem Content="Punchy"/>
-                                <ComboBoxItem Content="Cinematic"/>
-                                <ComboBoxItem Content="Minimal"/>
-                                <ComboBoxItem Content="Reactive"/>
-                            </ComboBox>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                                   Text="Choose Custom to keep your current settings. Selecting any other preset overwrites every value under Bar Behaviour and FFT Smoothing — you can fine-tune afterwards."/>
-
-                        <CheckBox Content="Enable Gradient Bars"
-                                  Style="{StaticResource UpsToggleAmber}"
-                                  IsChecked="{Binding Settings.VizGradientEnabled}"/>
-                        <TextBlock Style="{StaticResource UpsHint}"
-                                   Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
-                    </StackPanel>
-                </TabItem>
 
                 <TabItem>
                     <TabItem.Header>
@@ -516,6 +517,177 @@
                         </StackPanel>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,4"
                                    Text="Clearing the cache makes every game re-sample its artwork next time it plays."/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- Graduated out of Experimental. These are audio-reactive visuals, which is
+                     what this page is for; sitting under Experimental described how finished
+                     they were, not what they do. -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Icon Glow" Style="{StaticResource UpsRailLabel}"/>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,3">
+                            <Button Style="{StaticResource UpsButton}" DockPanel.Dock="Right"
+                                    Content="Reset Icon Glow" Click="ResetIconGlow_Click"
+                                    Padding="8,3" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="Icon Glow" Style="{StaticResource UpsPaneTitle}"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="A coloured halo around the selected game's icon, sampled from its art. Reacts to audio when Live Effects or the visualizer is running, and falls back to a gentle pulse when neither is. Desktop only."/>
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Icon Glow (Desktop only)"
+                                  IsChecked="{Binding Settings.EnableIconGlow}"
+                                  Margin="0,12,0,4"
+                                  ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
+                        <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Preset:" VerticalAlignment="Center" Width="130"/>
+                            <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.IconGlowPreset}"
+                                      SelectedValuePath="Tag"
+                                      Width="160" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
+                                <!-- Audio-reactive presets (most reactive first) -->
+                                <ComboBoxItem Content="Reactive" Tag="{x:Static local:IconGlowPreset.Reactive}"/>
+                                <ComboBoxItem Content="Pulse" Tag="{x:Static local:IconGlowPreset.Pulse}"/>
+                                <ComboBoxItem Content="Bass Punch" Tag="{x:Static local:IconGlowPreset.BassPunch}"/>
+                                <ComboBoxItem Content="Neon" Tag="{x:Static local:IconGlowPreset.Neon}"/>
+                                <ComboBoxItem Content="Mellow" Tag="{x:Static local:IconGlowPreset.Mellow}"/>
+                                <!-- Visual-only presets -->
+                                <ComboBoxItem Content="Ambient" Tag="{x:Static local:IconGlowPreset.Ambient}"/>
+                                <ComboBoxItem Content="Subtle" Tag="{x:Static local:IconGlowPreset.Subtle}"/>
+                                <ComboBoxItem Content="Sharp Static" Tag="{x:Static local:IconGlowPreset.SharpStatic}"/>
+                                <ComboBoxItem Content="Sharp Bright" Tag="{x:Static local:IconGlowPreset.SharpBright}"/>
+                                <ComboBoxItem Content="Sharp Vivid" Tag="{x:Static local:IconGlowPreset.SharpVivid}"/>
+                                <ComboBoxItem Content="Sharp Warm" Tag="{x:Static local:IconGlowPreset.SharpWarm}"/>
+                                <ComboBoxItem Content="Sharp Cool" Tag="{x:Static local:IconGlowPreset.SharpCool}"/>
+                                <ComboBoxItem Content="Sharp Pulse" Tag="{x:Static local:IconGlowPreset.SharpPulse}"/>
+                            </ComboBox>
+                        </DockPanel>
+                        <StackPanel IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable pulse animation (SDL2 fallback)"
+                                  IsChecked="{Binding Settings.EnableIconGlowPulse}"
+                                  Margin="20,0,0,4"
+                                  IsEnabled="{Binding Settings.EnableIconGlow}"
+                                  ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable slow spin"
+                                  IsChecked="{Binding Settings.EnableIconGlowSpin}"
+                                  Margin="20,0,0,4"
+                                  IsEnabled="{Binding Settings.EnableIconGlow}"
+                                  ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Beat-reactive spin acceleration"
+                                  IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
+                                  Margin="40,0,0,4"
+                                  IsEnabled="{Binding Settings.EnableIconGlowSpin}"
+                                  ToolTip="When enabled, the glow spin speeds up on audio beats." />
+                        <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
+                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                            <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
+                                    Minimum="5" Maximum="60"
+                                    TickFrequency="5" IsSnapToTickEnabled="True"
+                                    ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
+                        </DockPanel>
+                        <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
+                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                            <Slider Value="{Binding Settings.IconGlowIntensity}"
+                                    Minimum="0.5" Maximum="3.0"
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                    ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
+                        </DockPanel>
+                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
+                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                            <Slider Value="{Binding Settings.IconGlowSize}"
+                                    Minimum="2.0" Maximum="12.0"
+                                    TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                    ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
+                        </DockPanel>
+                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
+                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                            <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
+                                    Minimum="0.5" Maximum="4.0"
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                    ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
+                        </DockPanel>
+                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
+                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                            <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
+                                    Minimum="0.5" Maximum="4.0"
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                    ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
+                        </DockPanel>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="List Icon Glow" Style="{StaticResource UpsSectionTitle}"/></Border>
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable List Icon Glow (Desktop only)"
+                                  IsChecked="{Binding Settings.EnableListIconGlow}"
+                                  Margin="0,12,0,4"
+                                  ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Subtle glow (softer effect)"
+                                  IsChecked="{Binding Settings.SubtleListGlow}"
+                                  Margin="20,0,0,4"
+                                  IsEnabled="{Binding Settings.EnableListIconGlow}"
+                                  ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
+
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Sidebar Glow" Style="{StaticResource UpsRailLabel}"/>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Sidebar Glow" Style="{StaticResource UpsPaneTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Turns the Desktop sidebar background into its own audio-reactive visual. Independent of the top-panel spectrum above — this one has its own set of modes."/>
+
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
+                                  IsChecked="{Binding Settings.EnableSidebarGlow}"
+                                  Margin="0,5,0,5"/>
+                        <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="20,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                                    IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Style="{StaticResource UpsComboBox}" Width="160"
+                                      SelectedIndex="{Binding Settings.SidebarGlowMode, Converter={StaticResource SidebarGlowModeConverter}}"
+                                      IsEnabled="{Binding Settings.EnableSidebarGlow}">
+                                <ComboBoxItem Content="Breathing"/>
+                                <ComboBoxItem Content="Glow Bars"/>
+                                <ComboBoxItem Content="Plasma Grid"/>
+                                <ComboBoxItem Content="Plasma Tinted"/>
+                                <ComboBoxItem Content="Pixel Grid"/>
+                                <ComboBoxItem Content="Rain Drops"/>
+                                <ComboBoxItem Content="Waveform"/>
+                                <ComboBoxItem Content="Fire"/>
+                                <ComboBoxItem Content="Starfield"/>
+                                <ComboBoxItem Content="Ripple"/>
+                                <ComboBoxItem Content="Aurora"/>
+                                <ComboBoxItem Content="Heartbeat"/>
+                                <ComboBoxItem Content="Waterfall"/>
+                                <ComboBoxItem Content="Nebula"/>
+                                <ComboBoxItem Content="DNA Helix"/>
+                                <ComboBoxItem Content="DNA Helix Bloom"/>
+                                <ComboBoxItem Content="Matrix"/>
+                                <ComboBoxItem Content="Laser"/>
+                                <ComboBoxItem Content="Pulse Waves"/>
+                                <ComboBoxItem Content="Voronoi"/>
+                                <ComboBoxItem Content="Equalizer Grid"/>
+                                <ComboBoxItem Content="Snow"/>
+                                <ComboBoxItem Content="Neon Line"/>
+                            </ComboBox>
+                        </StackPanel>
                     </StackPanel>
                 </TabItem>
 
