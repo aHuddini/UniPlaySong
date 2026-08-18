@@ -76,20 +76,15 @@
                            Margin="40,0,0,10"/>
     
 
-            <!-- A card, not a bar. This is the one block on the page that is output rather
-                 than input - what the ticker currently shows - so it earns being set apart. The
-                 Loaded/Unloaded handlers move to the card because they drove the Border that
-                 used to be here; the preview stops updating without them.
+            <!-- A card, not a bar: the one block here that is output rather than input, so it
+                 earns being set apart. No description - the thing itself is the explanation.
 
-                 The ad-hoc #33888888 frame is gone with it: the card supplies the frame, and
-                 those colours were the last hardcoded pair on this page. -->
+                 The Loaded/Unloaded handlers live on the card because they drove the Border that
+                 used to wrap this; the preview stops updating without them. -->
             <Border Style="{StaticResource UpsCard}"
                     Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
                 <StackPanel>
                     <TextBlock Text="Preview" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                               Text="What the ticker is showing right now. Mirrors the data theme developers read via {PluginSettings}."/>
-
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <TextBlock Text="Current Song: " Style="{StaticResource UpsParamLabel}"
                                    VerticalAlignment="Center"/>
