@@ -416,6 +416,13 @@
         <Setter Property="Padding" Value="14,12"/>
         <Setter Property="Margin" Value="0,0,0,12"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!-- The shadow below costs ClearType. An Effect renders its whole subtree to an
+             intermediate surface, and WPF turns ClearType off in those - so every label inside
+             a card was falling back to grayscale antialiasing and reading soft next to the same
+             text outside one. The hint puts it back for the subtree; layout rounding keeps the
+             borders and dividers on whole pixels while we are here. -->
+        <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <!-- Neutral and shallow. This is separation, not the bloom the toggles were told to drop:
              a card is one of three or four on a page rather than one of fifteen, the colour is
              black rather than a hue, and it signals depth rather than state. -->

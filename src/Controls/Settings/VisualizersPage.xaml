@@ -527,7 +527,7 @@
                  card on its own. Icon Glow has a preset plus three groups of tuning, so it
                  takes the same shape as the spectrum above it: a card for what applies to the
                  whole thing, and a rail for the parts you tune one at a time. -->
-            <Border Style="{StaticResource UpsCard}">
+            <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
                     <TextBlock Text="Sidebar Glow" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
@@ -537,8 +537,7 @@
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
                                Style="{StaticResource UpsHint}"
-                               TextWrapping="Wrap"
-                               Margin="20,0,0,5"/>
+                               TextWrapping="Wrap"/>
 
                     <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                                 IsEnabled="{Binding Settings.EnableSidebarGlow}">
@@ -574,7 +573,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource UpsCard}">
+            <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,3">
                         <Button Style="{StaticResource UpsButton}" DockPanel.Dock="Right"
