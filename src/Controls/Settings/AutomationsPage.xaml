@@ -24,7 +24,7 @@
 
             <TextBlock Text="Automations" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Options to automate the use of certain features in UniPlaySong. yt-dlp and FFmpeg tools are required."/>
+                       Text="Options to automate the use of certain features in UniPlaySong. Most options below require the yt-dlp and FFmpeg tools."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Library" Style="{StaticResource UpsSectionTitle}"/>

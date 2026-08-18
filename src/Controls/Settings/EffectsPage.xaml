@@ -40,44 +40,74 @@
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="Captures Spotify's own audio and runs it through the effects chain. Needs Windows 10 build 20348 or newer."/>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Style Preset" Style="{StaticResource UpsSectionTitle}"/>
+            <!-- A card, not a section bar. This is the one control that writes to every
+                 effect below it, so it must not read as just another effect category. -->
+            <Border Style="{StaticResource UpsCardAccent}">
+                <StackPanel IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                    <TextBlock Text="Style Preset" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,6"
+                               Text="One-click styles that set every effect at once. Set to None for manual control."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                        <TextBlock Text="Style" Style="{StaticResource UpsLabel}" Width="120"/>
+                        <ComboBox Style="{StaticResource UpsComboBox}" Width="240"
+                                  SelectedIndex="{Binding Settings.SelectedStylePreset, Converter={StaticResource StylePresetConverter}}">
+                            <ComboBoxItem Content="None (manual)"/>
+                            <ComboBoxItem Content="Huddini — Rehearsal"/>
+                            <ComboBoxItem Content="Huddini — Bright Room"/>
+                            <ComboBoxItem Content="Huddini — Retro Radio"/>
+                            <ComboBoxItem Content="Huddini — Lo-Bit"/>
+                            <ComboBoxItem Content="Huddini — Slowed Dream (slow)"/>
+                            <ComboBoxItem Content="Huddini — Cave Lake (slow)"/>
+                            <ComboBoxItem Content="Huddini — Honey Room (slow)"/>
+                            <ComboBoxItem Content="Clean Boost"/>
+                            <ComboBoxItem Content="Warm FM Radio"/>
+                            <ComboBoxItem Content="Bright &amp; Airy"/>
+                            <ComboBoxItem Content="Telephone"/>
+                            <ComboBoxItem Content="Concert Live"/>
+                            <ComboBoxItem Content="Muffled Next Room"/>
+                            <ComboBoxItem Content="Lo-Fi Chill (slow)"/>
+                            <ComboBoxItem Content="Slowed + Reverb (slow)"/>
+                            <ComboBoxItem Content="Vinyl Night (slow)"/>
+                            <ComboBoxItem Content="Underwater Dream (slow)"/>
+                            <ComboBoxItem Content="Cyberpunk (slow)"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,8"
+                               Text="Tweaking any individual effect below switches this back to None so your changes are preserved."/>
+                    <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left" Margin="0,0,0,4"
+                            Content="Copy current settings to clipboard"
+                            Click="CopyLiveEffectsToClipboard_Click"/>
+                </StackPanel>
             </Border>
 
-            <StackPanel IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,6"
-                           Text="One-click styles that set every effect at once. Set to None for manual control."/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                    <TextBlock Text="Style" Style="{StaticResource UpsLabel}" Width="120"/>
-                    <ComboBox Style="{StaticResource UpsComboBox}" Width="240"
-                              SelectedIndex="{Binding Settings.SelectedStylePreset, Converter={StaticResource StylePresetConverter}}">
-                        <ComboBoxItem Content="None (manual)"/>
-                        <ComboBoxItem Content="Huddini — Rehearsal"/>
-                        <ComboBoxItem Content="Huddini — Bright Room"/>
-                        <ComboBoxItem Content="Huddini — Retro Radio"/>
-                        <ComboBoxItem Content="Huddini — Lo-Bit"/>
-                        <ComboBoxItem Content="Huddini — Slowed Dream (slow)"/>
-                        <ComboBoxItem Content="Huddini — Cave Lake (slow)"/>
-                        <ComboBoxItem Content="Huddini — Honey Room (slow)"/>
-                        <ComboBoxItem Content="Clean Boost"/>
-                        <ComboBoxItem Content="Warm FM Radio"/>
-                        <ComboBoxItem Content="Bright &amp; Airy"/>
-                        <ComboBoxItem Content="Telephone"/>
-                        <ComboBoxItem Content="Concert Live"/>
-                        <ComboBoxItem Content="Muffled Next Room"/>
-                        <ComboBoxItem Content="Lo-Fi Chill (slow)"/>
-                        <ComboBoxItem Content="Slowed + Reverb (slow)"/>
-                        <ComboBoxItem Content="Vinyl Night (slow)"/>
-                        <ComboBoxItem Content="Underwater Dream (slow)"/>
-                        <ComboBoxItem Content="Cyberpunk (slow)"/>
-                    </ComboBox>
+            <!-- Output gain sits with the preset rather than at the far end of the chain.
+                 It is the control people reach for the moment a preset lands too loud or
+                 too quiet, and leaving it below nine collapsed effects meant scrolling
+                 past every one of them to undo the thing the preset just did. -->
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Output Gain" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
+                               Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
+                    <CheckBox Content="Enable Makeup Gain"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.MakeupGainEnabled}"
+                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
+                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
+                        <TextBlock Text="Gain" Style="{StaticResource UpsLabel}" Width="130"/>
+                        <Slider Minimum="-6" Maximum="12" Width="200" VerticalAlignment="Center"
+                                Value="{Binding Settings.MakeupGain}"
+                                SmallChange="1" LargeChange="3" TickFrequency="3"/>
+                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                   Text="{Binding Settings.MakeupGain, StringFormat='{}{0} dB'}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="Boosts or cuts output volume. Uses soft-knee limiting to prevent harsh clipping. Default 0 dB."/>
                 </StackPanel>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,8"
-                           Text="Tweaking any individual effect below switches this back to None so your changes are preserved."/>
-                <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left" Margin="0,0,0,4"
-                        Content="Copy current settings to clipboard"
-                        Click="CopyLiveEffectsToClipboard_Click"/>
-            </StackPanel>
+            </Expander>
 
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
@@ -474,31 +504,6 @@
                                    Text="Treble content of the reverb. Lower is darker and less bright. Default 100%."/>
 
                     </StackPanel>
-                </StackPanel>
-            </Expander>
-
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Output Gain" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
-                    <CheckBox Content="Enable Makeup Gain"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.MakeupGainEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Gain" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="-6" Maximum="12" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.MakeupGain}"
-                                SmallChange="1" LargeChange="3" TickFrequency="3"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.MakeupGain, StringFormat='{}{0} dB'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Boosts or cuts output volume. Uses soft-knee limiting to prevent harsh clipping. Default 0 dB."/>
                 </StackPanel>
             </Expander>
 

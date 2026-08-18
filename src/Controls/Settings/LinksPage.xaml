@@ -88,7 +88,7 @@
                                RequestNavigate="AboutHyperlink_RequestNavigate">Official Playnite Discord</Hyperlink>
                 </TextBlock>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Twitter" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Twitter/X" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0">
                     <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://twitter.com/Huddini_2k"
                                RequestNavigate="AboutHyperlink_RequestNavigate">@Huddini_2k</Hyperlink>
