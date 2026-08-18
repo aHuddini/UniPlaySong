@@ -1203,6 +1203,66 @@
     </Style>
 
     <!-- ================================================================================
+         Colour swatches - a ListBox that looks like a palette.
+
+         A ListBox rather than a bespoke control because SelectedIndex binds exactly as the
+         ComboBox it replaces did, so the existing VizColorThemeConverter keeps working and the
+         enum mapping is untouched. Item order therefore has to stay identical to the old
+         ComboBox: the converter maps position, not name.
+
+         Scrolling is disabled inside the list - the page already scrolls, and a nested scroller
+         here would trap the wheel whenever the pointer crossed the palette.
+         ================================================================================ -->
+    <Style x:Key="UpsSwatchItem" TargetType="ListBoxItem">
+        <Setter Property="Margin" Value="0,0,7,7"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="cell" Width="104" CornerRadius="5" BorderThickness="1"
+                            BorderBrush="{StaticResource UpsStroke}" Background="{StaticResource UpsGround}"
+                            SnapsToDevicePixels="True">
+                        <StackPanel>
+                            <!-- Tag carries the gradient. It runs bottom-to-top because that is how
+                                 the bars are painted; a top-down swatch shows every theme inverted. -->
+                            <Border Height="26" CornerRadius="4,4,0,0" Background="{TemplateBinding Tag}"/>
+                            <TextBlock Text="{TemplateBinding Content}" FontSize="10.5" FontWeight="Normal"
+                                       Foreground="{StaticResource UpsTextMuted}"
+                                       Margin="6,3,6,4" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="cell" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="cell" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter TargetName="cell" Property="Background" Value="{StaticResource UpsSurfaceHi}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSwatchList" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsSwatchItem}"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!-- ================================================================================
          Effect rail - a vertical list of effects beside one open pane.
 
          Same shape as NavRail in the settings shell: IsItemsHost in a vertical StackPanel next
