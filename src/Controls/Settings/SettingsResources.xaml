@@ -483,6 +483,18 @@
         <Setter Property="Margin" Value="0,0,0,11"/>
     </Style>
 
+    <!-- The title of a rail pane. It has to outrank UpsCardTitle, because a pane can contain
+         cards - Reverb holds two - and at the same 13.5/Bold the pane title and the cards inside
+         it rendered identically, so the pane read as three peers rather than a title over two
+         groups. Bigger and with a wider gap beneath; weight is already at Bold and cannot carry
+         the difference on its own. -->
+    <Style x:Key="UpsPaneTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Margin" Value="0,0,0,3"/>
+    </Style>
+
     <!-- Bulleted line inside a card. -->
     <Style x:Key="UpsBullet" TargetType="TextBlock" BasedOn="{StaticResource UpsBody}">
         <Setter Property="Margin" Value="2,0,0,3"/>
@@ -1154,11 +1166,14 @@
          ================================================================================ -->
     <Style x:Key="UpsRailItem" TargetType="TabItem">
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
-        <Setter Property="FontSize" Value="12.5"/>
+        <!-- Below the 12 of a setting label, and well below the 13.5 of a card title. The rail
+             is navigation: at 12.5 it read heavier than the hints in the pane it was pointing
+             at, which put the furniture in front of the content. -->
+        <Setter Property="FontSize" Value="11.5"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="face" Padding="13,6" Background="Transparent"
+                    <Border x:Name="face" Padding="14,6" Background="Transparent"
                             BorderThickness="2,0,0,0" BorderBrush="Transparent">
                         <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
                     </Border>
@@ -1188,15 +1203,17 @@
                 <ControlTemplate TargetType="TabControl">
                     <!-- Same glass fill and bevel border as UpsCard, so the rail reads as one
                          of the cards on Tools or Backup rather than a control bolted onto the
-                         page. Shadow and radius match too; only the padding differs, because
-                         the rail owns its own internal spacing. -->
+                         page.
+
+                         No DropShadowEffect, deliberately, even though UpsCard has one. An Effect
+                         forces WPF to render the whole subtree to an intermediate surface, and
+                         this subtree contains cards that carry their own shadows - so the page
+                         re-rasterized nested blurs on every scroll frame and dragged visibly.
+                         The bevel border already separates the rail from the page; the shadow was
+                         buying almost nothing on an element this wide. -->
                     <Border Background="{StaticResource UpsGlassNeutral}"
                             BorderBrush="{StaticResource UpsBevelNeutral}" BorderThickness="1"
                             CornerRadius="6" SnapsToDevicePixels="True">
-                        <Border.Effect>
-                            <DropShadowEffect Color="#000000" BlurRadius="9" ShadowDepth="2"
-                                              Direction="270" Opacity="0.38"/>
-                        </Border.Effect>
                         <Grid MinHeight="330">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -1205,10 +1222,10 @@
                             <Border Grid.Column="0" Background="#33070A0F"
                                     BorderBrush="{StaticResource UpsBevelNeutral}" BorderThickness="0,0,1,0"
                                     CornerRadius="5,0,0,5">
-                                <StackPanel IsItemsHost="True" MinWidth="172" Margin="0,7"/>
+                                <StackPanel IsItemsHost="True" MinWidth="168" Margin="0,7"/>
                             </Border>
                             <ContentPresenter Grid.Column="1" ContentSource="SelectedContent"
-                                              Margin="17,15,17,17"/>
+                                              Margin="16,14,16,16"/>
                         </Grid>
                     </Border>
                 </ControlTemplate>
@@ -1220,8 +1237,8 @@
          one is simply hidden when the effect is off, which needs no new C# and reuses the
          BooleanToVisibility converter every page already has. -->
     <Style x:Key="UpsRailPip" TargetType="Ellipse">
-        <Setter Property="Width" Value="6"/>
-        <Setter Property="Height" Value="6"/>
+        <Setter Property="Width" Value="5"/>
+        <Setter Property="Height" Value="5"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 

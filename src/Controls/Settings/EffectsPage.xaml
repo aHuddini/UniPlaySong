@@ -92,7 +92,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.MakeupGainEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -101,7 +101,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Output Gain" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Output Gain" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
                         <CheckBox Content="Enable Makeup Gain"
@@ -123,7 +123,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.HighPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -132,7 +132,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="High-Pass Filter" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="High-Pass Filter" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."/>
                         <CheckBox Content="Enable High-Pass Filter"
@@ -154,7 +154,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.LowPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -163,7 +163,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Low-Pass Filter" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Low-Pass Filter" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Removes high frequencies above the cutoff point. Creates a muffled or underwater effect."/>
                         <CheckBox Content="Enable Low-Pass Filter"
@@ -185,7 +185,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.SlowEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -194,7 +194,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Slow Effect" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Slow Effect" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Reduces playback speed with a proportional pitch drop. The classic slowed aesthetic &#8212; a vinyl record at a lower RPM."/>
                         <CheckBox Content="Enable Slow Effect"
@@ -216,7 +216,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.StereoWidenerEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -225,7 +225,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Stereo Widener" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Stereo Widener" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Adjusts the stereo image using mid-side processing. Widen for an immersive feel, or narrow toward mono."/>
                         <CheckBox Content="Enable Stereo Widener"
@@ -247,7 +247,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.ChorusEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -256,7 +256,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Chorus" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Chorus" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Thickens the sound by mixing in a slightly delayed, pitch-modulated copy. Creates a lush doubling effect."/>
                         <CheckBox Content="Enable Chorus"
@@ -300,7 +300,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.BitcrusherEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -309,7 +309,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Bitcrusher" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Bitcrusher" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Reduces bit depth and sample rate for lo-fi digital distortion. Retro, crunchy, chiptune-style effects."/>
                         <CheckBox Content="Enable Bitcrusher"
@@ -343,7 +343,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.TremoloEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -352,7 +352,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Tremolo" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Tremolo" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Periodic volume modulation that creates a pulsing, wavering effect. Slow rates feel atmospheric, fast rates feel intense."/>
                         <CheckBox Content="Enable Tremolo"
@@ -389,7 +389,7 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center">
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.ReverbEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -398,7 +398,7 @@
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Reverb" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Reverb" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Adds spatial depth and ambience. Based on the libSoX / Audacity algorithm, so its presets carry across."/>
                         <CheckBox Content="Enable Reverb"
@@ -562,12 +562,12 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                            <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Advanced" VerticalAlignment="Center"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
-                        <TextBlock Text="Advanced" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Text="Advanced" Style="{StaticResource UpsPaneTitle}"/>
                         <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                    Text="Settings that change how the chain runs, rather than adding to it."/>
                         <Border Style="{StaticResource UpsCard}">
