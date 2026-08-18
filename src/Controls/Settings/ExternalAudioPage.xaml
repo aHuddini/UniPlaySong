@@ -56,7 +56,7 @@
                 <Slider Minimum="0" Maximum="10" Width="200" VerticalAlignment="Center"
                         IsSnapToTickEnabled="True" TickFrequency="1"
                         Value="{Binding Settings.ExternalAudioDebounceSeconds}"/>
-                <TextBlock Margin="12,0,0,0">
+                <TextBlock Margin="12,0,0,0" FontSize="12">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource UpsValue}">
                             <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
@@ -72,7 +72,7 @@
             <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
                        Text="How long the other audio must play before UPS music pauses, and how long the silence must last before it resumes. Lower is more responsive, but can flicker pauses on brief sounds."/>
             <!-- Only worth saying when the debounce is actually zero. -->
-            <TextBlock Text="At zero, Windows notification sounds and short blips will pause the music too.">
+            <TextBlock FontSize="11" Text="At zero, Windows notification sounds and short blips will pause the music too.">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
                         <Setter Property="Margin" Value="0,0,0,4"/>

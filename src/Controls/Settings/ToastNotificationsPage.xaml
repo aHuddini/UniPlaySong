@@ -128,7 +128,7 @@
 
                     <!-- Brightness -->
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
-                        <TextBlock Text="Brightness:" VerticalAlignment="Center" Width="70" Foreground="#FFD93D"/>
+                        <TextBlock Text="Brightness:" VerticalAlignment="Center" Width="70" FontSize="12" Foreground="#FFD93D"/>
                         <Button Style="{StaticResource UpsButton}" Content="-" Width="30" Margin="0,0,5,0" Padding="5,2"
                                 Command="{Binding AdjustBrightnessCommand}" CommandParameter="-20"
                                 ToolTip="Darken color"/>
@@ -145,7 +145,7 @@
 
                     <!-- Red -->
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                        <TextBlock Text="R:" VerticalAlignment="Center" Width="25" Foreground="#FF6B6B"/>
+                        <TextBlock Text="R:" VerticalAlignment="Center" Width="25" FontSize="12" Foreground="#FF6B6B"/>
                         <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding ToastColorRed}" VerticalAlignment="Center" Width="35"/>
                         <Slider Minimum="0" Maximum="255"
                                 Value="{Binding ToastColorRed}"
@@ -156,7 +156,7 @@
 
                     <!-- Green -->
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                        <TextBlock Text="G:" VerticalAlignment="Center" Width="25" Foreground="#69DB7C"/>
+                        <TextBlock Text="G:" VerticalAlignment="Center" Width="25" FontSize="12" Foreground="#69DB7C"/>
                         <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding ToastColorGreen}" VerticalAlignment="Center" Width="35"/>
                         <Slider Minimum="0" Maximum="255"
                                 Value="{Binding ToastColorGreen}"
@@ -167,7 +167,7 @@
 
                     <!-- Blue -->
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                        <TextBlock Text="B:" VerticalAlignment="Center" Width="25" Foreground="#74C0FC"/>
+                        <TextBlock Text="B:" VerticalAlignment="Center" Width="25" FontSize="12" Foreground="#74C0FC"/>
                         <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding ToastColorBlue}" VerticalAlignment="Center" Width="35"/>
                         <Slider Minimum="0" Maximum="255"
                                 Value="{Binding ToastColorBlue}"

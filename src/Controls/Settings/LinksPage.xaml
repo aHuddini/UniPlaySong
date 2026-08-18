@@ -63,7 +63,7 @@
                     <StackPanel Orientation="Horizontal">
                         <Path Data="{StaticResource UpsCoffeeCupGeometry}" Fill="White" Stretch="Uniform"
                               Width="11" Height="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Support me on Ko-fi" VerticalAlignment="Center" Foreground="White"/>
+                        <TextBlock Text="Support me on Ko-fi" VerticalAlignment="Center" Foreground="White" FontSize="11"/>
                     </StackPanel>
                 </Button>
                 </Grid>

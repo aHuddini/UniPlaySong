@@ -97,7 +97,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.MakeupGainEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Output Gain" VerticalAlignment="Center"/>
+                            <TextBlock Text="Output Gain" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -128,7 +128,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.HighPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="High-Pass Filter" VerticalAlignment="Center"/>
+                            <TextBlock Text="High-Pass Filter" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -159,7 +159,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.LowPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Low-Pass Filter" VerticalAlignment="Center"/>
+                            <TextBlock Text="Low-Pass Filter" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -190,7 +190,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.SlowEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Slow Effect" VerticalAlignment="Center"/>
+                            <TextBlock Text="Slow Effect" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -221,7 +221,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.StereoWidenerEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Stereo Widener" VerticalAlignment="Center"/>
+                            <TextBlock Text="Stereo Widener" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -252,7 +252,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.ChorusEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Chorus" VerticalAlignment="Center"/>
+                            <TextBlock Text="Chorus" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -305,7 +305,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.BitcrusherEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Bitcrusher" VerticalAlignment="Center"/>
+                            <TextBlock Text="Bitcrusher" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -348,7 +348,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.TremoloEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Tremolo" VerticalAlignment="Center"/>
+                            <TextBlock Text="Tremolo" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -394,7 +394,7 @@
                                 <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
                                          Visibility="{Binding Settings.ReverbEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="Reverb" VerticalAlignment="Center"/>
+                            <TextBlock Text="Reverb" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>
@@ -563,7 +563,7 @@
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
                             <Grid Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Advanced" VerticalAlignment="Center"/>
+                            <TextBlock Text="Advanced" Style="{StaticResource UpsRailLabel}"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel>

@@ -260,7 +260,7 @@
                               Fill="#1DB954" Stretch="Uniform"
                               Width="15" Height="15" Margin="0,0,7,0"
                               VerticalAlignment="Center"/>
-                        <TextBlock Text="Spotify desktop app" VerticalAlignment="Center"/>
+                        <TextBlock Text="Spotify desktop app" VerticalAlignment="Center" FontSize="12.5"/>
                     </StackPanel>
                 </RadioButton>
                 <StackPanel Margin="24,2,0,0">

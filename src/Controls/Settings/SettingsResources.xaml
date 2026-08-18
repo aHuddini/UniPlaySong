@@ -1203,6 +1203,24 @@
         </Setter>
     </Style>
 
+    <!-- Rail header text. FontSize and FontWeight are set HERE, on the TextBlock, and not left
+         to inherit from UpsRailItem - Playnite ships an implicit TextBlock style, and an implicit
+         style beats an inherited value, so the TabItem's FontSize never reached the label and the
+         rail rendered at the host theme's size. The headless render harness does not load
+         Playnite's theme, which is why this looked correct there and wrong in the app. Same rule
+         that governs Foreground everywhere else in this file.
+
+         Foreground and weight still have to answer to the item's selected and hover triggers, so
+         they bind up to the TabItem rather than being pinned to a literal. -->
+    <Style x:Key="UpsRailLabel" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground"
+                Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+        <Setter Property="FontWeight"
+                Value="{Binding FontWeight, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+    </Style>
+
     <Style x:Key="UpsEffectRail" TargetType="TabControl">
         <Setter Property="ItemContainerStyle" Value="{StaticResource UpsRailItem}"/>
         <Setter Property="Template">

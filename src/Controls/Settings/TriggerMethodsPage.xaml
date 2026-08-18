@@ -146,7 +146,7 @@
                               Fill="#1DB954" Stretch="Uniform"
                               Width="15" Height="15" Margin="0,0,7,0"
                               VerticalAlignment="Center"/>
-                        <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center"/>
+                        <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center" FontSize="12.5"/>
                     </StackPanel>
                 </RadioButton>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="24,2,0,10"
