@@ -15,10 +15,16 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- The old Live Effects tab with the visualizer block lifted out to its own page, and
-         nothing else moved. Section order is the original: master toggle, style preset, then
-         the chain in the order it was authored, ending on chain order and advanced reverb
-         tuning. Restyled only - no regrouping, no resequencing. -->
+    <!-- Effects pick from a rail rather than stacking as expanders. Ten collapsed bars all
+         looked alike, so finding one meant reading every label, and nothing on screen said
+         which effects were actually running. The rail answers both: one pane open at a time,
+         and a lit pip beside every effect that is on.
+
+         What sits above the rail is what applies to the whole page - the master toggle, the
+         Spotify toggle, and the style preset that writes to every effect below it.
+
+         Advanced is a rail entry rather than an effect: chain order and the reverb algorithm
+         internals change how the chain runs instead of adding a stage to it. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
@@ -40,25 +46,25 @@
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="Captures Spotify's own audio and runs it through the effects chain. Needs Windows 10 build 20348 or newer."/>
 
-            <!-- A card, not a section bar. This is the one control that writes to every
-                 effect below it, so it must not read as just another effect category. -->
+            <!-- A card, not a section bar. This is the one control that writes to every effect
+                 in the rail below, so it must not read as just another effect. -->
             <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel IsEnabled="{Binding Settings.LiveEffectsEnabled}">
                     <TextBlock Text="Style Preset" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,6"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="One-click styles that set every effect at once. Set to None for manual control."/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Style" Style="{StaticResource UpsLabel}" Width="120"/>
                         <ComboBox Style="{StaticResource UpsComboBox}" Width="240"
                                   SelectedIndex="{Binding Settings.SelectedStylePreset, Converter={StaticResource StylePresetConverter}}">
                             <ComboBoxItem Content="None (manual)"/>
-                            <ComboBoxItem Content="Huddini — Rehearsal"/>
-                            <ComboBoxItem Content="Huddini — Bright Room"/>
-                            <ComboBoxItem Content="Huddini — Retro Radio"/>
-                            <ComboBoxItem Content="Huddini — Lo-Bit"/>
-                            <ComboBoxItem Content="Huddini — Slowed Dream (slow)"/>
-                            <ComboBoxItem Content="Huddini — Cave Lake (slow)"/>
-                            <ComboBoxItem Content="Huddini — Honey Room (slow)"/>
+                            <ComboBoxItem Content="Huddini &#8212; Rehearsal"/>
+                            <ComboBoxItem Content="Huddini &#8212; Bright Room"/>
+                            <ComboBoxItem Content="Huddini &#8212; Retro Radio"/>
+                            <ComboBoxItem Content="Huddini &#8212; Lo-Bit"/>
+                            <ComboBoxItem Content="Huddini &#8212; Slowed Dream (slow)"/>
+                            <ComboBoxItem Content="Huddini &#8212; Cave Lake (slow)"/>
+                            <ComboBoxItem Content="Huddini &#8212; Honey Room (slow)"/>
                             <ComboBoxItem Content="Clean Boost"/>
                             <ComboBoxItem Content="Warm FM Radio"/>
                             <ComboBoxItem Content="Bright &amp; Airy"/>
@@ -73,298 +79,346 @@
                         </ComboBox>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,8"
-                               Text="Tweaking any individual effect below switches this back to None so your changes are preserved."/>
+                               Text="Tweaking any individual effect switches this back to None so your changes are preserved."/>
                     <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left" Margin="0,0,0,4"
                             Content="Copy current settings to clipboard"
                             Click="CopyLiveEffectsToClipboard_Click"/>
                 </StackPanel>
             </Border>
 
-            <!-- Output gain sits with the preset rather than at the far end of the chain.
-                 It is the control people reach for the moment a preset lands too loud or
-                 too quiet, and leaving it below nine collapsed effects meant scrolling
-                 past every one of them to undo the thing the preset just did. -->
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Output Gain" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
-                    <CheckBox Content="Enable Makeup Gain"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.MakeupGainEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Gain" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="-6" Maximum="12" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.MakeupGain}"
-                                SmallChange="1" LargeChange="3" TickFrequency="3"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.MakeupGain, StringFormat='{}{0} dB'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Boosts or cuts output volume. Uses soft-knee limiting to prevent harsh clipping. Default 0 dB."/>
-                </StackPanel>
-            </Expander>
+            <TabControl Style="{StaticResource UpsEffectRail}" Margin="0,4,0,0"
+                        IsEnabled="{Binding Settings.LiveEffectsEnabled}">
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="High-Pass Filter" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."/>
-                    <CheckBox Content="Enable High-Pass Filter"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.HighPassEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="20" Maximum="2000" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.HighPassCutoff}"
-                                SmallChange="10" LargeChange="100" TickFrequency="200"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.HighPassCutoff, StringFormat='{}{0} Hz'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Frequencies below this are attenuated. Default 80 Hz — subtle rumble removal."/>
-                </StackPanel>
-            </Expander>
-
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Low-Pass Filter" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Removes high frequencies above the cutoff point. Creates a muffled or underwater effect."/>
-                    <CheckBox Content="Enable Low-Pass Filter"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.LowPassEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="200" Maximum="20000" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.LowPassCutoff}"
-                                SmallChange="100" LargeChange="1000" TickFrequency="2000"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.LowPassCutoff, StringFormat='{}{0} Hz'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Frequencies above this are attenuated. Default 8000 Hz — subtle high-end rolloff."/>
-                </StackPanel>
-            </Expander>
-
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Slow Effect" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Reduces playback speed with a proportional pitch drop. The classic slowed aesthetic — a vinyl record at a lower RPM."/>
-                    <CheckBox Content="Enable Slow Effect"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.SlowEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Slow amount" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="0" Maximum="50" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.SlowAmount}"
-                                SmallChange="1" LargeChange="5" TickFrequency="10"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.SlowAmount, StringFormat='{}{0}%'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="0% is normal speed, 25% is 0.75×, 50% is half. Higher is slower and lower in pitch."/>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="Loud or unnormalized songs may clip when slowed. Use Makeup Gain with a negative value, -3 to -6 dB, if you hear distortion."/>
-                </StackPanel>
-            </Expander>
-
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Stereo Widener" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Adjusts the stereo image using mid-side processing. Widen for an immersive feel, or narrow toward mono."/>
-                    <CheckBox Content="Enable Stereo Widener"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.StereoWidenerEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Width" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                Value="{Binding Settings.StereoWidenerWidth}"
-                                SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                   Text="{Binding Settings.StereoWidenerWidth, StringFormat='{}{0}%'}"/>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="0% is mono, 50% is normal stereo and unchanged, 100% is maximum widening. Default 50%."/>
-                </StackPanel>
-            </Expander>
-
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Chorus" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Thickens the sound by mixing in a slightly delayed, pitch-modulated copy. Creates a lush doubling effect."/>
-                    <CheckBox Content="Enable Chorus"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.ChorusEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Rate" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="1" Maximum="50" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ChorusRate}"
-                                    SmallChange="1" LargeChange="5" TickFrequency="5"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ChorusRate, StringFormat='{}{0} ×0.1 Hz'}"/>
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.MakeupGainEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Output Gain" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="LFO speed. 10 is 1.0 Hz, 30 is 3.0 Hz. Slower is a gentle sway, faster is vibrato. Default 30."/>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Output Gain" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Final gain stage applied after all effects. Use it to compensate for volume changes they introduce."/>
+                        <CheckBox Content="Enable Makeup Gain"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.MakeupGainEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                            <TextBlock Text="Gain" Style="{StaticResource UpsLabel}" Width="130"/>
+                            <Slider Minimum="-6" Maximum="12" Width="200" VerticalAlignment="Center"
+                                    Value="{Binding Settings.MakeupGain}"
+                                    SmallChange="1" LargeChange="3" TickFrequency="3"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                       Text="{Binding Settings.MakeupGain, StringFormat='{}{0} dB'}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                                   Text="Boosts or cuts output volume. Uses soft-knee limiting to prevent harsh clipping. Default 0 dB."/>
+                    </StackPanel>
+                </TabItem>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Depth" Style="{StaticResource UpsLabel}" Width="130"/>
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.HighPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="High-Pass Filter" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="High-Pass Filter" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Removes low frequencies below the cutoff point. Useful for reducing rumble or bass."/>
+                        <CheckBox Content="Enable High-Pass Filter"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.HighPassEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                            <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsLabel}" Width="130"/>
+                            <Slider Minimum="20" Maximum="2000" Width="200" VerticalAlignment="Center"
+                                    Value="{Binding Settings.HighPassCutoff}"
+                                    SmallChange="10" LargeChange="100" TickFrequency="200"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                       Text="{Binding Settings.HighPassCutoff, StringFormat='{}{0} Hz'}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                                   Text="Frequencies below this are attenuated. Default 80 Hz &#8212; subtle rumble removal."/>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.LowPassEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Low-Pass Filter" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Low-Pass Filter" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Removes high frequencies above the cutoff point. Creates a muffled or underwater effect."/>
+                        <CheckBox Content="Enable Low-Pass Filter"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.LowPassEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                            <TextBlock Text="Cutoff frequency" Style="{StaticResource UpsLabel}" Width="130"/>
+                            <Slider Minimum="200" Maximum="20000" Width="200" VerticalAlignment="Center"
+                                    Value="{Binding Settings.LowPassCutoff}"
+                                    SmallChange="100" LargeChange="1000" TickFrequency="2000"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                       Text="{Binding Settings.LowPassCutoff, StringFormat='{}{0} Hz'}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                                   Text="Frequencies above this are attenuated. Default 8000 Hz &#8212; subtle high-end rolloff."/>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.SlowEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Slow Effect" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Slow Effect" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Reduces playback speed with a proportional pitch drop. The classic slowed aesthetic &#8212; a vinyl record at a lower RPM."/>
+                        <CheckBox Content="Enable Slow Effect"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.SlowEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                            <TextBlock Text="Slow amount" Style="{StaticResource UpsLabel}" Width="130"/>
+                            <Slider Minimum="0" Maximum="50" Width="200" VerticalAlignment="Center"
+                                    Value="{Binding Settings.SlowAmount}"
+                                    SmallChange="1" LargeChange="5" TickFrequency="10"/>
+                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                       Text="{Binding Settings.SlowAmount, StringFormat='{}{0}%'}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                                   Text="0% is normal speed, 25% is 0.75x, 50% is half. Loud or unnormalized songs may clip when slowed &#8212; use Makeup Gain at -3 to -6 dB if you hear distortion."/>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.StereoWidenerEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Stereo Widener" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Stereo Widener" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Adjusts the stereo image using mid-side processing. Widen for an immersive feel, or narrow toward mono."/>
+                        <CheckBox Content="Enable Stereo Widener"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.StereoWidenerEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                            <TextBlock Text="Width" Style="{StaticResource UpsLabel}" Width="130"/>
                             <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ChorusDepth}"
+                                    Value="{Binding Settings.StereoWidenerWidth}"
                                     SmallChange="5" LargeChange="10" TickFrequency="10"/>
                             <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ChorusDepth, StringFormat='{}{0}%'}"/>
+                                       Text="{Binding Settings.StereoWidenerWidth, StringFormat='{}{0}%'}"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="How much the delay time wobbles. Higher is more pitch variation. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Mix" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ChorusMix}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ChorusMix, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Wet/dry blend. 0% is dry, 100% is fully chorused. Default 40%."/>
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
+                                   Text="0% is mono, 50% is normal stereo and unchanged, 100% is maximum widening. Default 50%."/>
                     </StackPanel>
-                </StackPanel>
-            </Expander>
+                </TabItem>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Bitcrusher" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Reduces bit depth and sample rate for lo-fi digital distortion. Retro, crunchy, chiptune-style effects."/>
-                    <CheckBox Content="Enable Bitcrusher"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.BitcrusherEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Bit depth" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="2" Maximum="16" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.BitcrusherBitDepth}"
-                                    SmallChange="1" LargeChange="2" TickFrequency="2"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.BitcrusherBitDepth, StringFormat='{}{0} bits'}"/>
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.ChorusEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Chorus" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Audio resolution. 16 is CD quality and subtle, 8 is retro, 4 is crunchy, 2 is extreme. Default 8."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Downsample" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="1" Maximum="32" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.BitcrusherDownsample}"
-                                    SmallChange="1" LargeChange="4" TickFrequency="4"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.BitcrusherDownsample, StringFormat='{}{0}×'}"/>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Chorus" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Thickens the sound by mixing in a slightly delayed, pitch-modulated copy. Creates a lush doubling effect."/>
+                        <CheckBox Content="Enable Chorus"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.ChorusEnabled}"/>
+                        <StackPanel Margin="32,0,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Rate" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="1" Maximum="50" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.ChorusRate}"
+                                        SmallChange="1" LargeChange="5" TickFrequency="5"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.ChorusRate, StringFormat='{}{0} x0.1 Hz'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                       Text="LFO speed. 10 is 1.0 Hz, 30 is 3.0 Hz. Slower is a gentle sway, faster is vibrato. Default 30."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Depth" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.ChorusDepth}"
+                                        SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.ChorusDepth, StringFormat='{}{0}%'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                       Text="How much the delay time wobbles. Higher is more pitch variation. Default 50%."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Mix" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.ChorusMix}"
+                                        SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.ChorusMix, StringFormat='{}{0}%'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                       Text="Wet/dry blend. 0% is dry, 100% is fully chorused. Default 40%."/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Sample rate reduction. 1 is none, 4 is gritty, 16 and up is heavily degraded. Default 1."/>
                     </StackPanel>
-                </StackPanel>
-            </Expander>
+                </TabItem>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Tremolo" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Periodic volume modulation that creates a pulsing, wavering effect. Slow rates feel atmospheric, fast rates feel intense."/>
-                    <CheckBox Content="Enable Tremolo"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.TremoloEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Rate" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="1" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.TremoloRate}"
-                                    SmallChange="1" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.TremoloRate, StringFormat='{}{0} ×0.1 Hz'}"/>
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.BitcrusherEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Bitcrusher" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Pulse speed. 10 is 1.0 Hz and a slow swell, 40 is classic tremolo, 80 and up is a fast flutter. Default 40."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Depth" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.TremoloDepth}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.TremoloDepth, StringFormat='{}{0}%'}"/>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Bitcrusher" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Reduces bit depth and sample rate for lo-fi digital distortion. Retro, crunchy, chiptune-style effects."/>
+                        <CheckBox Content="Enable Bitcrusher"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.BitcrusherEnabled}"/>
+                        <StackPanel Margin="32,0,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Bit depth" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="2" Maximum="16" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.BitcrusherBitDepth}"
+                                        SmallChange="1" LargeChange="2" TickFrequency="2"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.BitcrusherBitDepth, StringFormat='{}{0} bits'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                       Text="Audio resolution. 16 is CD quality and subtle, 8 is retro, 4 is crunchy, 2 is extreme. Default 8."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Downsample" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="1" Maximum="32" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.BitcrusherDownsample}"
+                                        SmallChange="1" LargeChange="4" TickFrequency="4"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.BitcrusherDownsample, StringFormat='{}{0}x'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                       Text="Sample rate reduction. 1 is none, 4 is gritty, 16 and up is heavily degraded. Default 1."/>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="How much the volume swings. 0% is no effect, 50% is a moderate pulse, 100% goes from silence to full. Default 50%."/>
                     </StackPanel>
-                </StackPanel>
-            </Expander>
+                </TabItem>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Reverb" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Adds spatial depth and ambience. Creates a sense of space or room. Based on the libSoX / Audacity algorithm."/>
-                    <CheckBox Content="Enable Reverb"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.ReverbEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.TremoloEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Tremolo" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Tremolo" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Periodic volume modulation that creates a pulsing, wavering effect. Slow rates feel atmospheric, fast rates feel intense."/>
+                        <CheckBox Content="Enable Tremolo"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.TremoloEnabled}"/>
+                        <StackPanel Margin="32,0,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Rate" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="1" Maximum="100" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.TremoloRate}"
+                                        SmallChange="1" LargeChange="10" TickFrequency="10"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.TremoloRate, StringFormat='{}{0} x0.1 Hz'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                       Text="Pulse speed. 10 is 1.0 Hz and a slow swell, 40 is classic tremolo, 80 and up is a fast flutter. Default 40."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Depth" Style="{StaticResource UpsLabel}" Width="130"/>
+                                <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.TremoloDepth}"
+                                        SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.TremoloDepth, StringFormat='{}{0}%'}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                       Text="How much the volume swings. 0% is no effect, 50% is a moderate pulse, 100% goes from silence to full. Default 50%."/>
+                        </StackPanel>
+                    </StackPanel>
+                </TabItem>
 
-                    <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <!-- Reverb is the one pane with enough parameters to need grouping of its own:
+                     the room being modelled, then how it is balanced and coloured. Two cards,
+                     not four - finer splits made the pane read as a page in its own right. -->
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsStroke}"/>
+                                <Ellipse Style="{StaticResource UpsRailPip}" Fill="{StaticResource UpsOn}"
+                                         Visibility="{Binding Settings.ReverbEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="Reverb" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Reverb" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Adds spatial depth and ambience. Based on the libSoX / Audacity algorithm, so its presets carry across."/>
+                        <CheckBox Content="Enable Reverb"
+                                  Style="{StaticResource UpsToggle}"
+                                  IsChecked="{Binding Settings.ReverbEnabled}"/>
+                        <StackPanel Orientation="Horizontal" Margin="32,0,0,2">
                             <TextBlock Text="Preset" Style="{StaticResource UpsLabel}" Width="130"/>
                             <ComboBox Style="{StaticResource UpsComboBox}" Width="200"
                                       SelectedIndex="{Binding Settings.SelectedReverbPreset, Converter={StaticResource ReverbPresetConverter}}">
                                 <ComboBoxItem Content="Custom"/>
-                                <!-- General purpose (Audacity) -->
                                 <ComboBoxItem Content="Acoustic"/>
                                 <ComboBoxItem Content="Ambience"/>
                                 <ComboBoxItem Content="Artificial"/>
                                 <ComboBoxItem Content="Clean"/>
                                 <ComboBoxItem Content="Modern"/>
-                                <!-- Vocals (Audacity) -->
                                 <ComboBoxItem Content="Vocal I"/>
                                 <ComboBoxItem Content="Vocal II"/>
                                 <ComboBoxItem Content="Dance Vocal"/>
                                 <ComboBoxItem Content="Modern Vocal"/>
                                 <ComboBoxItem Content="Voice Tail"/>
-                                <!-- Room sizes (Audacity) -->
                                 <ComboBoxItem Content="Bathroom"/>
                                 <ComboBoxItem Content="Small Room Bright"/>
                                 <ComboBoxItem Content="Small Room Dark"/>
@@ -373,7 +427,6 @@
                                 <ComboBoxItem Content="Church Hall"/>
                                 <ComboBoxItem Content="Cathedral"/>
                                 <ComboBoxItem Content="Big Cave"/>
-                                <!-- Living / entertainment (UniPlaySong) -->
                                 <ComboBoxItem Content="Living Room"/>
                                 <ComboBoxItem Content="Home Theater"/>
                                 <ComboBoxItem Content="Late Night TV"/>
@@ -381,7 +434,6 @@
                                 <ComboBoxItem Content="Jazz Club"/>
                                 <ComboBoxItem Content="Night Club"/>
                                 <ComboBoxItem Content="Concert Hall"/>
-                                <!-- Creative / stylistic (UniPlaySong) -->
                                 <ComboBoxItem Content="Dreamy"/>
                                 <ComboBoxItem Content="Lo-Fi"/>
                                 <ComboBoxItem Content="Underwater"/>
@@ -390,201 +442,201 @@
                                 <ComboBoxItem Content="Vaporwave"/>
                             </ComboBox>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                        <TextBlock Style="{StaticResource UpsHintIndented}"
                                    Text="Audacity-compatible presets plus UniPlaySong environments. Adjusting any slider sets this to Custom."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Room size" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbRoomSize}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbRoomSize, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Size of the virtual room. 0% is tight and short, 100% is cathedral-like. Default 75%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Reverberance" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbReverberance}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbReverberance, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Length of the reverb tail. Higher is longer and more live. The key control for a pronounced effect. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Pre-delay" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="200" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbPreDelay}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="20"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbPreDelay, StringFormat='{}{0} ms'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Delay before the reverb starts, which creates a sense of distance. 0 ms is close, 100 ms and up is a distant, large space. Default 10 ms."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Stereo width" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbStereoWidth}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbStereoWidth, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Stereo spread of the reverb. 0% is mono, 100% is full stereo. Default 100%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Wet / dry mix" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbMix}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbMix, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Wet/dry crossfade. 0% is no reverb, 50% is a balanced blend, 100% is fully wet. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Wet gain" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="-20" Maximum="10" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbWetGain}"
-                                    SmallChange="1" LargeChange="3" TickFrequency="5"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbWetGain, StringFormat='{}{0} dB'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Volume of the reverb effect. Positive values make it more pronounced. Range -20 to +10 dB. Default -6 dB."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Dry gain" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="-20" Maximum="0" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbDryGain}"
-                                    SmallChange="1" LargeChange="3" TickFrequency="2"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbDryGain, StringFormat='{}{0} dB'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Volume of the original, dry signal. 0 dB is full, -20 dB is very quiet. Default 0 dB."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Damping" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbDamping}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbDamping, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="High-frequency absorption. Higher is a more muffled, darker tail. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Tone low" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbToneLow}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbToneLow, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Bass content of the reverb. Lower is less boomy and tighter. Default 100%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Tone high" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbToneHigh}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbToneHigh, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Treble content of the reverb. Lower is darker and less bright. Default 100%."/>
-
+                        <Border Style="{StaticResource UpsCard}">
+                            <StackPanel>
+                                <TextBlock Text="The Room" Style="{StaticResource UpsCardTitle}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Room size" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbRoomSize}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbRoomSize, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Size of the virtual room. 0% is tight and short, 100% is cathedral-like. Default 75%."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Reverberance" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbReverberance}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbReverberance, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Length of the reverb tail. Higher is longer and more live. The key control for a pronounced effect. Default 50%."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Pre-delay" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbPreDelay}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="20"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbPreDelay, StringFormat='{}{0} ms'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Delay before the reverb starts, which creates a sense of distance. 0 ms is close, 100 ms and up is a distant, large space. Default 10 ms."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Stereo width" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbStereoWidth}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbStereoWidth, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                           Text="Stereo spread of the reverb. 0% is mono, 100% is full stereo. Default 100%."/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource UpsCard}">
+                            <StackPanel>
+                                <TextBlock Text="Balance &amp; Tone" Style="{StaticResource UpsCardTitle}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Wet / dry mix" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbMix}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbMix, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Wet/dry crossfade. 0% is no reverb, 50% is a balanced blend, 100% is fully wet. Default 50%."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Wet gain" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="-20" Maximum="10" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbWetGain}"
+                                            SmallChange="1" LargeChange="3" TickFrequency="5"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbWetGain, StringFormat='{}{0} dB'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Volume of the reverb effect. Positive values make it more pronounced. Range -20 to +10 dB. Default -6 dB."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Dry gain" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="-20" Maximum="0" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbDryGain}"
+                                            SmallChange="1" LargeChange="3" TickFrequency="2"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbDryGain, StringFormat='{}{0} dB'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Volume of the original, dry signal. 0 dB is full, -20 dB is very quiet. Default 0 dB."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Damping" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbDamping}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbDamping, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="High-frequency absorption. Higher is a more muffled, darker tail. Default 50%."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Tone low" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbToneLow}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbToneLow, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Bass content of the reverb. Lower is less boomy and tighter. Default 100%."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Tone high" Style="{StaticResource UpsLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.ReverbToneHigh}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.ReverbToneHigh, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                           Text="Treble content of the reverb. Lower is darker and less bright. Default 100%."/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
-            </Expander>
+                </TabItem>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Effect Chain Order" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="The order in which effects are applied. Default is High-Pass → Low-Pass → Reverb, which is the recommended arrangement."/>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,2"
-                                IsEnabled="{Binding Settings.LiveEffectsEnabled}">
-                        <TextBlock Text="Chain order" Style="{StaticResource UpsLabel}" Width="130"/>
-                        <ComboBox Style="{StaticResource UpsComboBox}" Width="300"
-                                  SelectedIndex="{Binding Settings.EffectChainPreset, Converter={StaticResource EffectChainPresetConverter}}">
-                            <ComboBoxItem Content="High-Pass → Low-Pass → Reverb (recommended)"/>
-                            <ComboBoxItem Content="Reverb → High-Pass → Low-Pass"/>
-                            <ComboBoxItem Content="Low-Pass → High-Pass → Reverb"/>
-                            <ComboBoxItem Content="Low-Pass → Reverb → High-Pass"/>
-                            <ComboBoxItem Content="High-Pass → Reverb → Low-Pass"/>
-                            <ComboBoxItem Content="Reverb → Low-Pass → High-Pass"/>
-                        </ComboBox>
+                <!-- Advanced, not an effect: both of these change how the chain runs rather
+                     than adding a stage to it. No pip - nothing here is simply on or off. -->
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="6" Height="6" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Advanced" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel>
+                        <TextBlock Text="Advanced" Style="{StaticResource UpsCardTitle}"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                   Text="Settings that change how the chain runs, rather than adding to it."/>
+                        <Border Style="{StaticResource UpsCard}">
+                            <StackPanel>
+                                <TextBlock Text="Effect Chain Order" Style="{StaticResource UpsCardTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
+                                           Text="The order in which effects are applied. Default is High-Pass &#8594; Low-Pass &#8594; Reverb, which is the recommended arrangement."/>
+                                <ComboBox Style="{StaticResource UpsComboBox}" Width="300" HorizontalAlignment="Left"
+                                          SelectedIndex="{Binding Settings.EffectChainPreset, Converter={StaticResource EffectChainPresetConverter}}">
+                                    <ComboBoxItem Content="High-Pass &#8594; Low-Pass &#8594; Reverb (recommended)"/>
+                                    <ComboBoxItem Content="Reverb &#8594; High-Pass &#8594; Low-Pass"/>
+                                    <ComboBoxItem Content="Low-Pass &#8594; High-Pass &#8594; Reverb"/>
+                                    <ComboBoxItem Content="Low-Pass &#8594; Reverb &#8594; High-Pass"/>
+                                    <ComboBoxItem Content="High-Pass &#8594; Reverb &#8594; Low-Pass"/>
+                                    <ComboBoxItem Content="Reverb &#8594; Low-Pass &#8594; High-Pass"/>
+                                </ComboBox>
+                                <TextBlock Style="{StaticResource UpsWarning}" Margin="0,8,0,0"
+                                           Text="Be careful: reverb-first orderings can cause unusual or harsh sounds with certain filter settings."/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource UpsCard}">
+                            <StackPanel>
+                                <TextBlock Text="Advanced Reverb Tuning" Style="{StaticResource UpsCardTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                                           Text="Expert-level parameters that affect the reverb algorithm's behaviour. For audio engineers and enthusiasts."/>
+                                <CheckBox Content="Enable Advanced Tuning"
+                                          Style="{StaticResource UpsToggle}"
+                                          IsChecked="{Binding Settings.AdvancedReverbTuningEnabled}"/>
+                                <TextBlock Style="{StaticResource UpsDangerNote}"
+                                           Text="WARNING: these settings can produce VERY LOUD output that may damage your hearing or your speakers. Only enable them if you understand the reverb algorithm. Use at your own risk."/>
+                                <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.AdvancedReverbTuningEnabled}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                        <TextBlock Text="Wet multiplier" Style="{StaticResource UpsLabel}" Width="130"/>
+                                        <Slider Minimum="1" Maximum="25" Width="190" VerticalAlignment="Center"
+                                                Value="{Binding Settings.ReverbWetGainMultiplier}"
+                                                SmallChange="1" LargeChange="5" TickFrequency="5"/>
+                                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                                   Text="{Binding Settings.ReverbWetGainMultiplier, StringFormat='0.{0:D2}'}"/>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                               Text="Scales reverb intensity, 0.01 to 0.25. Default 0.03. Higher is more reverb but risks distortion &#8212; values above 0.15 can be VERY loud."/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                        <TextBlock Text="HF damp min" Style="{StaticResource UpsLabel}" Width="130"/>
+                                        <Slider Minimum="10" Maximum="40" Width="190" VerticalAlignment="Center"
+                                                Value="{Binding Settings.ReverbHfDampingMin}"
+                                                SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                                   Text="{Binding Settings.ReverbHfDampingMin, StringFormat='0.{0:D2}'}"/>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                               Text="Minimum damping at the 0% setting, 0.10 to 0.40. Default 0.20. Lower is a brighter reverb."/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                        <TextBlock Text="HF damp max" Style="{StaticResource UpsLabel}" Width="130"/>
+                                        <Slider Minimum="30" Maximum="70" Width="190" VerticalAlignment="Center"
+                                                Value="{Binding Settings.ReverbHfDampingMax}"
+                                                SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                                   Text="{Binding Settings.ReverbHfDampingMax, StringFormat='0.{0:D2}'}"/>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                               Text="Maximum damping at the 100% setting, 0.30 to 0.70. Default 0.50. Higher is a darker reverb at max damping."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                    <TextBlock Style="{StaticResource UpsWarning}" Margin="0,6,0,4"
-                               Text="Be careful: reverb-first orderings can cause unusual or harsh sounds with certain filter settings."/>
-                </StackPanel>
-            </Expander>
+                </TabItem>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Advanced Reverb Tuning" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
-                               Text="Expert-level parameters that affect the reverb algorithm's behaviour. For audio engineers and enthusiasts."/>
-
-                    <CheckBox Content="Enable Advanced Tuning"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.AdvancedReverbTuningEnabled}"
-                              IsEnabled="{Binding Settings.LiveEffectsEnabled}"/>
-                    <TextBlock Style="{StaticResource UpsDangerNote}"
-                               Text="WARNING: these settings can produce VERY LOUD output that may damage your hearing or your speakers. Only enable them if you understand the reverb algorithm. Use at your own risk."/>
-
-                    <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.AdvancedReverbTuningEnabled}">
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Wet multiplier" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="1" Maximum="25" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbWetGainMultiplier}"
-                                    SmallChange="1" LargeChange="5" TickFrequency="5"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbWetGainMultiplier, StringFormat='0.{0:D2}'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Scales reverb intensity, 0.01 to 0.25. Default 0.03. Higher is more reverb but risks distortion — values above 0.15 can be VERY loud."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="HF damp min" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="10" Maximum="40" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbHfDampingMin}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbHfDampingMin, StringFormat='0.{0:D2}'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Minimum damping at the 0% setting, 0.10 to 0.40. Default 0.20. Lower is a brighter reverb."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="HF damp max" Style="{StaticResource UpsLabel}" Width="130"/>
-                            <Slider Minimum="30" Maximum="70" Width="200" VerticalAlignment="Center"
-                                    Value="{Binding Settings.ReverbHfDampingMax}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.ReverbHfDampingMax, StringFormat='0.{0:D2}'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Maximum damping at the 100% setting, 0.30 to 0.70. Default 0.50. Higher is a darker reverb at max damping."/>
-
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
+            </TabControl>
 
         </StackPanel>
     </ScrollViewer>
