@@ -76,28 +76,29 @@
                            Margin="40,0,0,10"/>
     
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Preview" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-                <!-- Current Song Display (non-serialized, display-only) -->
-                <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
-                    <TextBlock Text="Current Song: "
-                               Style="{StaticResource UpsHint}"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding CurrentSongDisplay}"
-                               FontSize="11"
-                               Foreground="LightGray"
-                               FontStyle="Italic"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
-    
-                <!-- Live now-playing preview card (album art + title/artist), display-only.
-                     Mirrors the data theme devs pull via {PluginSettings}. -->
-                <Border Margin="20,0,0,10" Padding="8" CornerRadius="4"
-                        BorderThickness="1" BorderBrush="#33888888" Background="#11888888"
-                        HorizontalAlignment="Left"
-                        Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
-                    <StackPanel Orientation="Horizontal">
+            <!-- A card, not a bar. This is the one block on the page that is output rather
+                 than input - what the ticker currently shows - so it earns being set apart. The
+                 Loaded/Unloaded handlers move to the card because they drove the Border that
+                 used to be here; the preview stops updating without them.
+
+                 The ad-hoc #33888888 frame is gone with it: the card supplies the frame, and
+                 those colours were the last hardcoded pair on this page. -->
+            <Border Style="{StaticResource UpsCard}"
+                    Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
+                <StackPanel>
+                    <TextBlock Text="Preview" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                               Text="What the ticker is showing right now. Mirrors the data theme developers read via {PluginSettings}."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Current Song: " Style="{StaticResource UpsParamLabel}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CurrentSongDisplay}" FontSize="11" FontWeight="Normal"
+                                   Foreground="{StaticResource UpsTextMuted}" FontStyle="Italic"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <Grid Width="64" Height="64" Margin="0,0,10,0">
                             <Border Background="#22000000" CornerRadius="3"/>
                             <TextBlock Style="{StaticResource UpsLabel}" Text="&#x266A;" FontSize="28" HorizontalAlignment="Center"
@@ -118,7 +119,8 @@
                                        Visibility="{Binding PreviewHasDuration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                     </StackPanel>
-                </Border>
+                </StackPanel>
+            </Border>
     
 
         </StackPanel>
