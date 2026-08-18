@@ -106,6 +106,9 @@
     </Style>
 
     <Style x:Key="UpsPageSubtitle" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="FontSize" Value="11.5"/>
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="FontStyle" Value="Italic"/>
@@ -207,6 +210,9 @@
     <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
          explanation read as one block. 24 track + 8 gap. -->
     <Style x:Key="UpsHint" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="FontSize" Value="10"/>
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
@@ -237,6 +243,9 @@
     </Style>
 
     <Style x:Key="UpsLabel" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -256,6 +265,9 @@
 
     <!-- Prose. Wider than a hint and at full strength, for pages that explain rather than configure. -->
     <Style x:Key="UpsBody" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
@@ -504,6 +516,9 @@
 
     <!-- Bulleted line inside a card. -->
     <Style x:Key="UpsBullet" TargetType="TextBlock" BasedOn="{StaticResource UpsBody}">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Margin" Value="2,0,0,3"/>
     </Style>
 
