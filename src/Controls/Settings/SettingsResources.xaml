@@ -1367,6 +1367,63 @@
         </Setter>
     </Style>
 
+    <!-- ================================================================================
+         A visualizer unit - a head card fused to the rail it switches on.
+
+         One outer Border draws the frame, and the head and rail inside it are borderless. Two
+         adjacent Borders meeting at a seam was the obvious way to build this and the wrong one:
+         their radii have to cancel exactly, and UpsBevelAccent is a diagonal gradient, so the
+         two edges would never have matched across the join. One frame cannot misalign with
+         itself.
+
+         No shadow on the frame, deliberately. It contains a rail which contains cards, and an
+         Effect rasterises everything beneath it - that nesting is what stalled scrolling on the
+         Live Effects page.
+         ================================================================================ -->
+    <Style x:Key="UpsUnit" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource UpsGlassAccent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelAccent}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Margin" Value="0,0,0,14"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled"/>
+    </Style>
+
+    <!-- The head: the master switch and whatever applies to the whole visual. Its only edge is
+         the divider down to the rail. -->
+    <Style x:Key="UpsUnitHead" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{StaticResource UpsStroke}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="14,12,14,12"/>
+    </Style>
+
+    <!-- The rail inside a unit. Same template as UpsEffectRail with the frame taken off, since
+         the unit already draws one. -->
+    <Style x:Key="UpsUnitRail" TargetType="TabControl">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsRailItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid MinHeight="240">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#33070A0F"
+                                BorderBrush="{StaticResource UpsStroke}" BorderThickness="0,0,1,0">
+                            <StackPanel IsItemsHost="True" MinWidth="168" Margin="0,7"/>
+                        </Border>
+                        <ContentPresenter Grid.Column="1" ContentSource="SelectedContent"
+                                          Margin="16,14,16,16"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
     <!-- The on/off pip in a rail header. Two stacked ellipses rather than a converter: the lit
          one is simply hidden when the effect is off, which needs no new C# and reuses the
          BooleanToVisibility converter every page already has. -->

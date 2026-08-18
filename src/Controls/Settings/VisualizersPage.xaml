@@ -30,515 +30,23 @@
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
-            <TextBlock Text="Spectrum Visualizer" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Visualizers" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="A real-time 8-bar frequency spectrum for the Desktop top panel."/>
+                       Text="Three audio-reactive visuals for Desktop mode. Each one switches on in its own card."/>
 
-            <CheckBox Content="Show Spectrum Visualizer in Top Panel"
-                      Style="{StaticResource UpsToggle}"
-                      IsChecked="{Binding Settings.ShowSpectrumVisualizer}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Displays the spectrum in the Desktop top panel bar alongside the media controls. Forces the NAudio backend, which is where the spectrum data comes from."/>
-
-            <!-- Look is a card above the rail rather than a pane inside it. The preset writes
-                 to every value on the tuning panes, so it sits over them the same way Style
-                 Preset sits over the effect rail - a control that rewrites the rail should not
-                 be one of the rail's own entries. -->
-            <Border Style="{StaticResource UpsCardAccent}">
-                <StackPanel IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-                    <TextBlock Text="Top Panel Visualizer — Look" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                               Text="How the top-panel spectrum looks. A preset sets every tuning value at once, and everything in the rail below is what a preset writes to."/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                        <TextBlock Text="Viz preset" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                        <ComboBox Style="{StaticResource UpsComboBox}" Width="200"
-                                  SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
-                                  SelectionChanged="VizPreset_SelectionChanged">
-                            <ComboBoxItem Content="Custom"/>
-                            <ComboBoxItem Content="Default"/>
-                            <ComboBoxItem Content="Smooth"/>
-                            <ComboBoxItem Content="Punchy"/>
-                            <ComboBoxItem Content="Cinematic"/>
-                            <ComboBoxItem Content="Minimal"/>
-                            <ComboBoxItem Content="Reactive"/>
-                        </ComboBox>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                               Text="Choose Custom to keep your current settings. Selecting any other preset overwrites every value under Bar Behaviour and FFT Smoothing — you can fine-tune afterwards."/>
-
-                    <CheckBox Content="Enable Gradient Bars"
-                              Style="{StaticResource UpsToggleAmber}"
-                              IsChecked="{Binding Settings.VizGradientEnabled}"/>
-                    <TextBlock Style="{StaticResource UpsHintIndented}"
-                               Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
-                </StackPanel>
-            </Border>
-
-            <TabControl Style="{StaticResource UpsEffectRail}" Margin="0,4,0,0"
-                        IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
-
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Colour" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Colour" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                                   Text="Each swatch is the gradient that theme actually paints, bottom of the bar to the top. The three Dynamic themes sample the game's own artwork, so their swatch is a stand-in — tune them under Dynamic Colour."/>
-
-                        <!-- Order is load-bearing: VizColorThemeConverter maps the selected
-                             position to the enum, so these must stay in enum order. -->
-                        <ListBox Style="{StaticResource UpsSwatchList}"
-                                 SelectedIndex="{Binding Settings.VizColorTheme, Converter={StaticResource VizColorThemeConverter}}">
-                            <ListBoxItem Content="Dynamic — Game Art">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#3A4654"/><GradientStop Offset="1" Color="#93A1B0"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Classic">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#C8FFFFFF"/><GradientStop Offset="1" Color="#C8FFFFFF"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Neon">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#008CAA"/><GradientStop Offset="1" Color="#DC28DC"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Fire">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#AA5A0A"/><GradientStop Offset="1" Color="#DC1E0F"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Ocean">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#008C96"/><GradientStop Offset="1" Color="#2D64DC"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Sunset">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#AA8C14"/><GradientStop Offset="1" Color="#DC4164"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Matrix">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#0A8C0A"/><GradientStop Offset="1" Color="#41DC50"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Ice">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#5A8CB4"/><GradientStop Offset="1" Color="#3CAADC"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Synthwave">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#320078"/><GradientStop Offset="1" Color="#FF28B4"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Ember">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#8C1E00"/><GradientStop Offset="1" Color="#FFA014"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Abyss">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#002878"/><GradientStop Offset="1" Color="#00C8DC"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Solar">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#B43214"/><GradientStop Offset="1" Color="#FFC828"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Vapor">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#1EA078"/><GradientStop Offset="1" Color="#B48CFF"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Frost">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#28508C"/><GradientStop Offset="1" Color="#B4E6FF"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Dynamic — Vibrant">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#8A2740"/><GradientStop Offset="1" Color="#E0C24A"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Aurora">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#008278"/><GradientStop Offset="1" Color="#A0FF32"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Coral">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#C83C50"/><GradientStop Offset="1" Color="#FFB464"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Plasma">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#4614C8"/><GradientStop Offset="1" Color="#FF3250"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Toxic">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#A0D200"/><GradientStop Offset="1" Color="#781EC8"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Cherry">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#820A32"/><GradientStop Offset="1" Color="#FF78A0"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Midnight">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#0F0A50"/><GradientStop Offset="1" Color="#00DCFF"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                            <ListBoxItem Content="Dynamic — Alt Algo">
-                                <ListBoxItem.Tag>
-                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Offset="0" Color="#39405C"/><GradientStop Offset="1" Color="#8FA0C8"/>
-                                    </LinearGradientBrush>
-                                </ListBoxItem.Tag>
-                            </ListBoxItem>
-                        </ListBox>
-                    </StackPanel>
-                </TabItem>
-
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Bar Behaviour" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Bar Behaviour" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                                   Text="What the presets on the Look pane are setting. Change anything here and the preset becomes Custom."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Idle opacity" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizOpacityMin}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="20"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizOpacityMin, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Bar opacity when idle. Lower is a stronger glow or pulse; 100 means no opacity change. Default 30%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Gain boost" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="-50" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizBarGainBoost}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="25"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizBarGainBoost, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Global gain offset applied to all bars. Positive is taller peaks, negative is subtler. Default 0%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Peak hold" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="300" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizPeakHoldMs}"
-                                    SmallChange="10" LargeChange="50" TickFrequency="50"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizPeakHoldMs, StringFormat='{}{0} ms'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="How long bars hold at peak before falling. 0 is an instant drop, 300 is a long freeze. Default 80 ms."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Gravity" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="10" Maximum="200" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizGravity}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="30"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizGravity}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Base fall acceleration. Higher drops bars faster after peaks, lower leaves floaty trails. Default 80."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Bass punch" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizBassGravityBias}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="20"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizBassGravityBias, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Bass/treble gravity contrast. 0 gives every bar the same speed; higher makes bass snappy and treble floaty. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="FFT size" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="512" Maximum="2048" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizFftSize}"
-                                    SmallChange="512" LargeChange="1024" TickFrequency="512"
-                                    IsSnapToTickEnabled="True"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizFftSize}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="The analysis window. 512 reacts fast but reads bass coarsely, 1024 is balanced, 2048 is precise but slower off the mark. Takes effect on the next song. Default 1024."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Bass gain" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizBassGain}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="25"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizBassGain, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Height of the lower bars, sub-bass up through vocal presence. Default 100%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Treble gain" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizTrebleGain}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="25"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizTrebleGain, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Height of the upper bars. Default 100%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Freq bleed" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizBleedAmount}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="25"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizBleedAmount, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="How much energy spills into neighbouring bars. 0 keeps bars independent and spiky, 200 makes the row move as one. Default 100%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Compression" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizCompression}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizCompression, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Tames the tallest peaks so quiet detail still shows. Higher makes the bars more uniform. Default 50%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Smooth rise" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizSmoothRise}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizSmoothRise, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Attack — how fast bars answer a beat. Default 85%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Smooth fall" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizSmoothFall}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizSmoothFall, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Decay — how fast they let go afterwards. Default 15%."/>
-                    </StackPanel>
-                </TabItem>
-
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="FFT Smoothing" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="FFT Smoothing" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                                   Text="Smoothing applied to the raw spectrum before it reaches the bars — one layer below Bar Behaviour. Changes apply live."/>
-
-                        <CheckBox Content="Use Fixed Timer (~62 fps)"
-                                  Style="{StaticResource UpsToggleAmber}"
-                                  IsChecked="{Binding Settings.VizFftTimerMode}"/>
-                        <TextBlock Style="{StaticResource UpsHint}"
-                                   Text="By default the FFT runs whenever audio delivers samples, about 43 fps at size 1024. Timer mode runs it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Rise (bass)" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizFftRiseLow}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizFftRiseLow}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="How quickly bass bins rise to new peaks. Higher is a snappier bass attack. Default 88."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Rise (treble)" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizFftRiseHigh}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizFftRiseHigh}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Same for the treble bins. Default 93."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Fall (bass)" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizFftFallLow}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizFftFallLow}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="How quickly bass bins decay. Lower trails more smoothly. Default 50."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Fall (treble)" Style="{StaticResource UpsParamLabel}" Width="130"/>
-                            <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.VizFftFallHigh}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.VizFftFallHigh}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
-                                   Text="Same for the treble bins. Default 65."/>
-                    </StackPanel>
-                </TabItem>
-
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Dynamic Colour" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Dynamic Colour" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
-                                   Text="Only applies to the three Dynamic themes, which sample colours from each game's artwork. These are floors, so a dark or washed-out cover still produces readable bars. Vibrant carries its own aggressive values and ignores them."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Brightness (base)" Style="{StaticResource UpsParamLabel}" Width="140"/>
-                            <Slider Minimum="30" Maximum="220" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.DynMinBrightnessBottom}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="30"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.DynMinBrightnessBottom}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Higher lifts bars out of dark artwork. Default 200."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Brightness (tip)" Style="{StaticResource UpsParamLabel}" Width="140"/>
-                            <Slider Minimum="30" Maximum="220" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.DynMinBrightnessTop}"
-                                    SmallChange="5" LargeChange="20" TickFrequency="30"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.DynMinBrightnessTop}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Higher gives more vivid peaks. Default 150."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Saturation (base)" Style="{StaticResource UpsParamLabel}" Width="140"/>
-                            <Slider Minimum="0" Maximum="80" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.DynMinSatBottom}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.DynMinSatBottom, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Higher keeps the base from washing out to grey. Default 30%."/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <TextBlock Text="Saturation (tip)" Style="{StaticResource UpsParamLabel}" Width="140"/>
-                            <Slider Minimum="0" Maximum="80" Width="190" VerticalAlignment="Center"
-                                    Value="{Binding Settings.DynMinSatTop}"
-                                    SmallChange="5" LargeChange="10" TickFrequency="10"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                                       Text="{Binding Settings.DynMinSatTop, StringFormat='{}{0}%'}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                                   Text="Same for the peaks. Default 35%."/>
-
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource UpsButton}" Margin="0,0,8,0"
-                                    Content="Reset these four"
-                                    Command="{Binding ResetDynamicTuningCommand}"/>
-                            <Button Style="{StaticResource UpsButton}"
-                                    Content="Clear the colour cache"
-                                    Command="{Binding ResetDynamicColorCacheCommand}"/>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,4"
-                                   Text="Clearing the cache makes every game re-sample its artwork next time it plays."/>
-                    </StackPanel>
-                </TabItem>
-
-
-            </TabControl>
-
-            <!-- Graduated out of Experimental. Sidebar Glow is a single choice, so it is a
-                 card on its own. Icon Glow has a preset plus three groups of tuning, so it
-                 takes the same shape as the spectrum above it: a card for what applies to the
-                 whole thing, and a rail for the parts you tune one at a time. -->
+            <!-- Sidebar Glow is a switch and a mode, with nothing to tune, so it stays a plain
+                 card. The other two head a rail and are built as units. -->
             <Border Style="{StaticResource UpsCardAccent}">
                 <StackPanel>
-                    <TextBlock Text="Sidebar Glow" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Text="Sidebar Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                               Text="Turns the Desktop sidebar background into its own audio-reactive visual, separate from the top-panel spectrum above and with its own set of modes."/>
+                               Text="Turns the sidebar background into its own audio-reactive visual, separate from the spectrum below and with its own set of modes."/>
                     <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Audio-Reactive Sidebar Background (Desktop only)"
                               IsChecked="{Binding Settings.EnableSidebarGlow}"
                               Margin="0,5,0,5"/>
                     <TextBlock Text="Colors the sidebar icon strip background based on the selected game's icon. Brightness shifts with audio energy when music is playing with Live Effects enabled."
                                Style="{StaticResource UpsHint}"
                                TextWrapping="Wrap"/>
-
                     <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
                                 IsEnabled="{Binding Settings.EnableSidebarGlow}">
                         <TextBlock Style="{StaticResource UpsParamLabel}" Text="Mode:" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -573,156 +81,640 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource UpsCardAccent}">
+            <Border Style="{StaticResource UpsUnit}">
                 <StackPanel>
-                    <DockPanel Margin="0,0,0,3">
-                        <Button Style="{StaticResource UpsButton}" DockPanel.Dock="Right"
-                                Content="Reset Icon Glow" Click="ResetIconGlow_Click"
-                                Padding="8,3" FontSize="11" VerticalAlignment="Center"/>
-                        <TextBlock Text="Icon Glow" Style="{StaticResource UpsCardTitle}"/>
-                    </DockPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                               Text="A coloured halo around the selected game's icon, sampled from its art. Reacts to audio when Live Effects or the visualizer is running, and falls back to a gentle pulse when neither is. Desktop only."/>
-                    <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Icon Glow (Desktop only)"
-                              IsChecked="{Binding Settings.EnableIconGlow}"
-                              Margin="0,12,0,4"
-                              ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
-                    <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
-                        <TextBlock Style="{StaticResource UpsParamLabel}" Text="Preset:" VerticalAlignment="Center" Width="130"/>
-                        <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.IconGlowPreset}"
-                                  SelectedValuePath="Tag"
-                                  Width="160" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
-                            <!-- Audio-reactive presets (most reactive first) -->
-                            <ComboBoxItem Content="Reactive" Tag="{x:Static local:IconGlowPreset.Reactive}"/>
-                            <ComboBoxItem Content="Pulse" Tag="{x:Static local:IconGlowPreset.Pulse}"/>
-                            <ComboBoxItem Content="Bass Punch" Tag="{x:Static local:IconGlowPreset.BassPunch}"/>
-                            <ComboBoxItem Content="Neon" Tag="{x:Static local:IconGlowPreset.Neon}"/>
-                            <ComboBoxItem Content="Mellow" Tag="{x:Static local:IconGlowPreset.Mellow}"/>
-                            <!-- Visual-only presets -->
-                            <ComboBoxItem Content="Ambient" Tag="{x:Static local:IconGlowPreset.Ambient}"/>
-                            <ComboBoxItem Content="Subtle" Tag="{x:Static local:IconGlowPreset.Subtle}"/>
-                            <ComboBoxItem Content="Sharp Static" Tag="{x:Static local:IconGlowPreset.SharpStatic}"/>
-                            <ComboBoxItem Content="Sharp Bright" Tag="{x:Static local:IconGlowPreset.SharpBright}"/>
-                            <ComboBoxItem Content="Sharp Vivid" Tag="{x:Static local:IconGlowPreset.SharpVivid}"/>
-                            <ComboBoxItem Content="Sharp Warm" Tag="{x:Static local:IconGlowPreset.SharpWarm}"/>
-                            <ComboBoxItem Content="Sharp Cool" Tag="{x:Static local:IconGlowPreset.SharpCool}"/>
-                            <ComboBoxItem Content="Sharp Pulse" Tag="{x:Static local:IconGlowPreset.SharpPulse}"/>
-                        </ComboBox>
-                    </DockPanel>
+                    <Border Style="{StaticResource UpsUnitHead}">
+                        <StackPanel>
+                            <TextBlock Text="Spectrum — Top Panel (Desktop)" Style="{StaticResource UpsCardTitle}"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                       Text="An eight-bar frequency spectrum beside the Desktop media controls."/>
+                            <CheckBox Content="Show Spectrum Visualizer in Top Panel"
+                                      Style="{StaticResource UpsToggle}"
+                                      IsChecked="{Binding Settings.ShowSpectrumVisualizer}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="Viz preset" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                <ComboBox Style="{StaticResource UpsComboBox}" Width="200"
+                                          SelectedIndex="{Binding Settings.SelectedVizPreset, Converter={StaticResource VizPresetConverter}}"
+                                          SelectionChanged="VizPreset_SelectionChanged">
+                                    <ComboBoxItem Content="Custom"/>
+                                    <ComboBoxItem Content="Default"/>
+                                    <ComboBoxItem Content="Smooth"/>
+                                    <ComboBoxItem Content="Punchy"/>
+                                    <ComboBoxItem Content="Cinematic"/>
+                                    <ComboBoxItem Content="Minimal"/>
+                                    <ComboBoxItem Content="Reactive"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                                       Text="Choose Custom to keep your current settings. Selecting any other preset overwrites every value under Bar Behaviour and FFT Smoothing — you can fine-tune afterwards."/>
+                            <CheckBox Content="Enable Gradient Bars"
+                                      Style="{StaticResource UpsToggleAmber}"
+                                      IsChecked="{Binding Settings.VizGradientEnabled}"/>
+                            <TextBlock Style="{StaticResource UpsHintIndented}"
+                                       Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
+                        </StackPanel>
+                    </Border>
+
+                    <TabControl Style="{StaticResource UpsUnitRail}" IsEnabled="{Binding Settings.ShowSpectrumVisualizer}">
+
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="Colour" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="Colour" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                                           Text="Each swatch is the gradient that theme actually paints, bottom of the bar to the top. The three Dynamic themes sample the game's own artwork, so their swatch is a stand-in — tune them under Dynamic Colour."/>
+                                <ListBox Style="{StaticResource UpsSwatchList}"
+                                         SelectedIndex="{Binding Settings.VizColorTheme, Converter={StaticResource VizColorThemeConverter}}">
+                                    <ListBoxItem Content="Dynamic — Game Art">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#3A4654"/><GradientStop Offset="1" Color="#93A1B0"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Classic">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#C8FFFFFF"/><GradientStop Offset="1" Color="#C8FFFFFF"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Neon">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#008CAA"/><GradientStop Offset="1" Color="#DC28DC"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Fire">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#AA5A0A"/><GradientStop Offset="1" Color="#DC1E0F"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Ocean">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#008C96"/><GradientStop Offset="1" Color="#2D64DC"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Sunset">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#AA8C14"/><GradientStop Offset="1" Color="#DC4164"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Matrix">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#0A8C0A"/><GradientStop Offset="1" Color="#41DC50"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Ice">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#5A8CB4"/><GradientStop Offset="1" Color="#3CAADC"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Synthwave">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#320078"/><GradientStop Offset="1" Color="#FF28B4"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Ember">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#8C1E00"/><GradientStop Offset="1" Color="#FFA014"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Abyss">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#002878"/><GradientStop Offset="1" Color="#00C8DC"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Solar">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#B43214"/><GradientStop Offset="1" Color="#FFC828"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Vapor">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#1EA078"/><GradientStop Offset="1" Color="#B48CFF"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Frost">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#28508C"/><GradientStop Offset="1" Color="#B4E6FF"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Dynamic — Vibrant">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#8A2740"/><GradientStop Offset="1" Color="#E0C24A"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Aurora">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#008278"/><GradientStop Offset="1" Color="#A0FF32"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Coral">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#C83C50"/><GradientStop Offset="1" Color="#FFB464"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Plasma">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#4614C8"/><GradientStop Offset="1" Color="#FF3250"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Toxic">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#A0D200"/><GradientStop Offset="1" Color="#781EC8"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Cherry">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#820A32"/><GradientStop Offset="1" Color="#FF78A0"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Midnight">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#0F0A50"/><GradientStop Offset="1" Color="#00DCFF"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                    <ListBoxItem Content="Dynamic — Alt Algo">
+                                        <ListBoxItem.Tag>
+                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                <GradientStop Offset="0" Color="#39405C"/><GradientStop Offset="1" Color="#8FA0C8"/>
+                                            </LinearGradientBrush>
+                                        </ListBoxItem.Tag>
+                                    </ListBoxItem>
+                                </ListBox>
+                            </StackPanel>
+                        </TabItem>
+
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="Bar Behaviour" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="Bar Behaviour" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                                           Text="What the presets on the Look pane are setting. Change anything here and the preset becomes Custom."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Idle opacity" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizOpacityMin}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="20"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizOpacityMin, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Bar opacity when idle. Lower is a stronger glow or pulse; 100 means no opacity change. Default 30%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Gain boost" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="-50" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizBarGainBoost}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="25"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizBarGainBoost, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Global gain offset applied to all bars. Positive is taller peaks, negative is subtler. Default 0%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Peak hold" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="300" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizPeakHoldMs}"
+                                            SmallChange="10" LargeChange="50" TickFrequency="50"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizPeakHoldMs, StringFormat='{}{0} ms'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="How long bars hold at peak before falling. 0 is an instant drop, 300 is a long freeze. Default 80 ms."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Gravity" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="10" Maximum="200" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizGravity}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="30"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizGravity}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Base fall acceleration. Higher drops bars faster after peaks, lower leaves floaty trails. Default 80."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Bass punch" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizBassGravityBias}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="20"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizBassGravityBias, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Bass/treble gravity contrast. 0 gives every bar the same speed; higher makes bass snappy and treble floaty. Default 50%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="FFT size" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="512" Maximum="2048" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizFftSize}"
+                                            SmallChange="512" LargeChange="1024" TickFrequency="512"
+                                            IsSnapToTickEnabled="True"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizFftSize}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="The analysis window. 512 reacts fast but reads bass coarsely, 1024 is balanced, 2048 is precise but slower off the mark. Takes effect on the next song. Default 1024."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Bass gain" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizBassGain}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="25"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizBassGain, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Height of the lower bars, sub-bass up through vocal presence. Default 100%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Treble gain" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizTrebleGain}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="25"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizTrebleGain, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Height of the upper bars. Default 100%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Freq bleed" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="200" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizBleedAmount}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="25"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizBleedAmount, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="How much energy spills into neighbouring bars. 0 keeps bars independent and spiky, 200 makes the row move as one. Default 100%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Compression" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizCompression}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizCompression, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Tames the tallest peaks so quiet detail still shows. Higher makes the bars more uniform. Default 50%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Smooth rise" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizSmoothRise}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizSmoothRise, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Attack — how fast bars answer a beat. Default 85%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Smooth fall" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="100" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizSmoothFall}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizSmoothFall, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                           Text="Decay — how fast they let go afterwards. Default 15%."/>
+                            </StackPanel>
+                        </TabItem>
+
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="FFT Smoothing" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="FFT Smoothing" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                                           Text="Smoothing applied to the raw spectrum before it reaches the bars — one layer below Bar Behaviour. Changes apply live."/>
+
+                                <CheckBox Content="Use Fixed Timer (~62 fps)"
+                                          Style="{StaticResource UpsToggleAmber}"
+                                          IsChecked="{Binding Settings.VizFftTimerMode}"/>
+                                <TextBlock Style="{StaticResource UpsHint}"
+                                           Text="By default the FFT runs whenever audio delivers samples, about 43 fps at size 1024. Timer mode runs it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Rise (bass)" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizFftRiseLow}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizFftRiseLow}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="How quickly bass bins rise to new peaks. Higher is a snappier bass attack. Default 88."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Rise (treble)" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizFftRiseHigh}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizFftRiseHigh}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Same for the treble bins. Default 93."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Fall (bass)" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizFftFallLow}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizFftFallLow}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="How quickly bass bins decay. Lower trails more smoothly. Default 50."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Fall (treble)" Style="{StaticResource UpsParamLabel}" Width="130"/>
+                                    <Slider Minimum="0" Maximum="95" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.VizFftFallHigh}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.VizFftFallHigh}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,4"
+                                           Text="Same for the treble bins. Default 65."/>
+                            </StackPanel>
+                        </TabItem>
+
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="Dynamic Colour" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="Dynamic Colour" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                                           Text="Only applies to the three Dynamic themes, which sample colours from each game's artwork. These are floors, so a dark or washed-out cover still produces readable bars. Vibrant carries its own aggressive values and ignores them."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Brightness (base)" Style="{StaticResource UpsParamLabel}" Width="140"/>
+                                    <Slider Minimum="30" Maximum="220" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.DynMinBrightnessBottom}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="30"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.DynMinBrightnessBottom}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Higher lifts bars out of dark artwork. Default 200."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Brightness (tip)" Style="{StaticResource UpsParamLabel}" Width="140"/>
+                                    <Slider Minimum="30" Maximum="220" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.DynMinBrightnessTop}"
+                                            SmallChange="5" LargeChange="20" TickFrequency="30"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.DynMinBrightnessTop}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Higher gives more vivid peaks. Default 150."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Saturation (base)" Style="{StaticResource UpsParamLabel}" Width="140"/>
+                                    <Slider Minimum="0" Maximum="80" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.DynMinSatBottom}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.DynMinSatBottom, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Higher keeps the base from washing out to grey. Default 30%."/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <TextBlock Text="Saturation (tip)" Style="{StaticResource UpsParamLabel}" Width="140"/>
+                                    <Slider Minimum="0" Maximum="80" Width="190" VerticalAlignment="Center"
+                                            Value="{Binding Settings.DynMinSatTop}"
+                                            SmallChange="5" LargeChange="10" TickFrequency="10"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                               Text="{Binding Settings.DynMinSatTop, StringFormat='{}{0}%'}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                                           Text="Same for the peaks. Default 35%."/>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource UpsButton}" Margin="0,0,8,0"
+                                            Content="Reset these four"
+                                            Command="{Binding ResetDynamicTuningCommand}"/>
+                                    <Button Style="{StaticResource UpsButton}"
+                                            Content="Clear the colour cache"
+                                            Command="{Binding ResetDynamicColorCacheCommand}"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,4"
+                                           Text="Clearing the cache makes every game re-sample its artwork next time it plays."/>
+                            </StackPanel>
+                        </TabItem>
+
+                    </TabControl>
                 </StackPanel>
             </Border>
 
-            <!-- Everything in this rail is gated by IconGlowSlidersEnabled, exactly as the one
-                 StackPanel that held it was: a preset owns these values, so they only become
-                 editable once the preset is Custom. -->
-            <TabControl Style="{StaticResource UpsEffectRail}" Margin="0,0,0,12"
-                        IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
+            <Border Style="{StaticResource UpsUnit}">
+                <StackPanel>
+                    <Border Style="{StaticResource UpsUnitHead}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,3">
+                                <Button Style="{StaticResource UpsButton}" DockPanel.Dock="Right"
+                                        Content="Reset Icon Glow" Click="ResetIconGlow_Click"
+                                        Padding="8,3" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="Icon Glow (Desktop)" Style="{StaticResource UpsCardTitle}"/>
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                       Text="A coloured halo around the selected game's icon, sampled from its art. Reacts to audio when Live Effects or the spectrum is running, and falls back to a gentle pulse when neither is."/>
+                            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Icon Glow (Desktop only)"
+                                      IsChecked="{Binding Settings.EnableIconGlow}"
+                                      Margin="0,12,0,4"
+                                      ToolTip="Adds a pulsating colored border around the selected game's icon. Color is extracted from the game's icon art. Audio-reactive when Live Effects/Visualizer is enabled." />
+                            <DockPanel Margin="20,8,0,8" IsEnabled="{Binding Settings.EnableIconGlow}">
+                                <TextBlock Style="{StaticResource UpsParamLabel}" Text="Preset:" VerticalAlignment="Center" Width="130"/>
+                                <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.IconGlowPreset}"
+                                          SelectedValuePath="Tag"
+                                          Width="160" HorizontalAlignment="Left">
+                                    <ComboBoxItem Content="Custom" Tag="{x:Static local:IconGlowPreset.Custom}"/>
+                                    <!-- Audio-reactive presets (most reactive first) -->
+                                    <ComboBoxItem Content="Reactive" Tag="{x:Static local:IconGlowPreset.Reactive}"/>
+                                    <ComboBoxItem Content="Pulse" Tag="{x:Static local:IconGlowPreset.Pulse}"/>
+                                    <ComboBoxItem Content="Bass Punch" Tag="{x:Static local:IconGlowPreset.BassPunch}"/>
+                                    <ComboBoxItem Content="Neon" Tag="{x:Static local:IconGlowPreset.Neon}"/>
+                                    <ComboBoxItem Content="Mellow" Tag="{x:Static local:IconGlowPreset.Mellow}"/>
+                                    <!-- Visual-only presets -->
+                                    <ComboBoxItem Content="Ambient" Tag="{x:Static local:IconGlowPreset.Ambient}"/>
+                                    <ComboBoxItem Content="Subtle" Tag="{x:Static local:IconGlowPreset.Subtle}"/>
+                                    <ComboBoxItem Content="Sharp Static" Tag="{x:Static local:IconGlowPreset.SharpStatic}"/>
+                                    <ComboBoxItem Content="Sharp Bright" Tag="{x:Static local:IconGlowPreset.SharpBright}"/>
+                                    <ComboBoxItem Content="Sharp Vivid" Tag="{x:Static local:IconGlowPreset.SharpVivid}"/>
+                                    <ComboBoxItem Content="Sharp Warm" Tag="{x:Static local:IconGlowPreset.SharpWarm}"/>
+                                    <ComboBoxItem Content="Sharp Cool" Tag="{x:Static local:IconGlowPreset.SharpCool}"/>
+                                    <ComboBoxItem Content="Sharp Pulse" Tag="{x:Static local:IconGlowPreset.SharpPulse}"/>
+                                </ComboBox>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
 
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Motion" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Motion" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                                   Text="How the halo moves when nothing is driving it, and how it spins."/>
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable pulse animation (SDL2 fallback)"
-                                  IsChecked="{Binding Settings.EnableIconGlowPulse}"
-                                  Margin="20,0,0,4"
-                                  IsEnabled="{Binding Settings.EnableIconGlow}"
-                                  ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable slow spin"
-                                  IsChecked="{Binding Settings.EnableIconGlowSpin}"
-                                  Margin="20,0,0,4"
-                                  IsEnabled="{Binding Settings.EnableIconGlow}"
-                                  ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Beat-reactive spin acceleration"
-                                  IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
-                                  Margin="40,0,0,4"
-                                  IsEnabled="{Binding Settings.EnableIconGlowSpin}"
-                                  ToolTip="When enabled, the glow spin speeds up on audio beats." />
-                        <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
-                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
-                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
-                            <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
-                                    Minimum="5" Maximum="60"
-                                    TickFrequency="5" IsSnapToTickEnabled="True"
-                                    ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
-                        </DockPanel>
-                    </StackPanel>
-                </TabItem>
+                    <TabControl Style="{StaticResource UpsUnitRail}" IsEnabled="{Binding Settings.IconGlowSlidersEnabled}">
 
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Glow" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="Glow" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                                   Text="Size, strength and how hard the halo reacts to the music."/>
-                        <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
-                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
-                            <Slider Value="{Binding Settings.IconGlowIntensity}"
-                                    Minimum="0.5" Maximum="3.0"
-                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
-                                    ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
-                        </DockPanel>
-                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
-                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
-                            <Slider Value="{Binding Settings.IconGlowSize}"
-                                    Minimum="2.0" Maximum="12.0"
-                                    TickFrequency="0.5" IsSnapToTickEnabled="True"
-                                    ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
-                        </DockPanel>
-                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
-                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
-                            <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
-                                    Minimum="0.5" Maximum="4.0"
-                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
-                                    ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
-                        </DockPanel>
-                        <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
-                            <TextBlock Style="{StaticResource UpsParamLabel}" Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
-                            <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
-                                       VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
-                            <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
-                                    Minimum="0.5" Maximum="4.0"
-                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
-                                    ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
-                        </DockPanel>
-                    </StackPanel>
-                </TabItem>
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="Motion" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="Motion" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="How the halo moves when nothing is driving it, and how it spins."/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="How the halo moves when nothing is driving it, and how it spins."/>
+                                <CheckBox Style="{StaticResource UpsToggle}" Content="Enable pulse animation (SDL2 fallback)"
+                                          IsChecked="{Binding Settings.EnableIconGlowPulse}"
+                                          Margin="20,0,0,4"
+                                          IsEnabled="{Binding Settings.EnableIconGlow}"
+                                          ToolTip="When Live Effects/Visualizer is off, the glow pulses at a gentle fixed rate. Disable for a static glow." />
+                                <CheckBox Style="{StaticResource UpsToggle}" Content="Enable slow spin"
+                                          IsChecked="{Binding Settings.EnableIconGlowSpin}"
+                                          Margin="20,0,0,4"
+                                          IsEnabled="{Binding Settings.EnableIconGlow}"
+                                          ToolTip="Slowly rotates the glow image around the icon. Works with both audio-reactive and static glow." />
+                                <CheckBox Style="{StaticResource UpsToggle}" Content="Beat-reactive spin acceleration"
+                                          IsChecked="{Binding Settings.EnableIconGlowSpinAcceleration}"
+                                          Margin="40,0,0,4"
+                                          IsEnabled="{Binding Settings.EnableIconGlowSpin}"
+                                          ToolTip="When enabled, the glow spin speeds up on audio beats." />
+                                <DockPanel Margin="40,4,0,4" IsEnabled="{Binding Settings.EnableIconGlowSpin}">
+                                    <TextBlock Style="{StaticResource UpsParamLabel}" Text="Spin Speed (sec/turn):" VerticalAlignment="Center" Width="150"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSpinSpeed, StringFormat='{}{0:F0}s'}"
+                                               VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                                    <Slider Value="{Binding Settings.IconGlowSpinSpeed}"
+                                            Minimum="5" Maximum="60"
+                                            TickFrequency="5" IsSnapToTickEnabled="True"
+                                            ToolTip="Seconds per full rotation. Higher = slower spin. Default: 20s." />
+                                </DockPanel>
+                            </StackPanel>
+                        </TabItem>
 
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="List Icons" Style="{StaticResource UpsRailLabel}"/>
-                    </TabItem.Header>
-                    <StackPanel>
-                        <TextBlock Text="List Icons" Style="{StaticResource UpsPaneTitle}"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                                   Text="The same glow on the icons in list view, where it has to be quieter to stay readable."/>
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Enable List Icon Glow (Desktop only)"
-                                  IsChecked="{Binding Settings.EnableListIconGlow}"
-                                  Margin="0,12,0,4"
-                                  ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Subtle glow (softer effect)"
-                                  IsChecked="{Binding Settings.SubtleListGlow}"
-                                  Margin="20,0,0,4"
-                                  IsEnabled="{Binding Settings.EnableListIconGlow}"
-                                  ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
-                    </StackPanel>
-                </TabItem>
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="Glow" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="Glow" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="Size, strength and how hard the halo reacts to the music."/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="Size, strength and how hard the halo reacts to the music."/>
+                                <DockPanel Margin="20,8,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                                    <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Intensity:" VerticalAlignment="Center" Width="130"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowIntensity, StringFormat='{}{0:F1}'}"
+                                               VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                                    <Slider Value="{Binding Settings.IconGlowIntensity}"
+                                            Minimum="0.5" Maximum="3.0"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                            ToolTip="Controls glow brightness. Higher values produce a brighter, more vivid glow." />
+                                </DockPanel>
+                                <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                                    <TextBlock Style="{StaticResource UpsParamLabel}" Text="Glow Size:" VerticalAlignment="Center" Width="130"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowSize, StringFormat='{}{0:F1}'}"
+                                               VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                                    <Slider Value="{Binding Settings.IconGlowSize}"
+                                            Minimum="2.0" Maximum="12.0"
+                                            TickFrequency="0.5" IsSnapToTickEnabled="True"
+                                            ToolTip="How far the glow extends from the icon. Higher = wider, softer glow." />
+                                </DockPanel>
+                                <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                                    <TextBlock Style="{StaticResource UpsParamLabel}" Text="Pulse Speed (sec):" VerticalAlignment="Center" Width="130"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowPulseSpeed, StringFormat='{}{0:F1}'}"
+                                               VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                                    <Slider Value="{Binding Settings.IconGlowPulseSpeed}"
+                                            Minimum="0.5" Maximum="4.0"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                            ToolTip="SDL2 fallback pulse cycle duration. Lower = faster pulse. Only used when Live Effects/Visualizer is off." />
+                                </DockPanel>
+                                <DockPanel Margin="20,4,0,4" IsEnabled="{Binding Settings.EnableIconGlow}">
+                                    <TextBlock Style="{StaticResource UpsParamLabel}" Text="Audio Sensitivity:" VerticalAlignment="Center" Width="130"/>
+                                    <TextBlock Style="{StaticResource UpsValue}" Text="{Binding Settings.IconGlowAudioSensitivity, StringFormat='{}{0:F1}'}"
+                                               VerticalAlignment="Center" Width="30" TextAlignment="Center" DockPanel.Dock="Right"/>
+                                    <Slider Value="{Binding Settings.IconGlowAudioSensitivity}"
+                                            Minimum="0.5" Maximum="4.0"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                            ToolTip="Audio reactivity multiplier. Higher = more responsive to music peaks. Only used with Live Effects/Visualizer." />
+                                </DockPanel>
+                            </StackPanel>
+                        </TabItem>
 
-            </TabControl>
+                        <TabItem>
+                            <TabItem.Header>
+                                <TextBlock Text="List Icons" Style="{StaticResource UpsRailLabel}"/>
+                            </TabItem.Header>
+                            <StackPanel>
+                                <TextBlock Text="List Icons" Style="{StaticResource UpsPaneTitle}"/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="The same glow on list-view icons, where it has to be quieter to stay readable."/>
+                                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                                           Text="The same glow on the icons in list view, where it has to be quieter to stay readable."/>
+                                <CheckBox Style="{StaticResource UpsToggle}" Content="Enable List Icon Glow (Desktop only)"
+                                          IsChecked="{Binding Settings.EnableListIconGlow}"
+                                          Margin="0,12,0,4"
+                                          ToolTip="Highlights game icons in the list/grid view. Hover shows a colored shadow, selected game gets a full rendered glow. Independent from the Icon Glow visual reactor." />
+                                <CheckBox Style="{StaticResource UpsToggle}" Content="Subtle glow (softer effect)"
+                                          IsChecked="{Binding Settings.SubtleListGlow}"
+                                          Margin="20,0,0,4"
+                                          IsEnabled="{Binding Settings.EnableListIconGlow}"
+                                          ToolTip="Uses a softer, less intense glow on the selected game's list icon. Disable for the full-strength rendered glow." />
+                            </StackPanel>
+                        </TabItem>
 
+                    </TabControl>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>
