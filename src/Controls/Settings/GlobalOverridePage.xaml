@@ -36,11 +36,8 @@
                        TextWrapping="Wrap"
                        Margin="32,0,0,2"/>
             <TextBlock Text="WARNING: It is strongly recommended to keep this option on to ensure normal plugin functionality. Disabling this option allows Playnite's vanilla theme music to play simultaneously alongside UPS music, causing annoying audio issues. This WILL negatively impact all fullscreen themes that include their own music."
-                       FontSize="11"
-                       Foreground="#FFD44040"
-                       FontWeight="SemiBold"
-                       TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                       Style="{StaticResource UpsDangerNote}"
+                       Margin="32,0,0,10"/>
 
 
         </StackPanel>

@@ -172,7 +172,7 @@
                              Style="{StaticResource UpsRadio}"
                              GroupName="DefaultMusicSource"
                              IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"/>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="24,2,0,6"
+                <TextBlock Style="{StaticResource UpsHint}" Margin="32,2,0,6"
                            Text="Sources a default song at random by scanning existing game music you have in your library."/>
 
                 <!-- Custom folder -->
@@ -243,7 +243,7 @@
                         <TextBlock Style="{StaticResource UpsBody}" Margin="0"
                                    Text="Note: In ExtraMetadataLoader's own settings, turn on &quot;Play videos initially without sound&quot; to ensure normal UPS functionality."/>
                     </Border>
-                    <TextBlock Style="{StaticResource UpsDangerNote}" Margin="0,0,0,6"
+                    <TextBlock Style="{StaticResource UpsDangerNoteFlush}" Margin="0,0,0,6"
                                Text="FFmpeg is not set — add its path under Setup → Tools."
                                Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </StackPanel>

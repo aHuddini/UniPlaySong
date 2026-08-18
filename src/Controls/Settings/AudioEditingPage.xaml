@@ -150,7 +150,7 @@
                         <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'"
                                    Style="{StaticResource UpsHintFlush}"
                                    TextWrapping="Wrap"
-                                   Margin="20,0,0,10"/>
+                                   Margin="0,0,0,10"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,5">
                             <TextBlock Style="{StaticResource UpsLabel}" Text="Silence Trim Suffix: " VerticalAlignment="Center" Width="150"/>
@@ -175,11 +175,8 @@
                                   IsChecked="{Binding Settings.DoNotPreserveOriginals}"
                                   Margin="0,10"/>
                         <TextBlock Text="When enabled, original files are normalized directly and replaced (no backup/preservation). Saves disk space but originals cannot be restored. When disabled, originals are moved to PreservedOriginals folder."
-                                   FontSize="11"
-                                   Foreground="#FFA500"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap"
-                                   Margin="20,0,0,20"/>
+                                   Style="{StaticResource UpsWarning}"
+                                   Margin="32,0,0,20"/>
                 </StackPanel>
             </Expander>
         </StackPanel>

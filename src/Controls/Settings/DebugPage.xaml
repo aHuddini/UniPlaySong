@@ -22,16 +22,12 @@
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Logging, for when something needs reporting."/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Debug Logging"
-                      IsChecked="{Binding Settings.EnableDebugLogging}"
-                      Margin="0,5"/>
-            <TextBlock Text="When enabled, writes detailed debug information to UniPlaySong.log in the extension folder. Disable for normal use to reduce log file size."
-                       Style="{StaticResource UpsHint}"
-                       TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                      IsChecked="{Binding Settings.EnableDebugLogging}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Writes detailed diagnostics to UniPlaySong.log in the extension folder. Leave it off for normal use - the file grows quickly."/>
 
             <Button Style="{StaticResource UpsButton}" Content="Open Log Folder"
-                    Width="160"
-                    Margin="0,5,0,15"
+                    Width="160" Margin="0,4,0,0"
                     HorizontalAlignment="Left"
                     Command="{Binding OpenLogFolderCommand}"/>
 

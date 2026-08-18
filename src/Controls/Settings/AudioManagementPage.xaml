@@ -105,11 +105,8 @@
                                 Margin="0,0,10,0"
                                 Command="{Binding DeletePreservedOriginalsCommand}"/>
                         <TextBlock Text="Permanently delete all preserved originals to free disk space."
-                                   VerticalAlignment="Center"
-                                   FontSize="11"
-                                   Foreground="#FF6B6B"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap"/>
+                                   Style="{StaticResource UpsDangerNote}"
+                                   VerticalAlignment="Center" Margin="0"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>

@@ -31,7 +31,7 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable achievement sounds (default / fallback)"
                       IsChecked="{Binding Settings.EnableAchievementSound}"
                       Margin="0,5"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHintFlush}" Margin="20,0,0,5"
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,5"
                        Text="The default sound, played for any rarity that doesn't have its own sound set below."/>
 
             <StackPanel Margin="20,5,0,10"

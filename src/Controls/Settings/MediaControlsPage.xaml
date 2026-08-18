@@ -20,9 +20,6 @@
 
             <TextBlock Text="Media Controls" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Playback controls and Now-Playing readout UniPlaySong adds to Playnite."/>
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Media Controls" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls on Panel (Desktop)"
                           IsChecked="{Binding Settings.ShowDesktopMediaControls}"
                           Command="{Binding SetRestartRequired}"

@@ -74,7 +74,7 @@
                                Text="Themes that use the UPS theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• ANIKI REMAKE</TextBlock>
                     <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold" Margin="2,0,0,8">• PS5 Experience (by saVantCZ)</TextBlock>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,0"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
                                Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support."/>
                 </StackPanel>
             </Border>

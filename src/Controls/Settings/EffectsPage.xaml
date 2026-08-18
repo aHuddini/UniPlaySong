@@ -584,7 +584,7 @@
                                     <ComboBoxItem Content="High-Pass &#8594; Reverb &#8594; Low-Pass"/>
                                     <ComboBoxItem Content="Reverb &#8594; Low-Pass &#8594; High-Pass"/>
                                 </ComboBox>
-                                <TextBlock Style="{StaticResource UpsWarning}" Margin="0,8,0,0"
+                                <TextBlock Style="{StaticResource UpsWarningFlush}" Margin="0,8,0,0"
                                            Text="Be careful: reverb-first orderings can cause unusual or harsh sounds with certain filter settings."/>
                             </StackPanel>
                         </Border>

@@ -25,7 +25,7 @@
             <Border Style="{StaticResource UpsCardInfo}">
                 <StackPanel>
                     <TextBlock Text="Bundled Music" Style="{StaticResource UpsCardTitle}"/>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,10"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
                                Text="The Bundled Ambient default-music option ships these tracks. Full license details in NOTICES.txt on Github."/>
                     <TextBlock Style="{StaticResource UpsBullet}">• <Run FontWeight="SemiBold">Shades of Orange</Run> — Dave Miles, via Zapsplat (Standard License, Attribution)</TextBlock>
                     <TextBlock Style="{StaticResource UpsBullet}">• <Run FontWeight="SemiBold">ANIKI REMAKE — Hub OST / Login OST</Run> — Mike Aniki (used with explicit permission)</TextBlock>

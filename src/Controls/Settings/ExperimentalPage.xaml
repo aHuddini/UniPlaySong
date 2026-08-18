@@ -46,7 +46,7 @@
             <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. 0 disables idle release. UniPlaySong also releases its audio device immediately when you lock the PC or it suspends (regardless of this setting)."
                        Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,5"/>
+                       Margin="0,0,0,5"/>
             <TextBlock Text="&#x26A0; Experimental: still being ironed out — behavior may change."
                        Style="{StaticResource UpsWarning}"/>
 
@@ -127,7 +127,7 @@
             <!-- NAudio Fade Curve Tuning -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="NAudio Fade Curves" Style="{StaticResource UpsSectionTitle}"/></Border>
             <TextBlock Text="Only applies when Live Effects or Visualizer is enabled (NAudio pipeline)"
-                       FontSize="11" FontStyle="Italic" Foreground="#90A8A0" Margin="0,0,0,8"/>
+                       Style="{StaticResource UpsHintFlush}" FontStyle="Italic" Margin="0,0,0,8"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
                 <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
@@ -156,7 +156,7 @@
             <TextBlock Text="Linear: constant rate. Quadratic: moderate curve. Cubic: aggressive perceptual decay (default fade-out). S-Curve: gentle start/end, fast middle. Logarithmic: fast initial change, slow tail."
                        Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                       Margin="0,0,0,10"/>
 
             <!-- Auto-launch Spotify (Experimental) -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Auto-launch Spotify (Experimental)" Style="{StaticResource UpsSectionTitle}"/></Border>
@@ -181,7 +181,7 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music Dashboard sidebar panel (Desktop only)"
                       IsChecked="{Binding Settings.ShowMusicDashboard}"
                       Margin="0,5,0,5"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="20,0,0,10">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,10">
                 A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
             </TextBlock>
 

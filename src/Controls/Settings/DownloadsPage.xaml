@@ -55,7 +55,7 @@
                         <Button Content="Browse…" Style="{StaticResource UpsButton}"
                                 Command="{Binding BrowseForCookiesFile}"/>
                     </StackPanel>
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="22,0,0,4"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                                Text="A cookies.txt exported from your browser."/>
                 </StackPanel>
             </Expander>
@@ -94,7 +94,7 @@
                     <TextBlock ups:TrackedCaps.Text="Search Hints" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,4"
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                                Text="The hints database helps find the right soundtrack for games whose name titles search badly."/>
 
                     <!-- OneWay is load-bearing: TwoWay here ping-ponged with the radio below via

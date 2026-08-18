@@ -31,9 +31,9 @@
                       IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
                       Margin="0,5"/>
             <TextBlock Text="Default: Off. Only needed for Fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music at a theme's login/welcome screen."
-                       Style="{StaticResource UpsHintFlush}"
+                       Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="20,0,0,10"/>
+                       Margin="32,0,0,10"/>
 
             <!-- PS5-Experience theme compatibility (override-flicker debounce) -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="PS5-Experience Theme Compatibility" Style="{StaticResource UpsSectionTitle}"/></Border>

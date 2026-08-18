@@ -20,10 +20,7 @@
             <TextBlock Text="Transfer music files between PlayniteSound and UniPlaySong extensions." Style="{StaticResource UpsPageSubtitle}"/>
 
             <TextBlock Text="Note: Only audio files will be migrated."
-                       FontSize="11"
-                       Foreground="#FFA500"
-                       FontWeight="SemiBold"
-                       TextWrapping="Wrap"
+                       Style="{StaticResource UpsWarningFlush}"
                        Margin="0,0,0,20"/>
 
             <!-- Migration Summary -->
@@ -93,10 +90,7 @@
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,5"/>
                         <TextBlock Text="WARNING: Original PlayniteSound music files will be permanently deleted after import!"
-                                   FontSize="11"
-                                   Foreground="#FF6666"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap"
+                                   Style="{StaticResource UpsDangerNoteFlush}"
                                    Margin="0,0,0,10"/>
                         <Button Style="{StaticResource UpsButton}" Content="Import &amp; Delete PlayniteSound Music"
                                 Command="{Binding MigrateFromPlayniteSoundAndDeleteCommand}"

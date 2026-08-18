@@ -20,21 +20,14 @@
 
             <TextBlock Text="Performance" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Settings that can help optimize UPS to perform better."/>
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Song List Cache"
-                          IsChecked="{Binding Settings.EnableSongListCache}"
-                          Margin="0,5"/>
-                <TextBlock Text="Off by default. When enabled, music directory lists are cached during a running Playnite session (Desktop Mode = one session, switch to Fullscreen Mode = brand new session). This is to make game switches more seamless if crackles are heard. Cache is automatically cleared when you download, modify, or delete music, and is reset when Playnite restarts. Note that manually added music files (outside UniPlaySong) won't appear until you restart Playnite."
-                           Style="{StaticResource UpsHint}"
-                           TextWrapping="Wrap"
-                           Margin="20,0,0,10"/>
-                <TextBlock Text="⚠️ Keep this disabled if you don't notice any performance issues with game switching in your library."
-                           FontSize="11"
-                           Foreground="#FFB74D"
-                           TextWrapping="Wrap"
-                           Margin="20,0,0,15"/>
-    
-                <!-- Note: "Release Audio When Idle" lives on the Experimental tab (v1.5.4) -->
-    
+
+            <!-- "Release Audio When Idle" lives on Advanced -> Experimental (v1.5.4). -->
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Song List Cache"
+                      IsChecked="{Binding Settings.EnableSongListCache}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Off by default. Caches each game's music file list for the running Playnite session, which can smooth out crackles when switching games quickly. Desktop and Fullscreen count as separate sessions. The cache clears itself whenever you download, edit or delete music, and on restart - but music you add by hand outside UniPlaySong will not appear until Playnite restarts."/>
+            <TextBlock Style="{StaticResource UpsWarning}"
+                       Text="&#x26A0; Leave this off unless you actually hear a problem switching games."/>
 
         </StackPanel>
     </ScrollViewer>
