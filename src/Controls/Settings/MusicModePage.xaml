@@ -32,7 +32,7 @@
                 <TextBlock ups:TrackedCaps.Text="Preview Mode" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Limit how long game music plays"
+            <CheckBox Content="Enable Preview Mode"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.EnablePreviewMode}"/>
             <TextBlock Style="{StaticResource UpsHint}"
@@ -51,7 +51,7 @@
                 <TextBlock ups:TrackedCaps.Text="Radio Mode" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Radio Mode"
+            <CheckBox Content="Enable Radio Mode"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.RadioModeEnabled}"/>
             <TextBlock Style="{StaticResource UpsHint}"
