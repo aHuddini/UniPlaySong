@@ -27,8 +27,7 @@
                 <StackPanel>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Play Fanfare on Completed Games"
-                      IsChecked="{Binding Settings.EnableCompletionCelebration}"
-                      Margin="0,5"/>
+                      IsChecked="{Binding Settings.EnableCompletionCelebration}"/>
             <TextBlock Style="{StaticResource UpsHint}" Text="Play a celebration sound when you mark a game as 'Completed' in Playnite"/>
 
             <CheckBox Style="{StaticResource UpsToggleChild}" Content="Also celebrate when marked as 'Beaten'"
@@ -115,8 +114,7 @@
                 <StackPanel>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Play Sound on Abandoned Games"
-                      IsChecked="{Binding Settings.EnableAbandonedSound}"
-                      Margin="0,5"/>
+                      IsChecked="{Binding Settings.EnableAbandonedSound}"/>
             <TextBlock Style="{StaticResource UpsHint}" Text="Play a distinct sound (and optional toast) when you mark a game as 'Abandoned' in Playnite. Separate from the Completed/Beaten fanfare so you can pick a game-over jingle instead."/>
 
             <StackPanel Margin="20,5,0,10"

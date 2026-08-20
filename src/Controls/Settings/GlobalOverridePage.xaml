@@ -21,16 +21,14 @@
             <TextBlock Text="Global Overrides" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Master switches that force UniPlaySong to behave in certain ways and overrides other preferences."/>
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music"
-                      IsChecked="{Binding Settings.EnableMusic}"
-                      Margin="0,5"/>
+                      IsChecked="{Binding Settings.EnableMusic}"/>
             <TextBlock Text="When enabled, game music will automatically play when selecting games (console-like preview experience). Turn off if you only want Default music or Radio Mode."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="32,0,0,10"/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Suppress Playnite Vanilla Theme Music"
-                      IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"
-                      Margin="0,5"/>
+                      IsChecked="{Binding Settings.SuppressPlayniteBackgroundMusic}"/>
             <TextBlock Text="Default: Enabled. Prevents Playnite's built-in vanilla music from playing in the background during fullscreen mode."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"

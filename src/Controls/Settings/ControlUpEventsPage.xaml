@@ -29,8 +29,7 @@
                                Text="Plays a sound when ControlUp detects a game controller. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
 
                     <CheckBox Style="{StaticResource UpsToggle}" Content="Enable controller detected sound"
-                              IsChecked="{Binding Settings.EnableControlUpDetectSound}"
-                              Margin="0,5"/>
+                              IsChecked="{Binding Settings.EnableControlUpDetectSound}"/>
 
                     <StackPanel Margin="20,5,0,10"
                                 IsEnabled="{Binding Settings.EnableControlUpDetectSound}">

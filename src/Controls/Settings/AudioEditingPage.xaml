@@ -171,12 +171,9 @@
                                    Margin="32,0,0,10"/>
 
                         <CheckBox Style="{StaticResource UpsToggle}" Content="Skip Already Normalized Files"
-                                  IsChecked="{Binding Settings.SkipAlreadyNormalized}"
-                                  Margin="0,10"/>
-                        <TextBlock Text="When enabled, files with the normalization suffix are automatically skipped during bulk operations. Useful when downloading new music."
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"
-                                   Margin="32,0,0,10"/>
+                                  IsChecked="{Binding Settings.SkipAlreadyNormalized}"/>
+                        <TextBlock Style="{StaticResource UpsHint}"
+                                   Text="Files that already carry the normalization suffix are skipped during bulk operations. Useful when downloading new music."/>
 
                 </StackPanel>
             </Expander>

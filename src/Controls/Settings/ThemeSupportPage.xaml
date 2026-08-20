@@ -28,8 +28,7 @@
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Fullscreen" Style="{StaticResource UpsSectionTitle}"/></Border>
             <CheckBox Style="{StaticResource UpsToggle}" Content="Theme Compatible Login Skip (Fullscreen)"
                       IsChecked="{Binding Settings.ThemeCompatibleSilentSkip}"
-                      IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"
-                      Margin="0,5"/>
+                      IsEnabled="{Binding Settings.IsThemeCompatibleSilentSkipEnabled}"/>
             <TextBlock Text="Default: Off. Only needed for Fullscreen themes that do NOT natively support UPS. Waits for keyboard or controller input before playing music at a theme's login/welcome screen."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"

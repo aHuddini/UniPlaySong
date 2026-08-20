@@ -46,8 +46,7 @@
                        Margin="0,0,0,10"/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Acrylic Blur Effect"
-                      IsChecked="{Binding Settings.EnableToastAcrylicBlur}"
-                      Margin="0,5"/>
+                      IsChecked="{Binding Settings.EnableToastAcrylicBlur}"/>
 
             <!-- Blur Opacity -->
             <StackPanel Orientation="Horizontal" Margin="0,15,0,5">
