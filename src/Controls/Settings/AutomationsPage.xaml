@@ -61,6 +61,21 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Normalize every new download to the EBU R128 loudness standard so tracks do not jump in volume between games. Tune normalization settings in Library → Audio Editing."/>
 
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Audio Editing" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <!-- The same setting as Library → Audio Editing → Normalization. Both bind the one
+                 property, so they stay in step on their own; it is surfaced twice because it
+                 decides what automatic normalization does to your files. -->
+            <CheckBox Content="Do not preserve originals when normalizing (space saver)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.DoNotPreserveOriginals}"/>
+            <TextBlock Style="{StaticResource UpsHintTight}"
+                       Text="Normalizes each file in place and replaces it, instead of moving the original into the PreservedOriginals folder first. Shared with Library → Audio Editing."/>
+            <TextBlock Style="{StaticResource UpsWarning}"
+                       Text="Saves disk space, but the originals cannot be restored afterwards."/>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

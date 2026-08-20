@@ -128,6 +128,13 @@
                                    Style="{StaticResource UpsHint}"
                                    TextWrapping="Wrap"
                                    Margin="32,0,0,10"/>
+
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals when normalizing (space saver)"
+                                  IsChecked="{Binding Settings.DoNotPreserveOriginals}"/>
+                        <TextBlock Style="{StaticResource UpsHintTight}"
+                                   Text="Normalizes each file in place and replaces it, instead of moving the original into the PreservedOriginals folder first."/>
+                        <TextBlock Style="{StaticResource UpsWarning}"
+                                   Text="Saves disk space, but the originals cannot be restored afterwards."/>
                 </StackPanel>
             </Expander>
 
@@ -171,12 +178,6 @@
                                    TextWrapping="Wrap"
                                    Margin="32,0,0,10"/>
 
-                        <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals when normalizing (space saver)"
-                                  IsChecked="{Binding Settings.DoNotPreserveOriginals}"
-                                  Margin="0,10"/>
-                        <TextBlock Text="When enabled, original files are normalized directly and replaced (no backup/preservation). Saves disk space but originals cannot be restored. When disabled, originals are moved to PreservedOriginals folder."
-                                   Style="{StaticResource UpsWarning}"
-                                   Margin="32,0,0,20"/>
                 </StackPanel>
             </Expander>
         </StackPanel>
