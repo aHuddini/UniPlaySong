@@ -295,6 +295,11 @@
                 <TabItem Header="ControlUp">
                     <settings:ControlUpEventsPage/>
                 </TabItem>
+                <!-- Cross-event settings. Apply-live-effects governs both Library Events jingles,
+                     so nesting it under one of them disabled it for the other. -->
+                <TabItem Header="Miscellaneous">
+                    <settings:MiscellaneousEventsPage/>
+                </TabItem>
             </TabControl>
         </TabItem>
 

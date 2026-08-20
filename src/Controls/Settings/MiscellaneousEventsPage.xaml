@@ -1,0 +1,46 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.MiscellaneousEventsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Settings that span more than one Gamification event, so they belong to none of the event
+         pages. Apply-live-effects was nested inside Library Events' Completed block and disabled
+         with it, which also disabled it for the Abandoned jingle it equally governs.
+
+         It reaches exactly the two Library Events jingles: JingleService routes the achievement and
+         ControlUp events through IsExternalNotificationEvent to a plain SDL2 player that never sees
+         the Live Effects factory, so those are unaffected either way. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Miscellaneous" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Gamification settings that apply across events rather than to one of them."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Jingles" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
+                      IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."/>
+            <TextBlock Style="{StaticResource UpsHintFlush}"
+                       Text="Applies to the Completed and Abandoned jingles on the Library Events page. Achievement and ControlUp sounds always play without effects."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

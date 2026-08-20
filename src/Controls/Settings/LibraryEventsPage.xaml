@@ -71,11 +71,6 @@
                             Margin="5,0,0,0"/>
                 </StackPanel>
 
-                <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Apply live effects to jingles"
-                          IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"
-                          Margin="0,10,0,3"/>
-                <TextBlock Style="{StaticResource UpsHint}" Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."/>
-
                 <!-- Visual Celebration Toast -->
                 <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Show celebration toast notification"
                           IsChecked="{Binding Settings.ShowCelebrationToast}"
