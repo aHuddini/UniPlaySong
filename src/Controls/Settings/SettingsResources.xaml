@@ -24,6 +24,7 @@
     <local:VizPresetConverter x:Key="VizPresetConverter"/>
     <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
     <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+    <local:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
     <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
     <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
     <local:AbandonedThemeConverter x:Key="AbandonedThemeConverter"/>
@@ -1068,6 +1069,108 @@
         <GradientStop Offset="0.5" Color="#98393A"/>
         <GradientStop Offset="1"   Color="#3E1616"/>
     </LinearGradientBrush>
+
+    <!-- A segmented picker: RadioButtons retemplated as one joined button strip. Still radios, so
+         the existing EnumToBooleanConverter bindings are untouched - but a strip reads as "exactly
+         one of these" where a stacked list of dots reads as "here are some options", which is what
+         made the sound picker and the pack picker look like the same kind of question.
+         Put the buttons in a horizontal StackPanel and give the first UpsSegFirst / last UpsSegLast
+         so only the outer corners round. -->
+    <Style x:Key="UpsSegment" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1"
+                            Padding="14,5">
+                        <ContentPresenter x:Name="Body" VerticalAlignment="Center"
+                                          RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentFirst" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentLast" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1" CornerRadius="0,4,4,0"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style x:Key="UpsButtonCaution" TargetType="Button" BasedOn="{StaticResource UpsButton}">
         <Setter Property="Template">

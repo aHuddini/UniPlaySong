@@ -1,4 +1,4 @@
-using Playnite.SDK;
+﻿using Playnite.SDK;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
@@ -85,6 +85,16 @@ namespace UniPlaySong
                     hintsService.SetCustomHintsPath(customPath);
                 }
                 UpdateHintsDatabaseStatus();
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.AchievementSoundPack)
+                     || e.PropertyName == nameof(UniPlaySongSettings.CommonAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.UncommonAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.RareAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.UltraRareAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.HiddenAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.CapstoneAchievementSoundPath))
+            {
+                RefreshRarityRows();
             }
             // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls now use SetRestartRequired command
             // which sets IsRestartRequired on the Playnite settings window for safe restart handling
@@ -392,6 +402,85 @@ namespace UniPlaySong
         public string BadgePlatinumPath => Services.BundledImageService.GetAchievementBadgePath("platinum");
         public string BadgeHiddenPath => Services.BundledImageService.GetAchievementBadgePath("hidden");
         public string BadgePerfectPath => Services.BundledImageService.GetAchievementBadgePath("perfect");
+
+        // One row of the per-rarity table. The rows stay live under every pack, so each has to say
+        // where its sound is actually coming from - which is the pack chain's answer, not just the
+        // custom path the user may or may not have set.
+        public class RarityRow
+        {
+            public string Rarity { get; set; }        // "common" ... "capstone", the command parameter
+            public string Display { get; set; }       // "Common", "Ultra-Rare"
+            public string BadgePath { get; set; }
+            public string SourceText { get; set; }    // "PA Starter Pack - chime_01.wav"
+            public bool IsOverridden { get; set; }    // true when this row resolves to the user's own file
+        }
+
+        private static readonly (string Key, string Display, string Badge)[] RarityOrder =
+        {
+            ("common",    "Common",     "bronze"),
+            ("uncommon",  "Uncommon",   "silver"),
+            ("rare",      "Rare",       "gold"),
+            ("ultrarare", "Ultra-Rare", "platinum"),
+            ("hidden",    "Hidden",     "hidden"),
+            ("capstone",  "Capstone",   "perfect"),
+        };
+
+        public List<RarityRow> RarityRows => RarityOrder.Select(r => new RarityRow
+        {
+            Rarity = r.Key,
+            Display = r.Display,
+            BadgePath = Services.BundledImageService.GetAchievementBadgePath(r.Badge),
+            SourceText = DescribeRaritySource(r.Key),
+            IsOverridden = IsRarityOverridden(r.Key),
+        }).ToList();
+
+        // True only when this rarity resolves to a file the user picked. A custom path that is blank
+        // or missing on disk falls through to the PA Starter Pack, so it is not an override.
+        private bool IsRarityOverridden(string rarity)
+        {
+            if (Settings?.AchievementSoundPack != AchievementSoundPack.Custom) return false;
+            var custom = GetRarityAchievementSoundPath(rarity);
+            return !string.IsNullOrWhiteSpace(custom) && File.Exists(custom);
+        }
+
+        // What this rarity will actually play, named the way the user would name it. Mirrors the
+        // resolution order in JingleService.ResolveAchievementRarityPath, including its silent
+        // fallbacks - a theme missing a rarity, or a custom path pointing at a deleted file, both
+        // land on the PA Starter Pack, and the row has to admit that rather than claim otherwise.
+        private string DescribeRaritySource(string rarity)
+        {
+            // GetPAStarterPackPath comes back empty until BundledJingleService has been initialised,
+            // so name the pack without a dangling filename rather than printing "PA Starter Pack - ".
+            var starterFile = System.IO.Path.GetFileName(
+                Services.BundledJingleService.GetPAStarterPackPath(rarity) ?? string.Empty);
+            var starter = string.IsNullOrEmpty(starterFile)
+                ? "PA Starter Pack"
+                : "PA Starter Pack - " + starterFile;
+
+            switch (Settings?.AchievementSoundPack)
+            {
+                case AchievementSoundPack.Theme:
+                    var themePath = Common.PlayniteThemeHelper.FindThemeAchievementSound(rarity);
+                    return !string.IsNullOrEmpty(themePath)
+                        ? "Active theme - " + System.IO.Path.GetFileName(themePath)
+                        : starter + " (theme has no sound for this rarity)";
+
+                case AchievementSoundPack.Custom:
+                    var custom = GetRarityAchievementSoundPath(rarity);
+                    if (string.IsNullOrWhiteSpace(custom))
+                        return starter + " (no file picked yet)";
+                    if (!File.Exists(custom))
+                        return starter + " (your file is missing)";
+                    return "Your file - " + System.IO.Path.GetFileName(custom);
+
+                default:
+                    return starter;
+            }
+        }
+
+        // Every row's text depends on the pack and on all six custom paths, so any of them changing
+        // reprints the table.
+        private void RefreshRarityRows() => OnPropertyChanged(nameof(RarityRows));
 
         // Status line for the Theme pack: how many of the six rarities the active theme provides.
         public string ThemeAchievementStatus =>
