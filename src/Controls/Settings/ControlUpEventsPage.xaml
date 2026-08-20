@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="UniPlaySong.Controls.Settings.ControlUpEventsPage"
+<UserControl x:Class="UniPlaySong.Controls.Settings.ControlUpEventsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,56 +15,67 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <!-- One bar group per ControlUp event. Only Controller Detected exists today, but the shape is
+         the one to copy when another arrives: a bar naming the event, a hint saying when it fires,
+         its own enable toggle, then the segmented sound source. Nothing here is page-wide, so
+         there is deliberately no master toggle - with one event it would duplicate that event's
+         own toggle, and with several it would be a switch nobody asked for.
+
+         Teal on the bundled segment carries the same meaning as on PlayniteAchievements: this is
+         a sound UniPlaySong ships. Custom stays neutral because it is whatever you supply. -->
+
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="ControlUp" Style="{StaticResource UpsPageTitle}"/>
-            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Sounds when the ControlUp plugin reports a controller event. ControlUp plugin required."/>
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Controller Detected" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
-                               Text="Plays a sound when ControlUp detects a game controller. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Sounds when the ControlUp plugin reports a controller event. ControlUp is required."/>
 
-                    <CheckBox Style="{StaticResource UpsToggle}" Content="Enable controller detected sound"
-                              IsChecked="{Binding Settings.EnableControlUpDetectSound}"/>
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Controller Detected" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,7"
+                       Text="Fires when ControlUp detects a game controller. Repeat fires within one second are ignored, so a flaky reconnect doesn't stutter."/>
 
-                    <StackPanel Margin="20,5,0,10"
-                                IsEnabled="{Binding Settings.EnableControlUpDetectSound}">
-                        <RadioButton Style="{StaticResource UpsRadio}" Content="Bundled sound"
-                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"
-                                     GroupName="ControlUpDetectSound"
-                                     Margin="0,3"/>
-                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="Coin Pickup"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                            <Button Style="{StaticResource UpsButton}" Content="Preview"
-                                    Command="{Binding PreviewControlUpDetectSoundCommand}"
-                                    Padding="10,4"/>
-                        </StackPanel>
-                        <RadioButton Style="{StaticResource UpsRadio}" Content="Custom sound file (.wav recommended)"
-                                     IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"
-                                     GroupName="ControlUpDetectSound"
-                                     Margin="0,3"/>
-                        <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
-                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.ControlUpDetectSoundPath, UpdateSourceTrigger=PropertyChanged}"
-                                     Width="350"
-                                     VerticalContentAlignment="Center"
-                                     Margin="0,0,8,0"/>
-                            <Button Style="{StaticResource UpsButton}" Content="Browse..."
-                                    Command="{Binding BrowseControlUpDetectSoundCommand}"
-                                    Padding="10,4"/>
-                            <Button Style="{StaticResource UpsButton}" Content="Preview"
-                                    Command="{Binding PreviewControlUpDetectCustomSoundCommand}"
-                                    Padding="10,4"
-                                    Margin="5,0,0,0"/>
-                        </StackPanel>
-                    </StackPanel>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable controller detected sound"
+                      IsChecked="{Binding Settings.EnableControlUpDetectSound}"/>
+
+            <StackPanel Margin="32,6,0,0" IsEnabled="{Binding Settings.EnableControlUpDetectSound}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <RadioButton Style="{StaticResource UpsSegmentFirstTeal}" Content="Bundled sound"
+                                 GroupName="ControlUpDetectSound"
+                                 IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"/>
+                    <RadioButton Style="{StaticResource UpsSegmentLast}" Content="Custom File"
+                                 GroupName="ControlUpDetectSound"
+                                 IsChecked="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"/>
                 </StackPanel>
-            </Expander>
+
+                <!-- SelectedControlUpDetectJingle already existed and JingleService already honours
+                     it, but the page hardcoded the sound's name and offered no way to change it.
+                     A picker reaches the setting, and takes any further bundled ControlUp sounds
+                     without another edit here. -->
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                            Visibility="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=BundledJingle}">
+                    <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding ControlUpJingles}"
+                              ItemTemplate="{StaticResource UpsDisplayNameTemplate}"
+                              SelectedValuePath="File"
+                              SelectedValue="{Binding Settings.SelectedControlUpDetectJingle}"
+                              Width="300" Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Padding="10,4"
+                            Command="{Binding PreviewControlUpDetectSoundCommand}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                            Visibility="{Binding Settings.ControlUpDetectSoundType, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=CustomFile}">
+                    <TextBox Style="{StaticResource UpsTextBox}" Width="350" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                             Text="{Binding Settings.ControlUpDetectSoundPath, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Padding="10,4"
+                            Command="{Binding BrowseControlUpDetectSoundCommand}"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Preview" Padding="10,4" Margin="6,0,0,0"
+                            Command="{Binding PreviewControlUpDetectCustomSoundCommand}"/>
+                </StackPanel>
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

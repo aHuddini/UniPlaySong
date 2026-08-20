@@ -351,6 +351,8 @@ namespace UniPlaySong
         // Bundled "Default" achievement pack (Trophy Notif + Platinum) for the achievement sound pickers
         public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
 
+        public List<Services.BundledJingleInfo> ControlUpJingles => Services.BundledJingleService.GetControlUpJingles();
+
         // SDL2 output buffer choices for the Experimental tab.
         public List<AudioBufferOption> AudioBufferOptions => AudioBufferOption.All;
 

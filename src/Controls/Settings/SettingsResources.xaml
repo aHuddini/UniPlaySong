@@ -1216,6 +1216,36 @@
         </Setter>
     </Style>
 
+    <Style x:Key="UpsSegmentFirstTeal" TargetType="RadioButton" BasedOn="{StaticResource UpsSegmentFirst}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegTealFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="UpsSegmentLast" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
         <Setter Property="Template">
             <Setter.Value>

@@ -111,7 +111,7 @@
                            Text="Used only when a sound pack has no sound for the rarity that unlocked."/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <RadioButton Style="{StaticResource UpsSegmentFirst}" Content="Bundled sound" GroupName="AchievementSound"
+                    <RadioButton Style="{StaticResource UpsSegmentFirstTeal}" Content="Bundled sound" GroupName="AchievementSound"
                                  IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledJingle}"/>
                     <RadioButton Style="{StaticResource UpsSegmentLast}" Content="Your own file" GroupName="AchievementSound"
                                  IsChecked="{Binding Settings.AchievementSoundType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"/>
