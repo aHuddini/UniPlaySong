@@ -30,7 +30,7 @@
                 <TextBlock ups:TrackedCaps.Text="Where Music Plays (Mode State)" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,14">
                 <TextBlock Text="Play music in" Style="{StaticResource UpsLabel}" Width="140"/>
                 <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
                           SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}">
@@ -40,8 +40,6 @@
                     <ComboBoxItem Content="Desktop + Fullscreen"/>
                 </ComboBox>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,14"
-                       Text="The startup master switch. To stop automatic playback in Desktop entirely, pick &quot;Fullscreen only&quot;."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Automatic Playback" Style="{StaticResource UpsSectionTitle}"/>
