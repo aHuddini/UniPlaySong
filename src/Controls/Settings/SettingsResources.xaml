@@ -1076,6 +1076,20 @@
          made the sound picker and the pack picker look like the same kind of question.
          Put the buttons in a horizontal StackPanel and give the first UpsSegFirst / last UpsSegLast
          so only the outer corners round. -->
+    <LinearGradientBrush x:Key="UpsSegGoldFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#6A5426"/>
+        <GradientStop Offset="1" Color="#463716"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsSegGoldRim"  Color="#C8A24B"/>
+    <SolidColorBrush x:Key="UpsSegGoldInk"  Color="#F0DCA8"/>
+
+    <LinearGradientBrush x:Key="UpsSegTealFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#1E4E55"/>
+        <GradientStop Offset="1" Color="#123338"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsSegTealRim"  Color="#4FA3AE"/>
+    <SolidColorBrush x:Key="UpsSegTealInk"  Color="#B4E4EA"/>
+
     <Style x:Key="UpsSegment" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
         <Setter Property="FontSize" Value="11.5"/>
@@ -1131,6 +1145,66 @@
                             <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
                             <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
                             <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentFirstGold" TargetType="RadioButton" BasedOn="{StaticResource UpsSegmentFirst}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegGoldFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegGoldRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegGoldInk}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentTeal" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegTealFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
                             <Setter Property="FontWeight" Value="SemiBold"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">

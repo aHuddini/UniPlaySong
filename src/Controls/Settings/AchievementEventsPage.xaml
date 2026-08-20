@@ -30,12 +30,12 @@
 
             <TextBlock Text="PlayniteAchievements" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Sounds when the PlayniteAchievements plugin reports an unlock. That plugin is required."/>
+                       Text="Sounds when the PlayniteAchievements plugin reports an unlock. PlayniteAchievements is required."/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable achievement sounds"
                       IsChecked="{Binding Settings.EnableAchievementSound}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Plays a sound each time an achievement or trophy is unlocked. Nothing below applies while this is off."/>
+                       Text="Plays a sound each time an achievement or trophy is unlocked."/>
 
             <StackPanel IsEnabled="{Binding Settings.EnableAchievementSound}">
 
@@ -43,14 +43,14 @@
                     <TextBlock ups:TrackedCaps.Text="Rarity Sounds" Style="{StaticResource UpsSectionTitle}"/>
                 </Border>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,7"
-                           Text="Six sounds, one per rarity. Tried first &#x2014; the fallback below only covers a rarity this pack has nothing for."/>
+                           Text="Six sounds, one per rarity. Pick a sound pack you will hear when a rarity is unlocked."/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <RadioButton Style="{StaticResource UpsSegmentFirst}" Content="Active theme" GroupName="AchievementPack"
+                    <RadioButton Style="{StaticResource UpsSegmentFirstGold}" Content="Active Theme" GroupName="AchievementPack"
                                  IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Theme}"/>
-                    <RadioButton Style="{StaticResource UpsSegment}" Content="PA Starter Pack" GroupName="AchievementPack"
+                    <RadioButton Style="{StaticResource UpsSegmentTeal}" Content="UPS Starter Pack" GroupName="AchievementPack"
                                  IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PAStarterPack}"/>
-                    <RadioButton Style="{StaticResource UpsSegmentLast}" Content="Your own files" GroupName="AchievementPack"
+                    <RadioButton Style="{StaticResource UpsSegmentLast}" Content="Custom Files" GroupName="AchievementPack"
                                  IsChecked="{Binding Settings.AchievementSoundPack, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Custom}"/>
                 </StackPanel>
                 <TextBlock Text="{Binding ThemeAchievementStatus}" Style="{StaticResource UpsHintFlush}" Margin="0,7,0,0"
@@ -102,13 +102,13 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0"
-                           Text="Each row shows the file that rarity will actually play. Browse on a row sets your own sound for that rarity only. Badge art from the PlayniteAchievements plugin."/>
+                           Text="Each row shows the sound file that a rarity event will play. Badge art from the PlayniteAchievements plugin."/>
 
                 <Border Style="{StaticResource UpsSectionBar}" Margin="0,18,0,0">
                     <TextBlock ups:TrackedCaps.Text="Fallback Sound" Style="{StaticResource UpsSectionTitle}"/>
                 </Border>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,7"
-                           Text="Used only when the pack above has no sound for the rarity that unlocked."/>
+                           Text="Used only when a sound pack has no sound for the rarity that unlocked."/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <RadioButton Style="{StaticResource UpsSegmentFirst}" Content="Bundled sound" GroupName="AchievementSound"
