@@ -15,9 +15,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Everything that decides which song comes next, and how long the current one gets.
-         Preview Mode belongs here rather than on its own page: it is the third answer to
-         "when does this track stop", alongside randomize-on-end and stop-on-end. -->
+    <!-- Everything that decides which song comes next. Preview Mode moved to Music Mode,
+         which is where the modes that override normal selection now live. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
@@ -47,25 +46,6 @@
                       IsChecked="{Binding Settings.StopAfterSongEnds}"/>
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Do not loop and do not advance. Silence until you select another game. Applies to normal playback and to preview mode."/>
-
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Preview Mode" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
-            <CheckBox Content="Limit how long game music plays"
-                      Style="{StaticResource UpsToggle}"
-                      IsChecked="{Binding Settings.EnablePreviewMode}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Game music restarts once it hits a certain duration, so you hear the opening of a track rather than all of it."/>
-            <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
-                        IsEnabled="{Binding Settings.EnablePreviewMode}">
-                <TextBlock Text="Preview length" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
-                <Slider Minimum="15" Maximum="300" Width="220" VerticalAlignment="Center"
-                        Value="{Binding Settings.PreviewDuration}"
-                        SmallChange="5" LargeChange="15" TickFrequency="15"/>
-                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
-                           Text="{Binding Settings.PreviewDuration, StringFormat='{}{0} s'}"/>
-            </StackPanel>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Random Game Picker" Style="{StaticResource UpsSectionTitle}"/>

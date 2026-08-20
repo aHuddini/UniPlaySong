@@ -30,12 +30,10 @@
                 <Button Style="{StaticResource UpsButton}" Content="Scan &amp; Tag All Games"
                         Width="160" Margin="0,0,10,0"
                         Command="{Binding ScanAndTagAllGamesCommand}"/>
-                <Button Style="{StaticResource UpsButton}" Content="Remove All Tags"
+                <Button Style="{StaticResource UpsButtonDanger}" Content="Remove All Tags"
                         Width="140"
                         Command="{Binding RemoveAllMusicTagsCommand}"/>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,6,0,0"
-                       Text="Runs the same tagging over your whole library now, rather than waiting for the next update."/>
 
         </StackPanel>
     </ScrollViewer>

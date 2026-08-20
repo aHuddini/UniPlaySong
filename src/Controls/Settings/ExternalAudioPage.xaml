@@ -25,7 +25,7 @@
             <CheckBox Content="Pause when another app plays audio"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.PauseOnExternalAudio}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
+            <TextBlock Style="{StaticResource UpsHintTight}"
                        Text="Pauses when apps like YouTube, Spotify, Discord or anything else starts playing, and resumes once it stops."/>
             <TextBlock Style="{StaticResource UpsWarning}"
                        Text="Screen recorders and streaming apps (OBS, Shadowplay, XSplit, etc) that capture desktop audio can trigger pauses unnecessarily, making this feature feel broken. They mirror system audio back, confusing UPS. Add them to the process exclusions below if that happens."/>

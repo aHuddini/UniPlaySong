@@ -30,14 +30,14 @@
                  this page for, and the warning under it is the one that most needs to be seen.
                  A section worth hiding is one you configure once; this is not that. -->
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Games" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Playnite Events" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
             <StackPanel>
 
                     <CheckBox Content="Pause on game launch"
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.PauseOnGameStart}"/>
-                    <TextBlock Style="{StaticResource UpsHint}"
+                    <TextBlock Style="{StaticResource UpsHintTight}"
                                Text="Music fades out as soon as you click Play, and resumes when the game closes. Compatible with the Splash Screen plugin."/>
                     <TextBlock Style="{StaticResource UpsDangerNote}"
                                Text="Keep this on to ensure normal plugin behaviour. If disabled, UPS music keeps playing in the background while your game runs."/>
@@ -53,7 +53,7 @@
             <!-- Set-once settings, so these two fold away. -->
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="System" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="System Events" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
 
@@ -87,10 +87,22 @@
                 </Expander.Header>
                 <StackPanel>
 
+                    <CheckBox Content="Pause when minimized"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnMinimize}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses when Playnite is minimized to the taskbar, and resumes when it is restored."/>
+
+                    <CheckBox Content="Pause when in the system tray"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses while Playnite is hidden in the tray, and resumes when it is restored."/>
+
                     <CheckBox Content="Pause when Playnite loses focus"
                               Style="{StaticResource UpsToggle}"
                               IsChecked="{Binding Settings.PauseOnFocusLoss}"/>
-                    <TextBlock Style="{StaticResource UpsHintFlush}"
+                    <TextBlock Style="{StaticResource UpsHint}"
                                Text="Pauses when you switch to another application, and resumes when Playnite comes back."/>
 
                     <CheckBox Content="Stay paused after focus returns"
@@ -106,18 +118,6 @@
                               IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
                     <TextBlock Style="{StaticResource UpsHintIndented}"
                                Text="Detects the Windows OS alt-tab overlay and only pauses if you actually switch away. Aborted alt-tabs are ignored."/>
-
-                    <CheckBox Content="Pause when minimized"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.PauseOnMinimize}"/>
-                    <TextBlock Style="{StaticResource UpsHint}"
-                               Text="Pauses when Playnite is minimized to the taskbar, and resumes when it is restored."/>
-
-                    <CheckBox Content="Pause when in the system tray"
-                              Style="{StaticResource UpsToggle}"
-                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"/>
-                    <TextBlock Style="{StaticResource UpsHint}"
-                               Text="Pauses while Playnite is hidden in the tray, and resumes when it is restored."/>
 
                 </StackPanel>
             </Expander>

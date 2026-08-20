@@ -98,65 +98,6 @@
                 </StackPanel>
             </Expander>
 
-            <!-- Not collapsed: Radio Mode overrides every setting above it, so hiding it behind
-                 a fold would let someone tune filters that Radio Mode is quietly ignoring. -->
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Radio Mode" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
-            <CheckBox Content="Radio Mode"
-                      Style="{StaticResource UpsToggle}"
-                      IsChecked="{Binding Settings.RadioModeEnabled}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Ignores game selection entirely and plays continuously from one pool, like background radio. Overrides both game music and default music while it is on."/>
-
-            <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.RadioModeEnabled}">
-
-                <RadioButton Content="Full Library (every song you have)"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FullLibrary}"/>
-
-                <RadioButton Content="Custom folder (Curated Playlist)"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"/>
-                <StackPanel Orientation="Horizontal" Margin="24,2,0,0">
-                    <TextBox Style="{StaticResource UpsTextBox}" Width="330" Margin="0,0,10,0"
-                             Text="{Binding Settings.RadioCustomFolderPath}" IsReadOnly="True"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Width="86"
-                            Command="{Binding BrowseForRadioCustomFolder}"/>
-                </StackPanel>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                           Text="Shuffles any audio files in that folder. Left empty, it falls back to your Default Music folder."/>
-
-                <RadioButton Content="Custom game rotation"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"/>
-
-                <RadioButton Content="Completion status pool"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"/>
-
-                <RadioButton Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
-                             Command="{Binding SetRestartRequired}"
-                             CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Official Spotify logomark. Brand green #1DB954, geometry from resources. -->
-                        <Path Data="{StaticResource SpotifyLogoGeometry}"
-                              Fill="#1DB954" Stretch="Uniform"
-                              Width="15" Height="15" Margin="0,0,7,0"
-                              VerticalAlignment="Center"/>
-                        <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center" FontSize="12.5"/>
-                    </StackPanel>
-                </RadioButton>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                           Text="Uses Spotify as continuous background music instead of a UPS pool. UPS pauses and resumes it on game launch, video, focus loss and lock. Restart required for this option to take effect."/>
-
-            </StackPanel>
-
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
-                       Text="Full library shuffles everything you have downloaded. The other pool sources reuse whatever you configured on the Default Music page."/>
-
         </StackPanel>
     </ScrollViewer>
 </UserControl>

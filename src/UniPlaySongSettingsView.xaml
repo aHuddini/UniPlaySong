@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.UniPlaySongSettingsView"
+﻿<UserControl x:Class="UniPlaySong.UniPlaySongSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -226,14 +226,20 @@
                 <TabItem Header="Startup">
                     <settings:StartupPage/>
                 </TabItem>
-                <TabItem Header="Trigger Methods">
-                    <settings:TriggerMethodsPage/>
+                <!-- Preview Mode came off Randomization and Radio Mode off Trigger Methods.
+                     Both change what playback is rather than tuning it, so they sit together
+                     and early - the pages after this one are read in light of them. -->
+                <TabItem Header="Music Mode">
+                    <settings:MusicModePage/>
                 </TabItem>
                 <TabItem Header="Default Music">
                     <settings:DefaultMusicPage/>
                 </TabItem>
                 <TabItem Header="Randomization">
                     <settings:RandomizationPage/>
+                </TabItem>
+                <TabItem Header="Trigger Methods">
+                    <settings:TriggerMethodsPage/>
                 </TabItem>
                 <!-- Off the old General tab: these decide whether UPS plays at all, which is a
                      playback question, not a general one. -->
