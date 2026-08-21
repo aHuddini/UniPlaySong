@@ -1104,7 +1104,9 @@
         <Setter Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
         <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNeutral}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="11"/>
+        <!-- 4, matching the cards and buttons. A full stadium radius made these read as tags from
+             a different design system than everything else in the window. -->
+        <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="10,3,4,3"/>
         <Setter Property="Margin" Value="0,0,6,6"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -1116,9 +1118,9 @@
         <Setter Property="Padding" Value="10,3"/>
     </Style>
 
-    <!-- Tinted static chips, for the About page's two read-only sets. Green says "this file type
-         plays", teal reuses the meaning it already carries on the sound pickers - UniPlaySong
-         handles this. The editable exclusion chips stay neutral: an ignored process is neither. -->
+    <!-- The tinted static chip, for the About page's read-only sets. Green says "supported" -
+         a format that plays, a theme that works. The editable exclusion chips stay neutral, since
+         an ignored process is not a thing that is supported. -->
     <Style x:Key="UpsChipGood" TargetType="Border" BasedOn="{StaticResource UpsChipStatic}">
         <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
         <Setter Property="BorderBrush" Value="{StaticResource UpsOnStroke}"/>
@@ -1129,16 +1131,6 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <Style x:Key="UpsChipTeal" TargetType="Border" BasedOn="{StaticResource UpsChipStatic}">
-        <Setter Property="Background" Value="{StaticResource UpsSegTealFace}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
-    </Style>
-
-    <Style x:Key="UpsChipTextTeal" TargetType="TextBlock" BasedOn="{StaticResource UpsChipText}">
-        <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
-
     <Style x:Key="UpsChipRemove" TargetType="Button">
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Focusable" Value="True"/>
@@ -1146,7 +1138,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Face" Background="Transparent" CornerRadius="8" Width="16" Height="16">
+                    <Border x:Name="Face" Background="Transparent" CornerRadius="3" Width="16" Height="16">
                         <TextBlock x:Name="Glyph" Text="&#x00D7;" FontSize="12" FontWeight="Bold"
                                    Foreground="{StaticResource UpsTextMuted}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
