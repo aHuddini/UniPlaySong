@@ -34,8 +34,15 @@ jobs:
           git remote add gitea "https://gitea.com/aHuddini/UniPlaySong.git"
           git config --local credential.helper '!f() { echo "username=aHuddini"; echo "password=${GITEA_TOKEN}"; }; f'
 
+          # Branches decide success. Tags are best-effort: a single tag that exists on Gitea at a
+          # different commit makes "git push gitea --tags" exit non-zero, which used to fail the
+          # whole mirror and report it as a token problem - the branches had already pushed fine.
           push_all() {
-            git push gitea --branches && git push gitea --tags
+            git push gitea --branches || return 1
+            if ! git push gitea --tags; then
+              echo "::warning::Branches mirrored, but some tags were rejected. Usually one tag exists on Gitea at a different commit; compare with: git ls-remote --tags gitea"
+            fi
+            return 0
           }
 
           # First attempt
@@ -53,5 +60,5 @@ jobs:
             exit 0
           fi
 
-          echo "::error::Mirror push failed twice. If the error was HTTP 403, the GITEA_TOKEN secret is expired/revoked or lacks repo:write scope. Rotate it in repo Settings."
+          echo "::error::Mirror push failed twice - the BRANCH push did not succeed. Check the git output above for the real cause. If it was HTTP 403, the GITEA_TOKEN secret is expired/revoked or lacks repo:write scope; rotate it in repo Settings."
           exit 1
