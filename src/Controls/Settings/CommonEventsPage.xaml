@@ -81,7 +81,7 @@
                 </StackPanel>
             </Expander>
 
-            <Expander Style="{StaticResource UpsSection}">
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
                 <Expander.Header>
                     <TextBlock ups:TrackedCaps.Text="Window Focus" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>

@@ -39,8 +39,6 @@
                        Text="Supporters can purchase an unlocked build of UPS that improves the download manager (a non-essential feature of UPS)."/>
             <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,6"
                        Text="New unlocked builds will release on Ko-Fi when major features ship, but is not required. Downloading music works in the normal build, and so does every other feature — playback, radio, live effects, jingles, etc. The unlocked build simply makes one feature nicer."/>
-            <TextBlock Style="{StaticResource UpsWarningFlush}" Margin="0,0,0,4"
-                       Text="Nothing else is planned to be paywalled at this point. UPS is feature-complete. The Playnite community is a large part of why UPS is what it is, and locking up what it helped build would be a poor way to say thanks."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Where" Style="{StaticResource UpsSectionTitle}"/>
