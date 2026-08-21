@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.MiscellaneousEventsPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.MiscellaneousEventsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -37,9 +37,7 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
                       IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="When Live Effects are enabled, jingles will play through the NAudio effects chain (reverb, filters, etc.). Disable to play jingles without effects."/>
-            <TextBlock Style="{StaticResource UpsHintFlush}"
-                       Text="Applies to the Completed and Abandoned jingles on the Library Events page. Achievement and ControlUp sounds always play without effects."/>
+                       Text="When Live Effects are enabled, the Completed and Abandoned jingles play through the NAudio effects chain (reverb, filters, etc.). Disable to play them without effects. Achievement and ControlUp sounds are unaffected either way."/>
 
         </StackPanel>
     </ScrollViewer>
