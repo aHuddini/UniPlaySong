@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.LibraryEventsPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.LibraryEventsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -19,10 +19,10 @@
          toast shows, how the toast looks. Each step's controls sit in the same 32px column, so the
          eye tracks one left edge down the whole event.
 
-         Both expanders start open. They held opposite defaults before, which made the page look
-         like one event with an afterthought under it. The folds stay, unlike ControlUp's - there
-         each fold hid the entire page, whereas these hold a sound picker and four toast controls
-         apiece and are worth collapsing once set.
+         Completed opens, Abandoned starts collapsed. Both events carry a sound picker and four
+         toast controls, so showing both at once makes the page a wall on arrival; Completed is the
+         common case and Abandoned is one click away. The folds stay, unlike ControlUp's - there
+         each fold hid the entire page, whereas these each hide one event of two.
 
          Toast field labels take UpsLabel. They were UpsHint, the 10px muted style used for the
          explanatory sentence directly above them, so a field's name rendered the same as prose. -->
@@ -35,7 +35,7 @@
 
             <Expander Style="{StaticResource UpsSection}">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Completed" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="Games Completed" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
 
@@ -124,9 +124,9 @@
                 </StackPanel>
             </Expander>
 
-            <Expander Style="{StaticResource UpsSection}">
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
                 <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Abandoned" Style="{StaticResource UpsSectionTitle}"/>
+                    <TextBlock ups:TrackedCaps.Text="Games Abandoned" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
 
