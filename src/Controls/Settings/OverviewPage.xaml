@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
              xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
@@ -56,7 +57,24 @@
                     <TextBlock Text="Supported Audio Formats" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="Audio formats tested with UPS's audio engine. Drop files matching these extensions into a game's music folder."/>
-                    <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• MP3    • OGG Vorbis    • FLAC    • WAV</TextBlock>
+                    <!-- A flat set of peers, so chips rather than a bullet run. The chiptune list
+                         below stays prose: each entry carries a console and, for .hes, a caveat. -->
+                    <ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource UpsChipStatic}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipText}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <system:String>MP3</system:String>
+                        <system:String>OGG Vorbis</system:String>
+                        <system:String>FLAC</system:String>
+                        <system:String>WAV</system:String>
+                    </ItemsControl>
 
                     <TextBlock Style="{StaticResource UpsBody}" Margin="0,10,0,4" FontWeight="SemiBold"
                                Text="Retro Chiptune Formats"/>
@@ -72,8 +90,20 @@
                     <TextBlock Text="Officially Supported Fullscreen Themes" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
                                Text="Themes that use the UPS theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
-                    <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold">• ANIKI REMAKE</TextBlock>
-                    <TextBlock Style="{StaticResource UpsBullet}" FontWeight="SemiBold" Margin="2,0,0,8">• PS5 Experience (by saVantCZ)</TextBlock>
+                    <ItemsControl Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource UpsChipStatic}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipText}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <system:String>ANIKI REMAKE</system:String>
+                        <system:String>PS5 Experience (by saVantCZ)</system:String>
+                    </ItemsControl>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
                                Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support."/>
                 </StackPanel>

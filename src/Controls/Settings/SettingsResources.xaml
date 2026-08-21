@@ -1110,6 +1110,12 @@
         <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
+    <!-- A chip with nothing to remove: for listing a fixed set rather than editing one. Same shape
+         as UpsChip so a read-only set and an editable one look like the same kind of thing. -->
+    <Style x:Key="UpsChipStatic" TargetType="Border" BasedOn="{StaticResource UpsChip}">
+        <Setter Property="Padding" Value="10,3"/>
+    </Style>
+
     <Style x:Key="UpsChipRemove" TargetType="Button">
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Focusable" Value="True"/>
