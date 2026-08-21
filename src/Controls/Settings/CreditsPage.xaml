@@ -38,7 +38,7 @@
                 <StackPanel>
                     <TextBlock Text="Thanks" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Mike Aniki</Run> — for fully integrating UniPlaySong with ANIKI REMAKE, and for requesting and testing the theme-integration features that came out of it.
+                        <Run FontWeight="SemiBold">Mike Aniki</Run> — for fully integrating UniPlaySong with ANIKI REMAKE, for requesting and testing the theme-integration features that came out of it, and for the working control template that the v1.8.0 settings revamp was built on. This window is far easier to navigate because of it.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
                         <Run FontWeight="SemiBold">saVantCZ</Run> — for extensive testing, and for the help integrating UniPlaySong with his PS5 Experience theme.

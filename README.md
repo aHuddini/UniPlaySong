@@ -185,7 +185,7 @@ See `docs/dev_docs/` for detailed build instructions.
 
 ### Collaborations & Contributors
 - **[Playnite Achievements](https://github.com/justin-delano/PlayniteAchievements) by Justin Delano** — collaboration on the achievement unlock sound feature. His plugin tells UniPlaySong when an achievement is earned so UPS can play the sound, and his rarity badge artwork (MIT) is used in the achievement settings. Thanks to Justin for the cross-plugin integration.
-- **[Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — author of the Aniki ReMake theme. His theme's notification sounds are bundled (with permission) as UniPlaySong's default achievement-sound presets, and he requested/tested several theme-integration features.
+- **[Mike Aniki](https://github.com/Mike-Aniki/Aniki-ReMake)** — author of the Aniki ReMake theme. His theme's notification sounds are bundled (with permission) as UniPlaySong's default achievement-sound presets, and he requested/tested several theme-integration features. He also provided the working control template the v1.8.0 settings revamp was built on — the settings window is far easier to navigate because of it.
 
 ### Bundled Libraries
 - **Playnite SDK** - Extension framework
