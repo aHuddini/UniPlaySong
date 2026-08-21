@@ -65,8 +65,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource UpsChipStatic}">
-                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipText}"/>
+                                <Border Style="{StaticResource UpsChipGood}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipTextGood}"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -96,8 +96,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource UpsChipStatic}">
-                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipText}"/>
+                                <Border Style="{StaticResource UpsChipTeal}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipTextTeal}"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

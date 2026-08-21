@@ -1116,6 +1116,29 @@
         <Setter Property="Padding" Value="10,3"/>
     </Style>
 
+    <!-- Tinted static chips, for the About page's two read-only sets. Green says "this file type
+         plays", teal reuses the meaning it already carries on the sound pickers - UniPlaySong
+         handles this. The editable exclusion chips stay neutral: an ignored process is neither. -->
+    <Style x:Key="UpsChipGood" TargetType="Border" BasedOn="{StaticResource UpsChipStatic}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnStroke}"/>
+    </Style>
+
+    <Style x:Key="UpsChipTextGood" TargetType="TextBlock" BasedOn="{StaticResource UpsChipText}">
+        <Setter Property="Foreground" Value="#B9E0C4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="UpsChipTeal" TargetType="Border" BasedOn="{StaticResource UpsChipStatic}">
+        <Setter Property="Background" Value="{StaticResource UpsSegTealFace}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
+    </Style>
+
+    <Style x:Key="UpsChipTextTeal" TargetType="TextBlock" BasedOn="{StaticResource UpsChipText}">
+        <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
     <Style x:Key="UpsChipRemove" TargetType="Button">
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Focusable" Value="True"/>
