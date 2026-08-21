@@ -4,6 +4,36 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.0] - 2026-08-21
+
+### Changed
+
+- **Settings window restructured into a two-level rail.** Tabs became a left rail of groups, each holding its own pages, with one `UserControl` per page under `src/Controls/Settings/`. A shared `SettingsResources.xaml` now owns every style the pages use, so spacing and type come from the design system rather than from inline attributes. Reset stays per rail group via `SettingsGroups.Map`; `SettingsResetCoverageTests` fails by name if a setting is not filed.
+- **Hint scale and alignment unified across all pages.** 73 hints were overriding the indent their style already bakes in (0, 10, 20, 22, 24 and 40 against the style's 32), and 13 warnings were hand-rolled at FontSize 11 in five different hex colours rather than using `UpsWarning`. Hints are now classified by what they sit under: `UpsHint` under a toggle, `UpsHintIndented` under a child toggle, `UpsHintFlush` under anything else.
+- **Sound sources use a segmented picker.** `UpsSegment` retemplates `RadioButton` as a joined button strip, so existing `EnumToBooleanConverter` bindings are untouched. Only the selected branch's controls render, via the new `EnumToVisibilityConverter`.
+
+### Added
+
+- **Music Mode page** (Playback) — Preview Mode lifted off Randomization, Radio Mode off Trigger Methods. Both settings already filed under the Playback reset group, so the map needed no change.
+- **Miscellaneous page** (Gamification) — for settings that span events.
+- **Visualizers page** (Live Effects) — the spectrum visualizer as a card+rail unit, with Icon Glow and Sidebar Glow graduated out of Experimental.
+- **Chip list editor** — `UpsChip` plus add/remove commands over the existing comma-joined `ExternalAudioExcludedApps` string. Storage, its default, `SettingsService`'s migration and the split in `UniPlaySong.cs` are all unchanged; this is a view over the setting.
+- **`SelectedControlUpDetectJingle` is reachable.** The setting existed and `JingleService` honoured it, but ControlUp's page hardcoded the sound's name and offered no picker.
+
+### Fixed
+
+- **`ApplyLiveEffectsToJingles` was gated by the wrong toggle.** It sat inside Library Events' Completed block with `IsEnabled` bound to `EnableCompletionCelebration`, so switching off the Completed fanfare disabled a setting that also governs the Abandoned jingle. Of the ten `JingleEvent` values only `Completion` and `Abandoned` reach the effects-capable path — the rest route through `IsExternalNotificationEvent` to a plain SDL2 player.
+- **Achievement rarity rows were dead in two of three packs.** Every field was gated on `AchievementSoundPack == Custom`. The rows now report what each rarity will actually play, including the silent fallbacks: a theme missing a rarity, a blank custom path, and a path pointing at a deleted file all resolve to the PA Starter Pack.
+- **`EnableAchievementSound` was labelled "(default / fallback)"**, describing the fallback sound while acting as the feature's master gate — `JingleService` returns before the pack chain runs.
+- **Radio Mode's `CustomRotation` and `CompletionStatusPool` gave no way to see or set their pools.** They read `CustomRotationGameIds` and `DefaultMusicStatusPoolIds`, both edited on Default Music; the options now carry the live summary and name that page.
+- **Toast toggles used `UpsToggleChildFlush`**, which indents 24px *and* swaps to the sub-toggle palette, so a toast read as one more sound option.
+- **Section bars overriding `Margin`** lost the 10px `UpsSectionBar` puts beneath every bar — WPF replaces the whole margin, there is no per-side override.
+- **Toggles carrying `Margin="0,5"`** on top of `UpsToggle`'s own spacing pushed their hints away from the labels they explain (9 sites).
+
+### Performance
+
+- Removed a nested `Effect` from the visualizer rail. An `Effect` renders its subtree to an intermediate surface, which both stalled scrolling and disabled ClearType inside cards; `RenderOptions.ClearTypeHint` restores text sharpness.
+
 ## [1.7.4] - 2026-08-15
 
 ### Fixed

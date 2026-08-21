@@ -1,0 +1,103 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.TriggerMethodsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The old "Play Methods" block. Every setting here answers the same question — which
+         games get their own music — and every one of them falls through to default music
+         when it does not match, which is why Default Music is its own page next door. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Trigger Rules" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Conditions that UPS honors to trigger music for your library. When conditions can't be honored, UPS may defer to default music."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Game Selection Music" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Installed Games Only"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.MusicOnlyForInstalledGames}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Installed games will play its game music files. Uninstalled games stays silent or use Default music (if enabled)."/>
+
+            <CheckBox Content="Only on explicit selection (Fullscreen Only)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.PlayOnlyOnGameSelect}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Game music waits until you press A on a game to explicitly open its details view. Otherwise, silence or Default music (if enabled) will play when hovering your library grid."/>
+
+            <!-- Collapsed: three ways to narrow the same thing, and most setups use none of
+                 them. Leaving them open pushes Radio Mode below the fold. -->
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Match Filters" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+                    <CheckBox Content="Nostalgia Mode"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.NostalgiaMode}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Game music only plays for games marked with a certain playing status. Example: Select &quot;Completed&quot; to hear only the games you marked Complete on Playnite."/>
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
+                                IsEnabled="{Binding Settings.NostalgiaMode}">
+                        <Button Style="{StaticResource UpsButton}" Content="Select statuses..."
+                                Command="{Binding SelectNostalgiaStatusesCommand}" Margin="0,0,12,0"/>
+                        <TextBlock Text="{Binding NostalgiaStatusSummary}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <CheckBox Content="Game property filter"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.GamePropFilterEnabled}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Game music only for the platforms, genres or sources you pick — a game matching any one of them qualifies. Select &quot;PC&quot; to hear music only while browsing PC games."/>
+                    <StackPanel Margin="32,0,0,14" IsEnabled="{Binding Settings.GamePropFilterEnabled}">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Style="{StaticResource UpsButton}" Content="Platforms..." Width="104"
+                                    Command="{Binding SelectGamePropFilterPlatformsCommand}"/>
+                            <TextBlock Text="{Binding GamePropFilterPlatformSummary}"
+                                       Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Style="{StaticResource UpsButton}" Content="Genres..." Width="104"
+                                    Command="{Binding SelectGamePropFilterGenresCommand}"/>
+                            <TextBlock Text="{Binding GamePropFilterGenreSummary}"
+                                       Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource UpsButton}" Content="Sources..." Width="104"
+                                    Command="{Binding SelectGamePropFilterSourcesCommand}"/>
+                            <TextBlock Text="{Binding GamePropFilterSourceSummary}"
+                                       Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <CheckBox Content="Playnite Filter Mode"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.FilterModeEnabled}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Game music only while one of Playnite's own filter presets is active. Make a preset called &quot;RPGs&quot; and music plays only while it is applied. On &quot;All Games&quot; filter, everything is silent or falls through to default music."/>
+
+                </StackPanel>
+            </Expander>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

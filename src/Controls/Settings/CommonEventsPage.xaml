@@ -1,0 +1,127 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.CommonEventsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The system and window-focus halves of the old Pauses tab. External audio is its own page:
+         it carries a limitation warning, a debounce slider and an exclusion list, and that bulk
+         buried the plain on/off pauses that most people come here for. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Common Events" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="When music should pause on its own."/>
+
+            <!-- Not collapsible, deliberately. Pause-on-game-launch is the setting people open
+                 this page for, and the warning under it is the one that most needs to be seen.
+                 A section worth hiding is one you configure once; this is not that. -->
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Playnite Events" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <StackPanel>
+
+                    <CheckBox Content="Pause on game launch"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnGameStart}"/>
+                    <TextBlock Style="{StaticResource UpsHintTight}"
+                               Text="Music fades out as soon as you click Play, and resumes when the game closes. Compatible with the Splash Screen plugin."/>
+                    <TextBlock Style="{StaticResource UpsDangerNote}"
+                               Text="Keep this on to ensure normal plugin behaviour. If disabled, UPS music keeps playing in the background while your game runs."/>
+
+                    <CheckBox Content="Except Radio Mode (Radio Plays Through Games, PS4-Style)"
+                              Style="{StaticResource UpsToggleChild}"
+                              IsChecked="{Binding Settings.RadioPlaysThroughGames}"/>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="Radio Mode keeps music playing while a game runs, PS4-style. Applies to a Default music pool source or Spotify mode. Game select music remains paused."/>
+
+            </StackPanel>
+
+            <!-- Set-once settings, so these two fold away. -->
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="System Events" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+                    <CheckBox Content="Pause when Windows is locked"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnSystemLock}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses on Win+L, and resumes when you unlock and sign back in."/>
+
+                    <CheckBox Content="Pause when idle"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnIdle}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses after a duration with no keyboard or mouse input, and resumes on the next one. Does not apply to Gamepad input."/>
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,12"
+                                IsEnabled="{Binding Settings.PauseOnIdle}">
+                        <TextBlock Text="Idle timeout" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                        <Slider Minimum="1" Maximum="60" Width="220" VerticalAlignment="Center"
+                                Value="{Binding Settings.IdleTimeoutMinutes}"
+                                TickFrequency="5" IsSnapToTickEnabled="False"/>
+                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                   Text="{Binding Settings.IdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Window Focus" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+                    <CheckBox Content="Pause when minimized"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnMinimize}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses when Playnite is minimized to the taskbar, and resumes when it is restored."/>
+
+                    <CheckBox Content="Pause when in the system tray"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseWhenInSystemTray}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses while Playnite is hidden in the tray, and resumes when it is restored."/>
+
+                    <CheckBox Content="Pause when Playnite loses focus"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Pauses when you switch to another application, and resumes when Playnite comes back."/>
+
+                    <CheckBox Content="Stay paused after focus returns"
+                              Style="{StaticResource UpsToggleChild}"
+                              IsChecked="{Binding Settings.FocusLossStayPaused}"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="Music will not resume on its own — manually press play when you want it back."/>
+
+                    <CheckBox Content="Ignore brief focus loss (alt-tab)"
+                              Style="{StaticResource UpsToggleChild}"
+                              IsChecked="{Binding Settings.FocusLossIgnoreBrief}"
+                              IsEnabled="{Binding Settings.PauseOnFocusLoss}"/>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="Detects the Windows OS alt-tab overlay and only pauses if you actually switch away. Aborted alt-tabs are ignored."/>
+
+                </StackPanel>
+            </Expander>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,111 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.StatisticsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Statistics" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="What is actually in your music library, and where the space is going."/>
+
+            <!-- No section wrapper. The whole page is one read-only readout, so a collapsible
+                 header would only offer to hide the single thing the page exists to show -
+                 and the page title already names it. -->
+
+            <!-- Row 1: Core metrics -->
+            <UniformGrid Columns="4" Margin="0,0,0,5">
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsTotalSongs}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Total Songs" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsTotalSize}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Total Size of Songs" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsGamesWithMusic}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <TextBlock Text="Games in Library with Music" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsAvgSongsPerGame}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Average #Songs / Game" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Row 2: Audio metrics (populated by background scan) -->
+            <UniformGrid Columns="3" Margin="0,0,0,10">
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsAvgSongLength}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Avg Song Length" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsTotalPlaytime}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Total Playtime" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsId3Coverage}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Songs With ID3 Tags" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Top Games by Song Count -->
+            <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Top Games by Song Count" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsTopGames}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Song Format Distribution -->
+            <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Song Format Distribution" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsFormatBreakdown}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Song Bitrate Distribution -->
+            <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Song Bitrate Distribution" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsBitrateDistribution}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Reducible Track Size (teal/cyan accent — actionable insight) -->
+            <Border Background="#E60D2222" BorderBrush="#2D8B8B" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Reducible Track Size" FontSize="11" FontWeight="SemiBold" Foreground="#5ECECE" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsReducibleSpace}" FontSize="11" Foreground="#4AABAB" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

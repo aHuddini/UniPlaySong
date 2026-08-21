@@ -1,0 +1,60 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.ToolsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The former Setup tab. Deliberately has no Reset: these are machine-specific paths the user
+         had to go and find, not preferences, which is also why the group reset preserves them. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Tools" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Point UniPlaySong at the external tools it needs."/>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="yt-dlp" Style="{StaticResource UpsCardTitle}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.YtDlpPath}" Width="330" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
+                                Command="{Binding BrowseForYtDlpFile}"/>
+                        <TextBlock Text="{Binding YtDlpStatus}" Foreground="{Binding YtDlpStatusBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                               Text="Required for downloading music. Do not forget to also put deno.exe in the same folder as yt-dlp.exe."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="FFmpeg" Style="{StaticResource UpsCardTitle}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.FFmpegPath}" Width="330" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
+                                Command="{Binding BrowseForFFmpegFile}"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding FfmpegStatus}" VerticalAlignment="Center"
+                                   Margin="12,0,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                               Text="Required for downloads (audio extraction), and for normalization, conversion, silence trim, precise trim, audio repair and trailer audio."/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

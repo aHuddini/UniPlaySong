@@ -1,0 +1,129 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.MusicModePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The two modes that change what playback IS, rather than tuning it. Preview Mode still
+         follows your game selection and only shortens each track; Radio Mode stops following
+         selection at all. Preview first because it is the smaller departure. Neither folds:
+         Radio Mode silently overrides settings on the pages around it, and a fold would let
+         someone tune rules it is ignoring. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Music Mode" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Modes that change how UniPlaySong plays, rather than which song it picks."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Preview Mode" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Enable Preview Mode"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.EnablePreviewMode}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Game music restarts once it hits a certain duration, so you hear the opening of a track rather than all of it."/>
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
+                        IsEnabled="{Binding Settings.EnablePreviewMode}">
+                <TextBlock Text="Preview length" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="15" Maximum="300" Width="220" VerticalAlignment="Center"
+                        Value="{Binding Settings.PreviewDuration}"
+                        SmallChange="5" LargeChange="15" TickFrequency="15"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.PreviewDuration, StringFormat='{}{0} s'}"/>
+            </StackPanel>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Radio Mode" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Enable Radio Mode"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.RadioModeEnabled}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Ignores game selection entirely and plays continuously from one pool, like background radio. Overrides both game music and default music while it is on."/>
+
+            <StackPanel Margin="32,0,0,0" IsEnabled="{Binding Settings.RadioModeEnabled}">
+
+                <RadioButton Content="Full Library (every song you have)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FullLibrary}"/>
+
+                <RadioButton Content="Custom folder (Curated Playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"/>
+                <StackPanel Orientation="Horizontal" Margin="24,2,0,0">
+                    <TextBox Style="{StaticResource UpsTextBox}" Width="330" Margin="0,0,10,0"
+                             Text="{Binding Settings.RadioCustomFolderPath}" IsReadOnly="True"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Width="86"
+                            Command="{Binding BrowseForRadioCustomFolder}"/>
+                </StackPanel>
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                           Text="Shuffles any audio files in that folder. Left empty, it falls back to your Default Music folder."/>
+
+                <RadioButton Content="A handpicked set of games (playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"/>
+                <StackPanel Margin="24,2,0,10">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,2"
+                               Text="Shuffles the games you picked as the rotation pool."/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding RotationGameCountText}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0" VerticalAlignment="Center"
+                                   Text="&#x2014; choose them under Playback &#x2192; Default Music."/>
+                    </StackPanel>
+                </StackPanel>
+
+                <RadioButton Content="By completion status (nostalgia playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"/>
+                <StackPanel Margin="24,2,0,10">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,2"
+                               Text="Shuffles every game marked with the play statuses you picked."/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding DefaultMusicStatusPoolSummary}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0" VerticalAlignment="Center"
+                                   Text="&#x2014; choose them under Playback &#x2192; Default Music."/>
+                    </StackPanel>
+                </StackPanel>
+
+                <RadioButton Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                             Command="{Binding SetRestartRequired}"
+                             CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Official Spotify logomark. Brand green #1DB954, geometry from resources. -->
+                        <Path Data="{StaticResource SpotifyLogoGeometry}"
+                              Fill="#1DB954" Stretch="Uniform"
+                              Width="15" Height="15" Margin="0,0,7,0"
+                              VerticalAlignment="Center"/>
+                        <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center" FontSize="12.5"/>
+                    </StackPanel>
+                </RadioButton>
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                           Text="Uses Spotify as continuous background music instead of a UPS pool. UPS pauses and resumes it on game launch, video, focus loss and lock. Restart required for this option to take effect."/>
+
+            </StackPanel>
+
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                       Text="Radio Mode and Default Music share one rotation and one status set, so editing either on the Default Music page changes both."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

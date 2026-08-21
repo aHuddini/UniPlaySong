@@ -1,0 +1,123 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.MigrationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+            <TextBlock Text="Music Migration" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Transfer music files between PlayniteSound and UniPlaySong extensions." Style="{StaticResource UpsPageSubtitle}"/>
+
+            <TextBlock Text="Note: Only audio files will be migrated."
+                       Style="{StaticResource UpsWarningFlush}"
+                       Margin="0,0,0,20"/>
+
+            <!-- Migration Summary -->
+            <Border Style="{StaticResource UpsCardNavy}">
+                <StackPanel>
+                    <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Current Status" Style="{StaticResource UpsSectionTitle}"/></Border>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="PlayniteSound" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding MigrationPlayniteSoundStatus}"
+                                       Style="{StaticResource UpsHintFlush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="UniPlaySong" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding MigrationUniPlaySongStatus}"
+                                       Style="{StaticResource UpsHintFlush}"/>
+                        </StackPanel>
+                    </Grid>
+                    <Button Style="{StaticResource UpsButton}" Content="Refresh Status"
+                            HorizontalAlignment="Left"
+                            Margin="0,10,0,0"
+                            Padding="10,5"
+                            Command="{Binding RefreshMigrationStatusCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Directory Info — moved above the actions: knowing where files live is the
+                 context you want BEFORE choosing an import or export, not after. -->
+            <StackPanel Margin="0,0,0,20">
+                <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Directory Locations" Style="{StaticResource UpsSectionTitle}"/></Border>
+                <TextBlock Style="{StaticResource UpsHintFlush}">
+                    <Run FontWeight="SemiBold">PlayniteSound:</Run>
+                    <Run Text=" %APPDATA%\Playnite\ExtraMetadata\Games\{GameId}\Music Files\"/>
+                </TextBlock>
+                <TextBlock Style="{StaticResource UpsHintFlush}">
+                    <Run FontWeight="SemiBold">UniPlaySong:</Run>
+                    <Run Text=" %APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\"/>
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Import actions, collapsed by default: one-off migrations, not settings. -->
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Import" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Style="{StaticResource UpsCardTitle}" Text="Import from PlayniteSound" Margin="0,0,0,10"/>
+                        <TextBlock Text="Copy music files from PlayniteSound to UniPlaySong. Use this if you just want to test UniPlaySong out."
+                                   Style="{StaticResource UpsHintFlush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+                        <Button Style="{StaticResource UpsButton}" Content="Import from PlayniteSound"
+                                Command="{Binding MigrateFromPlayniteSoundCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource UpsCardTitle}" Text="Import from PlayniteSound &amp; Delete" Margin="0,0,0,10"/>
+                        <TextBlock Text="Import all music from PlayniteSound to UniPlaySong, then DELETE the original PlayniteSound files. Use this for a permanent migration."
+                                   Style="{StaticResource UpsHintFlush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,5"/>
+                        <TextBlock Text="WARNING: Original PlayniteSound music files will be permanently deleted after import!"
+                                   Style="{StaticResource UpsDangerNoteFlush}"
+                                   Margin="0,0,0,10"/>
+                        <Button Style="{StaticResource UpsButton}" Content="Import &amp; Delete PlayniteSound Music"
+                                Command="{Binding MigrateFromPlayniteSoundAndDeleteCommand}"
+                                Padding="15,8"
+                                HorizontalAlignment="Left"
+                                Background="#664422"
+                                Foreground="White"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Export" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock Style="{StaticResource UpsCardTitle}" Text="Export to PlayniteSound" Margin="0,0,0,10"/>
+                    <TextBlock Text="Copy music files from UniPlaySong to PlayniteSound. Use this if you want to migrate back to PlayniteSound."
+                               Style="{StaticResource UpsHintFlush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+                    <Button Style="{StaticResource UpsButton}" Content="Export to PlayniteSound"
+                            Command="{Binding MigrateToPlayniteSoundCommand}"
+                            Padding="15,8"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

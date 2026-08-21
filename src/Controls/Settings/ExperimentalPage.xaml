@@ -1,0 +1,190 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.ExperimentalPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+            <TextBlock Text="Experimental Features" Style="{StaticResource UpsPageTitle}"/>
+            <Border Style="{StaticResource UpsCardWarn}" Margin="0,5,0,20">
+                <TextBlock Style="{StaticResource UpsWarningFlush}">
+                    <Run FontWeight="SemiBold" Text="Warning:"/>
+                    <Run Text=" These features are experimental and under active development. They may not work correctly, cause minor audio glitches, or behave unexpectedly. They may be changed or removed in future versions. Enable at your own discretion."/>
+                </TextBlock>
+            </Border>
+
+            <!-- Release Audio When Idle (issue #81 — moved from General tab in v1.5.4) -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Release Audio When Idle" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <StackPanel Orientation="Horizontal" Margin="0,8">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Release after: " VerticalAlignment="Center" Width="100"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                           VerticalAlignment="Center"
+                           Width="25"
+                           Margin="0,0,3,0"/>
+                <TextBlock Style="{StaticResource UpsLabel}" Text="min" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <Slider Minimum="0" Maximum="60"
+                        Value="{Binding Settings.IdleAudioDeviceTeardownMinutes}"
+                        Width="200"
+                        IsSnapToTickEnabled="True"
+                        SmallChange="1"
+                        LargeChange="5"
+                        TickFrequency="1"
+                        TickPlacement="None"
+                        AutoToolTipPlacement="TopLeft"/>
+            </StackPanel>
+            <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. 0 disables idle release. UniPlaySong also releases its audio device immediately when you lock the PC or it suspends (regardless of this setting)."
+                       Style="{StaticResource UpsHintFlush}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,5"/>
+            <TextBlock Text="&#x26A0; Experimental: still being ironed out — behavior may change."
+                       Style="{StaticResource UpsWarning}"/>
+
+            <!-- Audio Buffer Size (v1.7.2) -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Audio Buffer Size" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <StackPanel Orientation="Horizontal" Margin="0,8">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Buffer: " VerticalAlignment="Center" Width="100"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" ItemsSource="{Binding AudioBufferOptions}"
+                          ItemTemplate="{StaticResource UpsLabelTemplate}"
+                          SelectedValuePath="Samples"
+                          SelectedValue="{Binding Settings.AudioBufferSamples}"
+                          Width="340"/>
+            </StackPanel>
+            <TextBlock Text="How much audio UniPlaySong prepares ahead of the speakers. A smaller buffer starts sounds sooner — most noticeable on short notification sounds like achievement and controller dings — but gives the audio thread less headroom, so a busy machine may crackle or drop out. Increase it if you hear stuttering; leave it at 2048 if playback is fine."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,5"/>
+            <TextBlock Text="&#x26A0; Takes effect after restarting Playnite — the buffer is fixed when the audio device opens."
+                       Style="{StaticResource UpsWarning}"/>
+
+            <!-- Download Notification Sound -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Download Notifications" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Play sound when downloads complete"
+                      IsChecked="{Binding Settings.PlaySoundOnDownloadComplete}"
+                      Margin="0,5,0,5"/>
+            <TextBlock Text="Briefly pauses music and plays a system notification sound when any music download finishes (single game, batch, auto-download, Download From URL)."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,10"/>
+
+            <!-- Song Progress Indicator -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Song Progress Indicator" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show song progress bar (Desktop mode)"
+                      IsChecked="{Binding Settings.ShowProgressBar}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+                      Margin="0,5,0,5"/>
+            <StackPanel Orientation="Horizontal" Margin="20,5,0,5"
+                        IsEnabled="{Binding Settings.ShowProgressBar}">
+                <TextBlock Text="Position:" VerticalAlignment="Center" Style="{StaticResource UpsHint}"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.ProgressBarPosition, Converter={StaticResource ProgressBarPositionConverter}}"
+                          Margin="8,0,0,0" Width="170">
+                    <ComboBoxItem Content="After skip button"/>
+                    <ComboBoxItem Content="After visualizer"/>
+                    <ComboBoxItem Content="After now playing"/>
+                    <ComboBoxItem Content="Below now playing"/>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHint}">
+                <Run Text="Thin bar showing song playback position."/>
+                <Run Text="Requires a Playnite restart to take effect."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
+
+            <!-- Peak Meter -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Peak Meter (VU Display)" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show Peak Meter in top panel"
+                      IsChecked="{Binding Settings.ShowPeakMeter}"
+                      Margin="0,5,0,5"/>
+            <TextBlock Text="Real-time L/R audio level meter with green/yellow/red LED-style bars. Requires NAudio player (auto-enabled). May impact performance on some systems."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,5"/>
+            <TextBlock Text="&#x26A0; Experimental: This feature may cause lag on some systems."
+                       Style="{StaticResource UpsWarning}"/>
+
+            <!-- Media Key Control -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Media Key Control" Style="{StaticResource UpsSectionTitle}"/></Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Control music with keyboard media keys"
+                      IsChecked="{Binding Settings.EnableMediaKeyControl}"
+                      Margin="0,5,0,5"/>
+            <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,10"/>
+
+            <!-- NAudio Fade Curve Tuning -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="NAudio Fade Curves" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <TextBlock Text="Only applies when Live Effects or Visualizer is enabled (NAudio pipeline)"
+                       Style="{StaticResource UpsHintFlush}" FontStyle="Italic" Margin="0,0,0,8"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeInCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                          Width="150">
+                    <ComboBoxItem Content="Linear"/>
+                    <ComboBoxItem Content="Quadratic"/>
+                    <ComboBoxItem Content="Cubic"/>
+                    <ComboBoxItem Content="S-Curve"/>
+                    <ComboBoxItem Content="Logarithmic"/>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-out curve:" VerticalAlignment="Center" Width="110"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeOutCurve, Converter={StaticResource FadeCurveTypeConverter}}"
+                          Width="150">
+                    <ComboBoxItem Content="Linear"/>
+                    <ComboBoxItem Content="Quadratic"/>
+                    <ComboBoxItem Content="Cubic"/>
+                    <ComboBoxItem Content="S-Curve"/>
+                    <ComboBoxItem Content="Logarithmic"/>
+                </ComboBox>
+            </StackPanel>
+
+            <TextBlock Text="Linear: constant rate. Quadratic: moderate curve. Cubic: aggressive perceptual decay (default fade-out). S-Curve: gentle start/end, fast middle. Logarithmic: fast initial change, slow tail."
+                       Style="{StaticResource UpsHintFlush}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,10"/>
+
+            <!-- Auto-launch Spotify (Experimental) -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Auto-launch Spotify (Experimental)" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-launch Spotify on startup if not running"
+                      IsChecked="{Binding Settings.AutoLaunchSpotifyOnStartup}"
+                      Margin="0,5,0,0"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,8"
+                       Text="When Spotify is your Radio Mode or Default Music source and the Spotify desktop app isn't running, UniPlaySong opens it on startup so music can begin. Only acts when Spotify is your active source. Media controls need Spotify running."/>
+            <StackPanel Orientation="Horizontal" Margin="20,0,0,0"
+                        IsEnabled="{Binding Settings.AutoLaunchSpotifyOnStartup}">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Spotify path (optional): " VerticalAlignment="Center"/>
+                <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SpotifyExePath, UpdateSourceTrigger=PropertyChanged}"
+                         Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+                <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseSpotifyExeCommand}" Padding="10,4"/>
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,3,0,0"
+                       Text="Leave empty for standard installs (auto-detected at %APPDATA%\Spotify\Spotify.exe). For Microsoft Store or custom installs, point this at Spotify.exe or its shortcut (.lnk)."/>
+
+            <!-- Music Dashboard -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Music Dashboard" Style="{StaticResource UpsSectionTitle}"/></Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music Dashboard sidebar panel (Desktop only)"
+                      IsChecked="{Binding Settings.ShowMusicDashboard}"
+                      Margin="0,5,0,5"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,10">
+                A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
+            </TextBlock>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

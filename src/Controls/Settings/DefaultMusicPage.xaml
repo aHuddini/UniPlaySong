@@ -1,0 +1,281 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.DefaultMusicPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Nine sources, each with its own picker and caveats. They stay one flat radio list
+         rather than an expander per source: a radio group only makes sense when you can see
+         the alternatives, and folding them would hide which one is currently selected. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Default Music" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="What plays when a game has no music of its own (known as &quot;fallback&quot;). Turn it off to keep those games silent."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Behaviour" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Enable default music"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.EnableDefaultMusic}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Plays a fallback track whenever the selected game has no music files of its own."/>
+
+            <CheckBox Content="Keep the same default song during game switches (Switch Mode)"
+                      Style="{StaticResource UpsToggleChild}"
+                      IsChecked="{Binding Settings.DefaultMusicContinueSameSong}"
+                      IsEnabled="{Binding Settings.EnableDefaultMusic}"/>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="Applies to specific playback sources — Random Game, Custom Folder, Custom Rotation, Completion Status. The same song keeps playing as you browse instead of re-rolling on every game. Recommended to turn on to reduce annoyances with constant game switching."/>
+
+            <CheckBox Content="Advance to a new track when a default song ends (Loop Mode)"
+                      Style="{StaticResource UpsToggleChild}"
+                      IsChecked="{Binding Settings.RandomizeDefaultMusicOnEnd}"
+                      IsEnabled="{Binding Settings.EnableDefaultMusic}"/>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="Applies to same playback sources. On = default music rotates radio-style. Off = the current default song loops forever."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Source" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel IsEnabled="{Binding Settings.EnableDefaultMusic}">
+
+                <!-- Bundled preset -->
+                <RadioButton Content="Bundled preset"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BundledPreset}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <ComboBox Style="{StaticResource UpsComboBox}" Width="350" HorizontalAlignment="Left"
+                              ItemsSource="{Binding BundledPresets}"
+                              SelectedValue="{Binding Settings.SelectedBundledPreset}"
+                              SelectedValuePath="File"
+                              ItemTemplate="{StaticResource UpsDisplayNameTemplate}"
+                              IsEnabled="{Binding Settings.IsBundledPresetPickerEnabled}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
+                               Text="Ambient tracks that ship with UniPlaySong."/>
+                    <CheckBox Content="Pick a random preset every startup"
+                              Style="{StaticResource UpsToggleChildFlush}"
+                              IsChecked="{Binding Settings.RandomizeBundledTrackOnStartup}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
+                               Text="One preset is chosen at random each time Playnite starts and used for the whole session."/>
+                </StackPanel>
+
+                <!-- Custom file -->
+                <RadioButton Content="A music file of your own"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Style="{StaticResource UpsTextBox}" Width="316" Margin="0,0,10,0"
+                                 Text="{Binding Settings.DefaultMusicPath}" IsReadOnly="True"/>
+                        <Button Style="{StaticResource UpsButton}" Content="Browse..." Width="86" Margin="0,0,6,0"
+                                Command="{Binding BrowseForDefaultMusicFile}"/>
+                        <Button Style="{StaticResource UpsButton}" Content="Download..." Width="94"
+                                Command="{Binding DownloadDefaultMusic}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
+                               Text="Any MP3, WAV, OGG or FLAC file."/>
+                </StackPanel>
+
+                <!-- v1.5.0: "Use Playnite native theme music" radio removed. The
+                     DefaultMusicSource.NativeTheme enum value is marked [Obsolete] and silently
+                     migrated to BundledPreset on settings load. UPS now ships Shades of Orange
+                     (the same track Playnite's default Fullscreen theme uses) as a bundled
+                     preset, avoiding the file-handle conflict UPS had when reading Playnite's
+                     installed theme directly. See NOTICES.txt for attribution. -->
+
+                <!-- Active theme's UPS audio file -->
+                <RadioButton Content="The active theme's UPS audio file"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=ActiveThemeMusic}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
+                               Text="Plays UPS_BackgroundAudio.{mp3,ogg,wav,flac} from the active Fullscreen theme's audio folder."/>
+
+                    <!-- State A: ready -->
+                    <Border Style="{StaticResource UpsCardGood}"
+                            Visibility="{Binding IsActiveThemeReady, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Style="{StaticResource UpsBody}" Margin="0">
+                            <Run Text="Detected — UPS_BackgroundAudio in "/><Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- State B: can be created from the theme's own background file -->
+                    <Border Style="{StaticResource UpsCardWarn}"
+                            Visibility="{Binding IsActiveThemeCanBeCreated, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource UpsBody}">
+                                <Run Text="Your active theme ("/><Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=") has no UPS audio file, but it does ship a background file that Playnite uses for its own player."/>
+                            </TextBlock>
+                            <!-- Doubled underscore: a single _ in Button.Content is an access-key
+                                 mnemonic and gets eaten, which turned this into UPSBackgroundAudio. -->
+                            <Button Style="{StaticResource UpsButtonPrimary}" HorizontalAlignment="Left" Margin="0,8,0,6"
+                                    Content="Create UPS__BackgroundAudio from it"
+                                    Command="{Binding CreateUpsAudioFromBackgroundCommand}"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                                       Text="Makes a copy using the UPS filename. A theme update can overwrite it — run this again if the music goes quiet after running this button."/>
+                            <!-- Result of a copy attempt. Hidden until the button is clicked. -->
+                            <TextBlock Margin="0,6,0,0"
+                                       Text="{Binding ActiveThemeCopyResultMessage}"
+                                       Visibility="{Binding ActiveThemeCopyResultMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource UpsHintFlush}">
+                                        <Setter Property="Foreground" Value="{StaticResource UpsOn}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ActiveThemeCopyResultIsError}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource UpsDanger}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- State C: theme ships neither file -->
+                    <Border Style="{StaticResource UpsCardDanger}"
+                            Visibility="{Binding IsActiveThemeUnsupported, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Style="{StaticResource UpsBody}" Margin="0">
+                            <Run Text="Not supported by "/><Run Text="{Binding ActiveThemeStatus.ThemeName, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=". Ask its developer to add UPS_BackgroundAudio.{mp3,ogg,wav,flac} to the theme's audio folder, or pick another source."/>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- State D: no fullscreen theme to resolve against (Desktop, or lookup failed) -->
+                    <Border Style="{StaticResource UpsCard}"
+                            Visibility="{Binding IsActiveThemeNotApplicable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Style="{StaticResource UpsBody}" Margin="0"
+                                   Text="Applies in Fullscreen mode. Desktop Mode also pulls from the Fullscreen theme. UPS resolves the file against whichever theme is active."/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Random game -->
+                <RadioButton Content="A random game from your library"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=RandomGame}"/>
+                <TextBlock Style="{StaticResource UpsHint}" Margin="32,2,0,6"
+                           Text="Sources a default song at random by scanning existing game music you have in your library."/>
+
+                <!-- Custom folder -->
+                <RadioButton Content="A folder of your own (playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Style="{StaticResource UpsTextBox}" Width="330" Margin="0,0,10,0"
+                                 Text="{Binding Settings.DefaultMusicFolderPath}" IsReadOnly="True"/>
+                        <Button Style="{StaticResource UpsButton}" Content="Browse..." Width="86"
+                                Command="{Binding BrowseForDefaultMusicFolder}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
+                               Text="Sources and shuffles any audio files in that folder."/>
+                </StackPanel>
+
+                <!-- Custom game rotation -->
+                <RadioButton Content="A handpicked set of games (playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource UpsButton}" Content="Select games..." Width="126"
+                                Command="{Binding SelectRotationGames}"/>
+                        <TextBlock Text="{Binding RotationGameCountText}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding RotationGameNames}" Margin="0,5,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource UpsAccent}" Margin="2,1"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
+                               Text="Sources the music from the games you picked as the rotation pool."/>
+                </StackPanel>
+
+                <!-- Completion status pool -->
+                <RadioButton Content="By completion status (nostalgia playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource UpsButton}" Content="Select statuses..." Width="140"
+                                Command="{Binding SelectDefaultMusicStatusPoolCommand}"/>
+                        <TextBlock Text="{Binding DefaultMusicStatusPoolSummary}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,4"
+                               Text="Sources the default music from every game marked with play statuses. Pick &quot;Completed&quot; and you only ever hear games you marked &quot;Completed&quot; in Playnite."/>
+                </StackPanel>
+
+                <!-- Trailer audio (graduated from Experimental in v1.5.8) -->
+                <RadioButton Content="Audio ripped from the game's trailer"
+                             Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsEnabled="{Binding IsTrailerAudioEnabled}"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DeferToTrailerAudio}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                               Text="FFmpeg &amp; EML trailers required. For games where you have no music, pulls the audio out of the ExtraMetadataLoader video trailer and plays that. The first play per game may be delayed. Microtrailers will keep UPS silent."/>
+                    <Border Style="{StaticResource UpsCardWarn}">
+                        <TextBlock Style="{StaticResource UpsBody}" Margin="0"
+                                   Text="Note: In ExtraMetadataLoader's own settings, turn on &quot;Play videos initially without sound&quot; to ensure normal UPS functionality."/>
+                    </Border>
+                    <TextBlock Style="{StaticResource UpsDangerNoteFlush}" Margin="0,0,0,6"
+                               Text="FFmpeg is not set — add its path under Setup → Tools."
+                               Visibility="{Binding TrailerAudioFFmpegMissing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
+
+                <!-- Spotify (graduated from Experimental in v1.5.8) -->
+                <RadioButton Style="{StaticResource UpsRadio}"
+                             GroupName="DefaultMusicSource"
+                             IsChecked="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
+                             Command="{Binding SetRestartRequired}"
+                             CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Official Spotify logomark. Brand green #1DB954, geometry from resources. -->
+                        <Path Data="{StaticResource SpotifyLogoGeometry}"
+                              Fill="#1DB954" Stretch="Uniform"
+                              Width="15" Height="15" Margin="0,0,7,0"
+                              VerticalAlignment="Center"/>
+                        <TextBlock Text="Spotify desktop app" VerticalAlignment="Center" FontSize="12.5"/>
+                    </StackPanel>
+                </RadioButton>
+                <StackPanel Margin="24,2,0,0">
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
+                               Text="For games with no music available, Spotify app music is used as fallback. Spotify must be open on Desktop. Playnite Restart required."/>
+                    <CheckBox Content="Skip to a new Spotify track on each no-music game (Switch Mode)"
+                              Style="{StaticResource UpsToggleChildFlush}"
+                              IsChecked="{Binding Settings.SpotifySkipOnGap}"
+                              IsEnabled="{Binding Settings.DefaultMusicSourceOption, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}"
+                               Text="A fresh Spotify song plays every time you hover on a game with no music. Turn off to keep the same song on switch."/>
+                </StackPanel>
+
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

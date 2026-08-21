@@ -1,0 +1,182 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.AudioEditingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Audio Editing" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Convert, normalize and rename. Everything here runs on demand, never during playback."/>
+
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                       Text="FFmpeg is required to run these functions."/>
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Format Conversion" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Target Format:" VerticalAlignment="Center" Width="110"/>
+                    <ComboBox Style="{StaticResource UpsComboBox}" Width="80" Margin="0,0,15,0"
+                              SelectedValue="{Binding Settings.ConversionTargetFormat}"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="OGG" Tag="ogg"/>
+                        <ComboBoxItem Content="MP3" Tag="mp3"/>
+                    </ComboBox>
+                    <TextBlock Style="{StaticResource UpsLabel}" Text="Quality:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <ComboBox Style="{StaticResource UpsComboBox}" Width="100" Margin="0,0,15,0"
+                              SelectedValue="{Binding Settings.ConversionBitrate}"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="128 kbps" Tag="128"/>
+                        <ComboBoxItem Content="192 kbps" Tag="192"/>
+                        <ComboBoxItem Content="256 kbps" Tag="256"/>
+                    </ComboBox>
+                    <CheckBox Style="{StaticResource UpsToggle}" Content="Keep originals as backup"
+                              IsChecked="{Binding Settings.ConversionKeepOriginals}"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10">
+                    <Button Style="{StaticResource UpsButton}" Content="Convert All Music Files"
+                            Width="220"
+                            Margin="0,0,10,0"
+                            Command="{Binding ConvertAllMusicCommand}"/>
+                    <TextBlock Text="Convert all music files in your library to the selected format and quality."
+                               VerticalAlignment="Center"
+                               Style="{StaticResource UpsHintFlush}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Normalization" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Target Loudness: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.NormalizationTargetLoudness}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="LUFS (EBU R128: -16 LUFS)"
+                                       VerticalAlignment="Center"
+                                       Style="{StaticResource UpsHint}"/>
+                        </StackPanel>
+                        <TextBlock Text="Target integrated loudness. Industry standard is -16 LUFS. Range: -30 to -10 LUFS"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="32,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="True Peak Limit: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.NormalizationTruePeak}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="dBTP (EBU R128: -1.5 dBTP)"
+                                       VerticalAlignment="Center"
+                                       Style="{StaticResource UpsHint}"/>
+                        </StackPanel>
+                        <TextBlock Text="True peak limit to prevent clipping. Industry standard is -1.5 dBTP. Range: -3.0 to 0.0 dBTP"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="32,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Loudness Range: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.NormalizationLoudnessRange}"
+                                     Width="60"
+                                     Margin="0,0,10,0"/>
+                            <TextBlock Text="LU (EBU R128: 11 LU)"
+                                       VerticalAlignment="Center"
+                                       Style="{StaticResource UpsHint}"/>
+                        </StackPanel>
+                        <TextBlock Text="Loudness range target. Industry standard is 11 LU. Range: 1 to 20 LU"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="32,0,0,5"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Audio Codec: " VerticalAlignment="Center" Width="150"/>
+                            <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.NormalizationCodec}"
+                                      SelectedValuePath="Tag"
+                                      Width="220"
+                                      Margin="0,0,10,0">
+                                <ComboBoxItem Content="Auto (match input format)" Tag="auto"/>
+                                <ComboBoxItem Content="MP3 (libmp3lame)" Tag="libmp3lame"/>
+                                <ComboBoxItem Content="OGG Vorbis (libvorbis)" Tag="libvorbis"/>
+                                <ComboBoxItem Content="FLAC (lossless)" Tag="flac"/>
+                                <ComboBoxItem Content="WAV (uncompressed)" Tag="pcm_s16le"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock Text="Auto detects the correct codec from the input file format. Select a specific codec to force all output to that format."
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="32,0,0,10"/>
+
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Do not preserve originals when normalizing (space saver)"
+                                  IsChecked="{Binding Settings.DoNotPreserveOriginals}"/>
+                        <TextBlock Style="{StaticResource UpsHintTight}"
+                                   Text="Normalizes each file in place and replaces it, instead of moving the original into the PreservedOriginals folder first."/>
+                        <TextBlock Style="{StaticResource UpsWarning}"
+                                   Text="Saves disk space, but the originals cannot be restored afterwards."/>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="File Naming" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                        <TextBlock Text="Normalized files are always created with a suffix (e.g., 'song-normalized.mp3'), preserving your original files. Original files are never modified or deleted."
+                                   Style="{StaticResource UpsHintFlush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Normalization Suffix: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.NormalizationSuffix}"
+                                     Width="120"
+                                     Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Suffix to append to normalized file names (default: '-normalized'). Example: 'song.mp3' becomes 'song-normalized.mp3'"
+                                   Style="{StaticResource UpsHintFlush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Style="{StaticResource UpsLabel}" Text="Silence Trim Suffix: " VerticalAlignment="Center" Width="150"/>
+                            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.TrimSuffix}"
+                                     Width="120"
+                                     Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Suffix to append to silence-trimmed file names (default: '-trimmed'). Example: 'song.mp3' becomes 'song-trimmed.mp3'"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"
+                                   Margin="32,0,0,10"/>
+
+                        <CheckBox Style="{StaticResource UpsToggle}" Content="Skip Already Normalized Files"
+                                  IsChecked="{Binding Settings.SkipAlreadyNormalized}"/>
+                        <TextBlock Style="{StaticResource UpsHint}"
+                                   Text="Files that already carry the normalization suffix are skipped during bulk operations. Useful when downloading new music."/>
+
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

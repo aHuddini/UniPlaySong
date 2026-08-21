@@ -1,0 +1,125 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.DownloadsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- How downloading is configured. What happens automatically moved to Automations. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Downloads" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Cookies and search settings. Downloading requires yt-dlp and FFmpeg tools."/>
+
+            <!-- Open by default. Every section on this page folds, so with all three shut the page
+                 opens blank and reads as broken; the cookie source is also the one people actually
+                 come here to change. -->
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Cookie Source" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                               Text="Uses your browser's YouTube login to reach audio-only streams, which roughly halves download and preview times. It counts toward your account's activity. Firefox cookies work best."/>
+
+                    <RadioButton Content="No cookies" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=None}"/>
+                    <RadioButton Content="Firefox" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Firefox}"/>
+                    <RadioButton Content="Chrome" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Chrome}"/>
+                    <RadioButton Content="Edge" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Edge}"/>
+                    <RadioButton Content="Brave" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Brave}"/>
+                    <RadioButton Content="Opera" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Opera}"/>
+                    <RadioButton Content="Custom cookies file" Style="{StaticResource UpsRadio}" GroupName="CookieMode"
+                                 IsChecked="{Binding Settings.CookieMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFile}"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="22,8,0,4">
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CustomCookiesFilePath}" Width="300" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
+                                Command="{Binding BrowseForCookiesFile}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                               Text="A cookies.txt exported from your browser."/>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Search Cache" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <CheckBox Content="Cache search results"
+                              Style="{StaticResource UpsToggle}"
+                              IsChecked="{Binding Settings.EnableSearchCache}"/>
+                    <TextBlock Style="{StaticResource UpsHint}"
+                               Text="Keeps search results so the same search is not run twice. Cached entries expire after the duration below."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,8"
+                                IsEnabled="{Binding Settings.EnableSearchCache}">
+                        <TextBlock Text="Expire after" Style="{StaticResource UpsLabel}" Margin="0,0,10,0"/>
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SearchCacheDurationDays}" Width="52" Margin="0,0,8,0"/>
+                        <TextBlock Text="days  (1–30)" Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHint}" Margin="32,0,0,10"
+                               Text="Longer means fewer searches, but new uploads take longer to appear."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="32,0,0,4">
+                        <Button Content="Clear search cache" Style="{StaticResource UpsButton}"
+                                Command="{Binding ClearSearchCache}"/>
+                        <TextBlock Text="{Binding CacheStatsText}" Style="{StaticResource UpsHint}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Search Hints" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                               Text="The hints database helps find the right soundtrack for games whose name titles search badly."/>
+
+                    <!-- OneWay is load-bearing: TwoWay here ping-ponged with the radio below via
+                         InverseBooleanConverter.ConvertBack until the UI stack overflowed (v1.6.8
+                         crash). The custom radio's TwoWay binding is the sole writer for this group. -->
+                    <RadioButton Content="Bundled database" Style="{StaticResource UpsRadio}" GroupName="HintsDatabase"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase, Converter={StaticResource InverseBooleanConverter}, Mode=OneWay}"/>
+                    <RadioButton Content="Custom database file" Style="{StaticResource UpsRadio}" GroupName="HintsDatabase"
+                                 IsChecked="{Binding Settings.UseCustomHintsDatabase}"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="22,8,0,6"
+                                IsEnabled="{Binding Settings.UseCustomHintsDatabase}">
+                        <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.CustomHintsDatabasePath, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="320" VerticalContentAlignment="Center" IsReadOnly="True" Margin="0,0,8,0"/>
+                        <Button Content="Browse…" Style="{StaticResource UpsButton}"
+                                Command="{Binding BrowseForCustomHintsDatabase}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                        <TextBlock Text="Status" Style="{StaticResource UpsLabel}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding HintsDatabaseStatus}" Style="{StaticResource UpsValue}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

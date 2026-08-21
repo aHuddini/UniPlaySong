@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.AutomationsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The automations off the old Downloads page. They are the settings that act on their own,
+         which is a different question from how downloading is configured, and they were buried
+         under the cookie and search machinery. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Automations" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Options to automate the use of certain features in UniPlaySong. Most options below require the yt-dlp and FFmpeg tools."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Library" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Automatically Download Music For Newly Added Games"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDownloadOnLibraryUpdate}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When your library updates, music is fetched for new games automatically. UPS picks the best match by album and song title."/>
+
+            <CheckBox Content="Automatically Download Music Only When A Game Is Installed"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDownloadOnGameInstall}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When a game goes from uninstalled to installed in your library and has no music yet, UPS automatically downloads music in the background."/>
+
+            <!-- Moved off Advanced → Cleanup. Cleanup is for actions you run; this fires on its
+                 own, which makes it the same kind of setting as the two downloads above. The
+                 manual sweep for music already orphaned stays on Cleanup. -->
+            <CheckBox Content="Automatically Delete A Game's Music When It Leaves The Library"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoDeleteMusicOnGameRemoval}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Removing a game from Playnite also removes its music folder, so stale music does not sit on your PC. To clear music from games already removed, use Advanced → Cleanup."/>
+
+            <!-- The same setting as General -> Tagging. Both bind the one property, so they stay in
+                 step on their own; it is surfaced twice because it is a thing UPS does unprompted
+                 on a library update, alongside the two downloads and the delete above. -->
+            <CheckBox Content="Auto-Tag Games On Library Update"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Tags each game &quot;[UPS] Has Music&quot; or &quot;[UPS] No Music&quot; whenever your library updates, so you can filter on it in Playnite. Shared with General → Tagging, where you can also tag your whole library now."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Post-Download Actions" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Automatically Normalize Downloaded Music"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoNormalizeAfterDownload}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Normalize every new download to the EBU R128 loudness standard so tracks do not jump in volume between games. Tune normalization settings in Library → Audio Editing."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Audio Editing" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <!-- The same setting as Library → Audio Editing → Normalization. Both bind the one
+                 property, so they stay in step on their own; it is surfaced twice because it
+                 decides what automatic normalization does to your files. -->
+            <CheckBox Content="Do not preserve originals when normalizing (space saver)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.DoNotPreserveOriginals}"/>
+            <TextBlock Style="{StaticResource UpsHintTight}"
+                       Text="Normalizes each file in place and replaces it, instead of moving the original into the PreservedOriginals folder first. Shared with Library → Audio Editing."/>
+            <TextBlock Style="{StaticResource UpsWarning}"
+                       Text="Saves disk space, but the originals cannot be restored afterwards."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

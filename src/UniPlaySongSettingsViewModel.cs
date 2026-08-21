@@ -1,4 +1,4 @@
-using Playnite.SDK;
+﻿using Playnite.SDK;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
@@ -85,6 +85,20 @@ namespace UniPlaySong
                     hintsService.SetCustomHintsPath(customPath);
                 }
                 UpdateHintsDatabaseStatus();
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ExternalAudioExcludedApps))
+            {
+                OnPropertyChanged(nameof(ExcludedApps));
+            }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.AchievementSoundPack)
+                     || e.PropertyName == nameof(UniPlaySongSettings.CommonAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.UncommonAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.RareAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.UltraRareAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.HiddenAchievementSoundPath)
+                     || e.PropertyName == nameof(UniPlaySongSettings.CapstoneAchievementSoundPath))
+            {
+                RefreshRarityRows();
             }
             // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls now use SetRestartRequired command
             // which sets IsRestartRequired on the Playnite settings window for safe restart handling
@@ -341,6 +355,62 @@ namespace UniPlaySong
         // Bundled "Default" achievement pack (Trophy Notif + Platinum) for the achievement sound pickers
         public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
 
+        public List<Services.BundledJingleInfo> ControlUpJingles => Services.BundledJingleService.GetControlUpJingles();
+
+        // === External-audio exclusions ===
+        // The setting stays a comma-joined string - UniPlaySong.cs splits it on ',' and
+        // SettingsService's migration appends to it in the same form - so this is a view over it,
+        // not a change of storage. Editing seven names inside one sentence was the problem.
+
+        public string NewExcludedApp
+        {
+            get => newExcludedApp;
+            set { newExcludedApp = value; OnPropertyChanged(); }
+        }
+        private string newExcludedApp = string.Empty;
+
+        public List<string> ExcludedApps => SplitExcluded(Settings?.ExternalAudioExcludedApps);
+
+        private static List<string> SplitExcluded(string raw) =>
+            (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .ToList();
+
+        // Written back the way the migration writes it, so both agree on the format.
+        private void WriteExcluded(IEnumerable<string> apps)
+        {
+            Settings.ExternalAudioExcludedApps = string.Join(", ", apps);
+            OnPropertyChanged(nameof(ExcludedApps));
+        }
+
+        public ICommand AddExcludedAppCommand => new Common.RelayCommand(() =>
+        {
+            // Accept a pasted "obs64, obs32" as readily as a single name, drop any .exe the user
+            // copied from Task Manager, and ignore duplicates rather than silently listing one twice.
+            var candidates = SplitExcluded(NewExcludedApp)
+                .Select(x => x.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? x.Substring(0, x.Length - 4) : x)
+                .Where(x => x.Length > 0);
+
+            var apps = ExcludedApps;
+            var seen = new HashSet<string>(apps, StringComparer.OrdinalIgnoreCase);
+            bool added = false;
+            foreach (var c in candidates)
+            {
+                if (seen.Add(c)) { apps.Add(c); added = true; }
+            }
+            if (added) WriteExcluded(apps);
+            NewExcludedApp = string.Empty;
+        });
+
+        public ICommand RemoveExcludedAppCommand => new Common.RelayCommand<object>(app =>
+        {
+            var name = app?.ToString();
+            if (string.IsNullOrEmpty(name)) return;
+            WriteExcluded(ExcludedApps.Where(x => !string.Equals(x, name, StringComparison.OrdinalIgnoreCase)));
+        });
+
         // SDL2 output buffer choices for the Experimental tab.
         public List<AudioBufferOption> AudioBufferOptions => AudioBufferOption.All;
 
@@ -392,6 +462,85 @@ namespace UniPlaySong
         public string BadgePlatinumPath => Services.BundledImageService.GetAchievementBadgePath("platinum");
         public string BadgeHiddenPath => Services.BundledImageService.GetAchievementBadgePath("hidden");
         public string BadgePerfectPath => Services.BundledImageService.GetAchievementBadgePath("perfect");
+
+        // One row of the per-rarity table. The rows stay live under every pack, so each has to say
+        // where its sound is actually coming from - which is the pack chain's answer, not just the
+        // custom path the user may or may not have set.
+        public class RarityRow
+        {
+            public string Rarity { get; set; }        // "common" ... "capstone", the command parameter
+            public string Display { get; set; }       // "Common", "Ultra-Rare"
+            public string BadgePath { get; set; }
+            public string SourceText { get; set; }    // "PA Starter Pack - chime_01.wav"
+            public bool IsOverridden { get; set; }    // true when this row resolves to the user's own file
+        }
+
+        private static readonly (string Key, string Display, string Badge)[] RarityOrder =
+        {
+            ("common",    "Common",     "bronze"),
+            ("uncommon",  "Uncommon",   "silver"),
+            ("rare",      "Rare",       "gold"),
+            ("ultrarare", "Ultra-Rare", "platinum"),
+            ("hidden",    "Hidden",     "hidden"),
+            ("capstone",  "Capstone",   "perfect"),
+        };
+
+        public List<RarityRow> RarityRows => RarityOrder.Select(r => new RarityRow
+        {
+            Rarity = r.Key,
+            Display = r.Display,
+            BadgePath = Services.BundledImageService.GetAchievementBadgePath(r.Badge),
+            SourceText = DescribeRaritySource(r.Key),
+            IsOverridden = IsRarityOverridden(r.Key),
+        }).ToList();
+
+        // True only when this rarity resolves to a file the user picked. A custom path that is blank
+        // or missing on disk falls through to the PA Starter Pack, so it is not an override.
+        private bool IsRarityOverridden(string rarity)
+        {
+            if (Settings?.AchievementSoundPack != AchievementSoundPack.Custom) return false;
+            var custom = GetRarityAchievementSoundPath(rarity);
+            return !string.IsNullOrWhiteSpace(custom) && File.Exists(custom);
+        }
+
+        // What this rarity will actually play, named the way the user would name it. Mirrors the
+        // resolution order in JingleService.ResolveAchievementRarityPath, including its silent
+        // fallbacks - a theme missing a rarity, or a custom path pointing at a deleted file, both
+        // land on the PA Starter Pack, and the row has to admit that rather than claim otherwise.
+        private string DescribeRaritySource(string rarity)
+        {
+            // GetPAStarterPackPath comes back empty until BundledJingleService has been initialised,
+            // so name the pack without a dangling filename rather than printing "PA Starter Pack - ".
+            var starterFile = System.IO.Path.GetFileName(
+                Services.BundledJingleService.GetPAStarterPackPath(rarity) ?? string.Empty);
+            var starter = string.IsNullOrEmpty(starterFile)
+                ? "PA Starter Pack"
+                : "PA Starter Pack - " + starterFile;
+
+            switch (Settings?.AchievementSoundPack)
+            {
+                case AchievementSoundPack.Theme:
+                    var themePath = Common.PlayniteThemeHelper.FindThemeAchievementSound(rarity);
+                    return !string.IsNullOrEmpty(themePath)
+                        ? "Active theme - " + System.IO.Path.GetFileName(themePath)
+                        : starter + " (theme has no sound for this rarity)";
+
+                case AchievementSoundPack.Custom:
+                    var custom = GetRarityAchievementSoundPath(rarity);
+                    if (string.IsNullOrWhiteSpace(custom))
+                        return starter + " (no file picked yet)";
+                    if (!File.Exists(custom))
+                        return starter + " (your file is missing)";
+                    return "Your file - " + System.IO.Path.GetFileName(custom);
+
+                default:
+                    return starter;
+            }
+        }
+
+        // Every row's text depends on the pack and on all six custom paths, so any of them changing
+        // reprints the table.
+        private void RefreshRarityRows() => OnPropertyChanged(nameof(RarityRows));
 
         // Status line for the Theme pack: how many of the six rarities the active theme provides.
         public string ThemeAchievementStatus =>
@@ -479,6 +628,24 @@ namespace UniPlaySong
             updateAction(newSettings);
             return newSettings;
         }
+
+        // Reset for a whole left-rail group. The strip template supplies the group name from the
+        // inner TabControl's Tag, so there is one button per group rather than one per page — and
+        // the values come from SettingsResetService, which reads them off a pristine settings
+        // object instead of restating them.
+        public ICommand ResetGroupCommand => new Common.RelayCommand<object>((param) =>
+        {
+            var group = param as string;
+            if (string.IsNullOrEmpty(group)) return;
+
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                $"Reset all {group} settings to their defaults?",
+                $"Reset {group}",
+                MessageBoxButton.YesNo);
+            if (confirm != MessageBoxResult.Yes) return;
+
+            SettingsResetService.ResetGroup(Settings, group);
+        });
 
         public ICommand BrowseForYtDlpFile => new Common.RelayCommand<object>((a) =>
         {
@@ -1599,7 +1766,9 @@ namespace UniPlaySong
         public bool PreviewHasAlbum => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingAlbum);
         public bool PreviewHasGenre => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingGenre);
         public bool PreviewHasDuration => !string.IsNullOrEmpty(plugin?.Settings?.NowPlayingDuration);
-        public UniPlaySong PluginForPreview => plugin;
+        // How the settings pages reach the plugin. They are constructed by XAML, so they cannot
+        // take it as a constructor argument the way the old single settings view did.
+        public UniPlaySong Plugin => plugin;
 
         // Called by the view on the settings object's PropertyChanged to refresh the ticker + card live.
         public void RefreshNowPlayingPreview()

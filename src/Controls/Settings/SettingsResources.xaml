@@ -1,0 +1,1771 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:UniPlaySong">
+
+    <!--
+    Shared resources for the settings pages.
+
+    Every settings tab used to live inside UniPlaySongSettingsView.xaml and resolve these
+    from that one root. Splitting the tabs into their own UserControls breaks that chain:
+    StaticResource walks up the visual tree, so a page hosted anywhere else finds nothing.
+    That failure is a runtime XamlParseException, not a build error, so it would surface as
+    a settings window that refuses to open rather than a red squiggle.
+
+    Each extracted page merges this dictionary. The converters are stateless, so the extra
+    instance per page costs nothing.
+    -->
+
+    <local:AudioStateConverter x:Key="AudioStateConverter"/>
+    <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    <local:ReverbPresetConverter x:Key="ReverbPresetConverter"/>
+    <local:StylePresetConverter x:Key="StylePresetConverter"/>
+    <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
+    <local:HexToColorConverter x:Key="HexToColorConverter"/>
+    <local:VizPresetConverter x:Key="VizPresetConverter"/>
+    <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
+    <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+    <local:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
+    <local:ProgressBarPositionConverter x:Key="ProgressBarPositionConverter"/>
+    <local:CelebrationThemeConverter x:Key="CelebrationThemeConverter"/>
+    <local:AbandonedThemeConverter x:Key="AbandonedThemeConverter"/>
+    <local:FadeCurveTypeConverter x:Key="FadeCurveTypeConverter"/>
+    <local:SidebarGlowModeConverter x:Key="SidebarGlowModeConverter"/>
+    <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    <local:ActiveRailConverter x:Key="ActiveRailConverter"/>
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+    <!-- Section divider: bolder + accent-tinted so settings sections read as distinct blocks
+         instead of blending together. Implicit style applies to every Separator on every page. -->
+    <Style TargetType="Separator">
+        <Setter Property="Height" Value="1"/>
+        <Setter Property="Background" Value="#4EC9B0"/>
+        <Setter Property="Opacity" Value="0.75"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="{TemplateBinding Height}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="1"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         Settings page look.
+
+         Taken from the Quick Start tab rather than invented next to it: that tab is the design
+         this rework follows, and two slate palettes in one window drift apart on the first tweak.
+
+         Every text style sets Foreground explicitly and none rely on inheritance. That is not
+         belt-and-braces — a page paints its own dark ground here, and an inherited colour LOSES to
+         the host theme's implicit TextBlock style, so anything left to inherit renders in a colour
+         chosen for Playnite's background and can land near-black on ours. Quick Start shipped that
+         bug: its profile names had no Foreground while the Summary line right beneath them did.
+         ================================================================================ -->
+
+    <SolidColorBrush x:Key="UpsGround"     Color="#12171E"/>
+    <SolidColorBrush x:Key="UpsSurface"    Color="#1A222C"/>
+    <SolidColorBrush x:Key="UpsSurfaceHi"  Color="#232D3A"/>
+    <SolidColorBrush x:Key="UpsStroke"     Color="#31404F"/>
+    <SolidColorBrush x:Key="UpsStrokeHi"   Color="#4A5F73"/>
+    <SolidColorBrush x:Key="UpsAccent"     Color="#4CC2FF"/>
+    <SolidColorBrush x:Key="UpsOn"         Color="#4E8C5E"/>
+    <SolidColorBrush x:Key="UpsOnStroke"   Color="#5FA772"/>
+    <SolidColorBrush x:Key="UpsText"       Color="#E4E9EF"/>
+    <SolidColorBrush x:Key="UpsTextMuted"  Color="#93A1B0"/>
+    <SolidColorBrush x:Key="UpsTextFaint"  Color="#6B7A88"/>
+    <SolidColorBrush x:Key="UpsWarn"       Color="#C8A24B"/>
+    <SolidColorBrush x:Key="UpsDanger"     Color="#E08070"/>
+
+    <!-- The page ground is a slow diagonal rather than a flat fill. Two reasons: a flat ground
+         gives a translucent card nothing to sit on, so glass reads as plain grey; and a large
+         unbroken block of one colour looks like an unpainted surface rather than a chosen one.
+         The range is tiny on purpose — this should never be legible as a gradient. -->
+    <LinearGradientBrush x:Key="UpsGroundGlass" StartPoint="0,0" EndPoint="0.85,1">
+        <GradientStop Offset="0"   Color="#1A212B"/>
+        <GradientStop Offset="0.5" Color="#161C25"/>
+        <GradientStop Offset="1"   Color="#131922"/>
+    </LinearGradientBrush>
+
+    <!-- Page root. Padding sits here rather than on the inner panel so the ground fills the whole
+         page instead of leaving a theme-coloured gutter round the edge. -->
+    <Style x:Key="UpsPage" TargetType="ScrollViewer">
+        <Setter Property="Background" Value="{StaticResource UpsGroundGlass}"/>
+        <Setter Property="Padding" Value="22,18,22,24"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="TextElement.Foreground" Value="{StaticResource UpsText}"/>
+    </Style>
+
+    <Style x:Key="UpsPageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+
+    <Style x:Key="UpsPageSubtitle" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <Setter Property="FontStyle" Value="Italic"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="0,0,0,18"/>
+    </Style>
+
+    <!-- Section heading with a left accent bar, so groups of settings read as bands rather than
+         another line of bold text. -->
+    <Style x:Key="UpsSectionBar" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="BorderThickness" Value="3,0,0,0"/>
+        <Setter Property="Padding" Value="10,1,0,1"/>
+        <Setter Property="Margin" Value="0,14,0,10"/>
+    </Style>
+
+    <!-- Small, dimmed and tracked uppercase, so the heading reads as a band marker rather than
+         competing with the setting labels under it. The old 13.5 sat 4% off the 13px labels,
+         which is not a hierarchy level — the eye read the whole page as one tier.
+         Set the string via TrackedCaps.Text, not Text: WPF has no text-transform or
+         letter-spacing, and that attached property supplies both. -->
+    <Style x:Key="UpsSectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+    </Style>
+
+    <!-- A collapsible section. Same accent bar and tracked caps as UpsSectionBar, plus a
+         disclosure chevron, so a collapsed page still reads as the same design rather than as a
+         different kind of control.
+
+         Expanded by default: the settings are the point of the page, and these pages are short
+         enough after the split that opening to a wall of closed headings would cost a click per
+         section for nothing. Set IsExpanded="False" on any section that is genuinely secondary.
+
+         The ToggleButton carries its own template — without one it picks up the host theme's
+         button chrome and the header renders as a raised grey button across the page. -->
+    <Style x:Key="UpsSection" TargetType="Expander">
+        <Setter Property="IsExpanded" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <StackPanel>
+                        <!-- Content must be fed from Header explicitly. Without it the button has
+                             nothing to present and the heading renders as a bare bar and chevron
+                             — which builds and runs perfectly happily. -->
+                        <ToggleButton IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      Cursor="Hand" Focusable="True" HorizontalAlignment="Left">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent"
+                                            BorderBrush="{StaticResource UpsAccent}"
+                                            BorderThickness="3,0,0,0"
+                                            Padding="10,1,0,1" Margin="0,14,0,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                            <!-- Points right when closed, down when open. -->
+                                            <Path x:Name="Chevron" Data="M 0,0 L 4,3.5 L 0,7 Z"
+                                                  Fill="{StaticResource UpsTextFaint}"
+                                                  VerticalAlignment="Center" Margin="8,0,0,0"
+                                                  RenderTransformOrigin="0.5,0.5">
+                                                <Path.RenderTransform>
+                                                    <RotateTransform Angle="0"/>
+                                                </Path.RenderTransform>
+                                            </Path>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="90"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Chevron" Property="Fill"
+                                                    Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="Body" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="Body" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Indent lines the hint up with the toggle's LABEL, not its switch, so the setting and its
+         explanation read as one block. 24 track + 8 gap. -->
+    <Style x:Key="UpsHint" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="32,1,0,12"/>
+    </Style>
+
+    <Style x:Key="UpsHintIndented" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Margin" Value="56,1,0,12"/>
+    </Style>
+
+    <!-- Same hint, no indent. For prose that is NOT sitting under a toggle — inside a card, under
+         a section bar, anywhere the 32px alignment would look like a stray tab. Use this rather
+         than overriding Margin inline: two adjacent lines where one overrides and one does not
+         come out on different left edges, which is exactly how the Migration directory list
+         ended up ragged. -->
+    <Style x:Key="UpsHintTight" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Margin" Value="32,1,0,1"/>
+    </Style>
+
+    <Style x:Key="UpsHintFlush" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Margin" Value="0,1,0,8"/>
+    </Style>
+
+    <Style x:Key="UpsWarning" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Foreground" Value="{StaticResource UpsWarn}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="UpsWarningFlush" TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
+        <Setter Property="Margin" Value="0,1,0,8"/>
+    </Style>
+
+    <Style x:Key="UpsDangerNote" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+        <Setter Property="Foreground" Value="{StaticResource UpsDanger}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="UpsDangerNoteFlush" TargetType="TextBlock" BasedOn="{StaticResource UpsDangerNote}">
+        <Setter Property="Margin" Value="0,1,0,8"/>
+    </Style>
+
+    <Style x:Key="UpsLabel" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- The label on a slider row inside an effect pane. UpsLabel in full text colour sat too
+         close to the SemiBold toggle label above it, so the two read as one block of headings.
+         Muted separates them without another size step. -->
+    <Style x:Key="UpsParamLabel" TargetType="TextBlock" BasedOn="{StaticResource UpsLabel}">
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+    </Style>
+
+    <Style x:Key="UpsValue" TargetType="TextBlock" BasedOn="{StaticResource UpsLabel}">
+        <Setter Property="Foreground" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- Prose. Wider than a hint and at full strength, for pages that explain rather than configure. -->
+    <Style x:Key="UpsBody" TargetType="TextBlock">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+
+    <!-- A Hyperlink left unstyled renders in WPF's default navy, which is close to unreadable on
+         UpsGround. Accent for the resting state, brighter on hover. -->
+    <Style x:Key="UpsLink" TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="TextDecorations" Value="{x:Null}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#8FDCFF"/>
+                <Setter Property="TextDecorations" Value="Underline"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ================================================================================
+         Cards.
+
+         Informational pages (About and its siblings) are built from these rather than from
+         section bars. A run of prose under flat headings reads as one wall of text no matter how
+         the headings are set; a tinted, bordered box makes each block a distinct object you can
+         skip or land on, and the tint says what KIND of block it is before you read a word.
+
+         Settings pages are the opposite case — there the rows are the objects, and cards around
+         them would just add noise. Use UpsSectionBar / UpsSection there.
+
+         Tints are the palette's hues at low saturation over the page ground, not the saturated
+         borders this replaces; a #FF8888FF border was fighting the slate rather than sitting in
+         it. Keep the background near UpsSurface so text contrast never depends on the hue.
+         ================================================================================ -->
+    <!-- Glazed, not flat. Each fill runs a bright sliver across the top few percent — the lit
+         edge of a pane catching light — then falls to a translucent tint. Alpha is real here
+         (0xD8, ~85%) so the ground's diagonal shows through and the card sits ON something.
+
+         Note this reverses the warning left on the Quick Start palette, and deliberately. That
+         warning was about translucent panels over the HOST THEME's background: white at 7-14%
+         has no colour of its own, so every panel came out the same washed grey over an unknown
+         ground. These sit over a ground we paint ourselves, so the result is predictable — the
+         technique was never the problem, not owning the backdrop was.
+
+         WPF has no backdrop blur. Real acrylic is a Win32 window attribute, and BlurEffect blurs
+         the element rather than what is behind it. This is the honest approximation: translucency
+         plus a lit edge, which is what reads as glass anyway at this size. -->
+    <!-- Card face. A broad diagonal, light corner to dark corner, as if one light source were off
+         the top-left. Proportional offsets are correct HERE — the gradient is meant to span the
+         whole card, so it scales with it by design. (The earlier bug was a small percentage doing
+         the job of a fixed size; that is now the border's job, and a border is 1px by
+         construction.)
+
+         Alpha near 0xE6 so the ground's own diagonal shows through and the card sits ON something
+         rather than being pasted over it. -->
+    <!-- Darker than the ground they sit on, which is the point: these read as smoked glass laid
+         on a lighter surface, not as panels cut from it. The bevel's lit top-left corner and the
+         drop shadow are what keep them raised rather than reading as holes — a recess would want
+         the opposite bevel and no shadow. Alpha stays near 0xE6 so the ground's diagonal still
+         shows through the tint. -->
+    <LinearGradientBrush x:Key="UpsGlassNeutral" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6161D28"/>
+        <GradientStop Offset="1" Color="#E60B0F16"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassAccent" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6111F2B"/>
+        <GradientStop Offset="1" Color="#E6080F16"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassGood" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6102018"/>
+        <GradientStop Offset="1" Color="#E607100C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassWarn" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E61E180D"/>
+        <GradientStop Offset="1" Color="#E6100C06"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsGlassInfo" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E615172A"/>
+        <GradientStop Offset="1" Color="#E60A0B18"/>
+    </LinearGradientBrush>
+
+    <!-- Bevelled edges. The border is a gradient rather than a flat colour: lit along the top,
+         falling to shadow at the bottom, so the card reads as a raised panel.
+
+         Chosen over the glass sheen for two reasons. It speaks the same language as the toggle
+         cap, which is already a moulded bevel, so the window has one vocabulary instead of two.
+         And a border is one pixel by construction — it cannot develop the size-with-the-card
+         problem the proportional sheen had, on any card, ever.
+
+         The glass brushes above are kept and still used for the fill, so the two treatments
+         compose: bevelled edge, glazed face. -->
+    <!-- Diagonal, so the lit corner is top-LEFT and the shadowed one bottom-right — one light
+         source, consistent with the card face and the toggle cap. A purely vertical bevel lights
+         the whole top edge evenly, which reads as a printed line; lighting a corner reads as an
+         object.
+
+         Four stops rather than three: the hot highlight is held briefly at the start and the mid
+         tone occupies most of the run, so the edge is defined all the way round. Glassmorphism
+         guides typically fade the border to zero opacity mid-run, which works over vibrant
+         photographic backdrops where the fill defines the card — over near-black slate the border
+         IS the definition, so it stays visible throughout. -->
+    <LinearGradientBrush x:Key="UpsBevelNeutral" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#93A6B8"/>
+        <GradientStop Offset="0.12" Color="#63768A"/>
+        <GradientStop Offset="0.55" Color="#3A4757"/>
+        <GradientStop Offset="1"    Color="#1E262F"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelAccent" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#7FC6E2"/>
+        <GradientStop Offset="0.12" Color="#4E9CBC"/>
+        <GradientStop Offset="0.55" Color="#2C6580"/>
+        <GradientStop Offset="1"    Color="#173846"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelGood" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#8CCFA3"/>
+        <GradientStop Offset="0.12" Color="#5FA97A"/>
+        <GradientStop Offset="0.55" Color="#3A7550"/>
+        <GradientStop Offset="1"    Color="#1E402B"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelWarn" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#E0BC70"/>
+        <GradientStop Offset="0.12" Color="#B99548"/>
+        <GradientStop Offset="0.55" Color="#7E6329"/>
+        <GradientStop Offset="1"    Color="#453516"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelInfo" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#9C9CD0"/>
+        <GradientStop Offset="0.12" Color="#7373A8"/>
+        <GradientStop Offset="0.55" Color="#47477A"/>
+        <GradientStop Offset="1"    Color="#272745"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNeutral}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="14,12"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!-- The shadow below costs ClearType. An Effect renders its whole subtree to an
+             intermediate surface, and WPF turns ClearType off in those - so every label inside
+             a card was falling back to grayscale antialiasing and reading soft next to the same
+             text outside one. The hint puts it back for the subtree; layout rounding keeps the
+             borders and dividers on whole pixels while we are here. -->
+        <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <!-- Neutral and shallow. This is separation, not the bloom the toggles were told to drop:
+             a card is one of three or four on a page rather than one of fifteen, the colour is
+             black rather than a hue, and it signals depth rather than state. -->
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="#000000" BlurRadius="9" ShadowDepth="2"
+                                  Direction="270" Opacity="0.38"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Reference / capability -->
+    <Style x:Key="UpsCardAccent" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassAccent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelAccent}"/>
+    </Style>
+
+    <!-- Release notes, anything that reads as "new" -->
+    <Style x:Key="UpsCardGood" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelGood}"/>
+    </Style>
+
+    <!-- Caveats, quirks, anything with a "but" in it -->
+    <Style x:Key="UpsCardWarn" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassWarn}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelWarn}"/>
+    </Style>
+
+    <!-- Readout, not action. Navy sets a status panel apart from the cards around it that DO
+         something, so "here is the current state" and "here is a button that changes it" are not
+         the same colour. Deeper and bluer than UpsCardAccent, which is for capability. -->
+    <LinearGradientBrush x:Key="UpsGlassNavy" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6121A33"/>
+        <GradientStop Offset="1" Color="#E6080C1D"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelNavy" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#8892D6"/>
+        <GradientStop Offset="0.12" Color="#5A66B0"/>
+        <GradientStop Offset="0.55" Color="#37407A"/>
+        <GradientStop Offset="1"    Color="#1B2143"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsCardNavy" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassNavy}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNavy}"/>
+    </Style>
+
+    <!-- Credit, licensing, people -->
+    <Style x:Key="UpsCardInfo" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassInfo}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelInfo}"/>
+    </Style>
+
+    <!-- "This cannot be undone." Reserved for destructive actions; if it is used for ordinary
+         caution it stops meaning anything. UpsCardWarn is the one for caution. -->
+    <LinearGradientBrush x:Key="UpsGlassDanger" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E6301416"/>
+        <GradientStop Offset="1" Color="#E61C0B0C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsBevelDanger" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"    Color="#D07A78"/>
+        <GradientStop Offset="0.12" Color="#A85350"/>
+        <GradientStop Offset="0.55" Color="#743634"/>
+        <GradientStop Offset="1"    Color="#3E1D1C"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsCardDanger" TargetType="Border" BasedOn="{StaticResource UpsCard}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassDanger}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelDanger}"/>
+    </Style>
+
+    <!-- A card's own heading. Sits inside the box, so the box does not need a section bar too. -->
+    <!-- Deliberately two steps clear of UpsLabel, not one. At 12.5/SemiBold against a 12/Normal
+         label in the same colour, a card of key-value rows read as four labels with the first
+         one slightly bolder - the title stopped looking like a title. Size, weight and the gap
+         beneath it all move together, because any one of them alone is still ambiguous. -->
+    <Style x:Key="UpsCardTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Margin" Value="0,0,0,11"/>
+    </Style>
+
+    <!-- The title of a rail pane. It has to outrank UpsCardTitle, because a pane can contain
+         cards - Reverb holds two - and at the same 13.5/Bold the pane title and the cards inside
+         it rendered identically, so the pane read as three peers rather than a title over two
+         groups. Bigger and with a wider gap beneath; weight is already at Bold and cannot carry
+         the difference on its own. -->
+    <Style x:Key="UpsPaneTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="Margin" Value="0,0,0,3"/>
+    </Style>
+
+    <!-- Bulleted line inside a card. -->
+    <Style x:Key="UpsBullet" TargetType="TextBlock" BasedOn="{StaticResource UpsBody}">
+        <!-- Weight stated, not inherited. Playnite's implicit TextBlock style would
+             otherwise decide it, which is how the hints came out bold. -->
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Margin" Value="2,0,0,3"/>
+    </Style>
+
+    <!-- ================================================================================
+         Toggle switch — a panel-mounted rocker, not a flat iOS pill.
+
+         The track is a recessed groove: its gradient runs dark at the top so the lip reads as
+         casting a shadow into the channel. The knob is the opposite, lit from above and dropping
+         a shadow onto the groove, which is what makes it sit proud of the surface rather than
+         printed on it. On, the groove lights from within and gains a faint bloom, the way an
+         indicator behind a translucent panel would.
+
+         Sized against the 12.5px label beside it: an 18px track is a shade taller than the text's
+         line box, so the two read as one row. The earlier 21px version towered over the label.
+
+         Keyed, never implicit. An implicit CheckBox style would replace whatever the Playnite
+         theme sets for every checkbox in the window, including ones outside these pages.
+         ================================================================================ -->
+
+    <!-- Machined cap: a hot specular at the top edge falling to shadow underneath. The range is
+         deliberately wide — anything subtler flattens out at 18px and the knob reads as a dot. -->
+    <LinearGradientBrush x:Key="UpsKnobFace" StartPoint="0.3,0" EndPoint="0.7,1">
+        <GradientStop Offset="0"    Color="#FFFFFF"/>
+        <GradientStop Offset="0.30" Color="#E8EFF6"/>
+        <GradientStop Offset="0.62" Color="#B2C0CE"/>
+        <GradientStop Offset="1"    Color="#75838F"/>
+    </LinearGradientBrush>
+
+    <!-- Empty channel. Dark at the lip, opening out below. -->
+    <LinearGradientBrush x:Key="UpsGrooveOff" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#0F151C"/>
+        <GradientStop Offset="0.55" Color="#1E2733"/>
+        <GradientStop Offset="1"    Color="#2C3843"/>
+    </LinearGradientBrush>
+
+    <!-- Brighter than the off groove by a wide margin, because with the bloom gone this fill is
+         what carries the on state at a glance. -->
+    <LinearGradientBrush x:Key="UpsGrooveOn" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#154759"/>
+        <GradientStop Offset="0.55" Color="#1E7391"/>
+        <GradientStop Offset="1"    Color="#3BACD1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRim" Color="#1F5F76"/>
+    <SolidColorBrush x:Key="UpsLedOn" Color="#A7E8FF"/>
+
+    <!-- Hover. Three surfaces move together — the cap face, its rim, and the hairline along the
+         track's top lip — because any one of them alone is too quiet to notice at 24x13. The
+         track's own fill is deliberately left alone: it carries the on/off state, and a hover
+         that recoloured it would read as the setting having changed. -->
+    <LinearGradientBrush x:Key="UpsKnobFaceHover" StartPoint="0.3,0" EndPoint="0.7,1">
+        <GradientStop Offset="0"    Color="#FFFFFF"/>
+        <GradientStop Offset="0.30" Color="#F6FAFE"/>
+        <GradientStop Offset="0.62" Color="#D2DEEA"/>
+        <GradientStop Offset="1"    Color="#94A3B2"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsLipSheen" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0"   Color="#00FFFFFF"/>
+        <GradientStop Offset="0.5" Color="#62FFFFFF"/>
+        <GradientStop Offset="1"   Color="#00FFFFFF"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsLipSheenHover" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0"   Color="#00FFFFFF"/>
+        <GradientStop Offset="0.5" Color="#B8FFFFFF"/>
+        <GradientStop Offset="1"   Color="#00FFFFFF"/>
+    </LinearGradientBrush>
+
+    <!-- Sub-option on state. A nested toggle only means anything while its parent is on, so it
+         gets its own colour rather than repeating the parent's. Deep blue sits beside the cyan
+         parent without leaving the cool family, and reads a stop or two quieter, which is what
+         keeps a sub-option from looking like a second kind of primary. -->
+    <LinearGradientBrush x:Key="UpsGrooveOnSub" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#16273F"/>
+        <GradientStop Offset="0.55" Color="#22406B"/>
+        <GradientStop Offset="1"    Color="#3A63A0"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRimSub" Color="#1E355C"/>
+    <SolidColorBrush x:Key="UpsLedOnSub" Color="#A8C6F0"/>
+
+    <Style x:Key="UpsToggle" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <!-- SemiBold so the label separates from its hint by weight, not only by colour. -->
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,7,0,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <!-- The template repurposes these three to carry the ON colours, so a derived style can
+             recolour the switch without restating the whole template. The off groove is fixed,
+             so Background and BorderBrush are free to mean "on". -->
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOn}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRim}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOn}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <!-- A Border takes one child, so the surfaces are siblings in a Grid and
+                             stack in document order: groove, dark inset lip, lit hairline, cap.
+                             SnapsToDevicePixels + UseLayoutRounding keep every edge on a whole
+                             pixel — at 24x13 a half-pixel rim is a smudge. -->
+                        <Grid Width="24" Height="13" VerticalAlignment="Center">
+
+                            <Border x:Name="Track" CornerRadius="0"
+                                    Background="{StaticResource UpsGrooveOff}"
+                                    BorderBrush="#0B1015" BorderThickness="1"
+                                    SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+
+                            <!-- Hard inset lip, zero blur. WPF has no inset shadow, so this is a
+                                 solid band pinned under the top edge — which is all the CSS
+                                 equivalent draws anyway, and it stays crisp at this size. -->
+                            <Border x:Name="InsetLip" Height="2.5" VerticalAlignment="Top"
+                                    Margin="1,1,1,0" IsHitTestVisible="False"
+                                    Background="#20000000"/>
+
+                            <!-- Hairline catching the light along the top lip. Sits above the
+                                 inset band so the groove reads as an edge, not a gradient. -->
+                            <Border x:Name="Lip" Height="1" VerticalAlignment="Top"
+                                    Margin="2,0,2,0" IsHitTestVisible="False"
+                                    Background="{StaticResource UpsLipSheen}"/>
+
+                            <Border x:Name="Thumb" Width="12" Height="10" CornerRadius="0"
+                                    Background="{StaticResource UpsKnobFace}"
+                                    BorderBrush="#4B5764" BorderThickness="0.75"
+                                    HorizontalAlignment="Left" Margin="1.5,0,0,0"
+                                    SnapsToDevicePixels="True">
+                                <!-- Nearly hard: 1px of blur is enough to separate the cap from
+                                     the groove without the halo a page full of these would make. -->
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" BlurRadius="1"
+                                                      ShadowDepth="0.8" Direction="270" Opacity="0.4"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <!-- Moulded bevel: lit top edge, shaded bottom edge. -->
+                                    <Border Height="1" VerticalAlignment="Top" Margin="1,0,1,0"
+                                            Background="#69FFFFFF"/>
+                                    <Border Height="1" VerticalAlignment="Bottom" Margin="1,0,1,0"
+                                            Background="#56000000"/>
+                                    <!-- Gloss over the upper 45% of the cap. -->
+                                    <Border VerticalAlignment="Top" Height="4.5">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Offset="0" Color="#54FFFFFF"/>
+                                                <GradientStop Offset="1" Color="#00FFFFFF"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <!-- Indicator sunk INTO the cap. This is where the on state
+                                         gets its spark without any light spilling onto the page. -->
+                                    <Ellipse x:Name="Led" Width="3" Height="3" Fill="#6B7885"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             Opacity="0.45"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <ContentPresenter x:Name="Label"
+                                          Margin="8,0,0,0" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background"
+                                    Value="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="Track" Property="BorderBrush"
+                                    Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <!-- No bloom on the on state. A page carries a dozen or more of these,
+                                 and a dozen soft green halos turn a list of settings into a
+                                 smear. On reads from the fill and the knob's position, which are
+                                 both hard-edged. It is also a dozen fewer blur passes. -->
+                            <!-- The knob throws, it does not glide. Two reasons beyond taste: a
+                                 real panel switch snaps, and a slide animation only runs on the
+                                 transition INTO checked — so every toggle already on when the
+                                 window opens would sit at the wrong end and then visibly jump
+                                 into place. An alignment swap is correct the instant it renders. -->
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,1.5,0"/>
+                            <Setter TargetName="Led" Property="Fill"
+                                    Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="Led" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <!-- After the IsChecked trigger, so on a lit switch the hover still wins
+                             for the surfaces it touches. -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Thumb" Property="Background" Value="{StaticResource UpsKnobFaceHover}"/>
+                            <Setter TargetName="Thumb" Property="BorderBrush" Value="#A9BAC9"/>
+                            <Setter TargetName="Lip" Property="Background" Value="{StaticResource UpsLipSheenHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.35"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.35"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         Radio button — the exclusive-choice sibling of the toggle.
+
+         Stays circular where the toggle is square: the shape is the affordance, and a round well
+         has meant "one of these" since physical panels. Same construction otherwise — recessed
+         groove, bevelled rim, a lit indicator when selected — so the two read as one family.
+         ================================================================================ -->
+    <LinearGradientBrush x:Key="UpsWellFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"   Color="#0E141A"/>
+        <GradientStop Offset="0.6" Color="#1B232E"/>
+        <GradientStop Offset="1"   Color="#28323D"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsWellRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#5A6A7A"/>
+        <GradientStop Offset="0.5" Color="#2C3743"/>
+        <GradientStop Offset="1"   Color="#141A21"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsRadio" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="14" Height="14" VerticalAlignment="Center">
+                            <Ellipse x:Name="Well"
+                                     Fill="{StaticResource UpsWellFace}"
+                                     Stroke="{StaticResource UpsWellRim}" StrokeThickness="1"/>
+                            <Ellipse x:Name="Dot" Width="6" Height="6"
+                                     Fill="{StaticResource UpsAccent}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Opacity="0"/>
+                        </Grid>
+                        <ContentPresenter x:Name="Label" Margin="8,0,0,0"
+                                          VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Dot" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Well" Property="Stroke" Value="#8CA0B4"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Well" Property="Opacity" Value="0.35"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.35"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Text input. A recess rather than a raised panel — the inverse of the button, which is what
+         an input should read as. Left unstyled it renders as WPF's stark white box, which on this
+         ground is the brightest thing on the page by a wide margin and pulls the eye off the
+         setting it belongs to. -->
+    <Style x:Key="UpsTextBox" TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="7,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{StaticResource UpsWellFace}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsWellRim}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Well" CornerRadius="4"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"
+                                      Focusable="False" HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Well" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         Dropdown. The closed box is the same recess as UpsTextBox — it is an input — and the
+         popup is a raised panel, since it sits above the page.
+         ================================================================================ -->
+    <!-- Use one of these instead of DisplayMemberPath on ANY dropdown bound to objects.
+         DisplayMemberPath templates the dropdown ITEMS only. The closed selection box renders
+         from SelectionBoxItemTemplate, which WPF leaves null when only DisplayMemberPath is set —
+         so the ContentPresenter falls back to ToString() and the box reads
+         "UniPlaySong.Services.BundledJingleInfo". Setting ItemTemplate populates
+         SelectionBoxItemTemplate from it, which fixes both at once.
+
+         The stock ComboBox template hides this, which is why it only appeared once the control
+         was restyled. Pick by the property the items expose, not by what the dropdown is for:
+         jingles and bundled presets both carry DisplayName and share one template. -->
+    <DataTemplate x:Key="UpsDisplayNameTemplate">
+        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+    </DataTemplate>
+
+    <DataTemplate x:Key="UpsLabelTemplate">
+        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+    </DataTemplate>
+
+    <Style x:Key="UpsComboBoxItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="9,5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Row" Background="Transparent"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="#243040"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="#1D3A4C"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsComboBox" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsComboBoxItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Well" CornerRadius="4"
+                                            Background="{StaticResource UpsWellFace}"
+                                            BorderBrush="{StaticResource UpsWellRim}" BorderThickness="1"
+                                            SnapsToDevicePixels="True">
+                                        <Path x:Name="Chevron" Data="M 0,0 L 7,0 L 3.5,4.5 Z"
+                                              Fill="{StaticResource UpsTextMuted}"
+                                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                                              Margin="0,0,9,0"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                                            <Setter TargetName="Chevron" Property="Fill" Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Well" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="Selected" IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                          Margin="9,0,26,0" VerticalAlignment="Center"/>
+
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                            <Border Background="#161D26" BorderBrush="{StaticResource UpsStrokeHi}"
+                                    BorderThickness="1" CornerRadius="4" Margin="0,3,0,0"
+                                    MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" BlurRadius="10" ShadowDepth="3"
+                                                      Direction="270" Opacity="0.55"/>
+                                </Border.Effect>
+                                <ScrollViewer>
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         Button. Same bevelled panel as the cards, at control scale.
+         ================================================================================ -->
+    <LinearGradientBrush x:Key="UpsButtonFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#2B3644"/>
+        <GradientStop Offset="1" Color="#1D2530"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#384656"/>
+        <GradientStop Offset="1" Color="#26303C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#7C8EA0"/>
+        <GradientStop Offset="0.5" Color="#3C4959"/>
+        <GradientStop Offset="1"   Color="#212934"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="UpsButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonFace}"
+                            BorderBrush="{StaticResource UpsButtonRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                        </Trigger>
+                        <!-- Pressed inverts the bevel, so the panel reads as pushed in. -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tinted actions. The neutral UpsButton is for the small utilities that sit beside a field —
+         Browse, Refresh, Preview. A button that is the POINT of its card gets a tint, so a page of
+         several actions says which is which before the labels are read. Same bevel and press
+         behaviour; only the face and rim change.
+
+         This restores colour the old pages carried inline (a blue export, a green snapshot) that a
+         single neutral button style had flattened away. -->
+    <LinearGradientBrush x:Key="UpsButtonPrimaryFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#2A5872"/>
+        <GradientStop Offset="1" Color="#1B3A4D"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPrimaryFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#356C8C"/>
+        <GradientStop Offset="1" Color="#224B63"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPrimaryRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#6FB4D4"/>
+        <GradientStop Offset="0.5" Color="#356C8C"/>
+        <GradientStop Offset="1"   Color="#16303F"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonPositiveFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#3A6B4C"/>
+        <GradientStop Offset="1" Color="#254732"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPositiveFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#4A855F"/>
+        <GradientStop Offset="1" Color="#2F5940"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonPositiveRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#7FC395"/>
+        <GradientStop Offset="0.5" Color="#4A855F"/>
+        <GradientStop Offset="1"   Color="#1E3B2A"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonCautionFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#6B5330"/>
+        <GradientStop Offset="1" Color="#46351D"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonCautionFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#856741"/>
+        <GradientStop Offset="1" Color="#584429"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonCautionRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#C9A567"/>
+        <GradientStop Offset="0.5" Color="#856741"/>
+        <GradientStop Offset="1"   Color="#392B18"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="UpsButtonDangerFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#7A2C2C"/>
+        <GradientStop Offset="1" Color="#4E1B1B"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonDangerFaceHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#98393A"/>
+        <GradientStop Offset="1" Color="#652424"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="UpsButtonDangerRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0"   Color="#D98A8A"/>
+        <GradientStop Offset="0.5" Color="#98393A"/>
+        <GradientStop Offset="1"   Color="#3E1616"/>
+    </LinearGradientBrush>
+
+    <!-- A segmented picker: RadioButtons retemplated as one joined button strip. Still radios, so
+         the existing EnumToBooleanConverter bindings are untouched - but a strip reads as "exactly
+         one of these" where a stacked list of dots reads as "here are some options", which is what
+         made the sound picker and the pack picker look like the same kind of question.
+         Put the buttons in a horizontal StackPanel and give the first UpsSegFirst / last UpsSegLast
+         so only the outer corners round. -->
+    <LinearGradientBrush x:Key="UpsSegGoldFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#6A5426"/>
+        <GradientStop Offset="1" Color="#463716"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsSegGoldRim"  Color="#C8A24B"/>
+    <SolidColorBrush x:Key="UpsSegGoldInk"  Color="#F0DCA8"/>
+
+    <LinearGradientBrush x:Key="UpsSegTealFace" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#1E4E55"/>
+        <GradientStop Offset="1" Color="#123338"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsSegTealRim"  Color="#4FA3AE"/>
+    <SolidColorBrush x:Key="UpsSegTealInk"  Color="#B4E4EA"/>
+
+    <!-- A removable chip: one entry of a list that used to be a comma-separated sentence. The X is
+         a Button so it is keyboard-reachable, and the chip sizes to its text so a long process name
+         is never clipped the way it was in the fixed-width box. -->
+    <Style x:Key="UpsChipText" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="UpsChip" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelNeutral}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <!-- 4, matching the cards and buttons. A full stadium radius made these read as tags from
+             a different design system than everything else in the window. -->
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="10,3,4,3"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <!-- A chip with nothing to remove: for listing a fixed set rather than editing one. Same shape
+         as UpsChip so a read-only set and an editable one look like the same kind of thing. -->
+    <Style x:Key="UpsChipStatic" TargetType="Border" BasedOn="{StaticResource UpsChip}">
+        <Setter Property="Padding" Value="10,3"/>
+    </Style>
+
+    <!-- The tinted static chip, for the About page's read-only sets. Green says "supported" -
+         a format that plays, a theme that works. The editable exclusion chips stay neutral, since
+         an ignored process is not a thing that is supported. -->
+    <Style x:Key="UpsChipGood" TargetType="Border" BasedOn="{StaticResource UpsChipStatic}">
+        <Setter Property="Background" Value="{StaticResource UpsGlassGood}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnStroke}"/>
+    </Style>
+
+    <Style x:Key="UpsChipTextGood" TargetType="TextBlock" BasedOn="{StaticResource UpsChipText}">
+        <Setter Property="Foreground" Value="#B9E0C4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="UpsChipRemove" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="True"/>
+        <Setter Property="Margin" Value="6,0,0,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" Background="Transparent" CornerRadius="3" Width="16" Height="16">
+                        <TextBlock x:Name="Glyph" Text="&#x00D7;" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource UpsTextMuted}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Margin="0,-1,0,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsDanger}"/>
+                            <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource UpsText}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegment" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1"
+                            Padding="14,5">
+                        <ContentPresenter x:Name="Body" VerticalAlignment="Center"
+                                          RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentFirst" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentFirstGold" TargetType="RadioButton" BasedOn="{StaticResource UpsSegmentFirst}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegGoldFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegGoldRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegGoldInk}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentTeal" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegTealFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentFirstTeal" TargetType="RadioButton" BasedOn="{StaticResource UpsSegmentFirst}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1,1,0,1" CornerRadius="4,0,0,4"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsSegTealFace}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsSegTealRim}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsSegTealInk}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSegmentLast" TargetType="RadioButton" BasedOn="{StaticResource UpsSegment}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Face"
+                            Background="{StaticResource UpsWellFace}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}"
+                            BorderThickness="1" CornerRadius="0,4,4,0"
+                            Padding="14,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsGlassNeutral}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonFaceHover}"/>
+                            <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsButtonCaution" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonCautionFace}"
+                            BorderBrush="{StaticResource UpsButtonCautionRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonCautionFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Irreversible only. If it also gets used for merely-annoying-to-undo, the red stops
+         carrying information and people learn to click through it. -->
+    <Style x:Key="UpsButtonDanger" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonDangerFace}"
+                            BorderBrush="{StaticResource UpsButtonDangerRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonDangerFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsButtonPrimary" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonPrimaryFace}"
+                            BorderBrush="{StaticResource UpsButtonPrimaryRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonPrimaryFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsButtonPositive" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Face" CornerRadius="4"
+                            Background="{StaticResource UpsButtonPositiveFace}"
+                            BorderBrush="{StaticResource UpsButtonPositiveRim}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsButtonPositiveFaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource UpsWellFace}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Face" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A nested toggle: one that only means anything while its parent is on. Indented, and lit
+         violet rather than cyan so a glance down the page separates the sub-options from the
+         settings they hang off. -->
+    <Style x:Key="UpsToggleChild" TargetType="CheckBox" BasedOn="{StaticResource UpsToggle}">
+        <Setter Property="Margin" Value="24,7,0,0"/>
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOnSub}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRimSub}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOnSub}"/>
+    </Style>
+
+    <!-- Same sub-option colour, no indent of its own. For a toggle that already sits inside an
+         indented, parent-gated block — where UpsToggleChild would indent it a second time and
+         step it out of line with the radios and sliders beside it. -->
+    <!-- Amber on-state, for the per-effect switches on the Live Effects page. The window is
+         cyan everywhere else, so a page whose whole job is "which of these ten are running"
+         reads faster when its switches are the one warm thing on it - and the master toggle
+         above stays cyan, which keeps the page switch distinct from the effect switches.
+
+         Amber is also the caution colour in this file (UpsWarn, UpsCardWarn). That overlap is
+         tolerable here only because these panes carry no caution state of their own; the two
+         warnings on the page are the master toggle's and Advanced Tuning's, both of which sit
+         outside the effect switches. Do not spread this to a page that warns. -->
+    <LinearGradientBrush x:Key="UpsGrooveOnAmber" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0"    Color="#4A3714"/>
+        <GradientStop Offset="0.55" Color="#8A6A22"/>
+        <GradientStop Offset="1"    Color="#D8A93E"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="UpsOnRimAmber" Color="#6B5220"/>
+    <SolidColorBrush x:Key="UpsLedOnAmber" Color="#FFE6A8"/>
+
+    <Style x:Key="UpsToggleAmber" TargetType="CheckBox" BasedOn="{StaticResource UpsToggle}">
+        <Setter Property="Background" Value="{StaticResource UpsGrooveOnAmber}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsOnRimAmber}"/>
+        <Setter Property="Tag" Value="{StaticResource UpsLedOnAmber}"/>
+    </Style>
+
+    <!-- The rail pip, lit. Matches the amber switches rather than the green it started as, so a
+         lit pip and a lit switch are visibly the same fact. -->
+    <SolidColorBrush x:Key="UpsPipOn" Color="#D8A93E"/>
+
+    <Style x:Key="UpsToggleChildFlush" TargetType="CheckBox" BasedOn="{StaticResource UpsToggleChild}">
+        <Setter Property="Margin" Value="0,7,0,0"/>
+    </Style>
+
+    <!-- ================================================================================
+         Colour swatches - a ListBox that looks like a palette.
+
+         A ListBox rather than a bespoke control because SelectedIndex binds exactly as the
+         ComboBox it replaces did, so the existing VizColorThemeConverter keeps working and the
+         enum mapping is untouched. Item order therefore has to stay identical to the old
+         ComboBox: the converter maps position, not name.
+
+         Scrolling is disabled inside the list - the page already scrolls, and a nested scroller
+         here would trap the wheel whenever the pointer crossed the palette.
+         ================================================================================ -->
+    <Style x:Key="UpsSwatchItem" TargetType="ListBoxItem">
+        <Setter Property="Margin" Value="0,0,7,7"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="cell" Width="104" CornerRadius="5" BorderThickness="1"
+                            BorderBrush="{StaticResource UpsStroke}" Background="{StaticResource UpsGround}"
+                            SnapsToDevicePixels="True">
+                        <StackPanel>
+                            <!-- Tag carries the gradient. It runs bottom-to-top because that is how
+                                 the bars are painted; a top-down swatch shows every theme inverted. -->
+                            <Border Height="26" CornerRadius="4,4,0,0" Background="{TemplateBinding Tag}"/>
+                            <TextBlock Text="{TemplateBinding Content}" FontSize="10.5" FontWeight="Normal"
+                                       Foreground="{StaticResource UpsTextMuted}"
+                                       Margin="6,3,6,4" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="cell" Property="BorderBrush" Value="{StaticResource UpsStrokeHi}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="cell" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter TargetName="cell" Property="Background" Value="{StaticResource UpsSurfaceHi}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpsSwatchList" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsSwatchItem}"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!-- ================================================================================
+         Effect rail - a vertical list of effects beside one open pane.
+
+         Same shape as NavRail in the settings shell: IsItemsHost in a vertical StackPanel next
+         to a ContentPresenter on SelectedContent. Keyed, never implicit - an implicit TabControl
+         style would cascade into any page that later hosts one, which is the same trap NavStrip
+         is keyed to avoid.
+
+         No inner ScrollViewer. The page's own UpsPage scroller still handles a tall pane, and
+         nesting a second one means two scrollbars racing on the same wheel event.
+         ================================================================================ -->
+    <Style x:Key="UpsRailItem" TargetType="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <!-- 11, under the 11.5 hints and well under the 12.5 of a toggle label. The rail is
+             navigation and has to sit beneath everything in the pane it points at; at 12.5 it
+             read as the loudest thing on the page. -->
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="face" Padding="14,6" Background="Transparent"
+                            BorderThickness="2,0,0,0" BorderBrush="Transparent">
+                        <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="face" Property="Background" Value="{StaticResource UpsSurfaceHi}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                        </Trigger>
+                        <!-- Last matching trigger wins, so selection sits after hover and a
+                             selected item does not lose its accent when the pointer crosses it. -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="face" Property="Background" Value="{StaticResource UpsSurfaceHi}"/>
+                            <Setter TargetName="face" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                            <Setter Property="Foreground" Value="{StaticResource UpsText}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Rail header text. FontSize and FontWeight are set HERE, on the TextBlock, and not left
+         to inherit from UpsRailItem - Playnite ships an implicit TextBlock style, and an implicit
+         style beats an inherited value, so the TabItem's FontSize never reached the label and the
+         rail rendered at the host theme's size. The headless render harness does not load
+         Playnite's theme, which is why this looked correct there and wrong in the app. Same rule
+         that governs Foreground everywhere else in this file.
+
+         Foreground and weight still have to answer to the item's selected and hover triggers, so
+         they bind up to the TabItem rather than being pinned to a literal. -->
+    <Style x:Key="UpsRailLabel" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground"
+                Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+        <Setter Property="FontWeight"
+                Value="{Binding FontWeight, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+    </Style>
+
+    <Style x:Key="UpsEffectRail" TargetType="TabControl">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsRailItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <!-- Same glass fill and bevel border as UpsCard, so the rail reads as one
+                         of the cards on Tools or Backup rather than a control bolted onto the
+                         page.
+
+                         No DropShadowEffect, deliberately, even though UpsCard has one. An Effect
+                         forces WPF to render the whole subtree to an intermediate surface, and
+                         this subtree contains cards that carry their own shadows - so the page
+                         re-rasterized nested blurs on every scroll frame and dragged visibly.
+                         The bevel border already separates the rail from the page; the shadow was
+                         buying almost nothing on an element this wide. -->
+                    <Border Background="{StaticResource UpsGlassNeutral}"
+                            BorderBrush="{StaticResource UpsBevelNeutral}" BorderThickness="1"
+                            CornerRadius="6" SnapsToDevicePixels="True">
+                        <Grid MinHeight="330">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#33070A0F"
+                                    BorderBrush="{StaticResource UpsBevelNeutral}" BorderThickness="0,0,1,0"
+                                    CornerRadius="5,0,0,5">
+                                <StackPanel IsItemsHost="True" MinWidth="168" Margin="0,7"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1" ContentSource="SelectedContent"
+                                              Margin="16,14,16,16"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================================================
+         A visualizer unit - a head card fused to the rail it switches on.
+
+         One outer Border draws the frame, and the head and rail inside it are borderless. Two
+         adjacent Borders meeting at a seam was the obvious way to build this and the wrong one:
+         their radii have to cancel exactly, and UpsBevelAccent is a diagonal gradient, so the
+         two edges would never have matched across the join. One frame cannot misalign with
+         itself.
+
+         No shadow on the frame, deliberately. It contains a rail which contains cards, and an
+         Effect rasterises everything beneath it - that nesting is what stalled scrolling on the
+         Live Effects page.
+         ================================================================================ -->
+    <Style x:Key="UpsUnit" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource UpsGlassAccent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource UpsBevelAccent}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Margin" Value="0,0,0,14"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled"/>
+    </Style>
+
+    <!-- The head: the master switch and whatever applies to the whole visual. Its only edge is
+         the divider down to the rail. -->
+    <Style x:Key="UpsUnitHead" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{StaticResource UpsStroke}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="14,12,14,12"/>
+    </Style>
+
+    <!-- The rail inside a unit. Same template as UpsEffectRail with the frame taken off, since
+         the unit already draws one. -->
+    <Style x:Key="UpsUnitRail" TargetType="TabControl">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UpsRailItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid MinHeight="240">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#33070A0F"
+                                BorderBrush="{StaticResource UpsStroke}" BorderThickness="0,0,1,0">
+                            <StackPanel IsItemsHost="True" MinWidth="168" Margin="0,7"/>
+                        </Border>
+                        <ContentPresenter Grid.Column="1" ContentSource="SelectedContent"
+                                          Margin="16,14,16,16"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!-- The on/off pip in a rail header. Two stacked ellipses rather than a converter: the lit
+         one is simply hidden when the effect is off, which needs no new C# and reuses the
+         BooleanToVisibility converter every page already has. -->
+    <Style x:Key="UpsRailPip" TargetType="Ellipse">
+        <Setter Property="Width" Value="5"/>
+        <Setter Property="Height" Value="5"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Coffee cup for the Ko-fi pill. Drawn rather than fetched: the settings window has no
+         network and no image asset for it, and a generic cup beside the brand colour is the
+         convention for these buttons anyway - it is not a reproduction of their logomark.
+         Mug body and handle are one geometry so a single Path can fill both. viewBox 0 0 20 20. -->
+    <PathGeometry x:Key="UpsCoffeeCupGeometry"
+                  Figures="M2,4 L14,4 L14,11 A4,4 0 0 1 10,15 L6,15 A4,4 0 0 1 2,11 Z
+                           M15.2,5.6 L16.4,5.6 A2.7,2.7 0 0 1 16.4,11 L15.2,11 Z"/>
+
+    <!-- Ko-fi's brand red. Kept as a token so the pill and anything else that carries their
+         branding cannot drift apart. -->
+    <SolidColorBrush x:Key="UpsKoFi" Color="#FF5E5B"/>
+
+    <!-- A branded pill: coloured capsule, white label, whole thing clickable. Button rather
+         than Hyperlink because a Hyperlink is an Inline and cannot host a Border - it would
+         have to be wrapped in an InlineUIContainer inside a TextBlock, which then fights the
+         surrounding text's line box. The URL rides on Tag; see LinksPage.OpenLink_Click. -->
+    <Style x:Key="UpsPillLink" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{StaticResource UpsKoFi}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <!-- Sized to sit inside a text row rather than push it open: the capsule
+                         has to match the line box of the labels beside it, or the row it
+                         lives in grows taller than every other row in the card. -->
+                    <Border x:Name="cap" CornerRadius="10" Padding="9,3,11,3"
+                            Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="cap" Property="Opacity" Value="0.86"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="cap" Property="Opacity" Value="0.72"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Official Spotify logomark: green circle + 3 sound-wave arcs, viewBox 0 0 168 168. -->
+    <Geometry x:Key="SpotifyLogoGeometry">M84,0 C37.6,0 0,37.6 0,84 C0,130.4 37.6,168 84,168 C130.4,168 168,130.4 168,84 C168,37.6 130.4,0 84,0 Z M122.5,121.2 C121,123.7 117.8,124.4 115.4,122.9 C95.9,111 71.4,108.3 42.5,114.9 C39.7,115.5 37,113.8 36.3,111 C35.7,108.2 37.4,105.5 40.2,104.8 C71.8,97.6 98.9,100.7 120.8,114.1 C123.2,115.6 124,118.8 122.5,121.2 Z M132.8,98.3 C130.9,101.4 126.9,102.3 123.8,100.4 C101.5,86.7 67.5,82.7 41.1,90.7 C37.6,91.8 33.9,89.8 32.8,86.3 C31.8,82.8 33.8,79.1 37.3,78 C67.4,68.9 104.9,73.3 130.5,89.1 C133.6,91 134.6,95.1 132.8,98.3 Z M133.7,74.4 C107,58.5 62.9,57.1 37.4,64.8 C33.2,66.1 28.8,63.7 27.5,59.5 C26.3,55.3 28.7,50.9 32.9,49.6 C62.2,40.7 110.9,42.4 141.6,60.6 C145.4,62.9 146.6,67.8 144.4,71.5 C142.2,75.3 137.4,76.6 133.7,74.4 Z</Geometry>
+
+</ResourceDictionary>
+

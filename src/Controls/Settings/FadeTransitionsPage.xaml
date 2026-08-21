@@ -1,0 +1,95 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.FadeTransitionsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Fade Transitions" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="How music arrives and leaves. With Live Effects on, fades sound different — the reverb tail carries past the fade."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Fade Length" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+                <TextBlock Text="Fade in" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0.10" Maximum="5" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.FadeInDuration}"
+                        IsSnapToTickEnabled="True" TickFrequency="0.05"
+                        SmallChange="0.05" LargeChange="0.5"
+                        AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="2"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.FadeInDuration, StringFormat='{}{0:F2} s'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
+                       Text="Longer is smoother."/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <TextBlock Text="Fade out" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0.10" Maximum="5" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.FadeOutDuration}"
+                        IsSnapToTickEnabled="True" TickFrequency="0.05"
+                        SmallChange="0.05" LargeChange="0.5"
+                        AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="2"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.FadeOutDuration, StringFormat='{}{0:F2} s'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,14"
+                       Text="Shorter is snappier."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Track Changes" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Fade out before a song ends"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.FadeOutBeforeSongEnd}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Only applies where UPS advances on its own (Radio Mode or Randomize-On-Song-End). The current track fades in its final seconds instead of abruptly cutting."/>
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
+                        IsEnabled="{Binding Settings.FadeOutBeforeSongEnd}">
+                <TextBlock Text="Fade length" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="0.2" Maximum="5" Width="200" VerticalAlignment="Center"
+                        Value="{Binding Settings.FadeOutBeforeSongEndDuration}"
+                        TickFrequency="0.1" IsSnapToTickEnabled="True"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.FadeOutBeforeSongEndDuration, StringFormat='{}{0:F1} s'}"/>
+            </StackPanel>
+
+            <CheckBox Content="True crossfade — overlap the two tracks"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.EnableTrueCrossfade}"/>
+            <TextBlock Style="{StaticResource UpsHintFlush}"
+                       Text="Replaces the sequential fade above with a DJ-style overlap: the next song starts while the current one is still fading. Auto-advance transitions only — manual song changes still switch instantly."/>
+            <TextBlock Style="{StaticResource UpsWarning}" Margin="32,0,0,6"
+                       Text="Takes effect on the next song transition."/>
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,4"
+                        IsEnabled="{Binding Settings.EnableTrueCrossfade}">
+                <TextBlock Text="Crossfade length" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="1" Maximum="10" Width="200" VerticalAlignment="Center"
+                        Value="{Binding Settings.CrossfadeDurationSeconds}"
+                        TickFrequency="1" IsSnapToTickEnabled="True"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.CrossfadeDurationSeconds, StringFormat='{}{0} s'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="9 seconds sounds the most natural; shorter values feel abrupt. Songs shorter than the crossfade plus two seconds fall back to the sequential fade."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

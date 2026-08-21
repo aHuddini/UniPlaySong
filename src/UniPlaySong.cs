@@ -4141,9 +4141,9 @@ namespace UniPlaySong
         public override UserControl GetSettingsView(bool firstRunSettings)
         {
             // Return view WITHOUT setting DataContext manually
-            // Playnite sets the ISettings object (from GetSettings) as DataContext automatically
-            // Following PlayniteSound pattern: pass plugin reference, not ViewModel
-            return new UniPlaySongSettingsView(this);
+            // Playnite sets the ISettings object (from GetSettings) as DataContext automatically.
+            // The settings pages reach the plugin through the view model's Plugin property.
+            return new UniPlaySongSettingsView();
         }
 
         // Returns custom controls for theme integration. Called by Playnite when a theme uses

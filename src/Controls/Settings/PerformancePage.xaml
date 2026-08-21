@@ -1,0 +1,34 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.PerformancePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Performance" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Settings that can help optimize UPS to perform better."/>
+
+            <!-- "Release Audio When Idle" lives on Advanced -> Experimental (v1.5.4). -->
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Song List Cache"
+                      IsChecked="{Binding Settings.EnableSongListCache}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Off by default. Caches each game's music file list for the running Playnite session, which can smooth out crackles when switching games quickly. Desktop and Fullscreen count as separate sessions. The cache clears itself whenever you download, edit or delete music, and on restart - but music you add by hand outside UniPlaySong will not appear until Playnite restarts."/>
+            <TextBlock Style="{StaticResource UpsWarning}"
+                       Text="&#x26A0; Leave this off unless you actually hear a problem switching games."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

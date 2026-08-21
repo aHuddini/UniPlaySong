@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.RandomizationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Everything that decides which song comes next. Preview Mode moved to Music Mode,
+         which is where the modes that override normal selection now live. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Randomization" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Rules for UPS to determine which game music plays next when a game has several tracks, and how long each one gets."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Song Selection" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Pick a new song each time you select the game (Switch Mode)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.RandomizeOnEverySelect}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="After a game's initial song has played, UPS will pick a random song if you later visit the same game."/>
+
+            <CheckBox Content="Pick a new song when the current one ends (Loop Mode)"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.RandomizeOnMusicEnd}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="When staying on the same game, after a song finishes, another is chosen at random from the game's songs instead of looping."/>
+
+            <CheckBox Content="Stop when the song ends"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.StopAfterSongEnds}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Do not loop and do not advance. Silence until you select another game. Applies to normal playback and to preview mode."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Random Game Picker" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Content="Play music while browsing Playnite's Random Game Picker"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.EnableRandomPickerMusic}"/>
+            <TextBlock Style="{StaticResource UpsHintFlush}"
+                       Text="Each game's music plays as you click Pick Another in Playnite's picker dialog. Music returns to your library selection when the dialog closes."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

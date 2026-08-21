@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.DebugPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Debug" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Logging, for when something needs reporting."/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Debug Logging"
+                      IsChecked="{Binding Settings.EnableDebugLogging}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Writes detailed diagnostics to UniPlaySong.log in the extension folder. Leave it off for normal use - the file grows quickly."/>
+
+            <Button Style="{StaticResource UpsButton}" Content="Open Log Folder"
+                    Width="160" Margin="0,4,0,0"
+                    HorizontalAlignment="Left"
+                    Command="{Binding OpenLogFolderCommand}"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

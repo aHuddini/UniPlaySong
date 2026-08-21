@@ -20,13 +20,25 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.7.3
+## What's New - v1.8.0
+
+### Improved
+- **The settings window has been overhauled.** Settings are grouped into pages you pick from a rail on the left, related options sit together, and confusing or repeated descriptions have been rewritten or removed throughout.
+- **PlayniteAchievements** now shows which sound each rarity will actually play, in every sound pack — instead of greying the list out unless you picked Custom.
+- **External Audio's ignored-apps list** is one removable chip per app, rather than a single comma-separated text box.
+- **Auto-tagging** and **"do not preserve originals"** also appear on the Automations page, in step with their original home.
+
+### Added
+- **Music Mode** page — Preview Mode and Radio Mode, the two modes that change how UniPlaySong plays, together on one page.
+- **Miscellaneous** page — Gamification settings that apply across events.
+- **Visualizers** page — the spectrum visualizer, plus Icon Glow and Sidebar Glow graduated out of Experimental.
 
 ### Fixed
-- **YouTube downloads that failed with a "403 Forbidden" now work.** Some videos were refused outright — most visibly in **Download from URL**, where previews and downloads both failed. UniPlaySong now automatically retries those with different settings and gets the track. Videos that already downloaded fine are unaffected.
+- **"Apply live effects to jingles"** switched itself off with the Completed fanfare, even though it also governs the Abandoned jingle.
+- **Radio Mode's** game rotation and completion-status options now show what is selected and where to change it.
 
 ### Previous Version
-- **v1.7.2**: ControlUp support — a sound when your controller is detected (needs ControlUp v2.5.3); audio buffer size setting in the Experimental tab.
+- **v1.7.4**: Gamification Preview buttons only played once per settings session; removed the System beep sound option.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

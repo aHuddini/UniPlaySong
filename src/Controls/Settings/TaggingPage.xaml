@@ -1,0 +1,40 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.TaggingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Tagging" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="How UniPlaySong writes metadata into Playnite."/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-Tag Games On Library Update"
+                      IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Tags each game &quot;[UPS] Has Music&quot; or &quot;[UPS] No Music&quot; whenever your library updates, so you can filter on it in Playnite."/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <Button Style="{StaticResource UpsButton}" Content="Scan &amp; Tag All Games"
+                        Width="160" Margin="0,0,10,0"
+                        Command="{Binding ScanAndTagAllGamesCommand}"/>
+                <Button Style="{StaticResource UpsButtonDanger}" Content="Remove All Tags"
+                        Width="140"
+                        Command="{Binding RemoveAllMusicTagsCommand}"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

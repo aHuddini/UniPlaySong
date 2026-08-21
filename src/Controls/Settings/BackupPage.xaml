@@ -1,0 +1,78 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.BackupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+            <TextBlock Text="Settings Backup &amp; Migration" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Text="Export your settings to a file for backup, migration to another machine, or sharing in support requests." Style="{StaticResource UpsPageSubtitle}"/>
+
+            <!-- JSON Export / Import (portable, re-importable) -->
+            <Border Style="{StaticResource UpsCardAccent}">
+                <StackPanel>
+                    <TextBlock Text="Portable JSON Backup" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Text="Save your settings to a JSON file that can be re-imported later or on another machine. Tool paths and custom rotation pool are excluded."
+                               Style="{StaticResource UpsHintFlush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource UpsButtonPrimary}" Content="Export Settings (JSON)…"
+                                Click="ExportSettingsJson_Click"
+                                Padding="15,8"
+                                Margin="0,0,10,0"/>
+                        <!-- Amber, not blue. Export writes a file and changes nothing; import
+                             replaces every setting you currently have. Same severity scale as
+                             Cleanup: neutral is safe, amber changes things you would have to
+                             redo, red is irreversible. -->
+                        <Button Style="{StaticResource UpsButtonCaution}" Content="Import Settings (JSON)…"
+                                Click="ImportSettingsJson_Click"
+                                Padding="15,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Markdown Snapshot (human-readable, one-way) -->
+            <Border Style="{StaticResource UpsCardGood}">
+                <StackPanel>
+                    <TextBlock Text="Human-Readable Snapshot" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Text="Save a Markdown snapshot of your configuration for personal reference or for sharing in GitHub issues / Discord support requests. Includes derived stats (game count, music storage) and tool-path validation. Not re-importable."
+                               Style="{StaticResource UpsHintFlush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <Button Style="{StaticResource UpsButtonPositive}" Content="Export Snapshot (Markdown)…"
+                            Click="ExportSettingsMarkdown_Click"
+                            Padding="15,8"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Notes -->
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="What gets included?" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0">
+                        <Run Text="• "/><Run Text="JSON Export:" FontWeight="SemiBold"/><Run Text="Playback / Pauses / Live Effects / Visualizer / all toggles. Excludes tool paths (yt-dlp, FFmpeg, custom default music file/folder paths, cookies file) and Custom Rotation game IDs."/>
+                        <LineBreak/>
+                        <Run Text="• "/><Run Text="JSON Import:" FontWeight="SemiBold"/><Run Text=" Restores included settings; preserves your local tool paths and Custom Rotation. You'll see a notification listing what stayed local."/>
+                        <LineBreak/>
+                        <Run Text="• "/><Run Text="Markdown Snapshot:" FontWeight="SemiBold"/><Run Text=" Everything visible (sensitive values redacted as *****). Includes a 'Diff from defaults' table at the bottom."/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

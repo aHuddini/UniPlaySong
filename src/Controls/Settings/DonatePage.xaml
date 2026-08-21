@@ -1,0 +1,83 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.DonatePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Support UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="UPS is a full blown audio engine for Playnite that is free and open-source."/>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,8"
+                               Text="UPS is maintained by Huddini in his spare time and when he's not trying to make ends meet."/>
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,0"
+                               Text="Your support is critical to continue the development of UPS, be it promoting on Reddit, tipping a dollar, etc."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Ko-Fi: Enhanced Build" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,6"
+                       Text="Supporters can purchase an unlocked build of UPS that improves the download manager (a non-essential feature of UPS)."/>
+            <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,6"
+                       Text="New unlocked builds will release on Ko-Fi when major features ship, but is not required. Downloading music works in the normal build, and so does every other feature — playback, radio, live effects, jingles, etc. The unlocked build simply makes one feature nicer."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Where" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ko-fi (Tips)" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
+                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ko-fi.com/Z8Z11SG2IK"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">ko-fi.com/Z8Z11SG2IK</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                               Text="The primary way to support me."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="GitHub (Sponsor)" Style="{StaticResource UpsLabel}" Margin="0,0,0,10"/>
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,10">
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,0,0,2">
+                        <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/sponsors/aHuddini"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">github.com/sponsors/aHuddini</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                               Text="Recurring subscription."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Free" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsHintFlush}" Margin="0,2,0,0"
+                           Text="Report a bug you hit, or tell someone the plugin exists."/>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,115 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.AudioManagementPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Audio Management" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Run an operation across the whole library, or clean up what is on disk."/>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Bulk Actions" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <Button Style="{StaticResource UpsButton}" Content="Normalize All Music Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding NormalizeAllMusicCommand}"/>
+                        <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings in Audio Editing page."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Style="{StaticResource UpsButton}" Content="Trim Silence - All Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding TrimAllMusicCommand}"/>
+                        <TextBlock Text="Remove leading silence from all music files."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Style="{StaticResource UpsButton}" Content="Create Folders for All Games"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding CreateMissingMusicFoldersCommand}"/>
+                        <TextBlock Text="Create a music folder for every game in your library that doesn't have one yet."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="File Management" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <Button Style="{StaticResource UpsButton}" Content="Open Game Index"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding OpenGameIndexCommand}"/>
+                        <TextBlock Text="Open the game index listing all games with music folders and their IDs."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Style="{StaticResource UpsButton}" Content="Open Preserved Folder"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding OpenPreservedOriginalsFolderCommand}"/>
+                        <TextBlock Text="Open the folder containing backup copies of original files."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Style="{StaticResource UpsButton}" Content="Restore Original Files"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding RestoreNormalizedFilesCommand}"/>
+                        <TextBlock Text="Restore originals and delete normalized/trimmed versions."
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource UpsHint}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+    
+                    <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Button Style="{StaticResource UpsButton}" Content="Delete Preserved Originals"
+                                Width="220"
+                                Margin="0,0,10,0"
+                                Command="{Binding DeletePreservedOriginalsCommand}"/>
+                        <TextBlock Text="Permanently delete all preserved originals to free disk space."
+                                   Style="{StaticResource UpsDangerNote}"
+                                   VerticalAlignment="Center" Margin="0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

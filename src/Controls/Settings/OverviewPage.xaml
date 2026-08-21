@@ -1,0 +1,149 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.OverviewPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             xmlns:system="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Cards rather than sections. This page is read, not operated: flat headings over prose
+         collapse into one wall of text, whereas a tinted box makes each block skippable and its
+         tint says what kind of block it is before a word is read. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="UniPlaySong" Style="{StaticResource UpsPageTitle}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Version " Style="{StaticResource UpsHint}" Margin="0"/>
+                <TextBlock Text="{Binding PluginVersion}" Style="{StaticResource UpsHint}"
+                           Margin="0" FontWeight="SemiBold" Foreground="{StaticResource UpsAccent}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="A console-like game music preview experience for Playnite. Music plays while browsing your library, with controller-friendly song management and fade transitions between selections."/>
+
+            <Border Style="{StaticResource UpsCardGood}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource UpsCardTitle}">
+                        <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Improved:</Run> This settings window has been overhauled — grouped into pages, related options together, and confusing descriptions rewritten or removed.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Added:</Run> Music Mode, Miscellaneous and Visualizers pages. Icon Glow and Sidebar Glow have graduated out of Experimental.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Fixed:</Run> "Apply live effects to jingles" switched off with the Completed fanfare, though it also governs the Abandoned jingle.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
+                        Full History:
+                        <Hyperlink Style="{StaticResource UpsLink}"
+                                   NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
+                                   RequestNavigate="AboutHyperlink_RequestNavigate">Github</Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+                <StackPanel>
+                    <TextBlock Text="Supported Audio Formats" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                               Text="Audio formats tested with UPS's audio engine. Drop files matching these extensions into a game's music folder."/>
+                    <!-- A flat set of peers, so chips rather than a bullet run. The chiptune list
+                         below stays prose: each entry carries a console and, for .hes, a caveat. -->
+                    <ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource UpsChipGood}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipTextGood}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <system:String>MP3</system:String>
+                        <system:String>OGG Vorbis</system:String>
+                        <system:String>FLAC</system:String>
+                        <system:String>WAV</system:String>
+                    </ItemsControl>
+
+                    <TextBlock Style="{StaticResource UpsBody}" Margin="0,10,0,4" FontWeight="SemiBold"
+                               Text="Retro Chiptune Formats"/>
+                    <TextBlock Style="{StaticResource UpsBullet}" Margin="10,0,0,3"><Run FontWeight="SemiBold">• .vgm / .vgz</Run> — Sega Genesis / Mega Drive / Sega CD</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBullet}" Margin="10,0,0,3"><Run FontWeight="SemiBold">• .nsf</Run> — NES / Famicom</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBullet}" Margin="10,0,0,3"><Run FontWeight="SemiBold">• .spc</Run> — SNES / Super Famicom</TextBlock>
+                    <TextBlock Style="{StaticResource UpsBullet}" Margin="10,0,0,0"><Run FontWeight="SemiBold">• .hes</Run> — NEC TurboGrafx-16 / PC Engine (needs a sibling .m3u for multi-track playback)</TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCardAccent}">
+                <StackPanel>
+                    <TextBlock Text="Officially Supported Fullscreen Themes" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,8"
+                               Text="Themes that use the UPS theme-integration API (UPS_MusicControl) to pause music during intro sequences, login screens and overlays."/>
+                    <ItemsControl Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource UpsChipGood}">
+                                    <TextBlock Text="{Binding}" Style="{StaticResource UpsChipTextGood}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <system:String>ANIKI REMAKE</system:String>
+                        <system:String>PS5 Experience (by saVantCZ)</system:String>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
+                               Text="PS5 Experience needs its compatibility toggle: Advanced → Theme Support."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCardWarn}">
+                <StackPanel>
+                    <TextBlock Text="Troubleshooting / Known Quirks" Style="{StaticResource UpsCardTitle}"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                               Text="Real-world edge cases users have hit."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Windows may not auto-sleep while Playnite is running"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
+                               Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio, which may prevent sleep. If your PC doesn't sleep on its own, exit Playnite when you step away."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Pause on focus loss can be unreliable"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
+                               Text="If music gets stuck silent after exiting a game, turn off &quot;Ignore brief focus loss&quot;. If it still happens, send a log."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Active theme music options in Playback settings require theme support"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
+                               Text="This option needs the theme to ship a UPS_BackgroundAudio audio file. Ask the theme's developer to add one to their theme directories."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Very long or very large songs can make a theme stutter"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,0"
+                               Text="A track past roughly 30 minutes, or one with a big file size, competes with the theme for memory and can leave animations stuttering. Cut it to something like 10-15 minutes with Precise Trim — right-click the game in your library — or shrink the file under Library → Audio Editing → Format Conversion. A reasonable-bitrate MP3 or OGG is far lighter than a long WAV or FLAC."/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

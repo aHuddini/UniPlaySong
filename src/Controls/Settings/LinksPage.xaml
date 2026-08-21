@@ -1,0 +1,134 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.LinksPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- The tool downloads live here rather than on Setup → Tools: Tools is where you point the
+         plugin at an exe you already have, this is where you go to get one. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Links" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Where the project lives, and where to get the optional external tools."/>
+
+            <Border Style="{StaticResource UpsCardAccent}">
+              <StackPanel>
+                <TextBlock Text="Project" Style="{StaticResource UpsCardTitle}"/>
+                <Grid Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Source" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource UpsBody}">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/aHuddini/UniPlaySong"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">github.com/aHuddini/UniPlaySong</Hyperlink>
+                </TextBlock>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Report a bug" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource UpsBody}">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/aHuddini/UniPlaySong/issues"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">Open an issue on GitHub</Hyperlink>
+                </TextBlock>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Version history" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource UpsBody}">
+                    <Hyperlink Style="{StaticResource UpsLink}"
+                               NavigateUri="https://github.com/aHuddini/UniPlaySong/blob/main/Manifest/installer.yaml"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">Update Log</Hyperlink>
+                </TextBlock>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Support" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource UpsPillLink}" Margin="0,0,0,0"
+                        Tag="https://ko-fi.com/Z8Z11SG2IK" Click="OpenLink_Click"
+                        ToolTip="ko-fi.com/Z8Z11SG2IK">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource UpsCoffeeCupGeometry}" Fill="White" Stretch="Uniform"
+                              Width="11" Height="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Support me on Ko-fi" VerticalAlignment="Center" Foreground="White" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCardAccent}">
+              <StackPanel>
+                <TextBlock Text="Social" Style="{StaticResource UpsCardTitle}"/>
+                <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Discord" Style="{StaticResource UpsLabel}" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0,0,0,6">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://discord.gg/lvUdMqCwVf"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">Official Playnite Discord</Hyperlink>
+                </TextBlock>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Twitter/X" Style="{StaticResource UpsLabel}" Margin="0,0,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource UpsBody}" Margin="0">
+                    <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://twitter.com/Huddini_2k"
+                               RequestNavigate="AboutHyperlink_RequestNavigate">@Huddini_2k</Hyperlink>
+                </TextBlock>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource UpsCard}">
+              <StackPanel>
+                <TextBlock Text="External Tools" Style="{StaticResource UpsCardTitle}"/>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
+                       Text="Most features work out of the box. Below are tools required for full plugin functionality."/>
+
+            <!-- A list, not three labelled blocks: this page exists to get you to a download,
+                 and what each tool is for belongs on Setup → Tools where you configure it. -->
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,4">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">yt-dlp</Run>
+                <Run Foreground="#6B7A88"> — </Run>
+                <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://github.com/yt-dlp/yt-dlp/releases"
+                           RequestNavigate="AboutHyperlink_RequestNavigate">github.com/yt-dlp/yt-dlp/releases</Hyperlink>
+            </TextBlock>
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,4">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">Deno</Run>
+                <Run Foreground="#6B7A88"> — </Run>
+                <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://deno.com/"
+                           RequestNavigate="AboutHyperlink_RequestNavigate">deno.com</Hyperlink>
+            </TextBlock>
+            <TextBlock Style="{StaticResource UpsBullet}" Margin="2,0,0,0">
+                <Run Foreground="#6B7A88">•</Run>
+                <Run FontWeight="SemiBold">FFmpeg</Run>
+                <Run Foreground="#6B7A88"> — </Run>
+                <Hyperlink Style="{StaticResource UpsLink}" NavigateUri="https://ffmpeg.org/download.html"
+                           RequestNavigate="AboutHyperlink_RequestNavigate">ffmpeg.org/download</Hyperlink>
+            </TextBlock>
+              </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
