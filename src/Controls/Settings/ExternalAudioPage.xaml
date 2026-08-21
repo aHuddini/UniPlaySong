@@ -44,11 +44,11 @@
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="Useful for voice calls, or any time you want zero overlap."/>
 
-            <Border Style="{StaticResource UpsSectionBar}" Margin="0,14,0,0">
+            <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <StackPanel Orientation="Horizontal" Margin="0,2,0,0"
+            <StackPanel Orientation="Horizontal"
                         IsEnabled="{Binding Settings.PauseOnExternalAudio}">
                 <TextBlock Text="Debounce" Style="{StaticResource UpsLabel}" Width="86"/>
                 <Slider Minimum="0" Maximum="10" Width="200" VerticalAlignment="Center"
@@ -84,11 +84,11 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <Border Style="{StaticResource UpsSectionBar}" Margin="0,18,0,0">
+            <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Ignored Apps" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
-                       Text="UPS never pauses for audio from these processes. This is where the recorders and streaming apps above belong."/>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,7"
+                       Text="This setting tells UPS to avoid pausing music if it hears audio coming from problematic applications. Recording apps like OBS should be added here."/>
 
             <!-- One chip per entry, over the same comma-joined setting. The list used to be a single
                  420px text box holding seven names, so most of it was scrolled out of sight and
@@ -129,7 +129,7 @@
                         Command="{Binding AddExcludedAppCommand}"/>
             </StackPanel>
             <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,5,0,0"
-                       Text="Process names without .exe, e.g. obs64. Find your app's process in Task Manager's Details tab. Enter adds it; paste a comma-separated list to add several at once."/>
+                       Text="Add process names without .exe, e.g. obs64. Find your app's process in Task Manager's Details tab."/>
 
         </StackPanel>
     </ScrollViewer>

@@ -104,7 +104,7 @@
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0"
                            Text="Each row shows the sound file that a rarity event will play. Badge art from the PlayniteAchievements plugin."/>
 
-                <Border Style="{StaticResource UpsSectionBar}" Margin="0,18,0,0">
+                <Border Style="{StaticResource UpsSectionBar}">
                     <TextBlock ups:TrackedCaps.Text="Fallback Sound" Style="{StaticResource UpsSectionTitle}"/>
                 </Border>
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,7"
