@@ -14,16 +14,11 @@ Packages:
       - '[Improved] Gamification settings reworked throughout so the options are clearer to pick. PlayniteAchievements got the largest change: setting up a sound for each unlock rarity is far easier.'
       - '[Improved] Pauses settings reorganised, with External Audio on its own page. Adding a process to the ignore list is now a matter of typing its name rather than editing a comma-separated line.'
       - '[Improved] Media Controls settings are described more clearly. Troubleshooting notes now cover how very long or very large songs can make a theme stutter.'
+      - '[Fixed] Gamification: the Preview buttons only played a sound once. Clicking Preview again did nothing until you closed and reopened the settings window.'
+      - '[Changed] Gamification: removed the "System beep" sound option from the Games Completed, Games Abandoned, PlayniteAchievements and ControlUp sections. If you had it selected, those now use the bundled jingle instead.'
       - '[Fixed] "Apply live effects to jingles" switched itself off along with the Completed fanfare, even though it also governs the Abandoned jingle.'
       - '[Fixed] PlayniteAchievements per-rarity sounds appeared greyed out unless you had picked the Custom pack. They now show which sound each rarity will actually play, whichever pack you are using.'
       - '[Fixed] Radio Mode game-rotation and completion-status options gave no indication of what was selected, or where to change it.'
-  - Version: 1.7.4
-    RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-08-15
-    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.7.4/UniPlaySong-1_7_4.pext'
-    Changelog:
-      - '[Fixed] Gamification tab: the Preview buttons only played a sound once. Clicking Preview again did nothing until you closed and reopened the settings window.'
-      - '[Changed] Gamification tab: removed the "System beep" sound option from the Games Completed, Games Abandoned, PlayniteAchievements and ControlUp sections. If you had it selected, those now use the bundled jingle instead.'
   - Version: 1.7.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-14

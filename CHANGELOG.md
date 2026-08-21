@@ -50,6 +50,9 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.7.4] - 2026-08-15
 
+> Never released on its own. These changes shipped inside 1.8.0; the 1.7.4 entry was removed
+> from the installer manifest, where its download URL pointed at a release that was never published.
+
 ### Fixed
 
 - **Preview buttons only worked once per settings-window session.** `MediaPlayer.Open()` raises `MediaOpened` only when the source actually changes, so re-opening the same URI was a no-op: the handler that calls `Play()` never ran and the second click was silent. Reopening the settings window appeared to fix it only because that built a fresh player. `PlayPreview` now calls `Close()` before `Open()`, so every click is a real source change. Affects all seven Preview buttons, since they share the one helper.

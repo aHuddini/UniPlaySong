@@ -61,8 +61,7 @@ very large songs can make a theme stutter.
   pack. They now show which sound each rarity will actually play, whichever pack you are using.
 
 ### Previous Version
-- **v1.7.4**: Gamification Preview buttons only played once per settings session; removed the System
-  beep sound option.
+- **v1.7.3**: YouTube downloads that failed with a "403 Forbidden" now retry automatically and get the track.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
