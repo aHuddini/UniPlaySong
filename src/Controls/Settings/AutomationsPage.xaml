@@ -51,6 +51,15 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Removing a game from Playnite also removes its music folder, so stale music does not sit on your PC. To clear music from games already removed, use Advanced → Cleanup."/>
 
+            <!-- The same setting as General -> Tagging. Both bind the one property, so they stay in
+                 step on their own; it is surfaced twice because it is a thing UPS does unprompted
+                 on a library update, alongside the two downloads and the delete above. -->
+            <CheckBox Content="Auto-Tag Games On Library Update"
+                      Style="{StaticResource UpsToggle}"
+                      IsChecked="{Binding Settings.AutoTagOnLibraryUpdate}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Tags each game &quot;[UPS] Has Music&quot; or &quot;[UPS] No Music&quot; whenever your library updates, so you can filter on it in Playnite. Shared with General → Tagging, where you can also tag your whole library now."/>
+
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Post-Download Actions" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
