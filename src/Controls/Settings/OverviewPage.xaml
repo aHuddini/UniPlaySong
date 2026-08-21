@@ -38,10 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Fixed:</Run> Preview buttons only played once per settings session — clicking Preview again now works without reopening this window.
+                        <Run FontWeight="SemiBold">Improved:</Run> This settings window has been overhauled — grouped into pages, related options together, and confusing descriptions rewritten or removed.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Changed:</Run> Removed the System beep sound option. If you had it selected, that sound now uses the bundled jingle.
+                        <Run FontWeight="SemiBold">Added:</Run> Music Mode, Miscellaneous and Visualizers pages. Icon Glow and Sidebar Glow have graduated out of Experimental.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        <Run FontWeight="SemiBold">Fixed:</Run> "Apply live effects to jingles" switched off with the Completed fanfare, though it also governs the Abandoned jingle.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

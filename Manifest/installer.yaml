@@ -1,5 +1,18 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.8.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-21
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.0/UniPlaySong-1_8_0.pext'
+    Changelog:
+      - '[Improved] The settings window has been overhauled. Settings are grouped into pages you navigate from a rail on the left, related options now sit together, and confusing or repeated descriptions have been rewritten or removed throughout.'
+      - '[New Feature] Music Mode page (Playback): Preview Mode and Radio Mode, the two modes that change how UniPlaySong plays, now share one page.'
+      - '[New Feature] Miscellaneous page (Gamification): settings that apply across events, starting with "Apply live effects to jingles" - which previously switched itself off with the Completed fanfare even though it also governs the Abandoned jingle.'
+      - '[New Feature] Visualizers page (Live Effects): the spectrum visualizer, plus Icon Glow and Sidebar Glow graduated out of Experimental.'
+      - '[Improved] PlayniteAchievements: the rarity sounds now show which file each rarity will actually play, in every sound pack, instead of greying out unless you picked Custom.'
+      - '[Improved] External Audio: the ignored-apps list is now one removable chip per app instead of a single comma-separated text box.'
+      - '[Improved] Auto-tagging and "do not preserve originals" also appear on the Automations page, in step with their original home.'
+      - '[Fixed] Radio Mode: the game rotation and completion-status options now show what is selected and where to change it.'
   - Version: 1.7.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-15
