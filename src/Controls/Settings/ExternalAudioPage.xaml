@@ -44,19 +44,17 @@
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="Useful for voice calls, or any time you want zero overlap."/>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
+            <Border Style="{StaticResource UpsSectionBar}" Margin="0,14,0,0">
+                <TextBlock ups:TrackedCaps.Text="Timing" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
+            <StackPanel Orientation="Horizontal" Margin="0,2,0,0"
                         IsEnabled="{Binding Settings.PauseOnExternalAudio}">
-                <TextBlock Text="Debounce" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <TextBlock Text="Debounce" Style="{StaticResource UpsLabel}" Width="86"/>
                 <Slider Minimum="0" Maximum="10" Width="200" VerticalAlignment="Center"
                         IsSnapToTickEnabled="True" TickFrequency="1"
                         Value="{Binding Settings.ExternalAudioDebounceSeconds}"/>
-                <TextBlock Margin="12,0,0,0" FontSize="12">
+                <TextBlock Margin="12,0,0,0">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource UpsValue}">
                             <Setter Property="Text" Value="{Binding Settings.ExternalAudioDebounceSeconds, StringFormat='{}{0} seconds'}"/>
@@ -69,13 +67,13 @@
                     </TextBlock.Style>
                 </TextBlock>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="86,4,0,0"
                        Text="How long the other audio must play before UPS music pauses, and how long the silence must last before it resumes. Lower is more responsive, but can flicker pauses on brief sounds."/>
             <!-- Only worth saying when the debounce is actually zero. -->
             <TextBlock Text="At zero, Windows notification sounds and short blips will pause the music too.">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
-                        <Setter Property="Margin" Value="0,0,0,4"/>
+                        <Setter Property="Margin" Value="86,2,0,0"/>
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
@@ -86,25 +84,52 @@
                 </TextBlock.Style>
             </TextBlock>
 
-                </StackPanel>
-            </Expander>
+            <Border Style="{StaticResource UpsSectionBar}" Margin="0,18,0,0">
+                <TextBlock ups:TrackedCaps.Text="Ignored Apps" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
+                       Text="UPS never pauses for audio from these processes. This is where the recorders and streaming apps above belong."/>
 
-            <Expander Style="{StaticResource UpsSection}">
-                <Expander.Header>
-                    <TextBlock ups:TrackedCaps.Text="App Exclusions" Style="{StaticResource UpsSectionTitle}"/>
-                </Expander.Header>
-                <StackPanel>
+            <!-- One chip per entry, over the same comma-joined setting. The list used to be a single
+                 420px text box holding seven names, so most of it was scrolled out of sight and
+                 removing one meant editing a sentence without breaking the commas. -->
+            <ItemsControl ItemsSource="{Binding ExcludedApps}"
+                          IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource UpsChip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding}" Style="{StaticResource UpsChipText}"/>
+                                <Button Style="{StaticResource UpsChipRemove}"
+                                        ToolTip="Stop ignoring this app"
+                                        Command="{Binding DataContext.RemoveExcludedAppCommand,
+                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-            <TextBlock Text="Ignore audio from these processes" Style="{StaticResource UpsLabel}"
-                       Margin="0,0,0,6" IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-            <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.ExternalAudioExcludedApps, UpdateSourceTrigger=PropertyChanged}"
-                     Width="420" HorizontalAlignment="Left" Margin="0,0,0,6"
-                     IsEnabled="{Binding Settings.PauseOnExternalAudio}"/>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,12"
-                       Text="Comma-separated process names, e.g. obs64, discord. Find your app's process in Task Manager's Details tab. UPS will then ignore these apps' audio and will not pause its music."/>
-
-                </StackPanel>
-            </Expander>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                        IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                <TextBox Style="{StaticResource UpsTextBox}" Width="220" Margin="0,0,8,0"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding NewExcludedApp, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Return" Command="{Binding AddExcludedAppCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Button Style="{StaticResource UpsButton}" Content="Add" Padding="14,4"
+                        Command="{Binding AddExcludedAppCommand}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,5,0,0"
+                       Text="Process names without .exe, e.g. obs64. Find your app's process in Task Manager's Details tab. Enter adds it; paste a comma-separated list to add several at once."/>
 
         </StackPanel>
     </ScrollViewer>

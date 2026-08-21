@@ -86,6 +86,10 @@ namespace UniPlaySong
                 }
                 UpdateHintsDatabaseStatus();
             }
+            else if (e.PropertyName == nameof(UniPlaySongSettings.ExternalAudioExcludedApps))
+            {
+                OnPropertyChanged(nameof(ExcludedApps));
+            }
             else if (e.PropertyName == nameof(UniPlaySongSettings.AchievementSoundPack)
                      || e.PropertyName == nameof(UniPlaySongSettings.CommonAchievementSoundPath)
                      || e.PropertyName == nameof(UniPlaySongSettings.UncommonAchievementSoundPath)
@@ -352,6 +356,60 @@ namespace UniPlaySong
         public List<Services.BundledJingleInfo> AchievementJingles => Services.BundledJingleService.GetAchievementJingles();
 
         public List<Services.BundledJingleInfo> ControlUpJingles => Services.BundledJingleService.GetControlUpJingles();
+
+        // === External-audio exclusions ===
+        // The setting stays a comma-joined string - UniPlaySong.cs splits it on ',' and
+        // SettingsService's migration appends to it in the same form - so this is a view over it,
+        // not a change of storage. Editing seven names inside one sentence was the problem.
+
+        public string NewExcludedApp
+        {
+            get => newExcludedApp;
+            set { newExcludedApp = value; OnPropertyChanged(); }
+        }
+        private string newExcludedApp = string.Empty;
+
+        public List<string> ExcludedApps => SplitExcluded(Settings?.ExternalAudioExcludedApps);
+
+        private static List<string> SplitExcluded(string raw) =>
+            (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .ToList();
+
+        // Written back the way the migration writes it, so both agree on the format.
+        private void WriteExcluded(IEnumerable<string> apps)
+        {
+            Settings.ExternalAudioExcludedApps = string.Join(", ", apps);
+            OnPropertyChanged(nameof(ExcludedApps));
+        }
+
+        public ICommand AddExcludedAppCommand => new Common.RelayCommand(() =>
+        {
+            // Accept a pasted "obs64, obs32" as readily as a single name, drop any .exe the user
+            // copied from Task Manager, and ignore duplicates rather than silently listing one twice.
+            var candidates = SplitExcluded(NewExcludedApp)
+                .Select(x => x.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? x.Substring(0, x.Length - 4) : x)
+                .Where(x => x.Length > 0);
+
+            var apps = ExcludedApps;
+            var seen = new HashSet<string>(apps, StringComparer.OrdinalIgnoreCase);
+            bool added = false;
+            foreach (var c in candidates)
+            {
+                if (seen.Add(c)) { apps.Add(c); added = true; }
+            }
+            if (added) WriteExcluded(apps);
+            NewExcludedApp = string.Empty;
+        });
+
+        public ICommand RemoveExcludedAppCommand => new Common.RelayCommand<object>(app =>
+        {
+            var name = app?.ToString();
+            if (string.IsNullOrEmpty(name)) return;
+            WriteExcluded(ExcludedApps.Where(x => !string.Equals(x, name, StringComparison.OrdinalIgnoreCase)));
+        });
 
         // SDL2 output buffer choices for the Experimental tab.
         public List<AudioBufferOption> AudioBufferOptions => AudioBufferOption.All;
