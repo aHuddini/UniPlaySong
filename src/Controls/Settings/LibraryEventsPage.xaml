@@ -25,7 +25,13 @@
          each fold hid the entire page, whereas these each hide one event of two.
 
          Toast field labels take UpsLabel. They were UpsHint, the 10px muted style used for the
-         explanatory sentence directly above them, so a field's name rendered the same as prose. -->
+         explanatory sentence directly above them, so a field's name rendered the same as prose.
+
+         The toast toggles are UpsToggle, not UpsToggleChild. A toast is not a sound option, and the
+         child style both indented it under the sound picker and gave it the dimmer sub-toggle
+         palette, so it read as one more choice belonging to the sound. Its IsEnabled gate stays,
+         though: the toast only fires inside the isCelebratedStatus branch in UniPlaySong.cs, so the
+         event's master toggle genuinely governs the toast as well as the jingle. -->
 
     <ScrollViewer Style="{StaticResource UpsPage}">
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
@@ -82,8 +88,9 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Whether a toast shows, and how it looks. -->
-                    <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Show celebration toast notification"
+                    <!-- Whether a toast shows, and how it looks. A peer of the sound above, not a
+                         child of it - both are halves of the same event. -->
+                    <CheckBox Style="{StaticResource UpsToggle}" Margin="0,14,0,0" Content="Show celebration toast notification"
                               IsChecked="{Binding Settings.ShowCelebrationToast}"
                               IsEnabled="{Binding Settings.EnableCompletionCelebration}"/>
                     <TextBlock Style="{StaticResource UpsHint}" Text="Displays a congratulatory toast popup with a glow animation when a game is marked completed. Complements the celebration fanfare sound."/>
@@ -166,7 +173,7 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Show abandoned toast notification"
+                    <CheckBox Style="{StaticResource UpsToggle}" Margin="0,14,0,0" Content="Show abandoned toast notification"
                               IsChecked="{Binding Settings.ShowAbandonedToast}"
                               IsEnabled="{Binding Settings.EnableAbandonedSound}"/>
                     <TextBlock Style="{StaticResource UpsHint}" Text="Displays a muted toast popup with a graveyard icon when a game is marked abandoned."/>
