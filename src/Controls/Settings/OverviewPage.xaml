@@ -38,13 +38,10 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Improved:</Run> This settings window has been overhauled — grouped into pages, related options together, and confusing descriptions rewritten or removed.
+                        This settings window has been overhauled. It now uses two-tier navigation &#x2014; pick a group on the left, then a page within it &#x2014; so the setting you want is faster to find, and the advanced material is out of the way but still there to explore.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Added:</Run> Music Mode, Miscellaneous and Visualizers pages. Icon Glow and Sidebar Glow have graduated out of Experimental.
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsBody}">
-                        <Run FontWeight="SemiBold">Fixed:</Run> "Apply live effects to jingles" switched off with the Completed fanfare, though it also governs the Abandoned jingle.
+                        Several pages are new or reorganised, and Sidebar Glow, Icon Glow and library Statistics have graduated out of Experimental. See the full changelog below.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

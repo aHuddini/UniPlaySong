@@ -5,14 +5,18 @@ Packages:
     ReleaseDate: 2026-08-21
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.0/UniPlaySong-1_8_0.pext'
     Changelog:
-      - '[Improved] The settings window has been overhauled. Settings are grouped into pages you navigate from a rail on the left, related options now sit together, and confusing or repeated descriptions have been rewritten or removed throughout.'
-      - '[New Feature] Music Mode page (Playback): Preview Mode and Radio Mode, the two modes that change how UniPlaySong plays, now share one page.'
-      - '[New Feature] Miscellaneous page (Gamification): settings that apply across events, starting with "Apply live effects to jingles" - which previously switched itself off with the Completed fanfare even though it also governs the Abandoned jingle.'
-      - '[New Feature] Visualizers page (Live Effects): the spectrum visualizer, plus Icon Glow and Sidebar Glow graduated out of Experimental.'
-      - '[Improved] PlayniteAchievements: the rarity sounds now show which file each rarity will actually play, in every sound pack, instead of greying out unless you picked Custom.'
-      - '[Improved] External Audio: the ignored-apps list is now one removable chip per app instead of a single comma-separated text box.'
-      - '[Improved] Auto-tagging and "do not preserve originals" also appear on the Automations page, in step with their original home.'
-      - '[Fixed] Radio Mode: the game rotation and completion-status options now show what is selected and where to change it.'
+      - '[Improved] The settings window now uses two-tier navigation: pick a group on the left, then a page within it. Finding the setting you want is faster, and the advanced material is out of the way but still there to explore.'
+      - '[New Feature] Setup page: Tools, Downloads, and a new Automations page for the things UniPlaySong does on its own, such as downloading music when a game is added to your library.'
+      - '[New Feature] Playback reorganised, with a dedicated Default Music page for your fallback music and a new Music Mode page holding Preview Mode and Radio Mode together.'
+      - '[New Feature] Live Effects: Volume and Fade Transitions moved off Playback into their own pages, and the reverb effects and the visualizers are now separate pages. Sidebar Glow and Icon Glow have graduated out of Experimental.'
+      - '[New Feature] Library page: a dedicated Statistics page for your music library (graduated out of Experimental), plus Audio Management for bulk actions and file housekeeping.'
+      - '[New Feature] Advanced page collects theme-specific patches, backup, migration and cleanup in one place. About page collects Overview, Links, Credits and Donate.'
+      - '[Improved] Gamification reworked throughout so the options are clearer to pick. PlayniteAchievements got the largest change: setting up a sound for each unlock rarity is far easier.'
+      - '[Improved] Pauses reorganised, with External Audio on its own page. Adding a process to the ignore list is now a matter of typing its name rather than editing a comma-separated line.'
+      - '[Improved] Media Controls options are described more clearly, and the troubleshooting notes now cover how very long or very large songs can make a theme stutter.'
+      - '[Fixed] "Apply live effects to jingles" switched itself off along with the Completed fanfare, even though it also governs the Abandoned jingle.'
+      - '[Fixed] PlayniteAchievements per-rarity sounds appeared greyed out unless you had picked the Custom pack. They now show which sound each rarity will actually play, whichever pack you are using.'
+      - '[Fixed] Radio Mode game-rotation and completion-status options gave no indication of what was selected, or where to change it.'
   - Version: 1.7.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-15

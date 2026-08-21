@@ -8,7 +8,21 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Changed
 
-- **Settings window restructured into a two-level rail.** Tabs became a left rail of groups, each holding its own pages, with one `UserControl` per page under `src/Controls/Settings/`. A shared `SettingsResources.xaml` now owns every style the pages use, so spacing and type come from the design system rather than from inline attributes. Reset stays per rail group via `SettingsGroups.Map`; `SettingsResetCoverageTests` fails by name if a setting is not filed.
+- **Settings window restructured into a two-level rail.** Tabs became a left rail of groups, each holding its own pages, with one `UserControl` per page under `src/Controls/Settings/`. The resulting map:
+
+  | Group | Pages |
+  |---|---|
+  | About | Overview, Credits, Links, Donate |
+  | Quick Start | Profiles |
+  | Setup | Tools, Downloads, Automations |
+  | General | Media Controls, Tagging, Performance |
+  | Playback | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
+  | Pauses | Common Events, External Audio |
+  | Live Effects | Volume, Fade Transitions, Live Effects, Visualizers |
+  | Gamification | Library Events, PlayniteAchievements, ControlUp, Miscellaneous |
+  | Library | Statistics, Audio Editing, Audio Management |
+  | Advanced | Theme Support, Backup, Migration, Cleanup, Debug, Experimental |
+- A shared `SettingsResources.xaml` now owns every style the pages use, so spacing and type come from the design system rather than from inline attributes. Reset stays per rail group via `SettingsGroups.Map`; `SettingsResetCoverageTests` fails by name if a setting is not filed.
 - **Hint scale and alignment unified across all pages.** 73 hints were overriding the indent their style already bakes in (0, 10, 20, 22, 24 and 40 against the style's 32), and 13 warnings were hand-rolled at FontSize 11 in five different hex colours rather than using `UpsWarning`. Hints are now classified by what they sit under: `UpsHint` under a toggle, `UpsHintIndented` under a child toggle, `UpsHintFlush` under anything else.
 - **Sound sources use a segmented picker.** `UpsSegment` retemplates `RadioButton` as a joined button strip, so existing `EnumToBooleanConverter` bindings are untouched. Only the selected branch's controls render, via the new `EnumToVisibilityConverter`.
 
