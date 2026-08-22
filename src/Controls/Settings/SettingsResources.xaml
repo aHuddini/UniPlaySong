@@ -119,11 +119,24 @@
 
     <!-- Section heading with a left accent bar, so groups of settings read as bands rather than
          another line of bold text. -->
+    <!-- Fully self-contained on purpose. A Playnite theme cannot reach an element that carries an
+         explicit Style, but it CAN supply anything the style leaves unset - every inheritable text
+         property flows down the visual tree from the theme's window. Reported broken on the Mythos
+         desktop theme, where the bar came out wrong while the cards beside it (which pin their own
+         Background and text) did not.
+         Literal values rather than StaticResource so the appearance cannot shift with a resource
+         lookup either. These are the exact current colours: UpsAccent #4CC2FF, UpsTextMuted
+         #93A1B0. -->
     <Style x:Key="UpsSectionBar" TargetType="Border">
-        <Setter Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+        <Setter Property="BorderBrush" Value="#4CC2FF"/>
         <Setter Property="BorderThickness" Value="3,0,0,0"/>
         <Setter Property="Padding" Value="10,1,0,1"/>
         <Setter Property="Margin" Value="0,14,0,10"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
     </Style>
 
     <!-- Small, dimmed and tracked uppercase, so the heading reads as a band marker rather than
@@ -132,9 +145,26 @@
          Set the string via TrackedCaps.Text, not Text: WPF has no text-transform or
          letter-spacing, and that attached property supplies both. -->
     <Style x:Key="UpsSectionTitle" TargetType="TextBlock">
+        <!-- FontFamily is the one that actually bites: it is inheritable, themes routinely set a
+             window-wide font, and TrackedCaps derives its spacer width from the rendered glyphs -
+             so a substituted face turns the tracking into ragged gaps. Pinned along with every
+             other inheritable text property, so this heading renders identically on any theme. -->
+        <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="10"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource UpsTextMuted}"/>
+        <Setter Property="FontStyle" Value="Normal"/>
+        <Setter Property="FontStretch" Value="Normal"/>
+        <Setter Property="Foreground" Value="#93A1B0"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+        <Setter Property="TextWrapping" Value="NoWrap"/>
+        <Setter Property="TextTrimming" Value="None"/>
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
     </Style>
 
     <!-- A collapsible section. Same accent bar and tracked caps as UpsSectionBar, plus a
@@ -162,10 +192,14 @@
                                       Cursor="Hand" Focusable="True" HorizontalAlignment="Left">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
+                                    <!-- Same geometry and render settings as UpsSectionBar, so a
+                                         foldable group and a plain one sit on the same pixels. -->
                                     <Border Background="Transparent"
-                                            BorderBrush="{StaticResource UpsAccent}"
+                                            BorderBrush="#4CC2FF"
                                             BorderThickness="3,0,0,0"
-                                            Padding="10,1,0,1" Margin="0,14,0,10">
+                                            Padding="10,1,0,1" Margin="0,14,0,10"
+                                            SnapsToDevicePixels="True"
+                                            FlowDirection="LeftToRight">
                                         <StackPanel Orientation="Horizontal">
                                             <ContentPresenter VerticalAlignment="Center"/>
                                             <!-- Points right when closed, down when open. -->
