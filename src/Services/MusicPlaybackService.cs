@@ -1344,6 +1344,11 @@ namespace UniPlaySong.Services
                             _fileLogger?.Debug($"Switching from game music to default music: {Path.GetFileName(songToPlay)}");
                             
                             _fader.Switch(
+                                // The hover-settle bridge ducks the abandoned track fast so the
+                                // ambient arrives almost immediately; every other route to default
+                                // music keeps the configured fade.
+                                fadeOutOverride: _forceDefaultInterim
+                                    ? (double?)Constants.HoverBridgeFadeOutSeconds : null,
                                 stopAction: () =>
                                 {
                                     StopPreviewTimer();

@@ -20,6 +20,11 @@ namespace UniPlaySong.Common
         public const double MinHoverSettleSeconds = 1.0;
         public const double MaxHoverSettleSeconds = 8.0;
 
+        // The bridge's outgoing fade. When a scroll leaves a game, its abandoned track ducks away
+        // at this rate rather than the configured FadeOutDuration, so the ambient arrives almost
+        // immediately - the PS5's quick cut-away. The ambient's own fade-in stays as configured.
+        public const double HoverBridgeFadeOutSeconds = 0.25;
+
         #endregion
         
         #region Volume

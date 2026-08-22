@@ -155,6 +155,20 @@ namespace UniPlaySong.Tests.Services
             Assert.That(half, Is.LessThan(full), "game-to-game is the snappy one");
         }
 
+        // The bridge's outgoing fade is a quick duck, not the configured FadeOutDuration - the
+        // abandoned track must get out of the ambient's way at PS5 speed. It has to stay well under
+        // the shortest possible wait, or the bridge would still be fading when the commit's own
+        // fade-out wants the player.
+        [Test]
+        public void BridgeFade_IsAQuickDuck()
+        {
+            Assert.That(Constants.HoverBridgeFadeOutSeconds, Is.LessThanOrEqualTo(0.5),
+                "the ambient should arrive almost immediately");
+            Assert.That(Constants.HoverBridgeFadeOutSeconds,
+                Is.LessThan(Constants.MinHoverSettleSeconds / 2.0),
+                "must finish inside even the shortest game-to-game wait");
+        }
+
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()

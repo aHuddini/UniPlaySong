@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -210,7 +210,10 @@ namespace UniPlaySong.Players
             EnsureTimer();
         }
 
-        public void Switch(Action stopAction, Action preloadAction = null, Action playAction = null)
+        // fadeOutOverride shortens (or lengthens) only this switch's outgoing fade, the same way
+        // FadeOut's override parameter does - the snapshot below reads the configured duration,
+        // and the override replaces it for this one transition.
+        public void Switch(Action stopAction, Action preloadAction = null, Action playAction = null, double? fadeOutOverride = null)
         {
             _preloadAction = preloadAction;
             _playAction = playAction;
@@ -230,6 +233,8 @@ namespace UniPlaySong.Players
                 _isFadingOut = true;
             }
             SnapshotFadeParams();
+            if (fadeOutOverride.HasValue)
+                _snapDuration = fadeOutOverride.Value;
             EnsureTimer();
         }
 
