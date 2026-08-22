@@ -315,7 +315,12 @@ namespace UniPlaySong.Services
 
             if (_hoverSettleTimer == null)
             {
-                _hoverSettleTimer = new System.Windows.Threading.DispatcherTimer();
+                // Render priority, not the DispatcherTimer default of Background. A Fullscreen
+                // theme mid-scroll keeps the dispatcher busy, and a Background tick waits behind
+                // that work - so the wait ran longer than the slider said, by however long the UI
+                // happened to be busy.
+                _hoverSettleTimer = new System.Windows.Threading.DispatcherTimer(
+                    System.Windows.Threading.DispatcherPriority.Render);
                 _hoverSettleTimer.Tick += OnHoverSettleTick;
             }
 
@@ -323,7 +328,7 @@ namespace UniPlaySong.Services
             // the full window commits.
             _hoverSettleTimer.Stop();
             _hoverSettleTimer.Interval = TimeSpan.FromSeconds(
-                HoverSettlePolicy.ClampSeconds(_settings.HoverSettleSeconds));
+                HoverSettlePolicy.TimerSeconds(_settings.HoverSettleSeconds, _settings.FadeOutDuration));
             _hoverSettleTimer.Start();
         }
 

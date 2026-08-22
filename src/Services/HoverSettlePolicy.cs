@@ -1,4 +1,4 @@
-namespace UniPlaySong.Services
+﻿namespace UniPlaySong.Services
 {
     // Pure decision for the PS5-style hover settle delay. No state, no threading, no timers.
     // Mirrors RadioPlayThroughPolicy so the rule is unit-testable without constructing
@@ -31,6 +31,29 @@ namespace UniPlaySong.Services
             if (seconds < Common.Constants.MinHoverSettleSeconds) return Common.Constants.MinHoverSettleSeconds;
             if (seconds > Common.Constants.MaxHoverSettleSeconds) return Common.Constants.MaxHoverSettleSeconds;
             return seconds;
+        }
+
+        // How long the timer should actually wait, given that the transition it triggers is not
+        // instant. Switching away from the playing track fades it out first, so a timer armed for
+        // the full slider value puts the new music at slider + fadeOut + fadeIn - a 3s setting
+        // landed at roughly 4.5s, which reads as the slider lying.
+        //
+        // The slider means "how long until the game's music starts". Spending the fade-out inside
+        // that budget makes it mean that: the old track begins fading at (slider - fadeOut) and the
+        // new one starts exactly on the slider mark. The fade-in then runs from there, because a
+        // track that starts fading in IS the music starting.
+        //
+        // Never goes below MinHoverSettleSeconds - a long fade-out must not collapse the wait to
+        // nothing, which would restore the scroll-chop the feature exists to prevent.
+        public static double TimerSeconds(double settleSeconds, double fadeOutSeconds)
+        {
+            var settle = ClampSeconds(settleSeconds);
+            if (fadeOutSeconds <= 0) return settle;
+
+            var armed = settle - fadeOutSeconds;
+            return armed < Common.Constants.MinHoverSettleSeconds
+                ? Common.Constants.MinHoverSettleSeconds
+                : armed;
         }
     }
 }
