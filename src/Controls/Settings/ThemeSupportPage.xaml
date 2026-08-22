@@ -42,6 +42,10 @@
             <TextBlock Text="Fixes the music briefly breaking on the Welcome Hub button on the PS5-Experience theme. Enable if you notice music switching glitches at hub/menu screens."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
+                       Margin="32,0,0,2"/>
+            <TextBlock Text="Also required for the settle delay on this theme, which drives its own music switching. Turn on both this and Playback → Global Overrides → wait for the selection to settle."
+                       Style="{StaticResource UpsHintFlush}"
+                       TextWrapping="Wrap"
                        Margin="32,0,0,15"/>
 
             <!-- Theme Developer Options (overlay/video pause opt-outs) -->

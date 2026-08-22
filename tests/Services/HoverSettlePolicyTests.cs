@@ -43,6 +43,40 @@ namespace UniPlaySong.Tests.Services
                 Is.False, "game-to-game stays snappy - the ambient is already gone");
         }
 
+        // The PS5 theme drives the ambient-to-game transition through its
+        // ForceDefaultMusicOverride binding rather than through selection, so the delay is honoured
+        // on that path too - gated on PS5ThemeCompatMode, the same way every other change to that
+        // path is gated. The direction decides: leaving the ambient waits, returning does not, and
+        // the ambient-is-playing check IS the "leaving the ambient" case.
+        [Test]
+        public void Defers_LeavingTheAmbient_OnTheOverridePath()
+        {
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: true),
+                Is.True);
+        }
+
+        [Test]
+        public void DoesNotDefer_ReturningToTheAmbient()
+        {
+            // wantDefault==true is filtered before the policy is consulted, and the state it
+            // arrives in - a game's track playing - independently says do not wait.
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+                Is.False, "going back to the ambient is immediate");
+        }
+
+        // Both toggles are off by default, so a fresh install behaves exactly as before on every
+        // theme - the override path included.
+        [Test]
+        public void BothGates_AreOffByDefault()
+        {
+            var s = new UniPlaySongSettings();
+            Assert.Multiple(() =>
+            {
+                Assert.That(s.HoverSettleEnabled, Is.False, "the feature itself");
+                Assert.That(s.PS5ThemeCompatMode, Is.False, "the theme patch that carries it to the override path");
+            });
+        }
+
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()

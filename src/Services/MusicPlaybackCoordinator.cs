@@ -301,6 +301,8 @@ namespace UniPlaySong.Services
 
         private System.Windows.Threading.DispatcherTimer _hoverSettleTimer;
         private Game _hoverSettleGame;
+        // PlayGameMusic's forceOverride argument. The override path passes true; selection false.
+        private bool _hoverSettleViaOverride;
 
         // The delay only earns its keep when there is something for the ambient to hold. With
         // nothing playing it would just be silence, which is strictly worse than starting now.
@@ -309,9 +311,10 @@ namespace UniPlaySong.Services
             _isFullscreen(),
             _playbackService?.IsPlayingDefaultMusic == true);
 
-        private void ArmHoverSettle(Game game)
+        private void ArmHoverSettle(Game game, bool viaOverride = false)
         {
             _hoverSettleGame = game;
+            _hoverSettleViaOverride = viaOverride;
 
             if (_hoverSettleTimer == null)
             {
@@ -366,6 +369,14 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // The theme can flip its tag back to "keep the ambient" mid-wait - the user navigated
+            // off the game again. Committing then would start music for a game they already left.
+            if (_hoverSettleViaOverride && _settings?.ForceDefaultMusicOverride == true)
+            {
+                _fileLogger?.Debug($"HoverSettle: override flipped back to default during the wait - dropping {game.Name}");
+                return;
+            }
+
             // Anything that interrupted playback during the wait - a game launch, a video, focus
             // loss, the lock screen - lands here as a pause source. Checking the paused state once
             // covers every one of them, rather than hooking each interruption separately.
@@ -375,8 +386,8 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing");
-            _playbackService?.PlayGameMusic(game, _settings, false);
+            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing (viaOverride={_hoverSettleViaOverride})");
+            _playbackService?.PlayGameMusic(game, _settings, _hoverSettleViaOverride);
         }
         
         // Handles login screen dismissal (controller/keyboard input)
@@ -662,6 +673,30 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // The PS5 theme drives this transition through its ForceDefaultMusicOverride binding
+            // rather than through selection, so the settle delay has to be honoured here too or it
+            // does nothing on that theme.
+            //
+            // Gated on PS5ThemeCompatMode as well as the feature's own toggle. Only the debounced
+            // compat path reaches this method today, so the flag is already implied - stating it
+            // keeps that true if another caller is ever added, and matches how every other change
+            // to this path is gated.
+            //
+            // Asymmetric, as the theme's author described: leaving the ambient waits, returning to
+            // it does not. wantDefault==false is ambient->game and takes the delay; wantDefault==true
+            // is the way back and stays immediate, because someone who navigated off a game wants
+            // the ambient now, not in three seconds.
+            if (_settings?.PS5ThemeCompatMode == true
+                && !wantDefault
+                && HoverSettlePolicy.ShouldDefer(
+                       _settings?.HoverSettleEnabled == true, _isFullscreen(), isPlayingDefault))
+            {
+                _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: hover settle armed for {game.Name} ({_settings.HoverSettleSeconds}s)");
+                ArmHoverSettle(game, viaOverride: true);
+                return;
+            }
+
+            CancelHoverSettle("override applying immediately");
             _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: applying override for {game.Name} (wantDefault={wantDefault}, isPlayingDefault={isPlayingDefault})");
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
