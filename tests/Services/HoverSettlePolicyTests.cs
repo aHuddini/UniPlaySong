@@ -43,6 +43,46 @@ namespace UniPlaySong.Tests.Services
                 Is.False, "game-to-game stays snappy - the ambient is already gone");
         }
 
+        // Some themes switch between default and game music through the
+        // UPS_MusicControl_PauseGamePlayDefault Tag rather than through game selection, so the
+        // delay hooked to selection never reaches them. GameHoverDelayPatch carries it there.
+        // The direction decides: leaving the default music waits, returning does not, and the
+        // default-is-playing check IS the "leaving it" case.
+        [Test]
+        public void Defers_LeavingDefaultMusic_OnTheTagPath()
+        {
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: true),
+                Is.True);
+        }
+
+        [Test]
+        public void DoesNotDefer_ReturningToDefaultMusic()
+        {
+            // wantDefault==true is filtered before the policy is consulted, and the state it
+            // arrives in - a game's track playing - independently says do not wait.
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+                Is.False, "going back to the default music is immediate");
+        }
+
+        // Three independent toggles, all off on a fresh install, so nothing about playback changes
+        // until they are asked for. GameHoverDelayPatch is its own switch rather than a change to
+        // PS5ThemeCompatMode, which fixes a different problem on the same Tag.
+        [Test]
+        public void PatchToggles_AreOffByDefault_AndIndependent()
+        {
+            var s = new UniPlaySongSettings();
+            Assert.Multiple(() =>
+            {
+                Assert.That(s.HoverSettleEnabled, Is.False, "the delay itself");
+                Assert.That(s.GameHoverDelayPatch, Is.False, "the Tag-path patch");
+                Assert.That(s.PS5ThemeCompatMode, Is.False, "the flicker debounce, unrelated");
+            });
+
+            s.GameHoverDelayPatch = true;
+            Assert.That(s.PS5ThemeCompatMode, Is.False,
+                "enabling the hover patch must not turn on the flicker debounce");
+        }
+
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()

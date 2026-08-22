@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.1/UniPlaySong-1_8_1.pext'
     Changelog:
       - '[New Feature] PS5-style hover delay (Fullscreen): under Playback -> Global Overrides, UniPlaySong can wait for your selection to settle before starting a game's music, so scrolling the library no longer chops the music already playing. Delay is adjustable from 1 to 8 seconds.'
+      - '[New Feature] Game Hover Delay Patch (Advanced -> Theme Support): applies the hover delay to themes that switch between default and game music themselves, such as PS5-Experience, rather than following your game selection.'
       - '[Improved] Credits now record Mike Aniki''s control template, which the v1.8.0 settings revamp was built on.'
   - Version: 1.8.0
     RequiredApiVersion: 6.16.0

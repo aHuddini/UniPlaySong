@@ -301,6 +301,8 @@ namespace UniPlaySong.Services
 
         private System.Windows.Threading.DispatcherTimer _hoverSettleTimer;
         private Game _hoverSettleGame;
+        // PlayGameMusic's forceOverride argument. The Tag path passes true; selection false.
+        private bool _hoverSettleViaOverride;
 
         // The delay only earns its keep when there is something for the ambient to hold. With
         // nothing playing it would just be silence, which is strictly worse than starting now.
@@ -309,9 +311,10 @@ namespace UniPlaySong.Services
             _isFullscreen(),
             _playbackService?.IsPlayingDefaultMusic == true);
 
-        private void ArmHoverSettle(Game game)
+        private void ArmHoverSettle(Game game, bool viaOverride = false)
         {
             _hoverSettleGame = game;
+            _hoverSettleViaOverride = viaOverride;
 
             if (_hoverSettleTimer == null)
             {
@@ -366,6 +369,14 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // The theme can flip its Tag back to "keep the default music" mid-wait - the user
+            // navigated off the game again. Committing then would start music for a game they left.
+            if (_hoverSettleViaOverride && _settings?.ForceDefaultMusicOverride == true)
+            {
+                _fileLogger?.Debug($"HoverSettle: Tag flipped back to default during the wait - dropping {game.Name}");
+                return;
+            }
+
             // Anything that interrupted playback during the wait - a game launch, a video, focus
             // loss, the lock screen - lands here as a pause source. Checking the paused state once
             // covers every one of them, rather than hooking each interruption separately.
@@ -375,8 +386,8 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing");
-            _playbackService?.PlayGameMusic(game, _settings, false);
+            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing (viaOverride={_hoverSettleViaOverride})");
+            _playbackService?.PlayGameMusic(game, _settings, _hoverSettleViaOverride);
         }
         
         // Handles login screen dismissal (controller/keyboard input)
@@ -662,6 +673,28 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // Some themes - PS5-Experience among them - switch between default and game music
+            // through this Tag rather than through game selection, so the settle delay hooked to
+            // HandleGameSelected never reaches them. GameHoverDelayPatch honours it here too.
+            //
+            // Its own toggle rather than PS5ThemeCompatMode: that one debounces Tag flicker and is
+            // a separate fix, and a user may want either without the other.
+            //
+            // Asymmetric, as the PS5 theme's author described it: leaving the default music waits,
+            // returning to it does not. wantDefault==false is the default->game direction and takes
+            // the delay; wantDefault==true is the way back and stays immediate, since someone who
+            // navigated off a game wants the default music now, not in three seconds.
+            if (_settings?.GameHoverDelayPatch == true
+                && !wantDefault
+                && HoverSettlePolicy.ShouldDefer(
+                       _settings?.HoverSettleEnabled == true, _isFullscreen(), isPlayingDefault))
+            {
+                _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: hover settle armed for {game.Name} ({_settings.HoverSettleSeconds}s)");
+                ArmHoverSettle(game, viaOverride: true);
+                return;
+            }
+
+            CancelHoverSettle("override applying immediately");
             _fileLogger?.Debug($"ApplyForceDefaultMusicOverride: applying override for {game.Name} (wantDefault={wantDefault}, isPlayingDefault={isPlayingDefault})");
             _playbackService?.PlayGameMusic(game, _settings, true);
         }

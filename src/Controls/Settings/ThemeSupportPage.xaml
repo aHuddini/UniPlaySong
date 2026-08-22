@@ -42,6 +42,16 @@
             <TextBlock Text="Fixes the music briefly breaking on the Welcome Hub button on the PS5-Experience theme. Enable if you notice music switching glitches at hub/menu screens."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
+                       Margin="32,0,0,10"/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Game Hover Delay Patch"
+                      IsChecked="{Binding Settings.GameHoverDelayPatch}"/>
+            <TextBlock Text="Some themes switch between default and game music themselves rather than following your game selection, which leaves the settle delay with nothing to act on. This patch applies the delay to those themes as well."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"/>
+            <TextBlock Text="Needs the settle delay switched on: Playback → Global Overrides → wait for the selection to settle. Leaving the default music waits; returning to it stays immediate."
+                       Style="{StaticResource UpsHintFlush}"
+                       TextWrapping="Wrap"
                        Margin="32,0,0,15"/>
 
             <!-- Theme Developer Options (overlay/video pause opt-outs) -->

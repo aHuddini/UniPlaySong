@@ -1347,6 +1347,7 @@ namespace UniPlaySong
         private bool suppressPlayniteBackgroundMusic = true;
         private bool useNativeMusicAsDefault = false;
         private bool ps5ThemeCompatMode = false;
+        private bool gameHoverDelayPatch = false; // Carries the settle delay to themes that switch their own music
         private bool pauseOnThemeOverlay = true;
         private bool pauseOnThemeVideo = true;
         private bool musicOnlyForInstalledGames = false;
@@ -1431,6 +1432,19 @@ namespace UniPlaySong
         {
             get => ps5ThemeCompatMode;
             set { ps5ThemeCompatMode = value; OnPropertyChanged(); }
+        }
+
+        // Theme compatibility for the hover settle delay. Some themes - PS5-Experience among them -
+        // switch between default and game music through the UPS_MusicControl_PauseGamePlayDefault
+        // Tag rather than through game selection, so the delay hooked to selection never reaches
+        // them. When enabled, UPS honours the delay on that Tag path too.
+        //
+        // Asymmetric by design: leaving the default music waits, returning to it is immediate.
+        // Off by default, and inert unless the settle delay itself is switched on.
+        public bool GameHoverDelayPatch
+        {
+            get => gameHoverDelayPatch;
+            set { gameHoverDelayPatch = value; OnPropertyChanged(); }
         }
 
         // Theme-developer option (default true). When false, a theme's overlay (driven by the UPS_MusicControl Tag →

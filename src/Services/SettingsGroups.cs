@@ -290,6 +290,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.PlaySoundOnDownloadComplete),
                     nameof(UniPlaySongSettings.ProgressBarPosition),
                     nameof(UniPlaySongSettings.PS5ThemeCompatMode),
+                    nameof(UniPlaySongSettings.GameHoverDelayPatch),
                     nameof(UniPlaySongSettings.ShowMusicDashboard),
                     nameof(UniPlaySongSettings.ShowPeakMeter),
                     nameof(UniPlaySongSettings.ShowProgressBar),
