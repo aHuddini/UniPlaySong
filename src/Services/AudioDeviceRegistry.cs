@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UniPlaySong.Common;
@@ -68,6 +68,11 @@ namespace UniPlaySong.Services
 
             if (openOnes.Count == 0)
             {
+                // Even with no holder claiming an open device, SDL2's is process-wide and may be
+                // open with no live owner - PrewarmExternalPlayer opens it through a throwaway
+                // probe. Ask it directly rather than trusting the holder list.
+                SDL2MusicPlayer.CloseSharedDeviceIfUnused();
+
                 _fileLogger?.Debug($"[Sleep] {reason} — no open audio devices to release");
                 return 0;
             }
@@ -87,6 +92,10 @@ namespace UniPlaySong.Services
                     _fileLogger?.Debug($"[Sleep]   release failed for {h.AudioDeviceLabel}: {ex.Message}");
                 }
             }
+
+            // Holders free their own handles above; this closes the shared SDL device once none of
+            // them still needs it. A no-op when SDL is not in use or an instance is still playing.
+            SDL2MusicPlayer.CloseSharedDeviceIfUnused();
             return released;
         }
     }

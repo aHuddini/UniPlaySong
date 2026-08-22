@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -63,6 +63,12 @@ namespace UniPlaySong.Services
         // A transient jingle player is created with enableIdleTeardown:false and must not
         // close the device out from under the main player.
         private readonly bool _enableIdleTeardown;
+
+        // True while this instance owns any Mix_* handle that Mix_CloseAudio would invalidate.
+        // Mix_CloseAudio is process-wide, so closing while another instance still owns a handle
+        // leaves it dangling - that is the hazard _enableIdleTeardown was guarding against,
+        // expressed as state rather than as a role.
+        private bool HoldsMixHandles => _music != IntPtr.Zero || _preloadedMusic != IntPtr.Zero;
 
         public event EventHandler MediaEnded;
         public event EventHandler<ExceptionEventArgs> MediaFailed;
@@ -174,10 +180,42 @@ namespace UniPlaySong.Services
                 _preloadedPath = string.Empty;
             }
 
-            SDL2Mixer.Mix_CloseAudio();
-            _isSDLAudioInitialized = false;
+            CloseSharedDeviceIfUnused();
+        }
 
-            Logger.Debug($"SDL2 audio device closed so Windows can sleep");
+        // Closes the process-wide SDL device when no live instance still holds a Mix_* handle.
+        //
+        // Static because ownership is not a reliable gate. PrewarmExternalPlayer builds a throwaway
+        // probe, opens the device through it, then drops it - and since _isSDLAudioInitialized is
+        // static, that disposed probe still reports IsAudioDeviceOpen true while its own
+        // ReleaseAudioDevice early-returns on _isDisposed. The device was left open for the life of
+        // the process with nobody able to close it, which is the "UPS holds the driver open even
+        // when it plays nothing" report.
+        //
+        // The handle check is what _enableIdleTeardown was really protecting: Mix_CloseAudio
+        // invalidates handles process-wide, so closing while another instance owns one leaves it
+        // dangling. Expressed as state, a secondary player can safely close a device nobody is
+        // using, and cannot close one the main player is playing through.
+        public static void CloseSharedDeviceIfUnused()
+        {
+            lock (_instancesLock)
+            {
+                if (!_isSDLAudioInitialized) return;
+
+                foreach (var inst in _instances)
+                {
+                    if (inst._isDisposed) continue;
+                    if (inst.HoldsMixHandles)
+                    {
+                        Logger.Debug("SDL2 shared device kept open — an instance still holds Mix handles");
+                        return;
+                    }
+                }
+
+                SDL2Mixer.Mix_CloseAudio();
+                _isSDLAudioInitialized = false;
+                Logger.Debug("SDL2 audio device closed so Windows can sleep");
+            }
         }
 
         public double Volume
@@ -542,7 +580,8 @@ namespace UniPlaySong.Services
         {
             try
             {
-                if (!_enableIdleTeardown) return;
+                // No _enableIdleTeardown gate: freeing this instance's own handles is always
+                // safe, and the shared device close is guarded by CloseSharedDeviceIfUnused.
                 if (_isDisposed || !_isSDLAudioInitialized) return;
 
                 // issue #81: if a song was loaded, stash its path + position so resume can reload it

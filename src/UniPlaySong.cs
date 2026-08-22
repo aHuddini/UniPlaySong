@@ -1,4 +1,4 @@
-using Playnite.SDK;
+﻿using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using Playnite.SDK.Events;
@@ -2420,11 +2420,17 @@ namespace UniPlaySong
         // closed the device again.
         private bool AnySoundFeatureWantsPrewarm()
         {
+            // Deliberately not gated on EnableMusic or on mode: every one of these fires on its own
+            // trigger, not on music playback. Marking a game completed plays its fanfare whether or
+            // not music is enabled, so a Desktop-mode user with music off still needs a warm device.
+            // The reported "holds the driver open even when it plays nothing" was not this warming
+            // being wrong - it was the device having no way to close afterwards (issue #81).
             return _settings?.EnableCompletionCelebration == true
                 || _settings?.EnableAbandonedSound == true
                 || _settings?.EnableAchievementSound == true
                 || _settings?.EnableControlUpDetectSound == true;
         }
+
 
         // Re-open the jingle audio device after an idle/lock/suspend release (issue #81) so the first
         // jingle after wake stays instant. Only when a sound feature is on. Deferred slightly so it
@@ -3424,6 +3430,8 @@ namespace UniPlaySong
                 _playbackService?.Stop();
 
                 // Dispose old player if it implements IDisposable
+                if (_currentMusicPlayer is Services.IAudioDeviceHolder oldHolder)
+                    _audioDeviceRegistry?.Unregister(oldHolder); // issue #81 — or the registry keeps a dead holder
                 if (_currentMusicPlayer is IDisposable disposable)
                 {
                     disposable.Dispose();
@@ -3431,6 +3439,8 @@ namespace UniPlaySong
 
                 // Create new player
                 _currentMusicPlayer = CreateMusicPlayer();
+                if (_currentMusicPlayer is Services.IAudioDeviceHolder newHolder)
+                    _audioDeviceRegistry?.Register(newHolder); // issue #81 — the live player must be releasable
 
                 // Recreate playback service with new player
                 var oldService = _playbackService;
@@ -3521,11 +3531,15 @@ namespace UniPlaySong
                 _playbackService?.Stop();
 
                 // Dispose old player
+                if (_currentMusicPlayer is Services.IAudioDeviceHolder oldHolder)
+                    _audioDeviceRegistry?.Unregister(oldHolder); // issue #81 — see the sibling swap
                 if (_currentMusicPlayer is IDisposable disposable)
                     disposable.Dispose();
 
                 // Create NAudio player
                 _currentMusicPlayer = CreateMusicPlayer();
+                if (_currentMusicPlayer is Services.IAudioDeviceHolder newHolder)
+                    _audioDeviceRegistry?.Register(newHolder); // issue #81
 
                 // Recreate playback service
                 var oldService = _playbackService;

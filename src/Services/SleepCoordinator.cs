@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Threading;
 using UniPlaySong.Common;
 
@@ -78,7 +78,17 @@ namespace UniPlaySong.Services
             var idleFor = nowUtc - _idleBaselineUtc;
             if (idleFor.TotalMinutes < minutes) return false;
 
-            if (!(_registry?.IsAnyDeviceOpen ?? false)) return false;
+            // Logged because a tick that decides NOT to release used to be silent, which made
+            // "the idle timer doesn't work" impossible to confirm or refute from a log.
+            bool anyOpen = _registry?.IsAnyDeviceOpen ?? false;
+            _fileLogger?.Debug($"[Sleep] idle {idleFor.TotalMinutes:F1}min >= {minutes}min threshold, deviceOpen={anyOpen}");
+            if (!anyOpen)
+            {
+                // SDL2's device is process-wide and can be open with no live holder claiming it,
+                // so ask directly rather than concluding there is nothing to close.
+                SDL2MusicPlayer.CloseSharedDeviceIfUnused();
+                return false;
+            }
 
             int released = _registry.ReleaseAllDevices($"Idle {idleFor.TotalMinutes:F1}min");
             // Reset baseline so we don't re-fire every tick while still idle.
