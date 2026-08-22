@@ -275,6 +275,17 @@ namespace UniPlaySong.Services
             // and a login-skip that clears three seconds late is a regression.
             if (ShouldDeferForHoverSettle())
             {
+                // Leaving a game's track bridges back to the default music at once, so the wait is
+                // spent on the ambient rather than on a track the user already scrolled away from.
+                // Already on the ambient (or default music disabled): nothing to bridge.
+                if (HoverSettlePolicy.ShouldBridgeToDefault(
+                        _playbackService?.IsPlayingDefaultMusic == true,
+                        _settings?.EnableDefaultMusic == true))
+                {
+                    _fileLogger?.Debug($"HandleGameSelected: bridging to default music while settling on {game.Name}");
+                    _playbackService?.PlayDefaultMusicInterim(game, _settings);
+                }
+
                 _fileLogger?.Debug($"HandleGameSelected: Hover settle armed for {game.Name} ({_settings.HoverSettleSeconds}s)");
                 ArmHoverSettle(game);
                 _firstSelect = false;
@@ -309,12 +320,15 @@ namespace UniPlaySong.Services
         private bool ShouldDeferForHoverSettle() => HoverSettlePolicy.ShouldDefer(
             _settings?.HoverSettleEnabled == true,
             _isFullscreen(),
-            _playbackService?.IsPlayingDefaultMusic == true);
+            _playbackService?.IsPlaying == true);
 
+        // viaOverride is sticky across a re-arm: moving between games during a Tag-armed wait
+        // re-arms from HandleGameSelected, which knows nothing about the Tag, and clearing the
+        // flag there would drop the forceReload the Tag path asked for.
         private void ArmHoverSettle(Game game, bool viaOverride = false)
         {
             _hoverSettleGame = game;
-            _hoverSettleViaOverride = viaOverride;
+            _hoverSettleViaOverride = _hoverSettleViaOverride || viaOverride;
 
             if (_hoverSettleTimer == null)
             {
@@ -344,6 +358,7 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug($"CancelHoverSettle: {reason}");
             _hoverSettleTimer?.Stop();
             _hoverSettleGame = null;
+            _hoverSettleViaOverride = false;
         }
 
         private void OnHoverSettleTick(object sender, EventArgs e)
@@ -351,7 +366,9 @@ namespace UniPlaySong.Services
             _hoverSettleTimer.Stop();
 
             var game = _hoverSettleGame;
+            var viaOverride = _hoverSettleViaOverride;
             _hoverSettleGame = null;
+            _hoverSettleViaOverride = false;
             if (game == null) return;
 
             // The selection may have moved on without a fresh HandleGameSelected (mode switch,
@@ -369,11 +386,14 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // The theme can flip its Tag back to "keep the default music" mid-wait - the user
-            // navigated off the game again. Committing then would start music for a game they left.
-            if (_hoverSettleViaOverride && _settings?.ForceDefaultMusicOverride == true)
+            // The theme flipped its Tag to "keep the default music" mid-wait - the user moved to
+            // the nav menu or otherwise left the game. Not conditioned on which path armed the
+            // wait: the Tag states what should be playing regardless, and conditioning this on
+            // viaOverride let a selection-armed timer fire game music ~140ms after the Tag asked
+            // for default - the race the logs caught at 51.937/52.076/52.179.
+            if (_settings?.ForceDefaultMusicOverride == true)
             {
-                _fileLogger?.Debug($"HoverSettle: Tag flipped back to default during the wait - dropping {game.Name}");
+                _fileLogger?.Debug($"HoverSettle: Tag wants default music - dropping {game.Name}");
                 return;
             }
 
@@ -386,8 +406,8 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing (viaOverride={_hoverSettleViaOverride})");
-            _playbackService?.PlayGameMusic(game, _settings, _hoverSettleViaOverride);
+            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing (viaOverride={viaOverride})");
+            _playbackService?.PlayGameMusic(game, _settings, viaOverride);
         }
         
         // Handles login screen dismissal (controller/keyboard input)
@@ -577,6 +597,11 @@ namespace UniPlaySong.Services
         // exact pre-1.5.6 path below — no new behavior — so normal themes are unaffected.
         public void HandleForceDefaultMusicOverrideChange(bool isActive)
         {
+            // Tag on means "play the default music now". A wait still pending is for a game the
+            // user has left - drop it here rather than letting it fire inside the debounce window
+            // and be corrected a moment later.
+            if (isActive) CancelHoverSettle("theme asked for default music");
+
             if (_settings?.PS5ThemeCompatMode == true)
             {
                 _fileLogger?.Debug($"HandleForceDefaultMusicOverrideChange: ForceDefaultMusicOverride={isActive} (debounced)");

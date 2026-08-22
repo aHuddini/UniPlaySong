@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -667,6 +667,22 @@ namespace UniPlaySong.Services
             }
         }
 
+        // True only for the duration of a PlayDefaultMusicInterim call. Routes PlayGameMusic into
+        // the default-music fall-through without touching the theme-owned ForceDefaultMusicOverride
+        // flag - this is UPS asking for default music, not the theme.
+        private bool _forceDefaultInterim;
+
+        // Hover settle: while a wait is pending, the coordinator bridges from the old game's track
+        // back to the default music, so a scroll rides the ambient instead of the abandoned track.
+        // Runs the full PlayGameMusic pipeline with the song list treated as empty, which is the
+        // same proven fall-through the theme override uses.
+        public void PlayDefaultMusicInterim(Game game, UniPlaySongSettings settings)
+        {
+            _forceDefaultInterim = true;
+            try { PlayGameMusic(game, settings, false); }
+            finally { _forceDefaultInterim = false; }
+        }
+
         public void PlayGameMusic(Game game) => PlayGameMusic(game, null, false);
         public void PlayGameMusic(Game game, UniPlaySongSettings settings) => PlayGameMusic(game, settings, false);
 
@@ -876,6 +892,14 @@ namespace UniPlaySong.Services
                 var gameId = game.Id.ToString();
                 var songs = _fileService.GetAvailableSongs(game);
                 _fileLogger?.Debug(() => $"[Perf] PlayGameMusic: GetAvailableSongs took {sw.ElapsedMilliseconds}ms ({songs.Count} songs for {game.Name})");
+
+                // Hover-settle interim: the coordinator asked for default music while a wait is
+                // pending. It gates on Fullscreen itself, so no mode probe here.
+                if (songs.Count > 0 && _forceDefaultInterim)
+                {
+                    _fileLogger?.Debug($"PlayGameMusic: hover-settle interim — clearing {songs.Count} game songs to play default music");
+                    songs.Clear();
+                }
 
                 // INVARIANT (not a leak-patch): the override is a Fullscreen Welcome-Hub concept and must NEVER suppress game
                 // music in Desktop, even when the flag is legitimately true. This is independent of the override's lifecycle

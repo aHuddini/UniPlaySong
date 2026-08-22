@@ -8,25 +8,38 @@
         // True when a game selection should wait for the selection to rest before its music
         // starts, instead of playing immediately.
         //
-        // The delay exists to stop a fast library scroll tearing down the ambient default music to
-        // load tracks it abandons a moment later. It protects the ambient specifically, so it only
-        // applies while the ambient is what is playing:
+        // The delay exists so a library scroll rides the default music instead of chopping
+        // through half-loaded game tracks. The PS5 shape, per the recording: leaving the ambient
+        // waits; leaving a game returns to the ambient at once, and the NEW game's music waits.
         //
-        //   isPlayingDefaultMusic == false -> never defer. Two cases fall in here and both want
-        //                           an immediate switch:
-        //                             nothing playing - waiting on silence produces more silence;
-        //                             a game's track already playing - you are past the ambient,
-        //                             so game-to-game should be snappy. Matches the PS5, where
-        //                             leaving the dashboard ambient takes a couple of seconds but
-        //                             moving between titles switches quickly.
+        //   isPlaying == false  ->  never defer. Waiting on silence produces more silence, which
+        //                           is strictly worse than starting now.
         //   isFullscreen == false -> never defer. Desktop selection is click-driven rather than
         //                           scrolled, so a delay there reads as lag.
-        public static bool ShouldDefer(bool enabled, bool isFullscreen, bool isPlayingDefaultMusic)
+        //
+        // Deliberately gated on "any music playing", NOT on IsPlayingDefaultMusic: that flag is
+        // cleared before the outgoing fade even starts, so during a scroll it reads false while
+        // the ambient is still audible - gating on it made every switch in that window chop.
+        public static bool ShouldDefer(bool enabled, bool isFullscreen, bool isPlaying)
         {
             if (!enabled) return false;
             if (!isFullscreen) return false;
-            if (!isPlayingDefaultMusic) return false;
+            if (!isPlaying) return false;
             return true;
+        }
+
+        // Whether a deferred switch should first bridge back to the default music. This is the
+        // half that makes game-to-game feel like the PS5: the abandoned game's track does not
+        // keep playing through the wait - the ambient returns immediately and the new game's
+        // music arrives after the delay.
+        //
+        //   already on the default music -> nothing to bridge, keep playing it;
+        //   default music disabled       -> nothing to bridge WITH, the wait just defers the
+        //                                   switch and the old track plays out the wait.
+        public static bool ShouldBridgeToDefault(bool isPlayingDefaultMusic, bool defaultMusicEnabled)
+        {
+            if (!defaultMusicEnabled) return false;
+            return !isPlayingDefaultMusic;
         }
 
         // Clamps a configured delay into the supported range. Settings already clamps on set,

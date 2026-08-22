@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Playnite.SDK.Models;
 using UniPlaySong.Models;
 
@@ -10,6 +10,10 @@ namespace UniPlaySong.Services
         void PlayGameMusic(Game game);
         void PlayGameMusic(Game game, UniPlaySongSettings settings);
         void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload);
+
+        // Plays the default music for the current selection as if the game had no songs of its
+        // own. Used by the hover settle wait to bridge a game-to-game switch through the ambient.
+        void PlayDefaultMusicInterim(Game game, UniPlaySongSettings settings);
         void Stop();
 
         // Stops every timer this service owns so it can be collected once it is replaced.

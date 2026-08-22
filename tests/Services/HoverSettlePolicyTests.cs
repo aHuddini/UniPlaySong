@@ -11,16 +11,29 @@ namespace UniPlaySong.Tests.Services
     public class HoverSettlePolicyTests
     {
         [Test]
-        public void Defers_LeavingTheAmbient_InFullscreen()
+        public void Defers_WhenMusicIsPlaying_InFullscreen()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: true),
                 Is.True, "the case the feature exists for");
+        }
+
+        // Gated on "any music playing" deliberately. IsPlayingDefaultMusic is cleared before the
+        // outgoing fade starts, so during a scroll it reads false while the ambient is still
+        // audible - a gate on it made every switch in that window chop. Pinned so the narrower
+        // gate does not come back looking like a refinement.
+        [Test]
+        public void Defers_EvenWhenTheDefaultFlagHasAlreadyCleared()
+        {
+            const bool ambientStillAudible_flagAlreadyFalse = true; // isPlaying: the ear's truth
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true,
+                            isPlaying: ambientStillAudible_flagAlreadyFalse),
+                Is.True);
         }
 
         [Test]
         public void DoesNotDefer_WhenDisabled()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: false, isFullscreen: true, isPlayingDefaultMusic: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: false, isFullscreen: true, isPlaying: true),
                 Is.False);
         }
 
@@ -29,7 +42,7 @@ namespace UniPlaySong.Tests.Services
         [Test]
         public void DoesNotDefer_WhenNothingIsPlaying()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
                 Is.False, "nothing to protect - starting now beats waiting on silence");
         }
 
@@ -39,7 +52,7 @@ namespace UniPlaySong.Tests.Services
         [Test]
         public void DoesNotDefer_GameToGame()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
                 Is.False, "game-to-game stays snappy - the ambient is already gone");
         }
 
@@ -51,7 +64,7 @@ namespace UniPlaySong.Tests.Services
         [Test]
         public void Defers_LeavingDefaultMusic_OnTheTagPath()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: true),
                 Is.True);
         }
 
@@ -60,7 +73,7 @@ namespace UniPlaySong.Tests.Services
         {
             // wantDefault==true is filtered before the policy is consulted, and the state it
             // arrives in - a game's track playing - independently says do not wait.
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
                 Is.False, "going back to the default music is immediate");
         }
 
@@ -83,11 +96,37 @@ namespace UniPlaySong.Tests.Services
                 "enabling the hover patch must not turn on the flicker debounce");
         }
 
+        // The bridge is what makes game-to-game feel like the PS5: leaving a game returns to the
+        // default music at once, and the NEW game's music takes the delay. The abandoned track
+        // never plays out the wait.
+        [Test]
+        public void Bridges_WhenLeavingAGamesTrack()
+        {
+            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: true),
+                Is.True, "the ambient returns immediately while the wait runs");
+        }
+
+        [Test]
+        public void DoesNotBridge_WhenAlreadyOnDefaultMusic()
+        {
+            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: true, defaultMusicEnabled: true),
+                Is.False, "nothing to bridge - it is already playing");
+        }
+
+        // With default music disabled there is nothing to bridge WITH. The wait still defers the
+        // switch; the old track simply plays it out.
+        [Test]
+        public void DoesNotBridge_WhenDefaultMusicIsDisabled()
+        {
+            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: false),
+                Is.False);
+        }
+
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: false, isPlayingDefaultMusic: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: false, isPlaying: true),
                 Is.False, "Fullscreen-gated by design");
         }
 
