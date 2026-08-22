@@ -2992,6 +2992,9 @@ namespace UniPlaySong
             // the jingle factory delegate can register its transient player via the registry.
             // SleepCoordinator.Start() is deferred until after CheckInitialWindowStateEarly.
             _audioDeviceRegistry = new Services.AudioDeviceRegistry(_fileLogger);
+            // Route SDL2's device open/close diagnostics into UniPlaySong.log with the rest of the
+            // sleep triggers; they were landing in Playnite's extensions.log and reading as missing.
+            Services.SDL2MusicPlayer.SetSleepLogger(_fileLogger);
             _sleepCoordinator = new Services.SleepCoordinator(
                 _audioDeviceRegistry,
                 // Audible if UPS game music is playing OR effected Spotify output is running — the

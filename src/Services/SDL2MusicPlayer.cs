@@ -75,6 +75,13 @@ namespace UniPlaySong.Services
 
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
+        // Sleep/power diagnostics belong in UniPlaySong.log beside the [Sleep] lines rather than in
+        // Playnite's extensions.log. Splitting them across two files is what made a device close
+        // that HAD happened look like it never did. Static because the close is static - the
+        // instance that opened the device is often gone by then.
+        private static FileLogger _sleepLogger;
+        public static void SetSleepLogger(FileLogger logger) => _sleepLogger = logger;
+
         public SDL2MusicPlayer(ErrorHandlerService errorHandler = null, SettingsService settingsService = null, bool enableIdleTeardown = false)
         {
             _errorHandler = errorHandler;
@@ -207,6 +214,7 @@ namespace UniPlaySong.Services
                     if (inst._isDisposed) continue;
                     if (inst.HoldsMixHandles)
                     {
+                        _sleepLogger?.Debug("[Sleep]   SDL2 shared device kept open — an instance still holds Mix handles");
                         Logger.Debug("SDL2 shared device kept open — an instance still holds Mix handles");
                         return;
                     }
@@ -214,6 +222,7 @@ namespace UniPlaySong.Services
 
                 SDL2Mixer.Mix_CloseAudio();
                 _isSDLAudioInitialized = false;
+                _sleepLogger?.Debug("[Sleep]   released: SharedDevice(SDL2) — closed so Windows can sleep");
                 Logger.Debug("SDL2 audio device closed so Windows can sleep");
             }
         }
@@ -569,6 +578,7 @@ namespace UniPlaySong.Services
             }
             catch (Exception ex)
             {
+                _sleepLogger?.Debug($"[Sleep]   SDL2 PrewarmAudioDevice failed: {ex.Message}");
                 Logger.Warn($"SDL2 PrewarmAudioDevice failed: {ex.Message}");
             }
         }
@@ -604,6 +614,7 @@ namespace UniPlaySong.Services
             }
             catch (Exception ex)
             {
+                _sleepLogger?.Debug($"[Sleep]   SDL2 ReleaseAudioDevice failed: {ex.Message}");
                 Logger.Warn($"SDL2 ReleaseAudioDevice failed: {ex.Message}");
             }
         }

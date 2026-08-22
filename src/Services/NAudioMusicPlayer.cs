@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -1201,6 +1201,7 @@ namespace UniPlaySong.Services
             }
             catch (Exception ex)
             {
+                _fileLogger?.Debug($"[Sleep]   {LogPrefix} PrewarmAudioDevice failed: {ex.Message}");
                 Logger.Warn($"[{LogPrefix}] PrewarmAudioDevice failed: {ex.Message}");
             }
         }
@@ -1230,6 +1231,7 @@ namespace UniPlaySong.Services
             }
             catch (Exception ex)
             {
+                _fileLogger?.Debug($"[Sleep]   {LogPrefix} ReleaseAudioDevice failed: {ex.Message}");
                 Logger.Warn($"[{LogPrefix}] ReleaseAudioDevice failed: {ex.Message}");
             }
         }
