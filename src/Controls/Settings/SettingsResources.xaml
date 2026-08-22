@@ -119,6 +119,62 @@
 
     <!-- Section heading with a left accent bar, so groups of settings read as bands rather than
          another line of bold text. -->
+    <!-- Header button for a collapsible section. Exists purely so the ToggleButton carries an
+         EXPLICIT Style: without one, a theme's implicit ToggleButton style applies to it, and
+         those routinely set a fixed Height and Padding sized for real buttons. Mythos sets
+         Height="28" with Padding="12,8,12,8", which cropped the heading - reported as the
+         collapsible bars breaking while the plain ones were fine.
+         Everything is stated rather than inherited, and Template is set here so no implicit
+         template can win either. -->
+    <Style x:Key="UpsSectionHeaderButton" TargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="Transparent"
+                            BorderBrush="{StaticResource UpsAccent}"
+                            BorderThickness="3,0,0,0"
+                            Padding="10,1,0,1" Margin="0,14,0,10">
+                        <StackPanel Orientation="Horizontal">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                            <!-- Points right when closed, down when open. -->
+                            <Path x:Name="Chevron" Data="M 0,0 L 4,3.5 L 0,7 Z"
+                                  Fill="{StaticResource UpsTextFaint}"
+                                  VerticalAlignment="Center" Margin="8,0,0,0"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="0"/>
+                                </Path.RenderTransform>
+                            </Path>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="90"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="UpsSectionBar" TargetType="Border">
         <Setter Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
         <Setter Property="BorderThickness" Value="3,0,0,0"/>
@@ -156,45 +212,10 @@
                         <!-- Content must be fed from Header explicitly. Without it the button has
                              nothing to present and the heading renders as a bare bar and chevron
                              — which builds and runs perfectly happily. -->
-                        <ToggleButton IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                        <ToggleButton Style="{StaticResource UpsSectionHeaderButton}"
+                                      IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                       Content="{TemplateBinding Header}"
-                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                      Cursor="Hand" Focusable="True" HorizontalAlignment="Left">
-                            <ToggleButton.Template>
-                                <ControlTemplate TargetType="ToggleButton">
-                                    <Border Background="Transparent"
-                                            BorderBrush="{StaticResource UpsAccent}"
-                                            BorderThickness="3,0,0,0"
-                                            Padding="10,1,0,1" Margin="0,14,0,10">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentPresenter VerticalAlignment="Center"/>
-                                            <!-- Points right when closed, down when open. -->
-                                            <Path x:Name="Chevron" Data="M 0,0 L 4,3.5 L 0,7 Z"
-                                                  Fill="{StaticResource UpsTextFaint}"
-                                                  VerticalAlignment="Center" Margin="8,0,0,0"
-                                                  RenderTransformOrigin="0.5,0.5">
-                                                <Path.RenderTransform>
-                                                    <RotateTransform Angle="0"/>
-                                                </Path.RenderTransform>
-                                            </Path>
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="Chevron" Property="RenderTransform">
-                                                <Setter.Value>
-                                                    <RotateTransform Angle="90"/>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Chevron" Property="Fill"
-                                                    Value="{StaticResource UpsAccent}"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </ToggleButton.Template>
-                        </ToggleButton>
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"/>
 
                         <ContentPresenter x:Name="Body" Visibility="Collapsed"/>
                     </StackPanel>
