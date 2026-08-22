@@ -43,7 +43,7 @@
                         TickPlacement="None"
                         AutoToolTipPlacement="TopLeft"/>
             </StackPanel>
-            <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. 0 disables idle release. UniPlaySong also releases its audio device immediately when you lock the PC or it suspends (regardless of this setting)."
+            <TextBlock Text="Releases UniPlaySong's audio device after this many minutes of no audible music (paused or stopped), so Windows can sleep. It also releases as soon as you minimize Playnite or send it to the tray, as long as nothing is playing and no game is running. 0 disables all of that. Locking the PC or letting it suspend always releases immediately, regardless of this setting."
                        Style="{StaticResource UpsHintFlush}"
                        TextWrapping="Wrap"
                        Margin="0,0,0,5"/>

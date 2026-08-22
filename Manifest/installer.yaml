@@ -5,9 +5,10 @@ Packages:
     ReleaseDate: 2026-08-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.1/UniPlaySong-1_8_1.pext'
     Changelog:
-      - '[New Feature] PS5-style hover delay (Fullscreen): under Playback -> Global Overrides, UniPlaySong can wait for your selection to settle before starting a game's music. Scrolling returns to your default music right away and rides it, so the library no longer chops through half-started tracks. Delay is adjustable from 1 to 8 seconds.'
+      - '[New Feature] PS5-style hover delay (Fullscreen): under Playback -> Global Overrides, UniPlaySong can wait for your selection to settle before starting a game''s music. Scrolling returns to your default music right away and rides it, so the library no longer chops through half-started tracks. Delay is adjustable from 1 to 8 seconds.'
       - '[New Feature] Game Hover Delay Patch (Advanced -> Theme Support): applies the hover delay to themes that switch between default and game music themselves, such as PS5-Experience, rather than following your game selection.'
       - '[Critical Fix] UniPlaySong could hold a Windows audio device open for its whole session even when it never played a sound, which on some PCs stopped them going to sleep. The device now closes once nothing is using it.'
+      - '[Improved] Minimizing Playnite or sending it to the tray now releases the audio device straight away instead of waiting out the idle countdown, as long as nothing is playing and no game is running.'
       - '[Improved] Credits now record Mike Aniki''s control template, which the v1.8.0 settings revamp was built on.'
   - Version: 1.8.0
     RequiredApiVersion: 6.16.0

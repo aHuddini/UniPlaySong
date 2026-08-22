@@ -2203,10 +2203,18 @@ namespace UniPlaySong
                 case WindowState.Maximized:
                     // Always remove — if the source isn't present, HashSet.Remove is a no-op
                     _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
+                    // Restore is a wake path now that minimize releases: re-open the jingle device
+                    // so the first sound after coming back doesn't pay the cold open. Matches what
+                    // unlock, resume and idle-exit already do.
+                    RewarmJinglePlayerIfEnabled();
                     break;
                 case WindowState.Minimized:
                     if (_settings?.PauseOnMinimize == true)
                         _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
+                    // Out of the way — release now rather than waiting out the idle countdown.
+                    // No-ops while anything is still audible, so minimizing with PauseOnMinimize
+                    // off keeps playing.
+                    _sleepCoordinator?.OnWindowHidden("Minimized");
                     break;
             }
         }
@@ -2217,10 +2225,17 @@ namespace UniPlaySong
         {
             var isVisible = (bool)e.NewValue;
             if (isVisible)
+            {
                 // Always remove — if the source isn't present, HashSet.Remove is a no-op
                 _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
-            else if (_settings?.PauseWhenInSystemTray == true)
-                _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
+                RewarmJinglePlayerIfEnabled(); // see the window-state sibling
+            }
+            else
+            {
+                if (_settings?.PauseWhenInSystemTray == true)
+                    _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
+                _sleepCoordinator?.OnWindowHidden("Hidden to tray");
+            }
         }
 
         // Handles application losing focus. If ignore-brief is enabled, checks if focus went to the task switcher

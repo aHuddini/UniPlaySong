@@ -38,6 +38,56 @@ namespace UniPlaySong.Services
             _registry?.ReleaseAllDevices(reason);
         }
 
+        // Minimize / hide-to-tray: the window is out of the way, so if nothing is audible there is
+        // no reason to hold the device for the rest of the idle countdown. Returns true if it
+        // released.
+        //
+        // Conditional on silence, unlike lock and suspend. Those mean the machine is going away and
+        // everything stops regardless; a minimize with PauseOnMinimize off is someone deliberately
+        // keeping the music going in the background, and releasing there would cut it off.
+        //
+        // Gated by the same "Release after: 0 min" that disables the idle timer, so one control
+        // still governs whether UPS releases the device on its own at all.
+        public bool OnWindowHidden(string reason)
+        {
+            bool audible;
+            try { audible = _isAudible?.Invoke() ?? false; } catch { audible = false; }
+            if (audible)
+            {
+                _fileLogger?.Debug($"[Sleep] {reason} — still audible, keeping the device");
+                return false;
+            }
+
+            bool gameRunning;
+            try { gameRunning = _isGameRunning?.Invoke() ?? false; } catch { gameRunning = false; }
+            if (gameRunning)
+            {
+                // Minimizing to play a game is the common case, and the machine stays awake anyway.
+                _fileLogger?.Debug($"[Sleep] {reason} — game running, keeping the device");
+                return false;
+            }
+
+            int minutes = 0;
+            try { minutes = _getIdleMinutes?.Invoke() ?? 0; } catch { minutes = 0; }
+            if (minutes <= 0)
+            {
+                _fileLogger?.Debug($"[Sleep] {reason} — idle release disabled, keeping the device");
+                return false;
+            }
+
+            _fileLogger?.Debug($"[Sleep] {reason} — releasing audio devices");
+            int released = _registry?.ReleaseAllDevices(reason) ?? 0;
+
+            // SDL2's device is process-wide and can be open with no holder claiming it.
+            SDL2MusicPlayer.CloseSharedDeviceIfUnused();
+
+            // Restart the idle countdown so a restore-then-idle still behaves normally.
+            _idleBaselineUtc = DateTime.UtcNow;
+            _seeded = true;
+            _wasAudible = false;
+            return released > 0;
+        }
+
         // Pure idle state machine (unit-tested). Returns true if it released devices this tick.
         // Audible playback resets the idle baseline; paused/stopped lets the baseline age. When the
         // idle stretch reaches the threshold (and a device is open), release. 0 minutes disables.

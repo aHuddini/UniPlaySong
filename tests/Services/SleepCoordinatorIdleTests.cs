@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using NUnit.Framework;
 using UniPlaySong.Services;
 
@@ -107,5 +107,61 @@ namespace UniPlaySong.Tests.Services
             c.OnLockOrSuspend("suspend");
             Assert.AreEqual(1, h.ReleaseCalls); // lock/suspend ignore the idle 0-disable
         }
+
+        // Minimize / hide-to-tray releases early rather than waiting out the idle countdown.
+        // Conditional on silence, unlike lock and suspend: minimizing with PauseOnMinimize off is
+        // someone deliberately keeping the music going, and releasing would cut it off.
+        [Test]
+        public void WindowHidden_ReleasesWhenSilent()
+        {
+            var holder = new FakeHolder();
+            var registry = new AudioDeviceRegistry(null);
+            registry.Register(holder);
+            var c = new SleepCoordinator(registry, () => false, () => 10, null);
+
+            Assert.That(c.OnWindowHidden("Minimized"), Is.True, "silent — no reason to hold the device");
+            Assert.That(holder.ReleaseCalls, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void WindowHidden_KeepsTheDeviceWhileAudible()
+        {
+            var holder = new FakeHolder();
+            var registry = new AudioDeviceRegistry(null);
+            registry.Register(holder);
+            var c = new SleepCoordinator(registry, () => true, () => 10, null);
+
+            Assert.That(c.OnWindowHidden("Minimized"), Is.False,
+                "PauseOnMinimize off means the user wants it playing in the background");
+            Assert.That(holder.ReleaseCalls, Is.Zero);
+        }
+
+        [Test]
+        public void WindowHidden_KeepsTheDeviceWhileAGameIsRunning()
+        {
+            var holder = new FakeHolder();
+            var registry = new AudioDeviceRegistry(null);
+            registry.Register(holder);
+            var c = new SleepCoordinator(registry, () => false, () => 10, null, isGameRunning: () => true);
+
+            Assert.That(c.OnWindowHidden("Minimized"), Is.False,
+                "minimizing to play a game is the common case, and the machine stays awake anyway");
+            Assert.That(holder.ReleaseCalls, Is.Zero);
+        }
+
+        // "Release after: 0 min" turns off UPS releasing the device on its own - one control, not
+        // one per trigger.
+        [Test]
+        public void WindowHidden_RespectsTheDisabledSetting()
+        {
+            var holder = new FakeHolder();
+            var registry = new AudioDeviceRegistry(null);
+            registry.Register(holder);
+            var c = new SleepCoordinator(registry, () => false, () => 0, null);
+
+            Assert.That(c.OnWindowHidden("Minimized"), Is.False);
+            Assert.That(holder.ReleaseCalls, Is.Zero);
+        }
+
     }
 }
