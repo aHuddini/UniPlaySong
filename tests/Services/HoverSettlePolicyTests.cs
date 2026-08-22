@@ -122,6 +122,39 @@ namespace UniPlaySong.Tests.Services
                 Is.False);
         }
 
+        // Two speeds, per the PS5 recording: leaving the idle ambient is the weighty transition
+        // and takes the full slider; game-to-game still bridges through the ambient but settles in
+        // half the time. The origin is latched at session start, so the numbers here are what a
+        // user actually waits.
+        [Test]
+        public void FromTheAmbient_TakesTheFullBudget()
+        {
+            Assert.That(HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: true),
+                Is.EqualTo(2.3).Within(0.001), "full slider minus the fade-out spent inside it");
+        }
+
+        [Test]
+        public void GameToGame_TakesHalf()
+        {
+            Assert.That(HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: false),
+                Is.EqualTo(0.8).Within(0.001), "half of 3s, minus the fade-out - music starts ~1.5s after rest");
+        }
+
+        [Test]
+        public void GameToGame_NeverCollapsesBelowTheFloor()
+        {
+            Assert.That(HoverSettlePolicy.SecondsForSwitch(1.0, 5.0, fromDefaultMusic: false),
+                Is.EqualTo(0.5), "a long fade-out must still leave a real debounce");
+        }
+
+        [Test]
+        public void TheTwoSpeeds_AreActuallyDifferent()
+        {
+            var full = HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: true);
+            var half = HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: false);
+            Assert.That(half, Is.LessThan(full), "game-to-game is the snappy one");
+        }
+
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()

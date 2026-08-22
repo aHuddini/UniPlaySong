@@ -314,6 +314,9 @@ namespace UniPlaySong.Services
         private Game _hoverSettleGame;
         // PlayGameMusic's forceOverride argument. The Tag path passes true; selection false.
         private bool _hoverSettleViaOverride;
+        // True when this settle session began on the idle ambient (full delay); false when it
+        // began on a game's track (half delay). Latched at session start.
+        private bool _hoverSettleFromDefault;
 
         // The delay only earns its keep when there is something for the ambient to hold. With
         // nothing playing it would just be silence, which is strictly worse than starting now.
@@ -327,6 +330,14 @@ namespace UniPlaySong.Services
         // flag there would drop the forceReload the Tag path asked for.
         private void ArmHoverSettle(Game game, bool viaOverride = false)
         {
+            // Session origin, latched on the FIRST arm and kept across re-arms. Read before the
+            // bridge has had a chance to matter: a session that starts while a game's track plays
+            // is a game-to-game move and settles at half speed, even though the bridged ambient is
+            // what plays during the wait. Re-reading per re-arm would flip it to the full delay
+            // the moment the bridge landed.
+            if (_hoverSettleGame == null)
+                _hoverSettleFromDefault = _playbackService?.IsPlayingDefaultMusic == true;
+
             _hoverSettleGame = game;
             _hoverSettleViaOverride = _hoverSettleViaOverride || viaOverride;
 
@@ -345,7 +356,8 @@ namespace UniPlaySong.Services
             // the full window commits.
             _hoverSettleTimer.Stop();
             _hoverSettleTimer.Interval = TimeSpan.FromSeconds(
-                HoverSettlePolicy.TimerSeconds(_settings.HoverSettleSeconds, _settings.FadeOutDuration));
+                HoverSettlePolicy.SecondsForSwitch(
+                    _settings.HoverSettleSeconds, _settings.FadeOutDuration, _hoverSettleFromDefault));
             _hoverSettleTimer.Start();
         }
 

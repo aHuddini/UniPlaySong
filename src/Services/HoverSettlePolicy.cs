@@ -28,6 +28,26 @@
             return true;
         }
 
+        // How long this settle session waits. Two speeds, matching the PS5 recording:
+        //
+        //   from the idle ambient -> the full slider value. Leaving the dashboard is the
+        //   deliberate, weighty transition.
+        //   from a game's track   -> half the slider. Game-to-game still bridges through the
+        //   ambient, but settles sooner - snappier, still with the fades.
+        //
+        // The origin is decided once when the session starts and kept across re-arms, so a scroll
+        // that began on a game stays snappy even while the bridged ambient is what is audible.
+        // Both spend the commit's fade-out inside their budget; the floor keeps a real debounce
+        // so a long fade-out cannot collapse the wait.
+        public static double SecondsForSwitch(double settleSeconds, double fadeOutSeconds, bool fromDefaultMusic)
+        {
+            if (fromDefaultMusic)
+                return TimerSeconds(settleSeconds, fadeOutSeconds);
+
+            var half = ClampSeconds(settleSeconds) / 2.0 - (fadeOutSeconds > 0 ? fadeOutSeconds : 0);
+            return half < 0.5 ? 0.5 : half;
+        }
+
         // Whether a deferred switch should first bridge back to the default music. This is the
         // half that makes game-to-game feel like the PS5: the abandoned game's track does not
         // keep playing through the wait - the ambient returns immediately and the new game's

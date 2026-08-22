@@ -42,7 +42,7 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="Keeps your default music playing while you scroll the library, and only starts a game's own music once the selection has rested on it. Mimics the PS5 dashboard, where leaving the ambient track takes a moment but moving between games stays quick."/>
             <TextBlock Style="{StaticResource UpsHintIndented}"
-                       Text="Moving off a game returns to your default music right away; the new game's music starts once you rest on it. Nothing is delayed when there is silence to begin with, and Desktop is unaffected."/>
+                       Text="Moving off a game returns to your default music right away, and a game-to-game move settles in half the time. Nothing is delayed when there is silence to begin with, and Desktop is unaffected."/>
             <TextBlock Style="{StaticResource UpsHintIndented}"
                        Text="If your theme switches its own music (PS5-Experience does), also turn on Advanced → Theme Support → Enable Game Hover Delay Patch."/>
 
@@ -50,7 +50,7 @@
                         IsEnabled="{Binding Settings.HoverSettleEnabled}">
                 <TextBlock Text="Settle delay" Style="{StaticResource UpsLabel}" Width="96"/>
                 <Slider Minimum="1" Maximum="8" Width="200" VerticalAlignment="Center"
-                        IsSnapToTickEnabled="True" TickFrequency="1"
+                        IsSnapToTickEnabled="True" TickFrequency="0.5"
                         Value="{Binding Settings.HoverSettleSeconds}"/>
                 <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
                            Text="{Binding Settings.HoverSettleSeconds, StringFormat='{}{0} seconds'}"/>
