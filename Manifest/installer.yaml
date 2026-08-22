@@ -9,7 +9,6 @@ Packages:
       - '[New Feature] Game Hover Delay Patch (Advanced -> Theme Support): applies the hover delay to themes that switch between default and game music themselves, such as PS5-Experience, rather than following your game selection.'
       - '[Critical Fix] UniPlaySong could hold a Windows audio device open for its whole session even when it never played a sound, which on some PCs stopped them going to sleep. The device now closes once nothing is using it.'
       - '[Improved] Minimizing Playnite or sending it to the tray now releases the audio device straight away instead of waiting out the idle countdown, as long as nothing is playing and no game is running.'
-      - '[Fixed] Settings section headings could render wrong under some desktop themes (reported on Mythos). They now keep their own font, size, colour and accent bar whatever the theme sets.'
       - '[Improved] Credits now record Mike Aniki''s control template, which the v1.8.0 settings revamp was built on.'
   - Version: 1.8.0
     RequiredApiVersion: 6.16.0
