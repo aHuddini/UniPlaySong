@@ -130,7 +130,7 @@
     <Style x:Key="UpsSectionBar" TargetType="Border">
         <Setter Property="BorderBrush" Value="#4CC2FF"/>
         <Setter Property="BorderThickness" Value="3,0,0,0"/>
-        <Setter Property="Padding" Value="10,4,0,4"/>
+        <Setter Property="Padding" Value="10,1,0,1"/>
         <Setter Property="Margin" Value="0,14,0,10"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="CornerRadius" Value="0"/>
@@ -159,8 +159,12 @@
         <Setter Property="TextWrapping" Value="NoWrap"/>
         <Setter Property="TextTrimming" Value="None"/>
         <Setter Property="FlowDirection" Value="LeftToRight"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="0"/>
         <Setter Property="Padding" Value="0"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
     </Style>
 
     <!-- A collapsible section. Same accent bar and tracked caps as UpsSectionBar, plus a
@@ -193,7 +197,7 @@
                                     <Border Background="Transparent"
                                             BorderBrush="#4CC2FF"
                                             BorderThickness="3,0,0,0"
-                                            Padding="10,4,0,4" Margin="0,14,0,10"
+                                            Padding="10,1,0,1" Margin="0,14,0,10"
                                             SnapsToDevicePixels="True"
                                             FlowDirection="LeftToRight">
                                         <StackPanel Orientation="Horizontal">
