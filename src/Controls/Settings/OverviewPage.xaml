@@ -38,10 +38,10 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        This settings window has been overhauled. It now uses two-tier navigation &#x2014; pick a group on the left, then a page within it &#x2014; so the setting you want is faster to find, and the advanced material is out of the way but still there to explore.
+                        Added: a PS5-style hover delay for Fullscreen, under Playback &#x2192; Global Overrides. It waits for your game selection to settle before starting a game's music, so scrolling rides your default music instead of chopping through half-started tracks.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Several pages are new or reorganised, and Sidebar Glow, Icon Glow and library Statistics have graduated out of Experimental. See the full changelog below.
+                        Fixed: UniPlaySong no longer holds a Windows audio device open for its whole session, and now releases it when you minimize to the tray. Collapsible section headings are no longer cropped under themes such as Mythos.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

@@ -20,48 +20,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.0
+## What's New - v1.8.1
 
-### The settings window has been rebuilt around two-tier navigation
-Pick a group on the left, then a page within it. Finding the setting you want is faster, and the
-advanced material is out of the way but still there to explore.
-
-**Setup** — Tools, Downloads, and a new **Automations** page for the things UniPlaySong can do on its
-own, like downloading music when a game is added to your library.
-
-**Playback** — reorganised into pages, including a dedicated **Default Music** page for your fallback
-music and a new **Music Mode** page holding Preview Mode and Radio Mode together.
-
-**Pauses** — reorganised, with **External Audio** on its own page. Adding a process to the ignore list
-is now a matter of typing its name, not editing a comma-separated line.
-
-**Live Effects** — Volume and Fade Transitions moved off Playback into their own pages, and the
-reverb effects and the visualizers are now separate pages rather than one long list. Sidebar Glow and
-Icon Glow have graduated out of Experimental.
-
-**Gamification** — reworked throughout so the options are clearer to pick. PlayniteAchievements got
-the largest change: setting up a sound for each unlock rarity is far easier.
-
-**Library** — a dedicated **Statistics** page for your music library (graduated out of Experimental),
-plus **Audio Management** for bulk actions and file housekeeping.
-
-**Advanced** — theme-specific patches, backup, migration and cleanup collected in one place.
-
-**About** — Overview, Links, Credits and Donate. The troubleshooting notes now cover how very long or
-very large songs can make a theme stutter.
-
-**General** — Media Controls options are described more clearly.
+### Added
+- **PS5-style hover delay (Fullscreen)** — wait for your selection to settle before a game's music starts, so scrolling rides your default music instead of chopping through half-started tracks. 1-8 seconds, under Playback → Global Overrides.
+- **Game Hover Delay Patch** — extends that delay to themes that switch music themselves, such as PS5-Experience. Under Advanced → Theme Support.
 
 ### Fixed
-- **"Apply live effects to jingles"** switched itself off along with the Completed fanfare, even
-  though it also governs the Abandoned jingle.
-- **Radio Mode's** game-rotation and completion-status options gave no indication of what was
-  selected, or where to change it.
-- **PlayniteAchievements' per-rarity sounds** appeared greyed out unless you had picked the Custom
-  pack. They now show which sound each rarity will actually play, whichever pack you are using.
+- UniPlaySong no longer holds a Windows audio device open for its whole session, which on some PCs stopped them going to sleep.
+- Minimizing Playnite or sending it to the tray now releases the audio device.
+- Collapsible settings section headings were cropped under some desktop themes (reported on Mythos).
 
 ### Previous Version
-- **v1.7.3**: YouTube downloads that failed with a "403 Forbidden" now retry automatically and get the track.
+- **v1.8.0**: The settings window was rebuilt around two-tier navigation — pick a group on the left, then a page within it.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

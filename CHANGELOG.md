@@ -4,6 +4,27 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.1] - 2026-08-22
+
+### Added
+
+- **Hover settle delay (Fullscreen).** A gated option under Playback → Global Overrides that defers the default→game music transition until the game selection stops changing, mimicking the PS5 dashboard. Decision logic lives in `HoverSettlePolicy` as pure static methods (`ShouldDefer`, `ClampSeconds`, `TimerSeconds`, `SecondsForSwitch`, `ShouldBridgeToDefault`) so the timing rules are testable without a dispatcher. The timer in `MusicPlaybackCoordinator` runs at `DispatcherPriority.Render` — `DispatcherTimer`'s default `Background` priority queues ticks behind UI work, which made the delay measure long under load.
+  - The user-facing seconds are the *settle* window, not wall-clock. Fade-out and fade-in are additive on top, which is why a 3-second setting first measured as 4-6 seconds; `TimerSeconds` now subtracts the fade-out so the slider means what it says.
+  - Game→game switches are deliberately faster than default→game: `SecondsForSwitch` branches on `fromDefaultMusic`, latched on first arm via `_hoverSettleFromDefault`. Leaving the default music waits; returning to it stays immediate.
+- **Game Hover Delay Patch** (Advanced → Theme Support). A separate toggle from the PS5-Experience compat patch. Some themes drive the default↔game transition themselves rather than following `SelectedGames`, so the settle timer has no selection change to act on; this applies the delay on that path too. Requires the settle delay to be enabled.
+
+### Fixed
+
+- **Audio device held open for the entire session.** Three separate mechanisms conspired so that no code path could ever close SDL2's device: a throwaway prewarm probe kept a handle, `ReleaseAudioDevice` early-returned on an `_enableIdleTeardown` gate, and `_isSDLAudioInitialized` is `static` (the device is process-wide, one `Mix_OpenAudio`). Added `SDL2MusicPlayer.CloseSharedDeviceIfUnused()` — state-guarded, needs no owner — and removed the gate. `EnableCompletionCelebration` defaults to `true`, so this affected default installs, not just configured ones.
+  - Whether releasing the device lets a machine sleep is hardware-dependent. On S0 Modern Standby an idle audio endpoint does not register as a sleep blocker at all, so `powercfg /requests` shows nothing either way; the release is still correct, but S0 machines were never blocked by it.
+- **Idle release never fired from a minimized window.** Added `SleepCoordinator.OnWindowHidden(reason)`, wired to both minimize and hide-to-tray. Conditional on silence and no running game, unlike lock/suspend which release unconditionally — a minimize with PauseOnMinimize off is someone deliberately keeping music going, and releasing there would cut it off. Gated by the same "Release after: 0 min" that disables the idle timer, so one control still governs whether UPS releases on its own.
+- **Sleep/power diagnostics split across two logs.** `[Sleep]` lines went to `UniPlaySong.log` while SDL2's device close went to Playnite's `extensions.log`, so a working release read as broken. Added `SDL2MusicPlayer.SetSleepLogger` to unify them. `IdleTick` now also logs the tick that decides *not* to release — previously silent, which made "the idle timer doesn't work" impossible to confirm or refute from a log.
+- **Collapsible settings headings cropped under some desktop themes** (reported on Mythos). The collapsible bar wraps its heading in a `ToggleButton` that set only `Template`, leaving it exposed to a theme's implicit `<Style TargetType="{x:Type ToggleButton}">` — Mythos applies `Height="28"` and `Padding="12,8,12,8"`, cropping a 13.3px heading. Setting `Template` alone is not enough; an element needs an explicit `Style` to be immune. Added `UpsSectionHeaderButton`, which reproduces the plain `UpsSectionBar` metrics exactly.
+
+### Changed
+
+- Credits now record Mike Aniki's control template, which the v1.8.0 settings revamp was built on.
+
 ## [1.8.0] - 2026-08-21
 
 ### Changed
