@@ -98,6 +98,8 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.RandomizeOnEverySelect),
                     nameof(UniPlaySongSettings.RandomizeOnMusicEnd),
                     nameof(UniPlaySongSettings.SelectedBundledPreset),
+                    nameof(UniPlaySongSettings.HoverSettleEnabled),
+                    nameof(UniPlaySongSettings.HoverSettleSeconds),
                     nameof(UniPlaySongSettings.SkipFirstSelectionAfterModeSwitch),
                     nameof(UniPlaySongSettings.SpotifySkipOnGap),
                     nameof(UniPlaySongSettings.StopAfterSongEnds),

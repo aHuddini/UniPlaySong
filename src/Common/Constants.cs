@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace UniPlaySong.Common
@@ -12,6 +12,13 @@ namespace UniPlaySong.Common
         public const double DefaultFadeOutDuration = 0.3;
         public const double MinFadeDuration = 0.10;
         public const double MaxFadeDuration = 5.0;
+
+        // Hover settle delay: how long the selection must rest on a game before its music starts.
+        // 3s is roughly the PS5 dashboard's feel - long enough to scroll a row without triggering,
+        // short enough that resting on a game does not feel broken.
+        public const double DefaultHoverSettleSeconds = 3.0;
+        public const double MinHoverSettleSeconds = 1.0;
+        public const double MaxHoverSettleSeconds = 8.0;
 
         #endregion
         

@@ -37,6 +37,24 @@
                        Style="{StaticResource UpsDangerNote}"
                        Margin="32,0,0,10"/>
 
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Wait for the selection to settle before playing game music (Fullscreen)"
+                      IsChecked="{Binding Settings.HoverSettleEnabled}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Keeps the music you are already hearing playing while you scroll the library, and only starts a game's own music once the selection has rested on it. Mimics the PS5 dashboard, where scrolling never chops the ambient track."/>
+            <TextBlock Style="{StaticResource UpsHintIndented}"
+                       Text="Skipped when nothing is playing, so it never turns music into silence. Desktop is unaffected."/>
+
+            <StackPanel Orientation="Horizontal" Margin="32,4,0,0"
+                        IsEnabled="{Binding Settings.HoverSettleEnabled}">
+                <TextBlock Text="Settle delay" Style="{StaticResource UpsLabel}" Width="96"/>
+                <Slider Minimum="1" Maximum="8" Width="200" VerticalAlignment="Center"
+                        IsSnapToTickEnabled="True" TickFrequency="1"
+                        Value="{Binding Settings.HoverSettleSeconds}"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.HoverSettleSeconds, StringFormat='{}{0} seconds'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="128,4,0,10"
+                       Text="Longer means more scrolling before any track starts. Default 3 seconds."/>
 
         </StackPanel>
     </ScrollViewer>

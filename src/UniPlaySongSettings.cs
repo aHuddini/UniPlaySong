@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -319,6 +319,8 @@ namespace UniPlaySong
         private bool autoPlayOnFirstLaunchDesktop = true;
         private bool skipFirstSelectionAfterModeSwitch = false;
         private bool themeCompatibleSilentSkip = true;
+        private bool hoverSettleEnabled = false; // Fullscreen: wait for the selection to rest before starting game music
+        private double hoverSettleSeconds = Constants.DefaultHoverSettleSeconds;
         private bool pauseOnTrailer = true;
         private int musicVolume = Constants.DefaultMusicVolume;
         private int fullscreenVolumeBoostPercent = 0;
@@ -495,6 +497,29 @@ namespace UniPlaySong
         // Theme Compatible Login Skip: Waits for keyboard/controller input (Enter/Space/Escape) before
         // playing music. Designed for themes with login/welcome screens. Music starts when user presses a key
         // to dismiss the login screen. Note: Disabled when "Do not play music on startup" is enabled.
+        // Fullscreen only. Holds the game-music start until the selection has rested for
+        // HoverSettleSeconds, so scrolling the library does not tear down default music to load
+        // tracks it immediately abandons. Mimics the PS5 dashboard. The delay is skipped when
+        // nothing is playing - waiting on silence is strictly worse than starting.
+        public bool HoverSettleEnabled
+        {
+            get => hoverSettleEnabled;
+            set { hoverSettleEnabled = value; OnPropertyChanged(); }
+        }
+
+        // How long the selection must rest before the game's music starts, in seconds.
+        public double HoverSettleSeconds
+        {
+            get => hoverSettleSeconds;
+            set
+            {
+                hoverSettleSeconds = Math.Round(
+                    Math.Max(Constants.MinHoverSettleSeconds,
+                             Math.Min(Constants.MaxHoverSettleSeconds, value)), 1);
+                OnPropertyChanged();
+            }
+        }
+
         public bool ThemeCompatibleSilentSkip
         {
             get => themeCompatibleSilentSkip;

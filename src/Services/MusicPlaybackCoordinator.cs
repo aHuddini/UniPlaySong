@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -270,6 +270,19 @@ namespace UniPlaySong.Services
                 return;
             }
 
+            // Every gate above has already run and every skip flag is already settled, so only the
+            // play itself is deferred. Deferring the whole method would defer the flag clears too,
+            // and a login-skip that clears three seconds late is a regression.
+            if (ShouldDeferForHoverSettle())
+            {
+                _fileLogger?.Debug($"HandleGameSelected: Hover settle armed for {game.Name} ({_settings.HoverSettleSeconds}s)");
+                ArmHoverSettle(game);
+                _firstSelect = false;
+                return;
+            }
+
+            CancelHoverSettle("committing immediately");
+
             // Service handles: music file detection, default music fallback, and settings
             var sw = System.Diagnostics.Stopwatch.StartNew();
             _fileLogger?.Debug($"HandleGameSelected: Calling PlayGameMusic for {game.Name}");
@@ -278,6 +291,87 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug(() => $"[Perf] HandleGameSelected: PlayGameMusic took {sw.ElapsedMilliseconds}ms for {game.Name}");
 
             _firstSelect = false;
+        }
+
+        // === Hover settle (PS5-style) ===
+        // Scrolling a Fullscreen library fires OnGameSelected per row, and each one used to tear
+        // down the playing default music to load a track it abandoned a moment later - the chop
+        // users hear when moving fast. Holding the start until the selection rests lets the ambient
+        // ride through the scroll, which is what the PS5 dashboard does.
+
+        private System.Windows.Threading.DispatcherTimer _hoverSettleTimer;
+        private Game _hoverSettleGame;
+
+        // The delay only earns its keep when there is something for the ambient to hold. With
+        // nothing playing it would just be silence, which is strictly worse than starting now.
+        private bool ShouldDeferForHoverSettle() => HoverSettlePolicy.ShouldDefer(
+            _settings?.HoverSettleEnabled == true,
+            _isFullscreen(),
+            _playbackService?.IsPlaying == true);
+
+        private void ArmHoverSettle(Game game)
+        {
+            _hoverSettleGame = game;
+
+            if (_hoverSettleTimer == null)
+            {
+                _hoverSettleTimer = new System.Windows.Threading.DispatcherTimer();
+                _hoverSettleTimer.Tick += OnHoverSettleTick;
+            }
+
+            // Restarting on every selection is the whole mechanism: only a selection that survives
+            // the full window commits.
+            _hoverSettleTimer.Stop();
+            _hoverSettleTimer.Interval = TimeSpan.FromSeconds(
+                HoverSettlePolicy.ClampSeconds(_settings.HoverSettleSeconds));
+            _hoverSettleTimer.Start();
+        }
+
+        // Called when anything supersedes a pending start - a game launch, a pause, a settings
+        // change, a stop. Without this the pending timer would fire over the top of whatever took
+        // over playback.
+        public void CancelHoverSettle(string reason)
+        {
+            if (_hoverSettleTimer?.IsEnabled != true && _hoverSettleGame == null) return;
+            _fileLogger?.Debug($"CancelHoverSettle: {reason}");
+            _hoverSettleTimer?.Stop();
+            _hoverSettleGame = null;
+        }
+
+        private void OnHoverSettleTick(object sender, EventArgs e)
+        {
+            _hoverSettleTimer.Stop();
+
+            var game = _hoverSettleGame;
+            _hoverSettleGame = null;
+            if (game == null) return;
+
+            // The selection may have moved on without a fresh HandleGameSelected (mode switch,
+            // filter change). Commit only what is actually selected now.
+            var current = _getSelectedGame();
+            if (current != null && current.Id != game.Id)
+            {
+                _fileLogger?.Debug($"HoverSettle: selection moved to {current.Name} before commit - dropping {game.Name}");
+                return;
+            }
+
+            if (!ShouldPlayMusic(game))
+            {
+                _fileLogger?.Debug($"HoverSettle: ShouldPlayMusic now false for {game.Name} - dropping");
+                return;
+            }
+
+            // Anything that interrupted playback during the wait - a game launch, a video, focus
+            // loss, the lock screen - lands here as a pause source. Checking the paused state once
+            // covers every one of them, rather than hooking each interruption separately.
+            if (_playbackService?.IsPaused == true)
+            {
+                _fileLogger?.Debug($"HoverSettle: playback paused during the wait - dropping {game.Name}");
+                return;
+            }
+
+            _fileLogger?.Debug($"HoverSettle: settled on {game.Name} - playing");
+            _playbackService?.PlayGameMusic(game, _settings, false);
         }
         
         // Handles login screen dismissal (controller/keyboard input)
