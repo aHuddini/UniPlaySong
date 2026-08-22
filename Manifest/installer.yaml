@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.8.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-22
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.1/UniPlaySong-1_8_1.pext'
+    Changelog:
+      - '[Improved] Credits now record Mike Aniki''s control template, which the v1.8.0 settings revamp was built on.'
   - Version: 1.8.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-21
