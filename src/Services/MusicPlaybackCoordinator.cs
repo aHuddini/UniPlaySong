@@ -307,7 +307,7 @@ namespace UniPlaySong.Services
         private bool ShouldDeferForHoverSettle() => HoverSettlePolicy.ShouldDefer(
             _settings?.HoverSettleEnabled == true,
             _isFullscreen(),
-            _playbackService?.IsPlaying == true);
+            _playbackService?.IsPlayingDefaultMusic == true);
 
         private void ArmHoverSettle(Game game)
         {

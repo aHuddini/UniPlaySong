@@ -8,19 +8,24 @@
         // True when a game selection should wait for the selection to rest before its music
         // starts, instead of playing immediately.
         //
-        // The delay exists to stop a fast library scroll tearing down the music already playing
-        // to load tracks it abandons a moment later. It therefore only applies when there is
-        // something to protect:
+        // The delay exists to stop a fast library scroll tearing down the ambient default music to
+        // load tracks it abandons a moment later. It protects the ambient specifically, so it only
+        // applies while the ambient is what is playing:
         //
-        //   isPlaying == false  ->  never defer. Waiting on silence turns music into more
-        //                           silence, which is strictly worse than starting now.
+        //   isPlayingDefaultMusic == false -> never defer. Two cases fall in here and both want
+        //                           an immediate switch:
+        //                             nothing playing - waiting on silence produces more silence;
+        //                             a game's track already playing - you are past the ambient,
+        //                             so game-to-game should be snappy. Matches the PS5, where
+        //                             leaving the dashboard ambient takes a couple of seconds but
+        //                             moving between titles switches quickly.
         //   isFullscreen == false -> never defer. Desktop selection is click-driven rather than
         //                           scrolled, so a delay there reads as lag.
-        public static bool ShouldDefer(bool enabled, bool isFullscreen, bool isPlaying)
+        public static bool ShouldDefer(bool enabled, bool isFullscreen, bool isPlayingDefaultMusic)
         {
             if (!enabled) return false;
             if (!isFullscreen) return false;
-            if (!isPlaying) return false;
+            if (!isPlayingDefaultMusic) return false;
             return true;
         }
 

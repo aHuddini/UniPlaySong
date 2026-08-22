@@ -11,16 +11,16 @@ namespace UniPlaySong.Tests.Services
     public class HoverSettlePolicyTests
     {
         [Test]
-        public void Defers_WhenEnabled_InFullscreen_WithMusicPlaying()
+        public void Defers_LeavingTheAmbient_InFullscreen()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: true),
                 Is.True, "the case the feature exists for");
         }
 
         [Test]
         public void DoesNotDefer_WhenDisabled()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: false, isFullscreen: true, isPlaying: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: false, isFullscreen: true, isPlayingDefaultMusic: true),
                 Is.False);
         }
 
@@ -29,15 +29,25 @@ namespace UniPlaySong.Tests.Services
         [Test]
         public void DoesNotDefer_WhenNothingIsPlaying()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
                 Is.False, "nothing to protect - starting now beats waiting on silence");
+        }
+
+        // Observed on the PS5: leaving the dashboard ambient takes a couple of seconds, but moving
+        // between titles switches quickly. Once a game's track is playing the ambient is already
+        // gone, so there is nothing left for the delay to protect.
+        [Test]
+        public void DoesNotDefer_GameToGame()
+        {
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlayingDefaultMusic: false),
+                Is.False, "game-to-game stays snappy - the ambient is already gone");
         }
 
         // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
         [Test]
         public void DoesNotDefer_InDesktop()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: false, isPlaying: true),
+            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: false, isPlayingDefaultMusic: true),
                 Is.False, "Fullscreen-gated by design");
         }
 
