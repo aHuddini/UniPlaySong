@@ -44,10 +44,16 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Resume song from last played position"
                       IsChecked="{Binding Settings.ResumeGameMusicPosition}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Default: Off. Preserves a game song's last played position when you switch back to the game that had the song. Works when Randomization → Switch Mode is enabled or disabled."/>
+                       Text="Default: On. Preserves a game song's last played position when you switch back to the game that had the song. Works when Randomization → Switch Mode is enabled or disabled."/>
             <TextBlock Style="{StaticResource UpsWarning}"
                        Margin="32,0,0,10"
                        Text="&#x26A0; Does not apply to chiptune music (.nsf, .spc, .vgm and similar) — those tracks always start from the beginning."/>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Resume default music from last played position"
+                      IsChecked="{Binding Settings.ResumeDefaultMusicPosition}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Margin="32,0,0,10"
+                       Text="Default: On. When a game's own music takes over and later hands back, your default music continues from where it was instead of starting again. Turn off if you would rather it restart every time."/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Wait for the selection to settle before playing game music (Fullscreen)"
                       IsChecked="{Binding Settings.HoverSettleEnabled}"/>

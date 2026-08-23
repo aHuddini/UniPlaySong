@@ -4,6 +4,26 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.3] - 2026-08-22
+
+### Fixed
+
+- **Default music restarted from zero every time game music took over.** `wasDefaultMusic` was computed at the fade-out block, ~110 lines after an unrelated Spotify-gap guard had already set `_isPlayingDefaultMusic = false` for the incoming-game-music case — which is precisely the case the save exists to handle. The condition could never be true, so `_defaultMusicPausedOnTime` was never written. Confirmed against a field log: `Switching from default to game music. Saved position` appeared **0 times** in 8,386 lines, while `Playing default music at position` reported 0.00s every time. The state is now captured on entry, before anything can clear it.
+- **Game music restarted when returning from default music.** The outgoing position was saved inside the game-music fade-out block, so it only ran on game→game switches. Leaving a game *for* default music takes the `isDefaultMusic` branch, and all six of its exits return before that block was reached. Extracted to `RememberOutgoingSongPosition` and called once, before any branch can diverge.
+- The hover-settle interim plays a default track without setting both default-music flags, so bundled ambient tracks were being recorded as though they were game music. The save now decides from the outgoing **path** via `IsDefaultMusicPath`, which is true on every route by construction.
+
+### Added
+
+- **`ResumeDefaultMusicPosition`** (Playback → Global Overrides, default on). Off makes default music restart each time it takes over.
+
+### Changed
+
+- **`ResumeGameMusicPosition` now defaults to on.**
+
+### Notes
+
+All three fixes are the same defect in different clothes: state read where it was convenient rather than where it was still valid. In a 2,700-line method with six early returns, the reliable placement is *before anything can diverge*, not next to the code that consumes it.
+
 ## [1.8.2] - 2026-08-22
 
 ### Added

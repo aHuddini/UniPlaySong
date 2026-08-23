@@ -38,10 +38,10 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: Resume song from last played position, under Playback &#x2192; Global Overrides. Leave a game part-way through a song and coming back picks it up from there instead of restarting.
+                        Fixed: default music no longer restarts from the beginning when a game's own music takes over and hands back, and game music no longer restarts when you return to a game from default music.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Positions are kept per song, so it works whether Randomization &#x2192; Switch Mode shuffling is on or off.
+                        Both resume options are now on by default, and default music resuming can be switched off under Playback &#x2192; Global Overrides.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

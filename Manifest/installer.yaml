@@ -5,7 +5,10 @@ Packages:
     ReleaseDate: 2026-08-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.3/UniPlaySong-1_8_3.pext'
     Changelog:
-      - '[Placeholder] Pending.'
+      - '[Critical Fix] Default music restarted from the beginning every time a game''s own music took over and handed back. Its position was being read after an unrelated guard had already cleared the flag the save depended on, so the save could never run. Default music now continues where it left off.'
+      - '[Critical Fix] Game music restarted when returning to a game from default music. The position was only recorded on game-to-game switches; leaving a game FOR default music took a different path that returned before the save. It is now recorded on every route.'
+      - '[New Setting] Resume default music from last played position (Playback -> Global Overrides). On by default. Turn off if you would rather default music restart each time it takes over.'
+      - '[Changed] Resume song from last played position is now on by default.'
   - Version: 1.8.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-22

@@ -321,7 +321,8 @@ namespace UniPlaySong
         private bool themeCompatibleSilentSkip = true;
         private bool hoverSettleEnabled = false; // Fullscreen: wait for the selection to rest before starting game music
         private double hoverSettleSeconds = Constants.DefaultHoverSettleSeconds;
-        private bool resumeGameMusicPosition = false; // returning to a game picks up where its track left off
+        private bool resumeGameMusicPosition = true;  // returning to a game picks up where its track left off
+        private bool resumeDefaultMusicPosition = true; // default music continues rather than restarting
         private bool pauseOnTrailer = true;
         private int musicVolume = Constants.DefaultMusicVolume;
         private int fullscreenVolumeBoostPercent = 0;
@@ -527,6 +528,15 @@ namespace UniPlaySong
         {
             get => resumeGameMusicPosition;
             set { resumeGameMusicPosition = value; OnPropertyChanged(); }
+        }
+
+        // Default music picks up where it left off when a game's own track hands back to it,
+        // rather than restarting. On by default: continuing is what it has always been meant to do,
+        // so turning it off is the new choice, not the existing one.
+        public bool ResumeDefaultMusicPosition
+        {
+            get => resumeDefaultMusicPosition;
+            set { resumeDefaultMusicPosition = value; OnPropertyChanged(); }
         }
 
         public bool ThemeCompatibleSilentSkip

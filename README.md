@@ -20,13 +20,20 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.2
+## What's New - v1.8.3
+
+### Fixed
+- **Default music no longer restarts.** When a game's own music took over and later handed back, your default music began again from the start. It now continues where it left off.
+- **Game music no longer restarts** when you return to a game from default music.
 
 ### Added
-- **Resume song from last played position** — leave a game part-way through a song and coming back picks it up from there instead of restarting. Positions are kept per song, so it works whether Switch Mode shuffling is on or off. Under Playback → Global Overrides.
+- **Resume default music from last played position** — under Playback → Global Overrides, on by default. Turn off if you would rather it restart each time.
+
+### Changed
+- **Resume song from last played position** is now on by default.
 
 ### Previous Version
-- **v1.8.1**: PS5-style hover delay for Fullscreen, plus audio-device release fixes.
+- **v1.8.2**: Resume a game's song from where you left it.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

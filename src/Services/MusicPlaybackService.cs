@@ -550,6 +550,41 @@ namespace UniPlaySong.Services
         #endregion
 
         // Checks if path is default music. Used to determine if same default music can continue playing.
+        // Records where the outgoing game track had reached, so landing on it again resumes there.
+        // Must be called while the player still holds it: Close() wipes CurrentTime.
+        //
+        // The outgoing PATH decides whether this is default music, not the flag pair
+        // (_isPlayingDefaultMusic && _isCurrentSongDefaultMusic). Those are not set on every route
+        // that plays default music - the hover-settle interim clears a game's songs and plays a
+        // default track without setting both - so trusting them recorded bundled ambient tracks as
+        // though they were game music. Asking the path is true on every route by construction.
+        private void RememberOutgoingSongPosition(string outgoingSongPath, UniPlaySongSettings settings, bool wasDefaultOnEntry)
+        {
+            if (string.IsNullOrEmpty(outgoingSongPath)) return;
+            if (_musicPlayer == null) return;
+
+            var resumeEnabled = (_currentSettings ?? settings)?.ResumeGameMusicPosition == true;
+            if (wasDefaultOnEntry || IsDefaultMusicPath(outgoingSongPath, settings)) return;
+
+            var position = _musicPlayer.CurrentTime ?? default(TimeSpan);
+            if (GameMusicResumePolicy.ShouldRemember(resumeEnabled, outgoingSongPath, position, _musicPlayer.TotalTime))
+            {
+                _songResumeMarks[outgoingSongPath] = new GameMusicResumePolicy.Mark
+                {
+                    SongPath = outgoingSongPath,
+                    Position = position
+                };
+                _fileLogger?.Debug($"Remembered {Path.GetFileName(outgoingSongPath)} at {position.TotalSeconds:F2}s");
+            }
+            else
+            {
+                // Near the end, a chiptune, or the feature is off - drop any older mark rather than
+                // letting a stale position outlive the play that set it.
+                _songResumeMarks.Remove(outgoingSongPath);
+                _fileLogger?.Debug($"Not remembering {Path.GetFileName(outgoingSongPath)} (pos={position.TotalSeconds:F2}s, total={_musicPlayer.TotalTime?.TotalSeconds ?? -1:F2}s, enabled={resumeEnabled})");
+            }
+        }
+
         private bool IsDefaultMusicPath(string path, UniPlaySongSettings settings)
         {
             if (string.IsNullOrWhiteSpace(path) || settings == null || !settings.EnableDefaultMusic)
@@ -1301,6 +1336,25 @@ namespace UniPlaySong.Services
                 // UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time.
                 bool isDefaultMusic = IsDefaultMusicPath(songToPlay, settings);
 
+                // Captured HERE, before the Spotify-gap reset a few lines below clears
+                // _isPlayingDefaultMusic. The fade-out block ~100 lines down needs to know whether
+                // default music was playing on the way in, so it can bank its position before
+                // Close() wipes it - and by the time it asked, the flag had already been reset for
+                // an unrelated reason. That is why "Switching from default to game music. Saved
+                // position" never appeared in a log: the condition could not be true. Default music
+                // therefore restarted from zero every time a game's own track took over.
+                bool wasPlayingDefaultOnEntry = _isPlayingDefaultMusic && _isCurrentSongDefaultMusic;
+
+                // Bank the outgoing track's position HERE, before any branch below returns.
+                //
+                // This used to live in the game-music fade-out block, which meant it only ever ran
+                // on a game-to-game switch. Leaving a game FOR default music takes the isDefaultMusic
+                // branch instead, and every exit from that branch returns before the old location was
+                // reached - so the game track's position was never recorded, and coming back from
+                // default music always restarted it. Reading it once, up front, is the only placement
+                // that covers every route out of this method.
+                RememberOutgoingSongPosition(outgoingSongPath, settings, wasPlayingDefaultOnEntry);
+
                 // A real game track is about to play → we are NOT in a default-music gap. Reset the flag unconditionally
                 // here. The later reset (in the shouldFadeOut block) is gated on UPS's own player being active, which is FALSE
                 // when the previous "default music" was a Spotify gap (UPS's player was closed while Spotify played). Without
@@ -1396,8 +1450,12 @@ namespace UniPlaySong.Services
                                         return;
                                     }
 
-                                    _musicPlayer.Play(_defaultMusicPausedOnTime);
-                                    _fileLogger?.Debug($"Playing default music at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
+                                    // Off means default music restarts each time it takes over.
+                                    var defaultStart = (_currentSettings ?? settings)?.ResumeDefaultMusicPosition == false
+                                        ? TimeSpan.Zero
+                                        : _defaultMusicPausedOnTime;
+                                    _musicPlayer.Play(defaultStart);
+                                    _fileLogger?.Debug($"Playing default music at position {defaultStart.TotalSeconds:F2}s");
                                     OnMusicStarted?.Invoke(settings);
                                 }
                             );
@@ -1419,7 +1477,12 @@ namespace UniPlaySong.Services
                 }
 
                 // PNS PATTERN: If switching from default music to game music, save position BEFORE fading out.
-                bool wasDefaultMusic = _isPlayingDefaultMusic && _isCurrentSongDefaultMusic;
+                //
+                // Uses the value captured on entry, not a fresh read. Reading the flags here gives
+                // the wrong answer whenever the incoming track is game music, because the
+                // Spotify-gap guard above has already set _isPlayingDefaultMusic to false by then -
+                // which is precisely the case this branch exists to handle.
+                bool wasDefaultMusic = wasPlayingDefaultOnEntry;
                 
                 if (isNewGame)
                 {
@@ -1456,28 +1519,6 @@ namespace UniPlaySong.Services
                         _isPlayingDefaultMusic = false;
                     }
 
-                    // Same idea for the track we are leaving, so landing on it again picks up there.
-                    // Has to be read here: the stopAction below calls Close(), which wipes CurrentTime.
-                    if (!wasDefaultMusic && !string.IsNullOrEmpty(outgoingSongPath))
-                    {
-                        var outgoingPosition = _musicPlayer.CurrentTime ?? default;
-                        if (GameMusicResumePolicy.ShouldRemember(resumeEnabled, outgoingSongPath, outgoingPosition, _musicPlayer.TotalTime))
-                        {
-                            _songResumeMarks[outgoingSongPath] = new GameMusicResumePolicy.Mark
-                            {
-                                SongPath = outgoingSongPath,
-                                Position = outgoingPosition
-                            };
-                            _fileLogger?.Debug($"Remembered {Path.GetFileName(outgoingSongPath)} at {outgoingPosition.TotalSeconds:F2}s");
-                        }
-                        else
-                        {
-                            // Near the end, a chiptune, or the feature is off - drop any older mark
-                            // rather than letting a stale position outlive the play that set it.
-                            _songResumeMarks.Remove(outgoingSongPath);
-                            _fileLogger?.Debug($"Not remembering {Path.GetFileName(outgoingSongPath)} (pos={outgoingPosition.TotalSeconds:F2}s, total={_musicPlayer.TotalTime?.TotalSeconds ?? -1:F2}s, enabled={resumeEnabled})");
-                        }
-                    }
 
                     _fileLogger?.Debug($"Switching to: {Path.GetFileName(newSongPath)}");
 
