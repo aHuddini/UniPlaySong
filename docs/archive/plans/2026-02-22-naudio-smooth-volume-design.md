@@ -136,7 +136,7 @@ Two follow-up changes built on the smooth volume foundation:
 
 The per-song `WaveOutEvent` lifecycle (~70ms: Init=57ms + Dispose=15ms) was still blocking the UI thread during game switches. Replaced with a persistent `MixingSampleProvider` + single `WaveOutEvent` that runs for the player's lifetime. Songs are swapped via `AddMixerInput()`/`RemoveMixerInput()` — song switch dropped to **0ms**.
 
-`SmoothVolumeSampleProvider` moved from the per-song chain to the persistent layer (between mixer output and WaveOutEvent). See [NAUDIO_PIPELINE.md](../dev_docs/NAUDIO_PIPELINE.md) for full architecture.
+`SmoothVolumeSampleProvider` moved from the per-song chain to the persistent layer (between mixer output and WaveOutEvent). See [NAUDIO_PIPELINE.md](../../dev_docs/NAUDIO_PIPELINE.md) for full architecture.
 
 Key changes:
 - `SongEndDetectorSampleProvider`: detects EOF via `read < count` (mixer auto-removes on partial read)

@@ -1556,6 +1556,35 @@ Pause removed: ThemeOverlay - resuming playback (no pause sources remaining)
 
 ---
 
+## Audio Capture: Approaches Ruled Out
+
+Getting one application's isolated audio on Windows has four obvious-looking answers that do not
+work for a no-admin Playnite plugin. All four were verified against primary Microsoft documentation
+before `SpotifyLoopback.dll` was written. **Do not revisit them** — this list exists so the dead ends
+are not re-derived.
+
+| Approach | Why it fails |
+|---|---|
+| Register our own virtual audio device at runtime | Impossible. Virtual endpoints are created by **SysAudio (kernel-mode)**, and `KSCATEGORY_AUDIO_DEVICE` is reserved exclusively for it. SysVAD needs test-signing, a trusted cert and a reboot. |
+| Classic WASAPI render loopback | Captures the **full system mix** only. Cannot isolate one application. |
+| Bundle VB-Cable / VoiceMeeter | The licence permits redistribution, but it is still a **driver install** and a worse experience than the native API. Fallback only. |
+| Equalizer APO | System- or device-wide effects, requires install plus reboot, and cannot be scoped to one app. |
+
+**The working answer is Process Loopback Capture** (`ActivateAudioInterfaceAsync` with
+`AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS` and `INCLUDE_TARGET_PROCESS_TREE`), which needs no cable, no
+driver and no admin.
+
+**Why a native shim is unavoidable.** NAudio's `WasapiLoopbackCapture` is system-mix-only and does
+not support process loopback ([NAudio issue #878](https://github.com/naudio/NAudio/issues/878), still
+open). The API requires an async COM completion handler and an activation-params blob, which is
+impractical from .NET Framework 4.6.2 P/Invoke — hence `native/SpotifyLoopback/`, an ordinary DLL
+shipped in the extension folder rather than a driver.
+
+The OS floor and the dry-output mute invariant that follow from this live in
+[SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md#live-effects--visualizer-on-spotify-v165-experimental).
+
+---
+
 ## Debugging Tips
 
 ### State Inspection

@@ -4,7 +4,7 @@
 
 **Verdict:** **YES — PROVEN, then SHIPPED in v1.6.5.** Windows Process Loopback Capture pulls Spotify's isolated, clean PCM with no virtual cable, no driver, no admin. A feasibility spike (2026-07-12) captured 4s of a playing Spotify track in isolation — non-silent, no DRM block, verified by ear. The feature shipped in v1.6.5 (Live Effects + Calm Down + Visualizer on Spotify) using a small bundled C++/WinRT shim. The OS floor was later corrected down to Windows 10 version 2004 / build 19041 in v1.6.9 (see Constraints).
 
-> **This doc is the feasibility research (the proven path).** For the SHIPPED architecture — the post-master output mixer, the −60 dB duck (not mute) because the tap is post-session-volume, the per-input fader/gate, and the issue-#81 idle-teardown guard — see the "External Source Path" section of [`NAUDIO_PIPELINE.md`](NAUDIO_PIPELINE.md).
+> **This doc is the feasibility research (the proven path).** For the SHIPPED architecture — the post-master output mixer, the −60 dB duck (not mute) because the tap is post-session-volume, the per-input fader/gate, and the issue-#81 idle-teardown guard — see the "External Source Path" section of [`NAUDIO_PIPELINE.md`](../dev_docs/NAUDIO_PIPELINE.md).
 
 ## Spike results (2026-07-12) — PROVEN
 
@@ -17,7 +17,7 @@ A minimal C++/WinRT console (`scratchpad/spotloop_spike.cpp`, built with VS 2022
 
 The single-variable proof: same code/API/PID, peak 0.0 (paused) → 0.384 (playing). The loopback taps the render stream exactly as documented.
 
-Cross-ref: [SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md) (SMTC transport control), [NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md) (the effect chain we'd feed).
+Cross-ref: [SPOTIFY_INTEGRATION.md](../dev_docs/SPOTIFY_INTEGRATION.md) (SMTC transport control), [NAUDIO_PIPELINE.md](../dev_docs/NAUDIO_PIPELINE.md) (the effect chain we'd feed).
 
 ---
 
@@ -85,7 +85,7 @@ captured isolated Spotify PCM. Read it for provenance; read the native project f
 ## Remaining work to ship the feature (all plumbing — the hard part is proven)
 
 1. **Turn the spike into a shim DLL** (`UniPlaySong.SpotifyLoopback.dll`, C++/WinRT) — swap the WAV-writing capture loop for a callback surface: `StartCapture(pid) → callback(byte[] pcm, WAVEFORMATEX)` / `StopCapture()`. Build it as a proper VS C++ project (the spike was a one-file `cl` build).
-2. **Managed bridge** — P/Invoke the shim, marshal the PCM callback into a `WaveProvider`/`ISampleProvider` that feeds the existing NAudio effect chain ([NAUDIO_PIPELINE.md](NAUDIO_PIPELINE.md)).
+2. **Managed bridge** — P/Invoke the shim, marshal the PCM callback into a `WaveProvider`/`ISampleProvider` that feeds the existing NAudio effect chain ([NAUDIO_PIPELINE.md](../dev_docs/NAUDIO_PIPELINE.md)).
 3. **Output + real-Spotify mute** — play the processed stream via `WasapiOut`; mute Spotify's own session with the existing [`SpotifyAudioSession`](../../src/Common/SpotifyAudioSession.cs) so only the effected version is audible. On stop/crash/disable, **unmute** (never leave Spotify silent).
 4. **Capability gate** — detect Windows build >= 19041; hide/disable the feature + hint below that.
 5. **Buffer sizing** — the shipped shim requests a **5s** WASAPI capture buffer (the spike used 200ms). That is CAPACITY, not latency: packets are still delivered as they arrive. 200ms proved far too small in production — the capture loop hands PCM to a *managed* callback, so any managed stall (a gen2 GC pause, a heavy Fullscreen theme view load) blocks it, WASAPI overflows, and the surplus is discarded at the source — audible as static. 5s matches OBS `win-capture-audio`; the managed ring is ~1s to accept the catch-up burst when the callback unblocks.

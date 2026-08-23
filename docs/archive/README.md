@@ -16,8 +16,15 @@ For current documentation see [docs/dev_docs/](../dev_docs/).
 - **`spikes/spotloop_spike.cpp`** — the July 2026 proof that Windows Process Loopback Capture could
   pull Spotify's isolated PCM with no virtual cable, driver or admin. Superseded by the shipping
   shim at `native/SpotifyLoopback/SpotifyLoopbackCapture.cpp`; kept because it is the smallest
-  readable statement of the capture dance. The feasibility write-up it belongs to is still current
-  and stays in `dev_docs/`.
+  readable statement of the capture dance.
+- **`SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`** — the "can we do this at all?" study behind that spike.
+  The feature shipped, so the study is history. Its two durable pieces were lifted into current docs
+  before it moved: the approaches ruled out and why a native shim is unavoidable are in
+  `dev_docs/TECHNICAL_REFERENCE.md`, and the OS floor plus the dry-output mute invariant are in
+  `dev_docs/SPOTIFY_INTEGRATION.md`.
+- **`POTENTIAL_ISSUES.md`** — an internal edge-case analysis written around v1.4.x. Never a
+  user-facing document, and old enough that anything actionable in it must be checked against the
+  code first.
 
 Newer working plans are local-only (gitignored under `docs/plans/` and `docs/superpowers/`); these
 were tracked before that rule existed and are retained rather than deleted.

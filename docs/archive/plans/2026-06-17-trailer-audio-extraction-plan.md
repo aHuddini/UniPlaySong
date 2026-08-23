@@ -265,7 +265,7 @@ git commit -m "feat(trailer-audio): TrailerAudioService paths, cache resolve, Cl
 **Files:**
 - Modify: `src/Services/TrailerAudioService.cs`
 
-Add the FFmpeg demux, modeled exactly on `AudioConversionService.ConvertFileInternal` ([src/Services/AudioConversionService.cs:198-254](../../src/Services/AudioConversionService.cs#L198)): `ProcessStartInfo` with both streams redirected, `CreateNoWindow`, `UseShellExecute=false`, UTF8 stderr; `WaitForExit(timeout)` with `Kill()` on timeout; exit-code + nonzero-output checks; temp-delete on failure. Write to a unique temp then `File.Move` into place (atomic, concurrency-safe).
+Add the FFmpeg demux, modeled exactly on `AudioConversionService.ConvertFileInternal` ([src/Services/AudioConversionService.cs:198-254](../../../src/Services/AudioConversionService.cs#L198)): `ProcessStartInfo` with both streams redirected, `CreateNoWindow`, `UseShellExecute=false`, UTF8 stderr; `WaitForExit(timeout)` with `Kill()` on timeout; exit-code + nonzero-output checks; temp-delete on failure. Write to a unique temp then `File.Move` into place (atomic, concurrency-safe).
 
 - [ ] **Step 1: Add `using` directives and the extraction methods**
 

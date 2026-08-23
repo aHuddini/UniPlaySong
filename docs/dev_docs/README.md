@@ -25,7 +25,6 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 | Doc | Covers |
 |---|---|
 | [SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md) | Control and radio: the event-mirror architecture (`SpotifyControlService` ↔ SMTC), the drive model and pause ownership, default-music gap handling, and Radio Mode. |
-| [SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md](SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md) | Why live effects over Spotify need WASAPI process-loopback capture, and the OS floor that gates it (Windows 10 build 19041). |
 
 ## Feature-specific
 
@@ -34,8 +33,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 | [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
 | [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs. |
 | [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
-| [POTENTIAL_ISSUES.md](POTENTIAL_ISSUES.md) | Known edge cases and deliberately deferred fixes. Written around v1.4.x — verify against current code before acting on it. |
-| [PERF_OPTIMIZATION_PLAN.md](PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
+| [PERF_OPTIMIZATION_PLAN.md](roadmaps/PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
 | [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md) | You're changing how the settings window looks or adding a page. The palette and type scale with the reasoning behind them, the toggle switch's anatomy and its three rules, section behaviour, the per-group reset architecture, and the WPF constraints (no letter-spacing, no inset shadow, one child per Border) that shaped all of it. Read the "Changing the style" section before touching `SettingsResources.xaml`. |
 | [QUICK_START_PROFILES.md](QUICK_START_PROFILES.md) | Design for one-click Quick Start profiles, split by Desktop vs Fullscreen. Settled decisions, proposed key sets per profile, and the open questions. Not built yet. |
 

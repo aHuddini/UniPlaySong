@@ -112,7 +112,7 @@ Opt-in path that lets UPS's Live Effects (reverb/EQ) and the Spectrum Visualizer
 
 **Safety invariant (`SpotifyEffectsCoordinator`):** hearing Spotify's raw output *and* the effected version at once would double the audio, so for the EFFECTS case Spotify's dry output is **muted iff UPS is producing effected output for it**, and **auto-unmuted on any stop** (effects disabled, capture stops/dies, UPS closes). The dry-output mute reuses `SpotifyAudioSession` (`ISimpleAudioVolume.SetMute` — the same audio-session mute as the v1.6.4 theme-mute work). The VISUALIZER case mutes **nothing**: it reacts to Spotify (dry or effected) with Spotify still audible. Error/unsupported-OS/mute-failure paths fall back to dry Spotify with no effects/viz.
 
-Full feasibility (proven end-to-end 2026-07-12) and design: `docs/dev_docs/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`.
+Approaches ruled out and why a native shim is unavoidable: `docs/dev_docs/TECHNICAL_REFERENCE.md`. The original feasibility study (proven end-to-end 2026-07-12) is archived at `docs/archive/SPOTIFY_LIVE_EFFECTS_FEASIBILITY.md`.
 
 ## Key files
 
