@@ -43,7 +43,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 
 - `docs/EXTERNAL_CONTROL.md` — the localhost control API (StreamDeck, AutoHotkey, Touch Portal).
 - `docs/archive/` — shipped design/plan documents and historical session notes, kept for provenance. Not maintained.
-- `docs/dev_docs/roadmaps/` and `docs/dev_docs/spikes/` — forward-looking ideas and experiments.
+- `docs/dev_docs/roadmaps/` — forward-looking ideas and backlogs.
 - `CHANGELOG.md` (root) — developer-facing version history, the most reliable record of *why* something changed.
 
 ## Conventions

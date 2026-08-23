@@ -77,10 +77,10 @@ Experimental, opt-in, clearly gated:
 
 ## Feasibility spike — DONE (proven, see "Spike results" above)
 
-The spike is complete and successful. Reference implementation of the capture core is preserved at
-[`docs/dev_docs/spikes/spotloop_spike.cpp`](spikes/spotloop_spike.cpp) — the exact code that captured
-isolated Spotify PCM. It's the template for the production shim (it already does the async
-`ActivateAudioInterfaceAsync` dance, the activation-params blob, tree targeting, and the capture loop).
+The spike is complete and successful, and the production shim it seeded now ships as
+`native/SpotifyLoopback/SpotifyLoopbackCapture.cpp`. The original spike is archived at
+[`docs/archive/spikes/spotloop_spike.cpp`](../archive/spikes/spotloop_spike.cpp) — the exact code that
+captured isolated Spotify PCM. Read it for provenance; read the native project for current behaviour.
 
 ## Remaining work to ship the feature (all plumbing — the hard part is proven)
 
