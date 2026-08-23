@@ -4,6 +4,16 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.2] - 2026-08-22
+
+### Added
+
+- **Resume song from last played position** (Playback → Global Overrides, default off). Leaving a game part-way through a track records where you were; coming back to that track picks up from there. Rules live in `GameMusicResumePolicy` as pure statics (`ShouldRemember`, `ResumeFrom`), so the refusal cases are testable without a player or an audio device.
+  - **Marks are keyed by song path, not by game**, and that is the design rather than an implementation detail. A per-game key can only answer "which track should this game play?", which is a *selection* question — honouring it meant pinning the track and overriding Randomization → Switch Mode, so both settings on made shuffle look broken. A per-song key answers "where was I in this track?", which touches playback only. Shuffle picks freely and whichever track it lands on resumes if part of it has been heard. `SelectSongToPlay` is untouched.
+  - The outgoing track is captured at the top of `PlayGameMusic`, next to `previousGameId`. The `isNewGame` branch nulls `_currentSongPath` hundreds of lines before the fade-out that reads the position off the player, so reading it at the save site yields null and the mark is silently discarded. The default-music twin never hit this because `_lastDefaultMusicPath` is a dedicated field nothing clears.
+  - Guards: nothing is recorded within `MinRemainingSeconds` (5s) of the end, since resuming there plays a stub that instantly auto-advances; an ineligible track *removes* any older mark rather than letting a stale position outlive the play that set it; and chiptune is excluded because NAudio's `Play(TimeSpan)` assigns `_audioFile.CurrentTime` synchronously on the calling thread, where a GME seek costs hundreds of milliseconds to seconds.
+  - Session-only, in memory, dropped with the process — matching how `_defaultMusicPausedOnTime` already behaves.
+
 ## [1.8.1] - 2026-08-22
 
 ### Added

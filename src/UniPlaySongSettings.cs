@@ -321,6 +321,7 @@ namespace UniPlaySong
         private bool themeCompatibleSilentSkip = true;
         private bool hoverSettleEnabled = false; // Fullscreen: wait for the selection to rest before starting game music
         private double hoverSettleSeconds = Constants.DefaultHoverSettleSeconds;
+        private bool resumeGameMusicPosition = false; // returning to a game picks up where its track left off
         private bool pauseOnTrailer = true;
         private int musicVolume = Constants.DefaultMusicVolume;
         private int fullscreenVolumeBoostPercent = 0;
@@ -518,6 +519,14 @@ namespace UniPlaySong
                              Math.Min(Constants.MaxHoverSettleSeconds, value)), 1);
                 OnPropertyChanged();
             }
+        }
+
+        // Leaving a game remembers how far into its track you were, so coming back resumes there
+        // rather than restarting. Session-only, and only when the same track is picked again.
+        public bool ResumeGameMusicPosition
+        {
+            get => resumeGameMusicPosition;
+            set { resumeGameMusicPosition = value; OnPropertyChanged(); }
         }
 
         public bool ThemeCompatibleSilentSkip

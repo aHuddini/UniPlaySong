@@ -38,10 +38,10 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: a PS5-style hover delay for Fullscreen, under Playback &#x2192; Global Overrides. It waits for your game selection to settle before starting a game's music, so scrolling rides your default music instead of chopping through half-started tracks.
+                        Added: Resume song from last played position, under Playback &#x2192; Global Overrides. Leave a game part-way through a song and coming back picks it up from there instead of restarting.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: UniPlaySong no longer holds a Windows audio device open for its whole session, and now releases it when you minimize to the tray. Collapsible section headings are no longer cropped under themes such as Mythos.
+                        Positions are kept per song, so it works whether Randomization &#x2192; Switch Mode shuffling is on or off.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

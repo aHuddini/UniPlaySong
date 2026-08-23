@@ -20,19 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.1
+## What's New - v1.8.2
 
 ### Added
-- **PS5-style hover delay (Fullscreen)** — wait for your selection to settle before a game's music starts, so scrolling rides your default music instead of chopping through half-started tracks. 1-8 seconds, under Playback → Global Overrides.
-- **Game Hover Delay Patch** — extends that delay to themes that switch music themselves, such as PS5-Experience. Under Advanced → Theme Support.
-
-### Fixed
-- UniPlaySong no longer holds a Windows audio device open for its whole session, which on some PCs stopped them going to sleep.
-- Minimizing Playnite or sending it to the tray now releases the audio device.
-- Collapsible settings section headings were cropped under some desktop themes (reported on Mythos).
+- **Resume song from last played position** — leave a game part-way through a song and coming back picks it up from there instead of restarting. Positions are kept per song, so it works whether Switch Mode shuffling is on or off. Under Playback → Global Overrides.
 
 ### Previous Version
-- **v1.8.0**: The settings window was rebuilt around two-tier navigation — pick a group on the left, then a page within it.
+- **v1.8.1**: PS5-style hover delay for Fullscreen, plus audio-device release fixes.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

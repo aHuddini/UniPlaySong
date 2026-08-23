@@ -29,7 +29,7 @@
                 <TextBlock ups:TrackedCaps.Text="Song Selection" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Content="Pick a new song each time you select the game (Switch Mode)"
+            <CheckBox Content="Shuffle a new song each time you select a game (Switch Mode)"
                       Style="{StaticResource UpsToggle}"
                       IsChecked="{Binding Settings.RandomizeOnEverySelect}"/>
             <TextBlock Style="{StaticResource UpsHint}"

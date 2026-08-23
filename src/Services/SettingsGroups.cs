@@ -100,6 +100,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.SelectedBundledPreset),
                     nameof(UniPlaySongSettings.HoverSettleEnabled),
                     nameof(UniPlaySongSettings.HoverSettleSeconds),
+                    nameof(UniPlaySongSettings.ResumeGameMusicPosition),
                     nameof(UniPlaySongSettings.SkipFirstSelectionAfterModeSwitch),
                     nameof(UniPlaySongSettings.SpotifySkipOnGap),
                     nameof(UniPlaySongSettings.StopAfterSongEnds),

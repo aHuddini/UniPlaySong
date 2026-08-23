@@ -58,6 +58,16 @@ namespace UniPlaySong.Services
         private string _lastDefaultMusicPath = null;
         private TimeSpan _defaultMusicPausedOnTime = default;
 
+        // Per-song version of _defaultMusicPausedOnTime, for ResumeGameMusicPosition. Session-only:
+        // one entry per track left part-way through, dropped with the process.
+        //
+        // Keyed by song path, not by game, and that is the whole design. Keying by game meant
+        // resume had to pin one track per game to be useful, which stopped Switch Mode shuffling
+        // at all. Keyed by song, shuffle picks freely and any track it lands on resumes if it has
+        // been heard before - the two settings compose instead of fighting.
+        private readonly Dictionary<string, GameMusicResumePolicy.Mark> _songResumeMarks =
+            new Dictionary<string, GameMusicResumePolicy.Mark>(StringComparer.OrdinalIgnoreCase);
+
         // Provider for pool-based default music sources (CustomFolder, RandomGame, CustomRotation)
         private Func<DefaultMusicSource, UniPlaySongSettings, List<string>> _defaultSongPoolProvider;
 
@@ -1216,6 +1226,12 @@ namespace UniPlaySong.Services
                 var previousGameId = _currentGameId;
                 var isNewGame = previousGameId == null || previousGameId != gameId;
 
+                // The song we are leaving, captured here because the isNewGame branch below nulls
+                // _currentSongPath to force a fresh selection - long before the fade-out that reads
+                // the position off the player. Reading _currentSongPath at that point yields null,
+                // and a mark with no track is discarded, which is what made resume silently restart.
+                var outgoingSongPath = _currentSongPath;
+
                 // When PlayOnlyOnGameSelect cleared game songs because we're in List view, this call is a "prep" call that
                 // plays default music until the user enters Details view. Skip updating _currentGameId so the subsequent
                 // Details-view call still sees this game as "new" and the RandomizeOnEverySelect path can fire. Otherwise, the
@@ -1411,10 +1427,25 @@ namespace UniPlaySong.Services
                 }
 
                 var newSongPath = songToPlay;
-                
-                bool shouldFadeOut = (_musicPlayer?.IsActive == true || _musicPlayer?.IsLoaded == true) && 
+
+                // Where this game's own track should start. Zero unless the same track is being
+                // picked up again, which is every case with the setting off.
+                bool resumeEnabled = (_currentSettings ?? settings)?.ResumeGameMusicPosition == true;
+                var resumeFrom = TimeSpan.Zero;
+                if (resumeEnabled && !isDefaultMusic && !string.IsNullOrEmpty(newSongPath))
+                {
+                    GameMusicResumePolicy.Mark mark;
+                    _songResumeMarks.TryGetValue(newSongPath, out mark);
+                    resumeFrom = GameMusicResumePolicy.ResumeFrom(true, newSongPath, mark);
+                    if (resumeFrom > TimeSpan.Zero)
+                    {
+                        _fileLogger?.Debug($"Resuming {Path.GetFileName(newSongPath)} at {resumeFrom.TotalSeconds:F2}s");
+                    }
+                }
+
+                bool shouldFadeOut = (_musicPlayer?.IsActive == true || _musicPlayer?.IsLoaded == true) &&
                                      _currentSongPath != newSongPath;
-                
+
                 if (shouldFadeOut)
                 {
                     // Save default music position if switching from default to game music
@@ -1423,6 +1454,29 @@ namespace UniPlaySong.Services
                         _defaultMusicPausedOnTime = _musicPlayer.CurrentTime ?? default;
                         _fileLogger?.Debug($"Switching from default to game music. Saved position: {_defaultMusicPausedOnTime.TotalSeconds:F2}s");
                         _isPlayingDefaultMusic = false;
+                    }
+
+                    // Same idea for the track we are leaving, so landing on it again picks up there.
+                    // Has to be read here: the stopAction below calls Close(), which wipes CurrentTime.
+                    if (!wasDefaultMusic && !string.IsNullOrEmpty(outgoingSongPath))
+                    {
+                        var outgoingPosition = _musicPlayer.CurrentTime ?? default;
+                        if (GameMusicResumePolicy.ShouldRemember(resumeEnabled, outgoingSongPath, outgoingPosition, _musicPlayer.TotalTime))
+                        {
+                            _songResumeMarks[outgoingSongPath] = new GameMusicResumePolicy.Mark
+                            {
+                                SongPath = outgoingSongPath,
+                                Position = outgoingPosition
+                            };
+                            _fileLogger?.Debug($"Remembered {Path.GetFileName(outgoingSongPath)} at {outgoingPosition.TotalSeconds:F2}s");
+                        }
+                        else
+                        {
+                            // Near the end, a chiptune, or the feature is off - drop any older mark
+                            // rather than letting a stale position outlive the play that set it.
+                            _songResumeMarks.Remove(outgoingSongPath);
+                            _fileLogger?.Debug($"Not remembering {Path.GetFileName(outgoingSongPath)} (pos={outgoingPosition.TotalSeconds:F2}s, total={_musicPlayer.TotalTime?.TotalSeconds ?? -1:F2}s, enabled={resumeEnabled})");
+                        }
                     }
 
                     _fileLogger?.Debug($"Switching to: {Path.GetFileName(newSongPath)}");
@@ -1459,7 +1513,8 @@ namespace UniPlaySong.Services
                                 return;
                             }
 
-                            _musicPlayer.Play();
+                            if (resumeFrom > TimeSpan.Zero) _musicPlayer.Play(resumeFrom);
+                            else _musicPlayer.Play();
                             MarkSongStart();
                             loadSw.Stop();
                             _fileLogger?.Debug(() => $"[Perf] SongSwitch: Load={loadMs}ms, Total={loadSw.ElapsedMilliseconds}ms, File={Path.GetFileName(newSongPath)}");
@@ -1486,7 +1541,8 @@ namespace UniPlaySong.Services
                     }
                     else
                     {
-                        _musicPlayer.Play();
+                        if (resumeFrom > TimeSpan.Zero) _musicPlayer.Play(resumeFrom);
+                        else _musicPlayer.Play();
                         MarkSongStart();
                         _fader.FadeIn();
                         _fileLogger?.Debug($"Playing game music (from paused default): {Path.GetFileName(newSongPath)}");
@@ -1499,7 +1555,7 @@ namespace UniPlaySong.Services
 
                     _currentSongPath = null;
 
-                    StartWithFadeIn(newSongPath, settings);
+                    StartWithFadeIn(newSongPath, settings, resumeFrom);
                 }
             }
             catch (Exception ex)
@@ -2149,6 +2205,12 @@ namespace UniPlaySong.Services
                 }
             }
 
+            // Resume deliberately does NOT pin the track here. Pinning made the two settings
+            // contradict each other: Switch Mode would stop shuffling entirely for any game whose
+            // track had a remembered position, so both switched on looked like Switch Mode was
+            // broken. Positions are keyed by song instead, so shuffle stays free to pick anything
+            // and whichever track it lands on resumes if that track has been heard before.
+
             // PNS PATTERN: Randomization logic (similar to PlayniteSound)
             if (songs.Count > 1 && _currentSettings != null)
             {
@@ -2235,7 +2297,7 @@ namespace UniPlaySong.Services
         // So build the reader on a worker first, then come back to the UI thread to do the mixer
         // wiring and start playback — Load() then finds the preloaded reader and costs ~0ms.
         // Everything observable stays in the original order; only the file I/O moves off-thread.
-        private void StartWithFadeIn(string newSongPath, UniPlaySongSettings settings)
+        private void StartWithFadeIn(string newSongPath, UniPlaySongSettings settings, TimeSpan startFrom = default(TimeSpan))
         {
             var player = _musicPlayer;
             var dispatcher = Application.Current?.Dispatcher;
@@ -2243,7 +2305,7 @@ namespace UniPlaySong.Services
             // No dispatcher (tests, headless) — behave exactly as before.
             if (player == null || dispatcher == null)
             {
-                StartWithFadeInCore(newSongPath, settings);
+                StartWithFadeInCore(newSongPath, settings, startFrom);
                 return;
             }
 
@@ -2265,14 +2327,14 @@ namespace UniPlaySong.Services
                     }
                     if (!ReferenceEquals(_musicPlayer, player)) return;
 
-                    StartWithFadeInCore(newSongPath, settings);
+                    StartWithFadeInCore(newSongPath, settings, startFrom);
                 }));
             });
         }
 
         // The original synchronous body. Load() is cheap here when the warm-up landed, and falls
         // back to building the reader itself when it didn't — same result either way.
-        private void StartWithFadeInCore(string newSongPath, UniPlaySongSettings settings)
+        private void StartWithFadeInCore(string newSongPath, UniPlaySongSettings settings, TimeSpan startFrom = default(TimeSpan))
         {
             _musicPlayer.Load(newSongPath);
             _musicPlayer.Volume = 0;
@@ -2286,7 +2348,8 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            _musicPlayer.Play();
+            if (startFrom > TimeSpan.Zero) _musicPlayer.Play(startFrom);
+            else _musicPlayer.Play();
             MarkSongStart();
             _fader.FadeIn();
             _fileLogger?.Debug($"Playing (initial): {Path.GetFileName(newSongPath)}");
