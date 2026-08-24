@@ -31,7 +31,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 | Doc | Covers |
 |---|---|
 | [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
-| [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract and rarity URIs. |
+| [ACHIEVEMENT_SOUND_INTEGRATION.md](ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract, rarity URIs, per-rarity resolution, and the v1.8.4 query API for extensions that want to play the sound themselves. |
 | [DYNAMIC_COLOR_ALGORITHM.md](DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [PERF_OPTIMIZATION_PLAN.md](roadmaps/PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
 | [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md) | You're changing how the settings window looks or adding a page. The palette and type scale with the reasoning behind them, the toggle switch's anatomy and its three rules, section behaviour, the per-group reset architecture, and the WPF constraints (no letter-spacing, no inset shadow, one child per Border) that shaped all of it. Read the "Changing the style" section before touching `SettingsResources.xaml`. |
@@ -53,4 +53,4 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](THEME_
 
 ---
 
-**Last updated**: 2026-08-21 · **Covers**: v1.8.0
+**Last updated**: 2026-08-24 · **Covers**: v1.8.4

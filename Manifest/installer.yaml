@@ -1,5 +1,11 @@
 AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.8.4
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-24
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.4/UniPlaySong-1_8_4.pext'
+    Changelog:
+      - '[Plugin Support] Other extensions can now ask UniPlaySong which achievement sound it would play for a given rarity, and where that file came from (your own file, your theme, or the bundled starter pack), without UniPlaySong playing it. Added for PlayniteAchievements, which needs the file itself rather than a request to play it.'
   - Version: 1.8.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-22

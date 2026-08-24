@@ -4,6 +4,7 @@ using Playnite.SDK.Plugins;
 using Playnite.SDK.Events;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -5558,6 +5559,132 @@ namespace UniPlaySong
         public Services.Controller.ControllerEventRouter GetControllerEventRouter() => _controllerEventRouter;
 
         // Gets the Playnite API instance.
+        #region Public API for other extensions
+
+        // Version of the contract below. Bumped only if an existing field changes meaning or goes
+        // away; adding fields does not bump it. A caller should check it and refuse to guess if it
+        // sees a number it does not recognise.
+        public const int AchievementSoundApiVersion = 1;
+
+        // Which audio file UPS would play for an achievement rarity, WITHOUT playing it.
+        //
+        // For extensions that want to play the sound themselves - PlayniteAchievements needs it
+        // muxed into a composite clip, where routing through UPS and waiting costs more delay than
+        // the notification can absorb. UPS picks between a user's custom file, a theme-shipped one
+        // and its bundled starter pack, with fallbacks; that rule lives here, and asking is the
+        // only way to get the answer without a second copy of it drifting out of step.
+        //
+        // Returns JSON, not a UPS type, so the caller needs no reference to this assembly:
+        //
+        //   {
+        //     "apiVersion": 1,
+        //     "ok": true,
+        //     "rarity": "rare",
+        //     "path": "C:\Users\...\rare.mp3",
+        //     "source": "UserCustom" | "Theme" | "StarterPack",
+        //     "fellBack": false,
+        //     "enabled": true,
+        //     "exists": true
+        //   }
+        //
+        // Call it by reflection - no shared assembly is needed:
+        //
+        //   var ups = PlayniteApi.Addons.Plugins
+        //       .FirstOrDefault(p => p.Id == Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+        //   var json = (string)ups?.GetType()
+        //       .GetMethod("ResolveAchievementSound", new[] { typeof(string) })
+        //       ?.Invoke(ups, new object[] { "rare" });
+        //
+        // Side-effect free, thread-safe, and cheap enough to call per notification. `enabled: false`
+        // means UPS would stay silent, so a caller mirroring UPS should stay silent too.
+        //
+        // Valid rarities: common, uncommon, rare, ultrarare, hidden, capstone.
+        public string ResolveAchievementSound(string rarity)
+        {
+            try
+            {
+                var info = _jingleService?.DescribeAchievementSound(rarity, _settings);
+                if (info == null)
+                {
+                    return JsonConvert.SerializeObject(new
+                    {
+                        apiVersion = AchievementSoundApiVersion,
+                        ok = false,
+                        error = "UniPlaySong is not fully started yet"
+                    });
+                }
+
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = true,
+                    rarity = info.Rarity,
+                    path = info.Path,
+                    source = info.Source,
+                    fellBack = info.FellBack,
+                    enabled = info.Enabled,
+                    exists = info.Exists
+                });
+            }
+            catch (Exception ex)
+            {
+                // Never throw across the boundary: an exception from a reflected call surfaces in
+                // the CALLER's crash log as their bug, with nothing pointing back here.
+                Logger.Error(ex, $"ResolveAchievementSound failed for '{rarity}'");
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        // Every rarity in one call, as a JSON array of the same objects.
+        //
+        // Worth having because the natural caller resolves all six once at startup and caches them,
+        // rather than asking again on each unlock - and one reflected call is meaningfully cheaper
+        // than six.
+        public string ResolveAchievementSounds()
+        {
+            try
+            {
+                var rarities = new[] { "common", "uncommon", "rare", "ultrarare", "hidden", "capstone" };
+                var results = rarities
+                    .Select(r => _jingleService?.DescribeAchievementSound(r, _settings))
+                    .Where(i => i != null)
+                    .Select(i => new
+                    {
+                        rarity = i.Rarity,
+                        path = i.Path,
+                        source = i.Source,
+                        fellBack = i.FellBack,
+                        enabled = i.Enabled,
+                        exists = i.Exists
+                    })
+                    .ToList();
+
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = true,
+                    sounds = results
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ResolveAchievementSounds failed");
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        #endregion
+
         public new IPlayniteAPI PlayniteApi => _api;
 
         #endregion

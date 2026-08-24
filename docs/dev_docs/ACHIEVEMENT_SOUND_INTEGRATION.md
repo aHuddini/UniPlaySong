@@ -169,6 +169,59 @@ Rarity badge icons (`Images/Achievements/badge-{bronze,silver,gold,platinum,perf
 via `BundledImageService`) label each per-rarity file row. The PA Starter Pack sounds are royalty-free
 Pixabay SFX; badge art is derived from the Playnite Achievements plugin badges (MIT) — see `NOTICES.txt`.
 
+## Query API — "which file would you play?" (v1.8.4)
+
+Everything above is UniPlaySong *playing* a sound. A caller that wants to play it **itself** — muxing
+it into a composite clip, or driving its own timing — needs the resolved path instead, because the
+resolution order above has three sources and two fallbacks and is not something a caller could
+reproduce without a second copy of the rule drifting.
+
+Two public methods on the plugin class, returning **JSON** so the caller needs no reference to
+`UniPlaySong.dll`:
+
+```csharp
+public const int AchievementSoundApiVersion = 1;
+
+public string ResolveAchievementSound(string rarity);   // one rarity
+public string ResolveAchievementSounds();               // all six, one call
+```
+
+```json
+{
+  "apiVersion": 1,
+  "ok": true,
+  "rarity": "rare",
+  "path": "C:\Users\...\rare.mp3",
+  "source": "UserCustom",     // or "Theme" | "StarterPack"
+  "fellBack": false,          // chosen pack had nothing; starter pack answered
+  "enabled": true,            // EnableAchievementSound — false means UPS would stay silent
+  "exists": true
+}
+```
+
+Called by reflection, same pattern as `TriggerExternalEvent`:
+
+```csharp
+var ups = PlayniteApi.Addons.Plugins
+    .FirstOrDefault(p => p.Id == Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+var json = (string)ups?.GetType()
+    .GetMethod("ResolveAchievementSound", new[] { typeof(string) })
+    ?.Invoke(ups, new object[] { "rare" });
+```
+
+Implementation: `JingleService.DescribeAchievementSound` — the same switch as
+`ResolveAchievementRarityPath`, reporting which branch it took. Side-effect free: no playback, no
+device warm-up, no state touched. Never throws across the boundary; failures come back as
+`{"ok": false, "error": "..."}` so an exception cannot surface in the *caller's* crash log as their
+bug.
+
+`apiVersion` bumps only when an existing field changes meaning or is removed — adding fields does not
+bump it.
+
+**Returning JSON rather than a type is the point.** A shared type means the caller references
+`UniPlaySong.dll` at compile time and breaks on any signature change. A string survives added fields,
+and `apiVersion` gives the caller something to refuse on.
+
 ## Extending
 
 - **Dedicated achievement volume.** Change the one line in `PlayExternalSound` that reads
@@ -180,6 +233,11 @@ Pixabay SFX; badge art is derived from the Playnite Achievements plugin badges (
   **alongside** — not replacing — the URI. The URI stays the zero-dependency default.
 
 ## History
+
+- v1.8.4 — `ResolveAchievementSound` / `ResolveAchievementSounds` query API, so a caller can play the
+  sound itself rather than asking UniPlaySong to. Requested by the Playnite Achievements dev, who
+  needs the file to mux into a composite clip. Note this is separate from latency: for callers who
+  only want the round trip removed, `TriggerExternalEvent` has done that since v1.7.2.
 
 - v1.5.10 — achievement unlock sound, dedicated lightweight SDL2 player. Proposed by the Playnite
   Achievements dev as PA<->UPS cross-support (PA owns the visual notification, UPS owns the audio +

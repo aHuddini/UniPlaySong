@@ -4,6 +4,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.4] - 2026-08-24
+
+### Added
+
+- **Achievement sound query API for other extensions.** `UniPlaySong.ResolveAchievementSound(string rarity)` and `ResolveAchievementSounds()` report which file UPS would play and which of the three sources it came from (`UserCustom` / `Theme` / `StarterPack`), plus `fellBack`, `enabled` and `exists` — without playing anything. Backed by `JingleService.DescribeAchievementSound`, which walks the same switch as `ResolveAchievementRarityPath` and reports the branch taken, so the resolution rule is not duplicated.
+  - Returns **JSON, not a UPS type**, so a caller needs no reference to `UniPlaySong.dll` and survives fields being added; `AchievementSoundApiVersion` (public const, currently 1) bumps only when an existing field changes meaning. Never throws across the reflection boundary — failures return `{"ok": false, "error": "..."}` rather than surfacing in the caller's crash log.
+  - Requested by the PlayniteAchievements dev, who needs the file to mux into a composite clip. Distinct from latency: callers who only want the `playnite://` round trip removed (~10-16ms warm, ~80ms first fire — Windows resolving the URI scheme, not UPS) have had `TriggerExternalEvent` since v1.7.2.
+
 ## [1.8.3] - 2026-08-22
 
 ### Fixed

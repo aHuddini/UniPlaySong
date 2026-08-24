@@ -232,6 +232,71 @@ namespace UniPlaySong.Services
         //   Theme         -> theme audio/Achievements/{rarity}.* ?? PA Starter {rarity}
         //   PAStarterPack -> PA Starter {rarity}
         //   Custom        -> {rarity}AchievementSoundPath (if set + exists) ?? PA Starter {rarity}
+        // Answers "which file would you play for this rarity, and why that one" WITHOUT playing it.
+        //
+        // Exists for other plugins - PlayniteAchievements in particular - that want to play the
+        // sound themselves, in sync with something of their own, rather than asking UPS to play it
+        // and living with the round trip. The resolution order below has three sources and two
+        // fallbacks, which is not something a caller could reasonably reproduce, and reproducing it
+        // would mean two copies of the rule drifting apart on the next release.
+        //
+        // Deliberately side-effect free: no playback, no device warm-up, no state touched. Safe to
+        // call on any thread, at any time, as often as wanted.
+        public AchievementSoundInfo DescribeAchievementSound(string rarity, UniPlaySongSettings settings)
+        {
+            var info = new AchievementSoundInfo
+            {
+                Rarity = rarity,
+                Enabled = settings?.EnableAchievementSound == true
+            };
+
+            if (settings == null || string.IsNullOrWhiteSpace(rarity)) return info;
+
+            rarity = rarity.Trim().ToLowerInvariant();
+            info.Rarity = rarity;
+
+            switch (settings.AchievementSoundPack)
+            {
+                case AchievementSoundPack.Theme:
+                    var themePath = Common.PlayniteThemeHelper.FindThemeAchievementSound(rarity);
+                    if (!string.IsNullOrEmpty(themePath))
+                    {
+                        info.Path = themePath;
+                        info.Source = "Theme";
+                    }
+                    else
+                    {
+                        info.Path = BundledJingleService.GetPAStarterPackPath(rarity);
+                        info.Source = "StarterPack";
+                        info.FellBack = true;
+                    }
+                    break;
+
+                case AchievementSoundPack.Custom:
+                    var custom = CustomRarityPath(rarity, settings);
+                    if (!string.IsNullOrWhiteSpace(custom) && System.IO.File.Exists(custom))
+                    {
+                        info.Path = custom;
+                        info.Source = "UserCustom";
+                    }
+                    else
+                    {
+                        info.Path = BundledJingleService.GetPAStarterPackPath(rarity);
+                        info.Source = "StarterPack";
+                        info.FellBack = true;
+                    }
+                    break;
+
+                default:
+                    info.Path = BundledJingleService.GetPAStarterPackPath(rarity);
+                    info.Source = "StarterPack";
+                    break;
+            }
+
+            info.Exists = !string.IsNullOrWhiteSpace(info.Path) && System.IO.File.Exists(info.Path);
+            return info;
+        }
+
         private string ResolveAchievementRarityPath(string rarity, UniPlaySongSettings settings)
         {
             if (string.IsNullOrEmpty(rarity)) return null;
