@@ -2,10 +2,18 @@ AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.8.4
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-08-24
+    ReleaseDate: 2026-08-25
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.4/UniPlaySong-1_8_4.pext'
     Changelog:
-      - '[Plugin Support] Other extensions can now ask UniPlaySong which achievement sound it would play for a given rarity, and where that file came from (your own file, your theme, or the bundled starter pack), without UniPlaySong playing it. Added for PlayniteAchievements, which needs the file itself rather than a request to play it.'
+      - '[Plugin Support] Other extensions can now ask UniPlaySong which achievement sound it would play for a given rarity, and where that file came from (your own file, your theme, or the bundled starter pack).'
+      - '[Critical Fix] No music on the first game you selected after starting Playnite, and sometimes the second one too. A pause left over from startup was swallowing the song change, so the track loaded and then never played.'
+      - '[Configuration Warning] If Playnite''s own Background Volume (Settings -> Fullscreen) is set to 0, UniPlaySong is silenced by it - UniPlaySong scales its volume by that slider. It now tells you when this happens instead of leaving you guessing, and the About tab lists it under Troubleshooting.'
+      - '[Fix Attempt] Games fell completely silent if you picked a default music source but never chose what it should play - for example selecting "a folder of your own" under Library -> Default Music without clicking Browse to pick the folder. UniPlaySong now plays the bundled preset instead and tells you which setting still needs a folder, file or selection.'
+      - '[Critical Fix] Radio Mode with nothing to play went completely silent instead of falling back to your default music.'
+      - '[Critical Fix] Setting UniPlaySong''s Music Volume to 0 and then raising it again left you in silence until you switched games. Volume 0 stops playback rather than just muting it, so coming back up now restarts the music straight away.'
+      - '[Configuration Warning] Desktop mode now warns you at startup if Playnite''s Background Volume is at 0, since that setting is edited from Desktop but only silences UniPlaySong once you launch Fullscreen - theme music players included.'
+      - '[Fixed] Some settings changes did not take effect until a restart, because a few components were still reading your previous settings.'
+      - '[Fixed] The theme-compatible silent skip option was sometimes switched on even though its own description said it was off by default.'
   - Version: 1.8.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-22

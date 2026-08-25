@@ -74,8 +74,10 @@ namespace DashboardTestApp
         public void SetIdleVolumeMultiplier(double multiplier) { }
         public void SetDefaultSongPoolProvider(Func<global::UniPlaySong.DefaultMusicSource, global::UniPlaySong.UniPlaySongSettings, List<string>> provider) { }
         public void SetFilterActiveProvider(Func<bool> provider) { }
+
+        public void SetUserWarningHandler(System.Action<string, string> handler) { }
         public void SetRadioSongPoolProvider(Func<global::UniPlaySong.RadioMusicSource, global::UniPlaySong.UniPlaySongSettings, List<string>> provider) { }
-        public void StartRadioPlayback(global::UniPlaySong.UniPlaySongSettings settings) { }
+        public bool StartRadioPlayback(global::UniPlaySong.UniPlaySongSettings settings) { return true; }
         public void StopRadioMode() { }
         public void ClearLastDefaultMusicPath() { }
         public void LoadAndPlayFile(string filePath) { }

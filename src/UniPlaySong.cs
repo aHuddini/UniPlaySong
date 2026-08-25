@@ -726,6 +726,19 @@ namespace UniPlaySong
                 // The provider is created per-song, so also gate at creation time (see NAudioMusicPlayer).
                 PauseFftProcessing(true);
             }
+            else
+            {
+                // Desktop mode does not apply the multiplier - Playnite's Background Volume governs
+                // Fullscreen only, and desktop playback is untouched by it.
+                //
+                // It is EDITABLE from Desktop settings all the same (Playnite Settings -> Fullscreen),
+                // so somebody can zero it here and not discover what it did until the next time they
+                // launch Fullscreen - where it silences UniPlaySong outright, theme music players
+                // included. Reading it costs one reflection call, so say so now rather than let them
+                // find out later with no way to connect the two.
+                InitializeFullscreenSettingsRef();
+                WarnIfPlayniteVolumeWillMuteFullscreen();
+            }
 
             // "Play Only on Game Select" is handled by the OnFullscreenViewChanged SDK override.
             // See that override for the List ↔ Details transition logic.
@@ -1842,9 +1855,28 @@ namespace UniPlaySong
             }
 
             // Check if MusicState or EnableMusic changed - if so, re-react against playback
+            // MusicVolume gates playback, it does not merely scale it: ShouldPlayMusic refuses outright
+            // at 0. So dropping to 0 lets playback stop, and raising it again used to leave the user in
+            // silence until the next game switch happened to call PlayGameMusic - reported as "I set it
+            // back to 70% and hear nothing until I switch games". Crossing zero belongs with the other
+            // gate changes below.
+            //
+            // Only the CROSSING counts. Treating every volume change as a gate change would restart the
+            // song on each drag of the slider.
+            bool volumeGateOpened = e.OldSettings != null && e.NewSettings != null &&
+                e.OldSettings.MusicVolume <= 0 && e.NewSettings.MusicVolume > 0;
+
             bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
                 (e.OldSettings.MusicState != e.NewSettings.MusicState ||
                  e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
+
+            // Nothing to restart if the track survived the silent spell - SetVolume below simply makes it
+            // audible again. Replaying regardless would jump a song that was playing all along.
+            if (volumeGateOpened && _playbackService?.IsPlaying != true)
+            {
+                musicSettingsChanged = true;
+                _fileLogger?.Debug("OnSettingsServiceChanged: music volume raised above 0 with nothing playing - restarting playback");
+            }
 
             if (musicSettingsChanged)
             {
@@ -2084,6 +2116,33 @@ namespace UniPlaySong
             if (e.NewSettings != null)
             {
                 e.NewSettings.PropertyChanged += OnSettingsChanged;
+            }
+
+            // Hand the new settings object to the consumers that CAPTURE it rather than reading it
+            // live, or they go on using the previous one for the rest of the session.
+            //
+            // Saving settings replaces the whole object; components that read through
+            // _settingsService.Current pick that up for free, but these three keep a static
+            // reference taken at startup. They were pointed at the new object exactly once, during
+            // initialization (see the UpdateServices calls there), and never again - so every save
+            // left the theme's media controls bound to a settings instance nobody was updating any
+            // more. The symptom is a theme control that stops responding after the user visits
+            // settings, and keeps working perfectly until they do.
+            if (e.NewSettings != null)
+            {
+                try
+                {
+                    Controls.MusicControl.UpdateServices(e.NewSettings);
+                    Controls.MusicControlPauseGamePlayDefault.UpdateServices(e.NewSettings);
+
+                    // Attach is idempotent - it reassigns state and guards its class-handler
+                    // registration - so this refreshes the captured settings without re-hooking.
+                    Monitors.RandomPickerMonitor.Attach(_playbackService, e.NewSettings, _fileLogger);
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Error($"Failed to hand new settings to captured consumers: {ex.Message}", ex);
+                }
             }
         }
 
@@ -3001,6 +3060,7 @@ namespace UniPlaySong
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+            _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
             _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
@@ -3471,6 +3531,7 @@ namespace UniPlaySong
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+                _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
                 _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
@@ -3566,6 +3627,7 @@ namespace UniPlaySong
                 _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
+                _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
                 _playbackService.MarkInitializationComplete();
                 _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
@@ -3708,7 +3770,84 @@ namespace UniPlaySong
         private double GetFullscreenVolumeMultiplier()
         {
             double boost = 1.0 + ((_settings?.FullscreenVolumeBoostPercent ?? 0) / 100.0);
-            return Math.Max(0.0, Math.Min(1.0, _playniteFullscreenVolume * boost));
+            var multiplier = Math.Max(0.0, Math.Min(1.0, _playniteFullscreenVolume * boost));
+
+            // UniPlaySong is deliberately synced to Playnite's fullscreen BackgroundVolume, and that
+            // stays true at zero - the slider is obeyed at every value, including this one.
+            //
+            // Zero is worth a word to the user all the same. The slider governs PLAYNITE's background
+            // music, which UniPlaySong suppresses and replaces by default, so zeroing it is the
+            // obvious move for someone who wants UniPlaySong's music instead - and it takes
+            // UniPlaySong down with it. Every track plays, at silence, with UniPlaySong's own Music
+            // Volume still reading 50% and nothing in the interface connecting the two. Reported as
+            // "the music starts muted every time", confirmed as exactly this, and unreproducible by
+            // anyone whose slider was not at zero.
+            //
+            // So: honour the value, explain the consequence. A log line alone is no use to someone
+            // who does not know there is a log.
+            if (multiplier <= 0.0 && _settings?.SuppressPlayniteBackgroundMusic == true && _settings?.EnableMusic == true)
+            {
+                WarnAboutZeroedPlayniteVolume();
+            }
+
+            return multiplier;
+        }
+
+        private readonly HashSet<string> _shownWarnings = new HashSet<string>(StringComparer.Ordinal);
+
+        // Surfaces a warning to the user once per session, keyed by id.
+        //
+        // Once per session, deliberately: every caller sits on a path that re-runs on each game
+        // select, so notifying every time would bury the notification list under duplicates of a
+        // message that only needs reading once.
+        //
+        // A notification rather than a log line alone, because the conditions these describe are
+        // undiagnosable from the interface - the settings all read normally and audio simply does
+        // not arrive - and someone in that position does not know there is a log.
+        private void ShowOneTimeWarning(string id, string message)
+        {
+            if (string.IsNullOrEmpty(id) || !_shownWarnings.Add(id)) return;
+
+            _fileLogger?.Lifecycle($"User warning [{id}]: {message.Replace(Environment.NewLine, " ")}");
+
+            try
+            {
+                _api?.Notifications?.Add(new NotificationMessage(id, message, NotificationType.Info));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to surface the '{id}' notification");
+            }
+        }
+
+        // Playnite's own Background Volume slider at 0 silences UniPlaySong outright. The value is
+        // obeyed; what was missing is any way for the user to connect the two, since UniPlaySong's
+        // own Music Volume still reads 50% and tracks still load and "play". Reported as "the music
+        // starts muted every time", and unreproducible by anyone whose slider was not at zero.
+        private void WarnAboutZeroedPlayniteVolume()
+        {
+            ShowOneTimeWarning("ups-playnite-volume-zero",
+                "UniPlaySong is silent because Playnite's own Background Volume is set to 0." + Environment.NewLine + Environment.NewLine +
+                "UniPlaySong scales its volume by that slider, so at 0 nothing can be heard however " +
+                "loud UniPlaySong's own Music Volume is set." + Environment.NewLine + Environment.NewLine +
+                "To fix: Playnite Settings → Fullscreen → Background Volume - raise it above 0. " +
+                "UniPlaySong already stops Playnite's own music separately, so raising it will not " +
+                "bring that back.");
+        }
+
+        // Desktop-mode counterpart to WarnAboutZeroedPlayniteVolume: the consequence is in Fullscreen,
+        // but the setting is reachable - and so most often changed - from Desktop.
+        private void WarnIfPlayniteVolumeWillMuteFullscreen()
+        {
+            if (_settings?.EnableMusic != true) return;
+            if (GetPlayniteFullscreenVolume() > 0.0) return;
+
+            ShowOneTimeWarning("ups-playnite-volume-zero-desktop",
+                "Playnite's Background Volume is set to 0, which will silence UniPlaySong in Fullscreen mode." + Environment.NewLine + Environment.NewLine +
+                "Fullscreen scales UniPlaySong's volume by that slider, so music there will be inaudible " +
+                "however loud UniPlaySong's own Music Volume is set - including any theme with its own " +
+                "music player driven by UniPlaySong. Desktop mode is not affected." + Environment.NewLine + Environment.NewLine +
+                "To change it: Playnite Settings → Fullscreen → Background Volume.");
         }
 
         // Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference. Returns 1.0

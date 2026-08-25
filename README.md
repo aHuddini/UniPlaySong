@@ -22,6 +22,15 @@ Built with the help of Claude Code and Cursor IDE
 
 ## What's New - v1.8.4
 
+### Fixed
+- No music on the first game you picked after starting Playnite — and sometimes the second one too.
+- If Playnite's own Background Volume (Settings → Fullscreen) is at 0, it silences UniPlaySong. UniPlaySong now tells you instead of leaving you guessing.
+- Games fell silent if you picked a default music source but never chose what it plays — like selecting "a folder of your own" without browsing to a folder. UniPlaySong now plays the bundled preset and tells you what's missing.
+- Radio Mode with nothing to play went silent instead of falling back to your default music.
+- Setting Music Volume to 0 and back up again left you silent until you switched games.
+- Desktop mode now warns you if Playnite's Background Volume is at 0, before it silences you in Fullscreen.
+- A few settings changes needed a restart to take effect.
+
 ### Added
 - **For extension developers**: other plugins can now ask UniPlaySong which achievement sound it would play, and where that file came from, without UniPlaySong playing it. Added for PlayniteAchievements.
 

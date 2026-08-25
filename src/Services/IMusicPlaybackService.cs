@@ -58,12 +58,15 @@ namespace UniPlaySong.Services
 
         // Sets a provider that returns true when a Playnite filter preset is currently active (for Filter Mode)
         void SetFilterActiveProvider(System.Func<bool> provider);
+        void SetUserWarningHandler(System.Action<string, string> handler);
 
         // Sets a provider for Radio Mode pool sources (FullLibrary, CustomFolder, CustomRotation, CompletionStatusPool)
         void SetRadioSongPoolProvider(System.Func<RadioMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
 
         // Starts Radio Mode playback from the configured pool source
-        void StartRadioPlayback(UniPlaySongSettings settings);
+        // Returns false when the radio could not start (empty pool, no provider), so callers can fall
+        // through to normal playback rather than returning into silence.
+        bool StartRadioPlayback(UniPlaySongSettings settings);
 
         // Stops Radio Mode playback and clears radio state
         void StopRadioMode();

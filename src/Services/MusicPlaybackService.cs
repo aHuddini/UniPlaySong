@@ -74,6 +74,10 @@ namespace UniPlaySong.Services
         // Provider that returns true when a Playnite filter preset is active (for Filter Mode)
         private Func<bool> _filterActiveProvider;
 
+        // Raises a user-visible warning. MusicPlaybackService has no Playnite API of its own,
+        // so the host supplies this the same way it supplies _filterActiveProvider.
+        private Action<string, string> _userWarning;
+
         // Provider for Radio Mode pool sources (injected from UniPlaySong.cs)
         private Func<RadioMusicSource, UniPlaySongSettings, List<string>> _radioSongPoolProvider;
 
@@ -914,11 +918,25 @@ namespace UniPlaySong.Services
                 }
 
                 if (_isPaused)
+                {
                     _fileLogger?.Debug($"RadioMode: not starting — paused ({string.Join(", ", _activePauseSources)})");
+                }
                 else if (!_isInRadioMode || !IsPlaying)
-                    StartRadioPlayback(settings);
+                {
+                    // Fall through rather than return when the radio cannot play. Returning here is
+                    // what turned "radio has nothing to play" into "nothing plays at all", because
+                    // default music lives below this point.
+                    if (!StartRadioPlayback(settings))
+                    {
+                        _isInRadioMode = false;
+                        _lastRadioSongPath = null;
+                        goto playNormal;
+                    }
+                }
                 else
+                {
                     _fileLogger?.Debug($"RadioMode: ignoring game switch to {game.Name} — radio continues");
+                }
                 return;
             }
 
@@ -1067,7 +1085,36 @@ namespace UniPlaySong.Services
                 // UseNativeMusicAsDefault kept in sync for backward compatibility.
                 if (songs.Count == 0 && settings?.EnableDefaultMusic == true)
                 {
-                    switch (settings.DefaultMusicSourceOption)
+                    // A source the user never finished configuring produces nothing, and default
+                    // music is the last thing standing between an empty radio pool and total
+                    // silence - so it must not be the second layer to fail quietly.
+                    //
+                    // Reported as "it mutes at startup, when opening hub, when changing focus, and
+                    // never unmutes": Radio Mode on with an empty pool, and default music pointed at
+                    // CustomFolder with no folder ever chosen. QuickStartProfiles.DefaultSourceIsUsable
+                    // already encodes this test, but it was only consulted when APPLYING a profile -
+                    // changing the source afterwards in settings went unchecked.
+                    //
+                    // BundledPreset ships with the plugin and is the one source guaranteed to make
+                    // sound on any install.
+                    var effectiveDefaultSource = settings.DefaultMusicSourceOption;
+                    if (!QuickStartProfiles.DefaultSourceIsUsable(settings))
+                    {
+                        _fileLogger?.Warn($"Default music source {settings.DefaultMusicSourceOption} is not configured (no path/selection). Using the bundled preset instead so this is not silence.");
+                        effectiveDefaultSource = DefaultMusicSource.BundledPreset;
+
+                        // Substituting silently would leave the user hearing music from a source they
+                        // did not pick, with their real setting quietly dead - so say which setting,
+                        // and say it where they are rather than only in a log they do not know exists.
+                        _userWarning?.Invoke(
+                            $"ups-default-source-unconfigured-{settings.DefaultMusicSourceOption}",
+                            $"Your default music source is set to \"{DescribeDefaultSource(settings.DefaultMusicSourceOption)}\", " +
+                            "but it has not been given anything to play yet. UniPlaySong is using the bundled preset " +
+                            "instead so games without their own music are not silent." + Environment.NewLine + Environment.NewLine +
+                            "Finish setting it up under UniPlaySong Settings → Library → Default Music, or pick a different source there.");
+                    }
+
+                    switch (effectiveDefaultSource)
                     {
                         // v1.5.0: NativeTheme deprecated. v1.5.2: legacy handler no-ops.
                         // Settings migration rewrites NativeTheme → BundledPreset on load, so this case should never fire. If
@@ -2012,6 +2059,25 @@ namespace UniPlaySong.Services
             _filterActiveProvider = provider;
         }
 
+        // Names the source the way the settings UI does, so the warning points at something the user
+        // can actually find.
+        private static string DescribeDefaultSource(DefaultMusicSource source)
+        {
+            switch (source)
+            {
+                case DefaultMusicSource.CustomFile: return "a specific file";
+                case DefaultMusicSource.CustomFolder: return "a folder of your own";
+                case DefaultMusicSource.CustomRotation: return "a rotation of chosen games";
+                case DefaultMusicSource.CompletionStatusPool: return "music from games by completion status";
+                default: return source.ToString();
+            }
+        }
+
+        public void SetUserWarningHandler(Action<string, string> handler)
+        {
+            _userWarning = handler;
+        }
+
         public void SetRadioSongPoolProvider(Func<RadioMusicSource, UniPlaySongSettings, List<string>> provider)
         {
             _radioSongPoolProvider = provider;
@@ -2019,7 +2085,16 @@ namespace UniPlaySong.Services
 
         // Picks a song from the radio pool and starts playing it.
         // Called on first game selection after Radio Mode is enabled, and on song-end auto-advance.
-        public void StartRadioPlayback(UniPlaySongSettings settings)
+        // Returns false when the radio could not start, so the caller can fall through to normal
+        // playback instead of returning into silence.
+        //
+        // It used to be void, and PlayGameMusic returned unconditionally after calling it. That made
+        // the documented safety net unreachable: the Jukebox Quick Start profile keeps default music
+        // ON precisely so an empty radio pool still produces sound, but the early return meant the
+        // default-music path was never reached on that call. A user with Radio Mode on and nothing
+        // in the pool got total silence - at startup, on hub open, on every focus change - with only
+        // a WARN in a log they had no reason to read.
+        public bool StartRadioPlayback(UniPlaySongSettings settings)
         {
             // Spotify is the radio source → UPS plays no pool; SpotifyControlService conducts Spotify.
             // Defensive: PlayGameMusic's SpotifyRadioMode suppression branch already returns before
@@ -2027,20 +2102,20 @@ namespace UniPlaySong.Services
             if (settings?.RadioMusicSource == RadioMusicSource.Spotify)
             {
                 _fileLogger?.Debug("StartRadioPlayback: source is Spotify — not starting a UPS pool.");
-                return;
+                return true;   // Spotify IS playing; UPS staying quiet is correct, not a failure.
             }
 
             if (_radioSongPoolProvider == null)
             {
                 _fileLogger?.Warn("RadioMode: no pool provider registered, cannot start radio");
-                return;
+                return false;
             }
 
             var pool = _radioSongPoolProvider(settings.RadioMusicSource, settings);
             if (pool == null || pool.Count == 0)
             {
-                _fileLogger?.Warn($"RadioMode: pool empty for source {settings.RadioMusicSource}");
-                return;
+                _fileLogger?.Warn($"RadioMode: pool empty for source {settings.RadioMusicSource}. Falling back to default music so this is not silence.");
+                return false;
             }
 
             string nextSong;
@@ -2099,6 +2174,8 @@ namespace UniPlaySong.Services
                 _currentSongPath = nextSong;
                 MarkSongStart();
             }
+
+            return true;
         }
 
         public void StopRadioMode()

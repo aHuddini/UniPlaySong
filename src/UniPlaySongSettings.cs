@@ -318,7 +318,16 @@ namespace UniPlaySong
         private AudioState musicState = AudioState.Always;
         private bool autoPlayOnFirstLaunchDesktop = true;
         private bool skipFirstSelectionAfterModeSwitch = false;
-        private bool themeCompatibleSilentSkip = true;
+        // OFF, matching what the Theme Support page has always told users ("Default: Off") and what
+        // the feature is for. It is a compatibility workaround for Fullscreen themes with a
+        // login/welcome screen: it holds music back until a key or controller button is pressed.
+        //
+        // Defaulting that ON meant every fresh install waited for input before playing anything,
+        // which presents as "no music on the first game" and resolves itself as soon as the user
+        // touches something - a symptom that looks like a playback bug rather than a setting. Reset
+        // and Quick Start did not help either, because Reset copies from a pristine instance (this
+        // line) and no Quick Start profile sets it.
+        private bool themeCompatibleSilentSkip = false;
         private bool hoverSettleEnabled = false; // Fullscreen: wait for the selection to rest before starting game music
         private double hoverSettleSeconds = Constants.DefaultHoverSettleSeconds;
         private bool resumeGameMusicPosition = true;  // returning to a game picks up where its track left off

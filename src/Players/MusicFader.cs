@@ -160,6 +160,20 @@ namespace UniPlaySong.Players
                     _stopAction?.Invoke();
                     _isPaused = _pauseAction != null;
                     _stopAction = _pauseAction = null;
+
+                    // Belt and braces against the same leak. Switch() now clears a pending pause so
+                    // both should never be armed together, but this branch used to clear only the
+                    // pause and stop actions - leaving a play action that would never fire and
+                    // never be cleared, so the fader looked idle while a song sat pending forever.
+                    // If some future path does arm both, dropping the play here fails silent rather
+                    // than leaving a permanent phantom.
+                    if (_playAction != null)
+                    {
+                        _fileLogger?.Debug("[Fader] Discarding a play action that was pending behind a pause");
+                        _playAction = null;
+                        _preloadAction = null;
+                    }
+
                     _fadeTimer?.Stop();
                     return;
                 }
@@ -218,6 +232,26 @@ namespace UniPlaySong.Players
             _preloadAction = preloadAction;
             _playAction = playAction;
             _stopAction = stopAction;
+
+            // A switch supersedes a pause that has not completed yet, and clearing it here is what
+            // makes the tick's branch order safe.
+            //
+            // The switch branch requires `_pauseAction == null && _playAction != null`. A pause
+            // armed earlier and still pending - the ThemeOverlay pause during startup is the one
+            // that bit users - therefore made the tick skip the switch entirely and take the PAUSE
+            // branch instead, which invoked the pause, cleared itself, and left _playAction set but
+            // never called. The song was preloaded and then simply never played, and the NEXT game
+            // worked because by then _pauseAction was null.
+            //
+            // Reported as "no music on the first game details view after a cold start" and "second
+            // game silent, third onward fine". Diagnosed from a user log by Mike Aniki.
+            //
+            // _isPaused is deliberately NOT touched: whether playback is logically paused is
+            // separate state, and PlayGameMusic's play action checks it independently.
+            if (playAction != null)
+            {
+                _pauseAction = null;
+            }
 
             if (stopAction == null)
             {

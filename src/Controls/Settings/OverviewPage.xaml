@@ -38,10 +38,16 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: default music no longer restarts from the beginning when a game's own music takes over and hands back, and game music no longer restarts when you return to a game from default music.
+                        Fixed: the first game you picked after starting Playnite could play no music at all, and sometimes the second one too.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Both resume options are now on by default, and default music resuming can be switched off under Playback &#x2192; Global Overrides.
+                        Fixed: picking a default music source without choosing what it plays (a folder, a file, a selection) meant silence; UPS now plays the bundled preset and says what is missing.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        Improved: UPS now warns you when Playnite's own Background Volume is at 0, which silences UPS. See Troubleshooting below.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        Added: other extensions can ask UPS which achievement sound it would play, without playing it.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:
@@ -114,6 +120,12 @@
                     <TextBlock Text="Troubleshooting / Known Quirks" Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,10"
                                Text="Real-world edge cases users have hit."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
+                               Text="Fullscreen starts or stays muted, whatever the volume is set to"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
+                               Text="Check Playnite Settings &#8594; Fullscreen &#8594; Background Volume. UPS scales its own volume by that slider, so at 0.00 nothing can be heard however loud UPS is set. Raising it will not bring Playnite's own music back &#8212; UPS stops that separately."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
