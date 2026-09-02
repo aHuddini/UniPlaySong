@@ -148,6 +148,7 @@ namespace UniPlaySong
         // Fullscreen volume integration - respects Playnite's Background Music Volume slider
         private double _playniteFullscreenVolume = 1.0;
         private dynamic _fullscreenSettingsObj;
+        private INotifyPropertyChanged _fullscreenSettingsNotifier; // kept for unsubscribe on dispose
 
         // External audio detection (polls Windows audio sessions to pause when other apps play audio).
         // Uses System.Timers.Timer (ThreadPool) to keep COM interop off the UI thread.
@@ -192,6 +193,16 @@ namespace UniPlaySong
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
+        // Window.WindowState is WPF's own bookkeeping and can disagree with the window Windows is
+        // actually showing - a process started minimized by its shortcut ("Run: minimized", which is
+        // how people hide things that launch at boot) is iconic from the moment it appears, without
+        // WPF ever having been asked for it. IsIconic/IsWindowVisible read the window itself.
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool IsIconic(IntPtr hWnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool IsWindowVisible(IntPtr hWnd);
+
         // Known task switcher window class names across Windows versions
         private static readonly HashSet<string> _taskSwitcherClassNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -218,6 +229,14 @@ namespace UniPlaySong
         // FocusLoss/Minimized/SystemTray pinning music silent. Retry briefly until the window settles.
         private System.Windows.Threading.DispatcherTimer _gameStopVerifyTimer;
         private int _gameStopVerifyTicks;
+        // Startup window-state verify: a Playnite told to start minimized or in the tray reaches that
+        // state AFTER OnApplicationStarted samples it, and a window BORN hidden raises no
+        // StateChanged/IsVisibleChanged to correct the sample later. Reported as "starts minimised to
+        // the tray but UPS plays anyway; open it and minimise again and it pauses fine". Poll briefly
+        // so the state is observed rather than assumed.
+        private System.Windows.Threading.DispatcherTimer _startupWindowVerifyTimer;
+        private int _startupWindowVerifyTicks;
+        private Window _windowStateHandlerTarget; // the window StateChanged/IsVisibleChanged are attached to
         private readonly System.Text.StringBuilder _classNameBuffer = new System.Text.StringBuilder(256);
 
         // Desktop top panel media control (play/pause button)
@@ -641,20 +660,176 @@ namespace UniPlaySong
                 _gameStopVerifyTimer?.Stop();
         }
 
+        // Attaches everything that hangs off Playnite's main window, to whichever window is available.
+        //
+        // Extracted from OnApplicationStarted because it used to be a bare null check with no retry:
+        // if MainWindow happened to be null at that instant, StateChanged and IsVisibleChanged were
+        // never attached AT ALL and minimize/tray pausing was dead for the rest of the session. The
+        // startup verify timer now calls this until a window exists.
+        //
+        // The window handle and the window's own Activated hook are captured here for the same
+        // reason. They sat behind a second copy of that same bare null check, and a missed handle is
+        // worse than a missed event: _mainWindowHandle stays IntPtr.Zero, so every
+        // `GetForegroundWindow() != _mainWindowHandle` test reads as "Playnite is not in front" for
+        // the rest of the session, and the focus-loss pause has no way back.
+        private void AttachWindowStateHandlers(Window window)
+        {
+            if (window == null || ReferenceEquals(window, _windowStateHandlerTarget)) return;
+
+            if (_windowStateHandlerTarget != null)
+            {
+                _windowStateHandlerTarget.StateChanged -= OnWindowStateChanged;
+                _windowStateHandlerTarget.IsVisibleChanged -= OnWindowVisibilityChanged;
+            }
+
+            window.StateChanged += OnWindowStateChanged;
+            window.IsVisibleChanged += OnWindowVisibilityChanged;
+            _windowStateHandlerTarget = window;
+
+            _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+
+            // Application.Activated only fires on app-level inactive→active transitions, so returning
+            // to the main window from a Playnite-owned sibling (overlay/dialog/WebView2) never re-fires
+            // it — FocusLoss stayed stuck and music silently never resumed. Window.Activated does fire
+            // for within-app focus moves; the handler's own guard + verify timer keep it safe.
+            if (_mainWindowForActivate != null)
+                _mainWindowForActivate.Activated -= OnApplicationActivate;
+            _mainWindowForActivate = window;
+            _mainWindowForActivate.Activated += OnApplicationActivate;
+        }
+
+        // What Windows is showing, which is not always what WPF thinks it asked for. A window the
+        // shell started minimized (a "Run: minimized" startup shortcut) is iconic before WPF has an
+        // opinion, and WindowState can still read Normal.
+        //
+        // Falls back to the WPF property whenever there is no handle yet - during startup the handle
+        // arrives with AttachWindowStateHandlers, and a window without one is not on screen anyway.
+        private bool WindowIsMinimized(Window window)
+        {
+            if (window == null) return false;
+            if (window.WindowState == WindowState.Minimized) return true;
+            return _mainWindowHandle != IntPtr.Zero && IsIconic(_mainWindowHandle);
+        }
+
+        private bool WindowIsHidden(Window window)
+        {
+            if (window == null) return false;
+            if (!window.IsVisible) return true;
+            return _mainWindowHandle != IntPtr.Zero && !IsWindowVisible(_mainWindowHandle);
+        }
+
+        // Polls the window state briefly after startup, mirroring OnGameStopVerifyTick - which solves
+        // the same "one sample is not enough" problem at game exit, only by removing sources where
+        // this one adds them.
+        private void StartStartupWindowVerify()
+        {
+            if (_startupWindowVerifyTimer == null)
+            {
+                _startupWindowVerifyTimer = new System.Windows.Threading.DispatcherTimer(
+                    System.Windows.Threading.DispatcherPriority.Background)
+                { Interval = TimeSpan.FromMilliseconds(200) };
+                _startupWindowVerifyTimer.Tick += OnStartupWindowVerifyTick;
+            }
+            _startupWindowVerifyTicks = 0;
+            _startupWindowVerifyTimer.Stop();
+            _startupWindowVerifyTimer.Start();
+        }
+
+        // Additive only: ResyncWindowStatePauseSources gates every source on its own setting, and
+        // re-adding a source already present is a HashSet no-op, so ticking repeatedly cannot pause
+        // anything the user did not ask to be paused.
+        //
+        // Deliberately does NOT stop early on "window looks settled". A window that starts normal and
+        // is hidden to the tray a moment later is the exact case this exists for.
+        //
+        // Two budgets, because the two halves fail differently:
+        //
+        //   Attachment is the one that must not give up. Once StateChanged/IsVisibleChanged are
+        //   attached, every later transition is caught by events and this timer stops mattering. If
+        //   attachment never happens, minimize and tray pausing are dead for the whole session -
+        //   which is what the old bare `if (MainWindow != null)` did whenever MainWindow was not yet
+        //   assigned. Playnite assigns it AFTER MainModel.OpenView() returns, and OpenView is what
+        //   raises OnApplicationStarted, so being early here is normal rather than exceptional.
+        //
+        //   Resync only needs to cover the gap before attachment plus the window's own settling. It
+        //   is capped, but generously: this reproduces at machine boot, where Playnite launches from
+        //   a Startup shortcut against a contended disk and its Visibility/WindowState bindings can
+        //   take far longer to propagate than on a warm manual launch. That timing difference is why
+        //   it reproduces on one machine every boot and not at all on another.
+        private const int StartupVerifyResyncTicks = 50;   // ~10s of ticks
+        private const int StartupVerifyMaxTicks = 150;     // ~30s hard stop, so the timer cannot leak
+
+        private void OnStartupWindowVerifyTick(object sender, EventArgs e)
+        {
+            _startupWindowVerifyTicks++;
+
+            var window = Application.Current?.MainWindow;
+            if (window != null)
+            {
+                bool firstAttach = _windowStateHandlerTarget == null;
+                AttachWindowStateHandlers(window);
+
+                // Self-guarded: retries until it lands, then no-ops. Losing this subscription freezes
+                // the Playnite volume UniPlaySong scales by at its startup value for the session.
+                SubscribeToFullscreenVolumeChanges(window);
+                if (firstAttach)
+                {
+                    _fileLogger?.Debug($"[StartupVerify] Window available after {_startupWindowVerifyTicks} tick(s) — " +
+                                       $"wpf state={window.WindowState}, visible={window.IsVisible}, active={window.IsActive}; " +
+                                       $"win32 hwnd={_mainWindowHandle.ToInt64():X}, iconic={IsIconic(_mainWindowHandle)}, " +
+                                       $"shown={IsWindowVisible(_mainWindowHandle)}, foreground={(GetForegroundWindow() == _mainWindowHandle)}");
+                }
+
+                // Bidirectional: the poll owns what it adds during startup, so a reading that turns
+                // out to be wrong corrects itself on the next tick rather than stranding.
+                if (_startupWindowVerifyTicks <= StartupVerifyResyncTicks)
+                    ResyncWindowStatePauseSources(bidirectional: true);
+            }
+
+            bool attached = _windowStateHandlerTarget != null;
+            if ((attached && _startupWindowVerifyTicks >= StartupVerifyResyncTicks)
+                || _startupWindowVerifyTicks >= StartupVerifyMaxTicks)
+            {
+                _startupWindowVerifyTimer?.Stop();
+            }
+        }
+
         // A radio play-through session suppressed the window-state pause sources, so they were
         // never added. Re-add whatever is genuinely true now that normal pausing resumes.
         // Mirror of OnGameStopVerifyTick, which only ever removes.
-        private void ResyncWindowStatePauseSources()
+        // bidirectional=false is the original radio play-through case: only ever ADD, because the
+        // sources it re-asserts were suppressed deliberately and nothing else is wrong.
+        //
+        // bidirectional=true also RELEASES a source whose condition no longer holds, and that is what
+        // makes the startup poll and the Win32 reading safe to have at all. WPF raises StateChanged
+        // and IsVisibleChanged only on a CHANGE, so a source added from a reading WPF never agreed
+        // with has no event coming to take it back — it just sits there refusing every play,
+        // transport buttons included, until something unrelated clears it. Reported as "it wouldn't
+        // start until I clicked around and opened the settings".
+        private void ResyncWindowStatePauseSources(bool bidirectional = false)
         {
             var window = Application.Current?.MainWindow;
             if (window == null || _playbackService == null) return;
 
-            if (!window.IsActive && _settings?.PauseOnFocusLoss == true)
-                _playbackService.AddPauseSource(Models.PauseSource.FocusLoss);
-            if (_settings?.PauseOnMinimize == true && window.WindowState == WindowState.Minimized)
-                _playbackService.AddPauseSource(Models.PauseSource.Minimized);
-            if (_settings?.PauseWhenInSystemTray == true && !window.IsVisible)
-                _playbackService.AddPauseSource(Models.PauseSource.SystemTray);
+            Apply(Models.PauseSource.FocusLoss, !window.IsActive && _settings?.PauseOnFocusLoss == true);
+            Apply(Models.PauseSource.Minimized, WindowIsMinimized(window) && _settings?.PauseOnMinimize == true);
+            Apply(Models.PauseSource.SystemTray, WindowIsHidden(window) && _settings?.PauseWhenInSystemTray == true);
+
+            void Apply(Models.PauseSource source, bool conditionHolds)
+            {
+                if (conditionHolds)
+                {
+                    _playbackService.AddPauseSource(source);
+                }
+                else if (bidirectional && _playbackService.HasPauseSource(source))
+                {
+                    _fileLogger?.Debug($"ResyncWindowStatePauseSources: releasing stale {source} — " +
+                                       $"wpf state={window.WindowState}, visible={window.IsVisible}, active={window.IsActive}; " +
+                                       $"win32 iconic={(_mainWindowHandle != IntPtr.Zero ? IsIconic(_mainWindowHandle).ToString() : "no handle")}, " +
+                                       $"shown={(_mainWindowHandle != IntPtr.Zero ? IsWindowVisible(_mainWindowHandle).ToString() : "no handle")}");
+                    _playbackService.RemovePauseSource(source);
+                }
+            }
         }
 
         // Handles application startup events from Playnite. Initializes skip state, login detection, and
@@ -717,9 +892,11 @@ namespace UniPlaySong
             {
                 SuppressNativeMusic();
 
-                // Initialize fullscreen volume integration (PlayniteSound-proven pattern)
+                // Initialize fullscreen volume integration (PlayniteSound-proven pattern). The
+                // subscription is attempted here and retried by the startup verify loop — it needs a
+                // window that may not exist yet, and losing it silences the whole session.
                 InitializeFullscreenSettingsRef();
-                SubscribeToFullscreenVolumeChanges();
+                SubscribeToFullscreenVolumeChanges(Application.Current?.MainWindow);
                 _playbackService?.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
 
                 // Pause FFT processing — desktop visualizer is not visible in fullscreen.
@@ -729,16 +906,19 @@ namespace UniPlaySong
             else
             {
                 // Desktop mode does not apply the multiplier - Playnite's Background Volume governs
-                // Fullscreen only, and desktop playback is untouched by it.
+                // Fullscreen only, and desktop playback is untouched by it. No warning here either:
+                // a value that changes nothing in the mode you are standing in is not worth a
+                // notification, and Playnite draws no slider for it in Desktop to act on anyway.
                 //
-                // It is EDITABLE from Desktop settings all the same (Playnite Settings -> Fullscreen),
-                // so somebody can zero it here and not discover what it did until the next time they
-                // launch Fullscreen - where it silences UniPlaySong outright, theme music players
-                // included. Reading it costs one reflection call, so say so now rather than let them
-                // find out later with no way to connect the two.
+                // The handle is still taken, so the change-watch below can report a value going to 0
+                // from wherever it happens.
                 InitializeFullscreenSettingsRef();
-                WarnIfPlayniteVolumeWillMuteFullscreen();
             }
+
+            // Playnite's Background Volume is reported from GetFullscreenVolumeMultiplier, which only
+            // runs in Fullscreen. UniPlaySong's own Music Volume silences it in both modes, so it is
+            // checked in both.
+            WarnIfUpsVolumeIsZero();
 
             // "Play Only on Game Select" is handled by the OnFullscreenViewChanged SDK override.
             // See that override for the List ↔ Details transition logic.
@@ -754,16 +934,8 @@ namespace UniPlaySong
             Application.Current.Activated += OnApplicationActivate;
             Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
-            if (Application.Current.MainWindow != null)
-            {
-                _mainWindowHandle = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
-                // Also hook the MAIN WINDOW's own Activated: Application.Activated only fires on app-level inactive→active
-                // transitions, so returning to the main window from a Playnite-owned sibling (overlay/dialog/WebView2) never
-                // re-fires it — FocusLoss stayed stuck and music silently never resumed. Window.Activated does fire for
-                // within-app focus moves; the handler's own guard + verify timer keep it safe.
-                _mainWindowForActivate = Application.Current.MainWindow;
-                _mainWindowForActivate.Activated += OnApplicationActivate;
-            }
+            // The window handle and the main window's own Activated hook are attached by
+            // AttachWindowStateHandlers, below, which retries until a window exists.
 
             _externalAudioPollTimer = new System.Timers.Timer(1500);
             _externalAudioPollTimer.Elapsed += OnExternalAudioPollTick;
@@ -824,15 +996,15 @@ namespace UniPlaySong
                 }
             }
 
-            if (Application.Current.MainWindow != null)
-            {
-                Application.Current.MainWindow.StateChanged += OnWindowStateChanged;
-                Application.Current.MainWindow.IsVisibleChanged += OnWindowVisibilityChanged;
-            }
+            AttachWindowStateHandlers(Application.Current.MainWindow);
 
             // Check initial window state and add pause sources if starting minimized/in tray/unfocused
             // This must be called AFTER event handlers are registered but BEFORE music can start playing
             CheckInitialWindowState();
+
+            // ...and keep checking briefly, because that single sample can be taken before the window
+            // has reached the state Playnite was told to start it in. See StartStartupWindowVerify.
+            StartStartupWindowVerify();
 
             // Mark initialization complete - this allows deferred playback to proceed
             // Any game selection that happened during startup will now be processed
@@ -1243,6 +1415,13 @@ namespace UniPlaySong
             // they must be prevented from loading/starting music during process exit.
             _isShuttingDown = true;
 
+            // Recorded so "my Background Volume keeps resetting to 0" can be settled from one log
+            // instead of argued: compare it with the InitializeFullscreenSettingsRef line at the NEXT
+            // startup. Same value means nothing touched it between sessions. Different means the file
+            // was written while Playnite was closed - or a second Playnite process saved its own
+            // older copy of fullscreenConfig.json over it on exit, which needs no plugin at all.
+            _fileLogger?.Lifecycle($"Shutdown: Playnite BackgroundVolume = {GetPlayniteFullscreenVolume():F2}");
+
             _playbackService?.Stop();
             _api.UriHandler.RemoveSource("uniplaysong");
             _externalControlService = null;
@@ -1267,6 +1446,19 @@ namespace UniPlaySong
             _activateVerifyTimer = null;
             _gameStopVerifyTimer?.Stop();
             _gameStopVerifyTimer = null;
+            _startupWindowVerifyTimer?.Stop();
+            _startupWindowVerifyTimer = null;
+            if (_windowStateHandlerTarget != null)
+            {
+                _windowStateHandlerTarget.StateChanged -= OnWindowStateChanged;
+                _windowStateHandlerTarget.IsVisibleChanged -= OnWindowVisibilityChanged;
+                _windowStateHandlerTarget = null;
+            }
+            if (_fullscreenSettingsNotifier != null)
+            {
+                _fullscreenSettingsNotifier.PropertyChanged -= OnFullscreenSettingsChanged;
+                _fullscreenSettingsNotifier = null;
+            }
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _sleepCoordinator?.Stop();
@@ -1878,6 +2070,9 @@ namespace UniPlaySong
                 _fileLogger?.Debug("OnSettingsServiceChanged: music volume raised above 0 with nothing playing - restarting playback");
             }
 
+            // Either zero silences everything, so both get said out loud and both get taken back.
+            WarnIfUpsVolumeIsZero();
+
             if (musicSettingsChanged)
             {
                 var game = ResolveContextGame();
@@ -2405,6 +2600,15 @@ namespace UniPlaySong
                 // Default: always remove FocusLoss (no-op if not present)
                 _playbackService?.RemovePauseSource(Models.PauseSource.FocusLoss);
             }
+
+            // The caller has confirmed the main window is the foreground window, and a foreground
+            // window is neither minimized nor sitting in the tray. Both are normally released by
+            // StateChanged/IsVisibleChanged, but a source added from a state WPF never agreed it was
+            // in has no such event coming - so releasing them here is what stops a startup reading
+            // from stranding the music silent. No-ops when absent.
+            _playbackService?.RemovePauseSource(Models.PauseSource.Minimized);
+            _playbackService?.RemovePauseSource(Models.PauseSource.SystemTray);
+
             _dashboardPlaybackService?.ResumeFromSystem();
         }
 
@@ -2963,12 +3167,24 @@ namespace UniPlaySong
         private void CheckInitialWindowState()
         {
             var window = Application.Current?.MainWindow;
-            if (window == null) return;
+            if (window == null)
+            {
+                _fileLogger?.Debug("CheckInitialWindowState: MainWindow is null — Playnite assigns it after OpenView() returns; the startup verify will retry");
+                return;
+            }
 
-            if (_settings?.PauseOnMinimize == true && window.WindowState == WindowState.Minimized)
+            // Logged because a field report could not be diagnosed without it: the log showed music
+            // starting with no Pause line, which proves no source was added but not what was read.
+            // Both readings, because they can disagree - see WindowIsMinimized.
+            _fileLogger?.Debug($"CheckInitialWindowState: wpf state={window.WindowState}, visible={window.IsVisible}, active={window.IsActive}; " +
+                               $"win32 iconic={(_mainWindowHandle != IntPtr.Zero ? IsIconic(_mainWindowHandle).ToString() : "no handle")}, " +
+                               $"shown={(_mainWindowHandle != IntPtr.Zero ? IsWindowVisible(_mainWindowHandle).ToString() : "no handle")} " +
+                               $"(PauseOnMinimize={_settings?.PauseOnMinimize}, PauseWhenInSystemTray={_settings?.PauseWhenInSystemTray}, PauseOnFocusLoss={_settings?.PauseOnFocusLoss})");
+
+            if (_settings?.PauseOnMinimize == true && WindowIsMinimized(window))
                 _playbackService?.AddPauseSource(Models.PauseSource.Minimized);
 
-            if (_settings?.PauseWhenInSystemTray == true && !window.IsVisible)
+            if (_settings?.PauseWhenInSystemTray == true && WindowIsHidden(window))
                 _playbackService?.AddPauseSource(Models.PauseSource.SystemTray);
 
             if (_settings?.PauseOnFocusLoss == true && !window.IsActive)
@@ -3061,6 +3277,7 @@ namespace UniPlaySong
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
+            _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
             _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
@@ -3532,6 +3749,7 @@ namespace UniPlaySong
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
+            _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
                 _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
 
@@ -3628,6 +3846,7 @@ namespace UniPlaySong
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
+            _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
                 _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
                 _playbackService.MarkInitializationComplete();
                 _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
@@ -3785,6 +4004,10 @@ namespace UniPlaySong
             //
             // So: honour the value, explain the consequence. A log line alone is no use to someone
             // who does not know there is a log.
+            // Every scenario, Spotify radio included: a zero here is worth naming wherever it is
+            // found. The message says what is silenced - UniPlaySong's own music - rather than
+            // claiming the user can hear nothing at all, which is what keeps it true when some other
+            // source is playing.
             if (multiplier <= 0.0 && _settings?.SuppressPlayniteBackgroundMusic == true && _settings?.EnableMusic == true)
             {
                 WarnAboutZeroedPlayniteVolume();
@@ -3824,30 +4047,36 @@ namespace UniPlaySong
         // obeyed; what was missing is any way for the user to connect the two, since UniPlaySong's
         // own Music Volume still reads 50% and tracks still load and "play". Reported as "the music
         // starts muted every time", and unreproducible by anyone whose slider was not at zero.
+        //
+        // Worth saying plainly in the message, because the zero is not a mistake - it is what the
+        // community has always advised, and it was right before UniPlaySong existed. UniPlaySong
+        // suppresses Playnite's built-in music itself, which is what that advice was for, so the
+        // slider is free to sit above 0 and needs to.
         private void WarnAboutZeroedPlayniteVolume()
         {
             ShowOneTimeWarning("ups-playnite-volume-zero",
-                "UniPlaySong is silent because Playnite's own Background Volume is set to 0." + Environment.NewLine + Environment.NewLine +
-                "UniPlaySong scales its volume by that slider, so at 0 nothing can be heard however " +
-                "loud UniPlaySong's own Music Volume is set." + Environment.NewLine + Environment.NewLine +
-                "To fix: Playnite Settings → Fullscreen → Background Volume - raise it above 0. " +
-                "UniPlaySong already stops Playnite's own music separately, so raising it will not " +
-                "bring that back.");
+                "Playnite's Background Volume is set to 0. Audio may not be heard." + Environment.NewLine + Environment.NewLine +
+                "Fix it in Playnite: Menu → Settings → Audio → Background Volume.");
         }
 
-        // Desktop-mode counterpart to WarnAboutZeroedPlayniteVolume: the consequence is in Fullscreen,
-        // but the setting is reachable - and so most often changed - from Desktop.
-        private void WarnIfPlayniteVolumeWillMuteFullscreen()
+        // UniPlaySong's own Music Volume at 0 is the other half of the same complaint, and the one
+        // setting that is genuinely UniPlaySong's to explain. It is a level AND a gate, and only the
+        // gate half is invisible: ShouldPlayMusic (MusicPlaybackCoordinator) refuses at <= 0, so
+        // nothing NEW starts, while a track already running keeps running - inaudibly. The interface
+        // shows a playing track at a volume of zero and says nothing about the half that is blocked.
+        private void WarnIfUpsVolumeIsZero()
         {
             if (_settings?.EnableMusic != true) return;
-            if (GetPlayniteFullscreenVolume() > 0.0) return;
 
-            ShowOneTimeWarning("ups-playnite-volume-zero-desktop",
-                "Playnite's Background Volume is set to 0, which will silence UniPlaySong in Fullscreen mode." + Environment.NewLine + Environment.NewLine +
-                "Fullscreen scales UniPlaySong's volume by that slider, so music there will be inaudible " +
-                "however loud UniPlaySong's own Music Volume is set - including any theme with its own " +
-                "music player driven by UniPlaySong. Desktop mode is not affected." + Environment.NewLine + Environment.NewLine +
-                "To change it: Playnite Settings → Fullscreen → Background Volume.");
+            if ((_settings?.MusicVolume ?? 0) > 0)
+            {
+                WithdrawWarning("ups-music-volume-zero");
+                return;
+            }
+
+            ShowOneTimeWarning("ups-music-volume-zero",
+                "UniPlaySong's Music Volume is set to 0. Audio may not be heard." + Environment.NewLine + Environment.NewLine +
+                "Fix it in UniPlaySong Settings → Live Effects → Volume → Music Volume.");
         }
 
         // Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference. Returns 1.0
@@ -3901,21 +4130,32 @@ namespace UniPlaySong
         // Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
         // Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as
         // INotifyPropertyChanged).
-        private void SubscribeToFullscreenVolumeChanges()
+        // Without this subscription _playniteFullscreenVolume is a frozen startup snapshot, and the
+        // consequence is the report that reads as "UniPlaySong keeps setting my volume back to 0":
+        // the reader raises Playnite's slider, UniPlaySong never learns, the multiplier stays at the
+        // zero it sampled at startup, and the music stays silent for the rest of the session however
+        // far the slider is moved. Nothing was written back - the raise simply never arrived.
+        //
+        // It used to be attempted exactly once, from OnApplicationStarted, against
+        // Application.Current.MainWindow.DataContext - and Playnite raises OnApplicationStarted from
+        // inside OpenView(), so arriving before that window exists is ordinary. A null there logged a
+        // warning and gave up for the session. It is now retried by the startup verify loop, from the
+        // window it was handed, and in Desktop too - the value is edited there and a wrong write
+        // needs to be visible wherever it happens.
+        private void SubscribeToFullscreenVolumeChanges(Window window)
         {
+            if (_fullscreenSettingsNotifier != null) return;
+
             try
             {
-                dynamic ctx = Application.Current.MainWindow?.DataContext;
-                if (ctx == null)
-                {
-                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: MainWindow.DataContext is null");
-                    return;
-                }
+                dynamic ctx = window?.DataContext;
+                if (ctx == null) return;
 
                 var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
                 if (fullscreenSettings != null)
                 {
                     fullscreenSettings.PropertyChanged += OnFullscreenSettingsChanged;
+                    _fullscreenSettingsNotifier = fullscreenSettings;
                     _fileLogger?.Debug("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
                 }
                 else
@@ -3956,10 +4196,45 @@ namespace UniPlaySong
         {
             if (e.PropertyName == "BackgroundVolume")
             {
+                double previous = _playniteFullscreenVolume;
                 _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
                 _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
+
+                if (_playniteFullscreenVolume > 0.0)
+                {
+                    ClearZeroVolumeWarnings();
+                }
+                else if (previous > 0.0)
+                {
+                    // PropertyChanged is raised from the setter, so the caller is still on the stack.
+                    // Whether anything sets this to 0 behind the user's back has been argued from the
+                    // outside and cannot be settled that way; one trace names whoever did it.
+                    _fileLogger?.Debug("BackgroundVolume was set to 0. Set by:" + Environment.NewLine + Environment.StackTrace);
+                }
+
                 _playbackService?.SetVolumeMultiplier(IsFullscreen ? GetFullscreenVolumeMultiplier() : 1.0);
             }
+        }
+
+        // Withdraws the "your Background volume is 0" notices once it no longer is.
+        //
+        // Playnite keeps a notification in the panel until something removes it, and nothing did:
+        // the reader raised the slider, fixed the problem, and UniPlaySong went on telling them the
+        // volume was 0 - which is a large part of why this was reported as UniPlaySong resetting the
+        // value. Un-latching as well, so a later genuine zero is still announced.
+        private void ClearZeroVolumeWarnings()
+        {
+            WithdrawWarning("ups-playnite-volume-zero");
+        }
+
+        // Takes a one-time warning back, and re-arms its latch so the same condition returning is
+        // announced again rather than silently.
+        private void WithdrawWarning(string id)
+        {
+            if (!_shownWarnings.Remove(id)) return;
+
+            try { _api?.Notifications?.Remove(id); } catch { }
+            _fileLogger?.Debug($"Withdrew the '{id}' notification - the condition it described no longer holds");
         }
 
         // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected. Uses GlobalPaused so new

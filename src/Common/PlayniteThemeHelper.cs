@@ -354,7 +354,15 @@ namespace UniPlaySong.Common
                     var configPath = Path.Combine(root, "fullscreenConfig.json");
                     if (!File.Exists(configPath)) continue;
 
-                    var json = File.ReadAllText(configPath);
+                    // FileShare.ReadWrite deliberately. This file is Playnite's, and other extensions
+                    // write it — PS5 Experience ducks Background Volume through it, and Playnite
+                    // itself rewrites it on every exit. A plain ReadAllText holds FileShare.Read for
+                    // the duration, which makes a concurrent write fail with a sharing violation.
+                    // UniPlaySong has no business risking that over a theme-id lookup.
+                    string json;
+                    using (var fs = new FileStream(configPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(fs))
+                        json = reader.ReadToEnd();
                     var key = "\"Theme\"";
                     var idx = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
                     if (idx >= 0)

@@ -77,6 +77,7 @@ namespace UniPlaySong.Services
         // Raises a user-visible warning. MusicPlaybackService has no Playnite API of its own,
         // so the host supplies this the same way it supplies _filterActiveProvider.
         private Action<string, string> _userWarning;
+        private Action _windowStateVerifier;
 
         // Provider for Radio Mode pool sources (injected from UniPlaySong.cs)
         private Func<RadioMusicSource, UniPlaySongSettings, List<string>> _radioSongPoolProvider;
@@ -794,6 +795,15 @@ namespace UniPlaySong.Services
             // Don't start playback if window-state pause sources are active
             // This prevents music from playing when Playnite is minimized/in tray/unfocused
             // Store game info so we can play when pause sources are cleared
+            //
+            // Re-read the window first. These sources are added from events AND from the startup
+            // poll, and a poll-added source has no event guaranteed to release it — WPF raises
+            // IsVisibleChanged/StateChanged only on a CHANGE, so a source added from a reading WPF
+            // never agreed with is never taken back. Stale, it silently blocks every play including
+            // the transport buttons, which is exactly how it was reported: "it wouldn't start until
+            // I clicked around and opened the settings". Verified here, at the one moment it matters.
+            _windowStateVerifier?.Invoke();
+
             if (HasWindowStatePauseSources())
             {
                 _fileLogger?.Debug($"Playback blocked for {game.Name} (window state pause sources active) - storing for later");
@@ -2033,6 +2043,13 @@ namespace UniPlaySong.Services
         {
             _volumeMultiplier = Math.Max(0.0, Math.Min(1.0, multiplier));
 
+            // Handed to the external (Spotify effects) input separately: it lives on the output
+            // mixer, past the master fader the write below drives, so nothing else carries this to
+            // it. Unconditional - that input plays while the game player is idle, which is precisely
+            // when the guard below is false.
+            if (_musicPlayer is NAudioMusicPlayer externalHost)
+                externalHost.ExternalVolumeMultiplier = _volumeMultiplier;
+
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
                 _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
@@ -2076,6 +2093,13 @@ namespace UniPlaySong.Services
         public void SetUserWarningHandler(Action<string, string> handler)
         {
             _userWarning = handler;
+        }
+
+        // Injected the same way as the warning handler: this service has no window to read, and the
+        // host does. Called immediately before a window-state source is allowed to refuse playback.
+        public void SetWindowStateVerifier(Action verifier)
+        {
+            _windowStateVerifier = verifier;
         }
 
         public void SetRadioSongPoolProvider(Func<RadioMusicSource, UniPlaySongSettings, List<string>> provider)

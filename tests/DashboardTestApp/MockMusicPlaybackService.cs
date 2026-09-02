@@ -76,6 +76,7 @@ namespace DashboardTestApp
         public void SetFilterActiveProvider(Func<bool> provider) { }
 
         public void SetUserWarningHandler(System.Action<string, string> handler) { }
+        public void SetWindowStateVerifier(System.Action verifier) { }
         public void SetRadioSongPoolProvider(Func<global::UniPlaySong.RadioMusicSource, global::UniPlaySong.UniPlaySongSettings, List<string>> provider) { }
         public bool StartRadioPlayback(global::UniPlaySong.UniPlaySongSettings settings) { return true; }
         public void StopRadioMode() { }

@@ -1,11 +1,17 @@
-AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+﻿AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
   - Version: 1.8.5
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-08-26
+    ReleaseDate: 2026-09-02
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.5/UniPlaySong-1_8_5.pext'
     Changelog:
-      - '[Placeholder] Entry for the 1.8.5 release - items accumulate here as work lands.'
+      - '[Notice, Revision] To all theme developers: Playnite''s Fullscreen volume should NO longer be set to 0 if a user has UPS installed. UPS has a Global Override setting enabled by default that handles suppressing Playnite''s Fullscreen vanilla music, so everyone can use background volume settings to its full potential.'
+      - '[Revision] Playnite notifications for reducing Playnite''s Background Volume to 0 are simplified.'
+      - '[Critical Fix] Corrected an existing pre-1.8.4 bug where the plugin''s own volume settings stopped syncing up with Playnite''s Fullscreen Background Volume settings. UPS should now sync up anytime you change volume through UPS settings or in Playnite Fullscreen mode.'
+      - '[New Feature, Theme Update] Playnite''s Fullscreen Background Volume now controls Spotify''s volume level through UPS whenever Spotify Live Effects are on, in Radio Mode or out of it. Muting Spotify from a theme''s music player worked already and still does, so all users of themes like Aniki ReMake can use ReMake''s music player buttons after updating to UPS 1.8.5. Before, Spotify played at full volume level in Fullscreen no matter what volume you set on Playnite.'
+      - '[Critical Fix] Pause on Minimize and Pause When In System Tray now respect Playnite starting minimised to the system tray at Windows boot.'
+      - '[Critical Fix] Music could stay silent after restoring Playnite from the tray, with even the play button doing nothing, until you clicked around or opened the settings.'
+      - '[Fix] Music could stay paused after returning to Playnite, because UniPlaySong could fail to identify its own window at startup.'
   - Version: 1.8.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-25

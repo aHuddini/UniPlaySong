@@ -20,22 +20,23 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.4
+## What's New - v1.8.5
+
+### Notice for theme developers and users
+Playnite's Fullscreen Background Volume should **no longer be set to 0** if you have UniPlaySong installed — UniPlaySong is synced to that slider. Suppressing Playnite's vanilla Fullscreen music is handled by a Global Override that is on by default, so the background volume slider is free to be used properly.
 
 ### Fixed
-- No music on the first game you picked after starting Playnite — and sometimes the second one too.
-- If Playnite's own Background Volume (Settings → Fullscreen) is at 0, it silences UniPlaySong. UniPlaySong now tells you instead of leaving you guessing.
-- Games fell silent if you picked a default music source but never chose what it plays — like selecting "a folder of your own" without browsing to a folder. UniPlaySong now plays the bundled preset and tells you what's missing.
-- Radio Mode with nothing to play went silent instead of falling back to your default music.
-- Setting Music Volume to 0 and back up again left you silent until you switched games.
-- Desktop mode now warns you if Playnite's Background Volume is at 0, before it silences you in Fullscreen.
-- A few settings changes needed a restart to take effect.
+- UniPlaySong's own volume stopped syncing with Playnite's Fullscreen Background Volume — a bug that predates 1.8.4. Volume now stays in sync whether you change it in UniPlaySong's settings or in Playnite Fullscreen.
+- Pause on Minimize and Pause When In System Tray now respect Playnite starting minimised to the system tray at Windows boot.
+- Music could stay silent after restoring Playnite from the tray, with even the play button doing nothing.
+- Music could stay paused after returning to Playnite.
 
 ### Added
-- **For extension developers**: other plugins can now ask UniPlaySong which achievement sound it would play, and where that file came from, without UniPlaySong playing it. Added for PlayniteAchievements.
+- **Playnite's Fullscreen Background Volume now controls Spotify through UniPlaySong** — whenever Spotify Live Effects are on, in Radio Mode or out of it. Muting Spotify from a theme's music player worked already and still does, so themes like Aniki ReMake get their music player buttons working on Spotify after updating. Before, Spotify played at full volume in Fullscreen no matter what you set.
+- A notice when Playnite's Background Volume or UniPlaySong's Music Volume is at 0 — simplified, and it clears itself once you fix it.
 
 ### Previous Version
-- **v1.8.3**: Music keeps its place when your library hands back and forth between a game's own music and your default music.
+- **v1.8.4**: Fixed several paths that ended in silence — the first game after startup, an unconfigured default music source, Radio Mode with an empty pool, and Music Volume coming back up from 0.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

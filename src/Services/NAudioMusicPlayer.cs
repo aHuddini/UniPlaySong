@@ -978,11 +978,24 @@ namespace UniPlaySong.Services
 
         // The user's music volume 0..1, or 0 while a theme overlay / video is active (the gate the
         // shared fader gives game music for free). The external gate wrapper polls this each buffer.
+        // Playnite's fullscreen Background Volume (times the user's boost), handed down by
+        // MusicPlaybackService.SetVolumeMultiplier.
+        //
+        // The external input is added to the OUTPUT mixer, deliberately past the master fader that
+        // carries this player's Volume - that is what keeps theme overlays from silencing Spotify.
+        // The cost is that the fullscreen multiplier rides on Volume and therefore never reached it:
+        // in Desktop the multiplier is 1.0 so UniPlaySong's own Music Volume governed Spotify
+        // correctly, while in Fullscreen the Background Volume slider moved nothing and Spotify
+        // played at full level. Reported as exactly that difference between the two modes.
+        public double ExternalVolumeMultiplier { get; set; } = 1.0;
+
         private float TargetExternalVolume()
         {
             var s = _settingsService.Current;
             if (s?.ThemeOverlayActive == true || s?.VideoIsPlaying == true) return 0f;
-            return (float)((s?.MusicVolume ?? Constants.DefaultMusicVolume) / Constants.VolumeDivisor);
+
+            double multiplier = Math.Max(0.0, Math.Min(1.0, ExternalVolumeMultiplier));
+            return (float)((s?.MusicVolume ?? Constants.DefaultMusicVolume) / Constants.VolumeDivisor * multiplier);
         }
 
         // External fades use the same user-configured durations as game music.

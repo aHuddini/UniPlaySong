@@ -38,16 +38,16 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: the first game you picked after starting Playnite could play no music at all, and sometimes the second one too.
+                        Fixed: UPS's volume stopped syncing with Playnite's Fullscreen Background Volume, leaving it silent for the rest of the session.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: picking a default music source without choosing what it plays (a folder, a file, a selection) meant silence; UPS now plays the bundled preset and says what is missing.
+                        Added: with Spotify Live Effects on, Playnite's Fullscreen Background Volume now controls Spotify's level, so a theme's music player buttons work on it.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: UPS now warns you when Playnite's own Background Volume is at 0, which silences UPS. See Troubleshooting below.
+                        Fixed: Pause on Minimize and Pause When In System Tray now respect Playnite starting minimised to the system tray at Windows boot.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: other extensions can ask UPS which achievement sound it would play, without playing it.
+                        Added: a notice when Playnite's Background Volume or UPS's Music Volume is at 0.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:
@@ -123,9 +123,9 @@
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
-                               Text="Fullscreen starts or stays muted, whatever the volume is set to"/>
+                               Text="Songs look like they are playing, but you hear nothing"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
-                               Text="Check Playnite Settings &#8594; Fullscreen &#8594; Background Volume. UPS scales its own volume by that slider, so at 0.00 nothing can be heard however loud UPS is set. Raising it will not bring Playnite's own music back &#8212; UPS stops that separately."/>
+                               Text="UPS or Playnite's background volumes may be set to 0. UPS is synced to Playnite's slider, so either one at 0 is silence, even though tracks load and play. Playnite's: Fullscreen &#8594; Menu &#8594; Settings &#8594; Audio &#8594; Background Volume. UPS's: Live Effects &#8594; Volume. Do not leave Playnite's at 0 to keep its vanilla music quiet &#8212; &quot;Suppress Playnite Vanilla Theme Music&quot; (Playback &#8594; Global Override) already does that, and is on by default."/>
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"

@@ -59,6 +59,8 @@ namespace UniPlaySong.Services
         // Sets a provider that returns true when a Playnite filter preset is currently active (for Filter Mode)
         void SetFilterActiveProvider(System.Func<bool> provider);
         void SetUserWarningHandler(System.Action<string, string> handler);
+        // Re-reads the real window state; called before window-state pause sources refuse playback
+        void SetWindowStateVerifier(System.Action verifier);
 
         // Sets a provider for Radio Mode pool sources (FullLibrary, CustomFolder, CustomRotation, CompletionStatusPool)
         void SetRadioSongPoolProvider(System.Func<RadioMusicSource, UniPlaySongSettings, System.Collections.Generic.List<string>> provider);
