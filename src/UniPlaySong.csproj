@@ -19,6 +19,15 @@
         <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
 
+    <!-- UpsSound is its own executable (src/UpsSound), deliberately standalone: it is the
+         out-of-process host for achievement sounds and must not share assemblies with the plugin.
+         The SDK's default glob would otherwise pull its sources and generated AssemblyInfo into
+         this project. -->
+    <ItemGroup>
+        <Compile Remove="UpsSound/**/*.cs" />
+        <None Remove="UpsSound/**" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="NVorbis" Version="0.10.4" />
         <PackageReference Include="PlayniteSDK" Version="6.16.0.0" PrivateAssets="none" />

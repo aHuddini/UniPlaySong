@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The out-of-process host for UniPlaySong's achievement sounds.
+
+        Deliberately standalone: no reference to UniPlaySong.dll, no shared assemblies, its own
+        copy of NAudio. Independence is the whole point — this exists so the sound is emitted from
+        a process tree that is not Playnite's, and a build coupling would only invite the two to
+        drift into needing each other.
+
+        WinExe rather than Exe: a console subsystem binary flashes a window on launch even with
+        CreateNoWindow, and this is spawned on every Playnite start when the feature is on.
+        stdin/stdout still work when redirected by the parent, which is the only way it is ever
+        run.
+    -->
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net4.6.2</TargetFramework>
+        <AssemblyName>UpsSound</AssemblyName>
+        <RootNamespace>UpsSound</RootNamespace>
+        <LangVersion>latest</LangVersion>
+        <UseWindowsForms>false</UseWindowsForms>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <!-- Ships beside UniPlaySong.dll in the .pext, so everything it needs must land next to it. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NAudio" Version="1.10.0" />
+    </ItemGroup>
+
+</Project>

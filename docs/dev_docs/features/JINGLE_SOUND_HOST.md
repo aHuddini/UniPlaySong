@@ -1,6 +1,6 @@
 # Out-of-Process Jingle Sound Host
 
-**Status:** stage 1 built (seam + null host); stages 2-3 not started
+**Status:** built (stages 1-3). No settings-page UI yet; the toggle exists in settings.
 **Target:** 1.8.6 or later
 **Scope:** achievement sounds only — see *Not in scope*
 **Requested by:** the PlayniteAchievements developer (justin-delano)
@@ -234,11 +234,12 @@ sounds, and nothing else.
 
 1. **Seam + fallback**, with a stub host that always returns false. Proves the branch is
    inert and that existing behaviour is untouched.
-2. **Helper exe + IPC**, behind the setting. Decisions taken: bundle NAudio into the
-   helper rather than share the packaged copy (independence is the point), and accept
-   SmartScreen risk unsigned unless a free certificate turns up — the never-silent
-   fallback is what makes that acceptable.
-3. **PID API + packaging.**
+2. **Helper exe + IPC** — DONE. `src/UpsSound` (WinExe, own NAudio),
+   `ProcessJingleSoundHost` with job-object lifetime, one restart then permanent
+   in-process fallback, and a one-time notice on failure. Verified end to end: the
+   protocol answers `ready`/`ok`/`err`/`done`, and a hard-killed parent leaves no orphan.
+3. **PID API + packaging** — DONE. `GetSoundHostInfo` / `EnsureSoundHostRunning` /
+   `RestartSoundHost`, and `package_extension.ps1` ships `UpsSound.exe` beside the plugin.
 
 Stage 1 is independently safe to ship; stages 2–3 can be dropped without unwinding
 anything.

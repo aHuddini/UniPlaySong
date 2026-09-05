@@ -1,4 +1,4 @@
-# UniPlaySong Extension Packaging Script
+﻿# UniPlaySong Extension Packaging Script
 # Creates a .pext package for Playnite installation
 # 
 # Usage: .\package_extension.ps1 [-Configuration Release|Debug]
@@ -167,6 +167,32 @@ if (Test-Path $imagesDir) {
 # Copy main DLL
 Copy-Item $dllPath -Destination $packageDir -Force
 Write-Host "  Copied: UniPlaySong.dll" -ForegroundColor Gray
+
+# Copy the out-of-process achievement sound host (src/UpsSound).
+# Its own executable with its own NAudio, deliberately standalone: it exists so achievement
+# sounds are emitted from a process tree that is not Playnite's, for recording tools that
+# separate audio by process. See docs/dev_docs/features/JINGLE_SOUND_HOST.md.
+# Not fatal if absent - UniPlaySong falls back to in-process playback - but a silent omission
+# would ship a feature that can never work, so say so loudly.
+Write-Host "Copying sound host..." -ForegroundColor Yellow
+$upsSoundDir = Join-Path $projectRoot "src\UpsSound\bin\Release"
+$upsSoundExe = Join-Path $upsSoundDir "UpsSound.exe"
+if (Test-Path $upsSoundExe) {
+    Copy-Item $upsSoundExe -Destination $packageDir -Force
+    Write-Host "  Copied: UpsSound.exe" -ForegroundColor Gray
+
+    # Its bundled NAudio, alongside. Same version as the plugin's, so whichever lands is
+    # correct for both.
+    $depPath = Join-Path $upsSoundDir "NAudio.dll"
+    if ((Test-Path $depPath) -and -not (Test-Path (Join-Path $packageDir "NAudio.dll"))) {
+        Copy-Item $depPath -Destination $packageDir -Force
+        Write-Host "  Copied: NAudio.dll (sound host dependency)" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "  WARNING: UpsSound.exe not found at $upsSoundExe" -ForegroundColor Yellow
+    Write-Host "    Build it with: dotnet build -c Release src\UpsSound\UpsSound.csproj" -ForegroundColor Yellow
+    Write-Host "    The separate sound player will be unavailable; achievement sounds still play normally." -ForegroundColor Yellow
+}
 
 # Copy SDL2 native DLLs (required for SDL2MusicPlayer)
 Write-Host "Copying SDL2 native DLLs..." -ForegroundColor Yellow

@@ -790,7 +790,9 @@ namespace UniPlaySong
             if ((attached && _startupWindowVerifyTicks >= StartupVerifyResyncTicks)
                 || _startupWindowVerifyTicks >= StartupVerifyMaxTicks)
             {
-                _startupWindowVerifyTimer?.Stop();
+                try { _soundHost?.Stop(); } catch { }
+            _soundHost = null;
+            _startupWindowVerifyTimer?.Stop();
             }
         }
 
@@ -3378,11 +3380,10 @@ namespace UniPlaySong
                 // the persistent player across fires and only rebuilds when the backend truly changes.
                 () => _isUsingLiveEffectsPlayer && (_settings?.ApplyLiveEffectsToJingles ?? true));
 
-            // Stage 1 of the out-of-process achievement sound host: the seam, with nothing behind
-            // it. The null host always declines, so every achievement sound takes the in-process
-            // path it takes today. Swapping in the real host is the only change stage 2 needs here.
-            // See docs/dev_docs/features/JINGLE_SOUND_HOST.md.
-            _jingleService.SetSoundHost(Services.Jingles.NullJingleSoundHost.Instance);
+            // Out-of-process achievement sound host. Only constructed when the user asked for it;
+            // otherwise the null host declines everything and sounds play in process exactly as
+            // they always have. See docs/dev_docs/features/JINGLE_SOUND_HOST.md.
+            _jingleService.SetSoundHost(CreateSoundHost());
 
             if (_settings != null)
             {
@@ -4058,6 +4059,40 @@ namespace UniPlaySong
         // A notification rather than a log line alone, because the conditions these describe are
         // undiagnosable from the interface - the settings all read normally and audio simply does
         // not arrive - and someone in that position does not know there is a log.
+        // Builds the achievement sound host. Returns the null host — which declines everything, so
+        // sounds play in process — whenever the feature is off, which is the default and the case
+        // for essentially every user.
+        //
+        // Resident by design: the host is started here, at plugin startup, rather than on the first
+        // sound. PlayniteAchievements attaches its process-loopback capture to the host's pid, and a
+        // pid that only appears when the first achievement fires is a race it would have to poll
+        // around — losing exactly the unlock it was recording.
+        private Services.Jingles.IJingleSoundHost CreateSoundHost()
+        {
+            try
+            {
+                if (_settings?.EnableJingleSoundHost != true)
+                    return Services.Jingles.NullJingleSoundHost.Instance;
+
+                var pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var exePath = Path.Combine(pluginDir ?? string.Empty, "UpsSound.exe");
+
+                var host = new Services.Jingles.ProcessJingleSoundHost(
+                    exePath, _fileLogger, ShowOneTimeWarning, WithdrawWarning);
+                host.Start();
+                _soundHost = host;
+                return host;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"Could not create the sound host: {ex.Message}");
+                return Services.Jingles.NullJingleSoundHost.Instance;
+            }
+        }
+
+        // Kept so the API can report on it and the teardown can stop it. Null when the feature is off.
+        private Services.Jingles.ProcessJingleSoundHost _soundHost;
+
         private void ShowOneTimeWarning(string id, string message)
         {
             if (string.IsNullOrEmpty(id) || !_shownWarnings.Add(id)) return;
@@ -6010,6 +6045,93 @@ namespace UniPlaySong
         // away; adding fields does not bump it. A caller should check it and refuse to guess if it
         // sees a number it does not recognise.
         public const int AchievementSoundApiVersion = 1;
+
+        #region Sound host API (PlayniteAchievements)
+
+        // Reports the out-of-process achievement sound host, for recording tools that separate audio
+        // by process tree. See docs/dev_docs/features/JINGLE_SOUND_HOST.md.
+        //
+        // JSON rather than an int, deliberately: a bare 0 cannot distinguish "the user never turned
+        // this on" from "it was meant to run and failed", and a caller has no way to tell a real
+        // problem from a configuration choice. Never throws across the reflection boundary.
+        //
+        // A LIVE read, not a startup constant. The pid is normally stable for the session because
+        // the host is resident, but a host that dies is restarted once and comes back with a new
+        // one — so callers should read this per recording rather than caching it.
+        //
+        //   var ups = PlayniteApi.Addons.Plugins.FirstOrDefault(p => p.Id == UpsId);
+        //   var json = ups?.GetType().GetMethod("GetSoundHostInfo")?.Invoke(ups, null) as string;
+        public string GetSoundHostInfo() => DescribeSoundHost();
+
+        // Starts the host if the setting is on and it is not already running. Safe to call at any
+        // time; reports the same shape as GetSoundHostInfo.
+        public string EnsureSoundHostRunning()
+        {
+            try
+            {
+                if (_settings?.EnableJingleSoundHost == true && _soundHost == null)
+                    _jingleService?.SetSoundHost(CreateSoundHost());
+                else
+                    _soundHost?.Start();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"EnsureSoundHostRunning failed: {ex.Message}");
+            }
+
+            return DescribeSoundHost();
+        }
+
+        // Recovers a wedged host without restarting Playnite.
+        public string RestartSoundHost()
+        {
+            try
+            {
+                _soundHost?.Stop();
+                _soundHost = null;
+                _jingleService?.SetSoundHost(CreateSoundHost());
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"RestartSoundHost failed: {ex.Message}");
+            }
+
+            return DescribeSoundHost();
+        }
+
+        private string DescribeSoundHost()
+        {
+            try
+            {
+                bool enabled = _settings?.EnableJingleSoundHost == true;
+                var host = _soundHost;
+                int pid = host?.ProcessId ?? 0;
+
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = true,
+                    enabled,
+                    running = pid != 0,
+                    processId = pid,
+                    executable = "UpsSound.exe",
+                    reason = pid != 0 ? null : (enabled ? (host?.FailureReason ?? "stopped") : "disabled")
+                });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new
+                {
+                    apiVersion = AchievementSoundApiVersion,
+                    ok = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        #endregion
+
+
 
         // Which audio file UPS would play for an achievement rarity, WITHOUT playing it.
         //

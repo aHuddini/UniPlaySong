@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -8,11 +8,11 @@ using UniPlaySong.Services.Jingles;
 
 namespace UniPlaySong.Tests.Services
 {
-    // Stage 1 of the out-of-process achievement sound host: the seam only, with no host behind it.
+    // The out-of-process achievement sound host: the seam, and the host's failure behaviour.
     //
-    // The point of these tests is that the seam is INERT. Until the host exists, and whenever the
-    // setting is off or the host declines, an achievement sound must take exactly the path it takes
-    // today. A capture feature that can cost an ordinary user their achievement sound would be a
+    // The point of these tests is that the seam is INERT. Whenever the setting is off or the host
+    // declines - which is every install that has not deliberately turned it on - an achievement
+    // sound must take exactly the path it takes today. A capture feature that can cost an ordinary user their achievement sound would be a
     // worse bug than the one it solves — that is the rule the whole design hangs on.
     [TestFixture]
     public class JingleSoundHostSeamTests
@@ -80,6 +80,43 @@ namespace UniPlaySong.Tests.Services
             var setter = typeof(JingleService).GetMethod("SetSoundHost");
             Assert.NotNull(setter);
             Assert.AreEqual(typeof(IJingleSoundHost), setter.GetParameters().Single().ParameterType);
+        }
+
+        [Test]
+        public void TheProcessHostReportsWhyItIsNotRunning()
+        {
+            // A bare pid cannot separate "the user never enabled this" from "it was meant to run and
+            // failed", so the host carries a reason the API can pass on. Without it a consumer sees 0
+            // in both cases and cannot tell a real fault from a configuration choice.
+            var reason = typeof(ProcessJingleSoundHost).GetProperty("FailureReason");
+            Assert.NotNull(reason, "the API has to be able to say WHY there is no pid");
+            Assert.AreEqual(typeof(string), reason.PropertyType);
+
+            Assert.NotNull(typeof(ProcessJingleSoundHost).GetProperty("IsRunning"));
+        }
+
+        [Test]
+        public void AMissingExecutableDeclinesInsteadOfThrowing()
+        {
+            // The likeliest real failure: antivirus quarantines the exe, or a partial install lands
+            // without it. That must read as a plain decline so the sound plays in process - never as
+            // an exception on the achievement path.
+            var host = new ProcessJingleSoundHost(@"C:\definitely\not\here\UpsSound.exe");
+
+            Assert.DoesNotThrow(() => host.Start());
+            Assert.IsFalse(host.TryPlay(@"C:\any\sound.mp3", 1.0), "no executable means decline");
+            Assert.AreEqual(0, host.ProcessId);
+            Assert.AreEqual("quarantined", host.FailureReason,
+                "a missing exe is reported as quarantined - the overwhelmingly common cause");
+            Assert.DoesNotThrow(() => host.Stop());
+        }
+
+        [Test]
+        public void AnEmptyPathDeclinesWithoutTouchingTheProcess()
+        {
+            var host = new ProcessJingleSoundHost(@"C:\definitely\not\here\UpsSound.exe");
+            Assert.IsFalse(host.TryPlay(null, 1.0));
+            Assert.IsFalse(host.TryPlay(string.Empty, 1.0));
         }
 
         [Test]
