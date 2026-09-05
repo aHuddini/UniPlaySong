@@ -75,6 +75,19 @@ namespace UniPlaySong.Services
             _jingleWantsLiveEffects = jingleWantsLiveEffects;
         }
 
+        // Jingles ride Music Volume, scaled by JingleVolume so notification sounds can be brought
+        // down without touching the music. 100 (the default) is exactly the old behaviour.
+        //
+        // Deliberately NOT scaled by Playnite's fullscreen Background Volume. Music is; jingles are
+        // not, so they still cut through in Fullscreen - and this is the lever for taming them when
+        // they cut through too well.
+        private static double JingleLevel(UniPlaySongSettings settings)
+        {
+            double music = (settings?.MusicVolume ?? Constants.DefaultMusicVolume) / Constants.VolumeDivisor;
+            double jingle = (settings?.JingleVolume ?? Constants.DefaultJingleVolume) / Constants.VolumeDivisor;
+            return Math.Max(0.0, Math.Min(1.0, music * jingle));
+        }
+
         // Plays the configured jingle for a given event. No-op if the feature
         // toggle is off, the sound type resolves to nothing, or the file is missing.
         public void PlayForEvent(JingleEvent evt, UniPlaySongSettings settings)
@@ -419,7 +432,7 @@ namespace UniPlaySong.Services
                 }
 
                 _jinglePlayer.Load(filePath);
-                _jinglePlayer.Volume = settings.MusicVolume / 100.0;
+                _jinglePlayer.Volume = JingleLevel(settings);
                 _jinglePlayer.Play();
             }
             catch (Exception ex)
@@ -465,7 +478,7 @@ namespace UniPlaySong.Services
                 _externalPlayer = _createLightweightPlayer();
                 _externalPlayer.MediaEnded += OnExternalEnded;
                 _externalPlayer.Load(filePath);
-                _externalPlayer.Volume = settings.MusicVolume / 100.0;
+                _externalPlayer.Volume = JingleLevel(settings);
                 _externalPlayer.Play();
             }
             catch (Exception ex)

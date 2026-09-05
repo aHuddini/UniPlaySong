@@ -40,6 +40,17 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <TextBlock Text="Jingle volume" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0" Maximum="100" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.JingleVolume}"
+                        TickFrequency="5" IsSnapToTickEnabled="True"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.JingleVolume, StringFormat='{}{0}%'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,14"
+                       Text="Default 100%. How loud jingles and notification sounds are relative to Music Volume - achievement unlocks, completion and abandoned jingles, and the controller-detected sound. Lower it if they cut through too sharply over a game; the music is unaffected."/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                 <TextBlock Text="Fullscreen boost" Style="{StaticResource UpsLabel}" Width="140"/>
                 <Slider Minimum="0" Maximum="20" Width="240" VerticalAlignment="Center"
                         Value="{Binding Settings.FullscreenVolumeBoostPercent}"

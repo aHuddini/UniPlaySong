@@ -439,6 +439,7 @@ namespace UniPlaySong
         // playnite://uniplaysong/playniteachievements/{tier} URI (e.g. by the Playnite Achievements
         // plugin). This is the MASTER / fallback sound: the five rarity tiers below each have their
         // own optional sound and fall back to this one when not enabled. Off by default.
+        private int jingleVolume = Constants.DefaultJingleVolume;
         private bool enableAchievementSound = false;
         private CelebrationSoundType achievementSoundType = CelebrationSoundType.BundledJingle;
         private string selectedAchievementJingle = "Achievements/Trophy_Notif.mp3";
@@ -1207,6 +1208,21 @@ namespace UniPlaySong
         {
             get => enableAchievementSound;
             set { enableAchievementSound = value; OnPropertyChanged(); }
+        }
+
+        // Loudness of jingles and notification sounds relative to Music Volume: 100 leaves them
+        // exactly as they were, lower brings them down without touching the music.
+        //
+        // Deliberately one setting for every non-music sound rather than one per event. Nobody has
+        // asked for a completion jingle at a different level from an achievement; what they ask for
+        // is 'the notification sounds are too loud'.
+        //
+        // Not scaled by Playnite's fullscreen Background Volume - unlike music, jingles ignore that
+        // slider so they still cut through, and this is the lever for taming them.
+        public int JingleVolume
+        {
+            get => jingleVolume;
+            set { jingleVolume = Math.Max(Constants.MinMusicVolume, Math.Min(Constants.MaxMusicVolume, value)); OnPropertyChanged(); }
         }
 
         public CelebrationSoundType AchievementSoundType

@@ -161,6 +161,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.FadeOutBeforeSongEnd),
                     nameof(UniPlaySongSettings.FadeOutBeforeSongEndDuration),
                     nameof(UniPlaySongSettings.FadeOutDuration),
+                    nameof(UniPlaySongSettings.JingleVolume),
                     nameof(UniPlaySongSettings.FullscreenVolumeBoostPercent),
                     nameof(UniPlaySongSettings.HighPassCutoff),
                     nameof(UniPlaySongSettings.HighPassEnabled),
