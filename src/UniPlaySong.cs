@@ -2058,6 +2058,11 @@ namespace UniPlaySong
             if (_settings != null)
                 Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
 
+            // The sound host follows its toggle immediately. Without this the checkbox would appear
+            // to do nothing until a Playnite restart, and the recording tool it exists for reads the
+            // pid live — it would keep seeing 0 after the user turned the feature on.
+            ApplySoundHostSetting(e.NewSettings?.EnableJingleSoundHost == true);
+
             // Coordinator subscribes directly to SettingsService - no manual update needed
 
             // Resolve the game to re-react against. Prefer Playnite's current selection (covers the typical "user is
@@ -4087,6 +4092,30 @@ namespace UniPlaySong
             {
                 _fileLogger?.Warn($"Could not create the sound host: {ex.Message}");
                 return Services.Jingles.NullJingleSoundHost.Instance;
+            }
+        }
+
+        // Starts or stops the host to match the setting. Idempotent: called on every settings save,
+        // and does nothing when the current state already matches.
+        private void ApplySoundHostSetting(bool enabled)
+        {
+            try
+            {
+                if (enabled && _soundHost == null)
+                {
+                    _jingleService?.SetSoundHost(CreateSoundHost());
+                }
+                else if (!enabled && _soundHost != null)
+                {
+                    _soundHost.Stop();
+                    _soundHost = null;
+                    _jingleService?.SetSoundHost(Services.Jingles.NullJingleSoundHost.Instance);
+                    _fileLogger?.Lifecycle("Sound host stopped - the setting was turned off");
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Warn($"Could not apply the sound host setting: {ex.Message}");
             }
         }
 

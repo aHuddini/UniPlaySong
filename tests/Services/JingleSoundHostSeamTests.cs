@@ -120,6 +120,18 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
+        public void TheToggleTakesEffectWithoutARestart()
+        {
+            // The consumer reads the pid live, so a toggle that only applied on the next Playnite
+            // start would leave it seeing 0 after the user turned the feature on - and the checkbox
+            // would look broken to everyone else.
+            var apply = typeof(UniPlaySong).GetMethod("ApplySoundHostSetting",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(apply, "the setting has to be applied on save, not only at startup");
+            Assert.AreEqual(typeof(bool), apply.GetParameters().Single().ParameterType);
+        }
+
+        [Test]
         public void TheContractForbidsThrowing()
         {
             // Documented on the interface, and enforced at the call site by a try/catch that falls

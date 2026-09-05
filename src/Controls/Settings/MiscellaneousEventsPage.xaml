@@ -39,6 +39,18 @@
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="When Live Effects are enabled, the Completed and Abandoned jingles play through the NAudio effects chain (reverb, filters, etc.). Disable to play them without effects. Achievement and ControlUp sounds are unaffected either way."/>
 
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Recording" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Play achievement sounds from a separate process"
+                      IsChecked="{Binding Settings.EnableJingleSoundHost}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="For screen recording only. Achievement sounds normally come from Playnite itself, so a recorder that separates audio by process cannot tell them apart from a game Playnite launched — an emulator especially. With this on, they play from a small helper program instead, which a recorder can capture or exclude on its own."/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Leave this off unless a tool asked for it. It changes nothing you can hear: the sounds play normally either way, and if the helper cannot start, UniPlaySong plays them itself and tells you."/>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
