@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 - **Audio-Reactive Visualizer** - Real-time spectrum visualizer with 22 color themes including Dynamic game-art colors, tuning presets, and per-bar gradient rendering (Desktop mode)
 - **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
 - **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations
-- **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes
+- **Theme Integration** - UPS_MusicControl for theme developers and compatibility with modern themes ([integration guide](docs/dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md))
 - **Migration Support** - Seamless import/export from PlayniteSound with cleanup options
 - **Desktop Controls** - Optional top panel media controls and Now Playing information
 - **Tagging & Filters** - Tag games with music/no music for better music management
@@ -150,7 +150,7 @@ dotnet clean -c Release && dotnet build -c Release
 powershell -ExecutionPolicy Bypass -File .\scripts\package_extension.ps1 -Configuration Release
 ```
 
-See `docs/dev_docs/` for detailed build instructions.
+See [`docs/dev_docs/BUILD_INSTRUCTIONS.md`](docs/dev_docs/BUILD_INSTRUCTIONS.md) for detailed build instructions, and [`docs/dev_docs/README.md`](docs/dev_docs/README.md) for the developer docs index.
 
 ---
 
