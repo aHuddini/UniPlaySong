@@ -8,7 +8,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 
-- **`JingleVolume` (Live Effects → Volume, default 100).** Scales every non-music sound — the completion/abandoned jingle and the external notification path (achievements, ControlUp) — on top of `MusicVolume`, via a shared `JingleService.JingleLevel` so the two playback paths cannot drift. Reported as achievement sounds being inaudible over a game for one user and too loud for another with identical settings: the only lever was `MusicVolume`, which moves the music with it, and nothing normalizes the sound files themselves.
+- **`JingleVolume` (Gamification → Miscellaneous, default 100).** Scales every non-music sound — the completion/abandoned jingle and the external notification path (achievements, ControlUp) — on top of `MusicVolume`, via a shared `JingleService.JingleLevel` so the two playback paths cannot drift. Reported as achievement sounds being inaudible over a game for one user and too loud for another with identical settings: the only lever was `MusicVolume`, which moves the music with it, and nothing normalizes the sound files themselves.
   - Deliberately **not** scaled by Playnite's fullscreen Background Volume. Music is; jingles are not, so they still cut through in Fullscreen — and applying it here would have made every existing Fullscreen user's jingles quieter on upgrade, on top of whatever they set. One setting for all non-music sound rather than one per event: nobody asks for a completion jingle at a different level from an achievement, they ask for "the notification sounds are too loud".
 
 ### Fixed

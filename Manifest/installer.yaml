@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-09-05
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.6/UniPlaySong-1_8_6.pext'
     Changelog:
-      - '[New Setting] Jingle volume (Live Effects -> Volume). Sets how loud achievement, completion, abandoned and controller-detected sounds are relative to your Music Volume. Default 100% - unchanged from before - so lower it if notification sounds cut through too sharply over a game. The music is unaffected.'
+      - '[New Setting] Jingle volume (Gamification -> Miscellaneous). Sets how loud achievement, completion, abandoned and controller-detected sounds are relative to your Music Volume. Default 100% - unchanged from before - so lower it if notification sounds cut through too sharply over a game. The music is unaffected.'
       - '[Critical Fix] Playnite could show an unrecoverable error and close - reported on every achievement unlock, and possible during any library import or install-size scan. UniPlaySong checked the Playnite window from a background thread while re-evaluating its pause state, which Windows forbids; the failure surfaced inside Playnite''s own database update, so Playnite reported it rather than UniPlaySong. It now reads the window in a way that is safe from any thread.'
   - Version: 1.8.5
     RequiredApiVersion: 6.16.0

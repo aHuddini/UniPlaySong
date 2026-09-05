@@ -34,6 +34,17 @@
                 <TextBlock ups:TrackedCaps.Text="Jingles" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <TextBlock Text="Jingle volume" Style="{StaticResource UpsLabel}" Width="140"/>
+                <Slider Minimum="0" Maximum="100" Width="240" VerticalAlignment="Center"
+                        Value="{Binding Settings.JingleVolume}"
+                        TickFrequency="5" IsSnapToTickEnabled="True"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.JingleVolume, StringFormat='{}{0}%'}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Default 100%. How loud every jingle and notification sound is relative to your Music Volume - achievement unlocks, the Completed and Abandoned jingles, and the controller-detected sound. Lower it if they cut through too sharply over a game; the music is unaffected."/>
+
             <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
                       IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"/>
             <TextBlock Style="{StaticResource UpsHint}"
