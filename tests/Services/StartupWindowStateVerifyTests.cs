@@ -230,6 +230,32 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
+        public void TheWindowStateReadingIsCallableFromAnyThread()
+        {
+            // Playnite raises ItemUpdated from library imports and install-size scans on a
+            // background task (GameDatabase.EndBufferUpdate -> OnItemUpdated), and anything writing
+            // game records arrives the same way — PlayniteAchievements storing unlock data, for one.
+            // Reading Window.WindowState/IsVisible/IsActive there throws from Dispatcher.VerifyAccess,
+            // and since Playnite raises it inside its own database pipeline the throw surfaced as
+            // Playnite's "unrecoverable error" dialog: a crash on every achievement unlock.
+            //
+            // A synchronous Dispatcher.Invoke would trade the crash for a deadlock — this runs inside
+            // a database write the UI thread can be waiting on. The off-thread reading therefore has
+            // to come from Win32, so those probes must be static and free of any WPF object.
+            foreach (var name in new[] { "IsIconic", "IsWindowVisible", "GetForegroundWindow" })
+            {
+                var probe = typeof(UniPlaySong).GetMethod(name,
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(probe, $"{name} must be static — the off-thread path cannot touch a Window");
+                Assert.AreEqual(1, probe.GetParameters().Length == 0 ? 1 : probe.GetParameters().Length,
+                    "Win32 probes take a handle or nothing, never a WPF object");
+                foreach (var p in probe.GetParameters())
+                    Assert.AreEqual(typeof(IntPtr), p.ParameterType,
+                        $"{name} must read from a handle, not a Window");
+            }
+        }
+
+        [Test]
         public void ComingToTheForegroundReleasesEveryWindowStateSource()
         {
             // The safety net for the reading above. A source added from a state WPF never agreed the

@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-09-05
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.6/UniPlaySong-1_8_6.pext'
     Changelog:
-      - '[Placeholder] Entry for the 1.8.6 release - items accumulate here as work lands.'
+      - '[Critical Fix] Playnite could show an unrecoverable error and close - reported on every achievement unlock, and possible during any library import or install-size scan. UniPlaySong checked the Playnite window from a background thread while re-evaluating its pause state, which Windows forbids; the failure surfaced inside Playnite''s own database update, so Playnite reported it rather than UniPlaySong. It now reads the window in a way that is safe from any thread.'
   - Version: 1.8.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-02

@@ -4,6 +4,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.6] - unreleased
+
+### Fixed
+
+- **Playnite crashed with "unhandled exception" — reported on every achievement unlock.** `ResyncWindowStatePauseSources` read `Window.WindowState` / `IsVisible` / `IsActive`, which `Dispatcher.VerifyAccess` permits only on the UI thread. `OnGameItemUpdated` is raised by `ItemCollection.OnItemUpdated` from `GameDatabase.EndBufferUpdate`, which runs on a background task during library imports and install-size scans — and any extension writing game records lands there too, which is why PlayniteAchievements triggered it every unlock. Because the throw happened inside Playnite's own database pipeline, Playnite reported it as unrecoverable rather than UniPlaySong catching it.
+  - Latent since the radio play-through work (`a48012e`) put `ResyncWindowStatePauseSources` on the `OnGameItemUpdated` path; 1.8.5 widened the exposure by calling the same method from `SetWindowStateVerifier` before playback decisions.
+  - A synchronous `Dispatcher.Invoke` would trade the crash for a deadlock — this runs inside a database write the UI thread can be waiting on. Off the UI thread the readings now come from Win32 (`IsIconic`, `IsWindowVisible`, `GetForegroundWindow`), which are callable from any thread and describe the same window; the UI-thread path is unchanged.
+
 ## [1.8.5] - 2026-09-02
 
 ### Fixed

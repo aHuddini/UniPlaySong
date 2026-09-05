@@ -806,14 +806,38 @@ namespace UniPlaySong
         // with has no event coming to take it back — it just sits there refusing every play,
         // transport buttons included, until something unrelated clears it. Reported as "it wouldn't
         // start until I clicked around and opened the settings".
+        //
+        // Callable from ANY thread. Playnite raises ItemUpdated from library imports and install-size
+        // scans on a background task (GameDatabase.EndBufferUpdate -> OnItemUpdated), and anything
+        // updating game records — PlayniteAchievements writing unlock data, for one — arrives the same
+        // way. Touching Window.WindowState/IsVisible/IsActive there throws
+        // InvalidOperationException from Dispatcher.VerifyAccess, and because Playnite raises this
+        // inside its own import pipeline the throw surfaced as Playnite's "unrecoverable error"
+        // dialog rather than anything UniPlaySong could catch. Reported as a crash on every
+        // achievement unlock.
+        //
+        // A synchronous Dispatcher.Invoke back to the UI thread would fix the access and introduce a
+        // deadlock instead: this runs inside Playnite's database write path, which the UI thread can
+        // be waiting on. So off-thread readings come from Win32 (IsIconic / IsWindowVisible /
+        // GetForegroundWindow), which are callable from any thread and describe the same window.
         private void ResyncWindowStatePauseSources(bool bidirectional = false)
         {
-            var window = Application.Current?.MainWindow;
-            if (window == null || _playbackService == null) return;
+            if (_playbackService == null) return;
 
-            Apply(Models.PauseSource.FocusLoss, !window.IsActive && _settings?.PauseOnFocusLoss == true);
-            Apply(Models.PauseSource.Minimized, WindowIsMinimized(window) && _settings?.PauseOnMinimize == true);
-            Apply(Models.PauseSource.SystemTray, WindowIsHidden(window) && _settings?.PauseWhenInSystemTray == true);
+            bool onUiThread = Application.Current?.Dispatcher?.CheckAccess() ?? false;
+            var window = onUiThread ? Application.Current?.MainWindow : null;
+            bool haveHandle = _mainWindowHandle != IntPtr.Zero;
+
+            // Nothing readable: no window on the UI thread, and no handle to fall back on.
+            if (window == null && !haveHandle) return;
+
+            bool inactive  = window != null ? !window.IsActive          : GetForegroundWindow() != _mainWindowHandle;
+            bool minimized = window != null ? WindowIsMinimized(window) : IsIconic(_mainWindowHandle);
+            bool hidden    = window != null ? WindowIsHidden(window)    : !IsWindowVisible(_mainWindowHandle);
+
+            Apply(Models.PauseSource.FocusLoss, inactive && _settings?.PauseOnFocusLoss == true);
+            Apply(Models.PauseSource.Minimized, minimized && _settings?.PauseOnMinimize == true);
+            Apply(Models.PauseSource.SystemTray, hidden && _settings?.PauseWhenInSystemTray == true);
 
             void Apply(Models.PauseSource source, bool conditionHolds)
             {
@@ -824,9 +848,10 @@ namespace UniPlaySong
                 else if (bidirectional && _playbackService.HasPauseSource(source))
                 {
                     _fileLogger?.Debug($"ResyncWindowStatePauseSources: releasing stale {source} — " +
-                                       $"wpf state={window.WindowState}, visible={window.IsVisible}, active={window.IsActive}; " +
-                                       $"win32 iconic={(_mainWindowHandle != IntPtr.Zero ? IsIconic(_mainWindowHandle).ToString() : "no handle")}, " +
-                                       $"shown={(_mainWindowHandle != IntPtr.Zero ? IsWindowVisible(_mainWindowHandle).ToString() : "no handle")}");
+                                       $"thread={(onUiThread ? "ui" : "background")}, " +
+                                       $"wpf state={(window != null ? window.WindowState.ToString() : "not read off-thread")}, " +
+                                       $"win32 iconic={(haveHandle ? IsIconic(_mainWindowHandle).ToString() : "no handle")}, " +
+                                       $"shown={(haveHandle ? IsWindowVisible(_mainWindowHandle).ToString() : "no handle")}");
                     _playbackService.RemovePauseSource(source);
                 }
             }
