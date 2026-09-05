@@ -169,19 +169,55 @@ extraction is used today — see the SDL2 DLL block). `UpsSound.exe` ships **bes
 
 ### API for PlayniteAchievements
 
-One addition beside the existing `ResolveAchievementSound` reflection surface:
+Read from his code rather than guessed. `AudioLoopbackRecorder` takes the game pid as
+`Func<int?>` and invokes it **per recording** (`_gameProcessId?.Invoke()`), while its chime
+capture currently hardcodes `Process.GetCurrentProcess().Id` with `includeProcessTree: true`.
+So the API has to be a **live read, not a startup constant**, and it has to work as the body
+of a `Func<int?>`.
 
 ```csharp
-public int GetSoundHostProcessId()   // helper PID, or 0 when not running
+// JSON, matching ResolveAchievementSound: no reference to UniPlaySong.dll needed, survives
+// fields being added, and never throws across the reflection boundary.
+public string GetSoundHostInfo()
 ```
 
-Stable for the session because the helper is resident, so it can be read once at startup
-rather than polled. Returns 0 when the setting is off or the helper failed to start — the
-consumer should treat 0 as "capture mode unavailable, fall back to the sidecar path".
+```jsonc
+{
+  "apiVersion": 1,
+  "ok": true,
+  "enabled": true,      // the user's setting
+  "running": true,      // host process alive right now
+  "processId": 24680,   // 0 when not running - treat as "capture unavailable"
+  "executable": "UpsSound.exe",
+  "reason": null        // when not running: "disabled" | "failed" | "quarantined" | "stopped"
+}
+```
 
-He points `ProcessLoopbackCapture` at it with `IncludeTargetProcessTree` and gets a clean
-chime stem in every case, emulators included. Nothing else on his side changes — it is the
-`Clean` path he already wrote.
+**Why JSON rather than a bare int:** it separates *off*, *failed* and *not started yet*,
+which a `0` cannot. Otherwise a 0 during startup is indistinguishable from a user who never
+enabled the feature, and he has no way to tell a real problem from a configuration choice.
+
+**Manipulation surface.** He needs more than a number, because the host's lifetime should be
+something he can act on rather than only observe:
+
+| Call | For |
+|---|---|
+| `GetSoundHostInfo()` | poll at each recording - the `Func<int?>` body |
+| `EnsureSoundHostRunning()` | start it on demand when a recording begins while it is down; returns the same JSON |
+| `RestartSoundHost()` | recover a wedged host without restarting Playnite |
+
+All three return the same JSON shape, so one parser handles every call, and all three are
+safe to call when the feature is off - they report `enabled: false` rather than starting
+something the user did not ask for.
+
+**PID stability.** Resident from startup means the pid is normally constant for the session,
+so a cached read works. It is not *guaranteed*: a host that dies is restarted once, which
+yields a new pid. That is why the API is a live read, and why his existing `Func<int?>` shape
+is already the right one - he re-invokes per capture and picks the change up for free.
+
+**Not exposed:** anything that points the host at a different process, adopts a foreign pid,
+or routes another plugin's audio through it. The host plays UniPlaySong's own achievement
+sounds, and nothing else.
 
 ---
 
