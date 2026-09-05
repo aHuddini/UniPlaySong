@@ -1,4 +1,4 @@
-# UniPlaySong - Technical Reference
+﻿# UniPlaySong - Technical Reference
 
 ## Overview
 
@@ -22,7 +22,7 @@ This document provides detailed technical references for key variables, logic, a
 14. [Debugging Tips](#debugging-tips)
 
 > Theme **developer** documentation (XAML you put in a theme) lives in
-> [THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md). This file documents UPS internals.
+> [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md). This file documents UPS internals.
 
 ---
 
@@ -764,7 +764,7 @@ private bool ShouldRestartForPreview()
 
 **Location**: `Players/MusicFader.cs`, `Audio/SmoothVolumeSampleProvider.cs`, `Services/MusicPlaybackService.cs`
 
-Full technical details: [NAudio Pipeline Documentation](NAUDIO_PIPELINE.md)
+Full technical details: [NAudio Pipeline Documentation](features/NAUDIO_PIPELINE.md)
 
 ### Volume Management
 
@@ -1526,7 +1526,7 @@ private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
 
 Theme-facing XAML for `UPS_MusicControl` — quick start, `DataTrigger`/`MultiDataTrigger` styles,
 Radio Mode gating, and the ANIKI REMAKE reference — lives in
-[THEME_INTEGRATION_GUIDE.md](THEME_INTEGRATION_GUIDE.md). That guide is the one kept current for
+[THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md). That guide is the one kept current for
 theme developers; this section covers only how UPS implements the control internally.
 
 ### Debugging Theme Integration
@@ -1581,7 +1581,7 @@ impractical from .NET Framework 4.6.2 P/Invoke — hence `native/SpotifyLoopback
 shipped in the extension folder rather than a driver.
 
 The OS floor and the dry-output mute invariant that follow from this live in
-[SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md#live-effects--visualizer-on-spotify-v165-experimental).
+[SPOTIFY_INTEGRATION.md](features/SPOTIFY_INTEGRATION.md#live-effects--visualizer-on-spotify-v165-experimental).
 
 ---
 

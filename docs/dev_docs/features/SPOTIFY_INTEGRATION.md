@@ -1,4 +1,4 @@
-# Spotify Control Integration
+﻿# Spotify Control Integration
 
 Developer reference for UniPlaySong's Spotify control feature (v1.5.7, `dev`). Control-only: UPS never captures, mixes, stores, or processes Spotify audio — it only sends transport commands to the running Spotify desktop app and reads now-playing metadata.
 
@@ -108,7 +108,7 @@ The `GlobalSystemMediaTransportControlsSession` we already hold also exposes (al
 
 Opt-in path that lets UPS's Live Effects (reverb/EQ) and the Spectrum Visualizer operate on Spotify audio, the same way they operate on UPS's own game music. This is the one place UPS *does* capture Spotify audio — gated behind `ApplyLiveEffectsToSpotify` (effects) and the existing Spectrum Visualizer setting (visualizer), both off by default. Requires **Windows 10 version 2004 / build 19041+** (Process Loopback Capture); below that the feature is unavailable and Spotify plays dry, with a one-time notification explaining why.
 
-**Seam:** `SpotifyLoopback.dll` (bundled native shim; Process Loopback via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS`, `INCLUDE_TARGET_PROCESS_TREE` on Spotify's window PID) → `SpotifyLoopbackClient` (P/Invoke + ring buffer) → `SpotifyCaptureSampleProvider` (an `ISampleProvider`, normalized to 44100Hz stereo float) → `NAudioMusicPlayer.LoadExternalSource`, which runs it through the **same** `EffectsChain` / `VisualizationDataProvider` / persistent mixer as game music (no `SongEndDetector` — a live capture never ends). See `docs/dev_docs/NAUDIO_PIPELINE.md` → "External Source Path".
+**Seam:** `SpotifyLoopback.dll` (bundled native shim; Process Loopback via `ActivateAudioInterfaceAsync` + `AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS`, `INCLUDE_TARGET_PROCESS_TREE` on Spotify's window PID) → `SpotifyLoopbackClient` (P/Invoke + ring buffer) → `SpotifyCaptureSampleProvider` (an `ISampleProvider`, normalized to 44100Hz stereo float) → `NAudioMusicPlayer.LoadExternalSource`, which runs it through the **same** `EffectsChain` / `VisualizationDataProvider` / persistent mixer as game music (no `SongEndDetector` — a live capture never ends). See `docs/dev_docs/features/NAUDIO_PIPELINE.md` → "External Source Path".
 
 **Safety invariant (`SpotifyEffectsCoordinator`):** hearing Spotify's raw output *and* the effected version at once would double the audio, so for the EFFECTS case Spotify's dry output is **muted iff UPS is producing effected output for it**, and **auto-unmuted on any stop** (effects disabled, capture stops/dies, UPS closes). The dry-output mute reuses `SpotifyAudioSession` (`ISimpleAudioVolume.SetMute` — the same audio-session mute as the v1.6.4 theme-mute work). The VISUALIZER case mutes **nothing**: it reacts to Spotify (dry or effected) with Spotify still audible. Error/unsupported-OS/mute-failure paths fall back to dry Spotify with no effects/viz.
 

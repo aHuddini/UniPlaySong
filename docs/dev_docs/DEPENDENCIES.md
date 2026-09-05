@@ -1,4 +1,4 @@
-# UniPlaySong - Dependencies Documentation
+﻿# UniPlaySong - Dependencies Documentation
 
 ## Overview
 
@@ -138,7 +138,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Build**: Compiled via CMake with `GME_YM2612_EMU=Nuked` (LGPL-safe core, NOT MAME)
 - **Source repo**: [github.com/libgme/game-music-emu](https://github.com/libgme/game-music-emu)
 - **Source archive**: `lib/source/gme-source-1815b97.tar.gz` (committed in this repo for LGPL §6 compliance — guarantees source remains available even if upstream becomes unreachable). SHA-256: `db3aa7842fa8a7b738b8b04acb37327c3daedaa55dcb36a5096205f048b91cc9`.
-- **Reproduction**: Full build instructions in [`docs/dev_docs/GME_BUILD.md`](GME_BUILD.md).
+- **Reproduction**: Full build instructions in [`docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md).
 - **P/Invoke**: Defined in `Audio/GmeNative.cs`
 - **Implementation**: Used by `Audio/GmeReader.cs`
 - **Copy to build output**: Automatic via `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`
@@ -154,7 +154,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **License**: zlib license (compatible with commercial use)
 
 ### SpotifyLoopback.dll (v1.6.5+)
-- **Purpose**: Spotify live-effects capture shim — pulls Spotify's isolated PCM via Windows **Process Loopback Capture** so Live Effects / Calm Down / the Visualizer can run on Spotify audio (see [`NAUDIO_PIPELINE.md`](NAUDIO_PIPELINE.md) → "External Source Path"). Managed .NET can't do the async COM dance (`ActivateAudioInterfaceAsync` + completion handler), so a native shim is required.
+- **Purpose**: Spotify live-effects capture shim — pulls Spotify's isolated PCM via Windows **Process Loopback Capture** so Live Effects / Calm Down / the Visualizer can run on Spotify audio (see [`NAUDIO_PIPELINE.md`](features/NAUDIO_PIPELINE.md) → "External Source Path"). Managed .NET can't do the async COM dance (`ActivateAudioInterfaceAsync` + completion handler), so a native shim is required.
 - **Origin**: **First-party** — written for UniPlaySong (C++/WinRT), not a third-party library.
 - **Architecture**: **x86 (32-bit) — required.** Playnite is a 32-bit host, so UniPlaySong (AnyCPU) loads as x86 and can only P/Invoke an x86 DLL. An x64 build fails with HRESULT `0x8007000B` (`ERROR_BAD_EXE_FORMAT`) at `LoadLibrary`.
 - **Location**: `src/Audio/Native/SpotifyLoopback.dll` (~104 KB)
@@ -483,7 +483,7 @@ All bundled dependencies are compatible with the MIT license under which UniPlay
 - **SDL2 / SDL2_mixer**: zlib license
 - **zlib (z.dll)**: zlib license
 - **TagLibSharp**: LGPL v2.1 — compatible via dynamic linking (NuGet-distributed DLL alongside `UniPlaySong.dll`).
-- **Game Music Emu (gme.dll)**: **LGPL v2.1+** — compatible via dynamic linking. UniPlaySong links via P/Invoke; `gme.dll` is a separate file in the `.pext`, making it user-replaceable. Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe); the MAME YM2612 core (GPL v2+) is explicitly NOT used. Source pin and reproduction in [`GME_BUILD.md`](GME_BUILD.md).
+- **Game Music Emu (gme.dll)**: **LGPL v2.1+** — compatible via dynamic linking. UniPlaySong links via P/Invoke; `gme.dll` is a separate file in the `.pext`, making it user-replaceable. Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe); the MAME YM2612 core (GPL v2+) is explicitly NOT used. Source pin and reproduction in [`GME_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md).
 
 > **Per-component upstream URLs, license texts, and LGPL §6 source-availability pointers live in [`NOTICES.txt`](../../NOTICES.txt).** That file is also bundled in the `.pext` so end users have it.
 

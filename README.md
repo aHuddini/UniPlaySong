@@ -1,4 +1,4 @@
-# UniPlaySong Playnite Extension
+﻿# UniPlaySong Playnite Extension
 
 ![License](https://img.shields.io/badge/license-MIT-green) ![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.16.0-purple) ![Total Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/total?label=downloads&color=brightgreen) ![Latest Release Downloads](https://img.shields.io/github/downloads/aHuddini/UniPlaySong/latest/total?label=latest%20release&color=blue)
 
@@ -82,7 +82,7 @@ Right-click any game → **Music Info Card** for a stylized per-game music dashb
 | **Chiptune** | `.spc` | SNES / Super Famicom |
 | **Chiptune** | `.hes` | NEC TurboGrafx-16 / PC Engine. Requires a sibling `.m3u` for multi-track playback. Right-click → Chiptunes → **Split HES Tracks** to break a multi-track HES into individual songs for skip/shuffle. |
 
-> Chiptune playback is powered by [Game Music Emu](https://github.com/libgme/game-music-emu) (LGPL v2.1+, dynamically linked). See `NOTICES.txt` and `docs/dev_docs/GME_BUILD.md` for license + build details.
+> Chiptune playback is powered by [Game Music Emu](https://github.com/libgme/game-music-emu) (LGPL v2.1+, dynamically linked). See `NOTICES.txt` and `docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md` for license + build details.
 
 ---
 
@@ -169,7 +169,7 @@ See `docs/dev_docs/` for detailed build instructions.
 - **HtmlAgilityPack, Newtonsoft.Json, NAudio, NVorbis, FuzzySharp** - Core functionality (MIT)
 - **[Dubya.WindowsMediaController](https://github.com/DubyaDude/WindowsMediaController)** by DubyaDude - Windows SMTC media-session control, powers the Spotify integration (MIT)
 - **TagLibSharp** - Audio metadata (LGPL)
-- **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking — see [`docs/dev_docs/GME_BUILD.md`](docs/dev_docs/GME_BUILD.md) for the source pin and reproducible build)
+- **[Game Music Emu](https://github.com/libgme/game-music-emu)** - Retro chiptune decoder (LGPL v2.1+, dynamic linking — see [`docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md`](docs/dev_docs/features/CHIPTUNE_GME_DLL_BUILD.md) for the source pin and reproducible build)
 - **[zlib](https://github.com/madler/zlib)** - Decompression for VGZ files (zlib license)
 
 ### External Tools (installed by user)

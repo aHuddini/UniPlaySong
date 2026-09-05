@@ -1,4 +1,4 @@
-# UniPlaySong - Architecture Documentation
+﻿# UniPlaySong - Architecture Documentation
 
 ## Overview
 
@@ -714,7 +714,7 @@ The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following
 
 ## Related Documentation
 
-- [NAudio Pipeline](NAUDIO_PIPELINE.md) — Persistent mixer, volume ramping, visualization, fade curves
+- [NAudio Pipeline](features/NAUDIO_PIPELINE.md) — Persistent mixer, volume ramping, visualization, fade curves
 - [NAudio Audio Artifact Fix](../archive/plans/2026-02-22-naudio-smooth-volume-design.md) — Design doc for the per-sample ramp that eliminated tremolo artifacts (archived)
 
 ## Future Architecture Improvement Ideas

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Playnite.SDK;
 using UniPlaySong.Audio;
 using UniPlaySong.Common;
@@ -14,7 +14,7 @@ namespace UniPlaySong.Services
 
         // Achievement/trophy unlocked — fired via URI by external plugins (e.g. Playnite Achievements).
         // Achievement is the MASTER/fallback sound; the six rarity tiers each have their own optional
-        // sound and fall back to Achievement when not set. See ACHIEVEMENT_SOUND_INTEGRATION.md.
+        // sound and fall back to Achievement when not set. See docs/dev_docs/features/ACHIEVEMENT_SOUND_INTEGRATION.md.
         Achievement,            // master / fallback (used when a rarity has no sound of its own)
         AchievementCommon,      // commonachievement     (bronze)
         AchievementUncommon,    // uncommonachievement   (silver)
