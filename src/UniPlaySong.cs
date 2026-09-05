@@ -3378,6 +3378,12 @@ namespace UniPlaySong
                 // the persistent player across fires and only rebuilds when the backend truly changes.
                 () => _isUsingLiveEffectsPlayer && (_settings?.ApplyLiveEffectsToJingles ?? true));
 
+            // Stage 1 of the out-of-process achievement sound host: the seam, with nothing behind
+            // it. The null host always declines, so every achievement sound takes the in-process
+            // path it takes today. Swapping in the real host is the only change stage 2 needs here.
+            // See docs/dev_docs/features/JINGLE_SOUND_HOST.md.
+            _jingleService.SetSoundHost(Services.Jingles.NullJingleSoundHost.Instance);
+
             if (_settings != null)
             {
                 _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);

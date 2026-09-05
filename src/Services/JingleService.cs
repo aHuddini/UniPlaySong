@@ -55,6 +55,10 @@ namespace UniPlaySong.Services
         // rebuild is needed. Null -> assume no change (always reuse an existing player).
         private readonly Func<bool> _jingleWantsLiveEffects;
 
+        // Out-of-process host for achievement sounds. Null or declining means every sound takes
+        // the in-process path, which is the default and the only behaviour until the host ships.
+        private Jingles.IJingleSoundHost _soundHost;
+
         public JingleService(
             IMusicPlaybackService playbackService,
             Func<IMusicPlayer> createJinglePlayer,
@@ -75,6 +79,13 @@ namespace UniPlaySong.Services
             _jingleWantsLiveEffects = jingleWantsLiveEffects;
         }
 
+        // Set by the host plugin once the sound host is constructed. Left null in tests and in any
+        // build where the feature does not exist.
+        public void SetSoundHost(Jingles.IJingleSoundHost host)
+        {
+            _soundHost = host;
+        }
+
         // Plays the configured jingle for a given event. No-op if the feature
         // toggle is off, the sound type resolves to nothing, or the file is missing.
         public void PlayForEvent(JingleEvent evt, UniPlaySongSettings settings)
@@ -92,7 +103,7 @@ namespace UniPlaySong.Services
                     var rarityPath = ResolveAchievementRarityPath(RarityOf(evt), settings);
                     if (!string.IsNullOrEmpty(rarityPath))
                     {
-                        PlayExternalSound(rarityPath, settings);
+                        PlayAchievementSound(rarityPath, settings);
                         return;
                     }
 
@@ -102,7 +113,7 @@ namespace UniPlaySong.Services
                     if (!master.HasValue) return;
                     var mcfg = master.Value;
                     var masterPath = ResolveConfigPath(mcfg);
-                    if (!string.IsNullOrEmpty(masterPath)) PlayExternalSound(masterPath, settings);
+                    if (!string.IsNullOrEmpty(masterPath)) PlayAchievementSound(masterPath, settings);
                     return;
                 }
 
@@ -456,6 +467,39 @@ namespace UniPlaySong.Services
         //     already paused, so there's nothing to duck; the sound just plays alongside game audio.
         //   - no viz-provider save/restore — no Live Effects / visualizer involvement by design.
         //   - own player + own MediaEnded, fully isolated from the completion/abandoned jingle state.
+        // Achievement sounds only. Offers the sound to the out-of-process host first, and falls
+        // straight through to the ordinary in-process path when it declines — which is every time
+        // unless the capture host is enabled and healthy.
+        //
+        // This sits at the achievement call sites rather than inside PlayExternalSound because that
+        // method is SHARED: ControllerDetected and the URI-triggered notification sounds go through
+        // it too, and they have nothing to do with unlock capture. Branching there would have moved
+        // them as a side effect. Here, every other caller keeps today's behaviour by construction
+        // rather than by a runtime check that could drift.
+        private void PlayAchievementSound(string filePath, UniPlaySongSettings settings)
+        {
+            var host = _soundHost;
+            if (host != null && settings?.EnableJingleSoundHost == true)
+            {
+                try
+                {
+                    if (host.TryPlay(filePath, settings.MusicVolume / Constants.VolumeDivisor))
+                    {
+                        _fileLogger?.Debug($"Achievement sound handed to the sound host (pid {host.ProcessId}): {System.IO.Path.GetFileName(filePath)}");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // A host that throws must never cost the user their sound — the contract says
+                    // it cannot, and this is the belt for the day it does anyway.
+                    _fileLogger?.Warn($"Sound host threw, falling back in process: {ex.Message}");
+                }
+            }
+
+            PlayExternalSound(filePath, settings);
+        }
+
         private void PlayExternalSound(string filePath, UniPlaySongSettings settings)
         {
             DisposeExternalPlayer(); // stop any still-playing external sound

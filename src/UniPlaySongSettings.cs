@@ -440,6 +440,10 @@ namespace UniPlaySong
         // plugin). This is the MASTER / fallback sound: the five rarity tiers below each have their
         // own optional sound and fall back to this one when not enabled. Off by default.
         private bool enableAchievementSound = false;
+        // Off by default and deliberately hard to reach by accident: it exists for one recording
+        // workflow, and its whole job is to move where a sound comes from. See
+        // features/JINGLE_SOUND_HOST.md.
+        private bool enableJingleSoundHost = false;
         private CelebrationSoundType achievementSoundType = CelebrationSoundType.BundledJingle;
         private string selectedAchievementJingle = "Achievements/Trophy_Notif.mp3";
         private string achievementSoundPath = string.Empty;
@@ -1207,6 +1211,16 @@ namespace UniPlaySong
         {
             get => enableAchievementSound;
             set { enableAchievementSound = value; OnPropertyChanged(); }
+        }
+
+        // Plays achievement sounds from a separate UniPlaySong process instead of Playnite's own,
+        // so recording tools that capture by process tree can isolate the sound. Costs nothing when
+        // off, and falls back to normal playback whenever the host is unavailable — an achievement
+        // sound is never lost to this setting.
+        public bool EnableJingleSoundHost
+        {
+            get => enableJingleSoundHost;
+            set { enableJingleSoundHost = value; OnPropertyChanged(); }
         }
 
         public CelebrationSoundType AchievementSoundType

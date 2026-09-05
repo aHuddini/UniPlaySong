@@ -1,6 +1,6 @@
 # Out-of-Process Jingle Sound Host
 
-**Status:** spec, not built
+**Status:** stage 1 built (seam + null host); stages 2-3 not started
 **Target:** 1.8.6 or later
 **Scope:** achievement sounds only — see *Not in scope*
 **Requested by:** the PlayniteAchievements developer (justin-delano)
@@ -198,7 +198,10 @@ chime stem in every case, emulators included. Nothing else on his side changes �
 
 1. **Seam + fallback**, with a stub host that always returns false. Proves the branch is
    inert and that existing behaviour is untouched.
-2. **Helper exe + IPC**, behind the setting.
+2. **Helper exe + IPC**, behind the setting. Decisions taken: bundle NAudio into the
+   helper rather than share the packaged copy (independence is the point), and accept
+   SmartScreen risk unsigned unless a free certificate turns up — the never-silent
+   fallback is what makes that acceptable.
 3. **PID API + packaging.**
 
 Stage 1 is independently safe to ship; stages 2–3 can be dropped without unwinding

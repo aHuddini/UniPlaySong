@@ -315,6 +315,9 @@ namespace UniPlaySong.Services
         // Machine-specific paths and live runtime state. No reset restores these.
         internal static readonly HashSet<string> NeverReset = new HashSet<string>
         {
+            // Machine-specific: names a helper process on THIS install. A reset should not move
+            // where sound comes from, and it must not travel to another machine.
+            nameof(UniPlaySongSettings.EnableJingleSoundHost),
             nameof(UniPlaySongSettings.ActiveMediaCanNext),
             nameof(UniPlaySongSettings.ActiveMediaCanPrevious),
             nameof(UniPlaySongSettings.ActiveMediaDurationText),
