@@ -221,6 +221,28 @@ sounds, and nothing else.
 
 ---
 
+## Open question: platform target
+
+`UpsSound.csproj` sets no `<PlatformTarget>`, so it builds AnyCPU and runs 64-bit on 64-bit
+Windows. **Playnite itself is x86** (`Playnite.DesktopApp` is a 32-bit process), so today the
+host runs at a different bitness from its parent. That is an accident of the default, not a
+decision.
+
+It works — parent and host share only a pipe and a job object, both bitness-agnostic — but a
+64-bit process loads a different WASAPI/driver shim than the 32-bit one UniPlaySong plays
+through in process. On almost every machine that is irrelevant. On one with an unusual audio
+driver it is exactly the difference that produces "sound works in Playnite, silence from the
+host", which would be miserable to diagnose remotely.
+
+Pinning `<PlatformTarget>x86</PlatformTarget>` would make the host's audio stack identical to
+the in-process one, so anything that plays in Playnite plays in the host. Nothing here needs
+64-bit: no large buffers, no memory pressure, no 64-bit-only API.
+
+**Deliberately deferred** until PlayniteAchievements has tested the current binary. Changing it
+now would mean the tested build and the shipped build differ, and a failure could not be
+attributed. Revisit after that lands — and if the host is ever reported silent on a machine
+where UniPlaySong's own audio works, try this first.
+
 ## Risks
 
 - **AV false positives.** An unsigned exe spawning from the extensions folder is exactly
