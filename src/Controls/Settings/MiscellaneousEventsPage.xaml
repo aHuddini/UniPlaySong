@@ -43,7 +43,7 @@
                            Text="{Binding Settings.JingleVolume, StringFormat='{}{0}%'}"/>
             </StackPanel>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Default 100%. How loud every jingle and notification sound is relative to your Music Volume - achievement unlocks, the Completed and Abandoned jingles, and the controller-detected sound. Lower it if they cut through too sharply over a game; the music is unaffected."/>
+                       Text="Default 50%. How loud achievement unlocks, the Completed and Abandoned jingles, and the controller-detected sound play. Set on its own, so turning your music down does not quieten them too."/>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Apply live effects to jingles"
                       IsChecked="{Binding Settings.ApplyLiveEffectsToJingles}"/>

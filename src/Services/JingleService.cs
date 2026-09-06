@@ -75,17 +75,24 @@ namespace UniPlaySong.Services
             _jingleWantsLiveEffects = jingleWantsLiveEffects;
         }
 
-        // Jingles ride Music Volume, scaled by JingleVolume so notification sounds can be brought
-        // down without touching the music. 100 (the default) is exactly the old behaviour.
+        // Jingle volume is its OWN level, independent of Music Volume.
         //
-        // Deliberately NOT scaled by Playnite's fullscreen Background Volume. Music is; jingles are
-        // not, so they still cut through in Fullscreen - and this is the lever for taming them when
-        // they cut through too well.
+        // It used to be relative (music * jingle), which made Music Volume a ceiling: with music at
+        // 20%, a jingle could never exceed 0.20 no matter what this was set to. Users who keep their
+        // music low while gaming reported they could not hear achievement sounds at all, and the
+        // relative scale had no position that would fix it. So the two are simply separate now -
+        // turn the music down as far as you like, the jingles stay where you put them.
+        //
+        // The default was rebased 100 -> 50 to match, so a fresh install sounds exactly as it did
+        // when the two were multiplied (50% x 100%). Existing configs are NOT migrated: anyone who
+        // had moved their Music Volume will hear their jingles change level once, on upgrade.
+        //
+        // Deliberately NOT scaled by Playnite's fullscreen Background Volume either. Music is;
+        // jingles are not, so they still cut through in Fullscreen.
         private static double JingleLevel(UniPlaySongSettings settings)
         {
-            double music = (settings?.MusicVolume ?? Constants.DefaultMusicVolume) / Constants.VolumeDivisor;
             double jingle = (settings?.JingleVolume ?? Constants.DefaultJingleVolume) / Constants.VolumeDivisor;
-            return Math.Max(0.0, Math.Min(1.0, music * jingle));
+            return Math.Max(0.0, Math.Min(1.0, jingle));
         }
 
         // Plays the configured jingle for a given event. No-op if the feature

@@ -39,9 +39,10 @@ namespace UniPlaySong.Common
         public const int MinMusicVolume = 0;
         public const int MaxMusicVolume = 100;
 
-        // Jingles and notification sounds are scaled by this on top of MusicVolume. 100 = no
-        // change, which is the default so no existing install gets quieter on upgrade.
-        public const int DefaultJingleVolume = 100;
+        // Loudness of jingles and notification sounds. An independent level, NOT a proportion of
+        // MusicVolume. Defaulted to the same value as DefaultMusicVolume so a fresh install sounds
+        // exactly as it did when the two were multiplied together (50% x 100% = 50%).
+        public const int DefaultJingleVolume = 50;
 
         #endregion
 

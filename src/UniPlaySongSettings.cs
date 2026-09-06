@@ -1210,15 +1210,20 @@ namespace UniPlaySong
             set { enableAchievementSound = value; OnPropertyChanged(); }
         }
 
-        // Loudness of jingles and notification sounds relative to Music Volume: 100 leaves them
-        // exactly as they were, lower brings them down without touching the music.
+        // Loudness of jingles and notification sounds. An INDEPENDENT level, not a proportion of
+        // Music Volume - turn the music down as far as you like and the jingles stay put.
+        //
+        // It was relative in 1.8.6, which made Music Volume a ceiling the jingles could never rise
+        // above: with music at 20%, a jingle could not exceed 0.20 at any setting. Users who game
+        // with quiet music reported they could not hear achievement sounds at all, and no position
+        // on the old scale would fix it.
         //
         // Deliberately one setting for every non-music sound rather than one per event. Nobody has
         // asked for a completion jingle at a different level from an achievement; what they ask for
         // is 'the notification sounds are too loud'.
         //
-        // Not scaled by Playnite's fullscreen Background Volume - unlike music, jingles ignore that
-        // slider so they still cut through, and this is the lever for taming them.
+        // Not scaled by Playnite's fullscreen Background Volume either - unlike music, jingles
+        // ignore that slider so they still cut through.
         public int JingleVolume
         {
             get => jingleVolume;
