@@ -8,8 +8,8 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 
-- **`ShowSettingsSidebarButton` (General → Miscellaneous, default off).** Adds a `SiderbarItemType.Button` to Playnite's Desktop sidebar whose `Activated` calls `MainView.OpenPluginSettings(Id)` — the same call the main-menu item already uses, so it opens Playnite's own add-on settings dialog and leaves the current view alone. Returned from the existing `GetSidebarItems` override alongside the dashboard item, gated on `IsDesktop` and its own setting, with visibility following the setting live via `PropertyChanged`.
-  - Off by default deliberately: the sidebar is Playnite's own navigation, shared with every installed extension, so a plugin should ask before adding itself.
+- **`ShowSettingsSidebarButton` (General → Miscellaneous, default on).** Adds a `SiderbarItemType.Button` to Playnite's Desktop sidebar whose `Activated` calls `MainView.OpenPluginSettings(Id)` — the same call the main-menu item already uses, so it opens Playnite's own add-on settings dialog and leaves the current view alone. Returned from the existing `GetSidebarItems` override alongside the dashboard item, gated on `IsDesktop` and its own setting, with visibility following the setting live via `PropertyChanged`.
+  - **Requires a restart to change.** Playnite calls `GetSidebarItems` once at startup and builds its sidebar from the result, so an item that did not exist then cannot be made to appear by flipping `Visible` later. The page raises the `SetRestartRequired` prompt, and the live `PropertyChanged` handler was removed rather than left in place implying it worked.
   - The icon is an IcoFont glyph in a `TextBlock` rather than an image, so it inherits the foreground brush and sizing a theme's sidebar template applies — a bitmap could not be restyled.
 
   - Adds a **General → Miscellaneous** page for General settings belonging to no single page.

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -10,16 +10,31 @@ namespace UniPlaySong.Tests.Services
     // A UniPlaySong button in Playnite's Desktop sidebar that opens these settings.
     //
     // The sidebar is Playnite's own navigation, shared with every other installed extension, so the
-    // rules here are about being a good guest: off unless asked for, Desktop only, and styleable by
+    // rules here are about being a good guest: one entry, Desktop only, removable, and styleable by
     // the theme rather than imposing an appearance on it.
     [TestFixture]
     public class SettingsSidebarButtonTests
     {
         [Test]
-        public void TheButtonIsOffByDefault()
+        public void TheButtonIsOnByDefault()
         {
-            // An extension does not put itself in shared navigation uninvited.
-            Assert.IsFalse(new UniPlaySongSettings().ShowSettingsSidebarButton);
+            // On, because the settings are otherwise four clicks deep in Add-ons -> Extensions and
+            // the button is the obvious way to reach them. It costs one sidebar entry and can be
+            // turned off.
+            Assert.IsTrue(new UniPlaySongSettings().ShowSettingsSidebarButton);
+        }
+
+        [Test]
+        public void TheSidebarCannotBeChangedWithoutARestart()
+        {
+            // Playnite calls GetSidebarItems once, at startup, and builds its sidebar from what it
+            // returns. An item that did not exist then cannot be made to appear by setting Visible
+            // later - which is why the settings page raises the restart prompt rather than pretending
+            // the toggle is live. Reported as "it does not load the button immediately".
+            var method = typeof(UniPlaySong).GetMethod("GetSidebarItems");
+            Assert.NotNull(method);
+            Assert.AreEqual(0, method.GetParameters().Length,
+                "Playnite pulls the items; UniPlaySong cannot push a new one mid-session");
         }
 
         [Test]

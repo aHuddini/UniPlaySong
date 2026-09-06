@@ -5664,14 +5664,11 @@ namespace UniPlaySong
                         }
                     };
 
-                    if (_settingsService != null)
-                    {
-                        _settingsService.Current.PropertyChanged += (s, e) =>
-                        {
-                            if (e.PropertyName == nameof(UniPlaySongSettings.ShowSettingsSidebarButton))
-                                _settingsSidebarItem.Visible = _settings?.ShowSettingsSidebarButton ?? false;
-                        };
-                    }
+                    // No live PropertyChanged toggle here, unlike the dashboard item. Playnite builds
+                    // the sidebar once from GetSidebarItems at startup, so an item that did not exist
+                    // then cannot be made to appear by flipping Visible later - and pretending
+                    // otherwise is what made the toggle look broken. The settings page prompts for a
+                    // restart instead.
                 }
                 catch (Exception ex)
                 {

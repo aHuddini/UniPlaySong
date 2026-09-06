@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.GeneralMiscellaneousPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.GeneralMiscellaneousPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -30,11 +30,11 @@
             </Border>
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Show a UniPlaySong button in the sidebar"
-                      IsChecked="{Binding Settings.ShowSettingsSidebarButton}"/>
+                      IsChecked="{Binding Settings.ShowSettingsSidebarButton}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Adds a button to Playnite's Desktop sidebar that opens these settings, so you can reach them without going through Add-ons. Desktop mode only."/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Off by default. The sidebar is Playnite's own navigation and shared with every other extension, so UniPlaySong does not add itself there uninvited."/>
+                       Text="Adds a button to Playnite's Desktop sidebar that opens these settings, so you can reach them without going through Add-ons -&gt; Extensions. Desktop mode only. Requires a Playnite restart to take effect - Playnite builds its sidebar once at startup."/>
             <TextBlock Style="{StaticResource UpsHint}"
                        Text="For theme developers: the icon is an IcoFont glyph in a TextBlock, so it inherits whatever foreground and sizing your sidebar template applies — it can be restyled like any other sidebar item."/>
 

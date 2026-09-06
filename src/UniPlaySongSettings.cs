@@ -3073,9 +3073,10 @@ namespace UniPlaySong
         }
 
         // Adds a UniPlaySong button to Playnite's Desktop sidebar that opens its settings.
-        // Off by default: the sidebar is Playnite's own navigation and shared by every extension,
-        // so a plugin should ask before putting itself there.
-        private bool showSettingsSidebarButton = false;
+        //
+        // Playnite reads sidebar items once, through GetSidebarItems at startup, so this only takes
+        // effect on the next launch - the settings page says so and prompts for a restart.
+        private bool showSettingsSidebarButton = true;
         public bool ShowSettingsSidebarButton
         {
             get => showSettingsSidebarButton;
