@@ -38,16 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: UPS's volume stopped syncing with Playnite's Fullscreen Background Volume, leaving it silent for the rest of the session.
+                        Fixed: Playnite could show an unrecoverable error and close, reported on every achievement unlock.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: with Spotify Live Effects on, Playnite's Fullscreen Background Volume now controls Spotify's level, so a theme's music player buttons work on it.
+                        Added: Jingle volume (Gamification &#8594; Miscellaneous) sets how loud achievement and celebration sounds are relative to your music.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: Pause on Minimize and Pause When In System Tray now respect Playnite starting minimised to the system tray at Windows boot.
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsBody}">
-                        Added: a notice when Playnite's Background Volume or UPS's Music Volume is at 0.
+                        Added: a UniPlaySong icon in Playnite's Desktop sidebar for quick access to these settings (General &#8594; Miscellaneous).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:
