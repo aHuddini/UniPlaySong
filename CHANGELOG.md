@@ -8,6 +8,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 
+- **`ShowSettingsSidebarButton` (General → Miscellaneous, default off).** Adds a `SiderbarItemType.Button` to Playnite's Desktop sidebar whose `Activated` calls `MainView.OpenPluginSettings(Id)` — the same call the main-menu item already uses, so it opens Playnite's own add-on settings dialog and leaves the current view alone. Returned from the existing `GetSidebarItems` override alongside the dashboard item, gated on `IsDesktop` and its own setting, with visibility following the setting live via `PropertyChanged`.
+  - Off by default deliberately: the sidebar is Playnite's own navigation, shared with every installed extension, so a plugin should ask before adding itself.
+  - The icon is an IcoFont glyph in a `TextBlock` rather than an image, so it inherits the foreground brush and sizing a theme's sidebar template applies — a bitmap could not be restyled.
+
+  - Adds a **General → Miscellaneous** page for General settings belonging to no single page.
+
 - **`JingleVolume` (Gamification → Miscellaneous, default 100).** Scales every non-music sound — the completion/abandoned jingle and the external notification path (achievements, ControlUp) — on top of `MusicVolume`, via a shared `JingleService.JingleLevel` so the two playback paths cannot drift. Reported as achievement sounds being inaudible over a game for one user and too loud for another with identical settings: the only lever was `MusicVolume`, which moves the music with it, and nothing normalizes the sound files themselves.
   - Deliberately **not** scaled by Playnite's fullscreen Background Volume. Music is; jingles are not, so they still cut through in Fullscreen — and applying it here would have made every existing Fullscreen user's jingles quieter on upgrade, on top of whatever they set. One setting for all non-music sound rather than one per event: nobody asks for a completion jingle at a different level from an achievement, they ask for "the notification sounds are too loud".
 

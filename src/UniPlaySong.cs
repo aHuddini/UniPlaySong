@@ -246,6 +246,7 @@ namespace UniPlaySong
         private MusicLibraryViewModel _libraryViewModel;
         private MusicLibraryView _libraryView;
         private SidebarItem _dashboardSidebarItem;
+        private SidebarItem _settingsSidebarItem;
         private DashboardPlaybackService _dashboardPlaybackService;
 
         // Cached settings ViewModel - ensures GetSettings and GetSettingsView use the same instance
@@ -5634,6 +5635,52 @@ namespace UniPlaySong
                     yield break;
                 }
             }
+
+            if (_settingsSidebarItem == null)
+            {
+                try
+                {
+                    // Type.Button, not View: this opens Playnite's own settings dialog rather than
+                    // hosting a page, so the current view is left alone.
+                    //
+                    // Icon is a TextBlock carrying an IcoFont glyph rather than an image, which is
+                    // what lets a theme restyle it — themes target the sidebar's control template and
+                    // a glyph inherits the foreground brush and sizing they set. A bitmap could not.
+                    _settingsSidebarItem = new SidebarItem
+                    {
+                        Type = SiderbarItemType.Button,
+                        Title = "UniPlaySong Settings",
+                        Icon = new System.Windows.Controls.TextBlock
+                        {
+                            Text = DeskMediaControl.MediaControlIcons.MusicNote,
+                            FontFamily = Playnite.SDK.ResourceProvider.GetResource("FontIcoFont") as System.Windows.Media.FontFamily,
+                            FontSize = 20
+                        },
+                        Visible = _settings?.ShowSettingsSidebarButton ?? false,
+                        Activated = () =>
+                        {
+                            try { _api.MainView.OpenPluginSettings(Id); }
+                            catch (Exception ex) { _fileLogger?.Error($"Sidebar: could not open settings: {ex.Message}"); }
+                        }
+                    };
+
+                    if (_settingsService != null)
+                    {
+                        _settingsService.Current.PropertyChanged += (s, e) =>
+                        {
+                            if (e.PropertyName == nameof(UniPlaySongSettings.ShowSettingsSidebarButton))
+                                _settingsSidebarItem.Visible = _settings?.ShowSettingsSidebarButton ?? false;
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Error($"Sidebar: Error creating the settings button: {ex.Message}");
+                }
+            }
+
+            if (_settingsSidebarItem != null)
+                yield return _settingsSidebarItem;
 
             yield return _dashboardSidebarItem;
         }

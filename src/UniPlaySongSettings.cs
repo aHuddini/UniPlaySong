@@ -3072,6 +3072,16 @@ namespace UniPlaySong
             set { enableSidebarGlow = value; OnPropertyChanged(); }
         }
 
+        // Adds a UniPlaySong button to Playnite's Desktop sidebar that opens its settings.
+        // Off by default: the sidebar is Playnite's own navigation and shared by every extension,
+        // so a plugin should ask before putting itself there.
+        private bool showSettingsSidebarButton = false;
+        public bool ShowSettingsSidebarButton
+        {
+            get => showSettingsSidebarButton;
+            set { showSettingsSidebarButton = value; OnPropertyChanged(); }
+        }
+
         // Music Dashboard (coming soon — toggle is display-only for now)
         private bool showMusicDashboard = false;
         public bool ShowMusicDashboard

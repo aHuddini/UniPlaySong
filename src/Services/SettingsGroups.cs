@@ -62,6 +62,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ShowDefaultMusicIndicator),
                     nameof(UniPlaySongSettings.ShowDesktopMediaControls),
                     nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel),
+                    nameof(UniPlaySongSettings.ShowSettingsSidebarButton),
                     nameof(UniPlaySongSettings.ShowTaskbarMediaControls),
                 },
                 [Playback] = new string[]

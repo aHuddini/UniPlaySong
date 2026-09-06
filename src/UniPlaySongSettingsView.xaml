@@ -218,6 +218,9 @@
                 <TabItem Header="Performance">
                     <settings:PerformancePage/>
                 </TabItem>
+                <TabItem Header="Miscellaneous">
+                    <settings:GeneralMiscellaneousPage/>
+                </TabItem>
             </TabControl>
         </TabItem>
 

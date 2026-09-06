@@ -1,0 +1,43 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.GeneralMiscellaneousPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- General settings that belong to no single page. Kept deliberately small: things land here
+         because they are genuinely cross-cutting, not because a home was hard to find. -->
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Miscellaneous" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="General settings that do not belong to one of the other pages."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Desktop Sidebar" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show a UniPlaySong button in the sidebar"
+                      IsChecked="{Binding Settings.ShowSettingsSidebarButton}"/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Adds a button to Playnite's Desktop sidebar that opens these settings, so you can reach them without going through Add-ons. Desktop mode only."/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="Off by default. The sidebar is Playnite's own navigation and shared with every other extension, so UniPlaySong does not add itself there uninvited."/>
+            <TextBlock Style="{StaticResource UpsHint}"
+                       Text="For theme developers: the icon is an IcoFont glyph in a TextBlock, so it inherits whatever foreground and sizing your sidebar template applies — it can be restyled like any other sidebar item."/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
