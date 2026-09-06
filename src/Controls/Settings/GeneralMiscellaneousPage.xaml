@@ -23,7 +23,7 @@
 
             <TextBlock Text="Miscellaneous" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="General settings that do not belong to one of the other pages."/>
+                       Text="Settings that do not belong to one of the other General pages."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Desktop Sidebar" Style="{StaticResource UpsSectionTitle}"/>
@@ -34,9 +34,7 @@
                       Command="{Binding SetRestartRequired}"
                       CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
             <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Adds a button to Playnite's Desktop sidebar that opens these settings, so you can reach them without going through Add-ons -&gt; Extensions. Desktop mode only. Requires a Playnite restart to take effect - Playnite builds its sidebar once at startup."/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="For theme developers: the icon is an IcoFont glyph in a TextBlock, so it inherits whatever foreground and sizing your sidebar template applies — it can be restyled like any other sidebar item."/>
+                       Text="Puts a UniPlaySong icon in the Desktop sidebar for quick access to these settings. Restart required."/>
 
         </StackPanel>
     </ScrollViewer>
