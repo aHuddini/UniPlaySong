@@ -38,13 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: Playnite could show an unrecoverable error and close, reported on every achievement unlock.
+                        Fixed: the Random Game Picker played over your library music, and ignored the Where Music Plays setting.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: Jingle volume (Gamification &#8594; Miscellaneous) sets how loud achievement and celebration sounds are relative to your music.
+                        Improved: Jingle volume (Gamification &#8594; Miscellaneous) is its own level now, so turning your music down no longer silences achievement sounds.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: a UniPlaySong icon in Playnite's Desktop sidebar for quick access to these settings (General &#8594; Miscellaneous).
+                        Improved: turning the Music Dashboard on or off prompts for the restart it needs.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

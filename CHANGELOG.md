@@ -4,6 +4,23 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.7] - 2026-09-06
+
+### Changed
+
+- **`JingleVolume` is an independent level, no longer a share of `MusicVolume`.** `JingleService.JingleLevel` was `music * jingle`, which made Music Volume a *ceiling*: with music at 20% a jingle could not exceed 0.20 at any slider position. Users who game with the music turned down reported achievement sounds were inaudible and that nothing they changed helped — correctly, since the only lever they had could attenuate but never lift. The level is now the setting alone.
+  - The default is rebased 100 -> 50 to match `DefaultMusicVolume`, so a fresh install sounds exactly as it did when the two were multiplied (50% x 100% = 0.50). Existing configs are deliberately **not** migrated: anyone who had moved Music Volume away from 50 hears their jingles change level once, on upgrade. A migration would have preserved every install exactly but needed a persisted one-shot marker, since `MigrateSettings` runs on every load and would otherwise re-multiply the value down to nothing.
+  - Still not scaled by Playnite's fullscreen Background Volume, for the same reason as before: applying it would reintroduce the same ceiling with a different slider holding the lid down.
+
+### Fixed
+
+- **Random Game Picker music played on top of the library's own music (issue #95).** The `RandomPickerMonitor.IsActive` guard in `MusicPlaybackCoordinator.HandleGameSelected` sat *after* the `ShouldPlayMusic` gate, leaving every branch above it free to act on playback while the picker owned it: the `EnableMusic=off` route into `PlayGameMusic`, the null-game fade-out, and `ShouldPlayMusic`'s own `_playbackService.Stop()` on a mode mismatch. Playnite raises selection events while the dialog is open, so each of those started or stopped a track underneath the picker's `PlayPreview`. The guard is now the first statement in the method, before any branch that plays or stops.
+- **The Random Game Picker ignored Where Music Plays (Mode State) (issue #95).** `RandomPickerMonitor` hooked the dialog and called `PlayPreview` directly, bypassing every gate, so it sang in Fullscreen with `MusicState` set to Desktop only. The mode-state rule moved to `UniPlaySongSettings.AllowsMusicInMode(bool)` — one implementation now shared with `MusicPlaybackCoordinator.ShouldPlayMusic`, so the two cannot drift — and the monitor consults it before hooking. Gating at the hook rather than at playback keeps `IsActive` false when the picker will not play, so the coordinator carries on normally instead of standing down for nothing.
+  - Only the mode-state half is shared. The rest of `ShouldPlayMusic` (first-select skip, login skip, the Desktop auto-play lock) is about how a library *selection* arrived and says nothing about a modal dialog the user opened deliberately.
+
+- **Enabling or disabling the Music Dashboard now raises the restart prompt (issue #95).** Same fault as the settings sidebar button fixed in 1.8.6: Playnite calls `GetSidebarItems` once at startup and builds its sidebar from the result, so an item that was not returned then cannot be produced mid-session by setting `Visible`. The toggle now binds `SetRestartRequired`.
+  - The live `PropertyChanged` handler that used to set `_dashboardSidebarItem.Visible` was removed rather than left implying it worked. It also subscribed to `_settingsService.Current` by reference — an object a settings save replaces wholesale — so it stopped firing after the first save and leaked onto the discarded instance.
+
 ## [1.8.6] - 2026-09-05
 
 ### Added

@@ -20,17 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.6
+## What's New - v1.8.7
 
 ### Fixed
-- Playnite could show an unrecoverable error and close — reported on every achievement unlock, and possible during any library update.
+- The Random Game Picker played over your library music, and played regardless of the Where Music Plays setting.
 
-### Added
-- Jingle volume (Gamification → Miscellaneous) — how loud achievement and celebration sounds are relative to your music.
-- A UniPlaySong icon in Playnite's Desktop sidebar for quick access to its settings (General → Miscellaneous).
+### Improved
+- Jingle volume is now its own setting rather than a share of your music volume, so turning the music down no longer silences achievement sounds.
+- Turning the Music Dashboard on or off now prompts for the restart it needs.
 
 ### Previous Version
-- **v1.8.5**: Fixed UniPlaySong going silent when Playnite's Background Volume changed, Spotify ignoring that slider in Fullscreen, and music playing when Playnite starts minimised to the tray.
+- **v1.8.6**: Fixed a crash reported on every achievement unlock, added a jingle volume setting, and added a UniPlaySong icon to Playnite's Desktop sidebar.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
