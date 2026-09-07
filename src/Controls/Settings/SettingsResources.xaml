@@ -22,6 +22,7 @@
     <local:EffectChainPresetConverter x:Key="EffectChainPresetConverter"/>
     <local:HexToColorConverter x:Key="HexToColorConverter"/>
     <local:VizPresetConverter x:Key="VizPresetConverter"/>
+    <local:CalmDownPresetConverter x:Key="CalmDownPresetConverter"/>
     <local:VizColorThemeConverter x:Key="VizColorThemeConverter"/>
     <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
     <local:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>

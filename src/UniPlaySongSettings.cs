@@ -251,6 +251,19 @@ namespace UniPlaySong
         Reactive        // Maximum responsiveness — minimal smoothing, high gain
     }
 
+    // Calm Down Mode character. Each preset sets the low-pass cutoff, the volume it settles at and
+    // how long the transition takes; Custom means the three sliders are the user's own.
+    public enum CalmDownPreset
+    {
+        Custom = 0,
+        Default,        // What Calm Down has always done - 1500 Hz, half volume, 1.5s
+        Subtle,         // Just takes the edge off; still clearly the same track
+        Warm,           // Rolls off the top but keeps the level up - dulls without hiding
+        Muffled,        // Heavy high cut, as though the music is through a wall
+        Distant,        // Pronounced everything, slow settle - furthest from the foreground
+        Whisper         // Barely there; for when the music should almost disappear
+    }
+
     public enum SidebarGlowMode
     {
         Breathing,   // subtle tint + opacity breathing
@@ -2179,6 +2192,7 @@ namespace UniPlaySong
         private float calmDownVolumeMultiplier = 0.5f;
         private float calmDownFadeLengthMultiplier = 2.0f;
         private float calmDownTransitionDurationSeconds = 1.5f;
+        private CalmDownPreset selectedCalmDownPreset = CalmDownPreset.Default;
 
         private bool liveEffectsEnabled = true;
         private bool lowPassEnabled = false;
@@ -2243,16 +2257,28 @@ namespace UniPlaySong
             set { calmDownModeEnabled = value; OnPropertyChanged(); }
         }
 
+        // Low-pass cutoff, 200-8000 Hz. Lower muffles harder. Clamped because these four were
+        // config-file-only until the Calm Down page exposed them - a cutoff of 0 makes the filter
+        // output silence, and one above Nyquist makes it a no-op.
         public float CalmDownLowPassCutoffHz
         {
             get => calmDownLowPassCutoffHz;
-            set { calmDownLowPassCutoffHz = value; OnPropertyChanged(); }
+            set { calmDownLowPassCutoffHz = Math.Max(200f, Math.Min(8000f, value)); OnPropertyChanged(); }
         }
 
+        // Level Calm Down settles at, 0.05-1.0 of normal. 1.0 means no volume change at all, so the
+        // effect is pure high cut.
         public float CalmDownVolumeMultiplier
         {
             get => calmDownVolumeMultiplier;
-            set { calmDownVolumeMultiplier = value; OnPropertyChanged(); }
+            set { calmDownVolumeMultiplier = Math.Max(0.05f, Math.Min(1f, value)); OnPropertyChanged(); }
+        }
+
+        // Which preset the three values above came from. Custom means the user moved a slider.
+        public CalmDownPreset SelectedCalmDownPreset
+        {
+            get => selectedCalmDownPreset;
+            set { selectedCalmDownPreset = value; OnPropertyChanged(); }
         }
 
         public float CalmDownFadeLengthMultiplier
@@ -2261,10 +2287,11 @@ namespace UniPlaySong
             set { calmDownFadeLengthMultiplier = value; OnPropertyChanged(); }
         }
 
+        // How long the S-curve takes to settle, 0.1-10s.
         public float CalmDownTransitionDurationSeconds
         {
             get => calmDownTransitionDurationSeconds;
-            set { calmDownTransitionDurationSeconds = value; OnPropertyChanged(); }
+            set { calmDownTransitionDurationSeconds = Math.Max(0.1f, Math.Min(10f, value)); OnPropertyChanged(); }
         }
 
         // Enable live audio effects processing. When enabled, uses NAudio-based player with real-time effects

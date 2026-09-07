@@ -44,7 +44,7 @@
                         Improved: Jingle volume (Gamification &#8594; Miscellaneous) is its own level now, so turning your music down no longer silences achievement sounds.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: pick how many bars the spectrum visualizer draws, and a Calm Down button for the Desktop panel.
+                        Added: a Calm Down page with presets (Live Effects), a Calm Down button for the Desktop panel, and a bar count for the visualizer.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

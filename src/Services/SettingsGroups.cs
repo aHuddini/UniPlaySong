@@ -136,6 +136,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.BitcrusherDownsample),
                     nameof(UniPlaySongSettings.BitcrusherEnabled),
                     nameof(UniPlaySongSettings.CalmDownFadeLengthMultiplier),
+                    nameof(UniPlaySongSettings.SelectedCalmDownPreset),
                     nameof(UniPlaySongSettings.CalmDownLowPassCutoffHz),
                     nameof(UniPlaySongSettings.CalmDownModeEnabled),
                     nameof(UniPlaySongSettings.CalmDownTransitionDurationSeconds),

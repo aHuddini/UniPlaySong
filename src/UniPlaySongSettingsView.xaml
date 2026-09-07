@@ -284,6 +284,9 @@
                 <TabItem Header="Visualizers">
                     <settings:VisualizersPage/>
                 </TabItem>
+                <TabItem Header="Calm Down">
+                    <settings:CalmDownPage/>
+                </TabItem>
             </TabControl>
         </TabItem>
 
