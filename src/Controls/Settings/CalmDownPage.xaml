@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.Controls.Settings.CalmDownPage"
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.CalmDownPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -26,16 +26,12 @@
                 <TextBlock ups:TrackedCaps.Text="Mode" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <CheckBox Style="{StaticResource UpsToggleAmber}" Content="Calm Down Mode on"
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Calm Down Mode"
                       IsChecked="{Binding Settings.CalmDownModeEnabled}"/>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,12"
-                       Text="Also on the Fullscreen quick menu, and on the Desktop top panel if you turned that button on under Media Controls. Uses the NAudio player while it is on."/>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                       Text="Shared by Desktop and Fullscreen — turning it on in one turns it on in both. In Fullscreen you can switch it on and off as you browse from Extensions menu → [UPS] Calm Down Mode."/>
 
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Character" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                 <TextBlock Text="Preset" Style="{StaticResource UpsLabel}" Width="140"/>
                 <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
                           SelectedIndex="{Binding Settings.SelectedCalmDownPreset, Converter={StaticResource CalmDownPresetConverter}}"
@@ -49,8 +45,6 @@
                     <ComboBoxItem Content="Whisper"/>
                 </ComboBox>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,12"
-                       Text="Default is how Calm Down has always sounded. Subtle takes the edge off; Warm dulls the top without dropping much volume; Muffled is through-the-wall; Distant is pronounced and slow; Whisper almost disappears. Moving any slider below switches to Custom."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Fine Tuning" Style="{StaticResource UpsSectionTitle}"/>
