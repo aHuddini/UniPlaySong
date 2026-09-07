@@ -56,6 +56,7 @@ namespace UniPlaySong.Services
                 },
                 [General] = new string[]
                 {
+                    nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup),
                     nameof(UniPlaySongSettings.AutoTagOnLibraryUpdate),
                     nameof(UniPlaySongSettings.EnableSongListCache),
                     nameof(UniPlaySongSettings.HideNowPlayingForDefaultMusic),
@@ -65,6 +66,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel),
                     nameof(UniPlaySongSettings.ShowSettingsSidebarButton),
                     nameof(UniPlaySongSettings.ShowTaskbarMediaControls),
+                    nameof(UniPlaySongSettings.SpotifyExePath),
                 },
                 [Playback] = new string[]
                 {
@@ -284,7 +286,6 @@ namespace UniPlaySong.Services
                 [Advanced] = new string[]
                 {
                     nameof(UniPlaySongSettings.AudioBufferSamples),
-                    nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup),
                     nameof(UniPlaySongSettings.EnableDebugLogging),
                     nameof(UniPlaySongSettings.EnableMediaKeyControl),
                     nameof(UniPlaySongSettings.EnableToastAcrylicBlur),
@@ -301,7 +302,6 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ShowMusicDashboard),
                     nameof(UniPlaySongSettings.ShowPeakMeter),
                     nameof(UniPlaySongSettings.ShowProgressBar),
-                    nameof(UniPlaySongSettings.SpotifyExePath),
                     nameof(UniPlaySongSettings.ThemeCompatibleSilentSkip),
                     nameof(UniPlaySongSettings.ToastBlurMode),
                     nameof(UniPlaySongSettings.ToastBlurOpacity),

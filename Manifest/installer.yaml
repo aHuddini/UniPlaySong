@@ -5,13 +5,14 @@ Packages:
     ReleaseDate: 2026-09-06
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.7/UniPlaySong-1_8_7.pext'
     Changelog:
-      - '[Improved] Jingle volume is now its own setting instead of a share of your Music Volume, so lowering the music no longer makes achievement and jingle sounds inaudible. Default is 50%.'
-      - '[Fix] The Random Game Picker played music on top of your library music, and played it regardless of the Where Music Plays setting.'
+      - '[Improved] Jingle volume is now decoupled from music volume, so lowering the music no longer makes achievement and jingle sounds inaudible. New Default is 50%.'
+      - '[Fix] On Fullscreen, the Random Game Picker played music on top of your library music, and played it regardless of the Where Music Plays Mode setting.'
       - '[Improved] Enabling or disabling the Music Dashboard now prompts for the Playnite restart it needs.'
-      - '[New Setting] Number of bars for the spectrum visualizer (1-12), for themes whose top panel is short on room. Live Effects -> Visualizers.'
-      - '[New Setting] A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has. Media Controls.'
-      - '[New Page] Live Effects -> Calm Down: presets for how pronounced Calm Down is (Subtle, Warm, Muffled, Distant, Whisper), plus sliders for high cut, volume and transition time.'
-      - '[Critical Fix] Saving settings reverted anything changed outside the settings dialog - Calm Down, and any toggle from the Fullscreen quick menu or a theme.'
+      - '[New Setting] Change the number of bars for the Desktop spectrum visualizer (1-12), for themes whose top panel is short on room. In Live Effects -> Visualizers.'
+      - '[New Feature & Setting] A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has. Calm Down softens music for late night browsing sessions. Enable it in General -> Media Controls.'
+      - '[New Settings Page] Live Effects -> Calm Down: New presets for how pronounced Calm Down is (Subtle, Warm, Muffled, Distant, Whisper), plus sliders for high cut, volume and transition time.'
+      - '[Critical Fix] Saving settings sometimes reverted any UPS functions changed outside the settings dialog - Calm Down, and any toggle from the Fullscreen quick menu or a theme.'
+      - '[Improved] Opening Spotify on startup is no longer experimental and has moved to General -> Miscellaneous. Still off by default.'
       - '[Improved] Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0

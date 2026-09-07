@@ -1447,7 +1447,7 @@ namespace UniPlaySong
         private bool filterModeEnabled = false; // Only play game-specific music when a Playnite filter preset is active
         private bool radioModeEnabled = false; // Ignore game selection; play continuously from a fixed pool
         private bool spotifySkipOnGap = false; // when Spotify is the default source, skip to a new track each time a no-music game is selected (instead of resuming)
-        private bool autoLaunchSpotifyOnStartup = false; // Experimental: launch Spotify on startup if not running and Spotify is the source
+        private bool autoLaunchSpotifyOnStartup = false; // launch Spotify on startup if not running and Spotify is the source
         private string spotifyExePath = string.Empty;    // Optional user path to Spotify.exe or a .lnk shortcut (auto-scan fallback)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
@@ -1650,8 +1650,9 @@ namespace UniPlaySong
             set { spotifySkipOnGap = value; OnPropertyChanged(); }
         }
 
-        // Experimental: on Playnite startup, launch the Spotify desktop app if it isn't running and
-        // Spotify is the active Radio/Default source. Off by default. See SpotifyLauncher / TryAutoLaunchSpotify.
+        // On Playnite startup, launch the Spotify desktop app if it isn't running and Spotify is the
+        // active Radio/Default source. Off by default. Graduated out of Experimental in 1.8.7; lives on
+        // General -> Miscellaneous. See SpotifyLauncher / TryAutoLaunchSpotify.
         public bool AutoLaunchSpotifyOnStartup
         {
             get => autoLaunchSpotifyOnStartup;

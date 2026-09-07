@@ -39,6 +39,25 @@
                      Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
             </TextBlock>
 
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Spotify" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Open Spotify on startup if it is not running"
+                      IsChecked="{Binding Settings.AutoLaunchSpotifyOnStartup}"/>
+            <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap"
+                       Text="Only when Spotify is your Radio Mode or Default Music source, so music can start without opening it yourself."/>
+
+            <StackPanel Orientation="Horizontal" Margin="20,6,0,0"
+                        IsEnabled="{Binding Settings.AutoLaunchSpotifyOnStartup}">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Spotify path (optional): " VerticalAlignment="Center"/>
+                <TextBox Style="{StaticResource UpsTextBox}" Text="{Binding Settings.SpotifyExePath, UpdateSourceTrigger=PropertyChanged}"
+                         Width="300" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+                <Button Style="{StaticResource UpsButton}" Content="Browse..." Command="{Binding BrowseSpotifyExeCommand}" Padding="10,4"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap" Margin="32,3,0,0"
+                       Text="Leave empty for standard installs. Point this at Spotify.exe or its shortcut only if you use the Microsoft Store version or installed it somewhere unusual."/>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
